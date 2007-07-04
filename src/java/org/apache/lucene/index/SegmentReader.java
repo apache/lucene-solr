@@ -60,6 +60,7 @@ class SegmentReader extends IndexReader {
 
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader = null;
+  CompoundFileReader storeCFSReader = null;
 
   private class Norm {
     public Norm(IndexInput in, int number, long normSeek)
@@ -128,7 +129,15 @@ class SegmentReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE);
+    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
+    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
   }
 
   /**
@@ -136,7 +145,15 @@ class SegmentReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, readBufferSize);
+    return get(si.dir, si, null, false, false, readBufferSize, true);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
+    return get(si.dir, si, null, false, false, readBufferSize, doOpenStores);
   }
 
   /**
@@ -145,7 +162,7 @@ class SegmentReader extends IndexReader {
    */
   public static SegmentReader get(SegmentInfos sis, SegmentInfo si,
                                   boolean closeDir) throws CorruptIndexException, IOException {
-    return get(si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE);
+    return get(si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -157,6 +174,19 @@ class SegmentReader extends IndexReader {
                                   boolean closeDir, boolean ownDir,
                                   int readBufferSize)
     throws CorruptIndexException, IOException {
+    return get(dir, si, sis, closeDir, ownDir, readBufferSize, true);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(Directory dir, SegmentInfo si,
+                                  SegmentInfos sis,
+                                  boolean closeDir, boolean ownDir,
+                                  int readBufferSize,
+                                  boolean doOpenStores)
+    throws CorruptIndexException, IOException {
     SegmentReader instance;
     try {
       instance = (SegmentReader)IMPL.newInstance();
@@ -164,11 +194,11 @@ class SegmentReader extends IndexReader {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
     instance.init(dir, sis, closeDir, ownDir);
-    instance.initialize(si, readBufferSize);
+    instance.initialize(si, readBufferSize, doOpenStores);
     return instance;
   }
 
-  private void initialize(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
+  private void initialize(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
     segment = si.name;
     this.si = si;
 
@@ -178,17 +208,45 @@ class SegmentReader extends IndexReader {
       // Use compound file directory for some files, if it exists
       Directory cfsDir = directory();
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(directory(), segment + ".cfs", readBufferSize);
+        cfsReader = new CompoundFileReader(directory(), segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
         cfsDir = cfsReader;
       }
 
+      final Directory storeDir;
+
+      if (doOpenStores) {
+        if (si.getDocStoreOffset() != -1) {
+          if (si.getDocStoreIsCompoundFile()) {
+            storeCFSReader = new CompoundFileReader(directory(), si.getDocStoreSegment() + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION, readBufferSize);
+            storeDir = storeCFSReader;
+          } else {
+            storeDir = directory();
+          }
+        } else {
+          storeDir = cfsDir;
+        }
+      } else
+        storeDir = null;
+
       // No compound file exists - use the multi-file format
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
-      fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos, readBufferSize);
 
-      // Verify two sources of "maxDoc" agree:
-      if (fieldsReader.size() != si.docCount) {
-        throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
+      final String fieldsSegment;
+      final Directory dir;
+
+      if (si.getDocStoreOffset() != -1)
+        fieldsSegment = si.getDocStoreSegment();
+      else
+        fieldsSegment = segment;
+
+      if (doOpenStores) {
+        fieldsReader = new FieldsReader(storeDir, fieldsSegment, fieldInfos, readBufferSize,
+                                        si.getDocStoreOffset(), si.docCount);
+
+        // Verify two sources of "maxDoc" agree:
+        if (si.getDocStoreOffset() == -1 && fieldsReader.size() != si.docCount) {
+          throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
+        }
       }
 
       tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
@@ -209,8 +267,13 @@ class SegmentReader extends IndexReader {
       proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
       openNorms(cfsDir, readBufferSize);
 
-      if (fieldInfos.hasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos, readBufferSize);
+      if (doOpenStores && fieldInfos.hasVectors()) { // open term vector files only as needed
+        final String vectorsSegment;
+        if (si.getDocStoreOffset() != -1)
+          vectorsSegment = si.getDocStoreSegment();
+        else
+          vectorsSegment = segment;
+        termVectorsReaderOrig = new TermVectorsReader(storeDir, vectorsSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
       }
       success = true;
     } finally {
@@ -273,6 +336,9 @@ class SegmentReader extends IndexReader {
 
     if (cfsReader != null)
       cfsReader.close();
+
+    if (storeCFSReader != null)
+      storeCFSReader.close();
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {

@@ -106,8 +106,12 @@ public class TestBackwardsCompatibility extends TestCase
     rmDir(dirName);
   }
 
+  final String[] oldNames = {"prelockless.cfs",
+                             "prelockless.nocfs",
+                             "presharedstores.cfs",
+                             "presharedstores.nocfs"};
+
   public void testSearchOldIndex() throws IOException {
-    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
@@ -117,7 +121,6 @@ public class TestBackwardsCompatibility extends TestCase
   }
 
   public void testIndexOldIndexNoAdds() throws IOException {
-    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
@@ -131,7 +134,6 @@ public class TestBackwardsCompatibility extends TestCase
   }
 
   public void testIndexOldIndex() throws IOException {
-    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
@@ -312,8 +314,9 @@ public class TestBackwardsCompatibility extends TestCase
         Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
 
         boolean autoCommit = 0 == pass;
-      
+ 
         IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+        writer.setRAMBufferSizeMB(16.0);
         //IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
         for(int i=0;i<35;i++) {
           addDoc(writer, i);
@@ -337,8 +340,8 @@ public class TestBackwardsCompatibility extends TestCase
         // figure out which field number corresponds to
         // "content", and then set our expected file names below
         // accordingly:
-        CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
-        FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
+        CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
+        FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
         int contentFieldIndex = -1;
         for(int i=0;i<fieldInfos.size();i++) {
           FieldInfo fi = fieldInfos.fieldInfo(i);
@@ -351,17 +354,15 @@ public class TestBackwardsCompatibility extends TestCase
         assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
         // Now verify file names:
-        String[] expected = {"_0.cfs",
-                             "_0_1.del",
-                             "_1.cfs",
-                             "_2.cfs",
-                             "_2_1.s" + contentFieldIndex,
-                             "_3.cfs",
-                             "segments_a",
-                             "segments.gen"};
-        if (!autoCommit) {
-          expected[6] = "segments_3";
-        }
+        String[] expected;
+        expected = new String[] {"_0.cfs",
+                    "_0_1.del",
+                    "_0_1.s" + contentFieldIndex,
+                    "segments_4",
+                    "segments.gen"};
+
+        if (!autoCommit)
+          expected[3] = "segments_3";
 
         String[] actual = dir.list();
         Arrays.sort(expected);

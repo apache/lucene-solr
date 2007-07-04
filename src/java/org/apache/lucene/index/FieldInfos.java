@@ -62,6 +62,20 @@ final class FieldInfos {
     }
   }
 
+  /**
+   * Returns a deep clone of this FieldInfos instance.
+   */
+  public Object clone() {
+    FieldInfos fis = new FieldInfos();
+    final int numField = byNumber.size();
+    for(int i=0;i<numField;i++) {
+      FieldInfo fi = (FieldInfo) ((FieldInfo) byNumber.get(i)).clone();
+      fis.byNumber.add(fi);
+      fis.byName.put(fi.name, fi);
+    }
+    return fis;
+  }
+
   /** Adds field info for a Document. */
   public void add(Document doc) {
     List fields = doc.getFields();

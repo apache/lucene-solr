@@ -291,6 +291,80 @@ public class TestTermVectors extends TestCase {
         Field.Index.TOKENIZED, Field.TermVector.YES));
     //System.out.println("Document: " + doc);
   }
-  
-  
+
+  // Test only a few docs having vectors
+  public void testRareVectors() throws IOException {
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    for(int i=0;i<100;i++) {
+      Document doc = new Document();
+      doc.add(new Field("field", English.intToEnglish(i),
+                        Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+      writer.addDocument(doc);
+    }
+    for(int i=0;i<10;i++) {
+      Document doc = new Document();
+      doc.add(new Field("field", English.intToEnglish(100+i),
+                        Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      writer.addDocument(doc);
+    }
+
+    writer.close();
+    searcher = new IndexSearcher(directory);
+
+    Query query = new TermQuery(new Term("field", "hundred"));
+    Hits hits = searcher.search(query);
+    assertEquals(10, hits.length());
+    for (int i = 0; i < hits.length(); i++) {
+      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+      assertTrue(vector != null);
+      assertTrue(vector.length == 1);
+    }
+  }
+
+
+  // In a single doc, for the same field, mix the term
+  // vectors up
+  public void testMixedVectrosVectors() throws IOException {
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    Document doc = new Document();
+    doc.add(new Field("field", "one",
+                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+    doc.add(new Field("field", "one",
+                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
+    doc.add(new Field("field", "one",
+                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field("field", "one",
+                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
+    doc.add(new Field("field", "one",
+                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.close();
+
+    searcher = new IndexSearcher(directory);
+
+    Query query = new TermQuery(new Term("field", "one"));
+    Hits hits = searcher.search(query);
+    assertEquals(1, hits.length());
+
+    TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(0));
+    assertTrue(vector != null);
+    assertTrue(vector.length == 1);
+    TermPositionVector tfv = (TermPositionVector) vector[0];
+    assertTrue(tfv.getField().equals("field"));
+    String[] terms = tfv.getTerms();
+    assertEquals(1, terms.length);
+    assertEquals(terms[0], "one");
+    assertEquals(5, tfv.getTermFrequencies()[0]);
+
+    int[] positions = tfv.getTermPositions(0);
+    assertEquals(5, positions.length);
+    for(int i=0;i<5;i++)
+      assertEquals(i, positions[i]);
+    TermVectorOffsetInfo[] offsets = tfv.getOffsets(0);
+    assertEquals(5, offsets.length);
+    for(int i=0;i<5;i++) {
+      assertEquals(4*i, offsets[i].getStartOffset());
+      assertEquals(4*i+3, offsets[i].getEndOffset());
+    }
+  }
 }

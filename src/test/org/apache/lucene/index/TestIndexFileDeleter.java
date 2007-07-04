@@ -51,6 +51,7 @@ public class TestIndexFileDeleter extends TestCase
     Directory dir = new RAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    writer.setMaxBufferedDocs(10);
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);

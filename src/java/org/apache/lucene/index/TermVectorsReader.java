@@ -33,6 +33,10 @@ class TermVectorsReader implements Cloneable {
   private IndexInput tvd;
   private IndexInput tvf;
   private int size;
+
+  // The docID offset where our docs begin in the index
+  // file.  This will be 0 if we have our own private file.
+  private int docStoreOffset;
   
   private int tvdFormat;
   private int tvfFormat;
@@ -44,6 +48,11 @@ class TermVectorsReader implements Cloneable {
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize)
     throws CorruptIndexException, IOException {
+    this(d, segment, fieldInfos, BufferedIndexInput.BUFFER_SIZE, -1, 0);
+  }
+    
+  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize, int docStoreOffset, int size)
+    throws CorruptIndexException, IOException {
     if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
       tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION, readBufferSize);
       checkValidFormat(tvx);
@@ -51,7 +60,16 @@ class TermVectorsReader implements Cloneable {
       tvdFormat = checkValidFormat(tvd);
       tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION, readBufferSize);
       tvfFormat = checkValidFormat(tvf);
-      size = (int) tvx.length() / 8;
+      if (-1 == docStoreOffset) {
+        this.docStoreOffset = 0;
+        this.size = (int) (tvx.length() / 8);
+      } else {
+        this.docStoreOffset = docStoreOffset;
+        this.size = size;
+        // Verify the file is long enough to hold all of our
+        // docs
+        assert ((int) (tvx.length()/8)) >= size + docStoreOffset;
+      }
     }
 
     this.fieldInfos = fieldInfos;
@@ -102,7 +120,7 @@ class TermVectorsReader implements Cloneable {
       //We don't need to do this in other seeks because we already have the
       // file pointer
       //that was written in another file
-      tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      tvx.seek(((docNum + docStoreOffset) * 8L) + TermVectorsWriter.FORMAT_SIZE);
       //System.out.println("TVX Pointer: " + tvx.getFilePointer());
       long position = tvx.readLong();
 
@@ -154,7 +172,7 @@ class TermVectorsReader implements Cloneable {
     // Check if no term vectors are available for this segment at all
     if (tvx != null) {
       //We need to offset by
-      tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      tvx.seek(((docNum + docStoreOffset) * 8L) + TermVectorsWriter.FORMAT_SIZE);
       long position = tvx.readLong();
 
       tvd.seek(position);

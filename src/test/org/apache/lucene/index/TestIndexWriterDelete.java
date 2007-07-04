@@ -110,7 +110,7 @@ public class TestIndexWriterDelete extends TestCase {
       }
       modifier.flush();
 
-      assertEquals(0, modifier.getRamSegmentCount());
+      assertEquals(0, modifier.getNumBufferedDocuments());
       assertTrue(0 < modifier.getSegmentCount());
 
       if (!autoCommit) {
@@ -452,7 +452,7 @@ public class TestIndexWriterDelete extends TestCase {
           String[] startFiles = dir.list();
           SegmentInfos infos = new SegmentInfos();
           infos.read(dir);
-          IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null);
+          IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
           String[] endFiles = dir.list();
 
           Arrays.sort(startFiles);

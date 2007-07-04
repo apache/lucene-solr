@@ -38,17 +38,53 @@ final class IndexFileNames {
   /** Extension of norms file */
   static final String NORMS_EXTENSION = "nrm";
 
+  /** Extension of freq postings file */
+  static final String FREQ_EXTENSION = "frq";
+
+  /** Extension of prox postings file */
+  static final String PROX_EXTENSION = "prx";
+
+  /** Extension of terms file */
+  static final String TERMS_EXTENSION = "tis";
+
+  /** Extension of terms index file */
+  static final String TERMS_INDEX_EXTENSION = "tii";
+
+  /** Extension of stored fields index file */
+  static final String FIELDS_INDEX_EXTENSION = "fdx";
+
+  /** Extension of stored fields file */
+  static final String FIELDS_EXTENSION = "fdt";
+
+  /** Extension of vectors fields file */
+  static final String VECTORS_FIELDS_EXTENSION = "tvf";
+
+  /** Extension of vectors documents file */
+  static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
+
+  /** Extension of vectors index file */
+  static final String VECTORS_INDEX_EXTENSION = "tvx";
+
   /** Extension of compound file */
   static final String COMPOUND_FILE_EXTENSION = "cfs";
 
+  /** Extension of compound file for doc store files*/
+  static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
+
   /** Extension of deletes */
   static final String DELETES_EXTENSION = "del";
+
+  /** Extension of field infos */
+  static final String FIELD_INFOS_EXTENSION = "fnm";
 
   /** Extension of plain norms */
   static final String PLAIN_NORMS_EXTENSION = "f";
 
   /** Extension of separate norms */
   static final String SEPARATE_NORMS_EXTENSION = "s";
+
+  /** Extension of gen file */
+  static final String GEN_EXTENSION = "gen";
 
   /**
    * This array contains all filename extensions used by
@@ -59,25 +95,72 @@ final class IndexFileNames {
    * filename extension.
    */
   static final String INDEX_EXTENSIONS[] = new String[] {
-      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
-      "tvx", "tvd", "tvf", "gen", "nrm" 
+    COMPOUND_FILE_EXTENSION,
+    FIELD_INFOS_EXTENSION,
+    FIELDS_INDEX_EXTENSION,
+    FIELDS_EXTENSION,
+    TERMS_INDEX_EXTENSION,
+    TERMS_EXTENSION,
+    FREQ_EXTENSION,
+    PROX_EXTENSION,
+    DELETES_EXTENSION,
+    VECTORS_INDEX_EXTENSION,
+    VECTORS_DOCUMENTS_EXTENSION,
+    VECTORS_FIELDS_EXTENSION,
+    GEN_EXTENSION,
+    NORMS_EXTENSION,
+    COMPOUND_FILE_STORE_EXTENSION,
   };
 
   /** File extensions that are added to a compound file
    * (same as above, minus "del", "gen", "cfs"). */
   static final String[] INDEX_EXTENSIONS_IN_COMPOUND_FILE = new String[] {
-      "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx",
-      "tvx", "tvd", "tvf", "nrm" 
+    FIELD_INFOS_EXTENSION,
+    FIELDS_INDEX_EXTENSION,
+    FIELDS_EXTENSION,
+    TERMS_INDEX_EXTENSION,
+    TERMS_EXTENSION,
+    FREQ_EXTENSION,
+    PROX_EXTENSION,
+    VECTORS_INDEX_EXTENSION,
+    VECTORS_DOCUMENTS_EXTENSION,
+    VECTORS_FIELDS_EXTENSION,
+    NORMS_EXTENSION
+  };
+
+  static final String[] STORE_INDEX_EXTENSIONS = new String[] {
+    VECTORS_INDEX_EXTENSION,
+    VECTORS_FIELDS_EXTENSION,
+    VECTORS_DOCUMENTS_EXTENSION,
+    FIELDS_INDEX_EXTENSION,
+    FIELDS_EXTENSION
+  };
+
+  static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
+    FIELD_INFOS_EXTENSION,
+    FREQ_EXTENSION,
+    PROX_EXTENSION,
+    TERMS_EXTENSION,
+    TERMS_INDEX_EXTENSION,
+    NORMS_EXTENSION
   };
   
   /** File extensions of old-style index files */
   static final String COMPOUND_EXTENSIONS[] = new String[] {
-    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
+    FIELD_INFOS_EXTENSION,
+    FREQ_EXTENSION,
+    PROX_EXTENSION,
+    FIELDS_INDEX_EXTENSION,
+    FIELDS_EXTENSION,
+    TERMS_INDEX_EXTENSION,
+    TERMS_EXTENSION
   };
   
   /** File extensions for term vector support */
   static final String VECTOR_EXTENSIONS[] = new String[] {
-    "tvx", "tvd", "tvf"
+    VECTORS_INDEX_EXTENSION,
+    VECTORS_DOCUMENTS_EXTENSION,
+    VECTORS_FIELDS_EXTENSION
   };
 
   /**

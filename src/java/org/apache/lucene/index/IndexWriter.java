@@ -61,14 +61,19 @@ import java.util.Map.Entry;
   When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
 
   <p>These changes are buffered in memory and periodically
-  flushed to the {@link Directory} (during the above method calls).  A flush is triggered when there are
-  enough buffered deletes (see {@link
-  #setMaxBufferedDeleteTerms}) or enough added documents
-  (see {@link #setMaxBufferedDocs}) since the last flush,
-  whichever is sooner.  You can also force a flush by
-  calling {@link #flush}.  When a flush occurs, both pending
-  deletes and added documents are flushed to the index.  A
-  flush may also trigger one or more segment merges.</p>
+  flushed to the {@link Directory} (during the above method
+  calls).  A flush is triggered when there are enough
+  buffered deletes (see {@link #setMaxBufferedDeleteTerms})
+  or enough added documents since the last flush, whichever
+  is sooner.  For the added documents, flushing is triggered
+  either by RAM usage of the documents (see {@link
+  #setRAMBufferSizeMB}) or the number of added documents
+  (this is the default; see {@link #setMaxBufferedDocs}).
+  For best indexing speed you should flush by RAM usage with
+  a large RAM buffer.  You can also force a flush by calling
+  {@link #flush}.  When a flush occurs, both pending deletes
+  and added documents are flushed to the index.  A flush may
+  also trigger one or more segment merges.</p>
 
   <a name="autoCommit"></a>
   <p>The optional <code>autoCommit</code> argument to the
@@ -181,7 +186,20 @@ public class IndexWriter {
   /**
    * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
    */
+
   public final static int DEFAULT_MAX_BUFFERED_DOCS = 10;
+  /* new merge policy
+  public final static int DEFAULT_MAX_BUFFERED_DOCS = 0;
+  */
+
+  /**
+   * Default value is 0 MB (which means flush only by doc
+   * count).  Change using {@link #setRAMBufferSizeMB}.
+   */
+  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 0.0;
+  /* new merge policy
+  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
+  */
 
   /**
    * Default value is 1000. Change using {@link #setMaxBufferedDeleteTerms(int)}.
@@ -224,8 +242,7 @@ public class IndexWriter {
   private boolean autoCommit = true;              // false if we should commit only on close
 
   SegmentInfos segmentInfos = new SegmentInfos();       // the segments
-  SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
-  private final RAMDirectory ramDirectory = new RAMDirectory(); // for temp segs
+  private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
 
   private Lock writeLock;
@@ -621,11 +638,14 @@ public class IndexWriter {
         rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
       }
 
+      docWriter = new DocumentsWriter(directory, this);
+      docWriter.setInfoStream(infoStream);
+
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
       deleter = new IndexFileDeleter(directory,
                                      deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
-                                     segmentInfos, infoStream);
+                                     segmentInfos, infoStream, docWriter);
 
     } catch (IOException e) {
       this.writeLock.release();
@@ -683,31 +703,64 @@ public class IndexWriter {
     return maxFieldLength;
   }
 
-  /** Determines the minimal number of documents required before the buffered
-   * in-memory documents are merged and a new Segment is created.
-   * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
-   * large value gives faster indexing.  At the same time, mergeFactor limits
-   * the number of files open in a FSDirectory.
+  /** Determines the minimal number of documents required
+   * before the buffered in-memory documents are flushed as
+   * a new Segment.  Large values generally gives faster
+   * indexing.
    *
-   * <p> The default value is 10.
+   * <p>When this is set, the writer will flush every
+   * maxBufferedDocs added documents and never flush by RAM
+   * usage.</p>
    *
-   * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
+   * <p> The default value is 0 (writer flushes by RAM
+   * usage).</p>
+   *
+   * @throws IllegalArgumentException if maxBufferedDocs is
+   * smaller than 2
+   * @see #setRAMBufferSizeMB
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     ensureOpen();
     if (maxBufferedDocs < 2)
       throw new IllegalArgumentException("maxBufferedDocs must at least be 2");
-    this.minMergeDocs = maxBufferedDocs;
+    docWriter.setMaxBufferedDocs(maxBufferedDocs);
   }
 
   /**
-   * Returns the number of buffered added documents that will
+   * Returns 0 if this writer is flushing by RAM usage, else
+   * returns the number of buffered added documents that will
    * trigger a flush.
    * @see #setMaxBufferedDocs
    */
   public int getMaxBufferedDocs() {
     ensureOpen();
-    return minMergeDocs;
+    return docWriter.getMaxBufferedDocs();
+  }
+
+  /** Determines the amount of RAM that may be used for
+   * buffering added documents before they are flushed as a
+   * new Segment.  Generally for faster indexing performance
+   * it's best to flush by RAM usage instead of document
+   * count and use as large a RAM buffer as you can.
+   *
+   * <p>When this is set, the writer will flush whenever
+   * buffered documents use this much RAM.</p>
+   *
+   * <p> The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.</p>
+   */
+  public void setRAMBufferSizeMB(double mb) {
+    if (mb <= 0.0)
+      throw new IllegalArgumentException("ramBufferSize should be > 0.0 MB");
+    docWriter.setRAMBufferSizeMB(mb);
+  }
+
+  /**
+   * Returns 0.0 if this writer is flushing by document
+   * count, else returns the value set by {@link
+   * #setRAMBufferSizeMB}.
+   */
+  public double getRAMBufferSizeMB() {
+    return docWriter.getRAMBufferSizeMB();
   }
 
   /**
@@ -788,6 +841,7 @@ public class IndexWriter {
   public void setInfoStream(PrintStream infoStream) {
     ensureOpen();
     this.infoStream = infoStream;
+    docWriter.setInfoStream(infoStream);
     deleter.setInfoStream(infoStream);
   }
 
@@ -871,7 +925,7 @@ public class IndexWriter {
    */
   public synchronized void close() throws CorruptIndexException, IOException {
     if (!closed) {
-      flushRamSegments();
+      flush(true, true);
 
       if (commitPending) {
         segmentInfos.write(directory);         // now commit changes
@@ -880,15 +934,76 @@ public class IndexWriter {
         rollbackSegmentInfos = null;
       }
 
-      ramDirectory.close();
       if (writeLock != null) {
         writeLock.release();                          // release write lock
         writeLock = null;
       }
       closed = true;
+      docWriter = null;
 
       if(closeDir)
         directory.close();
+    }
+  }
+
+  /** Tells the docWriter to close its currently open shared
+   *  doc stores (stored fields & vectors files). */
+  private void flushDocStores() throws IOException {
+
+    List files = docWriter.files();
+
+    if (files.size() > 0) {
+      String docStoreSegment;
+
+      boolean success = false;
+      try {
+        docStoreSegment = docWriter.closeDocStore();
+        success = true;
+      } finally {
+        if (!success)
+          docWriter.abort();
+      }
+
+      if (useCompoundFile && docStoreSegment != null) {
+        // Now build compound doc store file
+        checkpoint();
+
+        success = false;
+
+        final int numSegments = segmentInfos.size();
+
+        try {
+          CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
+          final int size = files.size();
+          for(int i=0;i<size;i++)
+            cfsWriter.addFile((String) files.get(i));
+      
+          // Perform the merge
+          cfsWriter.close();
+
+          for(int i=0;i<numSegments;i++) {
+            SegmentInfo si = segmentInfos.info(i);
+            if (si.getDocStoreOffset() != -1 &&
+                si.getDocStoreSegment().equals(docStoreSegment))
+              si.setDocStoreIsCompoundFile(true);
+          }
+          checkpoint();
+          success = true;
+        } finally {
+          if (!success) {
+            // Rollback to no compound file
+            for(int i=0;i<numSegments;i++) {
+              SegmentInfo si = segmentInfos.info(i);
+              if (si.getDocStoreOffset() != -1 &&
+                  si.getDocStoreSegment().equals(docStoreSegment))
+                si.setDocStoreIsCompoundFile(false);
+            }
+            deleter.refresh();
+          }
+        }
+
+        deleter.checkpoint(segmentInfos, false);
+      }
     }
   }
 
@@ -916,11 +1031,10 @@ public class IndexWriter {
     return analyzer;
   }
 
-
   /** Returns the number of documents currently in this index. */
   public synchronized int docCount() {
     ensureOpen();
-    int count = ramSegmentInfos.size();
+    int count = docWriter.getNumDocsInRAM();
     for (int i = 0; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       count += si.docCount;
@@ -998,22 +1112,8 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
-    SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
-    synchronized (this) {
-      ramSegmentInfos.addElement(newSegmentInfo);
-      maybeFlushRamSegments();
-    }
-  }
-
-  SegmentInfo buildSingleDocSegment(Document doc, Analyzer analyzer)
-      throws CorruptIndexException, IOException {
-    DocumentWriter dw = new DocumentWriter(ramDirectory, analyzer, this);
-    dw.setInfoStream(infoStream);
-    String segmentName = newRamSegmentName();
-    dw.addDocument(segmentName, doc);
-    SegmentInfo si = new SegmentInfo(segmentName, 1, ramDirectory, false, false);
-    si.setNumFields(dw.getNumFields());
-    return si;
+    if (docWriter.addDocument(doc, analyzer))
+      flush(true, false);
   }
 
   /**
@@ -1025,7 +1125,7 @@ public class IndexWriter {
   public synchronized void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     ensureOpen();
     bufferDeleteTerm(term);
-    maybeFlushRamSegments();
+    maybeFlush();
   }
 
   /**
@@ -1041,7 +1141,7 @@ public class IndexWriter {
     for (int i = 0; i < terms.length; i++) {
       bufferDeleteTerm(terms[i]);
     }
-    maybeFlushRamSegments();
+    maybeFlush();
   }
 
   /**
@@ -1077,16 +1177,13 @@ public class IndexWriter {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
     synchronized (this) {
       bufferDeleteTerm(term);
-      ramSegmentInfos.addElement(newSegmentInfo);
-      maybeFlushRamSegments();
     }
-  }
-
-  final synchronized String newRamSegmentName() {
-    return "_ram_" + Integer.toString(ramSegmentInfos.counter++, Character.MAX_RADIX);
+    if (docWriter.addDocument(doc, analyzer))
+      flush(true, false);
+    else
+      maybeFlush();
   }
 
   // for test purpose
@@ -1095,8 +1192,8 @@ public class IndexWriter {
   }
 
   // for test purpose
-  final synchronized int getRamSegmentCount(){
-    return ramSegmentInfos.size();
+  final synchronized int getNumBufferedDocuments(){
+    return docWriter.getNumDocsInRAM();
   }
 
   // for test purpose
@@ -1108,7 +1205,7 @@ public class IndexWriter {
     }
   }
 
-  final synchronized String newSegmentName() {
+  final String newSegmentName() {
     return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
   }
 
@@ -1125,17 +1222,10 @@ public class IndexWriter {
    */
   private int mergeFactor = DEFAULT_MERGE_FACTOR;
 
-  /** Determines the minimal number of documents required before the buffered
-   * in-memory documents are merging and a new Segment is created.
-   * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
-   * large value gives faster indexing.  At the same time, mergeFactor limits
-   * the number of files open in a FSDirectory.
-   *
-   * <p> The default value is {@link #DEFAULT_MAX_BUFFERED_DOCS}.
-
+  /** Determines amount of RAM usage by the buffered docs at
+   * which point we trigger a flush to the index.
    */
-  private int minMergeDocs = DEFAULT_MAX_BUFFERED_DOCS;
-
+  private double ramBufferSize = DEFAULT_RAM_BUFFER_SIZE_MB*1024F*1024F;
 
   /** Determines the largest number of documents ever merged by addDocument().
    * Small values (e.g., less than 10,000) are best for interactive indexing,
@@ -1151,6 +1241,7 @@ public class IndexWriter {
 
    */
   private PrintStream infoStream = null;
+
   private static PrintStream defaultInfoStream = null;
 
   /** Merges all segments together into a single segment,
@@ -1219,16 +1310,16 @@ public class IndexWriter {
   */
   public synchronized void optimize() throws CorruptIndexException, IOException {
     ensureOpen();
-    flushRamSegments();
+    flush();
     while (segmentInfos.size() > 1 ||
            (segmentInfos.size() == 1 &&
             (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
              SegmentReader.hasSeparateNorms(segmentInfos.info(0)) ||
              segmentInfos.info(0).dir != directory ||
              (useCompoundFile &&
-              (!SegmentReader.usesCompoundFile(segmentInfos.info(0))))))) {
+              !segmentInfos.info(0).getUseCompoundFile())))) {
       int minSegment = segmentInfos.size() - mergeFactor;
-      mergeSegments(segmentInfos, minSegment < 0 ? 0 : minSegment, segmentInfos.size());
+      mergeSegments(minSegment < 0 ? 0 : minSegment, segmentInfos.size());
     }
   }
 
@@ -1245,7 +1336,7 @@ public class IndexWriter {
     localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     localAutoCommit = autoCommit;
     if (localAutoCommit) {
-      flushRamSegments();
+      flush();
       // Turn off auto-commit during our local transaction:
       autoCommit = false;
     } else
@@ -1335,16 +1426,18 @@ public class IndexWriter {
       segmentInfos.clear();
       segmentInfos.addAll(rollbackSegmentInfos);
 
+      docWriter.abort();
+
       // Ask deleter to locate unreferenced files & remove
       // them:
       deleter.checkpoint(segmentInfos, false);
       deleter.refresh();
 
-      ramSegmentInfos = new SegmentInfos();
       bufferedDeleteTerms.clear();
       numBufferedDeleteTerms = 0;
 
       commitPending = false;
+      docWriter.abort();
       close();
 
     } else {
@@ -1439,7 +1532,7 @@ public class IndexWriter {
         for (int base = start; base < segmentInfos.size(); base++) {
           int end = Math.min(segmentInfos.size(), base+mergeFactor);
           if (end-base > 1) {
-            mergeSegments(segmentInfos, base, end);
+            mergeSegments(base, end);
           }
         }
       }
@@ -1479,7 +1572,7 @@ public class IndexWriter {
     // segments in S may not since they could come from multiple indexes.
     // Here is the merge algorithm for addIndexesNoOptimize():
     //
-    // 1 Flush ram segments.
+    // 1 Flush ram.
     // 2 Consider a combined sequence with segments from T followed
     //   by segments from S (same as current addIndexes(Directory[])).
     // 3 Assume the highest level for segments in S is h. Call
@@ -1500,13 +1593,18 @@ public class IndexWriter {
     // copy a segment, which may cause doc count to change because deleted
     // docs are garbage collected.
 
-    // 1 flush ram segments
+    // 1 flush ram
 
     ensureOpen();
-    flushRamSegments();
+    flush();
 
     // 2 copy segment infos and find the highest level from dirs
-    int startUpperBound = minMergeDocs;
+    int startUpperBound = docWriter.getMaxBufferedDocs();
+
+    /* new merge policy
+    if (startUpperBound == 0)
+      startUpperBound = 10;
+    */
 
     boolean success = false;
 
@@ -1566,7 +1664,7 @@ public class IndexWriter {
 
         // copy those segments from S
         for (int i = segmentCount - numSegmentsToCopy; i < segmentCount; i++) {
-          mergeSegments(segmentInfos, i, i + 1);
+          mergeSegments(i, i + 1);
         }
         if (checkNonDecreasingLevels(segmentCount - numSegmentsToCopy)) {
           success = true;
@@ -1575,7 +1673,7 @@ public class IndexWriter {
       }
 
       // invariants do not hold, simply merge those segments
-      mergeSegments(segmentInfos, segmentCount - numTailSegments, segmentCount);
+      mergeSegments(segmentCount - numTailSegments, segmentCount);
 
       // maybe merge segments again if necessary
       if (segmentInfos.info(segmentInfos.size() - 1).docCount > startUpperBound) {
@@ -1637,7 +1735,8 @@ public class IndexWriter {
         }
 
         segmentInfos.setSize(0);                      // pop old infos & add new
-        info = new SegmentInfo(mergedName, docCount, directory, false, true);
+        info = new SegmentInfo(mergedName, docCount, directory, false, true,
+                               -1, null, false);
         segmentInfos.addElement(info);
 
         success = true;
@@ -1720,29 +1819,19 @@ public class IndexWriter {
    * buffered added documents or buffered deleted terms are
    * large enough.
    */
-  protected final void maybeFlushRamSegments() throws CorruptIndexException, IOException {
-    // A flush is triggered if enough new documents are buffered or
-    // if enough delete terms are buffered
-    if (ramSegmentInfos.size() >= minMergeDocs || numBufferedDeleteTerms >= maxBufferedDeleteTerms) {
-      flushRamSegments();
-    }
+  protected final synchronized void maybeFlush() throws CorruptIndexException, IOException {
+    // We only check for flush due to number of buffered
+    // delete terms, because triggering of a flush due to
+    // too many added documents is handled by
+    // DocumentsWriter
+    if (numBufferedDeleteTerms >= maxBufferedDeleteTerms && docWriter.setFlushPending())
+      flush(true, false);
   }
 
-  /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
-  private final synchronized void flushRamSegments() throws CorruptIndexException, IOException {
-    flushRamSegments(true);
+  public final synchronized void flush() throws CorruptIndexException, IOException {  
+    flush(true, false);
   }
-    
-  /** Expert:  Flushes all RAM-resident segments (buffered documents), 
-   *           then may merge segments if triggerMerge==true. */
-  protected final synchronized void flushRamSegments(boolean triggerMerge) 
-      throws CorruptIndexException, IOException {
-    if (ramSegmentInfos.size() > 0 || bufferedDeleteTerms.size() > 0) {
-      mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
-      if (triggerMerge) maybeMergeSegments(minMergeDocs);
-    }
-  }
-  
+
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory. 
@@ -1751,9 +1840,158 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void flush() throws CorruptIndexException, IOException {
+  public final synchronized void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
     ensureOpen();
-    flushRamSegments();
+
+    // Make sure no threads are actively adding a document
+    docWriter.pauseAllThreads();
+
+    try {
+
+      SegmentInfo newSegment = null;
+
+      final int numDocs = docWriter.getNumDocsInRAM();
+
+      // Always flush docs if there are any
+      boolean flushDocs = numDocs > 0;
+
+      // With autoCommit=true we always must flush the doc
+      // stores when we flush
+      flushDocStores |= autoCommit;
+      String docStoreSegment = docWriter.getDocStoreSegment();
+      if (docStoreSegment == null)
+        flushDocStores = false;
+
+      // Always flush deletes if there are any delete terms.
+      // TODO: when autoCommit=false we don't have to flush
+      // deletes with every flushed segment; we can save
+      // CPU/IO by buffering longer & flushing deletes only
+      // when they are full or writer is being closed.  We
+      // have to fix the "applyDeletesSelectively" logic to
+      // apply to more than just the last flushed segment
+      boolean flushDeletes = bufferedDeleteTerms.size() > 0;
+
+      if (infoStream != null)
+        infoStream.println("  flush: flushDocs=" + flushDocs +
+                           " flushDeletes=" + flushDeletes +
+                           " flushDocStores=" + flushDocStores +
+                           " numDocs=" + numDocs);
+
+      int docStoreOffset = docWriter.getDocStoreOffset();
+      boolean docStoreIsCompoundFile = false;
+
+      // Check if the doc stores must be separately flushed
+      // because other segments, besides the one we are about
+      // to flush, reference it
+      if (flushDocStores && (!flushDocs || !docWriter.getSegment().equals(docWriter.getDocStoreSegment()))) {
+        // We must separately flush the doc store
+        if (infoStream != null)
+          infoStream.println("  flush shared docStore segment " + docStoreSegment);
+      
+        flushDocStores();
+        flushDocStores = false;
+        docStoreIsCompoundFile = useCompoundFile;
+      }
+
+      String segment = docWriter.getSegment();
+
+      if (flushDocs || flushDeletes) {
+
+        SegmentInfos rollback = null;
+
+        if (flushDeletes)
+          rollback = (SegmentInfos) segmentInfos.clone();
+
+        boolean success = false;
+
+        try {
+          if (flushDocs) {
+
+            if (0 == docStoreOffset && flushDocStores) {
+              // This means we are flushing private doc stores
+              // with this segment, so it will not be shared
+              // with other segments
+              assert docStoreSegment != null;
+              assert docStoreSegment.equals(segment);
+              docStoreOffset = -1;
+              docStoreIsCompoundFile = false;
+              docStoreSegment = null;
+            }
+
+            int flushedDocCount = docWriter.flush(flushDocStores);
+          
+            newSegment = new SegmentInfo(segment,
+                                         flushedDocCount,
+                                         directory, false, true,
+                                         docStoreOffset, docStoreSegment,
+                                         docStoreIsCompoundFile);
+            segmentInfos.addElement(newSegment);
+          }
+
+          if (flushDeletes) {
+            // we should be able to change this so we can
+            // buffer deletes longer and then flush them to
+            // multiple flushed segments, when
+            // autoCommit=false
+            applyDeletes(flushDocs);
+            doAfterFlush();
+          }
+
+          checkpoint();
+          success = true;
+        } finally {
+          if (!success) {
+            if (flushDeletes) {
+              // Fully replace the segmentInfos since flushed
+              // deletes could have changed any of the
+              // SegmentInfo instances:
+              segmentInfos.clear();
+              segmentInfos.addAll(rollback);
+            } else {
+              // Remove segment we added, if any:
+              if (newSegment != null && 
+                  segmentInfos.size() > 0 && 
+                  segmentInfos.info(segmentInfos.size()-1) == newSegment)
+                segmentInfos.remove(segmentInfos.size()-1);
+            }
+            if (flushDocs)
+              docWriter.abort();
+            deleter.checkpoint(segmentInfos, false);
+            deleter.refresh();
+          }
+        }
+
+        deleter.checkpoint(segmentInfos, autoCommit);
+
+        if (flushDocs && useCompoundFile) {
+          success = false;
+          try {
+            docWriter.createCompoundFile(segment);
+            newSegment.setUseCompoundFile(true);
+            checkpoint();
+            success = true;
+          } finally {
+            if (!success) {
+              newSegment.setUseCompoundFile(false);
+              deleter.refresh();
+            }
+          }
+
+          deleter.checkpoint(segmentInfos, autoCommit);
+        }
+
+        /* new merge policy
+        if (0 == docWriter.getMaxBufferedDocs())
+          maybeMergeSegments(mergeFactor * numDocs / 2);
+        else
+          maybeMergeSegments(docWriter.getMaxBufferedDocs());
+        */
+        maybeMergeSegments(docWriter.getMaxBufferedDocs());
+      }
+    } finally {
+      docWriter.clearFlushPending();
+      docWriter.resumeAllThreads();
+    }
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.
@@ -1761,21 +1999,25 @@ public class IndexWriter {
    */
   public final long ramSizeInBytes() {
     ensureOpen();
-    return ramDirectory.sizeInBytes();
+    return docWriter.getRAMUsed();
   }
 
   /** Expert:  Return the number of documents whose segments are currently cached in memory.
-   * Useful when calling flushRamSegments()
+   * Useful when calling flush()
    */
   public final synchronized int numRamDocs() {
     ensureOpen();
-    return ramSegmentInfos.size();
+    return docWriter.getNumDocsInRAM();
   }
   
   /** Incremental segment merger.  */
   private final void maybeMergeSegments(int startUpperBound) throws CorruptIndexException, IOException {
     long lowerBound = -1;
     long upperBound = startUpperBound;
+
+    /* new merge policy
+    if (upperBound == 0) upperBound = 10;
+    */
 
     while (upperBound < maxMergeDocs) {
       int minSegment = segmentInfos.size();
@@ -1808,7 +2050,7 @@ public class IndexWriter {
         while (numSegments >= mergeFactor) {
           // merge the leftmost* mergeFactor segments
 
-          int docCount = mergeSegments(segmentInfos, minSegment, minSegment + mergeFactor);
+          int docCount = mergeSegments(minSegment, minSegment + mergeFactor);
           numSegments -= mergeFactor;
 
           if (docCount > upperBound) {
@@ -1837,39 +2079,108 @@ public class IndexWriter {
    * Merges the named range of segments, replacing them in the stack with a
    * single segment.
    */
-  private final int mergeSegments(SegmentInfos sourceSegments, int minSegment, int end)
+
+  private final int mergeSegments(int minSegment, int end)
     throws CorruptIndexException, IOException {
 
-    // We may be called solely because there are deletes
-    // pending, in which case doMerge is false:
-    boolean doMerge = end > 0;
     final String mergedName = newSegmentName();
+    
     SegmentMerger merger = null;
-
-    final List ramSegmentsToDelete = new ArrayList();
-
     SegmentInfo newSegment = null;
 
     int mergedDocCount = 0;
-    boolean anyDeletes = (bufferedDeleteTerms.size() != 0);
 
     // This is try/finally to make sure merger's readers are closed:
     try {
 
-      if (doMerge) {
-        if (infoStream != null) infoStream.print("merging segments");
-        merger = new SegmentMerger(this, mergedName);
+      if (infoStream != null) infoStream.print("merging segments");
 
-        for (int i = minSegment; i < end; i++) {
-          SegmentInfo si = sourceSegments.info(i);
-          if (infoStream != null)
-            infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-          IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE); // no need to set deleter (yet)
-          merger.add(reader);
-          if (reader.directory() == this.ramDirectory) {
-            ramSegmentsToDelete.add(si);
-          }
-        }
+      // Check whether this merge will allow us to skip
+      // merging the doc stores (stored field & vectors).
+      // This is a very substantial optimization (saves tons
+      // of IO) that can only be applied with
+      // autoCommit=false.
+
+      Directory lastDir = directory;
+      String lastDocStoreSegment = null;
+      boolean mergeDocStores = false;
+      boolean doFlushDocStore = false;
+      int next = -1;
+
+      // Test each segment to be merged
+      for (int i = minSegment; i < end; i++) {
+        SegmentInfo si = segmentInfos.info(i);
+
+        // If it has deletions we must merge the doc stores
+        if (si.hasDeletions())
+          mergeDocStores = true;
+
+        // If it has its own (private) doc stores we must
+        // merge the doc stores
+        if (-1 == si.getDocStoreOffset())
+          mergeDocStores = true;
+
+        // If it has a different doc store segment than
+        // previous segments, we must merge the doc stores
+        String docStoreSegment = si.getDocStoreSegment();
+        if (docStoreSegment == null)
+          mergeDocStores = true;
+        else if (lastDocStoreSegment == null)
+          lastDocStoreSegment = docStoreSegment;
+        else if (!lastDocStoreSegment.equals(docStoreSegment))
+          mergeDocStores = true;
+
+        // Segments' docScoreOffsets must be in-order,
+        // contiguous.  For the default merge policy now
+        // this will always be the case but for an arbitrary
+        // merge policy this may not be the case
+        if (-1 == next)
+          next = si.getDocStoreOffset() + si.docCount;
+        else if (next != si.getDocStoreOffset())
+          mergeDocStores = true;
+        else
+          next = si.getDocStoreOffset() + si.docCount;
+      
+        // If the segment comes from a different directory
+        // we must merge
+        if (lastDir != si.dir)
+          mergeDocStores = true;
+
+        // If the segment is referencing the current "live"
+        // doc store outputs then we must merge
+        if (si.getDocStoreOffset() != -1 && si.getDocStoreSegment().equals(docWriter.getDocStoreSegment()))
+          doFlushDocStore = true;
+      }
+
+      final int docStoreOffset;
+      final String docStoreSegment;
+      final boolean docStoreIsCompoundFile;
+      if (mergeDocStores) {
+        docStoreOffset = -1;
+        docStoreSegment = null;
+        docStoreIsCompoundFile = false;
+      } else {
+        SegmentInfo si = segmentInfos.info(minSegment);        
+        docStoreOffset = si.getDocStoreOffset();
+        docStoreSegment = si.getDocStoreSegment();
+        docStoreIsCompoundFile = si.getDocStoreIsCompoundFile();
+      }
+
+      if (mergeDocStores && doFlushDocStore)
+        // SegmentMerger intends to merge the doc stores
+        // (stored fields, vectors), and at least one of the
+        // segments to be merged refers to the currently
+        // live doc stores.
+        flushDocStores();
+
+      merger = new SegmentMerger(this, mergedName);
+
+      for (int i = minSegment; i < end; i++) {
+        SegmentInfo si = segmentInfos.info(i);
+        if (infoStream != null)
+          infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+        IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, mergeDocStores); // no need to set deleter (yet)
+        merger.add(reader);
       }
 
       SegmentInfos rollback = null;
@@ -1879,65 +2190,32 @@ public class IndexWriter {
       // if we hit exception when doing the merge:
       try {
 
-        if (doMerge) {
-          mergedDocCount = merger.merge();
+        mergedDocCount = merger.merge(mergeDocStores);
 
-          if (infoStream != null) {
-            infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
-          }
-
-          newSegment = new SegmentInfo(mergedName, mergedDocCount,
-                                       directory, false, true);
+        if (infoStream != null) {
+          infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
         }
+
+        newSegment = new SegmentInfo(mergedName, mergedDocCount,
+                                     directory, false, true,
+                                     docStoreOffset,
+                                     docStoreSegment,
+                                     docStoreIsCompoundFile);
         
-        if (sourceSegments != ramSegmentInfos || anyDeletes) {
-          // Now save the SegmentInfo instances that
-          // we are replacing:
-          rollback = (SegmentInfos) segmentInfos.clone();
-        }
+        rollback = (SegmentInfos) segmentInfos.clone();
 
-        if (doMerge) {
-          if (sourceSegments == ramSegmentInfos) {
-            segmentInfos.addElement(newSegment);
-          } else {
-            for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
-              sourceSegments.remove(i);
+        for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
+          segmentInfos.remove(i);
 
-            segmentInfos.set(minSegment, newSegment);
-          }
-        }
+        segmentInfos.set(minSegment, newSegment);
 
-        if (sourceSegments == ramSegmentInfos) {
-          maybeApplyDeletes(doMerge);
-          doAfterFlush();
-        }
-        
         checkpoint();
 
         success = true;
 
       } finally {
-
-        if (success) {
-          // The non-ram-segments case is already committed
-          // (above), so all the remains for ram segments case
-          // is to clear the ram segments:
-          if (sourceSegments == ramSegmentInfos) {
-            ramSegmentInfos.removeAllElements();
-          }
-        } else {
-
-          // Must rollback so our state matches index:
-          if (sourceSegments == ramSegmentInfos && !anyDeletes) {
-            // Simple case: newSegment may or may not have
-            // been added to the end of our segment infos,
-            // so just check & remove if so:
-            if (newSegment != null && 
-                segmentInfos.size() > 0 && 
-                segmentInfos.info(segmentInfos.size()-1) == newSegment) {
-              segmentInfos.remove(segmentInfos.size()-1);
-            }
-          } else if (rollback != null) {
+        if (!success) {
+          if (rollback != null) {
             // Rollback the individual SegmentInfo
             // instances, but keep original SegmentInfos
             // instance (so we don't try to write again the
@@ -1952,16 +2230,13 @@ public class IndexWriter {
       }
     } finally {
       // close readers before we attempt to delete now-obsolete segments
-      if (doMerge) merger.closeReaders();
+      merger.closeReaders();
     }
-
-    // Delete the RAM segments
-    deleter.deleteDirect(ramDirectory, ramSegmentsToDelete);
 
     // Give deleter a chance to remove files now.
     deleter.checkpoint(segmentInfos, autoCommit);
 
-    if (useCompoundFile && doMerge) {
+    if (useCompoundFile) {
 
       boolean success = false;
 
@@ -1988,19 +2263,23 @@ public class IndexWriter {
   }
 
   // Called during flush to apply any buffered deletes.  If
-  // doMerge is true then a new segment was just created and
-  // flushed from the ram segments.
-  private final void maybeApplyDeletes(boolean doMerge) throws CorruptIndexException, IOException {
+  // flushedNewSegment is true then a new segment was just
+  // created and flushed from the ram segments, so we will
+  // selectively apply the deletes to that new segment.
+  private final void applyDeletes(boolean flushedNewSegment) throws CorruptIndexException, IOException {
 
     if (bufferedDeleteTerms.size() > 0) {
       if (infoStream != null)
         infoStream.println("flush " + numBufferedDeleteTerms + " buffered deleted terms on "
                            + segmentInfos.size() + " segments.");
 
-      if (doMerge) {
+      if (flushedNewSegment) {
         IndexReader reader = null;
         try {
-          reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1));
+          // Open readers w/o opening the stored fields /
+          // vectors because these files may still be held
+          // open for writing by docWriter
+          reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1), false);
 
           // Apply delete terms to the segment just flushed from ram
           // apply appropriately so that a delete term is only applied to
@@ -2018,14 +2297,14 @@ public class IndexWriter {
       }
 
       int infosEnd = segmentInfos.size();
-      if (doMerge) {
+      if (flushedNewSegment) {
         infosEnd--;
       }
 
       for (int i = 0; i < infosEnd; i++) {
         IndexReader reader = null;
         try {
-          reader = SegmentReader.get(segmentInfos.info(i));
+          reader = SegmentReader.get(segmentInfos.info(i), false);
 
           // Apply delete terms to disk segments
           // except the one just flushed from ram.
@@ -2049,7 +2328,12 @@ public class IndexWriter {
 
   private final boolean checkNonDecreasingLevels(int start) {
     int lowerBound = -1;
-    int upperBound = minMergeDocs;
+    int upperBound = docWriter.getMaxBufferedDocs();
+
+    /* new merge policy
+    if (upperBound == 0)
+      upperBound = 10;
+    */
 
     for (int i = segmentInfos.size() - 1; i >= start; i--) {
       int docCount = segmentInfos.info(i).docCount;
@@ -2098,10 +2382,11 @@ public class IndexWriter {
   // well as the disk segments.
   private void bufferDeleteTerm(Term term) {
     Num num = (Num) bufferedDeleteTerms.get(term);
+    int numDoc = docWriter.getNumDocsInRAM();
     if (num == null) {
-      bufferedDeleteTerms.put(term, new Num(ramSegmentInfos.size()));
+      bufferedDeleteTerms.put(term, new Num(numDoc));
     } else {
-      num.setNum(ramSegmentInfos.size());
+      num.setNum(numDoc);
     }
     numBufferedDeleteTerms++;
   }

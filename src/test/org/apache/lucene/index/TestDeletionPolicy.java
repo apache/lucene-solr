@@ -256,6 +256,7 @@ public class TestDeletionPolicy extends TestCase
       Directory dir = new RAMDirectory();
 
       IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       for(int i=0;i<107;i++) {
         addDoc(writer);
@@ -318,6 +319,7 @@ public class TestDeletionPolicy extends TestCase
       Directory dir = new RAMDirectory();
 
       IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       for(int i=0;i<107;i++) {
         addDoc(writer);
@@ -365,6 +367,7 @@ public class TestDeletionPolicy extends TestCase
 
       for(int j=0;j<N+1;j++) {
         IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+        writer.setMaxBufferedDocs(10);
         writer.setUseCompoundFile(useCompoundFile);
         for(int i=0;i<17;i++) {
           addDoc(writer);
@@ -525,6 +528,7 @@ public class TestDeletionPolicy extends TestCase
 
       Directory dir = new RAMDirectory();
       IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
@@ -533,6 +537,7 @@ public class TestDeletionPolicy extends TestCase
       for(int i=0;i<N+1;i++) {
 
         writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+        writer.setMaxBufferedDocs(10);
         writer.setUseCompoundFile(useCompoundFile);
         for(int j=0;j<17;j++) {
           addDoc(writer);

@@ -97,6 +97,7 @@ final class IndexFileDeleter {
   private PrintStream infoStream;
   private Directory directory;
   private IndexDeletionPolicy policy;
+  private DocumentsWriter docWriter;
 
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
@@ -116,10 +117,12 @@ final class IndexFileDeleter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos, PrintStream infoStream)
+  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos, PrintStream infoStream, DocumentsWriter docWriter)
     throws CorruptIndexException, IOException {
 
+    this.docWriter = docWriter;
     this.infoStream = infoStream;
+
     this.policy = policy;
     this.directory = directory;
 
@@ -294,7 +297,7 @@ final class IndexFileDeleter {
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
 
     if (infoStream != null) {
-      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [isCommit = " + isCommit + "]");
+      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
     // Try again now to delete any previously un-deletable
@@ -310,6 +313,8 @@ final class IndexFileDeleter {
 
     // Incref the files:
     incRef(segmentInfos, isCommit);
+    if (docWriter != null)
+      incRef(docWriter.files());
 
     if (isCommit) {
       // Append to our commits list:
@@ -325,9 +330,8 @@ final class IndexFileDeleter {
     // DecRef old files from the last checkpoint, if any:
     int size = lastFiles.size();
     if (size > 0) {
-      for(int i=0;i<size;i++) {
+      for(int i=0;i<size;i++)
         decRef((List) lastFiles.get(i));
-      }
       lastFiles.clear();
     }
 
@@ -340,6 +344,8 @@ final class IndexFileDeleter {
           lastFiles.add(segmentInfo.files());
         }
       }
+      if (docWriter != null)
+        lastFiles.add(docWriter.files());
     }
   }
 

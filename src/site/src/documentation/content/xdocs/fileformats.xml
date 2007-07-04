@@ -60,6 +60,15 @@
                 Lucene will not be able to read the index.
             </p>
 
+            <p>
+                In version 2.3, the file format was changed to allow
+		segments to share a single set of doc store (vectors &amp;
+		stored fields) files.  This allows for faster indexing
+		in certain cases.  The change is fully backwards
+		compatible (in the same way as the lock-less commits
+		change in 2.1).
+            </p>
+
         </section>
 
         <section id="Definitions"><title>Definitions</title>
@@ -809,9 +818,15 @@
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile&gt;<sup>SegCount</sup>
                 </p>
+                <p>
+                    <b>2.3 and above:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
+                    NormGen<sup>NumField</sup>,
+                    IsCompoundFile&gt;<sup>SegCount</sup>
+                </p>
 
                 <p>
-                    Format, NameCounter, SegCount, SegSize, NumField --&gt; Int32
+                    Format, NameCounter, SegCount, SegSize, NumField, DocStoreOffset --&gt; Int32
                 </p>
 
                 <p>
@@ -819,11 +834,11 @@
                 </p>
 
                 <p>
-                    SegName --&gt; String
+                    SegName, DocStoreSegment --&gt; String
                 </p>
 
                 <p>
-                    IsCompoundFile, HasSingleNormFile --&gt; Int8
+                    IsCompoundFile, HasSingleNormFile, DocStoreIsCompoundFile --&gt; Int8
                 </p>
 
                 <p>
@@ -889,6 +904,29 @@
                     "Normalization Factors" below for details.
                 </p>
 
+                <p>
+		    DocStoreOffset, DocStoreSegment,
+                    DocStoreIsCompoundFile: If DocStoreOffset is -1,
+                    this segment has its own doc store (stored fields
+                    values and term vectors) files and DocStoreSegment
+                    and DocStoreIsCompoundFile are not stored.  In
+                    this case all files for stored field values
+                    (<tt>*.fdt</tt> and <tt>*.fdx</tt>) and term
+                    vectors (<tt>*.tvf</tt>, <tt>*.tvd</tt> and
+                    <tt>*.tvx</tt>) will be stored with this segment.
+                    Otherwise, DocStoreSegment is the name of the
+                    segment that has the shared doc store files;
+                    DocStoreIsCompoundFile is 1 if that segment is
+                    stored in compound file format (as a <tt>.cfx</tt>
+                    file); and DocStoreOffset is the starting document
+                    in the shared doc store files where this segment's
+                    documents begin.  In this case, this segment does
+                    not store its own doc store files but instead
+                    shares a single set of these files with other
+                    segments.
+                </p>
+		
+
             </section>
 
             <section id="Lock File"><title>Lock File</title>
@@ -946,6 +984,14 @@
 
                 <p>FileData --&gt; raw file data</p>
                 <p>The raw file data is the data from the individual files named above.</p>
+
+		<p>Starting with Lucene 2.3, doc store files (stored
+		field values and term vectors) can be shared in a
+		single set of files for more than one segment.  When
+		compound file is enabled, these shared files will be
+		added into a single compound file (same format as
+		above) but with the extension <tt>.cfx</tt>.
+		</p>
 
             </section>
 

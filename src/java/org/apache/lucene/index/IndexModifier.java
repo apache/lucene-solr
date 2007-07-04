@@ -203,7 +203,8 @@ public class IndexModifier {
       indexWriter = new IndexWriter(directory, analyzer, false);
       indexWriter.setInfoStream(infoStream);
       indexWriter.setUseCompoundFile(useCompoundFile);
-      indexWriter.setMaxBufferedDocs(maxBufferedDocs);
+      if (maxBufferedDocs != 0)
+        indexWriter.setMaxBufferedDocs(maxBufferedDocs);
       indexWriter.setMaxFieldLength(maxFieldLength);
       indexWriter.setMergeFactor(mergeFactor);
     }

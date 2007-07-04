@@ -65,6 +65,12 @@ final class SegmentInfo {
   private List files;                             // cached list of files that this segment uses
                                                   // in the Directory
 
+  private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
+                                                  // offset is where in that file this segment's docs begin
+  private String docStoreSegment;                 // name used to derive fields/vectors file we share with
+                                                  // other segments
+  private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
+
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -73,13 +79,25 @@ final class SegmentInfo {
     isCompoundFile = CHECK_DIR;
     preLockless = true;
     hasSingleNormFile = false;
+    docStoreOffset = -1;
+    docStoreSegment = name;
+    docStoreIsCompoundFile = false;
   }
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
+    this(name, docCount, dir, isCompoundFile, hasSingleNormFile, -1, null, false);
+  }
+
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
+                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile) { 
     this(name, docCount, dir);
     this.isCompoundFile = (byte) (isCompoundFile ? YES : NO);
     this.hasSingleNormFile = hasSingleNormFile;
     preLockless = false;
+    this.docStoreOffset = docStoreOffset;
+    this.docStoreSegment = docStoreSegment;
+    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    assert docStoreOffset == -1 || docStoreSegment != null;
   }
 
   /**
@@ -92,6 +110,8 @@ final class SegmentInfo {
     dir = src.dir;
     preLockless = src.preLockless;
     delGen = src.delGen;
+    docStoreOffset = src.docStoreOffset;
+    docStoreIsCompoundFile = src.docStoreIsCompoundFile;
     if (src.normGen == null) {
       normGen = null;
     } else {
@@ -116,6 +136,20 @@ final class SegmentInfo {
     docCount = input.readInt();
     if (format <= SegmentInfos.FORMAT_LOCKLESS) {
       delGen = input.readLong();
+      if (format <= SegmentInfos.FORMAT_SHARED_DOC_STORE) {
+        docStoreOffset = input.readInt();
+        if (docStoreOffset != -1) {
+          docStoreSegment = input.readString();
+          docStoreIsCompoundFile = (1 == input.readByte());
+        } else {
+          docStoreSegment = name;
+          docStoreIsCompoundFile = false;
+        }
+      } else {
+        docStoreOffset = -1;
+        docStoreSegment = name;
+        docStoreIsCompoundFile = false;
+      }
       if (format <= SegmentInfos.FORMAT_SINGLE_NORM_FILE) {
         hasSingleNormFile = (1 == input.readByte());
       } else {
@@ -138,6 +172,9 @@ final class SegmentInfo {
       isCompoundFile = CHECK_DIR;
       preLockless = true;
       hasSingleNormFile = false;
+      docStoreOffset = -1;
+      docStoreIsCompoundFile = false;
+      docStoreSegment = null;
     }
   }
   
@@ -368,6 +405,28 @@ final class SegmentInfo {
       return dir.fileExists(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
     }
   }
+
+  int getDocStoreOffset() {
+    return docStoreOffset;
+  }
+  
+  boolean getDocStoreIsCompoundFile() {
+    return docStoreIsCompoundFile;
+  }
+  
+  void setDocStoreIsCompoundFile(boolean v) {
+    docStoreIsCompoundFile = v;
+    files = null;
+  }
+  
+  String getDocStoreSegment() {
+    return docStoreSegment;
+  }
+  
+  void setDocStoreOffset(int offset) {
+    docStoreOffset = offset;
+    files = null;
+  }
   
   /**
    * Save this segment's info.
@@ -377,6 +436,12 @@ final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
+    output.writeInt(docStoreOffset);
+    if (docStoreOffset != -1) {
+      output.writeString(docStoreSegment);
+      output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
+    }
+
     output.writeByte((byte) (hasSingleNormFile ? 1:0));
     if (normGen == null) {
       output.writeInt(NO);
@@ -387,6 +452,11 @@ final class SegmentInfo {
       }
     }
     output.writeByte(isCompoundFile);
+  }
+
+  private void addIfExists(List files, String fileName) throws IOException {
+    if (dir.fileExists(fileName))
+      files.add(fileName);
   }
 
   /*
@@ -409,13 +479,28 @@ final class SegmentInfo {
     if (useCompoundFile) {
       files.add(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
     } else {
-      for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE.length; i++) {
-        String ext = IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE[i];
-        String fileName = name + "." + ext;
-        if (dir.fileExists(fileName)) {
-          files.add(fileName);
-        }
+      final String[] exts = IndexFileNames.NON_STORE_INDEX_EXTENSIONS;
+      for(int i=0;i<exts.length;i++)
+        addIfExists(files, name + "." + exts[i]);
+    }
+
+    if (docStoreOffset != -1) {
+      // We are sharing doc stores (stored fields, term
+      // vectors) with other segments
+      assert docStoreSegment != null;
+      if (docStoreIsCompoundFile) {
+        files.add(docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
+      } else {
+        final String[] exts = IndexFileNames.STORE_INDEX_EXTENSIONS;
+        for(int i=0;i<exts.length;i++)
+          addIfExists(files, docStoreSegment + "." + exts[i]);
       }
+    } else if (!useCompoundFile) {
+      // We are not sharing, and, these files were not
+      // included in the compound file
+      final String[] exts = IndexFileNames.STORE_INDEX_EXTENSIONS;
+      for(int i=0;i<exts.length;i++)
+        addIfExists(files, name + "." + exts[i]);
     }
 
     String delFileName = IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);

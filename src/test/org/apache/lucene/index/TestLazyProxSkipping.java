@@ -50,7 +50,7 @@ public class TestLazyProxSkipping extends TestCase {
         
         Directory directory = new RAMDirectory();
         IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
-        
+        writer.setMaxBufferedDocs(10);
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
             String content;

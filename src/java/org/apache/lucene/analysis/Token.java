@@ -55,12 +55,30 @@ public class Token implements Cloneable {
   
   Payload payload;
   
+  // For better indexing speed, use termBuffer (and
+  // termBufferOffset/termBufferLength) instead of termText
+  // to save new'ing a String per token
+  char[] termBuffer;
+  int termBufferOffset;
+  int termBufferLength;
+
   private int positionIncrement = 1;
 
   /** Constructs a Token with the given term text, and start & end offsets.
       The type defaults to "word." */
   public Token(String text, int start, int end) {
     termText = text;
+    startOffset = start;
+    endOffset = end;
+  }
+
+  /** Constructs a Token with the given term text buffer
+   *  starting at offset for length lenth, and start & end offsets.
+   *  The type defaults to "word." */
+  public Token(char[] text, int offset, int length, int start, int end) {
+    termBuffer = text;
+    termBufferOffset = offset;
+    termBufferLength = length;
     startOffset = start;
     endOffset = end;
   }
@@ -72,6 +90,19 @@ public class Token implements Cloneable {
     endOffset = end;
     type = typ;
   }
+
+  /** Constructs a Token with the given term text buffer
+   *  starting at offset for length lenth, and start & end
+   *  offsets, & type. */
+  public Token(char[] text, int offset, int length, int start, int end, String typ) {
+    termBuffer = text;
+    termBufferOffset = offset;
+    termBufferLength = length;
+    startOffset = start;
+    endOffset = end;
+    type = typ;
+  }
+
 
   /** Set the position increment.  This determines the position of this token
    * relative to the previous Token in a {@link TokenStream}, used in phrase
@@ -117,6 +148,19 @@ public class Token implements Cloneable {
 
   /** Returns the Token's term text. */
   public final String termText() { return termText; }
+  public final char[] termBuffer() { return termBuffer; }
+  public final int termBufferOffset() { return termBufferOffset; }
+  public final int termBufferLength() { return termBufferLength; }
+
+  public void setStartOffset(int offset) {this.startOffset = offset;}
+  public void setEndOffset(int offset) {this.endOffset = offset;}
+
+  public final void setTermBuffer(char[] buffer, int offset, int length) {
+    this.termBuffer = buffer;
+    this.termBufferOffset = offset;
+    this.termBufferLength = length;
+  }
+    
 
   /** Returns this Token's starting offset, the position of the first character
     corresponding to this token in the source text.

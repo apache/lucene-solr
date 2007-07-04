@@ -125,6 +125,31 @@ public abstract class IndexOutput {
     }
   }
 
+  /** Writes a sequence of UTF-8 encoded characters from a char[].
+   * @param s the source of the characters
+   * @param start the first character in the sequence
+   * @param length the number of characters in the sequence
+   * @see IndexInput#readChars(char[],int,int)
+   */
+  public void writeChars(char[] s, int start, int length)
+    throws IOException {
+    final int end = start + length;
+    for (int i = start; i < end; i++) {
+      final int code = (int)s[i];
+      if (code >= 0x01 && code <= 0x7F)
+	writeByte((byte)code);
+      else if (((code >= 0x80) && (code <= 0x7FF)) || code == 0) {
+	writeByte((byte)(0xC0 | (code >> 6)));
+	writeByte((byte)(0x80 | (code & 0x3F)));
+      } else {
+	writeByte((byte)(0xE0 | (code >>> 12)));
+	writeByte((byte)(0x80 | ((code >> 6) & 0x3F)));
+	writeByte((byte)(0x80 | (code & 0x3F)));
+      }
+    }
+  }
+
+
   /** Forces any buffered output to be written. */
   public abstract void flush() throws IOException;
 

@@ -77,6 +77,7 @@ public class TestParser extends TestCase {
 				line=d.readLine();
 			}			
 			d.close();
+                        writer.close();
 		}
 		reader=IndexReader.open(dir);
 		searcher=new IndexSearcher(reader);

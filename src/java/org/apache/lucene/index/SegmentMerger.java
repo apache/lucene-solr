@@ -52,6 +52,12 @@ final class SegmentMerger {
   
   private int mergedDocs;
 
+  // Whether we should merge doc stores (stored fields and
+  // vectors files).  When all segments we are merging
+  // already share the same doc store files, we don't need
+  // to merge the doc stores.
+  private boolean mergeDocStores;
+
   /** This ctor used only by test code.
    * 
    * @param dir The Directory to merge the other segments into
@@ -92,18 +98,32 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   final int merge() throws CorruptIndexException, IOException {
-    int value;
-    
+    return merge(true);
+  }
+
+  /**
+   * Merges the readers specified by the {@link #add} method
+   * into the directory passed to the constructor.
+   * @param mergeDocStores if false, we will not merge the
+   * stored fields nor vectors files
+   * @return The number of documents that were merged
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  final int merge(boolean mergeDocStores) throws CorruptIndexException, IOException {
+
+    this.mergeDocStores = mergeDocStores;
+
     mergedDocs = mergeFields();
     mergeTerms();
     mergeNorms();
 
-    if (fieldInfos.hasVectors())
+    if (mergeDocStores && fieldInfos.hasVectors())
       mergeVectors();
 
     return mergedDocs;
   }
-  
+
   /**
    * close all IndexReaders that have been added.
    * Should not be called before merge().
@@ -126,7 +146,10 @@ final class SegmentMerger {
     
     // Basic files
     for (int i = 0; i < IndexFileNames.COMPOUND_EXTENSIONS.length; i++) {
-      files.add(segment + "." + IndexFileNames.COMPOUND_EXTENSIONS[i]);
+      String ext = IndexFileNames.COMPOUND_EXTENSIONS[i];
+      if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&
+                            !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
+        files.add(segment + "." + ext);
     }
 
     // Fieldable norm files
@@ -139,7 +162,7 @@ final class SegmentMerger {
     }
 
     // Vector files
-    if (fieldInfos.hasVectors()) {
+    if (fieldInfos.hasVectors() && mergeDocStores) {
       for (int i = 0; i < IndexFileNames.VECTOR_EXTENSIONS.length; i++) {
         files.add(segment + "." + IndexFileNames.VECTOR_EXTENSIONS[i]);
       }
@@ -173,7 +196,20 @@ final class SegmentMerger {
    * @throws IOException if there is a low-level IO error
    */
   private final int mergeFields() throws CorruptIndexException, IOException {
-    fieldInfos = new FieldInfos();		  // merge field names
+
+    if (!mergeDocStores) {
+      // When we are not merging by doc stores, that means
+      // all segments were written as part of a single
+      // autoCommit=false IndexWriter session, so their field
+      // name -> number mapping are the same.  So, we start
+      // with the fieldInfos of the last segment in this
+      // case, to keep that numbering.
+      final SegmentReader sr = (SegmentReader) readers.elementAt(readers.size()-1);
+      fieldInfos = (FieldInfos) sr.fieldInfos.clone();
+    } else {
+      fieldInfos = new FieldInfos();		  // merge field names
+    }
+
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
@@ -187,30 +223,40 @@ final class SegmentMerger {
     }
     fieldInfos.write(directory, segment + ".fnm");
 
-    FieldsWriter fieldsWriter = // merge field values
-            new FieldsWriter(directory, segment, fieldInfos);
+    if (mergeDocStores) {
+
+      FieldsWriter fieldsWriter = // merge field values
+        new FieldsWriter(directory, segment, fieldInfos);
     
-    // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
-    // in  merge mode, we use this FieldSelector
-    FieldSelector fieldSelectorMerge = new FieldSelector() {
-      public FieldSelectorResult accept(String fieldName) {
-        return FieldSelectorResult.LOAD_FOR_MERGE;
-      }        
-    };
-    
-    try {
-      for (int i = 0; i < readers.size(); i++) {
-        IndexReader reader = (IndexReader) readers.elementAt(i);
-        int maxDoc = reader.maxDoc();
-        for (int j = 0; j < maxDoc; j++)
-          if (!reader.isDeleted(j)) {               // skip deleted docs
-            fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
-            docCount++;
-          }
+      // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
+      // in  merge mode, we use this FieldSelector
+      FieldSelector fieldSelectorMerge = new FieldSelector() {
+          public FieldSelectorResult accept(String fieldName) {
+            return FieldSelectorResult.LOAD_FOR_MERGE;
+          }        
+        };
+
+      try {
+        for (int i = 0; i < readers.size(); i++) {
+          IndexReader reader = (IndexReader) readers.elementAt(i);
+          int maxDoc = reader.maxDoc();
+          for (int j = 0; j < maxDoc; j++)
+            if (!reader.isDeleted(j)) {               // skip deleted docs
+              fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
+              docCount++;
+            }
+        }
+      } finally {
+        fieldsWriter.close();
       }
-    } finally {
-      fieldsWriter.close();
-    }
+
+    } else
+      // If we are skipping the doc stores, that means there
+      // are no deletions in any of these segments, so we
+      // just sum numDocs() of each segment to get total docCount
+      for (int i = 0; i < readers.size(); i++)
+        docCount += ((IndexReader) readers.elementAt(i)).numDocs();
+
     return docCount;
   }
 
@@ -355,6 +401,7 @@ final class SegmentMerger {
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
       TermPositions postings = smi.getPositions();
+      assert postings != null;
       int base = smi.base;
       int[] docMap = smi.getDocMap();
       postings.seek(smi.termEnum);

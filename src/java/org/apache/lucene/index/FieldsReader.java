@@ -51,19 +51,39 @@ final class FieldsReader {
   private int size;
   private boolean closed;
 
+  // The docID offset where our docs begin in the index
+  // file.  This will be 0 if we have our own private file.
+  private int docStoreOffset;
+
   private ThreadLocal fieldsStreamTL = new ThreadLocal();
 
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
-    this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE);
+    this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE, -1, 0);
   }
 
   FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize) throws IOException {
+    this(d, segment, fn, readBufferSize, -1, 0);
+  }
+
+  FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
     fieldInfos = fn;
 
     cloneableFieldsStream = d.openInput(segment + ".fdt", readBufferSize);
     fieldsStream = (IndexInput)cloneableFieldsStream.clone();
     indexStream = d.openInput(segment + ".fdx", readBufferSize);
-    size = (int) (indexStream.length() / 8);
+
+    if (docStoreOffset != -1) {
+      // We read only a slice out of this shared fields file
+      this.docStoreOffset = docStoreOffset;
+      this.size = size;
+
+      // Verify the file is long enough to hold all of our
+      // docs
+      assert ((int) (indexStream.length()/8)) >= size + this.docStoreOffset;
+    } else {
+      this.docStoreOffset = 0;
+      this.size = (int) (indexStream.length() / 8);
+    }
   }
 
   /**
@@ -100,7 +120,7 @@ final class FieldsReader {
   }
 
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
-    indexStream.seek(n * 8L);
+    indexStream.seek((n + docStoreOffset) * 8L);
     long position = indexStream.readLong();
     fieldsStream.seek(position);
 

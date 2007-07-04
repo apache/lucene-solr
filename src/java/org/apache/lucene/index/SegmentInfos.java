@@ -51,8 +51,12 @@ final class SegmentInfos extends Vector {
    */
   public static final int FORMAT_SINGLE_NORM_FILE = -3;
 
+  /** This format allows multiple segments to share a single
+   * vectors and stored fields file. */
+  public static final int FORMAT_SHARED_DOC_STORE = -4;
+
   /* This must always point to the most recent file format. */
-  private static final int CURRENT_FORMAT = FORMAT_SINGLE_NORM_FILE;
+  private static final int CURRENT_FORMAT = FORMAT_SHARED_DOC_STORE;
   
   public int counter = 0;    // used to name new segments
   /**

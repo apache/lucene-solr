@@ -74,8 +74,6 @@ public class TestStressIndexing extends TestCase {
           count++;
         }
         
-        modifier.close();
-
       } catch (Exception e) {
         System.out.println(e.toString());
         e.printStackTrace();
@@ -125,6 +123,9 @@ public class TestStressIndexing extends TestCase {
     IndexerThread indexerThread = new IndexerThread(modifier);
     indexerThread.start();
       
+    IndexerThread indexerThread2 = new IndexerThread(modifier);
+    indexerThread2.start();
+      
     // Two searchers that constantly just re-instantiate the searcher:
     SearcherThread searcherThread1 = new SearcherThread(directory);
     searcherThread1.start();
@@ -133,9 +134,14 @@ public class TestStressIndexing extends TestCase {
     searcherThread2.start();
 
     indexerThread.join();
+    indexerThread2.join();
     searcherThread1.join();
     searcherThread2.join();
+
+    modifier.close();
+
     assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
+    assertTrue("hit unexpected exception in indexer 2", !indexerThread2.failed);
     assertTrue("hit unexpected exception in search1", !searcherThread1.failed);
     assertTrue("hit unexpected exception in search2", !searcherThread2.failed);
     //System.out.println("    Writer: " + indexerThread.count + " iterations");

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.File;
 import java.util.Arrays;
+import java.util.Random;
 
 import junit.framework.TestCase;
 
@@ -478,7 +479,7 @@ public class TestIndexWriter extends TestCase
       String[] startFiles = dir.list();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
-      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null);
+      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
       String[] endFiles = dir.list();
 
       Arrays.sort(startFiles);
@@ -859,6 +860,7 @@ public class TestIndexWriter extends TestCase
     public void testCommitOnCloseAbort() throws IOException {
       Directory dir = new RAMDirectory();      
       IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
       for (int i = 0; i < 14; i++) {
         addDoc(writer);
       }
@@ -871,6 +873,7 @@ public class TestIndexWriter extends TestCase
       searcher.close();
 
       writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      writer.setMaxBufferedDocs(10);
       for(int j=0;j<17;j++) {
         addDoc(writer);
       }
@@ -895,6 +898,7 @@ public class TestIndexWriter extends TestCase
       // Now make sure we can re-open the index, add docs,
       // and all is good:
       writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      writer.setMaxBufferedDocs(10);
       for(int i=0;i<12;i++) {
         for(int j=0;j<17;j++) {
           addDoc(writer);
@@ -962,6 +966,7 @@ public class TestIndexWriter extends TestCase
     public void testCommitOnCloseOptimize() throws IOException {
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
       for(int j=0;j<17;j++) {
         addDocWithIndex(writer, j);
       }
@@ -1000,6 +1005,255 @@ public class TestIndexWriter extends TestCase
       // Reader should still see index as unoptimized:
       assertTrue("Reader incorrectly sees that the index is unoptimized", reader.isOptimized());
       reader.close();
+    }
+
+    public void testIndexNoDocuments() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.flush();
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(0, reader.maxDoc());
+      assertEquals(0, reader.numDocs());
+      reader.close();
+
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+      writer.flush();
+      writer.close();
+
+      reader = IndexReader.open(dir);
+      assertEquals(0, reader.maxDoc());
+      assertEquals(0, reader.numDocs());
+      reader.close();
+    }
+
+    public void testManyFields() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
+      for(int j=0;j<100;j++) {
+        Document doc = new Document();
+        doc.add(new Field("a"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("b"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("c"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("d"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("e"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("f"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+        writer.addDocument(doc);
+      }
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(100, reader.maxDoc());
+      assertEquals(100, reader.numDocs());
+      for(int j=0;j<100;j++) {
+        assertEquals(1, reader.docFreq(new Term("a"+j, "aaa"+j)));
+        assertEquals(1, reader.docFreq(new Term("b"+j, "aaa"+j)));
+        assertEquals(1, reader.docFreq(new Term("c"+j, "aaa"+j)));
+        assertEquals(1, reader.docFreq(new Term("d"+j, "aaa")));
+        assertEquals(1, reader.docFreq(new Term("e"+j, "aaa")));
+        assertEquals(1, reader.docFreq(new Term("f"+j, "aaa")));
+      }
+      reader.close();
+      dir.close();
+    }
+
+    public void testSmallRAMBuffer() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setRAMBufferSizeMB(0.000001);
+      int lastNumFile = dir.list().length;
+      for(int j=0;j<9;j++) {
+        Document doc = new Document();
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        writer.addDocument(doc);
+        int numFile = dir.list().length;
+        // Verify that with a tiny RAM buffer we see new
+        // segment after every doc
+        assertTrue(numFile > lastNumFile);
+        lastNumFile = numFile;
+      }
+      writer.close();
+      dir.close();
+    }
+
+    // Make sure it's OK to change RAM buffer size and
+    // maxBufferedDocs in a write session
+    public void testChangingRAMBuffer() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
+      int lastNumFile = dir.list().length;
+      long lastGen = -1;
+      for(int j=1;j<52;j++) {
+        Document doc = new Document();
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        writer.addDocument(doc);
+        long gen = SegmentInfos.generationFromSegmentsFileName(SegmentInfos.getCurrentSegmentFileName(dir.list()));
+        if (j == 1)
+          lastGen = gen;
+        else if (j < 10)
+          // No new files should be created
+          assertEquals(gen, lastGen);
+        else if (10 == j) {
+          assertTrue(gen > lastGen);
+          lastGen = gen;
+          writer.setRAMBufferSizeMB(0.000001);
+        } else if (j < 20) {
+          assertTrue(gen > lastGen);
+          lastGen = gen;
+        } else if (20 == j) {
+          writer.setRAMBufferSizeMB(16);
+          lastGen = gen;
+        } else if (j < 30) {
+          assertEquals(gen, lastGen);
+        } else if (30 == j) {
+          writer.setRAMBufferSizeMB(0.000001);
+        } else if (j < 40) {
+          assertTrue(gen> lastGen);
+          lastGen = gen;
+        } else if (40 == j) {
+          writer.setMaxBufferedDocs(10);
+          lastGen = gen;
+        } else if (j < 50) {
+          assertEquals(gen, lastGen);
+          writer.setMaxBufferedDocs(10);
+        } else if (50 == j) {
+          assertTrue(gen > lastGen);
+        }
+      }
+      writer.close();
+      dir.close();
+    }
+
+    public void testDiverseDocs() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      // writer.setInfoStream(System.out);
+      long t0 = System.currentTimeMillis();
+      writer.setRAMBufferSizeMB(0.5);
+      Random rand = new Random(31415);
+      for(int i=0;i<3;i++) {
+        // First, docs where every term is unique (heavy on
+        // Posting instances)
+        for(int j=0;j<100;j++) {
+          Document doc = new Document();
+          for(int k=0;k<100;k++) {
+            doc.add(new Field("field", Integer.toString(rand.nextInt()), Field.Store.YES, Field.Index.TOKENIZED));
+          }
+          writer.addDocument(doc);
+        }
+
+        // Next, many single term docs where only one term
+        // occurs (heavy on byte blocks)
+        for(int j=0;j<100;j++) {
+          Document doc = new Document();
+          doc.add(new Field("field", "aaa aaa aaa aaa aaa aaa aaa aaa aaa aaa", Field.Store.YES, Field.Index.TOKENIZED));
+          writer.addDocument(doc);
+        }
+
+        // Next, many single term docs where only one term
+        // occurs but the terms are very long (heavy on
+        // char[] arrays)
+        for(int j=0;j<100;j++) {
+          StringBuffer b = new StringBuffer();
+          String x = Integer.toString(j) + ".";
+          for(int k=0;k<1000;k++)
+            b.append(x);
+          String longTerm = b.toString();
+
+          Document doc = new Document();
+          doc.add(new Field("field", longTerm, Field.Store.YES, Field.Index.TOKENIZED));
+          writer.addDocument(doc);
+        }
+      }
+      writer.close();
+
+      long t1 = System.currentTimeMillis();
+      IndexSearcher searcher = new IndexSearcher(dir);
+      Hits hits = searcher.search(new TermQuery(new Term("field", "aaa")));
+      assertEquals(300, hits.length());
+      searcher.close();
+
+      dir.close();
+    }
+
+    public void testEnablingNorms() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
+      // Enable norms for only 1 doc, pre flush
+      for(int j=0;j<10;j++) {
+        Document doc = new Document();
+        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED); 
+        if (j != 8) {
+          f.setOmitNorms(true);
+        }
+        doc.add(f);
+        writer.addDocument(doc);
+      }
+      writer.close();
+
+      Term searchTerm = new Term("field", "aaa");
+
+      IndexSearcher searcher = new IndexSearcher(dir);
+      Hits hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals(10, hits.length());
+      searcher.close();
+
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
+      // Enable norms for only 1 doc, post flush
+      for(int j=0;j<27;j++) {
+        Document doc = new Document();
+        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED); 
+        if (j != 26) {
+          f.setOmitNorms(true);
+        }
+        doc.add(f);
+        writer.addDocument(doc);
+      }
+      writer.close();
+      searcher = new IndexSearcher(dir);
+      hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals(27, hits.length());
+      searcher.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      reader.close();
+
+      dir.close();
+    }
+
+    public void testHighFreqTerm() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setRAMBufferSizeMB(0.01);
+      writer.setMaxFieldLength(100000000);
+      // Massive doc that has 128 K a's
+      StringBuffer b = new StringBuffer(1024*1024);
+      for(int i=0;i<4096;i++) {
+        b.append(" a a a a a a a a");
+        b.append(" a a a a a a a a");
+        b.append(" a a a a a a a a");
+        b.append(" a a a a a a a a");
+      }
+      Document doc = new Document();
+      doc.add(new Field("field", b.toString(), Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      writer.addDocument(doc);
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(1, reader.maxDoc());
+      assertEquals(1, reader.numDocs());
+      Term t = new Term("field", "a");
+      assertEquals(1, reader.docFreq(t));
+      TermDocs td = reader.termDocs(t);
+      td.next();
+      assertEquals(128*1024, td.freq());
+      reader.close();
+      dir.close();
     }
 
     // Make sure that a Directory implementation that does

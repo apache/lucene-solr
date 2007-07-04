@@ -43,4 +43,9 @@ final class FieldInfo {
     this.omitNorms = omitNorms;
     this.storePayloads = storePayloads;
   }
+
+  public Object clone() {
+    return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
+                         storeOffsetWithTermVector, omitNorms, storePayloads);
+  }
 }

@@ -467,7 +467,8 @@ public class TestPayloads extends TestCase {
                             d.add(new Field(field, new PoolingPayloadTokenStream(pool)));
                             writer.addDocument(d);
                         }
-                    } catch (IOException e) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
                         fail(e.toString());
                     }
                 }
@@ -480,7 +481,6 @@ public class TestPayloads extends TestCase {
                 ingesters[i].join();
             } catch (InterruptedException e) {}
         }
-        
         writer.close();
         IndexReader reader = IndexReader.open(dir);
         TermEnum terms = reader.terms();

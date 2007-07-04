@@ -24,6 +24,7 @@ import java.util.zip.Deflater;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.IndexOutput;
 
 final class FieldsWriter
@@ -38,15 +39,92 @@ final class FieldsWriter
 
     private IndexOutput indexStream;
 
+    private boolean doClose;
+
     FieldsWriter(Directory d, String segment, FieldInfos fn) throws IOException {
         fieldInfos = fn;
         fieldsStream = d.createOutput(segment + ".fdt");
         indexStream = d.createOutput(segment + ".fdx");
+        doClose = true;
+    }
+
+    FieldsWriter(IndexOutput fdx, IndexOutput fdt, FieldInfos fn) throws IOException {
+        fieldInfos = fn;
+        fieldsStream = fdt;
+        indexStream = fdx;
+        doClose = false;
+    }
+
+    // Writes the contents of buffer into the fields stream
+    // and adds a new entry for this document into the index
+    // stream.  This assumes the buffer was already written
+    // in the correct fields format.
+    void flushDocument(RAMOutputStream buffer) throws IOException {
+      indexStream.writeLong(fieldsStream.getFilePointer());
+      buffer.writeTo(fieldsStream);
+    }
+
+    void flush() throws IOException {
+      indexStream.flush();
+      fieldsStream.flush();
     }
 
     final void close() throws IOException {
+      if (doClose) {
         fieldsStream.close();
         indexStream.close();
+      }
+    }
+
+    final void writeField(FieldInfo fi, Fieldable field) throws IOException {
+      // if the field as an instanceof FieldsReader.FieldForMerge, we're in merge mode
+      // and field.binaryValue() already returns the compressed value for a field
+      // with isCompressed()==true, so we disable compression in that case
+      boolean disableCompression = (field instanceof FieldsReader.FieldForMerge);
+      fieldsStream.writeVInt(fi.number);
+      byte bits = 0;
+      if (field.isTokenized())
+        bits |= FieldsWriter.FIELD_IS_TOKENIZED;
+      if (field.isBinary())
+        bits |= FieldsWriter.FIELD_IS_BINARY;
+      if (field.isCompressed())
+        bits |= FieldsWriter.FIELD_IS_COMPRESSED;
+                
+      fieldsStream.writeByte(bits);
+                
+      if (field.isCompressed()) {
+        // compression is enabled for the current field
+        byte[] data = null;
+                  
+        if (disableCompression) {
+          // optimized case for merging, the data
+          // is already compressed
+          data = field.binaryValue();
+        } else {
+          // check if it is a binary field
+          if (field.isBinary()) {
+            data = compress(field.binaryValue());
+          }
+          else {
+            data = compress(field.stringValue().getBytes("UTF-8"));
+          }
+        }
+        final int len = data.length;
+        fieldsStream.writeVInt(len);
+        fieldsStream.writeBytes(data, len);
+      }
+      else {
+        // compression is disabled for the current field
+        if (field.isBinary()) {
+          byte[] data = field.binaryValue();
+          final int len = data.length;
+          fieldsStream.writeVInt(len);
+          fieldsStream.writeBytes(data, len);
+        }
+        else {
+          fieldsStream.writeString(field.stringValue());
+        }
+      }
     }
 
     final void addDocument(Document doc) throws IOException {
@@ -64,57 +142,8 @@ final class FieldsWriter
         fieldIterator = doc.getFields().iterator();
         while (fieldIterator.hasNext()) {
             Fieldable field = (Fieldable) fieldIterator.next();
-            // if the field as an instanceof FieldsReader.FieldForMerge, we're in merge mode
-            // and field.binaryValue() already returns the compressed value for a field
-            // with isCompressed()==true, so we disable compression in that case
-            boolean disableCompression = (field instanceof FieldsReader.FieldForMerge);
-            if (field.isStored()) {
-                fieldsStream.writeVInt(fieldInfos.fieldNumber(field.name()));
-
-                byte bits = 0;
-                if (field.isTokenized())
-                    bits |= FieldsWriter.FIELD_IS_TOKENIZED;
-                if (field.isBinary())
-                    bits |= FieldsWriter.FIELD_IS_BINARY;
-                if (field.isCompressed())
-                    bits |= FieldsWriter.FIELD_IS_COMPRESSED;
-                
-                fieldsStream.writeByte(bits);
-                
-                if (field.isCompressed()) {
-                  // compression is enabled for the current field
-                  byte[] data = null;
-                  
-                  if (disableCompression) {
-                      // optimized case for merging, the data
-                      // is already compressed
-                      data = field.binaryValue();
-                  } else {
-                      // check if it is a binary field
-                      if (field.isBinary()) {
-                        data = compress(field.binaryValue());
-                      }
-                      else {
-                        data = compress(field.stringValue().getBytes("UTF-8"));
-                      }
-                  }
-                  final int len = data.length;
-                  fieldsStream.writeVInt(len);
-                  fieldsStream.writeBytes(data, len);
-                }
-                else {
-                  // compression is disabled for the current field
-                  if (field.isBinary()) {
-                    byte[] data = field.binaryValue();
-                    final int len = data.length;
-                    fieldsStream.writeVInt(len);
-                    fieldsStream.writeBytes(data, len);
-                  }
-                  else {
-                    fieldsStream.writeString(field.stringValue());
-                  }
-                }
-            }
+            if (field.isStored())
+              writeField(fieldInfos.fieldInfo(field.name()), field);
         }
     }
 

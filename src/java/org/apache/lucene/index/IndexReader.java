@@ -783,7 +783,7 @@ public abstract class IndexReader {
         // KeepOnlyLastCommitDeleter:
         IndexFileDeleter deleter =  new IndexFileDeleter(directory,
                                                          deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
-                                                         segmentInfos, null);
+                                                         segmentInfos, null, null);
 
         // Checkpoint the state we are about to change, in
         // case we have to roll back:
