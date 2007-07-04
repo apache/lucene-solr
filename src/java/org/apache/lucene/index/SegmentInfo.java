@@ -248,6 +248,9 @@ final class SegmentInfo {
     if (normGen != null) {
       si.normGen = (long[]) normGen.clone();
     }
+    si.docStoreOffset = docStoreOffset;
+    si.docStoreSegment = docStoreSegment;
+    si.docStoreIsCompoundFile = docStoreIsCompoundFile;
     return si;
   }
 

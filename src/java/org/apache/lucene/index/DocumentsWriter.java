@@ -338,7 +338,6 @@ final class DocumentsWriter {
     postingsIsFull = false;
     flushPending = false;
     segment = null;
-    hasNorms = false;
     numDocsInRAM = 0;
     nextDocID = 0;
     nextWriteDocID = 0;
@@ -1803,7 +1802,6 @@ final class DocumentsWriter {
 
     if (hasNorms) {
       writeNorms(segmentName, numDocsInRAM);
-      hasNorms = false;
       flushedFiles.add(segmentFileName(IndexFileNames.NORMS_EXTENSION));
     }
 

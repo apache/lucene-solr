@@ -1293,6 +1293,21 @@ public class TestIndexWriter extends TestCase
       dir.close();
     }
 
+    // Make sure we can flush segment w/ norms, then add
+    // empty doc (no norms) and flush
+    public void testEmptyDocAfterFlushingRealDoc() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);      
+      Document doc = new Document();
+      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      writer.addDocument(doc);
+      writer.flush();
+      writer.addDocument(new Document());
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(2, reader.numDocs());
+    }
+
     private void rmDir(File dir) {
         File[] files = dir.listFiles();
         if (files != null) {
