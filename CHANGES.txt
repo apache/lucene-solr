@@ -8,6 +8,13 @@ Changes in runtime behavior
 
 API Changes
 
+ 1. LUCENE-843: Added IndexWriter.setRAMBufferSizeMB(...) to have
+    IndexWriter flush whenever the buffered documents are using more
+    than the specified amount of RAM.  Also added new APIs to Token
+    that allow one to set a char[] plus offset and length to specify a
+    token (to avoid creating a new String() for each Token).  (Mike
+    McCandless)
+ 
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
@@ -26,6 +33,12 @@ Optimizations
     significantly, especially when the number of Tokens is large. 
     (Mark Miller via Michael Busch)
 
+ 2. LUCENE-843: Substantial optimizations to improve how IndexWriter
+    uses RAM for buffering documents and to speed up indexing (2X-8X
+    faster).  A single shared hash table now records the in-memory
+    postings per unique term and is directly flushed into a single
+    segment.  (Mike McCandless)
+ 
 Documentation
 
 Build
@@ -105,13 +118,6 @@ API Changes
     to be public because it implements the public interface TermPositionVector.
     (Michael Busch)
 
-14. LUCENE-843: Added IndexWriter.setRAMBufferSizeMB(...) to have
-    IndexWriter flush whenever the buffered documents are using more
-    than the specified amount of RAM.  Also added new APIs to Token
-    that allow one to set a char[] plus offset and length to specify a
-    token (to avoid creating a new String() for each Token).  (Mike
-    McCandless)
- 
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
@@ -275,12 +281,6 @@ Optimizations
     contain very frequent and very unique terms the speedup can be over 80%.
     (Michael Busch)
 
- 8. LUCENE-843: Substantial optimizations to improve how IndexWriter
-    uses RAM for buffering documents and to speed up indexing (2X-8X
-    faster).  A single shared hash table now records the in-memory
-    postings per unique term and is directly flushed into a single
-    segment.  (Mike McCandless)
- 
 Documentation
 
  1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to
