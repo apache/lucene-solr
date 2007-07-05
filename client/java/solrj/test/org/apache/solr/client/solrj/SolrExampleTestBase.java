@@ -161,8 +161,6 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
    */
   public void testAddRetrieve() throws Exception
   {    
-    String path = "/update";
-    
     SolrServer server = getSolrServer();
     
     // Empty the database...
@@ -184,10 +182,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     docs.add( doc2 );
     
     // Add the documents
-    UpdateRequest up = new UpdateRequest();
-    up.setPath( path );
-    up.add( docs );
-    server.request( up );
+    server.add( docs );
     server.commit();
     
     SolrQuery query = new SolrQuery();
@@ -195,18 +190,15 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     query.addSortField( "price", SolrQuery.ORDER.asc );
     QueryResponse rsp = server.query( query );
     
-    Assert.assertEquals( path, 2, rsp.getResults().getNumFound() );
+    Assert.assertEquals( 2, rsp.getResults().getNumFound() );
     System.out.println( rsp.getResults() );
     
     // Now do it again
-    up = new UpdateRequest();
-    up.setPath( path );
-    up.add( docs );
-    server.request( up );
+    server.add( docs );
     server.commit();
     
     rsp = server.query( query );
-    Assert.assertEquals( path, 2, rsp.getResults().getNumFound() );
+    Assert.assertEquals( 2, rsp.getResults().getNumFound() );
     System.out.println( rsp.getResults() );
   }
   
