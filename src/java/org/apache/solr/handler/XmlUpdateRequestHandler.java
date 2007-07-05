@@ -197,6 +197,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
           } 
           else if ("doc".equals(currTag)) {
             log.finest("adding doc...");
+            addCmd.indexedId = null;
             SolrInputDocument doc = readDoc( parser );
             processor.processAdd( addCmd, doc );
           } 

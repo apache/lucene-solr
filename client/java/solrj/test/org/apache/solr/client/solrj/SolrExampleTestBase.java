@@ -21,10 +21,12 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -151,6 +153,61 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
     Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
+  }
+  
+
+  /**
+   * query the example
+   */
+  public void testAddRetrieve() throws Exception
+  {    
+    String path = "/update";
+    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    
+    // Now add something...
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField( "id", "id1", 1.0f );
+    doc1.addField( "name", "doc1", 1.0f );
+    doc1.addField( "price", 10 );
+
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.addField( "id", "id2", 1.0f );
+    doc2.addField( "name", "doc2", 1.0f );
+    doc2.addField( "price", 20 );
+    
+    Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    docs.add( doc1 );
+    docs.add( doc2 );
+    
+    // Add the documents
+    UpdateRequest up = new UpdateRequest();
+    up.setPath( path );
+    up.add( docs );
+    server.request( up );
+    server.commit();
+    
+    SolrQuery query = new SolrQuery();
+    query.setQuery( "*:*" );
+    query.addSortField( "price", SolrQuery.ORDER.asc );
+    QueryResponse rsp = server.query( query );
+    
+    Assert.assertEquals( path, 2, rsp.getResults().getNumFound() );
+    System.out.println( rsp.getResults() );
+    
+    // Now do it again
+    up = new UpdateRequest();
+    up.setPath( path );
+    up.add( docs );
+    server.request( up );
+    server.commit();
+    
+    rsp = server.query( query );
+    Assert.assertEquals( path, 2, rsp.getResults().getNumFound() );
+    System.out.println( rsp.getResults() );
   }
   
   protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
