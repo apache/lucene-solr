@@ -363,7 +363,7 @@ final class DocumentsWriter {
       notifyAll();
   }
 
-  private boolean allThreadsIdle() {
+  private synchronized boolean allThreadsIdle() {
     for(int i=0;i<threadStates.length;i++)
       if (!threadStates[i].isIdle)
         return false;
@@ -2119,8 +2119,8 @@ final class DocumentsWriter {
         ThreadState[] newArray = new ThreadState[1+threadStates.length];
         if (threadStates.length > 0)
           System.arraycopy(threadStates, 0, newArray, 0, threadStates.length);
+        state = newArray[threadStates.length] = new ThreadState();
         threadStates = newArray;
-        state = threadStates[threadStates.length-1] = new ThreadState();
       }
       threadBindings.put(Thread.currentThread(), state);
     }
