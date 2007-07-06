@@ -62,7 +62,7 @@ class TermVectorsReader implements Cloneable {
       tvfFormat = checkValidFormat(tvf);
       if (-1 == docStoreOffset) {
         this.docStoreOffset = 0;
-        this.size = (int) (tvx.length() / 8);
+        this.size = (int) (tvx.length() >> 3);
       } else {
         this.docStoreOffset = docStoreOffset;
         this.size = size;

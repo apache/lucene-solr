@@ -82,7 +82,7 @@ final class FieldsReader {
       assert ((int) (indexStream.length()/8)) >= size + this.docStoreOffset;
     } else {
       this.docStoreOffset = 0;
-      this.size = (int) (indexStream.length() / 8);
+      this.size = (int) (indexStream.length() >> 3);
     }
   }
 

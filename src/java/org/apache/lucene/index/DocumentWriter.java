@@ -323,7 +323,7 @@ final class DocumentWriter {
     if (lo >= hi)
       return;
 
-    int mid = (lo + hi) / 2;
+    int mid = (lo + hi) >>> 1;
 
     if (postings[lo].term.compareTo(postings[mid].term) > 0) {
       Posting tmp = postings[lo];

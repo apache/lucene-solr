@@ -734,7 +734,7 @@ final class DocumentsWriter {
       if (lo >= hi)
         return;
 
-      int mid = (lo + hi) / 2;
+      int mid = (lo + hi) >>> 1;
 
       if (comparePostings(postings[lo], postings[mid]) > 0) {
         Posting tmp = postings[lo];
@@ -792,7 +792,7 @@ final class DocumentsWriter {
       if (lo >= hi)
         return;
 
-      int mid = (lo + hi) / 2;
+      int mid = (lo + hi) >>> 1;
 
       if (comparePostings(postings[lo].p, postings[mid].p) > 0) {
         PostingVector tmp = postings[lo];
@@ -880,9 +880,9 @@ final class DocumentsWriter {
             int hashSize = fp.postingsHashSize;
 
             // Reduce hash so it's between 25-50% full
-            while (fp.numPostings < hashSize/2 && hashSize >= 2)
-              hashSize /= 2;
-            hashSize *= 2;
+            while (fp.numPostings < (hashSize>>1) && hashSize >= 2)
+              hashSize >>= 1;
+            hashSize <<= 1;
 
             if (hashSize != fp.postingsHash.length)
               fp.rehashPostings(hashSize);
@@ -1598,7 +1598,7 @@ final class DocumentsWriter {
 
         postingsHash = newHash;
         postingsHashSize = newSize;
-        postingsHashHalfSize = newSize/2;
+        postingsHashHalfSize = newSize >> 1;
       }
       
       final ByteSliceReader vectorSliceReader = new ByteSliceReader();
