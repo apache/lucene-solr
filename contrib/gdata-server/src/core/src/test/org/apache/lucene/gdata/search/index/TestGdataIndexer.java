@@ -552,7 +552,7 @@ public void testAddDocument() throws IOException {
         latch.countDown();
         documentLatch.await(5000,TimeUnit.MILLISECONDS);
         // wait active for the commit
-        while(this.indexer.writer != null){}
+        while(this.indexer.getWriter() != null){}
         
         IndexSearcher s = new IndexSearcher(this.dir);
         Hits h = s.search(new TermQuery(delTerm));

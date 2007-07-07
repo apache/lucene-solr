@@ -400,6 +400,11 @@ public class GDataIndexer {
 
     }
 
+    // Used only for testing
+    protected synchronized IndexWriter getWriter() {
+      return this.writer;
+    }
+
     /**
      * This factory method creates a new GDataIndexer using a instance of
      * {@link IndexTask}
