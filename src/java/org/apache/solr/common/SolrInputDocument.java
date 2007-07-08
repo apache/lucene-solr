@@ -162,13 +162,14 @@ public class SolrInputDocument implements Iterable<SolrInputField>
   }
 
   /**
-   * Remove a field
+   * Remove a field from the document
    * 
-   * @param the field name
-   * @return true if a field was removed
+   * @param key The field name whose field is to be removed from the document
+   * @return the previous field with <tt>name</tt>, or
+   *         <tt>null</tt> if there was no field for <tt>key</tt>.
    */
-  public boolean removeField(String name) {
-    return _fields.remove( name ) != null;
+  public SolrInputField removeField(String name) {
+    return _fields.remove( name );
   }
   
   /**
