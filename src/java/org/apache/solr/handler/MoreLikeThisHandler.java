@@ -54,6 +54,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
@@ -119,7 +120,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     int start = params.getInt( SolrParams.START, 0 );
     int rows  = params.getInt( SolrParams.ROWS, 10 );
     
-    DocList mltDocs = null;
+    DocListAndSet mltDocs = null;
     
     // Find documents MoreLikeThis - either with a reader or a query
     //--------------------------------------------------------------------------------
@@ -150,7 +151,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
           "MoreLikeThis requires either a query (?q=) or text to find similar documents." );
     }
-    rsp.add( "response", mltDocs );
+    if( mltDocs == null ) {
+      mltDocs = new DocListAndSet(); // avoid NPE
+    }
+    rsp.add( "response", mltDocs.docList );
     
   
     if( interesting != null ) {
@@ -172,13 +176,18 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     // maybe facet the results
     if (params.getBool(FACET,false)) {
-      SimpleFacets f = new SimpleFacets(searcher, mltDocs, params );
-      rsp.add( "facet_counts", f.getFacetCounts() );
+      if( mltDocs.docSet == null ) {
+        rsp.add( "facet_counts", null );
+      }
+      else {
+        SimpleFacets f = new SimpleFacets(searcher, mltDocs.docSet, params );
+        rsp.add( "facet_counts", f.getFacetCounts() );
+      }
     }
     
     // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
     try {
-      NamedList<Object> dbg = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs );
+      NamedList<Object> dbg = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs.docList );
       if (null != dbg) {
         if (null != filters) {
           dbg.add("filter_queries",req.getParams().getParams(FQ));
@@ -221,6 +230,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     final MoreLikeThis mlt;
     final IndexReader reader;
     final SchemaField uniqueKeyField;
+    final boolean needDocSet;
     
     Query mltquery;  // expose this for debugging
     
@@ -229,6 +239,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       this.searcher = searcher;
       this.reader = searcher.getReader();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
+      this.needDocSet = params.getBool(FACET,false);
       
       SolrParams required = params.required();
       String[] fields = splitList.split( required.get(MoreLikeThisParams.SIMILARITY_FIELDS) );
@@ -251,7 +262,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setBoost(            params.getBool(MoreLikeThisParams.BOOST, false ) );
     }
     
-    public DocList getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
+    public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       Document doc = reader.document(id);
       mltquery = mlt.like(id);
@@ -266,16 +277,28 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           new TermQuery(new Term(uniqueKeyField.getName(), doc.get(uniqueKeyField.getName()))), 
             BooleanClause.Occur.MUST_NOT);
       
-      return searcher.getDocList(mltQuery, filters, null, start, rows, flags);
+      DocListAndSet results = new DocListAndSet();
+      if (this.needDocSet) {
+        results = searcher.getDocListAndSet(mltQuery, filters, null, start, rows, flags);
+      } else {
+        results.docList = searcher.getDocList(mltQuery, filters, null, start, rows, flags);
+      }
+      return results;
     }
 
-    public DocList getMoreLikeThis( Reader reader, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
+    public DocListAndSet getMoreLikeThis( Reader reader, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       mltquery = mlt.like(reader);
       if( terms != null ) {
         fillInteristingTermsFromMLTQuery( mltquery, terms );
       }
-      return searcher.getDocList(mltquery, filters, null, start, rows, flags);
+      DocListAndSet results = new DocListAndSet();
+      if (this.needDocSet) {
+        results = searcher.getDocListAndSet(mltquery, filters, null, start, rows, flags);
+      } else {
+        results.docList = searcher.getDocList(mltquery, filters, null, start, rows, flags);
+      }
+      return results;
     }
     
     public NamedList<DocList> getMoreLikeThese( DocList docs, int rows, int flags ) throws IOException
@@ -286,10 +309,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       while( iterator.hasNext() ) {
         int id = iterator.nextDoc();
         
-        DocList sim = getMoreLikeThis( id, 0, rows, null, null, flags );
+        DocListAndSet sim = getMoreLikeThis( id, 0, rows, null, null, flags );
         String name = schema.printableUniqueKey( reader.document( id ) );
 
-        mlt.add(name, sim);
+        mlt.add(name, sim.docList);
       }
       return mlt;
     }
