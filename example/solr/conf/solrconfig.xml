@@ -180,9 +180,13 @@
          is requested, a superset of the requested number of document ids
          are collected.  For example, if a search for a particular query
          requests matching documents 10 through 19, and queryWindowSize is 50,
-         then documents 0 through 50 will be collected and cached.  Any further
+         then documents 0 through 49 will be collected and cached.  Any further
          requests in that range can be satisfied via the cache.  -->
-    <queryResultWindowSize>10</queryResultWindowSize>
+    <queryResultWindowSize>50</queryResultWindowSize>
+    
+    <!-- Maximum number of documents to cache for any entry in the
+         queryResultCache. -->
+    <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
     <!-- This entry enables an int hash representation for filters (DocSets)
          when the number of items in the set is less than maxSize.  For smaller

@@ -259,6 +259,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   private static boolean useFilterForSortedQuery=SolrConfig.config.getBool("query/useFilterForSortedQuery", false);
   private static int queryResultWindowSize=SolrConfig.config.getInt("query/queryResultWindowSize", 1);
+  private static int queryResultMaxDocsCached=SolrConfig.config.getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
 
 
   public Hits search(Query query, Filter filter, Sort sort) throws IOException {
@@ -808,8 +809,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       out.docList = superset.subset(offset,len);
     }
 
-    // lastly, put the superset in the cache
-    if (key != null) {
+    // lastly, put the superset in the cache if the size is less than or equal
+    // to queryResultMaxDocsCached
+    if (key != null && superset.size() <= queryResultMaxDocsCached) {
       queryResultCache.put(key, superset);
     }
   }

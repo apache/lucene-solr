@@ -95,6 +95,10 @@ New Features
 15. SOLR-273: Added hl.maxAnalyzedChars highlighting parameter, defaulting to
     50k (klaas)
 
+16. SOLR-291: Control maximum number of documents to cache for any entry
+    in the queryResultCache via queryResultMaxDocsCached solrconfig.xml 
+    entry. (Koji Sekiguchi via yonik)
+
 Changes in runtime behavior
 
 Optimizations
