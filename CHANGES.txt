@@ -54,48 +54,43 @@ New Features
     also includes tests that start jetty and test a connection using the full
     HTTP request cycle.  (Darren Erik Vengroff, Will Johnson, ryan)
  
- 7. SOLR-262: Added toObject( Fieldable ) to FieldType.  This lets the
-    DocumentBuilder convert lucene Document to a SolrDocument.  This patch
-    also lets the DocumentBuilder convert a SolrInputDocument to a lucene
-    Document.  (ryan)
-
- 8. SOLR-133: Added StaxUpdateRequestHandler that uses StAX for XML parsing.
+ 7. SOLR-133: Added StaxUpdateRequestHandler that uses StAX for XML parsing.
     This implementation has much better error checking and lets you configure
     a custom UpdateRequestProcessor that can selectively process update 
     requests depending on the request attributes.  This class will likely 
     replace XmlUpdateRequestHandler.  (Thorsten Scherler, ryan)
 
- 9. SOLR-264: Added RandomSortField, a utility field with a random sort order.
+ 8. SOLR-264: Added RandomSortField, a utility field with a random sort order.
     The seed is based on a hash of the field name, so a dynamic field
     of this type is useful for generating different random sequences.
     This field type should only be used for sorting or as a value source
     in a FunctionQuery (ryan, hossman, yonik) 
 
-10. SOLR-266: Adding show=schema to LukeRequestHandler to show the parsed
+ 9. SOLR-266: Adding show=schema to LukeRequestHandler to show the parsed
     schema fields and field types.  (ryan)
 
-11. SOLR-133: The UpdateRequestHandler now accepts multiple delete options 
+10. SOLR-133: The UpdateRequestHandler now accepts multiple delete options 
     within a single request.  For example, sending:
      <delete><id>1</id><id>2</id></delete> will delete both 1 and 2. (ryan)
 
-12. SOLR-269: Added UpdateRequestProcessor to the XmlUpdateRequestHandler.
+11. SOLR-269: Added UpdateRequestProcessor to the XmlUpdateRequestHandler.
     This provides a reasonable place to pre-process documents after they are
     parsed and before they are committed to the index.  This is a good place
     for custom document manipulation or document based authorization. (ryan)
 
-13. SOLR-260: Converting to a standard PluginLoader framework.  This reworks
+12. SOLR-260: Converting to a standard PluginLoader framework.  This reworks
     RequestHandlers, FieldTypes, and QueryResponseWriters to share the same
     base code for loading and initializing plugins.  This adds a new 
     configuration option to define the default RequestHandler and 
     QueryResponseWriter in XML using default="true".  (ryan)
 
-14. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
+13. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
     highlighting formatters and Fragmenters.  (ryan)
 
-15. SOLR-273: Added hl.maxAnalyzedChars highlighting parameter, defaulting to
+14. SOLR-273: Added hl.maxAnalyzedChars highlighting parameter, defaulting to
     50k (klaas)
 
-16. SOLR-291: Control maximum number of documents to cache for any entry
+15. SOLR-291: Control maximum number of documents to cache for any entry
     in the queryResultCache via queryResultMaxDocsCached solrconfig.xml 
     entry. (Koji Sekiguchi via yonik)
 
