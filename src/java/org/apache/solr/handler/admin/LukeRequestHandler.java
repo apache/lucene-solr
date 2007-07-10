@@ -71,7 +71,6 @@ import org.apache.solr.search.SolrQueryParser;
  * For more documentation see:
  *  http://wiki.apache.org/solr/LukeRequestHandler
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */
@@ -390,12 +389,18 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("maxDoc", reader.maxDoc());
     
     if( countTerms ) {
-      TermEnum te = reader.terms();
-      int numTerms = 0;
-      while (te.next()) {
-        numTerms++;
+      TermEnum te = null;
+      try{
+        te = reader.terms();
+        int numTerms = 0;
+        while (te.next()) {
+          numTerms++;
+        }
+        indexInfo.add("numTerms", numTerms );
       }
-      indexInfo.add("numTerms", numTerms );
+      finally{
+        if( te != null ) te.close();
+      }
     }
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
@@ -538,38 +543,44 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Map<String,TopTermQueue> getTopTerms( IndexReader reader, Set<String> fields, int numTerms, Set<String> junkWords ) throws Exception 
   {
     Map<String,TopTermQueue> info = new HashMap<String, TopTermQueue>();
-    TermEnum terms = reader.terms();
     
-    while (terms.next()) {
-      String field = terms.term().field();
-      String t = terms.term().text();
-
-      // Compute distinct terms for every field
-      TopTermQueue tiq = info.get( field );
-      if( tiq == null ) {
-        tiq = new TopTermQueue( numTerms );
-        info.put( field, tiq );
-      }
-      tiq.distinctTerms++;
-      tiq.histogram.add( terms.docFreq() );  // add the term to the histogram
-      
-      // Only save the distinct terms for fields we worry about
-      if (fields != null && fields.size() > 0) {
-        if( !fields.contains( field ) ) {
+    TermEnum terms = null;
+    try{
+      terms = reader.terms();    
+      while (terms.next()) {
+        String field = terms.term().field();
+        String t = terms.term().text();
+  
+        // Compute distinct terms for every field
+        TopTermQueue tiq = info.get( field );
+        if( tiq == null ) {
+          tiq = new TopTermQueue( numTerms+1 );
+          info.put( field, tiq );
+        }
+        tiq.distinctTerms++;
+        tiq.histogram.add( terms.docFreq() );  // add the term to the histogram
+        
+        // Only save the distinct terms for fields we worry about
+        if (fields != null && fields.size() > 0) {
+          if( !fields.contains( field ) ) {
+            continue;
+          }
+        }
+        if( junkWords != null && junkWords.contains( t ) ) {
           continue;
         }
-      }
-      if( junkWords != null && junkWords.contains( t ) ) {
-        continue;
-      }
-      
-      if( terms.docFreq() > tiq.minFreq ) {
-        tiq.put(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
-        if (tiq.size() >= numTerms) { // if tiq full
-          tiq.pop(); // remove lowest in tiq
-          tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
+        
+        if( terms.docFreq() > tiq.minFreq ) {
+          tiq.put(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
+            if (tiq.size() > numTerms) { // if tiq full
+            tiq.pop(); // remove lowest in tiq
+            tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
+          }
         }
       }
+    }
+    finally {
+      if( terms != null ) terms.close();
     }
     return info;
   }
