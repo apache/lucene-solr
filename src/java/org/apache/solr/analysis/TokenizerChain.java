@@ -24,7 +24,6 @@ import org.apache.solr.analysis.TokenizerFactory;
 import java.io.Reader;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

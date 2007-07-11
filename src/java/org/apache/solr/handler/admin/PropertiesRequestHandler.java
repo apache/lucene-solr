@@ -27,7 +27,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 
 /**
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

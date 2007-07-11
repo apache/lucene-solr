@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * Represent a list of SolrDocuments returned from a search.  This includes
  * position and offset information.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Token;
 
 
 /**
- * @version $Id:$
+ * @version $Id$
  */
 public class TestKeepWordFilter extends BaseTokenTestCase {
   

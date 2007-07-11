@@ -32,7 +32,6 @@ import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.XMLResponseWriter;
 
 /**
- * @author yonik
  * @version $Id$
  */
 @Deprecated

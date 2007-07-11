@@ -22,7 +22,6 @@ import org.apache.lucene.search.*;
 /**
  * Extra lucene sorting utilities & convenience methods
  *
- * @author yonik
  * @version $Id$
  *
  */

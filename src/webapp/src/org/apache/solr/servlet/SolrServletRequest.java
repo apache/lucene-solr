@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @author yonik
  * @version $Id$
  */
 class SolrServletRequest extends SolrQueryRequestBase {

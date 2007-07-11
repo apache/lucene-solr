@@ -21,7 +21,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 
 /**
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

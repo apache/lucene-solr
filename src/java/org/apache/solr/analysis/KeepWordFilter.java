@@ -28,7 +28,6 @@ import java.util.Set;
  * A TokenFilter that only keeps tokens with text contained in the
  * required words.  This filter behaves like the inverse of StopFilter.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

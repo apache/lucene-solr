@@ -35,7 +35,6 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

@@ -32,7 +32,6 @@ import java.io.Writer;
 import java.util.*;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

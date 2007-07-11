@@ -27,7 +27,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**  SolrParams hold request parameters.
  *
- * @author yonik
  * @version $Id$
  */
 public abstract class SolrParams {

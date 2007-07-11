@@ -29,7 +29,6 @@ import java.net.URL;
 
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class LRUCache implements SolrCache {

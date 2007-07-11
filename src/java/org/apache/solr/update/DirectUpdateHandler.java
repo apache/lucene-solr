@@ -16,7 +16,6 @@
  */
 
 /**
- * @author yonik
  */
 
 package org.apache.solr.update;
@@ -48,7 +47,6 @@ import org.apache.solr.core.SolrCore;
  * directly to the main lucene index as opposed to adding to a separate smaller index.
  * For this reason, not all combinations to/from pending and committed are supported.
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

@@ -39,7 +39,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * 
  * This lets us try various SolrServer implementations with the same tests.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

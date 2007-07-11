@@ -28,7 +28,6 @@ import java.util.HashMap;
  * A Reader that wraps another reader and attempts to strip out HTML constructs.
  *
  *
- * @author yonik
  * @version $Id$
  */
 

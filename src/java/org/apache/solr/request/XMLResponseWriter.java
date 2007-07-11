@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class XMLResponseWriter implements QueryResponseWriter {

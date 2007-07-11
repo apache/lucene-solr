@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 /**  A variety of high efficiencly bit twiddling routines.
  *
- * @author yonik
  * @version $Id$
  */
 public class BitUtil {

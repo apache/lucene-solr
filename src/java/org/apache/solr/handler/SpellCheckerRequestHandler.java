@@ -44,7 +44,6 @@ import java.util.logging.Logger;
  * The spellchecker used by this handler is the Lucene contrib SpellChecker.
  * @see <a href="http://wiki.apache.org/jakarta-lucene/SpellChecker">The Lucene Spellchecker documentation</a>
  *
- * @author Otis Gospodnetic
  */
 public class SpellCheckerRequestHandler extends RequestHandlerBase {
 

@@ -28,7 +28,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * @author ryan
  */
 public class SolrParamTest extends TestCase 
 {  

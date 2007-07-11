@@ -24,7 +24,6 @@ import java.util.List;
   * A utility class to hold the facet response.  It could use the NamedList container,
   * but for JSTL, it is nice to have something that implements List so it can be iterated
   * 
-  * @author ryan
   * @version $Id$
   * @since solr 1.3
   */

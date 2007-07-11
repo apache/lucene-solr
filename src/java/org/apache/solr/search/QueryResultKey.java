@@ -24,7 +24,6 @@ import org.apache.lucene.search.SortField;
 import java.util.List;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
- * @author yonik
  * @version $Id$
  */
 public final class QueryResultKey {

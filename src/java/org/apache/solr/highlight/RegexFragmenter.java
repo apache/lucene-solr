@@ -86,7 +86,6 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
  * could be significantly faster.  Could even build in custom tricks...
  * perhaps JavaCC should be used? TODO
  * 
- * @author Mike Klaas
  */
 class LuceneRegexFragmenter implements Fragmenter
 {

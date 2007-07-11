@@ -26,7 +26,6 @@ import java.io.IOException;
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
  *
-* @author yonik
 * @version $Id$
 * @since solr 0.9
 */

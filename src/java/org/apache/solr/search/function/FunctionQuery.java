@@ -27,7 +27,6 @@ import java.util.Set;
  * Returns a score for each document based on a ValueSource,
  * often some function of the value of a field.
  *
- * @author yonik
  * @version $Id$
  */
 public class FunctionQuery extends Query {

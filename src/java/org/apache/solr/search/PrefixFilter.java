@@ -27,7 +27,6 @@ import java.util.BitSet;
 import java.io.IOException;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class PrefixFilter extends Filter {

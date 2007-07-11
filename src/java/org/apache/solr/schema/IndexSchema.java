@@ -50,7 +50,6 @@ import java.util.logging.Logger;
  * <code>IndexSchema</code> contains information about the valid fields in an index
  * and the types of those fields.
  *
- * @author yonik
  * @version $Id$
  */
 

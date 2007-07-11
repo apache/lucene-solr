@@ -23,7 +23,6 @@ import java.util.Map;
 /**
  * Simple abstract implementation that handles init arg processing.
  * 
- * @author yonik
  * @version $Id$
  */
 public abstract class BaseTokenFilterFactory implements TokenFilterFactory {

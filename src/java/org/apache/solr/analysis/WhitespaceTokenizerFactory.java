@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import java.io.Reader;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class WhitespaceTokenizerFactory extends BaseTokenizerFactory {

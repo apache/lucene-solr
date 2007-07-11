@@ -22,7 +22,6 @@ import org.apache.lucene.search.DefaultSimilarity;
 import java.util.HashMap;
 
 /**
- * @author yonik
  */
 // don't make it public for now... easier to change later.
 

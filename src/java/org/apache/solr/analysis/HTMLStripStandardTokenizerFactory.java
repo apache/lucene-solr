@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.Reader;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {

@@ -55,8 +55,6 @@ import org.apache.solr.search.function.ValueSource;
  *  
  * Note that multiple calls to the same URL will return the same sorting order.
  * 
- * @author ryan
- * @author yonik
  * @version $Id$
  * @since solr 1.3
  */

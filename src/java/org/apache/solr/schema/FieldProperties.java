@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * @author yonik
  * @version $Id$
  */
 abstract class FieldProperties {

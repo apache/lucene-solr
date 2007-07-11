@@ -39,7 +39,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * 
- * @author ryan
  *
  */
 public class DirectUpdateHandlerTest extends AbstractSolrTestCase {

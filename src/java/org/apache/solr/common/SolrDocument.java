@@ -32,7 +32,6 @@ import java.util.Set;
  * For indexing documents, use the SolrInputDocumet that contains extra information
  * for document and field boosting.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

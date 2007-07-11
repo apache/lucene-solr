@@ -35,7 +35,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

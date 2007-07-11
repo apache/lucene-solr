@@ -54,7 +54,6 @@ import java.util.regex.Pattern;
  * but using group=1, the output would be: bbb and ccc (no ' marks)
  * 
  * 
- * @author ryan
  * @since solr1.2
  * @version $Id:$
  */

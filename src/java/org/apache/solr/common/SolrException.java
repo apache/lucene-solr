@@ -22,7 +22,6 @@ import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class SolrException extends RuntimeException {

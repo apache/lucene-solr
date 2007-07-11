@@ -43,7 +43,6 @@ import org.apache.solr.common.util.XML;
 /**
  * TODO? should this go in common?
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

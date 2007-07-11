@@ -44,7 +44,6 @@ import org.apache.solr.schema.IndexSchema;
  * This class is designed to be as simple as possible and alow for more flexibility
  * in how you interface to solr.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

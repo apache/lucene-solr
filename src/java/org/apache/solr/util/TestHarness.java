@@ -61,7 +61,6 @@ import java.util.Map;
  * distribution, in order to encourage plugin writers to create unit 
  * tests for their plugins.
  *
- * @author hossman
  * @version $Id:$
  */
 public class TestHarness {

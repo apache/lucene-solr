@@ -28,7 +28,6 @@ import org.apache.solr.common.SolrInputDocument;
 import junit.framework.TestCase;
 
 /**
- * @author ryan
  */
 public class SolrDocumentTest extends TestCase 
 {

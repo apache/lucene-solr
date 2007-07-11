@@ -16,7 +16,6 @@
  */
 
 /**
- * @author yonik
  */
 
 package org.apache.solr.update;
@@ -120,7 +119,6 @@ import org.apache.solr.core.SolrConfig;
   be batched and executed together so they may share the same index reader.
 
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

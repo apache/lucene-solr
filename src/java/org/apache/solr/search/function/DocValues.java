@@ -23,7 +23,6 @@ import org.apache.lucene.search.Explanation;
  * Represents field values as different types.
  * Normally created via a {@link ValueSource} for a particular field and reader.
  *
- * @author yonik
  * @version $Id$
  */
 

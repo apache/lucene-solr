@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 
 /**
- * @author yonik
  */
 class RunExecutableListener extends AbstractSolrEventListener {
   protected String[] cmd;

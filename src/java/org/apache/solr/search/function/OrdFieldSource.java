@@ -36,7 +36,6 @@ import java.io.IOException;
  * <p>
  * WARNING: ord() depends on the position in an index and can thus change when other documents are inserted or deleted,
  *  or if a MultiSearcher is used.
- * @author yonik
  * @version $Id$
  */
 

@@ -27,7 +27,6 @@ import java.util.Set;
 import java.io.IOException;
 
 /**
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

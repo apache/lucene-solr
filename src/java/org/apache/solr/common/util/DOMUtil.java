@@ -29,7 +29,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class DOMUtil {

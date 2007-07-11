@@ -33,7 +33,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import junit.framework.TestCase;
 
 /**
- * @author ryan
  */
 public class ContentStreamTest extends TestCase 
 {  

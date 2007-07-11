@@ -38,7 +38,6 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 
 /**
- * @author yonik
  */
 final class RequestHandlers {
   public static Logger log = Logger.getLogger(RequestHandlers.class.getName());
@@ -190,7 +189,6 @@ final class RequestHandlers {
    * This is a private class - if there is a real need for it to be public, it could
    * move
    * 
-   * @author ryan
    * @version $Id$
    * @since solr 1.2
    */

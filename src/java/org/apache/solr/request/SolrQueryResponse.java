@@ -48,7 +48,6 @@ import java.util.*;
  *  <li>null</li>
  * </ul>
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

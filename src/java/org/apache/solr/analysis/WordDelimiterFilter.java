@@ -58,7 +58,6 @@ import java.util.List;
  *  this filter be used after a tokenizer that does not do this
  *  (such as WhitespaceTokenizer).
  *
- *  @author yonik
  *  @version $Id$
  */
 

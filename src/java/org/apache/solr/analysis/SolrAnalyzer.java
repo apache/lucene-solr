@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.Analyzer;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public abstract class SolrAnalyzer extends Analyzer {

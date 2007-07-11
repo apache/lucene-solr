@@ -47,7 +47,6 @@ import java.io.Serializable;
  * or simply use a regular {@link Map}
  * </p>
  *
- * @author yonik
  * @version $Id$
  */
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {

@@ -22,7 +22,6 @@ import junit.framework.TestCase;
 
 /**
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

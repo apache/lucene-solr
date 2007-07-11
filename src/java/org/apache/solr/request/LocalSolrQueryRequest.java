@@ -30,7 +30,6 @@ import java.util.Iterator;
 // retained more for backward compatibility.
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {

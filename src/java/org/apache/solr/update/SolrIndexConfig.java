@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexWriter;
 // This config object encapsulates IndexWriter config params.
 //
 /**
- * @author yonik
  * @version $Id$
  */
 public class SolrIndexConfig {

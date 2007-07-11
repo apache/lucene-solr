@@ -21,7 +21,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * @author yonik
  */
 class AbstractSolrEventListener implements SolrEventListener {
   protected NamedList args;

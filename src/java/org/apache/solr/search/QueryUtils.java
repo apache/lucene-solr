@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Arrays;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class QueryUtils {

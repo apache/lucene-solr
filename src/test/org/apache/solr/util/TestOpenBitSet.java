@@ -23,7 +23,6 @@ import java.util.Random;
 import java.util.BitSet;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class TestOpenBitSet extends TestCase {

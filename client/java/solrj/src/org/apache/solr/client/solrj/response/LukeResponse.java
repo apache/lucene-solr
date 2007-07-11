@@ -26,7 +26,6 @@ import org.apache.solr.common.util.NamedList;
 /**
  * This is an incomplete representation of the data returned from Luke
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

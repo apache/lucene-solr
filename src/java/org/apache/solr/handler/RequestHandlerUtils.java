@@ -30,7 +30,6 @@ import org.apache.solr.update.CommitUpdateCommand;
 /**
  * Common helper functions for RequestHandlers
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

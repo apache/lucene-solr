@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class StandardFilterFactory extends BaseTokenFilterFactory {

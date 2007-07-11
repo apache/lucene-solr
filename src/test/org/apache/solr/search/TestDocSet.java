@@ -26,7 +26,6 @@ import org.apache.solr.util.BitSetIterator;
 import org.apache.solr.util.BitUtil;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class TestDocSet extends TestCase {

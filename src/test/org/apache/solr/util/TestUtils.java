@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.solr.common.util.StrUtils;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class TestUtils extends TestCase {

@@ -27,7 +27,6 @@ import java.util.Iterator;
  * DocIterator instance was retrieved.
  * </p>
  *
- * @author yonik
  * @version $Id$
  */
 public interface DocIterator extends Iterator<Integer> {

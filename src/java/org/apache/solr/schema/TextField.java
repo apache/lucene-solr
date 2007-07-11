@@ -27,7 +27,6 @@ import java.io.IOException;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
  * Analyzers for field types using this implementation should be defined in the schema.
- * @author yonik
  * @version $Id$
  */
 public class TextField extends CompressableField {

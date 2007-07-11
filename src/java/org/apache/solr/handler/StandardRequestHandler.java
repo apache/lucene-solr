@@ -41,7 +41,6 @@ import org.apache.solr.highlight.SolrHighlighter;
 import static org.apache.solr.common.params.SolrParams.*;
 
 /**
- * @author yonik
  * @version $Id$
  *
  * All of the following options may be configured for this handler

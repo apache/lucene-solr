@@ -33,7 +33,6 @@ import java.util.Set;
 
 /** Base class for text-oriented response writers.
  *
- * @author yonik
  * @version $Id$
  */
 public abstract class TextResponseWriter {

@@ -27,7 +27,6 @@ import java.io.IOException;
  * Obtains int field values from the {@link org.apache.lucene.search.FieldCache}
  * using <code>getInts()</code>
  * and makes those values available as other numeric types, casting as needed. *
- * @author yonik
  * @version $Id$
  */
 

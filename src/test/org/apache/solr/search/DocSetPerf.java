@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.BitSet;
 
 /**
- * @author yonik
  */
 public class DocSetPerf {
 

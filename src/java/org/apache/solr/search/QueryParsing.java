@@ -39,7 +39,6 @@ import java.io.IOException;
 /**
  * Collection of static utilities usefull for query parsing.
  *
- * @author yonik
  * @version $Id$
  */
 public class QueryParsing {

@@ -46,7 +46,6 @@ import java.util.logging.Logger;
  * SolrIndexSearcher adds schema awareness and caching functionality
  * over the lucene IndexSearcher.
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

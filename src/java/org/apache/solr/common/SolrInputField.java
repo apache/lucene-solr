@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
  *  http://docs.codehaus.org/display/JETTY/ServletTester
  * rather then open a real connection?
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

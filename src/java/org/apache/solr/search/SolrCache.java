@@ -27,7 +27,6 @@ import java.io.IOException;
 /**
  * Primary API for dealing with Solr's internal caches.
  * 
- * @author yonik
  * @version $Id$
  */
 public interface SolrCache extends SolrInfoMBean {

@@ -24,7 +24,6 @@ import org.apache.solr.core.SolrCore;
 /**
  * This runs SolrServer test using 
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

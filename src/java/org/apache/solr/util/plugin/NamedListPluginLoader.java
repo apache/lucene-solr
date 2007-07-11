@@ -23,7 +23,6 @@ import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 
 /**
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

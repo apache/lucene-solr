@@ -18,7 +18,6 @@
 package org.apache.solr.util;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class NumberUtils {

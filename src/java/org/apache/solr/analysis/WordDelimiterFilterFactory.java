@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.TokenStream;
 import java.util.Map;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {

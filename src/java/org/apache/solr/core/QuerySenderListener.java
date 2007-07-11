@@ -27,7 +27,6 @@ import org.apache.solr.request.SolrQueryResponse;
 import java.util.List;
 
 /**
- * @author yonik
  * @version $Id$
  */
 class QuerySenderListener extends AbstractSolrEventListener {

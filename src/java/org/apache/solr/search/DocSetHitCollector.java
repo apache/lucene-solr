@@ -22,7 +22,6 @@ import org.apache.solr.util.OpenBitSet;
 import org.apache.solr.core.SolrConfig;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

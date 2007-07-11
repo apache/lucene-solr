@@ -23,7 +23,6 @@ import org.apache.solr.common.util.NamedList;
 /**
  * TODO -- mostly a stub until we have a defined output format
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

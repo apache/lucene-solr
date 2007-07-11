@@ -48,7 +48,6 @@ import org.apache.lucene.analysis.*;
  *  </analyzer>
  * </fieldtype>
  * 
- * @author Boris Vitez
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
 

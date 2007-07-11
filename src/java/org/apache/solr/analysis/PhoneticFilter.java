@@ -28,7 +28,7 @@ import java.io.IOException;
  * Create tokens for phonetic matches.  See:
  * http://jakarta.apache.org/commons/codec/api-release/org/apache/commons/codec/language/package-summary.html
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class PhoneticFilter extends TokenFilter 
 {

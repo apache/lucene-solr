@@ -28,8 +28,6 @@ import java.io.IOException;
  * Based on FieldSortedHitQueue.comparatorString
  * <p>
  *
- * @author Chris Hostetter
- * @author yonik
  * @version $Id$
  *
  */

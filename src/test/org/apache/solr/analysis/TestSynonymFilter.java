@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class TestSynonymFilter extends BaseTokenTestCase {

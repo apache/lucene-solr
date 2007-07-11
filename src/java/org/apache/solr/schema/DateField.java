@@ -75,7 +75,6 @@ import java.text.ParseException;
  * for more examples.
  * </p>
  *
- * @author yonik
  * @version $Id$
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  *

@@ -39,7 +39,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * A single instance of any registered QueryResponseWriter is created
  * via the default constructor and is reused for all relevant queries.
  *
- * @author yonik
  * @version $Id$
  */
 public interface QueryResponseWriter extends NamedListInitializedPlugin {

@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 /**
- * @author yonik
  * @version $Id$
  */
 public class AddUpdateCommand extends UpdateCommand {

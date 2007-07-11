@@ -28,7 +28,6 @@ import java.io.IOException;
  * using <code>getFloats()</code>
  * and makes those values available as other numeric types, casting as needed.
  *
- * @author yonik
  * @version $Id$
  */
 

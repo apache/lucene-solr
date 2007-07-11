@@ -44,7 +44,6 @@ import javax.xml.xpath.XPathConstants;
  * <code>UpdateHandler</code> handles requests to change the index
  * (adds, deletes, commits, optimizes, etc).
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

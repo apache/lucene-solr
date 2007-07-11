@@ -53,7 +53,6 @@ import java.util.List;
  * </pre>
  *
  *
- * @author yonik
  * @version $Id$
  */
 public abstract class BufferedTokenStream extends TokenStream {

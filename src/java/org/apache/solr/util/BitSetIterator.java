@@ -21,7 +21,6 @@ package org.apache.solr.util;
  * This is faster than nextSetBit() for iterating over the complete set of bits,
  * especially when the density of the bits set is high.
  *
- * @author yonik
  * @version $Id$
  */
 public class BitSetIterator {

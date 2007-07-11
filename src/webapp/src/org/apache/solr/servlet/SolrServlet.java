@@ -33,8 +33,6 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 
 /**
- * @author yonik
- * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a>
  */
 
 @Deprecated

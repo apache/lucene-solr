@@ -25,8 +25,6 @@ import java.util.Map;
 
 /**
  * Creates new instances of {@link NGramTokenizer}.
- * @author Otis Gospodnetic
- * @author Adam Hiatt
  */
 public class NGramTokenizerFactory extends BaseTokenizerFactory {
     private int maxGramSize = 0;

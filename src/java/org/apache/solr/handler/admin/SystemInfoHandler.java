@@ -50,7 +50,6 @@ import org.apache.solr.schema.IndexSchema;
  * that it works nicely with an XSLT transformation.  Until we have a nice
  * XSLT front end for /admin, the format is still open to change.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

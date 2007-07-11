@@ -30,8 +30,6 @@ import org.apache.solr.util.TestHarness;
 /** Tests the ability to configure multiple query output writers, and select those
  * at query time.
  *
- * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a>
- * @author the Solr project
  */
 public class OutputWriterTest extends AbstractSolrTestCase {
     

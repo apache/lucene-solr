@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.Reader;
 
 /**
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

@@ -21,7 +21,6 @@ import java.io.Writer;
 import java.io.IOException;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class XML {

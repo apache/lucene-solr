@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.LengthFilter;
 import java.util.Map;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class LengthFilterFactory extends BaseTokenFilterFactory {

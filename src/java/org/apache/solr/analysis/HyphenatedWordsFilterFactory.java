@@ -22,7 +22,6 @@ import org.apache.solr.analysis.BaseTokenFilterFactory;
 
 /**
  * Factory for HyphenatedWordsFilter
- * @author Boris Vitez
  */
 public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
 	public TokenStream create(TokenStream input) {

@@ -34,7 +34,6 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * Base class that converts the server request into the more verbose general request framework.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

@@ -31,7 +31,6 @@ import java.util.Collection;
  * By default, this will keep every field value added to the document.  To only
  * keep distinct values, use setRemoveDuplicateFieldValues( "fieldname", true );
  *
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

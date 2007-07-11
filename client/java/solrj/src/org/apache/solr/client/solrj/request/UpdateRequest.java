@@ -36,7 +36,6 @@ import org.apache.solr.common.util.XML;
 
 /**
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

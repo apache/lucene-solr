@@ -45,7 +45,6 @@ import org.apache.lucene.analysis.*;
  * A single instance of any registered TokenizerFactory is created
  * via the default constructor and is reused for each FieldType.
  * </p>
- * @author yonik
  * @version $Id$
  */
 public interface TokenizerFactory {

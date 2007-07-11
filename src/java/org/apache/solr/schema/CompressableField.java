@@ -40,7 +40,6 @@ import java.io.IOException;
  * 
  * TODO: Enable compression level specification (not yet in lucene)
  * 
- * @author klaas
  * @version $Id$
  */
 public abstract class CompressableField extends FieldType {

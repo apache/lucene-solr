@@ -41,7 +41,6 @@ import java.io.IOException;
 /**
  * Base class for all field types used by an index schema.
  *
- * @author yonik
  * @version $Id$
  */
 public abstract class FieldType extends FieldProperties {

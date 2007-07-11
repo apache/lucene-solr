@@ -64,8 +64,6 @@ import org.w3c.dom.NodeList;
 
 
 /**
- * @author yonik
- * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a> 
  * @version $Id$
  */
 

@@ -28,7 +28,6 @@ import org.apache.solr.core.SolrCore;
  * Browsing the code, SnowballFilter uses reflection to adapt to Lucene... don't
  * use this if you are concerned about speed. Use EnglishPorterFilterFactory.
  * 
- * @author yonik
  * @version $Id$
  */
 

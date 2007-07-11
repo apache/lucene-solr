@@ -22,7 +22,6 @@ import java.util.Iterator;
 import org.apache.solr.common.util.IteratorChain;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class DefaultSolrParams extends SolrParams {

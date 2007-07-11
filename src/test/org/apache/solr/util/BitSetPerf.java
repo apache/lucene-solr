@@ -25,7 +25,6 @@ import java.util.BitSet;
  * is at least 10 seconds for better accuracy.  Close browsers on your system (javascript
  * or flash may be running and cause more erratic results).
  *
- * @author yonik
  * @version $Id$
  */
 public class BitSetPerf {

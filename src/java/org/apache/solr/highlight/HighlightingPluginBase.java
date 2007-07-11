@@ -26,7 +26,6 @@ import org.apache.solr.core.SolrInfoMBean;
 
 /**
  * 
- * @author ryan
  * @since solr 1.3
  */
 public abstract class HighlightingPluginBase implements SolrInfoMBean

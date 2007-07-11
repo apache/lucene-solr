@@ -23,7 +23,6 @@ import org.apache.solr.util.BCDUtils;
 import java.util.Random;
 
 /**
- * @author yonik
  */
 
 public class TestNumberUtils {

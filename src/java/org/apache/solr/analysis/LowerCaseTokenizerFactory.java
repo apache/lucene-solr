@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.LowerCaseTokenizer;
 import java.io.Reader;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class LowerCaseTokenizerFactory extends BaseTokenizerFactory {

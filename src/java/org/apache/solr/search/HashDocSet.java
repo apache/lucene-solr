@@ -26,7 +26,6 @@ import org.apache.solr.util.BitUtil;
  * in the set because it takes up less memory and is faster to iterate and take
  * set intersections.
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

@@ -36,7 +36,6 @@ import org.apache.solr.core.SolrInfoMBean;
  * A single instance of any registered SolrRequestHandler is created
  * via the default constructor and is reused for all relevant queries.
  *
- * @author yonik
  * @version $Id$
  */
 public interface SolrRequestHandler extends SolrInfoMBean {

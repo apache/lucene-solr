@@ -44,7 +44,6 @@ import java.net.URL;
 import java.net.MalformedURLException;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class Config {

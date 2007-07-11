@@ -25,8 +25,6 @@ import java.util.Map;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenizer}.
- * @author Otis Gospodnetic
- * @author Adam Hiatt
  */
 public class EdgeNGramTokenizerFactory extends BaseTokenizerFactory {
     private int maxGramSize = 0;

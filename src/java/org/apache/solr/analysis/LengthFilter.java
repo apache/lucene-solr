@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Token;
 import java.io.IOException;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public final class LengthFilter extends TokenFilter {

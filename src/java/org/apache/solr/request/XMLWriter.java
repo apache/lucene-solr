@@ -34,7 +34,6 @@ import java.util.*;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Document;
 /**
- * @author yonik
  * @version $Id$
  */
 final public class XMLWriter {

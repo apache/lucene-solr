@@ -27,7 +27,6 @@ import org.apache.solr.request.TextResponseWriter;
 import java.util.Map;
 import java.io.IOException;
 /**
- * @author yonik
  * @version $Id$
  */
 public class BCDIntField extends FieldType {

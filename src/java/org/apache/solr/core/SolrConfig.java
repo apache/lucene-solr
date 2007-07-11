@@ -37,7 +37,6 @@ import java.io.InputStream;
  * configuration data for a a Solr instance -- typically found in
  * "solrconfig.xml".
  *
- * @author yonik
  * @version $Id$
  */
 public class SolrConfig {

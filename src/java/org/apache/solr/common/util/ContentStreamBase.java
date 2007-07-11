@@ -33,7 +33,6 @@ import java.net.URLConnection;
 /**
  * Three concrete implementations for ContentStream - one for File/URL/String
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

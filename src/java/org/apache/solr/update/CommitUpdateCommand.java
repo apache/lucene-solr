@@ -17,7 +17,6 @@
 
 package org.apache.solr.update;
 /**
- * @author yonik
  * @version $Id$
  */
 public class CommitUpdateCommand extends UpdateCommand {

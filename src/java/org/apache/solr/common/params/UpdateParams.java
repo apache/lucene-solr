@@ -20,7 +20,6 @@ package org.apache.solr.common.params;
 /**
  * A collection of standard params used by Update handlers
  *
- * @author ryan
  * @version $Id$
  * @since solr 1.2
  */

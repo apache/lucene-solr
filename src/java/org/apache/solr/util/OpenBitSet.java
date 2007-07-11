@@ -71,7 +71,6 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
  </tr>
 </table>
 
- * @author yonik
  * @version $Id$
  */
 

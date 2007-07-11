@@ -25,7 +25,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * 
- * @author Greg Ludington
  */
 public class RequiredFieldsTest extends AbstractSolrTestCase {
 

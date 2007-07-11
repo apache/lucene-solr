@@ -22,7 +22,6 @@ import javax.servlet.ServletRequest;
 import org.apache.solr.common.params.MultiMapSolrParams;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class ServletSolrParams extends MultiMapSolrParams {

@@ -38,7 +38,6 @@ import org.mortbay.log.Logger;
 /**
  * Run solr using jetty
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

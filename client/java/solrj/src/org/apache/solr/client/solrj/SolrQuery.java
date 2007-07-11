@@ -26,7 +26,6 @@ import org.apache.solr.common.params.SolrParams;
  * This is an augmented SolrParams with get/set/add fields for common fields used
  * in the Standard and Dismax request handlers
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

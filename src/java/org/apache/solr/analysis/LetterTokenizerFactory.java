@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.LetterTokenizer;
 import java.io.Reader;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class LetterTokenizerFactory extends BaseTokenizerFactory {

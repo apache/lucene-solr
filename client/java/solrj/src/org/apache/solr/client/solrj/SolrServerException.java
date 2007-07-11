@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj;
 
 /** Exception to catch all types of communication / parsing issues associated with talking to SOLR
  * 
- * @author wjohnson
  * @version $Id$
  * @since solr 1.3
  */

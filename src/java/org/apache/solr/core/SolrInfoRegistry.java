@@ -22,7 +22,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import java.util.*;
 
 /**
- * @author ronp
  * @version $Id$
  */
 

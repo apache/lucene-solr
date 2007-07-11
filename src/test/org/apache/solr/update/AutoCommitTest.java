@@ -32,7 +32,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * 
- * @author ryan
  *
  */
 public class AutoCommitTest extends AbstractSolrTestCase {

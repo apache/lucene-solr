@@ -40,7 +40,6 @@ import java.util.HashMap;
  * </p>
  *
  *
- * @author yonik
  * @version $Id$
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {

@@ -22,7 +22,6 @@ import org.apache.lucene.document.Document;
 
 /** An index update command encapsulated in an object (Command pattern)
  *
- * @author yonik
  * @version $Id$
  */
   public class UpdateCommand {

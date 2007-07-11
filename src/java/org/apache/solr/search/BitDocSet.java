@@ -24,7 +24,6 @@ import org.apache.solr.util.BitSetIterator;
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
  * using a BitSet.  A set bit represents inclusion in the set for that document.
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

@@ -30,7 +30,6 @@ import java.util.Set;
  * parameters after it is initialized.  It has helper functions to set/add
  * integer and boolean param values.
  * 
- * @author ryan
  * @since solr 1.3
  */
 public class ModifiableSolrParams extends SolrParams 

@@ -35,7 +35,6 @@ import java.util.List;
 import java.io.*;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

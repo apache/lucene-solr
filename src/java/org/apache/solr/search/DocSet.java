@@ -30,7 +30,6 @@ import java.util.BitSet;
  * a cache and could be shared.
  * </p>
  *
- * @author yonik
  * @version $Id$
  * @since solr 0.9
  */

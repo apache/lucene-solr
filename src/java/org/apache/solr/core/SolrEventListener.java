@@ -23,7 +23,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import java.util.logging.Logger;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public interface SolrEventListener {

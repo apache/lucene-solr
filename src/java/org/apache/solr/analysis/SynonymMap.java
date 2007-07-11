@@ -23,7 +23,6 @@ import java.util.*;
 
 /** Mapping rules for use with {@link org.apache.solr.analysis.SynonymFilter}
  *
- * @author yonik
  * @version $Id$
  */
 public class SynonymMap {

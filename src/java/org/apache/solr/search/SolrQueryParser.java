@@ -46,7 +46,6 @@ import org.apache.solr.schema.FieldType;
  * @see QueryParsing#parseFunction
  * @see ConstantScoreRangeQuery
  * @see ConstantScorePrefixQuery
- * @author yonik
  */
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;

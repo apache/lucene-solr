@@ -25,7 +25,6 @@ import org.apache.solr.request.SolrQueryRequest;
  * implementation does nothing except pass the commands directly to the 
  * UpdateHandler
  * 
- * @author ryan
  * @since solr 1.3
  */
 public class UpdateRequestProcessorFactory 

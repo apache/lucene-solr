@@ -52,7 +52,6 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */

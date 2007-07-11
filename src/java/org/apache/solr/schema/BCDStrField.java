@@ -22,7 +22,6 @@ import org.apache.lucene.document.Fieldable;
 
 import java.io.IOException;
 /**
- * @author yonik
  * @version $Id$
  */
 public class BCDStrField extends BCDIntField {
