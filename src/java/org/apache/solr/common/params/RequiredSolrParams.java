@@ -50,7 +50,40 @@ public class RequiredSolrParams extends SolrParams {
     }
     return val;
   }
+  
+  @Override
+  public String getFieldParam(final String field, final String param) {
+    final String fpname = fpname(field,param);
+    String val = params.get(fpname);
+    if (null == val) {
+      // don't call this.get, we want a specified exception message
+      val = params.get(param);
+      if (null == val)  {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                 "Missing required parameter: "+fpname+
+                                 " (or default: "+param+")" );
+      }
+    }
+    return val;
+  }
 
+  @Override
+  public String[] getFieldParams(final String field, final String param) {
+    final String fpname = fpname(field,param);
+    String[] val = params.getParams(fpname);
+    if (null == val) {
+      // don't call this.getParams, we want a specified exception message
+      val = params.getParams(param);
+      if (null == val)  {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                 "Missing required parameter: "+fpname+
+                                 " (or default: "+param+")" );
+      }
+    }
+    return val;
+  }
+
+  
   @Override
   public String[] getParams(String param) {
     String[] vals = params.getParams(param);

@@ -127,7 +127,11 @@ public class SolrParamTest extends TestCase
     // field value present
     assertEquals( pbool  , required.getFieldBool(  "fl", "bool" ) );
     // field defaulting (fall through to non-field-specific value)
-    //assertEquals( pint   , required.getFieldInt( "fff",  "int"      ) );
+    assertEquals( pstr   , required.getFieldParams("fakefield", "str")[0] );
+    assertEquals( pstr   , required.getFieldParam( "fakefield", "str"   ) );
+    assertEquals( pbool  , required.getFieldBool(  "fakefield", "bool"  ) );
+    assertEquals( pint   , required.getFieldInt(   "fakefield", "int"   ) );
+    assertEquals( pfloat , required.getFieldFloat( "fakefield", "float" ) );
     
     // Required params which are missing: These should throw a 400
     assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.get( "aaaa" ); } } ) );
