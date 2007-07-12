@@ -119,7 +119,7 @@ public class BooleanQuery extends Query {
    * <p>
    * By default no optional clauses are neccessary for a match
    * (unless there are no required clauses).  If this method is used,
-   * then the specified numebr of clauses is required.
+   * then the specified number of clauses is required.
    * </p>
    * <p>
    * Use of this method is totally independant of specifying that
@@ -127,12 +127,12 @@ public class BooleanQuery extends Query {
    * only be compared against the number of matching optional clauses.
    * </p>
    * <p>
-   * EXPERT NOTE: Using this method will force the use of BooleanWeight2,
-   * regardless of wether setUseScorer14(true) has been called.
+   * EXPERT NOTE: Using this method may force collecting docs in order,
+   * regardless of wether setAllowDocsOutOfOrder(true) has been called.
    * </p>
    *
    * @param min the number of optional clauses that must match
-   * @see #setUseScorer14
+   * @see #setAllowDocsOutOfOrder
    */
   public void setMinimumNumberShouldMatch(int min) {
     this.minNrShouldMatch = min;
@@ -318,10 +318,10 @@ public class BooleanQuery extends Query {
    * {@link HitCollector#collect(int,float)} might be
    * invoked first for docid N and only later for docid N-1.
    * Being static, this setting is system wide.
-   * If docs out of order are allowed scoring might be faster
-   * for certain queries (disjunction queries with less than
-   * 32 prohibited terms). This setting has no effect for 
-   * other queries.
+   * If collecting docs out of order is allowed, scoring might be faster
+   * for certain queries, for example disjunction queries with
+   * less than 32 prohibited clauses.
+   * This setting has no effect for other queries.
    */
   public static void setAllowDocsOutOfOrder(boolean allow) {
     allowDocsOutOfOrder = allow;
@@ -334,20 +334,6 @@ public class BooleanQuery extends Query {
   public static boolean getAllowDocsOutOfOrder() {
     return allowDocsOutOfOrder;
   }  
-
-  /**
-   * @deprecated Use {@link #setAllowDocsOutOfOrder(boolean)} instead.
-   */
-  public static void setUseScorer14(boolean use14) {
-    setAllowDocsOutOfOrder(use14);
-  }
-  
-  /**
-   * @deprecated Use {@link #getAllowDocsOutOfOrder()} instead.
-   */
-  public static boolean getUseScorer14() {
-    return getAllowDocsOutOfOrder();
-  }
 
   protected Weight createWeight(Searcher searcher) throws IOException {
     return new BooleanWeight(searcher);

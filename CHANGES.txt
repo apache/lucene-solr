@@ -14,6 +14,9 @@ API Changes
     that allow one to set a char[] plus offset and length to specify a
     token (to avoid creating a new String() for each Token).  (Mike
     McCandless)
+
+ 2. LUCENE-944: Remove deprecated methods setUseScorer14() and
+    getUseScorer14() from BooleanQuery. (Paul Elschot via Michael Busch)
  
 Bug fixes
 
