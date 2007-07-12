@@ -200,7 +200,16 @@ fi
 # take a snapshot of current index so that only modified files will be rsync-ed
 # put the snapshot in the 'work-in-progress" directory to prevent it from
 # being installed while the copying is still in progress
-cp -lr ${data_dir}/index ${data_dir}/${name}-wip
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+then
+  orig_dir=$(pwd)
+  mkdir ${data_dir}/${name}-wip
+  cd ${data_dir}/index
+  find . -print|cpio -pdlmu ${data_dir}/${name}-wip 1>/dev/null 2>&1
+  cd ${orig_dir}
+else
+  cp -lr ${data_dir}/index ${data_dir}/${name}-wip
+fi
 # force rsync of segments and .del files since we are doing size-only
 if [[ -n ${sizeonly} ]]
 then

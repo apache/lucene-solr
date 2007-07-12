@@ -21,6 +21,7 @@ export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
 # set up variables
 prog=${0##*/}
+OS=`uname`
 
 # source the config file if present
 confFile=${solr_root}/conf/scripts.conf

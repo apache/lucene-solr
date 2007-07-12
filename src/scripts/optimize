@@ -117,13 +117,18 @@ then
   logExit failed 1
 fi
 
-# check status of optimize request
+# check status of optimize request - original format
 rc=`echo $rs|cut -f2 -d'"'`
 if [[ $? != 0 ]]
 then
-  logMessage optimize request to Solr at ${curl_url} failed:
-  logMessage $rs
-  logExit failed 2
+# check status of optimize request - new format
+  echo $rs | grep '<lst name="responseHeader"><int name="status">0</int>' > /dev/null 2>&1
+  if [[ $? != 0 ]]
+  then
+    logMessage optimize request to Solr at ${curl_url} failed:
+    logMessage $rs
+    logExit failed 2
+  fi
 fi
 
 logExit ended 0

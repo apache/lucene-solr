@@ -131,13 +131,18 @@ then
   logExit failed 1
 fi
 
-# check status of commit request
+# check status of commit request - original format
 echo $rs | grep '<result.*status="0"' > /dev/null 2>&1
 if [[ $? != 0 ]]
 then
-  logMessage commit request to Solr at ${curl_url} failed:
-  logMessage $rs
-  logExit failed 2
+# check status of commit request - new format
+  echo $rs | grep '<lst name="responseHeader"><int name="status">0</int>' > /dev/null 2>&1
+  if [[ $? != 0 ]]
+  then
+    logMessage commit request to Solr at ${curl_url} failed:
+    logMessage $rs
+    logExit failed 2
+  fi
 fi
 
 # successful commit creates a snapshot file synchronously
@@ -170,7 +175,16 @@ trap 'echo cleaning up, please wait ...;/bin/rm -rf ${data_dir}/${name} ${data_d
 
 # make a backup using hard links into temporary location
 # then move it into place atomically
-cp -lr ${lastsnap} ${data_dir}/${temp}
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+then
+  orig_dir=$(pwd)
+  mkdir ${data_dir}/${temp}
+  cd ${lastsnap}
+  find . -print|cpio -pdlmu ${data_dir}/${temp} 1>/dev/null 2>&1
+  cd ${orig_dir}
+else
+  cp -lr ${lastsnap} ${data_dir}/${temp}
+fi
 mv ${data_dir}/${temp} ${data_dir}/${name}
 
 logExit ended 0

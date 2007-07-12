@@ -101,7 +101,16 @@ logMessage making backup ${data_dir}/${name}
 
 # make a backup using hard links into temporary location
 # then move it into place atomically
-cp -lr ${data_dir}/index ${data_dir}/${temp}
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+then
+  orig_dir=$(pwd)
+  mkdir ${data_dir}/${temp}
+  cd ${data_dir}/index
+  find . -print|cpio -pdlmu ${data_dir}/${temp} 1>/dev/null 2>&1
+  cd ${orig_dir}
+else
+  cp -lr ${data_dir}/index ${data_dir}/${temp}
+fi
 mv ${data_dir}/${temp} ${data_dir}/${name}
 
 logExit ended 0

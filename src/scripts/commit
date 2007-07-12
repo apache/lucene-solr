@@ -116,13 +116,18 @@ then
   logExit failed 1
 fi
 
-# check status of commit request
+# check status of commit request - original format
 echo $rs | grep '<result.*status="0"' > /dev/null 2>&1
 if [[ $? != 0 ]]
 then
-  logMessage commit request to Solr at ${curl_url} failed:
-  logMessage $rs
-  logExit failed 2
+# check status of commit request - new format
+  echo $rs | grep '<lst name="responseHeader"><int name="status">0</int>' > /dev/null 2>&1
+  if [[ $? != 0 ]]
+  then
+    logMessage commit request to Solr at ${curl_url} failed:
+    logMessage $rs
+    logExit failed 2
+  fi
 fi
 
 logExit ended 0
