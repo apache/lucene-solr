@@ -469,6 +469,9 @@ Bug Fixes
     cause a clear message to be logged rather than an obscure exception thrown.
     (Koji Sekiguchi via ehatcher) 
 
+16. SOLR-282: Snapshooter does not work on Solaris and OS X since the cp command
+    there does not have the -l option.  (bill)
+
 Other Changes
  1. Updated to Lucene 2.1
 
