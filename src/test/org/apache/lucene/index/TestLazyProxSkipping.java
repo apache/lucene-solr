@@ -98,13 +98,41 @@ public class TestLazyProxSkipping extends TestCase {
         assertEquals(numHits, hits.length());
         
         // check if the number of calls of seek() does not exceed the number of hits
-        assertEquals(numHits, this.seeksCounter);
+        assertTrue(this.seeksCounter <= numHits + 1);
     }
     
     public void testLazySkipping() throws IOException {
         // test whether only the minimum amount of seeks() are performed
         performTest(5);
         performTest(10);
+    }
+    
+    public void testSeek() throws IOException {
+        Directory directory = new RAMDirectory();
+        IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 10; i++) {
+            Document doc = new Document();
+            doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.TOKENIZED));
+            writer.addDocument(doc);
+        }
+        
+        writer.close();
+        IndexReader reader = IndexReader.open(directory);
+        TermPositions tp = reader.termPositions();
+        tp.seek(new Term(this.field, "b"));
+        for (int i = 0; i < 10; i++) {
+            tp.next();
+            assertEquals(tp.doc(), i);
+            assertEquals(tp.nextPosition(), 1);
+        }
+        tp.seek(new Term(this.field, "a"));
+        for (int i = 0; i < 10; i++) {
+            tp.next();
+            assertEquals(tp.doc(), i);
+            assertEquals(tp.nextPosition(), 0);
+        }
+        
+        
     }
     
 

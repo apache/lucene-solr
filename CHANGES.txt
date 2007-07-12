@@ -20,6 +20,9 @@ Bug fixes
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
     BooleanQueries "()" even if the Analyzer proudced no 
     tokens for input. (Doron Cohen)
+
+ 2. LUCENE-955: Fixed SegmentTermPositions to work correctly with the
+    first term in the dictionary. (Michael Busch)
     
 New features
 

@@ -35,7 +35,7 @@ extends SegmentTermDocs implements TermPositions {
   
   // these variables are being used to remember information
   // for a lazy skip
-  private long lazySkipPointer = 0;
+  private long lazySkipPointer = -1;
   private int lazySkipProxCount = 0;
   
   SegmentTermPositions(SegmentReader p) {
@@ -152,9 +152,9 @@ extends SegmentTermDocs implements TermPositions {
     // if it was not read yet
     skipPayload();
       
-    if (lazySkipPointer != 0) {
+    if (lazySkipPointer != -1) {
       proxStream.seek(lazySkipPointer);
-      lazySkipPointer = 0;
+      lazySkipPointer = -1;
     }
      
     if (lazySkipProxCount != 0) {
