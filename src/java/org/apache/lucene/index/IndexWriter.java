@@ -1828,10 +1828,6 @@ public class IndexWriter {
       flush(true, false);
   }
 
-  public final synchronized void flush() throws CorruptIndexException, IOException {  
-    flush(true, false);
-  }
-
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory. 
@@ -1840,7 +1836,19 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
+  public final synchronized void flush() throws CorruptIndexException, IOException {  
+    flush(true, false);
+  }
+
+  /**
+   * Flush all in-memory buffered udpates (adds and deletes)
+   * to the Directory.
+   * @param triggerMerge if true, we may merge segments (if
+   *  deletes or docs were flushed) if necessary
+   * @param flushDocStores if false we are allowed to keep
+   *  doc stores open to share with the next segment
+   */
+  protected final synchronized void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
     ensureOpen();
 
     // Make sure no threads are actively adding a document
@@ -1986,7 +1994,8 @@ public class IndexWriter {
         else
           maybeMergeSegments(docWriter.getMaxBufferedDocs());
         */
-        maybeMergeSegments(docWriter.getMaxBufferedDocs());
+        if (triggerMerge)
+          maybeMergeSegments(docWriter.getMaxBufferedDocs());
       }
     } finally {
       docWriter.clearFlushPending();

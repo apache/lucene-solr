@@ -1293,6 +1293,23 @@ public class TestIndexWriter extends TestCase
       dir.close();
     }
 
+    public void testFlushWithNoMerging() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);      
+      writer.setMaxBufferedDocs(2);
+      Document doc = new Document();
+      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      for(int i=0;i<19;i++)
+        writer.addDocument(doc);
+      writer.flush(false, true);
+      writer.close();
+      SegmentInfos sis = new SegmentInfos();
+      sis.read(dir);
+      // Since we flushed w/o allowing merging we should now
+      // have 10 segments
+      assert sis.size() == 10;
+    }
+
     // Make sure we can flush segment w/ norms, then add
     // empty doc (no norms) and flush
     public void testEmptyDocAfterFlushingRealDoc() throws IOException {
