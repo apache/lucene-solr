@@ -23,6 +23,10 @@ Bug fixes
 
  2. LUCENE-955: Fixed SegmentTermPositions to work correctly with the
     first term in the dictionary. (Michael Busch)
+
+ 3. LUCENE-951: Fixed NullPointerException in MultiLevelSkipListReader
+    that was thrown after a call of TermPositions.seek(). 
+    (Rich Johnson via Michael Busch)
     
 New features
 

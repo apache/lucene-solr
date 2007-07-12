@@ -172,9 +172,11 @@ abstract class MultiLevelSkipListReader {
     this.docCount = df;
     Arrays.fill(skipDoc, 0);
     Arrays.fill(numSkipped, 0);
+    Arrays.fill(childPointer, 0);
+    
     haveSkipped = false;
     for (int i = 1; i < numberOfSkipLevels; i++) {
-      skipStream[0] = null;
+      skipStream[i] = null;
     }
   }
   
