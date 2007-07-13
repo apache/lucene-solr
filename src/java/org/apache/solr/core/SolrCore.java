@@ -57,7 +57,10 @@ import org.apache.solr.update.DirectUpdateHandler;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.processor.ChainedUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -79,6 +82,7 @@ public final class SolrCore {
   private static final long startTime = System.currentTimeMillis();
   private final RequestHandlers reqHandlers = new RequestHandlers();
   private final SolrHighlighter highlighter;
+  private final Map<String,UpdateRequestProcessorFactory> updateProcessors;
   
   public long getStartTime() { return startTime; }
 
@@ -209,6 +213,9 @@ public final class SolrCore {
       
       initWriters();
       
+      // Processors initialized before the handlers
+      updateProcessors = loadUpdateProcessors();
+      
       reqHandlers.initHandlersFromConfig( SolrConfig.config );
 
       // TODO? could select the highlighter implementation
@@ -228,6 +235,51 @@ public final class SolrCore {
         throw new RuntimeException(e);
       }
     }
+  }
+
+  /**
+   * Load the request processors configured in solrconfig.xml
+   */
+  private Map<String, UpdateRequestProcessorFactory> loadUpdateProcessors() {
+    final Map<String,UpdateRequestProcessorFactory> map = new HashMap<String, UpdateRequestProcessorFactory>();
+    
+    // If this is a more general use-case, this could be a regular type
+    AbstractPluginLoader<UpdateRequestProcessorFactory> loader 
+      = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "updateRequestProcessor" ) {
+
+      @Override
+      protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
+        plugin.init( node );
+      }
+
+      @Override
+      protected UpdateRequestProcessorFactory register(String name, UpdateRequestProcessorFactory plugin) throws Exception {
+        return map.put( name, plugin );
+      }
+    };
+
+    NodeList nodes = (NodeList)SolrConfig.config.evaluate("updateRequestProcessor/factory", XPathConstants.NODESET);
+    UpdateRequestProcessorFactory def = loader.load( nodes ); 
+    if( def == null ) {
+      def = new ChainedUpdateProcessorFactory(); // the default
+      def.init( null );
+    }
+    map.put( null, def );
+    map.put( "", def );
+    return map;
+  }
+  
+  /**
+   * @return an update processor registered to the given name.  Throw an exception if this factory is undefined
+   */
+  public UpdateRequestProcessorFactory getUpdateProcessorFactory( String name )
+  {
+    UpdateRequestProcessorFactory factory = updateProcessors.get( name );
+    if( factory == null ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "unknown UpdateProcessorFactory: "+name );
+    }
+    return factory;
   }
 
   public void close() {

@@ -126,7 +126,7 @@ final class RequestHandlers {
   {
     final RequestHandlers handlers = this;
     AbstractPluginLoader<SolrRequestHandler> loader = 
-      new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true )
+      new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true, true )
     {
       @Override
       protected SolrRequestHandler create( String name, String className, Node node ) throws Exception

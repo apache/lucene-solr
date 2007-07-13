@@ -15,32 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.update.processor;
 
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.w3c.dom.Node;
+
 
 /**
- * A factory to generate UpdateRequestProcessors for each request.  The default
- * implementation does nothing except pass the commands directly to the 
- * UpdateHandler
- * 
- * @since solr 1.3
+ * A custom class to do custom stuff
  */
-public class UpdateRequestProcessorFactory 
+public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory 
 {
-  public UpdateRequestProcessorFactory()
-  {
-    
-  }
+  public NamedList args = null;
   
-  public void init( NamedList<Object> args )
+  @Override
+  public void init( Node node )
   {
-    // by default nothing...
+    if( node != null ) {
+      args = DOMUtil.childNodesToNamedList( node );
+    }
   }
-  
-  public UpdateRequestProcessor getInstance( SolrQueryRequest req )
-  {
-    return new UpdateRequestProcessor( req );
+
+  @Override
+  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    // TODO Auto-generated method stub
+    return null;
   }
 }
+

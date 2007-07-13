@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<config>
+
+ <requestHandler name="custom" class="solr.CustomUpdateRequestHandler" >
+   <str name="update.processor.factory">custom</str>
+ </requestHandler>
+
+ <updateRequestProcessor>
+   <factory name="standard" class="solr.ChainedUpdateProcessorFactory" >
+     <chain class="solr.LogUpdateProcessorFactory" >
+	   <int name="maxNumToLog">100</int>
+     </chain>
+     <chain class="solr.CustomUpdateRequestProcessorFactory" >
+	    <lst name="name">
+	      <str name="n1">x1</str>
+	      <str name="n2">x2</str>
+	    </lst>
+     </chain>
+     <chain class="solr.CustomUpdateRequestProcessorFactory" >
+	    <lst name="name">
+	      <str name="nA">xA</str>
+	      <str name="nA">xA</str>
+	    </lst>
+     </chain>
+   </factory>
+   
+   <factory name="custom" class="solr.CustomUpdateRequestProcessorFactory" default="true" >
+    <lst name="name">
+      <str name="n8">88</str>
+      <str name="n9">99</str>
+    </lst>
+   </factory>
+ </updateRequestProcessor>
+
+</config>

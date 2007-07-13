@@ -40,20 +40,22 @@ public abstract class AbstractPluginLoader<T>
   
   private final String type;
   private final boolean preRegister;
+  private final boolean requireName;
   
   /**
    * @param type is the 'type' name included in error messages.
    * @param preRegister, if true, this will first register all Plugins, then it will initialize them.
    */
-  public AbstractPluginLoader( String type, boolean preRegister )
+  public AbstractPluginLoader( String type, boolean preRegister, boolean requireName )
   {
     this.type = type;
     this.preRegister = preRegister;
+    this.requireName = requireName;
   }
 
   public AbstractPluginLoader( String type )
   {
-    this( type, false );
+    this( type, false, true );
   }
   
   /**
@@ -130,7 +132,7 @@ public abstract class AbstractPluginLoader<T>
         // In a production environment, we can tolerate an error in some request handlers, 
         // still load the others, and have a working system.
         try {
-          String name       = DOMUtil.getAttr(node,"name", type);
+          String name       = DOMUtil.getAttr(node,"name", requireName?type:null);
           String className  = DOMUtil.getAttr(node,"class", type);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
             

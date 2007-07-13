@@ -37,11 +37,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -49,26 +49,18 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 /**
  * Add documents to solr using the STAX XML parser.
- * 
- * To change the UpdateRequestProcessor implementation, add the configuration parameter:
- * 
- *  <requestHandler name="/update" class="solr.StaxUpdateRequestHandler" >
- *    <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
- *    <lst name="update.processor.args">
- *     ... (optionally pass in arguments to the factory init method) ...
- *    </lst> 
- *  </requestHandler>
  */
 public class XmlUpdateRequestHandler extends RequestHandlerBase
 {
   public static Logger log = Logger.getLogger(XmlUpdateRequestHandler.class.getName());
 
-  public static final String UPDATE_PROCESSOR_FACTORY = "update.processor.factory";
-  public static final String UPDATE_PROCESSOR_ARGS    = "update.processor.args";
-  
+  public static final String UPDATE_PROCESSOR = "update.processor";
+
   // XML Constants
   public static final String ADD = "add";
   public static final String DELETE = "delete";
@@ -76,7 +68,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String COMMIT = "commit";
   public static final String WAIT_SEARCHER = "waitSearcher";
   public static final String WAIT_FLUSH = "waitFlush";
-  public static final String MODE = "mode";
   
   public static final String OVERWRITE = "overwrite";
   public static final String OVERWRITE_COMMITTED = "overwriteCommitted"; // @Deprecated
@@ -84,7 +75,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String ALLOW_DUPS = "allowDups"; 
   
   private XMLInputFactory inputFactory;
-  private UpdateRequestProcessorFactory processorFactory;
   
   @SuppressWarnings("unchecked")
   @Override
@@ -92,68 +82,60 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   {
     super.init(args);
     inputFactory = BaseXMLInputFactory.newInstance();
-  
-    // Initialize the UpdateRequestProcessorFactory
-    NamedList<Object> factoryargs = null;
-    if( args != null ) {
-      String className = (String)args.get( UPDATE_PROCESSOR_FACTORY );
-      factoryargs = (NamedList<Object>)args.get( UPDATE_PROCESSOR_ARGS );
-      if( className != null ) {
-        processorFactory = (UpdateRequestProcessorFactory)Config.newInstance( className, new String[]{} );
-      }
-    }
-    if( processorFactory == null ) {
-      processorFactory = new UpdateRequestProcessorFactory();
-    }
-    processorFactory.init( factoryargs );
   }
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
-    Iterable<ContentStream> streams = req.getContentStreams();
-    if( streams == null ) {
-      if( !RequestHandlerUtils.handleCommit(req, rsp, false) ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
-      }
-      return;
-    }
-    
     RequestHandlerUtils.addExperimentalFormatWarning( rsp );
     
-    // Cycle through each stream
-    for( ContentStream stream : req.getContentStreams() ) {
-      Reader reader = stream.getReader();
-      try {
-        NamedList out = this.update( req, req.getCore(), reader );
-        rsp.add( "update", out );
-      }
-      finally {
-        IOUtils.closeQuietly(reader);
+    SolrParams params = req.getParams();
+    UpdateRequestProcessorFactory processorFactory = 
+      req.getCore().getUpdateProcessorFactory( params.get( UpdateParams.UPDATE_PROCESSOR ) );
+    
+    UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+    Iterable<ContentStream> streams = req.getContentStreams();
+    if( streams == null ) {
+      if( !RequestHandlerUtils.handleCommit(processor, params, false) ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
       }
     }
+    else {
+      // Cycle through each stream
+      for( ContentStream stream : req.getContentStreams() ) {
+        Reader reader = stream.getReader();
+        try {
+          XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
+          this.processUpdate( processor, parser );
+        }
+        finally {
+          IOUtils.closeQuietly(reader);
+        }
+      }
+      
+      // Perhaps commit from the parameters
+      RequestHandlerUtils.handleCommit( processor, params, false );
+    }
     
-    // perhaps commit when we are done
-    RequestHandlerUtils.handleCommit(req, rsp, false);
+    // finish the request
+    processor.finish(); 
   }
     
   /**
    * @since solr 1.2
    */
-  NamedList<Object> processUpdate( SolrQueryRequest req, SolrCore core, XMLStreamReader parser)
+  void processUpdate( UpdateRequestProcessor processor, XMLStreamReader parser)
     throws XMLStreamException, IOException, FactoryConfigurationError,
           InstantiationException, IllegalAccessException,
           TransformerConfigurationException 
   {
-    UpdateRequestProcessor processor = processorFactory.getInstance( req );
-    
-    AddUpdateCommand addCmd = null;   
+    AddUpdateCommand addCmd = null;
     while (true) {
       int event = parser.next();
       switch (event) {
         case XMLStreamConstants.END_DOCUMENT:
           parser.close();
-          return processor.finish();
+          return;
 
         case XMLStreamConstants.START_ELEMENT:
           String currTag = parser.getLocalName();
@@ -170,8 +152,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
               String attrVal = parser.getAttributeValue(i);
               if (OVERWRITE.equals(attrName)) {
                 overwrite = StrUtils.parseBoolean(attrVal);
-//              } else if (MODE.equals(attrName)) {
-//                addCmd.mode = SolrPluginUtils.parseAndValidateFieldModes(attrVal,schema);
               } else if (ALLOW_DUPS.equals(attrName)) {
                 overwrite = !StrUtils.parseBoolean(attrVal);
               } else if ( OVERWRITE_PENDING.equals(attrName) ) {
@@ -197,9 +177,9 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
           } 
           else if ("doc".equals(currTag)) {
             log.finest("adding doc...");
-            addCmd.indexedId = null;
-            SolrInputDocument doc = readDoc( parser );
-            processor.processAdd( addCmd, doc );
+            addCmd.clear();
+            addCmd.solrDoc = readDoc( parser );
+            processor.processAdd(addCmd);
           } 
           else if ( COMMIT.equals(currTag) || OPTIMIZE.equals(currTag)) {
             log.finest("parsing " + currTag);
@@ -371,14 +351,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   }
 
   /**
-   * @since solr 1.2
-   */
-  public NamedList<Object> update( SolrQueryRequest req, SolrCore core, Reader reader) throws Exception {
-    XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
-    return processUpdate( req, core, parser);
-  }
-
-  /**
    * A Convenience method for getting back a simple XML string indicating
    * success or failure from an XML formated Update (from the Reader)
    * 
@@ -388,9 +360,17 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public void doLegacyUpdate(Reader input, Writer output) {
     try {
       SolrCore core = SolrCore.getSolrCore();
+
+      // Old style requests do not choose a custom handler
+      UpdateRequestProcessorFactory processorFactory = core.getUpdateProcessorFactory( null );
+      
       SolrParams params = new MapSolrParams( new HashMap<String, String>() );
       SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
-      this.update( req, SolrCore.getSolrCore(), input);
+      SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
+      XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
+      UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+      this.processUpdate( processor, parser );
+      processor.finish();
       output.write("<result status=\"0\"></result>");
     } 
     catch (Exception ex) {

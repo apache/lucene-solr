@@ -39,4 +39,7 @@ public interface UpdateParams
   
   /** Commit everything after the command completes */
   public static String OPTIMIZE = "optimize";
+
+  /** Select the update processor to use.  A RequestHandler may or may not respect this parameter */
+  public static final String UPDATE_PROCESSOR = "update.processor";
 }

@@ -73,10 +73,10 @@ New Features
     within a single request.  For example, sending:
      <delete><id>1</id><id>2</id></delete> will delete both 1 and 2. (ryan)
 
-11. SOLR-269: Added UpdateRequestProcessor to the XmlUpdateRequestHandler.
-    This provides a reasonable place to pre-process documents after they are
-    parsed and before they are committed to the index.  This is a good place
-    for custom document manipulation or document based authorization. (ryan)
+11. SOLR-269: Added UpdateRequestProcessor plugin framework.  This provides
+    a reasonable place to process documents after they are parsed and 
+    before they are committed to the index.  This is a good place for custom 
+    document manipulation or document based authorization. (yonik, ryan)
 
 12. SOLR-260: Converting to a standard PluginLoader framework.  This reworks
     RequestHandlers, FieldTypes, and QueryResponseWriters to share the same
