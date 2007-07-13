@@ -41,6 +41,20 @@
     <maxFieldLength>10000</maxFieldLength>
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
+    <!--
+      As long as Solr is the only process modifying your index, it is
+      safe to use Lucene's in process locking mechanism.  But you may
+      specify one of the other Lucene LockFactory implementations in
+      the event that you have a custom situation.
+      
+      none = NoLockFactory (typically only used with read only indexes)
+      single = SingleInstanceLockFactory (suggested)
+      native = NativeFSLockFactory
+      simple = SimpleFSLockFactory
+
+      ('simple' is the default for backwards compatibility with Solr 1.2)
+    -->
+    <lockType>single</lockType>
   </indexDefaults>
 
   <mainIndex>
@@ -54,7 +68,9 @@
     <!-- If true, unlock any held write or commit locks on startup. 
          This defeats the locking mechanism that allows multiple
          processes to safely access a lucene index, and should be
-         used with care. -->
+         used with care.
+         This is not needed if lock type is 'none' or 'single'
+     -->
     <unlockOnStartup>false</unlockOnStartup>
   </mainIndex>
 

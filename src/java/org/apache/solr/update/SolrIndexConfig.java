@@ -39,7 +39,9 @@ public class SolrIndexConfig {
   public static final int defMaxFieldLength=SolrConfig.config.getInt(defaultsName +"/maxFieldLength", -1);
   public static final int defWriteLockTimeout=SolrConfig.config.getInt(defaultsName +"/writeLockTimeout", -1);
   public static final int defCommitLockTimeout=SolrConfig.config.getInt(defaultsName +"/commitLockTimeout", -1);
-
+  public static final String defLockType=SolrConfig.config.get(defaultsName +"/lockType", null);
+  
+  
   /*** These are "final" in lucene 1.9
   static {
     if (writeLockTimeout != -1) IndexWriter.WRITE_LOCK_TIMEOUT=writeLockTimeout;
@@ -54,6 +56,7 @@ public class SolrIndexConfig {
   public final int maxFieldLength;
   public final int writeLockTimeout;
   public final int commitLockTimeout;
+  public final String lockType;
 
   public SolrIndexConfig(String prefix)  {
     useCompoundFile=SolrConfig.config.getBool(prefix+"/useCompoundFile", defUseCompoundFile);
@@ -63,5 +66,6 @@ public class SolrIndexConfig {
     maxFieldLength= SolrConfig.config.getInt(prefix+"/maxFieldLength",defMaxFieldLength);
     writeLockTimeout= SolrConfig.config.getInt(prefix+"/writeLockTimeout", defWriteLockTimeout);
     commitLockTimeout= SolrConfig.config.getInt(prefix+"/commitLockTimeout", defCommitLockTimeout);
+    lockType=SolrConfig.config.get(prefix+"/lockType", defLockType);
   }
 }

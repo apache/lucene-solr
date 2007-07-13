@@ -18,6 +18,13 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NativeFSLockFactory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 
 import java.util.logging.Logger;
@@ -54,14 +61,40 @@ public class SolrIndexWriter extends IndexWriter {
     }
 
   }
+  
+  private static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
+	  Directory d = FSDirectory.getDirectory(path);
+
+    String rawLockType = (null == config) ? null : config.lockType;
+    if (null == rawLockType) {
+      // we default to "simple" for backwards compatiblitiy
+      log.warning("No lockType configured for "+path+" assuming 'simple'");
+      rawLockType = "simple";
+    }
+    final String lockType = rawLockType.toLowerCase().trim();
+    
+	  if ("simple".equals(lockType)) {
+		  d.setLockFactory(new SimpleFSLockFactory(path));
+	  } else if("native".equals(lockType)) {
+		  d.setLockFactory(new NativeFSLockFactory(path));
+	  } else if("single".equals(lockType)) {
+		  d.setLockFactory(new SingleInstanceLockFactory());
+	  } else if("none".equals(lockType)) {
+		  d.setLockFactory(new NoLockFactory());
+	  } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Unrecognized lockType: " + rawLockType);
+	  } 
+	  return d;
+  }
 
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
-    super(path, schema.getAnalyzer(), create);
+    super(getDirectory(path, null), schema.getAnalyzer(), create);
     init(name, schema, null);
   }
 
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
-    super(path, schema.getAnalyzer(), create);
+    super(getDirectory(path, config), schema.getAnalyzer(), create);
     init(name, schema,config);
   }
 

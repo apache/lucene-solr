@@ -94,6 +94,12 @@ New Features
     in the queryResultCache via queryResultMaxDocsCached solrconfig.xml 
     entry. (Koji Sekiguchi via yonik)
 
+16. SOLR-240: New <lockType> configuration setting in <mainIndex> and
+    <indexDefaults> blocks supports all Lucene builtin LockFactories.
+    'single' is recommended setting, but 'simple' is default for total
+    backwards compatibility.
+    (Will Johnson via hossman)
+    
 Changes in runtime behavior
 
 Optimizations
