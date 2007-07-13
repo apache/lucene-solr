@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 /**
  * This is a subclass of RAMDirectory that adds methods
@@ -116,6 +117,7 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   void maybeThrowIOException() throws IOException {
+    maybeThrowDeterministicException();
     if (randomIOExceptionRate > 0.0) {
       int number = Math.abs(randomState.nextInt() % 1000);
       if (number < randomIOExceptionRate*1000) {
@@ -213,4 +215,59 @@ public class MockRAMDirectory extends RAMDirectory {
       }
     }
   }
+
+  /**
+   * Objects that represent fail-able conditions. Objects of a derived
+   * class are created and registered with the mock directory. After
+   * register, each object will be invoked once for each first write
+   * of a file, giving the object a chance to throw an IOException.
+   */
+  public static class Failure {
+    /**
+     * eval is called on the first write of every new file.
+     */
+    public void eval(MockRAMDirectory dir) throws IOException { }
+
+    /**
+     * reset should set the state of the failure to its default
+     * (freshly constructed) state. Reset is convenient for tests
+     * that want to create one failure object and then reuse it in
+     * multiple cases. This, combined with the fact that Failure
+     * subclasses are often anonymous classes makes reset difficult to
+     * do otherwise.
+     *
+     * A typical example of use is
+     * Failure failure = new Failure() { ... };
+     * ...
+     * mock.failOn(failure.reset())
+     */
+    public Failure reset() { return this; }
+  }
+
+  ArrayList failures;
+
+  /**
+   * add a Failure object to the list of objects to be evaluated
+   * at every potential failure point
+   */
+  public void failOn(Failure fail) {
+    if (failures == null) {
+      failures = new ArrayList();
+    }
+    failures.add(fail);
+  }
+
+  /**
+   * Itterate through the failures list, giving each object a
+   * chance to throw an IOE
+   */
+  void maybeThrowDeterministicException() throws IOException {
+    if (failures != null) {
+      for(int i = 0; i < failures.size(); i++) {
+        ((Failure)failures.get(i)).eval(this);
+      }
+    }
+  }
+
+
 }

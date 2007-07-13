@@ -31,6 +31,10 @@ Bug fixes
     that was thrown after a call of TermPositions.seek(). 
     (Rich Johnson via Michael Busch)
     
+ 4. LUCENE-938: Fixed cases where an unhandled exception in
+    IndexWriter's methods could cause deletes to be lost.
+    (Steven Parkes via Mike McCandless)
+      
 New features
 
  1. LUCENE-906: Elision filter for French.

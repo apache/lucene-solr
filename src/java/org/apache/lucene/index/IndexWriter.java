@@ -1331,8 +1331,18 @@ public class IndexWriter {
    * must make a matched (try/finally) call to
    * commitTransaction() or rollbackTransaction() to finish
    * the transaction.
+   *
+   * Note that buffered documents and delete terms are not handled
+   * within the transactions, so they must be flushed before the
+   * transaction is started.
    */
   private void startTransaction() throws IOException {
+
+    assert numBufferedDeleteTerms == 0 :
+           "calling startTransaction with buffered delete terms not supported";
+    assert docWriter.getNumDocsInRAM() == 0 :
+           "calling startTransaction with buffered documents not supported";
+
     localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     localAutoCommit = autoCommit;
     if (localAutoCommit) {
@@ -1907,6 +1917,9 @@ public class IndexWriter {
 
         SegmentInfos rollback = null;
 
+        HashMap saveBufferedDeleteTerms = null;
+        int saveNumBufferedDeleteTerms = 0;
+
         if (flushDeletes)
           rollback = (SegmentInfos) segmentInfos.clone();
 
@@ -1941,6 +1954,8 @@ public class IndexWriter {
             // buffer deletes longer and then flush them to
             // multiple flushed segments, when
             // autoCommit=false
+            saveBufferedDeleteTerms = bufferedDeleteTerms;
+            saveNumBufferedDeleteTerms = numBufferedDeleteTerms;
             applyDeletes(flushDocs);
             doAfterFlush();
           }
@@ -1955,6 +1970,12 @@ public class IndexWriter {
               // SegmentInfo instances:
               segmentInfos.clear();
               segmentInfos.addAll(rollback);
+
+              if (saveBufferedDeleteTerms != null) {
+                numBufferedDeleteTerms = saveNumBufferedDeleteTerms;
+                bufferedDeleteTerms = saveBufferedDeleteTerms;
+              }
+              
             } else {
               // Remove segment we added, if any:
               if (newSegment != null && 
@@ -2330,7 +2351,13 @@ public class IndexWriter {
       }
 
       // Clean up bufferedDeleteTerms.
-      bufferedDeleteTerms.clear();
+
+      // Rollbacks of buffered deletes are based on restoring the old
+      // map, so don't modify this one. Rare enough that the gc
+      // overhead is almost certainly lower than the alternate, which
+      // would be clone to support rollback.
+
+      bufferedDeleteTerms = new HashMap();
       numBufferedDeleteTerms = 0;
     }
   }

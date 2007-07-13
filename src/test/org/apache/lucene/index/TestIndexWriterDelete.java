@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.lang.StackTraceElement;
 
 import junit.framework.TestCase;
 
@@ -531,6 +532,146 @@ public class TestIndexWriterDelete extends TestCase {
         // Try again with 10 more bytes of free space:
         diskFree += 10;
       }
+    }
+  }
+
+  // This test tests that buffered deletes are not lost due to i/o
+  // errors occurring after the buffered deletes have been flushed but
+  // before the segmentInfos have been successfully written
+
+  public void testErrorAfterApplyDeletes() throws IOException {
+    
+    MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
+        boolean sawMaybe = false;
+        boolean failed = false;
+        public MockRAMDirectory.Failure reset() {
+          sawMaybe = false;
+          failed = false;
+          return this;
+        }
+        public void eval(MockRAMDirectory dir)  throws IOException {
+          if (sawMaybe && !failed) {
+            failed = true;
+            throw new IOException("fail after applyDeletes");
+          }
+          if (!failed) {
+            StackTraceElement[] trace = new Exception().getStackTrace();
+            for (int i = 0; i < trace.length; i++) {
+              if ("applyDeletes".equals(trace[i].getMethodName())) {
+                sawMaybe = true;
+                break;
+              }
+            }
+          }
+        }
+      };
+
+    // create a couple of files
+
+    String[] keywords = { "1", "2" };
+    String[] unindexed = { "Netherlands", "Italy" };
+    String[] unstored = { "Amsterdam has lots of bridges",
+        "Venice has lots of canals" };
+    String[] text = { "Amsterdam", "Venice" };
+
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
+      Directory ramDir = new RAMDirectory();
+      MockRAMDirectory dir = new MockRAMDirectory(ramDir);
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setUseCompoundFile(true);
+      modifier.setMaxBufferedDeleteTerms(2);
+
+      dir.failOn(failure.reset());
+
+      for (int i = 0; i < keywords.length; i++) {
+        Document doc = new Document();
+        doc.add(new Field("id", keywords[i], Field.Store.YES,
+                          Field.Index.UN_TOKENIZED));
+        doc.add(new Field("country", unindexed[i], Field.Store.YES,
+                          Field.Index.NO));
+        doc.add(new Field("contents", unstored[i], Field.Store.NO,
+                          Field.Index.TOKENIZED));
+        doc.add(new Field("city", text[i], Field.Store.YES,
+                          Field.Index.TOKENIZED));
+        modifier.addDocument(doc);
+      }
+      // flush (and commit if ac)
+
+      modifier.optimize();
+
+      // commit if !ac
+
+      if (!autoCommit) {
+        modifier.close();
+      }
+      // one of the two files hits
+
+      Term term = new Term("city", "Amsterdam");
+      int hitCount = getHitCount(dir, term);
+      assertEquals(1, hitCount);
+
+      // open the writer again (closed above)
+
+      if (!autoCommit) {
+        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer());
+        modifier.setUseCompoundFile(true);
+      }
+
+      // delete the doc
+      // max buf del terms is two, so this is buffered
+
+      modifier.deleteDocuments(term);
+
+      // add a doc (needed for the !ac case; see below)
+      // doc remains buffered
+
+      Document doc = new Document();
+      modifier.addDocument(doc);
+
+      // flush the changes, the buffered deletes, and the new doc
+
+      // The failure object will fail on the first write after the del
+      // file gets created when processing the buffered delete
+
+      // in the ac case, this will be when writing the new segments
+      // files so we really don't need the new doc, but it's harmless
+
+      // in the !ac case, a new segments file won't be created but in
+      // this case, creation of the cfs file happens next so we need
+      // the doc (to test that it's okay that we don't lose deletes if
+      // failing while creating the cfs file
+
+      boolean failed = false;
+      try {
+        modifier.flush();
+      } catch (IOException ioe) {
+        failed = true;
+      }
+
+      assertTrue(failed);
+
+      // The flush above failed, so we need to retry it (which will
+      // succeed, because the failure is a one-shot)
+
+      if (!autoCommit) {
+        modifier.close();
+      } else {
+        modifier.flush();
+      }
+
+      hitCount = getHitCount(dir, term);
+
+      // If we haven't lost the delete the hit count will be zero
+
+      assertEquals(0, hitCount);
+
+      if (autoCommit) {
+        modifier.close();
+      }
+
+      dir.close();
     }
   }
 
