@@ -64,44 +64,44 @@ public abstract class SolrParams {
   
   /**
    * Any lucene formated queries the user would like to use for
-   * Facet Contraint Counts (multi-value)
+   * Facet Constraint Counts (multi-value)
    */
   public static final String FACET_QUERY = "facet.query";
   /**
    * Any field whose terms the user wants to enumerate over for
-   * Facet Contraint Counts (multi-value)
+   * Facet Constraint Counts (multi-value)
    */
   public static final String FACET_FIELD = "facet.field";
 
   /**
    * The offset into the list of facets.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_OFFSET = "facet.offset";
 
   /**
    * Numeric option indicating the maximum number of facet field counts
    * be included in the response for each field - in descending order of count.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_LIMIT = "facet.limit";
 
   /**
    * Numeric option indicating the minimum number of hits before a facet should
-   * be included in the response.  Can be overriden on a per field basis.
+   * be included in the response.  Can be overridden on a per field basis.
    */
   public static final String FACET_MINCOUNT = "facet.mincount";
 
   /**
    * Boolean option indicating whether facet field counts of "0" should 
-   * be included in the response.  Can be overriden on a per field basis.
+   * be included in the response.  Can be overridden on a per field basis.
    */
   public static final String FACET_ZEROS = "facet.zeros";
 
   /**
    * Boolean option indicating whether the response should include a 
    * facet field count for all records which have no value for the 
-   * facet field. Can be overriden on a per field basis.
+   * facet field. Can be overridden on a per field basis.
    */
   public static final String FACET_MISSING = "facet.missing";
 
@@ -133,7 +133,7 @@ public abstract class SolrParams {
   public static final String STREAM_BODY = "stream.body";
   
   /** 
-   * Explicity set the content type for the input stream
+   * Explicitly set the content type for the input stream
    * If multiple streams are specified, the explicit contentType
    * will be used for all of them.  
    */
