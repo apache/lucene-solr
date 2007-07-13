@@ -88,7 +88,7 @@ public class DOMUtil {
   // response schema.
   // Should these be moved to Config?  Should all of these things?
   //////////////////////////////////////////////////////////
-  public static NamedList childNodesToNamedList(Node nd) {
+  public static NamedList<Object> childNodesToNamedList(Node nd) {
     return nodesToNamedList(nd.getChildNodes());
   }
 
@@ -96,8 +96,8 @@ public class DOMUtil {
     return nodesToList(nd.getChildNodes());
   }
 
-  public static NamedList nodesToNamedList(NodeList nlst) {
-    NamedList clst = new NamedList();
+  public static NamedList<Object> nodesToNamedList(NodeList nlst) {
+    NamedList<Object> clst = new NamedList<Object>();
     for (int i=0; i<nlst.getLength(); i++) {
       addToNamedList(nlst.item(i), clst, null);
     }
