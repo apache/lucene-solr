@@ -583,7 +583,8 @@
         includes="**/*.sh **/bin/ src/scripts/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="dist/*.jar dist/*.war" />
+        includes="dist/**"
+        excludes="*.tgz *.zip *.md5" />
       <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
     </tar>
