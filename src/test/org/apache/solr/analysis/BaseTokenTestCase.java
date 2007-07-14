@@ -171,6 +171,15 @@ public abstract class BaseTokenTestCase extends TestCase
     public IterTokenStream(Iterator<Token> toks) {
       this.toks = toks;
     }
+    public IterTokenStream(String ... text) {
+      int off = 0;
+      ArrayList<Token> t = new ArrayList<Token>( text.length );
+      for( String txt : text ) {
+        t.add( new Token( txt, off, off+txt.length() ) );
+        off += txt.length() + 2;
+      }
+      this.toks = t.iterator();
+    }
     @Override
     public Token next() {
       if (toks.hasNext()) {
