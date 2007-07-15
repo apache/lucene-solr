@@ -51,7 +51,7 @@ import org.w3c.dom.NodeList;
  */
 public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 {
-  UpdateRequestProcessorFactory[] factory;
+  protected UpdateRequestProcessorFactory[] factory;
   
   @Override
   public void init( Node node ) {
