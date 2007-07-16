@@ -250,6 +250,15 @@ public class CommonsHttpSolrServer extends BaseSolrServer
 
   //-------------------------------------------------------------------
   //-------------------------------------------------------------------
+  
+  /**
+   * Parameters are added to ever request regardless.  This may be a place to add 
+   * something like an authentication token.
+   */
+  public ModifiableSolrParams getInvariantParams()
+  {
+    return _invariantParams;
+  }
 
   public String getBaseURL() {
     return _baseURL;
