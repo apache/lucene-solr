@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+¿Lucene Change Log
 
 $Id$
 
@@ -55,6 +55,8 @@ Optimizations
  
  3. LUCENE-892: Fixed extra "buffer to buffer copy" that sometimes
     takes place when using compound files.  (Mike McCandless)
+
+ 4. LUCENE-959: Remove synchronization in Document (yonik)
 
 Documentation
 

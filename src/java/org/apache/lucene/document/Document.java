@@ -38,7 +38,7 @@ import java.util.*;             // for javadoc
  */
 
 public final class Document implements java.io.Serializable {
-  List fields = new Vector();
+  List fields = new ArrayList();
   private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
@@ -173,7 +173,15 @@ public final class Document implements java.io.Serializable {
    * @deprecated use {@link #getFields()} instead
    */
   public final Enumeration fields() {
-    return ((Vector)fields).elements();
+    return new Enumeration() {
+      final Iterator iter = fields.iterator();
+      public boolean hasMoreElements() {
+        return iter.hasNext();
+      }
+      public Object nextElement() {
+        return iter.next();
+      }
+    };
   }
 
   /** Returns a List of all the fields in a document.
