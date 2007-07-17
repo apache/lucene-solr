@@ -223,7 +223,7 @@ logMessage pulling snapshot ${name}
 ssh -o StrictHostKeyChecking=no ${master_host} mkdir -p ${master_status_dir}
 
 # start new distribution stats
-rsyncStart=`date`
+rsyncStart=`date +'%Y-%m-%d %H:%M:%S'`
 startTimestamp=`date -d "$rsyncStart" +'%Y%m%d-%H%M%S'`
 rsyncStartSec=`date -d "$rsyncStart" +'%s'`
 startStatus="rsync of `basename ${name}` started:$startTimestamp"
@@ -235,7 +235,7 @@ rsync -Wa${verbose}${compress} --delete ${sizeonly} \
 ${stats} rsync://${master_host}:${rsyncd_port}/solr/${name}/ ${data_dir}/${name}-wip
 
 rc=$?
-rsyncEnd=`date`
+rsyncEnd=`date +'%Y-%m-%d %H:%M:%S'`
 endTimestamp=`date -d "$rsyncEnd" +'%Y%m%d-%H%M%S'`
 rsyncEndSec=`date -d "$rsyncEnd" +'%s'`
 elapsed=`expr $rsyncEndSec - $rsyncStartSec`
