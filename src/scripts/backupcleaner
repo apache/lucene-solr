@@ -95,7 +95,7 @@ function remove
     /bin/rm -rf $1
 }
 
-start=`date +"%s"`
+setStartTime
 
 logMessage started by $oldwhoami
 logMessage command: $0 $@

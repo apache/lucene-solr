@@ -156,7 +156,7 @@ function pushStatus
     scp -q -o StrictHostKeyChecking=no ${solr_root}/logs/snappuller.status ${master_host}:${master_status_dir}/snapshot.status.`uname -n`
 }
 
-start=`date +"%s"`
+setStartTime
 
 logMessage started by $oldwhoami
 logMessage command: $0 $@

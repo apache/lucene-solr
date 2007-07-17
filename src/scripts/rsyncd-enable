@@ -59,7 +59,7 @@ done
 
 fixUser "$@"
 
-start=`date +"%s"`
+setStartTime
 
 logMessage enabled by $oldwhoami
 logMessage command: $0 $@

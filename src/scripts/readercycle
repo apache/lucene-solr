@@ -104,7 +104,7 @@ fi
 
 fixUser "$@"
 
-start=`date +"%s"`
+setStartTime
 
 logMessage started by $oldwhoami
 logMessage command: $0 $@

@@ -53,6 +53,16 @@ function fixUser
     fi
 }
 
+function setStartTime
+{
+    if [[ "${OS}" == "SunOS" ]]
+    then
+        start=`perl -e "print time;"`
+    else
+        start=`date +"%s"`
+    fi
+}
+
 function timeStamp
 {
     date +'%Y/%m/%d %H:%M:%S'
@@ -69,7 +79,12 @@ function logMessage
 
 function logExit
 {
-    end=`date +"%s"`
+    if [[ "${OS}" == "SunOS" ]]
+    then
+        end=`perl -e "print time;"`
+    else
+        end=`date +"%s"`
+    fi
     diff=`expr $end - $start`
     echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
     exit $2
