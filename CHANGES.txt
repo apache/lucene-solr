@@ -485,6 +485,8 @@ Bug Fixes
 17. SOLR-294: Logging of elapsed time broken on Solaris because the date command
     there does not support the %s output format.  (bill)
 
+18. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jürgen Hermann via    bill)
+
 Other Changes
  1. Updated to Lucene 2.1
 
