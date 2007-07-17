@@ -1,4 +1,4 @@
-¿Lucene Change Log
+Lucene Change Log
 
 $Id$
 
