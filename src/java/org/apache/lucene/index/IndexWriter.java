@@ -1112,7 +1112,14 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
-    if (docWriter.addDocument(doc, analyzer))
+    boolean success = false;
+    try {
+      success = docWriter.addDocument(doc, analyzer);
+    } catch (IOException ioe) {
+      deleter.refresh();
+      throw ioe;
+    }
+    if (success)
       flush(true, false);
   }
 
@@ -1180,7 +1187,14 @@ public class IndexWriter {
     synchronized (this) {
       bufferDeleteTerm(term);
     }
-    if (docWriter.addDocument(doc, analyzer))
+    boolean success = false;
+    try {
+      success = docWriter.addDocument(doc, analyzer);
+    } catch (IOException ioe) {
+      deleter.refresh();
+      throw ioe;
+    }
+    if (success)
       flush(true, false);
     else
       maybeFlush();

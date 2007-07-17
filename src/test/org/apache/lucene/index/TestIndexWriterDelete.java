@@ -576,8 +576,7 @@ public class TestIndexWriterDelete extends TestCase {
 
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
-      Directory ramDir = new RAMDirectory();
-      MockRAMDirectory dir = new MockRAMDirectory(ramDir);
+      MockRAMDirectory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true);
       modifier.setUseCompoundFile(true);
@@ -673,6 +672,75 @@ public class TestIndexWriterDelete extends TestCase {
 
       dir.close();
     }
+  }
+
+  // This test tests that the files created by the docs writer before
+  // a segment is written are cleaned up if there's an i/o error
+
+  public void testErrorInDocsWriterAdd() throws IOException {
+    
+    MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
+        boolean failed = false;
+        public MockRAMDirectory.Failure reset() {
+          failed = false;
+          return this;
+        }
+        public void eval(MockRAMDirectory dir)  throws IOException {
+          if (!failed) {
+            throw new IOException("fail in add doc");
+          }
+        }
+      };
+
+    // create a couple of files
+
+    String[] keywords = { "1", "2" };
+    String[] unindexed = { "Netherlands", "Italy" };
+    String[] unstored = { "Amsterdam has lots of bridges",
+        "Venice has lots of canals" };
+    String[] text = { "Amsterdam", "Venice" };
+
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
+      MockRAMDirectory dir = new MockRAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+
+      dir.failOn(failure.reset());
+
+      for (int i = 0; i < keywords.length; i++) {
+        Document doc = new Document();
+        doc.add(new Field("id", keywords[i], Field.Store.YES,
+                          Field.Index.UN_TOKENIZED));
+        doc.add(new Field("country", unindexed[i], Field.Store.YES,
+                          Field.Index.NO));
+        doc.add(new Field("contents", unstored[i], Field.Store.NO,
+                          Field.Index.TOKENIZED));
+        doc.add(new Field("city", text[i], Field.Store.YES,
+                          Field.Index.TOKENIZED));
+        try {
+          modifier.addDocument(doc);
+        } catch (IOException io) {
+          break;
+        }
+      }
+
+      String[] startFiles = dir.list();
+      SegmentInfos infos = new SegmentInfos();
+      infos.read(dir);
+      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+      String[] endFiles = dir.list();
+
+      if (!Arrays.equals(startFiles, endFiles)) {
+        fail("docswriter abort() failed to delete unreferenced files:\n  before delete:\n    "
+             + arrayToString(startFiles) + "\n  after delete:\n    "
+             + arrayToString(endFiles));
+      }
+
+      modifier.close();
+
+    }
+
   }
 
   private String arrayToString(String[] l) {

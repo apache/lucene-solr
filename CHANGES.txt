@@ -35,6 +35,11 @@ Bug fixes
     IndexWriter's methods could cause deletes to be lost.
     (Steven Parkes via Mike McCandless)
       
+ 4. LUCENE-962: Fixed case where an unhandled exception in
+    IndexWriter.addDocument or IndexWriter.updateDocument could cause
+    unreferenced files in the index to not be deleted
+    (Steven Parkes via Mike McCandless)
+      
 New features
 
  1. LUCENE-906: Elision filter for French.
