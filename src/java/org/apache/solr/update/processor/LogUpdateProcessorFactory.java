@@ -56,7 +56,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     boolean doLog = LogUpdateProcessor.log.isLoggable(Level.INFO);
-    LogUpdateProcessor.log.severe("Will Log=" + doLog);
+    // LogUpdateProcessor.log.severe("Will Log=" + doLog);
     if( doLog ) {
       // only create the log processor if we will use it
       return new LogUpdateProcessor(req, rsp, this, next);
