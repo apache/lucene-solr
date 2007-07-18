@@ -45,6 +45,8 @@ New features
  1. LUCENE-906: Elision filter for French.
     (Mathieu Lecarme via Otis Gospodnetic)
 
+ 2. LUCENE-960: Added a SpanQueryFilter and related classes to allow for not only filtering, but knowing where in a Document a Filter matches (Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
