@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,8 +29,9 @@ public class MockRAMInputStream extends RAMInputStream {
   private String name;
   private boolean isClone;
 
-  /** Construct an empty output buffer. */
-  public MockRAMInputStream(MockRAMDirectory dir, String name, RAMFile f) {
+  /** Construct an empty output buffer. 
+   * @throws IOException */
+  public MockRAMInputStream(MockRAMDirectory dir, String name, RAMFile f) throws IOException {
     super(f);
     this.name = name;
     this.dir = dir;

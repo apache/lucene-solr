@@ -38,9 +38,12 @@ class RAMInputStream extends IndexInput implements Cloneable {
   private long bufferStart;
   private int bufferLength;
 
-  public RAMInputStream(RAMFile f) {
+  RAMInputStream(RAMFile f) throws IOException {
     file = f;
     length = file.length;
+    if (length/BUFFER_SIZE >= Integer.MAX_VALUE) {
+      throw new IOException("Too large RAMFile! "+length); 
+    }
 
     // make sure that we switch to the
     // first needed buffer lazily
@@ -87,11 +90,9 @@ class RAMInputStream extends IndexInput implements Cloneable {
     } else {
       currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
       bufferPosition = 0;
-      bufferStart = BUFFER_SIZE * currentBufferIndex;
-      bufferLength = (int) (length - bufferStart);
-      if (bufferLength > BUFFER_SIZE) {
-        bufferLength = BUFFER_SIZE;
-      }
+      bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;
+      long buflen = length - bufferStart;
+      bufferLength = buflen > BUFFER_SIZE ? BUFFER_SIZE : (int) buflen;
     }
   }
 
@@ -100,8 +101,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
   }
 
   public void seek(long pos) throws IOException {
-    long bufferStart = currentBufferIndex * BUFFER_SIZE;
-    if (pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
+    if (currentBuffer==null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);
       switchCurrentBuffer();
     }

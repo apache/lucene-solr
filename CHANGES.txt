@@ -39,10 +39,13 @@ Bug fixes
     IndexWriter's methods could cause deletes to be lost.
     (Steven Parkes via Mike McCandless)
       
- 4. LUCENE-962: Fixed case where an unhandled exception in
+ 5. LUCENE-962: Fixed case where an unhandled exception in
     IndexWriter.addDocument or IndexWriter.updateDocument could cause
     unreferenced files in the index to not be deleted
     (Steven Parkes via Mike McCandless)
+  
+ 6. LUCENE-957: RAMDirectory fixed to properly handle directories
+    larger than Integer.MAX_VALUE. (Doron Cohen)
       
 New features
 

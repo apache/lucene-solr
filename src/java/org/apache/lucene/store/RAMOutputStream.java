@@ -130,7 +130,7 @@ public class RAMOutputStream extends IndexOutput {
       currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
     }
     bufferPosition = 0;
-    bufferStart = BUFFER_SIZE * currentBufferIndex;
+    bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;
     bufferLength = currentBuffer.length;
   }
 

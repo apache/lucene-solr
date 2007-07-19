@@ -60,7 +60,7 @@ class RAMFile implements Serializable {
 
   // Only one writing stream with no concurrent reading streams, so no file synchronization required
   final byte[] addBuffer(int size) {
-    byte[] buffer = new byte[size];
+    byte[] buffer = newBuffer(size);
     if (directory!=null)
       synchronized (directory) {             // Ensure addition of buffer and adjustment to directory size are atomic wrt directory
         buffers.add(buffer);
@@ -70,6 +70,16 @@ class RAMFile implements Serializable {
     else
       buffers.add(buffer);
     return buffer;
+  }
+
+  /**
+   * Expert: allocate a new buffer. 
+   * Subclasses can allocate differently. 
+   * @param size size of allocated buffer.
+   * @return allocated buffer.
+   */
+  byte[] newBuffer(int size) {
+    return new byte[size];
   }
 
   // Only valid if in a directory
