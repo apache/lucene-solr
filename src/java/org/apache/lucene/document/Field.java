@@ -155,6 +155,35 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public TokenStream tokenStreamValue()   { return fieldsData instanceof TokenStream ? (TokenStream)fieldsData : null; }
   
+
+  /** Expert: change the value of this field.  This can be
+   *  used during indexing to re-use a single Field instance
+   *  to improve indexing speed. */
+  public void setValue(String value) {
+    fieldsData = value;
+  }
+
+  /** Expert: change the value of this field.  This can be
+   *  used during indexing to re-use a single Field instance
+   *  to improve indexing speed. */
+  public void setValue(Reader value) {
+    fieldsData = value;
+  }
+
+  /** Expert: change the value of this field.  This can be
+   *  used during indexing to re-use a single Field instance
+   *  to improve indexing speed. */
+  public void setValue(byte[] value) {
+    fieldsData = value;
+  }
+
+  /** Expert: change the value of this field.  This can be
+   *  used during indexing to re-use a single Field instance
+   *  to improve indexing speed. */
+  public void setValue(TokenStream value) {
+    fieldsData = value;
+  }
+
   /**
    * Create a field by specifying its name, value and how it will
    * be saved in the index. Term vectors will not be stored in the index.

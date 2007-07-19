@@ -222,4 +222,45 @@ public class TestDocument extends TestCase
             assertTrue(unstoredFieldValues[1].equals("test2"));
         }
     }
+
+    public void testFieldSetValue() throws Exception {
+
+      Field field = new Field("id", "id1", Field.Store.YES, Field.Index.UN_TOKENIZED);
+      Document doc = new Document();
+      doc.add(field);
+      doc.add(new Field("keyword", "test", Field.Store.YES, Field.Index.UN_TOKENIZED));
+
+      RAMDirectory dir = new RAMDirectory();
+      IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true);
+      writer.addDocument(doc);
+      field.setValue("id2");
+      writer.addDocument(doc);
+      field.setValue("id3");
+      writer.addDocument(doc);
+      writer.close();
+
+      Searcher searcher = new IndexSearcher(dir);
+
+      Query query = new TermQuery(new Term("keyword", "test"));
+
+      // ensure that queries return expected results without DateFilter first
+      Hits hits = searcher.search(query);
+      assertEquals(3, hits.length());
+      int result = 0;
+      for(int i=0;i<3;i++) {
+        Document doc2 = hits.doc(i);
+        Field f = doc2.getField("id");
+        if (f.stringValue().equals("id1"))
+          result |= 1;
+        else if (f.stringValue().equals("id2"))
+          result |= 2;
+        else if (f.stringValue().equals("id3"))
+          result |= 4;
+        else
+          fail("unexpected id field");
+      }
+      searcher.close();
+      dir.close();
+      assertEquals("did not see all IDs", 7, result);
+    }
 }

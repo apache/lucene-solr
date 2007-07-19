@@ -65,6 +65,10 @@ Optimizations
 
  4. LUCENE-959: Remove synchronization in Document (yonik)
 
+ 5. LUCENE-963: Add setters to Field to allow for re-using a single
+    Field instance during indexing.  This is a sizable performance
+    gain, especially for small documents.  (Mike McCandless)
+
 Documentation
 
 Build
