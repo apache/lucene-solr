@@ -79,6 +79,7 @@
   <property name="javadoc.years" value="2006 - ${year}" />
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${build.docs}/api"/>
+  <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
   <property name="javadoc.access" value="protected"/>
   <property name="javadoc.link.java"
             value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
@@ -320,6 +321,42 @@
       <src path="${solrj-dir}/src/org/apache/solr/client/solrj/embedded" />
     </solr-javac>
   </target>
+  
+  
+  <target name="javadoc-solrj" depends="compile"
+          description="Generates solrj javadoc documentation.">
+    <mkdir dir="${build.javadoc.solrj}"/>  
+    <path id="javadoc.classpath.solrj">
+       <path refid="compile.classpath"/>
+       <!-- aparently ant.library.dir isn't allways set right? -->
+       <fileset dir="${ant.home}/lib">
+          <include name="**/*.jar"/>
+       </fileset>
+       <fileset dir="${ant.library.dir}">
+          <include name="**/*.jar"/>
+       </fileset>
+    </path>
+    <javadoc
+      destdir="${build.javadoc.solrj}"
+      author="true"
+      version="true"
+      failonerror="true"
+      use="true"
+      encoding="utf8"
+      access="${javadoc.access}"
+      windowtitle="${Name}-j ${version} API"
+      doctitle="${Name}-j ${version} API (${specversion})"
+      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
+      >
+        <packageset dir="${solrj-dir}/src" />
+        <link href="${javadoc.link.java}"/>
+        <link href="${javadoc.link.junit}"/>
+        <link href="${javadoc.link.lucene}"/>
+        <classpath refid="compile.classpath.solrj"/>
+        <classpath refid="compile.classpath.solrj-embedded"/>
+    </javadoc>
+  </target>
+  
 
 
   <!-- ========================================================================= -->
@@ -566,7 +603,7 @@
   <!-- make a distribution -->
   <target name="package"
           description="Packages the Solr Distribution files and Documentation."
-          depends="dist, example, javadoc">
+          depends="dist, example, javadoc-solrj, javadoc">
 
     <copy todir="${build.docs}">
       <fileset dir="site" />
