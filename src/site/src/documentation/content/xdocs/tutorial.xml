@@ -216,7 +216,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
       are smaller, we will specify them right on the command line rather than reference an XML file.
     </p>
     <p>Execute the following command to delete a document</p>
-    <source>java -Ddata=args -Dcommit=no -jar post.jar '&lt;delete>&lt;id>SP2514N&lt;/id>&lt;/delete>'</source>
+    <source>java -Ddata=args -Dcommit=no -jar post.jar "&lt;delete>&lt;id>SP2514N&lt;/id>&lt;/delete>"</source>
     <p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
        to the UPDATE_HANDLERS section and verify that "<code>deletesPending : 1</code>"</p>
     <p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
@@ -227,7 +227,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
     statistics page and observe the changes in both the UPDATE_HANDLERS section and the CORE section.</p>
     <p>Here is an example of using delete-by-query to delete anything with
       <a href="http://localhost:8983/solr/select?q=name:DDR&amp;fl=name">DDR</a> in the name:</p>
-    <source>java -Ddata=args -jar post.jar '&lt;delete>&lt;query>name:DDR&lt;/query>&lt;/delete>'</source>
+    <source>java -Ddata=args -jar post.jar "&lt;delete>&lt;query>name:DDR&lt;/query>&lt;/delete>"</source>
 
     <p>Commit can be a very expensive operation so it's best to make many changes to an index in a batch and
       then send the commit command at the end.  There is also an optimize command that does the same thing as commit,

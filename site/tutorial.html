@@ -5,7 +5,7 @@
 <meta content="Apache Forrest" name="Generator">
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
-<title>Solr tutorial (version 1.2.2007.06.04.13.41.39)</title>
+<title>Solr tutorial (version 1.2.2007.07.19.12.00.35)</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -152,7 +152,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <div id="credit">
 <hr>
-      This document is for Apache Solr version 1.2.2007.06.04.13.41.39.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 1.2.2007.07.19.12.00.35.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
@@ -174,7 +174,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 <h1>Solr tutorial</h1>
 <div id="motd-area">
-      This document is for Apache Solr version 1.2.2007.06.04.13.41.39.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 1.2.2007.07.19.12.00.35.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="minitoc-area">
 <ul class="minitoc">
@@ -421,7 +421,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
       are smaller, we will specify them right on the command line rather than reference an XML file.
     </p>
 <p>Execute the following command to delete a document</p>
-<pre class="code">java -Ddata=args -Dcommit=no -jar post.jar '&lt;delete&gt;&lt;id&gt;SP2514N&lt;/id&gt;&lt;/delete&gt;'</pre>
+<pre class="code">java -Ddata=args -Dcommit=no -jar post.jar "&lt;delete&gt;&lt;id&gt;SP2514N&lt;/id&gt;&lt;/delete&gt;"</pre>
 <p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
        to the UPDATE_HANDLERS section and verify that "<span class="codefrag">deletesPending : 1</span>"</p>
 <p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
@@ -432,7 +432,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
     statistics page and observe the changes in both the UPDATE_HANDLERS section and the CORE section.</p>
 <p>Here is an example of using delete-by-query to delete anything with
       <a href="http://localhost:8983/solr/select?q=name:DDR&fl=name">DDR</a> in the name:</p>
-<pre class="code">java -Ddata=args -jar post.jar '&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;'</pre>
+<pre class="code">java -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
 <p>Commit can be a very expensive operation so it's best to make many changes to an index in a batch and
       then send the commit command at the end.  There is also an optimize command that does the same thing as commit,
       in addition to merging all index segments into a single segment, making it faster to search and causing any
