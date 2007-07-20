@@ -37,6 +37,10 @@
 <%@include file="header.jsp" %>
 
 <%
+  // is name a field name or a type name?
+  String nt = request.getParameter("nt");
+  if (nt==null || nt.length()==0) nt="name"; // assume field name
+  nt = nt.toLowerCase().trim();
   String name = request.getParameter("name");
   if (name==null || name.length()==0) name="";
   String val = request.getParameter("val");
@@ -59,7 +63,10 @@
 <table>
 <tr>
   <td>
-	<strong>Field name</strong>
+	<strong>Field
+          <select name="nt">
+	  <option <%= nt.equals("name") ? "selected=\"selected\"" : "" %> >name</option>
+	  <option <%= nt.equals("type") ? "selected=\"selected\"" : "" %>>type</option></strong>
   </td>
   <td>
 	<input class="std" name="name" type="text" value="<% XML.escapeCharData(name, out); %>">
@@ -111,10 +118,19 @@
   SchemaField field=null;
 
   if (name!="") {
-    try {
-      field = schema.getField(name);
-    } catch (Exception e) {
-      out.println("<strong>Unknown Field " + name + "</strong>");
+    if (nt.equals("name")) {
+      try {
+        field = schema.getField(name);
+      } catch (Exception e) {
+        out.println("<strong>Unknown Field: " + name + "</strong>");
+      }
+    } else {
+       FieldType t = schema.getFieldTypes().get(name);
+       if (null == t) {
+         out.println("<strong>Unknown Field Type: " + name + "</strong>");
+       } else {
+         field = new SchemaField("fakefieldoftype:"+name, t);
+       }
     }
   }
 

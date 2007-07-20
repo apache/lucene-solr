@@ -107,6 +107,9 @@ New Features
 18. SOLR-307: Added NGramFilterFactory and EdgeNGramFilterFactory.
     (Thomas Peuss via Otis Gospodnetic)
 
+19. SOLR-305: analysis.jsp can be given a fieldtype instead of a field
+    name.  (hossman)
+
 Changes in runtime behavior
 
 Optimizations
