@@ -2273,7 +2273,9 @@ public class IndexWriter {
       }
     } finally {
       // close readers before we attempt to delete now-obsolete segments
-      merger.closeReaders();
+      if (merger != null) {
+        merger.closeReaders();
+      }
     }
 
     // Give deleter a chance to remove files now.
