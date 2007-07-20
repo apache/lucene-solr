@@ -45,7 +45,7 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
 
   @Override
   public String getDescription() {
-    return "GapFragmenter";
+    return "HtmlFormatter";
   }
 
   @Override
