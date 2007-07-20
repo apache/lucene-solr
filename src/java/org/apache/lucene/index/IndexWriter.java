@@ -25,12 +25,10 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -680,9 +678,10 @@ public class IndexWriter {
    * The maximum number of terms that will be indexed for a single field in a
    * document.  This limits the amount of memory required for indexing, so that
    * collections with very large files will not crash the indexing process by
-   * running out of memory.<p/>
-   * Note that this effectively truncates large documents, excluding from the
-   * index terms that occur further in the document.  If you know your source
+   * running out of memory.  This setting refers to the number of running terms,
+   * not to the number of different terms.<p/>
+   * <strong>Note:</strong> this silently truncates large documents, excluding from the
+   * index all terms that occur further in the document.  If you know your source
    * documents are large, be sure to set this value high enough to accomodate
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
