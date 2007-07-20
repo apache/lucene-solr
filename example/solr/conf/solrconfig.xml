@@ -453,18 +453,24 @@
     </lst>
   </requestHandler>
   
-  <!-- This should mostlikely be commented out in the "default" case -->
   <highlighting>
    <!-- Configure the standard fragmenter -->
+   <!-- This could most likely be commented out in the "default" case -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
     <lst name="defaults">
      <int name="hl.fragsize">100</int>
     </lst>
    </fragmenter>
-   
+
+   <!-- A regular-expression-based fragmenter (f.i., for sentence extraction) -->
    <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
     <lst name="defaults">
-     <int name="hl.fragsize">70</int>
+      <!-- slightly smaller fragsizes work better because of slop -->
+      <int name="hl.fragsize">70</int>
+      <!-- allow 50% slop on fragment sizes -->
+      <float name="hl.regex.slop">0.5</float> 
+      <!-- a basic sentence pattern -->
+      <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
     </lst>
    </fragmenter>
    

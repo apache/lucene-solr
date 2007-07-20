@@ -110,6 +110,9 @@ New Features
 19. SOLR-305: analysis.jsp can be given a fieldtype instead of a field
     name.  (hossman)
 
+20. SOLR-102: Added RegexFragmenter, which splits text for highlighting
+    based on a given pattern.  (klaas)
+
 Changes in runtime behavior
 
 Optimizations

@@ -388,8 +388,15 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    */
   public void readDocs(Document[] docs, DocList ids, Set<String> fields) throws IOException {
     DocIterator iter = ids.iterator();
+    int[] idlist = new int[ids.size()];
+    Map<Integer, Integer> pos = new HashMap<Integer, Integer>();
     for (int i=0; i<docs.length; i++) {
-      docs[i] = doc(iter.nextDoc(), fields);
+      idlist[i] = iter.nextDoc();
+      pos.put(idlist[i], i);
+    }
+    Arrays.sort(idlist);
+    for(int docid: idlist) {
+      docs[pos.get(docid)] = doc(docid, fields);      
     }
   }
 

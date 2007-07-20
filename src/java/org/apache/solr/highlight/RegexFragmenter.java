@@ -27,26 +27,59 @@ import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+
+/**
+ * Fragmenter that tries to produce snippets that "look" like a regular 
+ * expression.
+ *
+ * <code>solrconfig.xml</code> parameters:
+ * <ul>
+ * <li><code>hl.regex.pattern</code>: regular expression corresponding to "nice" fragments.</li>
+ * <li><code>hl.regex.slop</code>: how far the fragmenter can stray from the ideal fragment size.
+       A slop of 0.2 means that the fragmenter can go over or under by 20%.</li>
+ * <li><code>hl.regex.maxAnalyzedChars</code>: how many characters to apply the
+       regular expression to (independent from the global highlighter setting).</li>
+ * </ul>
+ *
+ * NOTE: the default for <code>maxAnalyzedChars</code> is much lower for this 
+ * fragmenter.  After this limit is exhausted, fragments are produced in the
+ * same way as <code>GapFragmenter</code>
+ */
 
 public class RegexFragmenter extends HighlightingPluginBase implements SolrFragmenter
 {
+  protected String defaultPatternRaw;
+  protected Pattern defaultPattern;
+
+  public void init(NamedList args) {
+    super.init(args);
+    defaultPatternRaw = LuceneRegexFragmenter.DEFAULT_PATTERN_RAW;
+    if( defaults != null ) {
+      defaultPatternRaw = defaults.get(HighlightParams.PATTERN, LuceneRegexFragmenter.DEFAULT_PATTERN_RAW);      
+    }
+    defaultPattern = Pattern.compile(defaultPatternRaw);
+  }
+
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   { 
-    numRequests++;
+    numRequests++;        
     if( defaults != null ) {
       params = new DefaultSolrParams( params, defaults );
     }
-    
     int fragsize  = params.getFieldInt(   fieldName, HighlightParams.FRAGSIZE,  LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE );
     int increment = params.getFieldInt(   fieldName, HighlightParams.INCREMENT, LuceneRegexFragmenter.DEFAULT_INCREMENT_GAP );
     float slop    = params.getFieldFloat( fieldName, HighlightParams.SLOP,      LuceneRegexFragmenter.DEFAULT_SLOP );
-    int maxchars  = params.getFieldInt(   fieldName, HighlightParams.MAX_CHARS, LuceneRegexFragmenter.DEFAULT_MAX_ANALYZED_CHARS );
-    
+    int maxchars  = params.getFieldInt(   fieldName, HighlightParams.MAX_RE_CHARS, LuceneRegexFragmenter.DEFAULT_MAX_ANALYZED_CHARS );
+    String rawpat = params.getFieldParam( fieldName, HighlightParams.PATTERN,   LuceneRegexFragmenter.DEFAULT_PATTERN_RAW );
+
+    Pattern p = rawpat == defaultPatternRaw ? defaultPattern : Pattern.compile(rawpat);
+
     if( fragsize <= 0 ) {
       return new NullFragmenter();
     }
     
-    return new LuceneRegexFragmenter( fragsize, increment, slop, maxchars );
+    return new LuceneRegexFragmenter( fragsize, increment, slop, maxchars, p );
   }
   
 
@@ -56,7 +89,7 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
 
   @Override
   public String getDescription() {
-    return "GapFragmenter";
+    return "RegexFragmenter (" + defaultPatternRaw + ")";
   }
 
   @Override
@@ -77,15 +110,12 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
 
 
 /**
- * Kind of cool but kind of slow compared to regular fragmenting
+ * Fragmenter that tries to produce snippets that "look" like a regular 
+ * expression.
  *
- * Interestingly, the slowdown comes almost entirely from the pre-analysis,
- * and could be completely avoided by pre-computation.
- *
- * it is also possible that a hand-crafted state machine (switch statement)
- * could be significantly faster.  Could even build in custom tricks...
- * perhaps JavaCC should be used? TODO
- * 
+ * NOTE: the default for <code>maxAnalyzedChars</code> is much lower for this 
+ * fragmenter.  After this limit is exhausted, fragments are produced in the
+ * same way as <code>GapFragmenter</code>
  */
 class LuceneRegexFragmenter implements Fragmenter
 {
@@ -93,7 +123,7 @@ class LuceneRegexFragmenter implements Fragmenter
   public static final int DEFAULT_FRAGMENT_SIZE = 70;
   public static final int DEFAULT_INCREMENT_GAP = 50;
   public static final float DEFAULT_SLOP = 0.6f;
-  public static final int DEFAULT_MAX_ANALYZED_CHARS = 3000;
+  public static final int DEFAULT_MAX_ANALYZED_CHARS = 10000;
 
   // ** settings
 
@@ -106,6 +136,9 @@ class LuceneRegexFragmenter implements Fragmenter
   protected float slop;
   // analysis limit (ensures we don't waste too much time on long fields)
   protected int maxAnalyzedChars;
+  // default desirable pattern for text fragments.
+  protected Pattern textRE;
+  
 
   // ** state
   protected int currentNumFrags;
@@ -116,10 +149,11 @@ class LuceneRegexFragmenter implements Fragmenter
   // ** other
   // note: could dynamically change size of sentences extracted to match
   // target frag size
-  protected static final Pattern textRE = Pattern.compile("[-\\w ,\"']{20,200}");
+  public static final String 
+    DEFAULT_PATTERN_RAW = "[-\\w ,\\n\"']{20,200}";
+  public static final Pattern 
+    DEFAULT_PATTERN = Pattern.compile(DEFAULT_PATTERN_RAW);
 
-  // twice as fast, but not terribly good.
-  //protected static final Pattern textRE = Pattern.compile("\\w{20,200}");
 
   public LuceneRegexFragmenter() {
     this(DEFAULT_FRAGMENT_SIZE, 
@@ -135,13 +169,24 @@ class LuceneRegexFragmenter implements Fragmenter
   }
 
   public LuceneRegexFragmenter(int targetFragChars, 
-                         int incrementGapThreshold,
-                         float slop,
-                         int maxAnalyzedChars ) {
+                               int incrementGapThreshold,
+                               float slop,
+                               int maxAnalyzedChars ) {
+    this(targetFragChars, incrementGapThreshold, slop, maxAnalyzedChars,
+         DEFAULT_PATTERN);
+         
+  }
+
+  public LuceneRegexFragmenter(int targetFragChars, 
+                               int incrementGapThreshold,
+                               float slop,
+                               int maxAnalyzedChars,
+                               Pattern targetPattern) {
     this.targetFragChars = targetFragChars;
     this.incrementGapThreshold = incrementGapThreshold;    
     this.slop = slop;
     this.maxAnalyzedChars = maxAnalyzedChars;
+    this.textRE = targetPattern;
   }
   
 
@@ -171,7 +216,6 @@ class LuceneRegexFragmenter implements Fragmenter
       cur = end;
       //System.out.println("Matched " + match.group());
     }    
-    //System.out.println("matches: " + temphs.size() + "\n\n");
     hotspots = new int[temphs.size()];
     for(int i = 0; i < temphs.size(); i++) {
       hotspots[i] = temphs.get(i);

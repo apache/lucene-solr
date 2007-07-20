@@ -313,6 +313,45 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='1'][not(*)]"
             );
   }
+  public void testRegexFragmenter() {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("fl", "id score");
+    args.put("hl", "true");
+    args.put("hl.snippets", "10");
+    args.put("hl.fl", "t_text");
+    args.put("hl.fragmenter", "regex");
+    args.put("hl.regex.pattern", "[-\\w ,\"']{20,200}");
+    args.put("hl.regex.slop", ".9");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    
+    String t = "This is an example of a sentence. Another example \"sentence\" with " +
+      "special characters\nand a line-break! Miscellaneous character like ^ are " +
+      "unknowns and end up being bad example s of sentences? I wonder how " +
+      "slashes/other punctuation fare in these examples?";
+    assertU(adoc("t_text", t, "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("regex fragmenter",
+            sumLRF.makeRequest("t_text:example"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//arr/str[.='This is an <em>example</em> of a sentence']",
+            "//arr/str[.='. Another <em>example</em> \"sentence\" with special characters\nand a line-break']",
+            "//arr/str[.=' ^ are unknowns and end up being bad <em>example</em> s of sentences']",
+            "//arr/str[.='/other punctuation fare in these <em>examples</em>?']"
+            );
+    // try with some punctuation included
+    args.put("hl.regex.pattern", "[-\\w ,^/\\n\"']{20,200}");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("regex fragmenter 2",
+            sumLRF.makeRequest("t_text:example"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//arr/str[.='This is an <em>example</em> of a sentence']",
+            "//arr/str[.='. Another <em>example</em> \"sentence\" with special characters\nand a line-break']",
+            "//arr/str[.='! Miscellaneous character like ^ are unknowns and end up being bad <em>example</em> s of sentences']",
+            "//arr/str[.='? I wonder how slashes/other punctuation fare in these <em>examples</em>?']"
+            );
+  }
   public void testVariableFragsize() {
      assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all", 
            "id", "1"));

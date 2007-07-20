@@ -40,4 +40,6 @@ public interface HighlightParams {
   // Regex fragmenter
   public static final String REGEX = "regex";
   public static final String SLOP  = HIGHLIGHT+"."+REGEX+".slop";
+  public static final String PATTERN  = HIGHLIGHT+"."+REGEX+".pattern";
+  public static final String MAX_RE_CHARS   = HIGHLIGHT+"."+REGEX+".maxAnalyzedChars";
 }
