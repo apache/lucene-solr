@@ -149,6 +149,8 @@ Other Changes
  2. SOLR-268: Tweaks to post.jar so it prints the error message from Solr.
     (Brian Whitman via hossman)
 
+ 3. Upgraded to Lucene 2.2.0; June 18, 2007.
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1
