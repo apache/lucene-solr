@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.BufferedIndexInput;
 
 import java.io.IOException;
 
@@ -104,18 +104,9 @@ class TermVectorsReader implements Cloneable {
     return size;
   }
 
-  /**
-   * Retrieve the term vector for the given document and field
-   * @param docNum The document number to retrieve the vector for
-   * @param field The field within the document to retrieve
-   * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
-   * @throws IOException if there is an error reading the term vector files
-   */ 
-  TermFreqVector get(int docNum, String field) throws IOException {
-    // Check if no term vectors are available for this segment at all
-    int fieldNumber = fieldInfos.fieldNumber(field);
-    TermFreqVector result = null;
+  public void get(int docNum, String field, TermVectorMapper mapper) throws IOException {
     if (tvx != null) {
+      int fieldNumber = fieldInfos.fieldNumber(field);
       //We need to account for the FORMAT_SIZE at when seeking in the tvx
       //We don't need to do this in other seeks because we already have the
       // file pointer
@@ -137,7 +128,7 @@ class TermVectorsReader implements Cloneable {
           number = tvd.readVInt();
         else
           number += tvd.readVInt();
-        
+
         if (number == fieldNumber)
           found = i;
       }
@@ -150,14 +141,30 @@ class TermVectorsReader implements Cloneable {
         for (int i = 0; i <= found; i++)
           position += tvd.readVLong();
 
-        result = readTermVector(field, position);
+        readTermVector(field, position, mapper);
       } else {
         //System.out.println("Fieldable not found");
       }
     } else {
       //System.out.println("No tvx file");
     }
-    return result;
+  }
+
+
+
+  /**
+   * Retrieve the term vector for the given document and field
+   * @param docNum The document number to retrieve the vector for
+   * @param field The field within the document to retrieve
+   * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
+   * @throws IOException if there is an error reading the term vector files
+   */ 
+  TermFreqVector get(int docNum, String field) throws IOException {
+    // Check if no term vectors are available for this segment at all
+    ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
+    get(docNum, field, mapper);
+
+    return mapper.materializeVector();
   }
 
   /**
@@ -169,7 +176,6 @@ class TermVectorsReader implements Cloneable {
    */
   TermFreqVector[] get(int docNum) throws IOException {
     TermFreqVector[] result = null;
-    // Check if no term vectors are available for this segment at all
     if (tvx != null) {
       //We need to offset by
       tvx.seek(((docNum + docStoreOffset) * 8L) + TermVectorsWriter.FORMAT_SIZE);
@@ -182,7 +188,7 @@ class TermVectorsReader implements Cloneable {
       if (fieldCount != 0) {
         int number = 0;
         String[] fields = new String[fieldCount];
-        
+
         for (int i = 0; i < fieldCount; i++) {
           if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
             number = tvd.readVInt();
@@ -208,24 +214,76 @@ class TermVectorsReader implements Cloneable {
     return result;
   }
 
+  public void get(int docNumber, TermVectorMapper mapper) throws IOException {
+    // Check if no term vectors are available for this segment at all
+    if (tvx != null) {
+      //We need to offset by
+      tvx.seek((docNumber * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      long position = tvx.readLong();
+
+      tvd.seek(position);
+      int fieldCount = tvd.readVInt();
+
+      // No fields are vectorized for this document
+      if (fieldCount != 0) {
+        int number = 0;
+        String[] fields = new String[fieldCount];
+
+        for (int i = 0; i < fieldCount; i++) {
+          if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+            number = tvd.readVInt();
+          else
+            number += tvd.readVInt();
+
+          fields[i] = fieldInfos.fieldName(number);
+        }
+
+        // Compute position in the tvf file
+        position = 0;
+        long[] tvfPointers = new long[fieldCount];
+        for (int i = 0; i < fieldCount; i++) {
+          position += tvd.readVLong();
+          tvfPointers[i] = position;
+        }
+
+        readTermVectors(fields, tvfPointers, mapper);
+      }
+    } else {
+      //System.out.println("No tvx file");
+    }
+  }
+
 
   private SegmentTermVector[] readTermVectors(String fields[], long tvfPointers[])
           throws IOException {
     SegmentTermVector res[] = new SegmentTermVector[fields.length];
     for (int i = 0; i < fields.length; i++) {
-      res[i] = readTermVector(fields[i], tvfPointers[i]);
+      ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
+       readTermVector(fields[i], tvfPointers[i], mapper);
+      res[i] = (SegmentTermVector) mapper.materializeVector();
     }
     return res;
   }
+
+  private void readTermVectors(String fields[], long tvfPointers[], TermVectorMapper mapper)
+          throws IOException {
+    for (int i = 0; i < fields.length; i++) {
+       readTermVector(fields[i], tvfPointers[i], mapper);
+    }
+
+  }
+
 
   /**
    * 
    * @param field The field to read in
    * @param tvfPointer The pointer within the tvf file where we should start reading
+   * @param mapper The mapper used to map the TermVector
    * @return The TermVector located at that position
    * @throws IOException
+
    */ 
-  private SegmentTermVector readTermVector(String field, long tvfPointer)
+  private void readTermVector(String field, long tvfPointer, TermVectorMapper mapper)
           throws IOException {
 
     // Now read the data from specified position
@@ -236,7 +294,7 @@ class TermVectorsReader implements Cloneable {
     //System.out.println("Num Terms: " + numTerms);
     // If no terms - return a constant empty termvector. However, this should never occur!
     if (numTerms == 0) 
-      return new SegmentTermVector(field, null, null);
+      return;
     
     boolean storePositions;
     boolean storeOffsets;
@@ -251,18 +309,7 @@ class TermVectorsReader implements Cloneable {
       storePositions = false;
       storeOffsets = false;
     }
-
-    String terms[] = new String[numTerms];
-    int termFreqs[] = new int[numTerms];
-    
-    //  we may not need these, but declare them
-    int positions[][] = null;
-    TermVectorOffsetInfo offsets[][] = null;
-    if(storePositions)
-      positions = new int[numTerms][];
-    if(storeOffsets)
-      offsets = new TermVectorOffsetInfo[numTerms][];
-    
+    mapper.setExpectations(field, numTerms, storeOffsets, storePositions);
     int start = 0;
     int deltaLength = 0;
     int totalLength = 0;
@@ -282,44 +329,53 @@ class TermVectorsReader implements Cloneable {
       }
       
       tvf.readChars(buffer, start, deltaLength);
-      terms[i] = new String(buffer, 0, totalLength);
+      String term = new String(buffer, 0, totalLength);
       previousBuffer = buffer;
       int freq = tvf.readVInt();
-      termFreqs[i] = freq;
-      
+      int [] positions = null;
       if (storePositions) { //read in the positions
-        int [] pos = new int[freq];
-        positions[i] = pos;
-        int prevPosition = 0;
-        for (int j = 0; j < freq; j++)
-        {
-          pos[j] = prevPosition + tvf.readVInt();
-          prevPosition = pos[j];
+        //does the mapper even care about positions?
+        if (mapper.isIgnoringPositions() == false) {
+          positions = new int[freq];
+          int prevPosition = 0;
+          for (int j = 0; j < freq; j++)
+          {
+            positions[j] = prevPosition + tvf.readVInt();
+            prevPosition = positions[j];
+          }
+        } else {
+          //we need to skip over the positions.  Since these are VInts, I don't believe there is anyway to know for sure how far to skip
+          //
+          for (int j = 0; j < freq; j++)
+          {
+            tvf.readVInt();
+          }
         }
       }
-      
+      TermVectorOffsetInfo[] offsets = null;
       if (storeOffsets) {
-        TermVectorOffsetInfo[] offs = new TermVectorOffsetInfo[freq];
-        offsets[i] = offs;
-        int prevOffset = 0;
-        for (int j = 0; j < freq; j++) {
-          int startOffset = prevOffset + tvf.readVInt();
-          int endOffset = startOffset + tvf.readVInt();
-          offs[j] = new TermVectorOffsetInfo(startOffset, endOffset);
-          prevOffset = endOffset;
+        //does the mapper even care about offsets?
+        if (mapper.isIgnoringOffsets() == false) {
+          offsets = new TermVectorOffsetInfo[freq];
+          int prevOffset = 0;
+          for (int j = 0; j < freq; j++) {
+            int startOffset = prevOffset + tvf.readVInt();
+            int endOffset = startOffset + tvf.readVInt();
+            offsets[j] = new TermVectorOffsetInfo(startOffset, endOffset);
+            prevOffset = endOffset;
+          }
+        } else {
+          for (int j = 0; j < freq; j++){
+            tvf.readVInt();
+            tvf.readVInt();
+          }
         }
       }
+      mapper.map(term, freq, offsets, positions);
     }
-    
-    SegmentTermVector tv;
-    if (storePositions || storeOffsets){
-      tv = new SegmentTermPositionVector(field, terms, termFreqs, positions, offsets);
-    }
-    else {
-      tv = new SegmentTermVector(field, terms, termFreqs);
-    }
-    return tv;
   }
+
+
 
   protected Object clone() {
     
@@ -336,5 +392,68 @@ class TermVectorsReader implements Cloneable {
     clone.tvf = (IndexInput) tvf.clone();
     
     return clone;
+  }
+
+
+
+}
+
+/**
+ * Models the existing parallel array structure
+ */
+class ParallelArrayTermVectorMapper extends TermVectorMapper
+{
+
+  private int numTerms;
+  private String[] terms;
+  private int[] termFreqs;
+  private int positions[][] = null;
+  private TermVectorOffsetInfo offsets[][] = null;
+  private int currentPosition;
+  private boolean storingOffsets;
+  private boolean storingPositions;
+  private String field;
+
+  public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
+    this.numTerms = numTerms;
+    this.field = field;
+    terms = new String[numTerms];
+    termFreqs = new int[numTerms];
+    this.storingOffsets = storeOffsets;
+    this.storingPositions = storePositions;
+    if(storePositions)
+      this.positions = new int[numTerms][];
+    if(storeOffsets)
+      this.offsets = new TermVectorOffsetInfo[numTerms][];
+  }
+
+  public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+    terms[currentPosition] = term;
+    termFreqs[currentPosition] = frequency;
+    if (storingOffsets)
+    {
+      this.offsets[currentPosition] = offsets;
+    }
+    if (storingPositions)
+    {
+      this.positions[currentPosition] = positions; 
+    }
+    currentPosition++;
+  }
+
+  /**
+   * Construct the vector
+   * @return
+   */
+  public TermFreqVector materializeVector() {
+    SegmentTermVector tv = null;
+    if (field != null && terms != null) {
+      if (storingPositions || storingOffsets) {
+        tv = new SegmentTermPositionVector(field, terms, termFreqs, positions, offsets);
+      } else {
+        tv = new SegmentTermVector(field, terms, termFreqs);
+      }
+    }
+    return tv;
   }
 }

@@ -54,6 +54,10 @@ New features
 
  2. LUCENE-960: Added a SpanQueryFilter and related classes to allow for not only filtering, but knowing where in a Document a Filter matches (Grant Ingersoll)
 
+ 3. LUCENE-868: Added new Term Vector access features.  New callback mechanism allows application to define how and where to read Term Vectors from disk.
+    This implementation contains several extensions of the new abstract TermVectorMapper class.  The new API should be back-compatible.  No changes in the
+     actual storage of Term Vectors has taken place.
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 

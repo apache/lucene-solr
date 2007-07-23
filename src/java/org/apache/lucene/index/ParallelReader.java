@@ -194,6 +194,29 @@ public class ParallelReader extends IndexReader {
     return reader==null ? null : reader.getTermFreqVector(n, field);
   }
 
+
+  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    if (reader != null) {
+      reader.getTermFreqVector(docNumber, field, mapper); 
+    }
+  }
+
+  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    ensureOpen();
+
+    Iterator i = fieldToReader.entrySet().iterator();
+    while (i.hasNext()) {
+      Map.Entry e = (Map.Entry)i.next();
+      String field = (String)e.getKey();
+      IndexReader reader = (IndexReader)e.getValue();
+      reader.getTermFreqVector(docNumber, field, mapper);
+    }
+
+  }
+
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(field));

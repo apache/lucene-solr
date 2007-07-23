@@ -20,12 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -384,6 +379,25 @@ public abstract class IndexReader {
    */
   abstract public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException;
+
+  /**
+   * Load the Term Vector into a user-defined data structure instead of relying on the parallel arrays of
+   * the {@link TermFreqVector}.
+   * @param docNumber The number of the document to load the vector for
+   * @param field The name of the field to load
+   * @param mapper The {@link TermVectorMapper} to process the vector.  Must not be null
+   * @throws IOException if term vectors cannot be accessed or if they do not exist on the field and doc. specified.
+   * 
+   */
+  abstract public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException;
+
+  /**
+   * Map all the term vectors for all fields in a Document
+   * @param docNumber The number of the document to load the vector for
+   * @param mapper The {@link TermVectorMapper} to process the vector.  Must not be null
+   * @throws IOException if term vectors cannot be accessed or if they do not exist on the field and doc. specified.
+   */
+  abstract public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException;
 
   /**
    * Returns <code>true</code> if an index exists at the specified directory.

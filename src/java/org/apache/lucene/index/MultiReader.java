@@ -85,6 +85,19 @@ public class MultiReader extends IndexReader {
     return subReaders[i].getTermFreqVector(n - starts[i], field);
   }
 
+
+  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    int i = readerIndex(docNumber);        // find segment num
+    subReaders[i].getTermFreqVector(docNumber - starts[i], field, mapper);
+  }
+
+  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    int i = readerIndex(docNumber);        // find segment num
+    subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
+  }
+
   public synchronized int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     if (numDocs == -1) {        // check cache

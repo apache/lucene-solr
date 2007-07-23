@@ -17,6 +17,16 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -30,21 +40,12 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -935,8 +936,47 @@ public class MemoryIndex {
       }
       return vectors;
     }
-    
-    public TermFreqVector getTermFreqVector(int docNumber, final String fieldName) {
+
+      public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException
+      {
+          if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
+
+    //      if (vectors.length == 0) return null;
+          for (Iterator iterator = fields.keySet().iterator(); iterator.hasNext();)
+          {
+            String fieldName = (String) iterator.next();
+            getTermFreqVector(docNumber, fieldName, mapper);
+          }
+      }
+
+      public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException
+      {
+        if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
+        final Info info = getInfo(field);
+          if (info == null){
+              return;
+          }
+          info.sortTerms();
+          mapper.setExpectations(field, info.sortedTerms.length, stride != 1, true);
+          for (int i = info.sortedTerms.length; --i >=0;){
+
+              ArrayIntList positions = (ArrayIntList) info.sortedTerms[i].getValue();
+              int size = positions.size();
+              org.apache.lucene.index.TermVectorOffsetInfo[] offsets =
+                new org.apache.lucene.index.TermVectorOffsetInfo[size / stride];
+
+              for (int k=0, j=1; j < size; k++, j += stride) {
+                int start = positions.get(j);
+                int end = positions.get(j+1);
+                offsets[k] = new org.apache.lucene.index.TermVectorOffsetInfo(start, end);
+              }
+              mapper.map((String)info.sortedTerms[i].getKey(),
+                         numPositions((ArrayIntList) info.sortedTerms[i].getValue()),
+                         offsets, ((ArrayIntList) info.sortedTerms[i].getValue()).toArray(stride));
+          }
+      }
+
+      public TermFreqVector getTermFreqVector(int docNumber, final String fieldName) {
       if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
       final Info info = getInfo(fieldName);
       if (info == null) return null; // TODO: or return empty vector impl???

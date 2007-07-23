@@ -20,10 +20,10 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.BitVector;
 
 import java.io.IOException;
@@ -642,6 +642,35 @@ class SegmentReader extends IndexReader {
     return termVectorsReader.get(docNumber, field);
   }
 
+
+  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null)
+      throw new IOException("field does not contain term vectors");
+
+    TermVectorsReader termVectorsReader = getTermVectorsReader();
+    if (termVectorsReader == null)
+    {
+      throw new IOException("Cannot open a reader for the term vectors");
+    }
+
+
+    termVectorsReader.get(docNumber, field, mapper);
+  }
+
+
+  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    if (termVectorsReaderOrig == null)
+      return;
+
+    TermVectorsReader termVectorsReader = getTermVectorsReader();
+    if (termVectorsReader == null)
+      return;
+
+    termVectorsReader.get(docNumber, mapper);
+  }
 
   /** Return an array of term frequency vectors for the specified document.
    *  The array contains a vector for each vectorized field in the document.

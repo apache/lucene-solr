@@ -21,29 +21,20 @@ package org.apache.lucene.index;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util._TestUtil;
 
-import java.util.Collection;
-import java.util.Arrays;
-import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.File;
-
-import org.apache.lucene.store.MockRAMDirectory;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.*;
 
 public class TestIndexReader extends TestCase
 {
@@ -180,8 +171,43 @@ public class TestIndexReader extends TestCase
         d.close();
     }
 
+  public void testTermVectors() throws Exception {
+    RAMDirectory d = new MockRAMDirectory();
+    // set up writer
+    IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true);
+    // want to get some more segments here
+    // new termvector fields
+    for (int i = 0; i < 5 * writer.getMergeFactor(); i++) {
+      Document doc = new Document();
+        doc.add(new Field("tvnot","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+        doc.add(new Field("termvector","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
+        doc.add(new Field("tvoffset","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
+        doc.add(new Field("tvposition","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+        doc.add(new Field("tvpositionoffset","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
 
-    private void assertTermDocsCount(String msg,
+        writer.addDocument(doc);
+    }
+    writer.close();
+    IndexReader reader = IndexReader.open(d);
+    FieldSortedTermVectorMapper mapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    reader.getTermFreqVector(0, mapper);
+    Map map = mapper.getFieldToTerms();
+    assertTrue("map is null and it shouldn't be", map != null);
+    assertTrue("map Size: " + map.size() + " is not: " + 4, map.size() == 4);
+    Set set = (Set) map.get("termvector");
+    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry entry = (TermVectorEntry) iterator.next();
+      assertTrue("entry is null and it shouldn't be", entry != null);
+      System.out.println("Entry: " + entry);
+    }
+
+
+
+
+    
+  }
+
+  private void assertTermDocsCount(String msg,
                                      IndexReader reader,
                                      Term term,
                                      int expected)

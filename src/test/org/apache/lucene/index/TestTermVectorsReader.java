@@ -22,16 +22,19 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedSet;
 
 public class TestTermVectorsReader extends TestCase {
   private TermVectorsWriter writer = null;
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
-  private String [] testFields = {"f1", "f2", "f3"};
-  private boolean [] testFieldsStorePos = {true, false, true, false};
-  private boolean [] testFieldsStoreOff = {true, false, false, true};  
-  private String [] testTerms = {"this", "is", "a", "test"};
-  private int [][] positions = new int[testTerms.length][];
-  private TermVectorOffsetInfo [][] offsets = new TermVectorOffsetInfo[testTerms.length][];
+  private String[] testFields = {"f1", "f2", "f3", "f4"};
+  private boolean[] testFieldsStorePos = {true, false, true, false};
+  private boolean[] testFieldsStoreOff = {true, false, false, true};
+  private String[] testTerms = {"this", "is", "a", "test"};
+  private int[][] positions = new int[testTerms.length][];
+  private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
   private RAMDirectory dir = new RAMDirectory();
   private String seg = "testSegment";
   private FieldInfos fieldInfos = new FieldInfos();
@@ -44,35 +47,37 @@ public class TestTermVectorsReader extends TestCase {
     for (int i = 0; i < testFields.length; i++) {
       fieldInfos.add(testFields[i], true, true, testFieldsStorePos[i], testFieldsStoreOff[i]);
     }
-    
-    for (int i = 0; i < testTerms.length; i++)
-    {
+
+    for (int i = 0; i < testTerms.length; i++) {
       positions[i] = new int[3];
       for (int j = 0; j < positions[i].length; j++) {
         // poditions are always sorted in increasing order
-        positions[i][j] = (int)(j * 10 + Math.random() * 10);
+        positions[i][j] = (int) (j * 10 + Math.random() * 10);
       }
       offsets[i] = new TermVectorOffsetInfo[3];
-      for (int j = 0; j < offsets[i].length; j++){
+      for (int j = 0; j < offsets[i].length; j++) {
         // ofsets are alway sorted in increasing order
         offsets[i][j] = new TermVectorOffsetInfo(j * 10, j * 10 + testTerms[i].length());
-      }        
+      }
     }
     Arrays.sort(testTerms);
+    //Create 5 documents for testing, they all have the same terms
+    writer = new TermVectorsWriter(dir, seg, fieldInfos);
     for (int j = 0; j < 5; j++) {
-      writer = new TermVectorsWriter(dir, seg, fieldInfos);
+
       writer.openDocument();
 
       for (int k = 0; k < testFields.length; k++) {
         writer.openField(testFields[k]);
         for (int i = 0; i < testTerms.length; i++) {
-          writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);      
+          writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);
         }
         writer.closeField();
       }
       writer.closeDocument();
-      writer.close();
+
     }
+    writer.close();
   }
 
   protected void tearDown() {
@@ -80,34 +85,38 @@ public class TestTermVectorsReader extends TestCase {
   }
 
   public void test() {
-      //Check to see the files were created properly in setup
-      assertTrue(writer.isDocumentOpen() == false);          
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
+    //Check to see the files were created properly in setup
+    assertTrue(writer.isDocumentOpen() == false);
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
   }
-  
+
   public void testReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
     assertTrue(reader != null);
-    TermFreqVector vector = reader.get(0, testFields[0]);
-    assertTrue(vector != null);
-    String [] terms = vector.getTerms();
-    assertTrue(terms != null);
-    assertTrue(terms.length == testTerms.length);
-    for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
-      //System.out.println("Term: " + term);
-      assertTrue(term.equals(testTerms[i]));
+    for (int j = 0; j < 5; j++) {
+      TermFreqVector vector = reader.get(j, testFields[0]);
+      assertTrue(vector != null);
+      String[] terms = vector.getTerms();
+      assertTrue(terms != null);
+      assertTrue(terms.length == testTerms.length);
+      for (int i = 0; i < terms.length; i++) {
+        String term = terms[i];
+        //System.out.println("Term: " + term);
+        assertTrue(term.equals(testTerms[i]));
+      }
     }
-  }  
-  
+
+
+  }
+
   public void testPositionReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
     assertTrue(reader != null);
     TermPositionVector vector;
-    String [] terms;
-    vector = (TermPositionVector)reader.get(0, testFields[0]);
-    assertTrue(vector != null);      
+    String[] terms;
+    vector = (TermPositionVector) reader.get(0, testFields[0]);
+    assertTrue(vector != null);
     terms = vector.getTerms();
     assertTrue(terms != null);
     assertTrue(terms.length == testTerms.length);
@@ -115,14 +124,14 @@ public class TestTermVectorsReader extends TestCase {
       String term = terms[i];
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
-      int [] positions = vector.getTermPositions(i);
+      int[] positions = vector.getTermPositions(i);
       assertTrue(positions != null);
       assertTrue(positions.length == this.positions[i].length);
       for (int j = 0; j < positions.length; j++) {
         int position = positions[j];
         assertTrue(position == this.positions[i][j]);
       }
-      TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+      TermVectorOffsetInfo[] offset = vector.getOffsets(i);
       assertTrue(offset != null);
       assertTrue(offset.length == this.offsets[i].length);
       for (int j = 0; j < offset.length; j++) {
@@ -130,9 +139,9 @@ public class TestTermVectorsReader extends TestCase {
         assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
       }
     }
-    
+
     TermFreqVector freqVector = reader.get(0, testFields[1]); //no pos, no offset
-    assertTrue(freqVector != null);      
+    assertTrue(freqVector != null);
     assertTrue(freqVector instanceof TermPositionVector == false);
     terms = freqVector.getTerms();
     assertTrue(terms != null);
@@ -140,30 +149,30 @@ public class TestTermVectorsReader extends TestCase {
     for (int i = 0; i < terms.length; i++) {
       String term = terms[i];
       //System.out.println("Term: " + term);
-      assertTrue(term.equals(testTerms[i]));        
+      assertTrue(term.equals(testTerms[i]));
     }
   }
-  
+
   public void testOffsetReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
     assertTrue(reader != null);
-    TermPositionVector vector = (TermPositionVector)reader.get(0, testFields[0]);
+    TermPositionVector vector = (TermPositionVector) reader.get(0, testFields[0]);
     assertTrue(vector != null);
-    String [] terms = vector.getTerms();
+    String[] terms = vector.getTerms();
     assertTrue(terms != null);
     assertTrue(terms.length == testTerms.length);
     for (int i = 0; i < terms.length; i++) {
       String term = terms[i];
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
-      int [] positions = vector.getTermPositions(i);
+      int[] positions = vector.getTermPositions(i);
       assertTrue(positions != null);
       assertTrue(positions.length == this.positions[i].length);
       for (int j = 0; j < positions.length; j++) {
         int position = positions[j];
         assertTrue(position == this.positions[i][j]);
       }
-      TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+      TermVectorOffsetInfo[] offset = vector.getOffsets(i);
       assertTrue(offset != null);
       assertTrue(offset.length == this.offsets[i].length);
       for (int j = 0; j < offset.length; j++) {
@@ -172,18 +181,112 @@ public class TestTermVectorsReader extends TestCase {
       }
     }
   }
-  
+
+  public void testMapper() throws IOException {
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
+    SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    reader.get(0, mapper);
+    SortedSet set = mapper.getTermVectorEntrySet();
+    assertTrue("set is null and it shouldn't be", set != null);
+    //three fields, 4 terms, all terms are the same
+    assertTrue("set Size: " + set.size() + " is not: " + 4, set.size() == 4);
+    //Check offsets and positions
+    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry tve = (TermVectorEntry) iterator.next();
+      assertTrue("tve is null and it shouldn't be", tve != null);
+      assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() != null);
+      assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() != null);
+
+    }
+
+    mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    reader.get(1, mapper);
+    set = mapper.getTermVectorEntrySet();
+    assertTrue("set is null and it shouldn't be", set != null);
+    //three fields, 4 terms, all terms are the same
+    assertTrue("set Size: " + set.size() + " is not: " + 4, set.size() == 4);
+    //Should have offsets and positions b/c we are munging all the fields together
+    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry tve = (TermVectorEntry) iterator.next();
+      assertTrue("tve is null and it shouldn't be", tve != null);
+      assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() != null);
+      assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() != null);
+
+    }
+
+
+    FieldSortedTermVectorMapper fsMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    reader.get(0, fsMapper);
+    Map map = fsMapper.getFieldToTerms();
+    assertTrue("map Size: " + map.size() + " is not: " + testFields.length, map.size() == testFields.length);
+    for (Iterator iterator = map.entrySet().iterator(); iterator.hasNext();) {
+      Map.Entry entry = (Map.Entry) iterator.next();
+      SortedSet sortedSet = (SortedSet) entry.getValue();
+      assertTrue("sortedSet Size: " + sortedSet.size() + " is not: " + 4, sortedSet.size() == 4);
+      for (Iterator inner = sortedSet.iterator(); inner.hasNext();) {
+        TermVectorEntry tve = (TermVectorEntry) inner.next();
+        assertTrue("tve is null and it shouldn't be", tve != null);
+        //Check offsets and positions.
+        assertTrue("tve is null and it shouldn't be", tve != null);
+        String field = tve.getField();
+        if (field.equals(testFields[0])) {
+          //should have offsets
+
+          assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() != null);
+          assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() != null);
+        }
+        else if (field.equals(testFields[1])) {
+          //should not have offsets
+
+          assertTrue("tve.getOffsets() is not null and it shouldn't be", tve.getOffsets() == null);
+          assertTrue("tve.getPositions() is not null and it shouldn't be", tve.getPositions() == null);
+        }
+      }
+    }
+    //Try mapper that ignores offs and positions
+    fsMapper = new FieldSortedTermVectorMapper(true, true, new TermVectorEntryFreqSortedComparator());
+    reader.get(0, fsMapper);
+    map = fsMapper.getFieldToTerms();
+    assertTrue("map Size: " + map.size() + " is not: " + testFields.length, map.size() == testFields.length);
+    for (Iterator iterator = map.entrySet().iterator(); iterator.hasNext();) {
+      Map.Entry entry = (Map.Entry) iterator.next();
+      SortedSet sortedSet = (SortedSet) entry.getValue();
+      assertTrue("sortedSet Size: " + sortedSet.size() + " is not: " + 4, sortedSet.size() == 4);
+      for (Iterator inner = sortedSet.iterator(); inner.hasNext();) {
+        TermVectorEntry tve = (TermVectorEntry) inner.next();
+        assertTrue("tve is null and it shouldn't be", tve != null);
+        //Check offsets and positions.
+        assertTrue("tve is null and it shouldn't be", tve != null);
+        String field = tve.getField();
+        if (field.equals(testFields[0])) {
+          //should have offsets
+
+          assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() == null);
+          assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() == null);
+        }
+        else if (field.equals(testFields[1])) {
+          //should not have offsets
+
+          assertTrue("tve.getOffsets() is not null and it shouldn't be", tve.getOffsets() == null);
+          assertTrue("tve.getPositions() is not null and it shouldn't be", tve.getPositions() == null);
+        }
+      }
+    }
+
+  }
+
 
   /**
    * Make sure exceptions and bad params are handled appropriately
-   */ 
+   */
   public void testBadParams() {
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
       assertTrue(reader != null);
       //Bad document number, good field number
       reader.get(50, testFields[0]);
-      fail();      
+      fail();
     } catch (IOException e) {
       // expected exception
     }
@@ -192,7 +295,7 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(reader != null);
       //Bad document number, no field
       reader.get(50);
-      fail();      
+      fail();
     } catch (IOException e) {
       // expected exception
     }
@@ -201,9 +304,9 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(reader != null);
       //good document number, bad field number
       TermFreqVector vector = reader.get(0, "f50");
-      assertTrue(vector == null);      
+      assertTrue(vector == null);
     } catch (IOException e) {
       fail();
     }
-  }    
+  }
 }

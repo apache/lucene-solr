@@ -28,7 +28,9 @@ import org.apache.lucene.util.English;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedSet;
 
 public class TestTermVectors extends TestCase {
   private IndexSearcher searcher;
@@ -171,7 +173,7 @@ public class TestTermVectors extends TestCase {
       assertTrue(false);
     }
   }
-  
+
   public void testKnownSetOfDocuments() {
     String test1 = "eating chocolate in a computer lab"; //6 terms
     String test2 = "computer in a computer lab"; //5 terms
@@ -275,20 +277,45 @@ public class TestTermVectors extends TestCase {
         Integer freqInt = (Integer)test4Map.get(term);
         assertTrue(freqInt != null);
         assertTrue(freqInt.intValue() == freq);        
-      } 
+      }
+      SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+      knownSearcher.reader.getTermFreqVector(hits.id(1), mapper);
+      SortedSet vectorEntrySet = mapper.getTermVectorEntrySet();
+      assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
+      TermVectorEntry last = null;
+      for (Iterator iterator = vectorEntrySet.iterator(); iterator.hasNext();) {
+         TermVectorEntry tve = (TermVectorEntry) iterator.next();
+        if (tve != null && last != null)
+        {
+          assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
+          Integer expectedFreq = (Integer) test4Map.get(tve.getTerm());
+          //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
+          assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
+        }
+        last = tve;
+
+      }
+
+      FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+      knownSearcher.reader.getTermFreqVector(hits.id(1), fieldMapper);
+      Map map = fieldMapper.getFieldToTerms();
+      assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
+      vectorEntrySet = (SortedSet) map.get("field");
+      assertTrue("vectorEntrySet is null and it shouldn't be", vectorEntrySet != null);
+      assertTrue("vectorEntrySet Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
       knownSearcher.close();
     } catch (IOException e) {
       e.printStackTrace();
       assertTrue(false);
     }
-
-
   } 
   
   private void setupDoc(Document doc, String text)
   {
     doc.add(new Field("field", text, Field.Store.YES,
         Field.Index.TOKENIZED, Field.TermVector.YES));
+    doc.add(new Field("field2", text, Field.Store.YES,
+        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     //System.out.println("Document: " + doc);
   }
 

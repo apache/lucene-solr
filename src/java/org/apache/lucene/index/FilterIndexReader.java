@@ -115,6 +115,18 @@ public class FilterIndexReader extends IndexReader {
     return in.getTermFreqVector(docNumber, field);
   }
 
+
+  public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    in.getTermFreqVector(docNumber, field, mapper);
+
+  }
+
+  public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
+    ensureOpen();
+    in.getTermFreqVector(docNumber, mapper);
+  }
+
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.numDocs();
