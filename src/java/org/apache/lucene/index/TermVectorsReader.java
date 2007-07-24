@@ -443,7 +443,7 @@ class ParallelArrayTermVectorMapper extends TermVectorMapper
 
   /**
    * Construct the vector
-   * @return
+   * @return The {@link TermFreqVector} based on the mappings.
    */
   public TermFreqVector materializeVector() {
     SegmentTermVector tv = null;
