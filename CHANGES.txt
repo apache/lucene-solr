@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 
 $Id$
 
@@ -79,6 +79,9 @@ Optimizations
  5. LUCENE-963: Add setters to Field to allow for re-using a single
     Field instance during indexing.  This is a sizable performance
     gain, especially for small documents.  (Mike McCandless)
+
+ 6. LUCENE-939: Check explicitly for boundary conditions in FieldInfos
+    and don't rely on exceptions. (Michael Busch)
 
 Documentation
 

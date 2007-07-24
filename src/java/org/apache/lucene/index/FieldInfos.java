@@ -230,15 +230,8 @@ final class FieldInfos {
   }
 
   public int fieldNumber(String fieldName) {
-    try {
-      FieldInfo fi = fieldInfo(fieldName);
-      if (fi != null)
-        return fi.number;
-    }
-    catch (IndexOutOfBoundsException ioobe) {
-      return -1;
-    }
-    return -1;
+    FieldInfo fi = fieldInfo(fieldName);
+    return (fi != null) ? fi.number : -1;
   }
 
   public FieldInfo fieldInfo(String fieldName) {
@@ -253,12 +246,8 @@ final class FieldInfos {
    * with the given number doesn't exist.
    */  
   public String fieldName(int fieldNumber) {
-    try {
-      return fieldInfo(fieldNumber).name;
-    }
-    catch (NullPointerException npe) {
-      return "";
-    }
+	FieldInfo fi = fieldInfo(fieldNumber);
+	return (fi != null) ? fi.name : "";
   }
 
   /**
@@ -268,12 +257,7 @@ final class FieldInfos {
    * doesn't exist.
    */  
   public FieldInfo fieldInfo(int fieldNumber) {
-    try {
-      return (FieldInfo) byNumber.get(fieldNumber);
-    }
-    catch (IndexOutOfBoundsException ioobe) {
-      return null;
-    }
+	return (fieldNumber >= 0) ? (FieldInfo) byNumber.get(fieldNumber) : null;
   }
 
   public int size() {
