@@ -39,6 +39,8 @@ import java.util.Iterator;
  * doc.stored=true|FALSE<br/>
  * doc.tokenized=TRUE|false<br/>
  * doc.term.vector=true|FALSE<br/>
+ * doc.term.vector.positions=true|FALSE<br/>
+ * doc.term.vector.offsets=true|FALSE<br/>
  * doc.store.body.bytes=true|FALSE //Store the body contents raw UTF-8 bytes as a field<br/>
  */
 public abstract class BasicDocMaker implements DocMaker {
@@ -55,7 +57,13 @@ public abstract class BasicDocMaker implements DocMaker {
   // leftovers are thread local, because it is unsafe to share residues between threads
   private ThreadLocal leftovr = new ThreadLocal();
 
-  static final String BODY_FIELD = "body";
+  public static final String BODY_FIELD = "body";
+  public static final String TITLE_FIELD = "doctitle";
+  public static final String DATE_FIELD = "docdate";
+  public static final String ID_FIELD = "docid";
+  public static final String BYTES_FIELD = "bytes";
+  public static final String NAME_FIELD = "docname";
+
   private long numBytes = 0;
   private long numUniqueBytes = 0;
 
@@ -97,17 +105,17 @@ public abstract class BasicDocMaker implements DocMaker {
   private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
     int docid = incrNumDocsCreated();
     Document doc = new Document();
-    doc.add(new Field("docid", "doc"+docid, storeVal, indexVal, termVecVal));
+    doc.add(new Field(ID_FIELD, "doc"+docid, storeVal, indexVal, termVecVal));
     if (docData.getName()!=null) {
       String name = (cnt<0 ? docData.getName() : docData.getName()+"_"+cnt);
-      doc.add(new Field("docname", name, storeVal, indexVal, termVecVal));
+      doc.add(new Field(NAME_FIELD, name, storeVal, indexVal, termVecVal));
     }
     if (docData.getDate()!=null) {
       String dateStr = DateTools.dateToString(docData.getDate(), DateTools.Resolution.SECOND);
-      doc.add(new Field("docdate", dateStr, storeVal, indexVal, termVecVal));
+      doc.add(new Field(DATE_FIELD, dateStr, storeVal, indexVal, termVecVal));
     }
     if (docData.getTitle()!=null) {
-      doc.add(new Field("doctitle", docData.getTitle(), storeVal, indexVal, termVecVal));
+      doc.add(new Field(TITLE_FIELD, docData.getTitle(), storeVal, indexVal, termVecVal));
     }
     if (docData.getBody()!=null && docData.getBody().length()>0) {
       String bdy;
@@ -127,7 +135,7 @@ public abstract class BasicDocMaker implements DocMaker {
       }
       doc.add(new Field(BODY_FIELD, bdy, storeVal, indexVal, termVecVal));
       if (storeBytes == true) {
-        doc.add(new Field("bytes", bdy.getBytes("UTF-8"), Field.Store.YES));
+        doc.add(new Field(BYTES_FIELD, bdy.getBytes("UTF-8"), Field.Store.YES));
       }
     }
 
@@ -188,7 +196,18 @@ public abstract class BasicDocMaker implements DocMaker {
     boolean termVec = config.get("doc.term.vector",false);
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
     indexVal = (tokenized ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED);
-    termVecVal = (termVec ? Field.TermVector.YES : Field.TermVector.NO);
+    boolean termVecPositions = config.get("doc.term.vector.positions",false);
+    boolean termVecOffsets = config.get("doc.term.vector.offsets",false);
+    if (termVecPositions && termVecOffsets)
+      termVecVal = Field.TermVector.WITH_POSITIONS_OFFSETS;
+    else if (termVecPositions)
+      termVecVal = Field.TermVector.WITH_POSITIONS;
+    else if (termVecOffsets)
+      termVecVal = Field.TermVector.WITH_OFFSETS;
+    else if (termVec)
+      termVecVal = Field.TermVector.YES;
+    else
+      termVecVal = Field.TermVector.NO;
     storeBytes = config.get("doc.store.body.bytes", false);
     forever = config.get("doc.maker.forever",true);
   }

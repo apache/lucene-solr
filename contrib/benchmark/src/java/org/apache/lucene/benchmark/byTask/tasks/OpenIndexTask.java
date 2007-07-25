@@ -30,14 +30,16 @@ import java.io.IOException;
  * Open an index writer.
  * <br>Other side effects: index writer object in perfRunData is set.
  * <br>Relevant properties: <code>merge.factor, max.buffered,
- * max.field.length</code>.
-</code>.
+ * max.field.length, ram.flush.mb [default 0], autocommit
+ * [default true]</code>.
  */
 public class OpenIndexTask extends PerfTask {
 
   public static final int DEFAULT_MAX_BUFFERED = 10;
   public static final int DEFAULT_MAX_FIELD_LENGTH = 10000;
   public static final int DEFAULT_MERGE_PFACTOR = 10;
+  public static final int DEFAULT_RAM_FLUSH_MB = 0;
+  public static final boolean DEFAULT_AUTO_COMMIT = true;
 
   public OpenIndexTask(PerfRunData runData) {
     super(runData);
@@ -46,7 +48,6 @@ public class OpenIndexTask extends PerfTask {
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
     Analyzer analyzer = getRunData().getAnalyzer();
-    IndexWriter writer = new IndexWriter(dir, analyzer, false);
     
     Config config = getRunData().getConfig();
     
@@ -54,12 +55,17 @@ public class OpenIndexTask extends PerfTask {
     int mrgf = config.get("merge.factor",DEFAULT_MERGE_PFACTOR);
     int mxbf = config.get("max.buffered",DEFAULT_MAX_BUFFERED);
     int mxfl = config.get("max.field.length",DEFAULT_MAX_FIELD_LENGTH);
+    double flushAtRAMUsage = config.get("ram.flush.mb", OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
+    boolean autoCommit = config.get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, analyzer, false);
 
     // must update params for newly opened writer
     writer.setMaxBufferedDocs(mxbf);
     writer.setMaxFieldLength(mxfl);
     writer.setMergeFactor(mrgf);
     writer.setUseCompoundFile(cmpnd); // this one redundant?
+    if (flushAtRAMUsage > 0)
+      writer.setRAMBufferSizeMB(flushAtRAMUsage);
     
     getRunData().setIndexWriter(writer);
     return 1;

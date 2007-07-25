@@ -22,6 +22,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -110,7 +112,9 @@ public class Config {
 
   private void printProps() {
     System.out.println("------------> config properties:");
-    for (Iterator it = props.keySet().iterator(); it.hasNext();) {
+    List propKeys = new ArrayList(props.keySet());
+    Collections.sort(propKeys);
+    for (Iterator it = propKeys.iterator(); it.hasNext();) {
       String propName = (String) it.next();
       System.out.println(propName + " = " + props.getProperty(propName));
     }

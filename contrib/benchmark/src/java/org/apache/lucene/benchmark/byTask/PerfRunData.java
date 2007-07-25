@@ -70,6 +70,7 @@ public class PerfRunData {
   private IndexReader indexReader;
   private IndexWriter indexWriter;
   private Config config;
+  private long startTimeMillis;
   
   // constructor
   public PerfRunData (Config config) throws Exception {
@@ -136,6 +137,15 @@ public class PerfRunData {
     // release unused stuff
     System.runFinalization();
     System.gc();
+
+    startTimeMillis = System.currentTimeMillis();
+  }
+
+  /**
+   * @return Start time in milliseconds
+   */
+  public long getStartTimeMillis() {
+    return startTimeMillis;
   }
 
   /**

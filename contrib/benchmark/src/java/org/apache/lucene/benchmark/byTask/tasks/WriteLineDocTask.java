@@ -17,36 +17,36 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.BasicDocMaker;
+import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
-import java.text.NumberFormat;
+import org.apache.lucene.document.Field;
 
 
-/**
- * Add a document, optionally with of a certain size.
- * <br>Other side effects: none.
- * <br>Relevant properties: <code>doc.add.log.step</code>.
- * <br>Takes optional param: document size. 
- */
-public class AddDocTask extends PerfTask {
+public class WriteLineDocTask extends PerfTask {
 
   /**
    * Default value for property <code>doc.add.log.step<code> - indicating how often 
    * an "added N docs" message should be logged.  
    */
-  public static final int DEFAULT_ADD_DOC_LOG_STEP = 500;
+  public static final int DEFAULT_WRITELINE_DOC_LOG_STEP = 1000;
 
-  public AddDocTask(PerfRunData runData) {
+  public WriteLineDocTask(PerfRunData runData) {
     super(runData);
   }
 
   private int logStep = -1;
   private int docSize = 0;
   int count = 0;
+  private BufferedWriter lineFileOut=null;
+  private DocMaker docMaker;
   
-  // volatile data passed between setup(), doLogic(), tearDown().
-  private Document doc = null;
+  public final static String SEP = "\t";
   
   /*
    *  (non-Javadoc)
@@ -54,38 +54,68 @@ public class AddDocTask extends PerfTask {
    */
   public void setup() throws Exception {
     super.setup();
-    DocMaker docMaker = getRunData().getDocMaker();
+    if (lineFileOut==null) {
+      Config config = getRunData().getConfig();
+      String fileName = config.get("line.file.out", null);
+      if (fileName == null)
+        throw new Exception("line.file.out must be set");
+      lineFileOut = new BufferedWriter(new FileWriter(fileName));
+    }
+    docMaker = getRunData().getDocMaker();
+  }
+
+  public void tearDown() throws Exception {
+    log(++count);
+    super.tearDown();
+  }
+
+  public int doLogic() throws Exception {
+    Document doc;
     if (docSize > 0) {
       doc = docMaker.makeDocument(docSize);
     } else {
       doc = docMaker.makeDocument();
     }
-  }
 
-  /* (non-Javadoc)
-   * @see PerfTask#tearDown()
-   */
-  public void tearDown() throws Exception {
-    log(++count);
-    doc = null;
-    super.tearDown();
-  }
+    Field f = doc.getField(BasicDocMaker.BODY_FIELD);
 
-  public int doLogic() throws Exception {
-    getRunData().getIndexWriter().addDocument(doc);
+    String body, title, date;
+    if (f != null)
+      body = f.stringValue().replace('\t', ' ');
+    else
+      body = null;
+    
+    f = doc.getField(BasicDocMaker.TITLE_FIELD);
+    if (f != null)
+      title = f.stringValue().replace('\t', ' ');
+    else
+      title = "";
+
+    f = doc.getField(BasicDocMaker.DATE_FIELD);
+    if (f != null)
+      date = f.stringValue().replace('\t', ' ');
+    else
+      date = "";
+
+    if (body != null) {
+      lineFileOut.write(title, 0, title.length());
+      lineFileOut.write(SEP);
+      lineFileOut.write(date, 0, date.length());
+      lineFileOut.write(SEP);
+      lineFileOut.write(body, 0, body.length());
+      lineFileOut.newLine();
+      lineFileOut.flush();
+    }
     return 1;
   }
 
   private void log (int count) {
     if (logStep<0) {
       // init once per instance
-      logStep = getRunData().getConfig().get("doc.add.log.step",DEFAULT_ADD_DOC_LOG_STEP);
+      logStep = getRunData().getConfig().get("doc.writeline.log.step", DEFAULT_WRITELINE_DOC_LOG_STEP);
     }
     if (logStep>0 && (count%logStep)==0) {
-      double seconds = (System.currentTimeMillis() - getRunData().getStartTimeMillis())/1000.0;
-      NumberFormat nf = NumberFormat.getInstance();
-      nf.setMaximumFractionDigits(2);
-      System.out.println("--> "+nf.format(seconds) + " sec: " + Thread.currentThread().getName()+" processed (add) "+count+" docs");
+      System.out.println("--> "+Thread.currentThread().getName()+" processed (add) "+count+" docs");
     }
   }
 
@@ -104,5 +134,4 @@ public class AddDocTask extends PerfTask {
   public boolean supportsParams() {
     return true;
   }
-  
 }

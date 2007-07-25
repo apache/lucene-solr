@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/24/07
+  LUCENE-947: Add support for creating and index "one document per
+  line" from a large text file, which reduces per-document overhead of
+  opening a single file for each document.
+
 6/30/07
   LUCENE-848: Added support for Wikipedia benchmarking.
 

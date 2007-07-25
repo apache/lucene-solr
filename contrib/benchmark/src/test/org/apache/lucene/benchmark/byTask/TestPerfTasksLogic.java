@@ -18,6 +18,9 @@
 package org.apache.lucene.benchmark.byTask;
 
 import java.io.StringReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
@@ -79,6 +82,7 @@ public class TestPerfTasksLogic extends TestCase {
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
+    ir.close();
   }
 
   /**
@@ -121,6 +125,7 @@ public class TestPerfTasksLogic extends TestCase {
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
+    ir.close();
   }
 
   /**
@@ -150,6 +155,69 @@ public class TestPerfTasksLogic extends TestCase {
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     int ndocsExpected = 21578; // that's how many docs there are in the Reuters collecton.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+  }
+
+  /**
+   * Test WriteLineDoc and LineDocMaker.
+   */
+  public void testLineDocFile() throws Exception {
+    File lineFile = new File(System.getProperty("tempDir"), "test.reuters.lines.txt");
+
+    // We will call WriteLineDocs this many times
+    final int NUM_TRY_DOCS = 500;
+
+    // Creates a line file with first 500 docs from reuters
+    String algLines1[] = {
+      "# ----- properties ",
+      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
+      "doc.maker.forever=false",
+      "line.file.out=" + lineFile.getAbsolutePath().replace('\\', '/'),
+      "# ----- alg ",
+      "{WriteLineDoc()}:" + NUM_TRY_DOCS,
+    };
+
+    // Run algo
+    Benchmark benchmark = execBenchmark(algLines1);
+
+    // Verify we got somewhere between 1-500 lines (some
+    // Reuters docs have no body, which WriteLineDoc task
+    // skips).
+    BufferedReader r = new BufferedReader(new FileReader(lineFile));
+    int numLines = 0;
+    while(r.readLine() != null)
+      numLines++;
+    r.close();
+    assertTrue("did not see the right number of docs; should be > 0 and <= " + NUM_TRY_DOCS + " but was " + numLines, numLines > 0 && numLines <= NUM_TRY_DOCS);
+    
+    // Index the line docs
+    String algLines2[] = {
+      "# ----- properties ",
+      "analyzer=org.apache.lucene.analysis.SimpleAnalyzer",
+      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker",
+      "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
+      "doc.maker.forever=false",
+      "autocommit=false",
+      "ram.flush.mb=4",
+      "# ----- alg ",
+      "ResetSystemErase",
+      "CreateIndex",
+      "{AddDoc}: *",
+      "CloseIndex",
+    };
+    
+    // Run algo
+    benchmark = execBenchmark(algLines2);
+
+    // now we should be able to open the index for write. 
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    iw.close();
+
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    assertEquals(numLines + " lines were were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
+    ir.close();
+
+    lineFile.delete();
   }
   
   // create the benchmark and execute it. 

@@ -40,7 +40,7 @@ import java.util.Stack;
  */
 public class DirDocMaker extends BasicDocMaker {
 
-  private DateFormat dateFormat;
+  private ThreadLocal dateFormat = new ThreadLocal();
   private File dataDir = null;
   private int iteration=0;
   
@@ -148,11 +148,21 @@ public class DirDocMaker extends BasicDocMaker {
     if (inputFiles==null) {
       throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());
     }
-    // date format: 30-MAR-1987 14:22:36
-    dateFormat = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss",Locale.US);
-    dateFormat.setLenient(true);
   }
 
+  // get/initiate a thread-local simple date format (must do so 
+  // because SimpleDateFormat is not thread-safe).
+  protected DateFormat getDateFormat () {
+    DateFormat df = (DateFormat) dateFormat.get();
+    if (df == null) {
+      // date format: 30-MAR-1987 14:22:36.87
+      df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.US);
+      df.setLenient(true);
+      dateFormat.set(df);
+    }
+    return df;
+  }
+  
   protected DocData getNextDocData() throws Exception {
     File f = null;
     String name = null;
@@ -184,7 +194,7 @@ public class DirDocMaker extends BasicDocMaker {
     reader.close();
     addBytes(f.length());
     
-    Date date = dateFormat.parse(dateStr.trim()); 
+    Date date = getDateFormat().parse(dateStr.trim()); 
     return new DocData(name, bodyBuf.toString(), title, null, date);
   }
 

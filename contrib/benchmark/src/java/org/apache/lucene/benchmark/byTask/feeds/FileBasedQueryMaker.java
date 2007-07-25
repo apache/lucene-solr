@@ -46,7 +46,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
 
     Analyzer anlzr = (Analyzer) Class.forName(config.get("analyzer",
             "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
-    String defaultField = config.get("file.query.maker.default.field", "body");
+    String defaultField = config.get("file.query.maker.default.field", BasicDocMaker.BODY_FIELD);
     QueryParser qp = new QueryParser(defaultField, anlzr);
 
     List qq = new ArrayList();
