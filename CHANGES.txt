@@ -46,6 +46,14 @@ Bug fixes
   
  6. LUCENE-957: RAMDirectory fixed to properly handle directories
     larger than Integer.MAX_VALUE. (Doron Cohen)
+
+ 7. LUCENE-781: MultiReader fixed to not throw NPE if isCurrent(),
+    isOptimized() or getVersion() is called. Separated MultiReader
+    into two classes: MultiSegmentReader extends IndexReader, is
+    package-protected and is created automatically by IndexReader.open()
+    in case the index has multiple segments. The public MultiReader 
+    now extends MultiSegmentReader and is intended to be used by users
+    who want to add their own subreaders. (Daniel Naber, Michael Busch)
       
 New features
 

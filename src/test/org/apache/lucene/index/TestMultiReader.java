@@ -61,7 +61,7 @@ public class TestMultiReader extends TestCase {
 
   public void testDocument() throws IOException {
     sis.read(dir);
-    MultiReader reader = new MultiReader(dir, sis, false, readers);
+    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
     assertTrue(reader != null);
     Document newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
@@ -76,7 +76,7 @@ public class TestMultiReader extends TestCase {
 
   public void testUndeleteAll() throws IOException {
     sis.read(dir);
-    MultiReader reader = new MultiReader(dir, sis, false, readers);
+    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
     assertTrue(reader != null);
     assertEquals( 2, reader.numDocs() );
     reader.deleteDocument(0);
@@ -88,7 +88,7 @@ public class TestMultiReader extends TestCase {
     reader.commit();
     reader.close();
     sis.read(dir);
-    reader = new MultiReader(dir, sis, false, readers);
+    reader = new MultiSegmentReader(dir, sis, false, readers);
     assertEquals( 2, reader.numDocs() );
 
     reader.deleteDocument(0);
@@ -96,17 +96,17 @@ public class TestMultiReader extends TestCase {
     reader.commit();
     reader.close();
     sis.read(dir);
-    reader = new MultiReader(dir, sis, false, readers);
+    reader = new MultiSegmentReader(dir, sis, false, readers);
     assertEquals( 1, reader.numDocs() );
   }
         
   
   public void testTermVectors() {
-    MultiReader reader = new MultiReader(dir, sis, false, readers);
+    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
     assertTrue(reader != null);
   }
   
-  /* known to fail, see https://issues.apache.org/jira/browse/LUCENE-781
+
   public void testIsCurrent() throws IOException {
     RAMDirectory ramDir1=new RAMDirectory();
     addDoc(ramDir1, "test foo", true);
@@ -135,6 +135,4 @@ public class TestMultiReader extends TestCase {
     iw.addDocument(doc);
     iw.close();
   }
-  */
-
 }

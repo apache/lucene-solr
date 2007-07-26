@@ -208,7 +208,7 @@ public abstract class IndexReader {
             }
           }
 
-          reader = new MultiReader(directory, infos, closeDirectory, readers);
+          reader = new MultiSegmentReader(directory, infos, closeDirectory, readers);
         }
         reader.deletionPolicy = deletionPolicy;
         return reader;
