@@ -566,6 +566,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         tracker.pending.cancel( true );
         tracker.pending = null;
       }
+      tracker.scheduler.shutdown(); 
       doDeletions();
       closeSearcher();
       closeWriter();
