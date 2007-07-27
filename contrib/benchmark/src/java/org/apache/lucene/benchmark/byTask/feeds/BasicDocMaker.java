@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 
@@ -299,9 +300,10 @@ public abstract class BasicDocMaker implements DocMaker {
       return;
     }
     if (f.isDirectory()) {
-      File files[] = f.listFiles();
+      String files[] = f.list();
+      Arrays.sort(files);
       for (int i = 0; i < files.length; i++) {
-        collectFiles(files[i],inputFiles);
+        collectFiles(new File(f,files[i]),inputFiles);
       }
       return;
     }
