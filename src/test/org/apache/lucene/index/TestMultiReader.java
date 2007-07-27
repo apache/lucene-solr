@@ -43,15 +43,20 @@ public class TestMultiReader extends TestCase {
   protected void setUp() throws IOException {
     DocHelper.setupDoc(doc1);
     DocHelper.setupDoc(doc2);
-    DocHelper.writeDoc(dir, "seg-1", doc1);
-    DocHelper.writeDoc(dir, "seg-2", doc2);
+    SegmentInfo info1 = DocHelper.writeDoc(dir, doc1);
+    SegmentInfo info2 = DocHelper.writeDoc(dir, doc2);
     sis.write(dir);
-    reader1 = SegmentReader.get(new SegmentInfo("seg-1", 1, dir));
-    reader2 = SegmentReader.get(new SegmentInfo("seg-2", 1, dir));
+    openReaders();
+  }
+
+  private void openReaders() throws IOException {
+    sis.read(dir);
+    reader1 = SegmentReader.get(sis.info(0));
+    reader2 = SegmentReader.get(sis.info(1));
     readers[0] = reader1;
     readers[1] = reader2;
   }
-  
+
   public void test() {
     assertTrue(dir != null);
     assertTrue(reader1 != null);
@@ -88,6 +93,7 @@ public class TestMultiReader extends TestCase {
     reader.commit();
     reader.close();
     sis.read(dir);
+    openReaders();
     reader = new MultiSegmentReader(dir, sis, false, readers);
     assertEquals( 2, reader.numDocs() );
 

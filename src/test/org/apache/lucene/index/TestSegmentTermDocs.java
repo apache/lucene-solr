@@ -29,6 +29,7 @@ import java.io.IOException;
 public class TestSegmentTermDocs extends TestCase {
   private Document testDoc = new Document();
   private Directory dir = new RAMDirectory();
+  private SegmentInfo info;
 
   public TestSegmentTermDocs(String s) {
     super(s);
@@ -36,7 +37,7 @@ public class TestSegmentTermDocs extends TestCase {
 
   protected void setUp() throws IOException {
     DocHelper.setupDoc(testDoc);
-    DocHelper.writeDoc(dir, testDoc);
+    info = DocHelper.writeDoc(dir, testDoc);
   }
 
 
@@ -50,7 +51,7 @@ public class TestSegmentTermDocs extends TestCase {
   
   public void testTermDocs() throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
+    SegmentReader reader = SegmentReader.get(info);
     assertTrue(reader != null);
     SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
     assertTrue(segTermDocs != null);
@@ -68,7 +69,7 @@ public class TestSegmentTermDocs extends TestCase {
   public void testBadSeek() throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
+      SegmentReader reader = SegmentReader.get(info);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);
@@ -78,7 +79,7 @@ public class TestSegmentTermDocs extends TestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
+      SegmentReader reader = SegmentReader.get(info);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);

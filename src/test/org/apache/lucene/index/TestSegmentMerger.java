@@ -32,12 +32,10 @@ public class TestSegmentMerger extends TestCase {
   //First segment to be merged
   private Directory merge1Dir = new RAMDirectory();
   private Document doc1 = new Document();
-  private String merge1Segment = "test-1";
   private SegmentReader reader1 = null;
   //Second Segment to be merged
   private Directory merge2Dir = new RAMDirectory();
   private Document doc2 = new Document();
-  private String merge2Segment = "test-2";
   private SegmentReader reader2 = null;
   
 
@@ -47,11 +45,11 @@ public class TestSegmentMerger extends TestCase {
 
   protected void setUp() throws IOException {
     DocHelper.setupDoc(doc1);
-    DocHelper.writeDoc(merge1Dir, merge1Segment, doc1);
+    SegmentInfo info1 = DocHelper.writeDoc(merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
-    DocHelper.writeDoc(merge2Dir, merge2Segment, doc2);
-    reader1 = SegmentReader.get(new SegmentInfo(merge1Segment, 1, merge1Dir));
-    reader2 = SegmentReader.get(new SegmentInfo(merge2Segment, 1, merge2Dir));
+    SegmentInfo info2 = DocHelper.writeDoc(merge2Dir, doc2);
+    reader1 = SegmentReader.get(info1);
+    reader2 = SegmentReader.get(info2);
   }
 
   public void test() {

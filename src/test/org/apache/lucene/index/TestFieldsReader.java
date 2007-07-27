@@ -35,6 +35,8 @@ public class TestFieldsReader extends TestCase {
   private Document testDoc = new Document();
   private FieldInfos fieldInfos = null;
 
+  private final static String TEST_SEGMENT_NAME = "_0";
+
   public TestFieldsReader(String s) {
     super(s);
   }
@@ -43,16 +45,16 @@ public class TestFieldsReader extends TestCase {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
-    DocumentWriter writer = new DocumentWriter(dir, new WhitespaceAnalyzer(),
-            Similarity.getDefault(), 50);
-    assertTrue(writer != null);
-    writer.addDocument("test", testDoc);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    writer.setUseCompoundFile(false);
+    writer.addDocument(testDoc);
+    writer.close();
   }
 
   public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Document doc = reader.doc(0, null);
@@ -82,7 +84,7 @@ public class TestFieldsReader extends TestCase {
   public void testLazyFields() throws Exception {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set loadFieldNames = new HashSet();
@@ -137,7 +139,7 @@ public class TestFieldsReader extends TestCase {
   public void testLazyFieldsAfterClose() throws Exception {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set loadFieldNames = new HashSet();
@@ -167,7 +169,7 @@ public class TestFieldsReader extends TestCase {
   public void testLoadFirst() throws Exception {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     LoadFirstFieldSelector fieldSelector = new LoadFirstFieldSelector();
@@ -200,10 +202,12 @@ public class TestFieldsReader extends TestCase {
     _TestUtil.rmDir(file);
     FSDirectory tmpDir = FSDirectory.getDirectory(file);
     assertTrue(tmpDir != null);
-    DocumentWriter writer = new DocumentWriter(tmpDir, new WhitespaceAnalyzer(),
-            Similarity.getDefault(), 50);
-    assertTrue(writer != null);
-    writer.addDocument("test", testDoc);
+
+    IndexWriter writer = new IndexWriter(tmpDir, new WhitespaceAnalyzer(), true);
+    writer.setUseCompoundFile(false);
+    writer.addDocument(testDoc);
+    writer.close();
+
     assertTrue(fieldInfos != null);
     FieldsReader reader;
     long lazyTime = 0;
@@ -214,7 +218,7 @@ public class TestFieldsReader extends TestCase {
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.EMPTY_SET, lazyFieldNames);
 
     for (int i = 0; i < length; i++) {
-      reader = new FieldsReader(tmpDir, "test", fieldInfos);
+      reader = new FieldsReader(tmpDir, TEST_SEGMENT_NAME, fieldInfos);
       assertTrue(reader != null);
       assertTrue(reader.size() == 1);
 
@@ -238,7 +242,7 @@ public class TestFieldsReader extends TestCase {
       doc = null;
       //Hmmm, are we still in cache???
       System.gc();
-      reader = new FieldsReader(tmpDir, "test", fieldInfos);
+      reader = new FieldsReader(tmpDir, TEST_SEGMENT_NAME, fieldInfos);
       doc = reader.doc(0, fieldSelector);
       field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
       assertTrue("field is not lazy", field.isLazy() == true);
@@ -256,7 +260,7 @@ public class TestFieldsReader extends TestCase {
   }
   
   public void testLoadSize() throws IOException {
-    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     Document doc;
     
     doc = reader.doc(0, new FieldSelector(){

@@ -105,14 +105,16 @@ public class TestDoc extends TestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
 
-      Directory directory = FSDirectory.getDirectory(indexDir, true);
-      directory.close();
+      Directory directory = FSDirectory.getDirectory(indexDir);
+      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
 
-      SegmentInfo si1 = indexDoc("one", "test.txt");
+      SegmentInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
 
-      SegmentInfo si2 = indexDoc("two", "test2.txt");
+      SegmentInfo si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
+      writer.close();
+      directory.close();
 
       SegmentInfo siMerge = merge(si1, si2, "merge", false);
       printSegment(out, siMerge);
@@ -131,14 +133,16 @@ public class TestDoc extends TestCase {
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      directory = FSDirectory.getDirectory(indexDir, true);
-      directory.close();
+      directory = FSDirectory.getDirectory(indexDir);
+      writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
 
-      si1 = indexDoc("one", "test.txt");
+      si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
 
-      si2 = indexDoc("two", "test2.txt");
+      si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
+      writer.close();
+      directory.close();
 
       siMerge = merge(si1, si2, "merge", true);
       printSegment(out, siMerge);
@@ -157,21 +161,14 @@ public class TestDoc extends TestCase {
    }
 
 
-   private SegmentInfo indexDoc(String segment, String fileName)
+   private SegmentInfo indexDoc(IndexWriter writer, String fileName)
    throws Exception
    {
-      Directory directory = FSDirectory.getDirectory(indexDir, false);
-      Analyzer analyzer = new SimpleAnalyzer();
-      DocumentWriter writer =
-         new DocumentWriter(directory, analyzer, Similarity.getDefault(), 1000);
-
       File file = new File(workDir, fileName);
       Document doc = FileDocument.Document(file);
-
-      writer.addDocument(segment, doc);
-
-      directory.close();
-      return new SegmentInfo(segment, 1, directory, false, false);
+      writer.addDocument(doc);
+      writer.flush();
+      return writer.segmentInfos.info(writer.segmentInfos.size()-1);
    }
 
 

@@ -41,8 +41,8 @@ public class TestSegmentReader extends TestCase {
   //TODO: Setup the reader w/ multiple documents
   protected void setUp() throws IOException {
     DocHelper.setupDoc(testDoc);
-    DocHelper.writeDoc(dir, testDoc);
-    reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
+    SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
+    reader = SegmentReader.get(info);
   }
 
   protected void tearDown() {
@@ -75,8 +75,8 @@ public class TestSegmentReader extends TestCase {
   public void testDelete() throws IOException {
     Document docToDelete = new Document();
     DocHelper.setupDoc(docToDelete);
-    DocHelper.writeDoc(dir, "seg-to-delete", docToDelete);
-    SegmentReader deleteReader = SegmentReader.get(new SegmentInfo("seg-to-delete", 1, dir));
+    SegmentInfo info = DocHelper.writeDoc(dir, docToDelete);
+    SegmentReader deleteReader = SegmentReader.get(info);
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);

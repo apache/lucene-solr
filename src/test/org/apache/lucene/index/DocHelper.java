@@ -207,55 +207,38 @@ class DocHelper {
   }                         
 
   /**
-   * Writes the document to the directory using a segment named "test"
+   * Writes the document to the directory using a segment
+   * named "test"; returns the SegmentInfo describing the new
+   * segment 
    * @param dir
    * @param doc
    * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, Document doc) throws IOException
+  public static SegmentInfo writeDoc(Directory dir, Document doc) throws IOException
   {
-    writeDoc(dir, "test", doc);
+    return writeDoc(dir, new WhitespaceAnalyzer(), Similarity.getDefault(), doc);
   }
 
   /**
-   * Writes the document to the directory in the given segment
-   * @param dir
-   * @param segment
-   * @param doc
-   * @throws IOException
-   */ 
-  public static void writeDoc(Directory dir, String segment, Document doc) throws IOException
-  {
-    Similarity similarity = Similarity.getDefault();
-    writeDoc(dir, new WhitespaceAnalyzer(), similarity, segment, doc);
-  }
-
-  /**
-   * Writes the document to the directory segment named "test" using the specified analyzer and similarity
+   * Writes the document to the directory using the analyzer
+   * and the similarity score; returns the SegmentInfo
+   * describing the new segment
    * @param dir
    * @param analyzer
    * @param similarity
    * @param doc
    * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException
+  public static SegmentInfo writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException
   {
-    writeDoc(dir, analyzer, similarity, "test", doc);
-  }
-
-  /**
-   * Writes the document to the directory segment using the analyzer and the similarity score
-   * @param dir
-   * @param analyzer
-   * @param similarity
-   * @param segment
-   * @param doc
-   * @throws IOException
-   */ 
-  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, String segment, Document doc) throws IOException
-  {
-    DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
-    writer.addDocument(segment, doc);
+    IndexWriter writer = new IndexWriter(dir, analyzer);
+    writer.setSimilarity(similarity);
+    //writer.setUseCompoundFile(false);
+    writer.addDocument(doc);
+    writer.flush();
+    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    writer.close();
+    return info;
   }
 
   public static int numFields(Document doc) {

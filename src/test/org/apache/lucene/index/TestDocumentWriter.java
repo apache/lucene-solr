@@ -32,6 +32,8 @@ import org.apache.lucene.store.RAMDirectory;
 import java.io.Reader;
 import java.io.IOException;
 
+import java.util.Arrays;
+
 public class TestDocumentWriter extends TestCase {
   private RAMDirectory dir;
 
@@ -57,11 +59,13 @@ public class TestDocumentWriter extends TestCase {
     DocHelper.setupDoc(testDoc);
     Analyzer analyzer = new WhitespaceAnalyzer();
     Similarity similarity = Similarity.getDefault();
-    DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
-    String segName = "test";
-    writer.addDocument(segName, testDoc);
+    IndexWriter writer = new IndexWriter(dir, analyzer, true);
+    writer.addDocument(testDoc);
+    writer.flush();
+    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
+    SegmentReader reader = SegmentReader.get(info);
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -89,14 +93,14 @@ public class TestDocumentWriter extends TestCase {
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_3_TEXT));
 
-    // test that the norm file is not present if omitNorms is true
+    // test that the norms are not present in the segment if
+    // omitNorms is true
     for (int i = 0; i < reader.fieldInfos.size(); i++) {
       FieldInfo fi = reader.fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
-        assertTrue(fi.omitNorms == !dir.fileExists(segName + ".f" + i));
+        assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
       }
     }
-
   }
 
   public void testPositionIncrementGap() throws IOException {
@@ -111,14 +115,17 @@ public class TestDocumentWriter extends TestCase {
     };
 
     Similarity similarity = Similarity.getDefault();
-    DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
+    IndexWriter writer = new IndexWriter(dir, analyzer, true);
+
     Document doc = new Document();
     doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.TOKENIZED));
     doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.TOKENIZED));
 
-    String segName = "test";
-    writer.addDocument(segName, doc);
-    SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
+    writer.addDocument(doc);
+    writer.flush();
+    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    writer.close();
+    SegmentReader reader = SegmentReader.get(info);
 
     TermPositions termPositions = reader.termPositions(new Term("repeated", "repeated"));
     assertTrue(termPositions.next());
@@ -130,7 +137,7 @@ public class TestDocumentWriter extends TestCase {
   
   public void testPreAnalyzedField() throws IOException {
     Similarity similarity = Similarity.getDefault();
-    DocumentWriter writer = new DocumentWriter(dir, new SimpleAnalyzer(), similarity, 50);
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true);
     Document doc = new Document();
     
     doc.add(new Field("preanalyzed", new TokenStream() {
@@ -147,9 +154,11 @@ public class TestDocumentWriter extends TestCase {
       
     }, TermVector.NO));
     
-    String segName = "test";
-    writer.addDocument(segName, doc);
-    SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
+    writer.addDocument(doc);
+    writer.flush();
+    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    writer.close();
+    SegmentReader reader = SegmentReader.get(info);
 
     TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
     assertTrue(termPositions.next());
