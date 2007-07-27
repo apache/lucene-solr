@@ -4,6 +4,14 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/27/07
+  LUCENE-836: Add support for search quality benchmarking, running 
+  a set of queries against a searcher, and, optionally produce a submission
+  report, and, if query judgements are available, compute quality measures:
+  recall, precision_at_N, average_precision, MAP. TREC specific Judge (based 
+  on TREC QRels) and TREC Topics reader are included in o.a.l.benchmark.quality.trec
+  but any other format of queries and judgements can be implemented and used.
+  
 7/24/07
   LUCENE-947: Add support for creating and index "one document per
   line" from a large text file, which reduces per-document overhead of

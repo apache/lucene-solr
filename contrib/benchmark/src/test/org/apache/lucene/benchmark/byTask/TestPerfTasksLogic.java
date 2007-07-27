@@ -23,6 +23,9 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
+import org.apache.lucene.benchmark.byTask.feeds.DocData;
+import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
+import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -135,8 +138,8 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
-        "doc.add.log.step=2697",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
         "doc.term.vector=false",
         "doc.maker.forever=false",
         "directory=FSDirectory",
@@ -153,7 +156,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 21578; // that's how many docs there are in the Reuters collecton.
+    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -221,7 +224,7 @@ public class TestPerfTasksLogic extends TestCase {
   }
   
   // create the benchmark and execute it. 
-  private Benchmark execBenchmark(String[] algLines) throws Exception {
+  public static Benchmark execBenchmark(String[] algLines) throws Exception {
     String algText = algLinesToText(algLines);
     logTstLogic(algText);
     Benchmark benchmark = new Benchmark(new StringReader(algText));
@@ -230,7 +233,7 @@ public class TestPerfTasksLogic extends TestCase {
   }
   
   // catenate alg lines to make the alg text
-  private String algLinesToText(String[] algLines) {
+  private static String algLinesToText(String[] algLines) {
     String indent = "  ";
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < propLines.length; i++) {
@@ -242,11 +245,22 @@ public class TestPerfTasksLogic extends TestCase {
     return sb.toString();
   }
 
-  private void logTstLogic (String txt) {
+  private static void logTstLogic (String txt) {
     if (!DEBUG) 
       return;
     System.out.println("Test logic of:");
     System.out.println(txt);
   }
 
+  /** use reuters and the exhaust mechanism, but to be faster, add 20 docs only... */
+  public static class Reuters20DocMaker extends ReutersDocMaker {
+    private int nDocs=0;
+    protected DocData getNextDocData() throws Exception {
+      if (nDocs>=20 && !forever) {
+        throw new NoMoreDataException();
+      }
+      nDocs++;
+      return super.getNextDocData();
+    }
+  }
 }

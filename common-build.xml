@@ -284,6 +284,8 @@
     </copy>
   </target>
 
+  <property name="tests.verbose" value="false"/>
+
   <target name="test" depends="compile-test" description="Runs unit tests">
     <fail unless="junit.present">
       ##################################################################
@@ -299,6 +301,10 @@
       <assertions>
         <enable package="org.apache.lucene"/>
       </assertions>
+
+      <!-- allow tests to control debug prints -->
+      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+
       <!-- TODO: create propertyset for test properties, so each project can have its own set -->
       <sysproperty key="dataDir" file="src/test"/>
       <sysproperty key="tempDir" file="${build.dir}/test"/>
