@@ -113,6 +113,10 @@ New Features
 20. SOLR-102: Added RegexFragmenter, which splits text for highlighting
     based on a given pattern.  (klaas)
 
+21. SOLR-258: Date Faceting added to SimpleFacets.  Facet counts
+    computed for ranges of size facet.date.gap (a DateMath expression) 
+    between facet.date.start and facet.date.end.  (hossman)
+
 Changes in runtime behavior
 
 Optimizations

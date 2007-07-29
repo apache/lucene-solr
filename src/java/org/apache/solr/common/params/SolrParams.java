@@ -121,8 +121,74 @@ public abstract class SolrParams {
    * only use the filterCache for terms with a df >= to this parameter.
    */
   public static final String FACET_ENUM_CACHE_MINDF = "facet.enum.cache.minDf";
+  /**
+   * Any field whose terms the user wants to enumerate over for
+   * Facet Contraint Counts (multi-value)
+   */
+  public static final String FACET_DATE = "facet.date";
+  /**
+   * Date string indicating the starting point for a date facet range.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_DATE_START = "facet.date.start";
+  /**
+   * Date string indicating the endinging point for a date facet range.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_DATE_END = "facet.date.end";
+  /**
+   * Date Math string indicating the interval of sub-ranges for a date
+   * facet range.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_DATE_GAP = "facet.date.gap";
+  /**
+   * Boolean indicating how counts should be computed if the range
+   * between 'start' and 'end' is not evenly divisible by 'gap'.  If
+   * this value is true, then all counts of ranges involving the 'end'
+   * point will use the exact endpoint specified -- this includes the
+   * 'between' and 'after' counts as well as the last range computed
+   * using the 'gap'.  If the value is false, then 'gap' is used to
+   * compute the effective endpoint closest to the 'end' param which
+   * results in the range between 'start' and 'end' being evenly
+   * divisible by 'gap'.
+   * The default is false.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_DATE_HARD_END = "facet.date.hardend";
+  /**
+   * String indicating what "other" ranges should be computed for a
+   * date facet range (multi-value).
+   * Can be overriden on a per field basis.
+   * @see FacetDateOther
+   */
+  public static final String FACET_DATE_OTHER = "facet.date.other";
 
-
+  /**
+   * An enumeration of the legal values for FACET_DATE_OTHER...
+   * <ul>
+   * <li>before = the count of matches before the start date</li>
+   * <li>after = the count of matches after the end date</li>
+   * <li>between = the count of all matches between start and end</li>
+   * <li>all = all of the above (default value)</li>
+   * <li>none = no additional info requested</li>
+   * </ul>
+   * @see #FACET_DATE_OTHER
+   */
+  public enum FacetDateOther {
+    BEFORE, AFTER, BETWEEN, ALL, NONE;
+    public String toString() { return super.toString().toLowerCase(); }
+    public static FacetDateOther get(String label) {
+      try {
+        return valueOf(label.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           label+" is not a valid type of 'other' date facet information",e);
+      }
+    }
+  }
+  
   /** If the content stream should come from a URL (using URLConnection) */
   public static final String STREAM_URL = "stream.url";
 

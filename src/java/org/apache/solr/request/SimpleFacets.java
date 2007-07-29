@@ -25,6 +25,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SolrParams.FacetDateOther;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -33,12 +34,18 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Set;
+import java.util.EnumSet;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -70,6 +77,7 @@ public class SimpleFacets {
    *
    * @see #getFacetQueryCounts
    * @see #getFacetFieldCounts
+   * @see #getFacetDateCounts
    * @see SolrParams#FACET
    * @return a NamedList of Facet Count info or null
    */
@@ -83,9 +91,9 @@ public class SimpleFacets {
     try {
 
       res.add("facet_queries", getFacetQueryCounts());
-
       res.add("facet_fields", getFacetFieldCounts());
-
+      res.add("facet_dates", getFacetDateCounts());
+      
     } catch (Exception e) {
       SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       res.add("exception", SolrException.toStr(e));
@@ -402,6 +410,148 @@ public class SimpleFacets {
     return res;
   }
 
+  /**
+   * Returns a list of value constraints and the associated facet counts 
+   * for each facet date field, range, and interval specified in the
+   * SolrParams
+   *
+   * @see SolrParams#FACET_DATE
+   */
+  public NamedList getFacetDateCounts()
+          throws IOException {
+
+    final SolrParams required = new RequiredSolrParams(params);
+    final NamedList resOuter = new SimpleOrderedMap();
+    final String[] fields = params.getParams(SolrParams.FACET_DATE);
+    final Date NOW = new Date();
+    
+    if (null == fields || 0 == fields.length) return resOuter;
+    
+    final IndexSchema schema = searcher.getSchema();
+    for (String f : fields) {
+      final NamedList resInner = new SimpleOrderedMap();
+      resOuter.add(f, resInner);
+      final FieldType trash = schema.getFieldType(f);
+      if (! (trash instanceof DateField)) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "Can not date facet on a field which is not a DateField: " + f);
+      }
+      final DateField ft = (DateField) trash;
+      final String startS
+        = required.getFieldParam(f,SolrParams.FACET_DATE_START);
+      final Date start;
+      try {
+        start = ft.parseMath(NOW, startS);
+      } catch (SolrException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "date facet 'start' is not a valid Date string: " + startS, e);
+      }
+      final String endS
+        = required.getFieldParam(f,SolrParams.FACET_DATE_END);
+      Date end; // not final, hardend may change this
+      try {
+        end = ft.parseMath(NOW, endS);
+      } catch (SolrException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "date facet 'end' is not a valid Date string: " + endS, e);
+      }
+          
+      if (end.before(start)) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "date facet 'end' comes before 'start': "+endS+" < "+startS);
+      }
+
+      final String gap = required.getFieldParam(f,SolrParams.FACET_DATE_GAP);
+      final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
+      dmp.setNow(NOW);
+      
+      try {
+        
+        Date low = start;
+        while (low.before(end)) {
+          dmp.setNow(low);
+          final String lowI = ft.toInternal(low);
+          final String label = ft.indexedToReadable(lowI);
+          Date high = dmp.parseMath(gap);
+          if (end.before(high)) {
+            if (params.getFieldBool(f,SolrParams.FACET_DATE_HARD_END,false)) {
+              high = end;
+            } else {
+              end = high;
+            }
+          }
+          if (high.before(low)) {
+            throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+               "date facet infinite loop (is gap negative?)");
+          }
+          final String highI = ft.toInternal(high);
+          resInner.add(label, rangeCount(f,lowI,highI,true,true));
+          low = high;
+        }
+      } catch (java.text.ParseException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "date facet 'gap' is not a valid Date Math string: " + gap, e);
+      }
+      
+      // explicitly return the gap and end so all the counts are meaningful
+      resInner.add("gap", gap);
+      resInner.add("end", end);
+
+      final String[] othersP =
+        params.getFieldParams(f,SolrParams.FACET_DATE_OTHER);
+      if (null != othersP && 0 < othersP.length ) {
+        Set<FacetDateOther> others = EnumSet.noneOf(FacetDateOther.class);
+
+        for (final String o : othersP) {
+          others.add(FacetDateOther.get(o));
+        }
+
+        // no matter what other values are listed, we don't do
+        // anything if "none" is specified.
+        if (! others.contains(FacetDateOther.NONE) ) {
+          final String startI = ft.toInternal(start);
+          final String endI = ft.toInternal(end);
+          
+          boolean all = others.contains(FacetDateOther.ALL);
+        
+          if (all || others.contains(FacetDateOther.BEFORE)) {
+            resInner.add(FacetDateOther.BEFORE.toString(),
+                         rangeCount(f,null,startI,false,false));
+          }
+          if (all || others.contains(FacetDateOther.AFTER)) {
+            resInner.add(FacetDateOther.AFTER.toString(),
+                         rangeCount(f,endI,null,false,false));
+          }
+          if (all || others.contains(FacetDateOther.BETWEEN)) {
+            resInner.add(FacetDateOther.BETWEEN.toString(),
+                         rangeCount(f,startI,endI,true,true));
+          }
+        }
+      }
+    }
+    
+    return resOuter;
+  }
+
+  /**
+   * Macro for getting the numDocs of a ConstantScoreRangeQuery over docs
+   * @see docs
+   * @see SolrIndexSearcher#numDocs
+   * @see ConstantScoreRangeQuery
+   */
+  protected int rangeCount(String field, String low, String high,
+                           boolean iLow, boolean iHigh) throws IOException {
+    return searcher.numDocs(new ConstantScoreRangeQuery(field,low,high,
+                                                        iHigh,iLow),
+                            docs);
+  }
+  
   /**
    * A simple key=>val pair whose natural order is such that 
    * <b>higher</b> vals come before lower vals.

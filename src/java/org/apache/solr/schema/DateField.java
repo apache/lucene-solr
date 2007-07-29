@@ -70,9 +70,10 @@ import java.text.ParseException;
  *
  * <p>
  * This FieldType also supports incoming "Date Math" strings for computing
- * values by adding/rounding internals of time relative "NOW",
- * ie: "NOW+1YEAR", "NOW/DAY", etc.. -- see {@link DateMathParser}
- * for more examples.
+ * values by adding/rounding internals of time relative either an explicit
+ * datetime (in theformat specified above) or the literal string "NOW",
+ * ie: "NOW+1YEAR", "NOW/DAY", 1995-12-31T23:59:59.999Z+5MINUTES, etc...
+ * -- see {@link DateMathParser} for more examples.
  * </p>
  *
  * @version $Id$
@@ -91,20 +92,61 @@ public class DateField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
+  protected static String NOW = "NOW";
+  protected static char Z = 'Z';
+  
   public String toInternal(String val) {
-    int len=val.length();
-    if (val.charAt(len-1)=='Z') {
+    final int len=val.length();
+    if (val.charAt(len-1) == Z) {
+      // check common case first, simple datetime
+      // NOTE: not parsed to ensure correctness
       return val.substring(0,len-1);
-    } else if (val.startsWith("NOW")) {
-      /* :TODO: let Locale/TimeZone come from init args for rounding only */
-      DateMathParser p = new DateMathParser(UTC, Locale.US);
-      try {
-        return toInternal(p.parseMath(val.substring(3)));
-      } catch (ParseException e) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid Date Math String:'" +val+'\'',e);
+    }
+    return toInternal(parseMath(null, val));
+  }
+
+  /**
+   * Parses a String which may be a date (in the standard format)
+   * followed by an optional math expression.
+   * @param now an optional fixed date to use as "NOW" in the DateMathParser
+   * @param val the string to parse
+   */
+  public Date parseMath(Date now, String val) {
+    String math = null;
+    /* :TODO: let Locale/TimeZone come from init args for rounding only */
+    final DateMathParser p = new DateMathParser(UTC, Locale.US);
+    
+    if (null != now) p.setNow(now);
+    
+    if (val.startsWith(NOW)) {
+      math = val.substring(NOW.length());
+    } else {
+      final int zz = val.indexOf(Z);
+      if (0 < zz) {
+        math = val.substring(zz+1);
+        try {
+          p.setNow(toObject(val.substring(0,zz)));
+        } catch (ParseException e) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                   "Invalid Date in Date Math String:'"
+                                   +val+'\'',e);
+        }
+      } else {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                 "Invalid Date String:'" +val+'\'');
       }
     }
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid Date String:'" +val+'\'');
+
+    if (null == math || math.equals("")) {
+      return p.getNow();
+    }
+    
+    try {
+      return p.parseMath(math);
+    } catch (ParseException e) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                               "Invalid Date Math String:'" +val+'\'',e);
+    }
   }
   
   public String toInternal(Date val) {
@@ -112,11 +154,14 @@ public class DateField extends FieldType {
   }
 
   public String indexedToReadable(String indexedForm) {
-    return indexedForm + 'Z';
+    return indexedForm + Z;
   }
 
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
+  }
+  public Date toObject(String indexedForm) throws java.text.ParseException {
+    return getThreadLocalDateFormat().parse(indexedToReadable(indexedForm));
   }
 
   @Override

@@ -612,6 +612,122 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
  
+  public void testDateFacets() {
+    final String f = "bday";
+    final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
+
+    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
+    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
+    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
+    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
+    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
+    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
+    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
+    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
+    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
+    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
+    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
+    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
+    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
+    assertU(commit());
+
+    assertQ("check counts for month of facet by day",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-01T00:00:00.000Z+1MONTH"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                )
+            // 31 days + pre+post+inner = 34
+            ,"*[count("+pre+"/int)=34]"
+            ,pre+"/int[@name='1976-07-01T00:00:00.000Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00.000Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-03T00:00:00.000Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,pre+"/int[@name='1976-07-04T00:00:00.000Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00.000Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-07T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-08T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00.000Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-13T00:00:00.000Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-14T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-15T00:00:00.000Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-16T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-17T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-18T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-19T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-21T00:00:00.000Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-22T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-23T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-24T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-25T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-26T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-27T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-28T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-29T00:00:00.000Z'][.='0']"
+            ,pre+"/int[@name='1976-07-30T00:00:00.000Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-31T00:00:00.000Z'][.='0']"
+            
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='11']"
+            
+            );
+
+    assertQ("check hardend=false",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start",  "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",    "1976-07-13T00:00:00.000Z"
+                ,"facet.date.gap",    "+5DAYS"
+                ,"facet.date.other",  "all"
+                ,"facet.date.hardend","false"
+                )
+            // 3 gaps + pre+post+inner = 6
+            ,"*[count("+pre+"/int)=6]"
+            ,pre+"/int[@name='1976-07-01T00:00:00.000Z'][.='5'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00.000Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-11T00:00:00.000Z'][.='4'  ]"
+            
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='3']"
+            ,pre+"/int[@name='between'][.='9']"
+            );
+
+    assertQ("check hardend=true",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start",  "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",    "1976-07-13T00:00:00.000Z"
+                ,"facet.date.gap",    "+5DAYS"
+                ,"facet.date.other",  "all"
+                ,"facet.date.hardend","true"
+                )
+            // 3 gaps + pre+post+inner = 6
+            ,"*[count("+pre+"/int)=6]"
+            ,pre+"/int[@name='1976-07-01T00:00:00.000Z'][.='5'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00.000Z'][.='0'  ]"
+            ,pre+"/int[@name='1976-07-11T00:00:00.000Z'][.='1'  ]"
+            
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='6']"
+            ,pre+"/int[@name='between'][.='6']"
+            );
+    
+  }
 
   public void testFacetMultiValued() {
     doFacets("t_s");
@@ -1128,15 +1244,29 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     //    ...
     // BUT: we can test that crazy combinations of "NOW" all work correctly,
     // assuming the test doesn't take too long to run...
-    
-    assertU(adoc("id", "1",  "bday", "1976-07-04T12:08:56.235Z"));
+
+    final String july4 = "1976-07-04T12:08:56.235Z";
+    assertU(adoc("id", "1",  "bday", july4));
     assertU(adoc("id", "2",  "bday", "NOW"));
     assertU(adoc("id", "3",  "bday", "NOW/HOUR"));
     assertU(adoc("id", "4",  "bday", "NOW-30MINUTES"));
     assertU(adoc("id", "5",  "bday", "NOW+30MINUTES"));
     assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
     assertU(commit());
- 
+
+    assertQ("check math on absolute date#1",
+            req("q", "bday:[* TO "+july4+"/SECOND]"),
+            "*[count(//doc)=0]");
+    assertQ("check math on absolute date#2",
+            req("q", "bday:[* TO "+july4+"/SECOND+1SECOND]"),
+            "*[count(//doc)=1]");
+    assertQ("check math on absolute date#3",
+            req("q", "bday:["+july4+"/SECOND TO "+july4+"/SECOND+1SECOND]"),
+            "*[count(//doc)=1]");
+    assertQ("check math on absolute date#4",
+            req("q", "bday:["+july4+"/MINUTE+1MINUTE TO *]"),
+            "*[count(//doc)=5]");
+    
     assertQ("check count for before now",
             req("q", "bday:[* TO NOW]"), "*[count(//doc)=4]");
 
