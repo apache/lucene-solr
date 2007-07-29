@@ -95,7 +95,8 @@
 	<input name="start" type="hidden" value="0">
 	<input name="rows" type="hidden" value="10">
 	<input name="indent" type="hidden" value="on">
-        <br><input class="stdbutton" type="button" value="search" onclick="if (queryForm.q.value.length==0) alert('no empty queries, please'); else queryForm.submit();">
+        <br><input class="stdbutton" type="submit" value="search" 
+        	onclick="if (queryForm.q.value.length==0) { alert('no empty queries, please'); return false; } else { queryForm.submit(); } ">
 	</form>
   </td>
 </tr>
