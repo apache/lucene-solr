@@ -112,6 +112,8 @@ public class TestFilterIndexReader extends TestCase {
 
     IndexReader reader = new TestReader(IndexReader.open(directory));
 
+    assertTrue(reader.isOptimized());
+    
     TermEnum terms = reader.terms();
     while (terms.next()) {
       assertTrue(terms.term().text().indexOf('e') != -1);

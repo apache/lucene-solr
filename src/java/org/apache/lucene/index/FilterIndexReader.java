@@ -217,4 +217,9 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.isCurrent();
   }
+  
+  public boolean isOptimized() {
+    ensureOpen();
+    return in.isOptimized();
+  }
 }

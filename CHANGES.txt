@@ -54,6 +54,9 @@ Bug fixes
     in case the index has multiple segments. The public MultiReader 
     now extends MultiSegmentReader and is intended to be used by users
     who want to add their own subreaders. (Daniel Naber, Michael Busch)
+
+ 8. LUCENE-970: FilterIndexReader now implements isOptimized(). Before
+    a call of isOptimized() would throw a NPE. (Michael Busch)
       
 New features
 
