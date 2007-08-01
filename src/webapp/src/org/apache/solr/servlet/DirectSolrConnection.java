@@ -177,4 +177,13 @@ public class DirectSolrConnection
     responseWriter.write(out, req, rsp);
     return out.toString();
   }
+  
+  /**
+   * Use this method to close the underlying SolrCore.
+   * 
+   * @since solr 1.3
+   */
+  public void close() {
+    core.close();
+  }
 }
