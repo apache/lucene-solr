@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/1/07
+  LUCENE-967: Add "ReadTokensTask" to allow for benchmarking just tokenization.
+
 7/27/07
   LUCENE-836: Add support for search quality benchmarking, running 
   a set of queries against a searcher, and, optionally produce a submission

@@ -69,6 +69,7 @@ public class Benchmark {
       throw new IllegalStateException("Benchmark was already executed");
     }
     executed = true;
+    runData.setStartTimeMillis();
     algorithm.execute();
   }
   

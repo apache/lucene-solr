@@ -100,15 +100,19 @@ public class TaskSequence extends PerfTask {
     
     int count = 0;
     boolean exhausted = false;
+    
+    final int numTasks = tasks.size();
+    final PerfTask[] tasksArray = new PerfTask[numTasks];
+    for(int k=0;k<numTasks;k++)
+      tasksArray[k] = (PerfTask) tasks.get(k);
+
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
-      for (Iterator it = tasks.iterator(); it.hasNext();) {
-        PerfTask task = (PerfTask) it.next();
+      for(int l=0;l<numTasks;l++)
         try {
-          count += task.runAndMaybeStats(letChildReport);
+          count += tasksArray[l].runAndMaybeStats(letChildReport);
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
-      }
     }
     return count;
   }

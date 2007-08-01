@@ -78,7 +78,7 @@ public abstract class PerfTask implements Cloneable {
     if (reportStats && depth <= maxDepthLogStart && !shouldNeverLogAtStart()) {
       System.out.println("------------> starting task: " + getName());
     }
-    if (shouldNotRecordStats() || !reportStats) {
+    if (!reportStats || shouldNotRecordStats()) {
       setup();
       int count = doLogic();
       tearDown();

@@ -21,14 +21,19 @@ import java.io.StringReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.List;
+import java.util.Iterator;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
+import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermDocs;
 
 import junit.framework.TestCase;
 
@@ -221,6 +226,60 @@ public class TestPerfTasksLogic extends TestCase {
     ir.close();
 
     lineFile.delete();
+  }
+  
+  /**
+   * Test ReadTokensTask
+   */
+  public void testReadTokens() throws Exception {
+
+    // We will call ReadTokens on this many docs
+    final int NUM_DOCS = 100;
+
+    // Read tokens from first NUM_DOCS docs from Reuters and
+    // then build index from the same docs
+    String algLines1[] = {
+      "# ----- properties ",
+      "analyzer=org.apache.lucene.analysis.WhitespaceAnalyzer",
+      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
+      "# ----- alg ",
+      "{ReadTokens}: " + NUM_DOCS,
+      "ResetSystemErase",
+      "CreateIndex",
+      "{AddDoc}: " + NUM_DOCS,
+      "CloseIndex",
+    };
+
+    // Run algo
+    Benchmark benchmark = execBenchmark(algLines1);
+
+    List stats = benchmark.getRunData().getPoints().taskStats();
+
+    // Count how many tokens all ReadTokens saw
+    int totalTokenCount1 = 0;
+    for (Iterator it = stats.iterator(); it.hasNext();) {
+      TaskStats stat = (TaskStats) it.next();
+      if (stat.getTask().getName().equals("ReadTokens")) {
+        totalTokenCount1 += stat.getCount();
+      }
+    }
+
+    // Separately count how many tokens are actually in the index:
+    IndexReader reader = IndexReader.open(benchmark.getRunData().getDirectory());
+    assertEquals(NUM_DOCS, reader.numDocs());
+
+    TermEnum terms = reader.terms();
+    TermDocs termDocs = reader.termDocs();
+    int totalTokenCount2 = 0;
+    while(terms.next()) {
+      termDocs.seek(terms.term());
+      while(termDocs.next())
+        totalTokenCount2 += termDocs.freq();
+    }
+    reader.close();
+
+    // Make sure they are the same
+    assertEquals(totalTokenCount1, totalTokenCount2);
   }
   
   // create the benchmark and execute it. 

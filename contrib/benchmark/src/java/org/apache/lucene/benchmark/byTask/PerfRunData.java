@@ -137,8 +137,11 @@ public class PerfRunData {
     // release unused stuff
     System.runFinalization();
     System.gc();
-
+  }
+  
+  public long setStartTimeMillis() {
     startTimeMillis = System.currentTimeMillis();
+    return startTimeMillis;
   }
 
   /**
