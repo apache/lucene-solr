@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
@@ -50,7 +51,7 @@ public class QueryRequest extends RequestBase
    */
   @Override
   public String getPath() {
-    String qt = query.get( SolrParams.QT );
+    String qt = query.get( CommonParams.QT );
     if( qt == null ) {
       qt = super.getPath();
     }

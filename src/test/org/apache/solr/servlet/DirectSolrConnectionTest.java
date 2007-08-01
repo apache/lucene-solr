@@ -17,7 +17,7 @@
 
 package org.apache.solr.servlet;
 
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 
@@ -68,7 +68,7 @@ public class DirectSolrConnectionTest extends AbstractSolrTestCase
     
     // Test using the Stream body parameter
     for( String cmd : cmds ) {
-      direct.request( "/update?"+SolrParams.STREAM_BODY+"="+cmd, null );
+      direct.request( "/update?"+CommonParams.STREAM_BODY+"="+cmd, null );
     }
     String got = direct.request( getIt, null );
     assertTrue( got.indexOf( value ) > 0 );

@@ -17,10 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.common.params.SolrParams.DF;
-import static org.apache.solr.common.params.SolrParams.FACET;
-import static org.apache.solr.common.params.SolrParams.FQ;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.net.MalformedURLException;
@@ -40,6 +36,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similar.MoreLikeThis;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.MoreLikeThisParams;
@@ -87,7 +85,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     // Parse Required Params
     // This will either have a single Reader or valid query
     Reader reader = null;
-    String q = params.get( SolrParams.Q );
+    String q = params.get( CommonParams.Q );
     if( q == null || q.trim().length() <1 ) {
       Iterable<ContentStream> streams = req.getContentStreams();
       if( streams != null ) {
@@ -111,14 +109,14 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       ? null : new ArrayList<InterestingTerm>( mlt.mlt.getMaxQueryTerms() );
     
     // What fields do we need to return
-    String fl = params.get(SolrParams.FL);
+    String fl = params.get(CommonParams.FL);
     int flags = 0; 
     if (fl != null) {
       flags |= SolrPluginUtils.setReturnFields(fl, rsp);
     }
 
-    int start = params.getInt( SolrParams.START, 0 );
-    int rows  = params.getInt( SolrParams.ROWS, 10 );
+    int start = params.getInt( CommonParams.START, 0 );
+    int rows  = params.getInt( CommonParams.ROWS, 10 );
     
     DocListAndSet mltDocs = null;
     
@@ -133,7 +131,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       int matchOffset = params.getInt( MoreLikeThisParams.MATCH_OFFSET, 0 );
       
       // Find the base match  
-      Query query = QueryParsing.parseQuery(q, params.get(DF), params, req.getSchema());
+      Query query = QueryParsing.parseQuery(q, params.get(CommonParams.DF), params, req.getSchema());
       DocList match = searcher.getDocList(query, null, null, matchOffset, 1, flags ); // only get the first one...
       if( includeMatch ) {
         rsp.add( "match", match );
@@ -175,7 +173,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     }
     
     // maybe facet the results
-    if (params.getBool(FACET,false)) {
+    if (params.getBool(FacetParams.FACET,false)) {
       if( mltDocs.docSet == null ) {
         rsp.add( "facet_counts", null );
       }
@@ -190,7 +188,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       NamedList<Object> dbg = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs.docList );
       if (null != dbg) {
         if (null != filters) {
-          dbg.add("filter_queries",req.getParams().getParams(FQ));
+          dbg.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
           List<String> fqs = new ArrayList<String>(filters.size());
           for (Query fq : filters) {
             fqs.add(QueryParsing.toString(fq, req.getSchema()));
@@ -239,7 +237,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       this.searcher = searcher;
       this.reader = searcher.getReader();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
-      this.needDocSet = params.getBool(FACET,false);
+      this.needDocSet = params.getBool(FacetParams.FACET,false);
       
       SolrParams required = params.required();
       String[] fields = splitList.split( required.get(MoreLikeThisParams.SIMILARITY_FIELDS) );

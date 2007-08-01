@@ -97,7 +97,7 @@ public class SolrPluginUtils {
 
   /** standard param for field list */
   @Deprecated
-  public static String FL = SolrParams.FL;
+  public static String FL = org.apache.solr.common.params.CommonParams.FL;
 
   /**
    * SolrIndexSearch.numDocs(Query,Query) freaks out if the filtering
@@ -300,7 +300,7 @@ public class SolrPluginUtils {
                                           CommonParams params)
     throws IOException {
         
-    String debug = getParam(req, SolrParams.DEBUG_QUERY, params.debugQuery);
+    String debug = getParam(req, org.apache.solr.common.params.CommonParams.DEBUG_QUERY, params.debugQuery);
 
     NamedList dbg = null;
     if (debug!=null) {
@@ -377,7 +377,7 @@ public class SolrPluginUtils {
                                           DocList results)
     throws IOException {
 
-    String debug = req.getParam(SolrParams.DEBUG_QUERY);
+    String debug = req.getParam(org.apache.solr.common.params.CommonParams.DEBUG_QUERY);
 
     NamedList dbg = null;
     if (debug!=null) {
@@ -787,7 +787,7 @@ public class SolrPluginUtils {
    */
   public static Sort getSort(SolrQueryRequest req) {
 
-    String sort = req.getParam(SolrParams.SORT);
+    String sort = req.getParam(org.apache.solr.common.params.CommonParams.SORT);
     if (null == sort || sort.equals("")) {
       return null;
     }
@@ -817,7 +817,7 @@ public class SolrPluginUtils {
    * @return null if no filter queries
    */
   public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {
-    return parseQueryStrings(req, req.getParams().getParams(SolrParams.FQ));
+    return parseQueryStrings(req, req.getParams().getParams(org.apache.solr.common.params.CommonParams.FQ));
   }
 
   /** Turns an array of query strings into a List of Query objects.

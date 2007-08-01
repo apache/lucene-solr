@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -95,8 +96,8 @@ public class CommonsHttpSolrServer extends BaseSolrServer
 
     // TODO -- expose these so that people can add things like 'u' & 'p'
     _invariantParams = new ModifiableSolrParams();
-    _invariantParams.set( SolrParams.WT, _processor.getWriterType() );
-    _invariantParams.set( SolrParams.VERSION, "2.2" );
+    _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
+    _invariantParams.set( CommonParams.VERSION, "2.2" );
   }
 
   //------------------------------------------------------------------------

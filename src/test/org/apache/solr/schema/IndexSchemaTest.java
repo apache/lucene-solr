@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -54,7 +55,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     assertU(commit());
     
     Map<String,String> args = new HashMap<String, String>();
-    args.put( SolrParams.Q, "title:test" );
+    args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
     
@@ -64,7 +65,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             );
     
     args = new HashMap<String, String>();
-    args.put( SolrParams.Q, "aaa_dynamic:aaa" );
+    args.put( CommonParams.Q, "aaa_dynamic:aaa" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
     assertQ("dynamic source", req
@@ -73,7 +74,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             );
 
     args = new HashMap<String, String>();
-    args.put( SolrParams.Q, "dynamic_aaa:aaa" );
+    args.put( CommonParams.Q, "dynamic_aaa:aaa" );
     args.put( "indent", "true" );
     req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
     assertQ("dynamic destination", req

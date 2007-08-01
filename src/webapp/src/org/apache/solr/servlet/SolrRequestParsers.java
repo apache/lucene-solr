@@ -37,6 +37,7 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -109,10 +110,10 @@ public class SolrRequestParsers
   public SolrQueryRequest buildRequestFrom( SolrParams params, Collection<ContentStream> streams ) throws Exception
   {
     // The content type will be applied to all streaming content
-    String contentType = params.get( SolrParams.STREAM_CONTENTTYPE );
+    String contentType = params.get( CommonParams.STREAM_CONTENTTYPE );
       
     // Handle anything with a remoteURL
-    String[] strs = params.getParams( SolrParams.STREAM_URL );
+    String[] strs = params.getParams( CommonParams.STREAM_URL );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
@@ -127,7 +128,7 @@ public class SolrRequestParsers
     }
     
     // Handle streaming files
-    strs = params.getParams( SolrParams.STREAM_FILE );
+    strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
@@ -142,7 +143,7 @@ public class SolrRequestParsers
     }
     
     // Check for streams in the request parameters
-    strs = params.getParams( SolrParams.STREAM_BODY );
+    strs = params.getParams( CommonParams.STREAM_BODY );
     if( strs != null ) {
       for( final String body : strs ) {
         ContentStreamBase stream = new ContentStreamBase.StringStream( body );

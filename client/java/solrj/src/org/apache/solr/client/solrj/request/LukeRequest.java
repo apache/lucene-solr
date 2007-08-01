@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -79,7 +80,7 @@ public class LukeRequest extends RequestBase
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if( fields != null && fields.size() > 0 ) {
-      params.add( SolrParams.FL, fields.toArray( new String[fields.size()] ) );
+      params.add( CommonParams.FL, fields.toArray( new String[fields.size()] ) );
     }
     if( count >= 0 ) {
       params.add( "count", count+"" );

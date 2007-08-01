@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -146,7 +147,7 @@ public class DirectSolrConnection
     SolrRequestHandler handler = core.getRequestHandler( path );
     if( handler == null ) {
       if( "/select".equals( path ) || "/select/".equalsIgnoreCase( path) ) {
-        String qt = params.get( SolrParams.QT );
+        String qt = params.get( CommonParams.QT );
         handler = core.getRequestHandler( qt );
         if( handler == null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);

@@ -20,8 +20,8 @@ package org.apache.solr.handler;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -47,7 +47,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     assertU(commit());
     
     Map<String,String> args = new HashMap<String, String>();
-    args.put( SolrParams.Q, "title:test" );
+    args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
     
@@ -56,7 +56,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//*[@numFound='3']"
             );
     
-    args.put( SolrParams.SORT, "val_s asc" );
+    args.put( CommonParams.SORT, "val_s asc" );
     assertQ("with sort param [asc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
@@ -64,7 +64,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[3]/int[@name='id'][.='12']"
             );
 
-    args.put( SolrParams.SORT, "val_s desc" );
+    args.put( CommonParams.SORT, "val_s desc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
@@ -73,8 +73,8 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             );
     
     // Using legacy ';' param
-    args.remove( SolrParams.SORT );
-    args.put( SolrParams.Q, "title:test; val_s desc" );
+    args.remove( CommonParams.SORT );
+    args.put( CommonParams.Q, "title:test; val_s desc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='12']"
@@ -82,7 +82,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[3]/int[@name='id'][.='10']"
             );
 
-    args.put( SolrParams.Q, "title:test; val_s asc" );
+    args.put( CommonParams.Q, "title:test; val_s asc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/int[@name='id'][.='10']"

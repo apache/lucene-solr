@@ -17,10 +17,6 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.common.params.SolrParams.FACET;
-import static org.apache.solr.common.params.SolrParams.FQ;
-import static org.apache.solr.common.params.SolrParams.Q;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,7 +30,9 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -154,7 +152,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
     /* :NOOP */
   }
   /** shorten the class references for utilities */
-  private static class DMP extends DisMaxParams {
+  private static interface DMP extends DisMaxParams {
     /* :NOOP */
   }
 
@@ -222,7 +220,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
 
       /* * * Main User Query * * */
       Query parsedUserQuery = null;
-      String userQuery = params.get( Q );
+      String userQuery = params.get( CommonParams.Q );
       Query altUserQuery = null;
       if( userQuery == null || userQuery.trim().length() < 1 ) {
         // If no query is specified, we may have an alternate
@@ -315,7 +313,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       
       DocListAndSet results = new DocListAndSet();
       NamedList facetInfo = null;
-      if (params.getBool(FACET,false)) {
+      if (params.getBool(FacetParams.FACET,false)) {
         results = s.getDocListAndSet(query, restrictions,
                                      SolrPluginUtils.getSort(req),
                                      req.getStart(), req.getLimit(),
@@ -349,7 +347,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
           }
           debug.add("boostfuncs", params.getParams(DMP.BF));
           if (null != restrictions) {
-            debug.add("filter_queries", params.getParams(FQ));
+            debug.add("filter_queries", params.getParams(CommonParams.FQ));
             debug.add("parsed_filter_queries", 
                       QueryParsing.toString(restrictions, req.getSchema()));
           }

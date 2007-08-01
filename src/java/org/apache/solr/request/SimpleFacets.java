@@ -24,12 +24,12 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.SolrParams.FacetDateOther;
+import org.apache.solr.common.params.FacetParams.FacetDateOther;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -84,7 +84,7 @@ public class SimpleFacets {
   public NamedList getFacetCounts() {
 
     // if someone called this method, benefit of the doubt: assume true
-    if (!params.getBool(params.FACET,true))
+    if (!params.getBool(FacetParams.FACET,true))
       return null;
 
     NamedList res = new SimpleOrderedMap();
@@ -118,7 +118,7 @@ public class SimpleFacets {
      */
     SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
-    String[] facetQs = params.getParams(SolrParams.FACET_QUERY);
+    String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
         res.add(q, searcher.numDocs(qp.parse(q), docs));
@@ -130,19 +130,19 @@ public class SimpleFacets {
 
 
   public NamedList getTermCounts(String field) throws IOException {
-    int offset = params.getFieldInt(field, params.FACET_OFFSET, 0);
-    int limit = params.getFieldInt(field, params.FACET_LIMIT, 100);
-    Integer mincount = params.getFieldInt(field, params.FACET_MINCOUNT);
+    int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
+    int limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
+    Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
     if (mincount==null) {
-      Boolean zeros = params.getFieldBool(field, params.FACET_ZEROS);
+      Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
       // mincount = (zeros!=null && zeros) ? 0 : 1;
       mincount = (zeros!=null && !zeros) ? 1 : 0;
       // current default is to include zeros.
     }
-    boolean missing = params.getFieldBool(field, params.FACET_MISSING, false);
+    boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting if there is a limit.
-    boolean sort = params.getFieldBool(field, params.FACET_SORT, limit>0);
-    String prefix = params.getFieldParam(field,params.FACET_PREFIX);
+    boolean sort = params.getFieldBool(field, FacetParams.FACET_SORT, limit>0);
+    String prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
 
     NamedList counts;
     SchemaField sf = searcher.getSchema().getField(field);
@@ -172,7 +172,7 @@ public class SimpleFacets {
           throws IOException {
 
     NamedList res = new SimpleOrderedMap();
-    String[] facetFs = params.getParams(SolrParams.FACET_FIELD);
+    String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
     if (null != facetFs) {
       for (String f : facetFs) {
         res.add(f, getTermCounts(f));
@@ -333,7 +333,7 @@ public class SimpleFacets {
     */
 
     // Minimum term docFreq in order to use the filterCache for that term.
-    int minDfFilterCache = params.getFieldInt(field, SolrParams.FACET_ENUM_CACHE_MINDF, 0);
+    int minDfFilterCache = params.getFieldInt(field, FacetParams.FACET_ENUM_CACHE_MINDF, 0);
 
     IndexSchema schema = searcher.getSchema();
     IndexReader r = searcher.getReader();
@@ -422,7 +422,7 @@ public class SimpleFacets {
 
     final SolrParams required = new RequiredSolrParams(params);
     final NamedList resOuter = new SimpleOrderedMap();
-    final String[] fields = params.getParams(SolrParams.FACET_DATE);
+    final String[] fields = params.getParams(FacetParams.FACET_DATE);
     final Date NOW = new Date();
     
     if (null == fields || 0 == fields.length) return resOuter;
@@ -439,7 +439,7 @@ public class SimpleFacets {
       }
       final DateField ft = (DateField) trash;
       final String startS
-        = required.getFieldParam(f,SolrParams.FACET_DATE_START);
+        = required.getFieldParam(f,FacetParams.FACET_DATE_START);
       final Date start;
       try {
         start = ft.parseMath(NOW, startS);
@@ -449,7 +449,7 @@ public class SimpleFacets {
            "date facet 'start' is not a valid Date string: " + startS, e);
       }
       final String endS
-        = required.getFieldParam(f,SolrParams.FACET_DATE_END);
+        = required.getFieldParam(f,FacetParams.FACET_DATE_END);
       Date end; // not final, hardend may change this
       try {
         end = ft.parseMath(NOW, endS);
@@ -465,7 +465,7 @@ public class SimpleFacets {
            "date facet 'end' comes before 'start': "+endS+" < "+startS);
       }
 
-      final String gap = required.getFieldParam(f,SolrParams.FACET_DATE_GAP);
+      final String gap = required.getFieldParam(f,FacetParams.FACET_DATE_GAP);
       final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
       dmp.setNow(NOW);
       
@@ -478,7 +478,7 @@ public class SimpleFacets {
           final String label = ft.indexedToReadable(lowI);
           Date high = dmp.parseMath(gap);
           if (end.before(high)) {
-            if (params.getFieldBool(f,SolrParams.FACET_DATE_HARD_END,false)) {
+            if (params.getFieldBool(f,FacetParams.FACET_DATE_HARD_END,false)) {
               high = end;
             } else {
               end = high;
@@ -504,7 +504,7 @@ public class SimpleFacets {
       resInner.add("end", end);
 
       final String[] othersP =
-        params.getFieldParams(f,SolrParams.FACET_DATE_OTHER);
+        params.getFieldParams(f,FacetParams.FACET_DATE_OTHER);
       if (null != othersP && 0 < othersP.length ) {
         Set<FacetDateOther> others = EnumSet.noneOf(FacetDateOther.class);
 

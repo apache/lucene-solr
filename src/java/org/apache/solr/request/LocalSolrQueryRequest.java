@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -44,10 +45,10 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
       if (v instanceof String[]) map.put(k,(String[])v);
       else map.put(k,new String[]{v.toString()});
     }
-    if (query!=null) map.put(SolrParams.Q, new String[]{query});
-    if (qtype!=null) map.put(SolrParams.QT, new String[]{qtype});
-    map.put(SolrParams.START, new String[]{Integer.toString(start)});
-    map.put(SolrParams.ROWS, new String[]{Integer.toString(limit)});
+    if (query!=null) map.put(CommonParams.Q, new String[]{query});
+    if (qtype!=null) map.put(CommonParams.QT, new String[]{qtype});
+    map.put(CommonParams.START, new String[]{Integer.toString(start)});
+    map.put(CommonParams.ROWS, new String[]{Integer.toString(limit)});
     return new MultiMapSolrParams(map);
   }
 

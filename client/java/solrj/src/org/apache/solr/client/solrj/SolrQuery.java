@@ -17,9 +17,10 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 
 
 /**
@@ -47,7 +48,7 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery(String q) {
     this();
-    this.set(SolrParams.Q, q);
+    this.set(CommonParams.Q, q);
   }
 
 
@@ -56,8 +57,8 @@ public class SolrQuery extends ModifiableSolrParams
    * @param f the field name from the IndexSchema
    */
   public void addFacetField(String f) {
-    this.add(SolrParams.FACET_FIELD, f);
-    this.set(SolrParams.FACET, true);
+    this.add(FacetParams.FACET_FIELD, f);
+    this.set(FacetParams.FACET, true);
     this.setFacetMinCount(1);
   }
 
@@ -66,15 +67,15 @@ public class SolrQuery extends ModifiableSolrParams
    * @return string array of facet fields or null if not set/empty
    */
   public String[] getFacetFields() {
-    return this.getParams(SolrParams.FACET_FIELD);
+    return this.getParams(FacetParams.FACET_FIELD);
   }
 
   /** remove a facet field
    * 
    */
   public boolean removeFacetField(String name) {
-    boolean b = this.remove(SolrParams.FACET_FIELD, name);
-    if (this.get(SolrParams.FACET_FIELD) == null && this.get(SolrParams.FACET_QUERY) == null) {
+    boolean b = this.remove(FacetParams.FACET_FIELD, name);
+    if (this.get(FacetParams.FACET_FIELD) == null && this.get(FacetParams.FACET_QUERY) == null) {
       this.setFacet(false);
     }
     return b;
@@ -86,30 +87,30 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public void setFacet(boolean b) {
     if (b) {
-      this.set(SolrParams.FACET, true);
+      this.set(FacetParams.FACET, true);
     } else {
-      this.remove(SolrParams.FACET);
-      this.remove(SolrParams.FACET_MINCOUNT);
-      this.remove(SolrParams.FACET_FIELD);
-      this.remove(SolrParams.FACET_LIMIT);
-      this.remove(SolrParams.FACET_MISSING);
-      this.remove(SolrParams.FACET_OFFSET);
-      this.remove(SolrParams.FACET_PREFIX);
-      this.remove(SolrParams.FACET_QUERY);
-      this.remove(SolrParams.FACET_SORT);
-      this.remove(SolrParams.FACET_ZEROS);
-      this.remove(SolrParams.FACET_PREFIX); // does not include the individual fields...
+      this.remove(FacetParams.FACET);
+      this.remove(FacetParams.FACET_MINCOUNT);
+      this.remove(FacetParams.FACET_FIELD);
+      this.remove(FacetParams.FACET_LIMIT);
+      this.remove(FacetParams.FACET_MISSING);
+      this.remove(FacetParams.FACET_OFFSET);
+      this.remove(FacetParams.FACET_PREFIX);
+      this.remove(FacetParams.FACET_QUERY);
+      this.remove(FacetParams.FACET_SORT);
+      this.remove(FacetParams.FACET_ZEROS);
+      this.remove(FacetParams.FACET_PREFIX); // does not include the individual fields...
     }
   }
   
   public void setFacetPrefix( String prefix )
   {
-    this.set( SolrParams.FACET_PREFIX, prefix );
+    this.set( FacetParams.FACET_PREFIX, prefix );
   }
 
   public void setFacetPrefix( String field, String prefix )
   {
-    this.set( "f."+field+"."+SolrParams.FACET_PREFIX, prefix );
+    this.set( "f."+field+"."+FacetParams.FACET_PREFIX, prefix );
   }
 
   /** add a faceting query
@@ -117,7 +118,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @param f facet query
    */
   public void addFacetQuery(String f) {
-    this.add(SolrParams.FACET_QUERY, f);
+    this.add(FacetParams.FACET_QUERY, f);
   }
 
   /** get facet queries
@@ -125,7 +126,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return all facet queries or null if not set/empty
    */
   public String[] getFacetQuery() {
-    return this.getParams(SolrParams.FACET_QUERY);
+    return this.getParams(FacetParams.FACET_QUERY);
   }
 
   /** remove a facet query
@@ -134,8 +135,8 @@ public class SolrQuery extends ModifiableSolrParams
    * @return true if the facet query was removed false otherwise
    */
   public boolean removeFacetQuery(String q) {
-    boolean b = this.remove(SolrParams.FACET_QUERY, q);
-    if (this.get(SolrParams.FACET_FIELD) == null && this.get(SolrParams.FACET_QUERY) == null) {
+    boolean b = this.remove(FacetParams.FACET_QUERY, q);
+    if (this.get(FacetParams.FACET_FIELD) == null && this.get(FacetParams.FACET_QUERY) == null) {
       this.setFacet(false);
     }
     return b;
@@ -146,7 +147,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @param lim number facet items to return
    */
   public void setFacetLimit(int lim) {
-    this.set(SolrParams.FACET_LIMIT, lim);
+    this.set(FacetParams.FACET_LIMIT, lim);
   }
 
   /** get current facet limit
@@ -154,7 +155,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return facet limit or default of 25
    */
   public int getFacetLimit() {
-    return this.getInt(SolrParams.FACET_LIMIT, 25);
+    return this.getInt(FacetParams.FACET_LIMIT, 25);
   }
 
   /** set facet minimum count
@@ -162,7 +163,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @param cnt facets having less that cnt hits will be excluded from teh facet list
    */
   public void setFacetMinCount(int cnt) {
-    this.set(SolrParams.FACET_MINCOUNT, cnt);
+    this.set(FacetParams.FACET_MINCOUNT, cnt);
   }
 
   /** get facet minimum count
@@ -170,11 +171,11 @@ public class SolrQuery extends ModifiableSolrParams
    * @return facet minimum count or default of 1
    */
   public int getFacetMinCount() {
-    return this.getInt(SolrParams.FACET_LIMIT, 1);
+    return this.getInt(FacetParams.FACET_LIMIT, 1);
   }
 
   public void setMissing(String fld) {
-    this.set(SolrParams.FACET_MISSING, fld);
+    this.set(FacetParams.FACET_MISSING, fld);
   }
 
   /** get facet sort
@@ -182,7 +183,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return facet sort or default of true
    */
   public boolean getFacetSort() {
-    return this.getBool(SolrParams.FACET_SORT, false);
+    return this.getBool(FacetParams.FACET_SORT, false);
   }
 
   /** set facet sort
@@ -190,7 +191,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @param sort sort facets
    */
   public void setFacetSort(Boolean sort) {
-    this.set(SolrParams.FACET_SORT, sort);
+    this.set(FacetParams.FACET_SORT, sort);
   }
 
   /** add highlight field
@@ -264,17 +265,17 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public void addSortField(String field, ORDER order) {
-    addValueToParam(SolrParams.SORT, toSortString(field, order));
+    addValueToParam(CommonParams.SORT, toSortString(field, order));
   }
 
   public void removeSortField(String field, ORDER order) {
-    String s = this.get(SolrParams.SORT);
+    String s = this.get(CommonParams.SORT);
     String removeSort = toSortString(field, order);
     if (s != null) {
       String[] sorts = s.split(",");
       s = join(sorts, ", ", removeSort);
       if (s.length()==0) s=null;
-      this.set(SolrParams.SORT, s);
+      this.set(CommonParams.SORT, s);
     }
   }
   
@@ -285,23 +286,23 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public String getSortField() {
-    return this.get(SolrParams.SORT);
+    return this.get(CommonParams.SORT);
   }
 
   public void setFilterQueries(String ... fq) {
-    this.set(SolrParams.FQ, fq);
+    this.set(CommonParams.FQ, fq);
   }
 
   public void addFilterQuery(String ... fq) {
-    this.add(SolrParams.FQ, fq);
+    this.add(CommonParams.FQ, fq);
   }
 
   public boolean removeFilterQuery(String fq) {
-    return this.remove(SolrParams.FQ, fq);
+    return this.remove(CommonParams.FQ, fq);
   }
 
   public String[] getFilterQueries() {
-    return this.getParams(SolrParams.FQ);
+    return this.getParams(CommonParams.FQ);
   }
   
   public boolean getHighlight() {
@@ -324,15 +325,15 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public void setFields(String ... fields) {
-    this.set(SolrParams.FL, fields);
+    this.set(CommonParams.FL, fields);
   }
     
   public void addField(String field) {
-    addValueToParam(SolrParams.FL, field);
+    addValueToParam(CommonParams.FL, field);
   }
 
   public String getFields() {
-    String fields = this.get(SolrParams.FL);
+    String fields = this.get(CommonParams.FL);
     if (fields!=null && fields.equals("score")) {
       fields = "*, score";
     }
@@ -341,39 +342,39 @@ public class SolrQuery extends ModifiableSolrParams
 
   public void setIncludeScore(boolean includeScore) {
     if (includeScore) {
-      this.add(SolrParams.FL, "score");
+      this.add(CommonParams.FL, "score");
     } else {
-      this.remove(SolrParams.FL, "score");
+      this.remove(CommonParams.FL, "score");
     }
   }
 
   public void setQuery(String query) {
-    this.set(SolrParams.Q, query);
+    this.set(CommonParams.Q, query);
   }
 
   public void setRows(Integer rows) {
-    this.set(SolrParams.ROWS, rows);
+    this.set(CommonParams.ROWS, rows);
   }
 
   public void setShowDebugInfo(boolean showDebugInfo) {
-    this.set(SolrParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+    this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
   }
 
 // use addSortField( sort, order 
 //  public void setSort(String ... sort) {
-//    this.set(SolrParams.SORT, sort);
+//    this.set(CommonParams.SORT, sort);
 //  }
 
   public void setStart(Integer start) {
-    this.set(SolrParams.START, start);
+    this.set(CommonParams.START, start);
   }
 
   public void setQueryType(String qt) {
-    this.set(SolrParams.QT, qt);
+    this.set(CommonParams.QT, qt);
   }
 
   public String getQueryType() {
-    return this.get(SolrParams.QT);
+    return this.get(CommonParams.QT);
   }
 
   public void setParam(String name, String ... values) {

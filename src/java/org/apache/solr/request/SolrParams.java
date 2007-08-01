@@ -17,12 +17,17 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
+
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
  */
 @Deprecated
-public abstract class SolrParams extends org.apache.solr.common.params.SolrParams {
+public abstract class SolrParams extends org.apache.solr.common.params.SolrParams
+ implements FacetParams, CommonParams // keep the same constants it used to have
+{
   
 }
 

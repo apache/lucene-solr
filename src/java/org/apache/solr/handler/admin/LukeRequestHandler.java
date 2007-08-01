@@ -44,6 +44,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -134,9 +135,9 @@ public class LukeRequestHandler extends RequestHandlerBase
     else {
       // If no doc is given, show all fields and top terms
       Set<String> fields = null;
-      if( params.get( SolrParams.FL ) != null ) {
+      if( params.get( CommonParams.FL ) != null ) {
         fields = new HashSet<String>();
-        for( String f : params.getParams( SolrParams.FL ) ) {
+        for( String f : params.getParams( CommonParams.FL ) ) {
           fields.add( f );
         }
       }

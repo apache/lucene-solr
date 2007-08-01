@@ -31,6 +31,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
@@ -71,18 +73,18 @@ public class StandardRequestHandler extends RequestHandlerBase {
   {
     
       SolrParams p = req.getParams();
-      String qstr = p.required().get(Q);
+      String qstr = p.required().get(CommonParams.Q);
 
-      String defaultField = p.get(DF);
+      String defaultField = p.get(CommonParams.DF);
 
       // find fieldnames to return (fieldlist)
-      String fl = p.get(SolrParams.FL);
+      String fl = p.get(CommonParams.FL);
       int flags = 0; 
       if (fl != null) {
         flags |= U.setReturnFields(fl, rsp);
       }
       
-      String sortStr = p.get(SORT);
+      String sortStr = p.get(CommonParams.SORT);
       if( sortStr == null ) {  
         // TODO? should we disable the ';' syntax with config?
         // legacy mode, where sreq is query;sort
@@ -117,14 +119,14 @@ public class StandardRequestHandler extends RequestHandlerBase {
       List<Query> filters = U.parseFilterQueries(req);
       SolrIndexSearcher s = req.getSearcher();
 
-      if (p.getBool(FACET,false)) {
+      if (p.getBool(FacetParams.FACET,false)) {
         results = s.getDocListAndSet(query, filters, sort,
-                                     p.getInt(START,0), p.getInt(ROWS,10),
+                                     p.getInt(CommonParams.START,0), p.getInt(CommonParams.ROWS,10),
                                      flags);
         facetInfo = getFacetInfo(req, rsp, results.docSet);
       } else {
         results.docList = s.getDocList(query, filters, sort,
-                                       p.getInt(START,0), p.getInt(ROWS,10),
+                                       p.getInt(CommonParams.START,0), p.getInt(CommonParams.ROWS,10),
                                        flags);
       }
 
@@ -147,7 +149,7 @@ public class StandardRequestHandler extends RequestHandlerBase {
         NamedList dbg = U.doStandardDebug(req, qstr, query, results.docList);
         if (null != dbg) {
           if (null != filters) {
-            dbg.add("filter_queries",req.getParams().getParams(FQ));
+            dbg.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
             List<String> fqs = new ArrayList<String>(filters.size());
             for (Query fq : filters) {
               fqs.add(QueryParsing.toString(fq, req.getSchema()));

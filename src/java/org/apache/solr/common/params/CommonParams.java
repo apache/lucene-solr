@@ -17,116 +17,96 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.util.NamedList;
-
-import java.util.logging.Logger;
 
 /**
- * A collection on common params, both for Plugin initialization and
- * for Requests.
+ * Parameters used across many handlers
  */
-@Deprecated
-public class CommonParams {
+public interface CommonParams {
 
-  public static Logger log = Logger.getLogger(CommonParams.class.getName());
+  /** the query type - which query handler should handle the request */
+  public static final String QT ="qt";
   
-  @Deprecated
-  public static String FL = "fl";
+  /** the response writer type - the format of the response */
+  public static final String WT ="wt";
+  
+  /** query string */
+  public static final String Q ="q";
+  
+  /** sort order */
+  public static final String SORT ="sort";
+  
+  /** Lucene query string(s) for filtering the results without affecting scoring */
+  public static final String FQ ="fq";
+  
+  /** zero based offset of matching documents to retrieve */
+  public static final String START ="start";
+  
+  /** number of documents to return starting at "start" */
+  public static final String ROWS ="rows";
+  
+  /** stylesheet to apply to XML results */
+  public static final String XSL ="xsl";
+  
+  /** stylesheet to apply to XML results */
+  public static final String VERSION ="version";
+  
+  /** query and init param for field list */
+  public static final String FL = "fl";
+  
   /** default query field */
-  @Deprecated
-  public static String DF = "df";
+  public static final String DF = "df";
+  
   /** whether to include debug data */
-  @Deprecated
-  public static String DEBUG_QUERY = "debugQuery";
+  public static final String DEBUG_QUERY = "debugQuery";
+  
   /** another query to explain against */
-  @Deprecated
-  public static String EXPLAIN_OTHER = "explainOther";
+  public static final String EXPLAIN_OTHER = "explainOther";
+  
 
+  /** If the content stream should come from a URL (using URLConnection) */
+  public static final String STREAM_URL = "stream.url";
 
-  /** the default field list to be used */
-  public String fl = null;
-  /** the default field to query */
-  public String df = null;
-  /** do not debug by default **/
-  public String debugQuery = null;
-  /** no default other explanation query **/
-  public String explainOther = null;
-  /** whether to highlight */
-  public boolean highlight = false;
-  /** fields to highlight */
-  public String highlightFields = null;
-  /** maximum highlight fragments to return */
-  public int maxSnippets = 1;
-  /** override default highlight Formatter class */
-  public String highlightFormatterClass = null;
-
-
-  public CommonParams() {
-    /* :NOOP: */
-  }
-
-  /** @see #setValues */
-  public CommonParams(NamedList args) {
-    this();
-    setValues(args);
-  }
-
-  /**
-   * Sets the params using values from a NamedList, usefull in the
-   * init method for your handler.
-   *
-   * <p>
-   * If any param is not of the expected type, a severe error is
-   * logged,and the param is skipped.
-   * </p>
-   *
-   * <p>
-   * If any param is not of in the NamedList, it is skipped and the
-   * old value is left alone.
-   * </p>
-   *
+  /** If the content stream should come from a File (using FileReader) */
+  public static final String STREAM_FILE = "stream.file";
+  
+  /** If the content stream should come directly from a field */
+  public static final String STREAM_BODY = "stream.body";
+  
+  /** 
+   * Explicitly set the content type for the input stream
+   * If multiple streams are specified, the explicit contentType
+   * will be used for all of them.  
    */
-  public void setValues(NamedList args) {
-
-    Object tmp;
-
-    tmp = args.get(SolrParams.FL);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        fl = tmp.toString();
-      } else {
-        log.severe("init param is not a str: " + SolrParams.FL);
+  public static final String STREAM_CONTENTTYPE = "stream.contentType";
+    
+  
+  /** 'true' if the header should include the handler name */
+  public static final String HEADER_ECHO_HANDLER = "echoHandler";
+  
+  /** include the parameters in the header **/
+  public static final String HEADER_ECHO_PARAMS = "echoParams";
+  
+  /** valid values for: <code>echoParams</code> */
+  public enum EchoParamStyle {
+    EXPLICIT,
+    ALL,
+    NONE;
+    
+    public static EchoParamStyle get( String v ) {
+      if( v != null ) {
+        v = v.toUpperCase();
+        if( v.equals( "EXPLICIT" ) ) {
+          return EXPLICIT;
+        }
+        if( v.equals( "ALL") ) {
+          return ALL;
+        }
+        if( v.equals( "NONE") ) {  // the same as nothing...
+          return NONE;
+        }
       }
+      return null;
     }
-
-    tmp = args.get(SolrParams.DF);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        df = tmp.toString();
-      } else {
-        log.severe("init param is not a str: " + SolrParams.DF);
-      }
-    }
-
-    tmp = args.get(SolrParams.DEBUG_QUERY);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        debugQuery = tmp.toString();
-      } else {
-        log.severe("init param is not a str: " + SolrParams.DEBUG_QUERY);
-      }
-    }
-
-    tmp = args.get(SolrParams.EXPLAIN_OTHER);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        explainOther = tmp.toString();
-      } else {
-        log.severe("init param is not a str: " + SolrParams.EXPLAIN_OTHER);
-      }
-    }
-
-  }
-
+  };
 }
 

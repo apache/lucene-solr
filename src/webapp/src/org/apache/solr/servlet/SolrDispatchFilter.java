@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -143,7 +144,7 @@ public class SolrDispatchFilter implements Filter
         if( handler == null && handleSelect ) {
           if( "/select".equals( path ) || "/select/".equals( path ) ) {
             solrReq = parsers.parse( path, req );
-            String qt = solrReq.getParams().get( SolrParams.QT );
+            String qt = solrReq.getParams().get( CommonParams.QT );
             if( qt != null && qt.startsWith( "/" ) ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
             }

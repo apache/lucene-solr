@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -65,8 +66,8 @@ public class EmbeddedSolrServer extends BaseSolrServer
     _processor = new XMLResponseParser();
 
     _invariantParams = new ModifiableSolrParams();
-    _invariantParams.set( SolrParams.WT, _processor.getWriterType() );
-    _invariantParams.set( SolrParams.VERSION, "2.2" );
+    _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
+    _invariantParams.set( CommonParams.VERSION, "2.2" );
   }
 
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException 
@@ -88,7 +89,7 @@ public class EmbeddedSolrServer extends BaseSolrServer
     SolrRequestHandler handler = core.getRequestHandler( path );
     if( handler == null ) {
       if( "/select".equals( path ) || "/select/".equalsIgnoreCase( path) ) {
-        String qt = params.get( SolrParams.QT );
+        String qt = params.get( CommonParams.QT );
         handler = core.getRequestHandler( qt );
         if( handler == null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);

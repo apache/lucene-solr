@@ -21,6 +21,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
@@ -135,24 +136,24 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
 
   @Deprecated
   public String getQueryString() {
-    return params.get(SolrParams.Q);
+    return params.get(CommonParams.Q);
   }
 
   @Deprecated
   public String getQueryType() {
-    return params.get(SolrParams.QT);
+    return params.get(CommonParams.QT);
   }
 
   // starting position in matches to return to client
   @Deprecated
   public int getStart() {
-    return params.getInt(SolrParams.START, 0);
+    return params.getInt(CommonParams.START, 0);
   }
 
   // number of matching documents to return
   @Deprecated
   public int getLimit() {
-    return params.getInt(SolrParams.ROWS, 10);
+    return params.getInt(CommonParams.ROWS, 10);
   }
 
 

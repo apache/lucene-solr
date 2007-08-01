@@ -37,8 +37,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.SolrParams.EchoParamStyle;
+import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -745,16 +746,16 @@ public final class SolrCore {
     responseHeader.add("QTime",qtime);
         
     SolrParams params = req.getParams();
-    if( params.getBool(SolrParams.HEADER_ECHO_HANDLER, false) ) {
+    if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );
     }
     
     // Values for echoParams... false/true/all or false/explicit/all ???
-    String ep = params.get( SolrParams.HEADER_ECHO_PARAMS, null );
+    String ep = params.get( CommonParams.HEADER_ECHO_PARAMS, null );
     if( ep != null ) {
       EchoParamStyle echoParams = EchoParamStyle.get( ep );
       if( echoParams == null ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid value '" + ep + "' for " + SolrParams.HEADER_ECHO_PARAMS 
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid value '" + ep + "' for " + CommonParams.HEADER_ECHO_PARAMS 
             + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'" );
       }
       if( echoParams == EchoParamStyle.EXPLICIT ) {

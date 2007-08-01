@@ -31,6 +31,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -57,7 +58,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     String body3 = "1234567890";
     
     Map<String,String[]> args = new HashMap<String, String[]>();
-    args.put( SolrParams.STREAM_BODY, new String[] {body1} );
+    args.put( CommonParams.STREAM_BODY, new String[] {body1} );
     
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<ContentStream>();
@@ -67,7 +68,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     
     // Now add three and make sure they come out ok
     streams = new ArrayList<ContentStream>();
-    args.put( SolrParams.STREAM_BODY, new String[] {body1,body2,body3} );
+    args.put( CommonParams.STREAM_BODY, new String[] {body1,body2,body3} );
     parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
     assertEquals( 3, streams.size() );
     ArrayList<String> input  = new ArrayList<String>();
@@ -86,7 +87,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     // set the contentType and make sure tat gets set
     String ctype = "text/xxx";
     streams = new ArrayList<ContentStream>();
-    args.put( SolrParams.STREAM_CONTENTTYPE, new String[] {ctype} );
+    args.put( CommonParams.STREAM_CONTENTTYPE, new String[] {ctype} );
     parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
     for( ContentStream s : streams ) {
       assertEquals( ctype, s.getContentType() );
@@ -109,7 +110,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     }
     
     Map<String,String[]> args = new HashMap<String, String[]>();
-    args.put( SolrParams.STREAM_URL, new String[] {url} );
+    args.put( CommonParams.STREAM_URL, new String[] {url} );
     
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<ContentStream>();
