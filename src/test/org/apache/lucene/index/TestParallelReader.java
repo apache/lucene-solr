@@ -120,7 +120,81 @@ public class TestParallelReader extends TestCase {
       // expected exception
     }
   }
+  
+  public void testIsCurrent() throws IOException {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir1();
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    
+    assertTrue(pr.isCurrent());
+    IndexReader modifier = IndexReader.open(dir1);
+    modifier.setNorm(0, "f1", 100);
+    modifier.close();
+    
+    // one of the two IndexReaders which ParallelReader is using
+    // is not current anymore
+    assertFalse(pr.isCurrent());
+    
+    modifier = IndexReader.open(dir2);
+    modifier.setNorm(0, "f3", 100);
+    modifier.close();
+    
+    // now both are not current anymore
+    assertFalse(pr.isCurrent());
+  }
 
+  public void testIsOptimized() throws IOException {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir1();
+    
+    // add another document to ensure that the indexes are not optimized
+    IndexWriter modifier = new IndexWriter(dir1, new StandardAnalyzer());
+    Document d = new Document();
+    d.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    modifier.addDocument(d);
+    modifier.close();
+    
+    modifier = new IndexWriter(dir2, new StandardAnalyzer());
+    d = new Document();
+    d.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    modifier.addDocument(d);
+    modifier.close();
+
+    
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    assertFalse(pr.isOptimized());
+    pr.close();
+    
+    modifier = new IndexWriter(dir1, new StandardAnalyzer());
+    modifier.optimize();
+    modifier.close();
+    
+    pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    // just one of the two indexes are optimized
+    assertFalse(pr.isOptimized());
+    pr.close();
+
+    
+    modifier = new IndexWriter(dir2, new StandardAnalyzer());
+    modifier.optimize();
+    modifier.close();
+    
+    pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    // now both indexes are optimized
+    assertTrue(pr.isOptimized());
+    pr.close();
+
+  }
+
+  
   private void queryTest(Query query) throws IOException {
     Hits parallelHits = parallel.search(query);
     Hits singleHits = single.search(query);
@@ -136,7 +210,7 @@ public class TestParallelReader extends TestCase {
     }
   }
 
-  // Fiels 1-4 indexed together:
+  // Fields 1-4 indexed together:
   private Searcher single() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), true);

@@ -279,6 +279,43 @@ public class ParallelReader extends IndexReader {
     ensureOpen();
     return new ParallelTermPositions();
   }
+  
+  /**
+   * Checks recursively if all subreaders are up to date. 
+   */
+  public boolean isCurrent() throws CorruptIndexException, IOException {
+    for (int i = 0; i < readers.size(); i++) {
+      if (!((IndexReader)readers.get(i)).isCurrent()) {
+        return false;
+      }
+    }
+    
+    // all subreaders are up to date
+    return true;
+  }
+
+  /**
+   * Checks recursively if all subindexes are optimized 
+   */
+  public boolean isOptimized() {
+    for (int i = 0; i < readers.size(); i++) {
+      if (!((IndexReader)readers.get(i)).isOptimized()) {
+        return false;
+      }
+    }
+    
+    // all subindexes are optimized
+    return true;
+  }
+
+  
+  /** Not implemented.
+   * @throws UnsupportedOperationException
+   */
+  public long getVersion() {
+    throw new UnsupportedOperationException("ParallelReader does not support this method.");
+  }
+
 
   protected void doCommit() throws IOException {
     for (int i = 0; i < readers.size(); i++)
@@ -448,5 +485,6 @@ public class ParallelReader extends IndexReader {
   }
 
 }
+
 
 

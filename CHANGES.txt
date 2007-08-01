@@ -57,6 +57,9 @@ Bug fixes
 
  8. LUCENE-970: FilterIndexReader now implements isOptimized(). Before
     a call of isOptimized() would throw a NPE. (Michael Busch)
+
+ 9. LUCENE-832: ParallelReader fixed to not throw NPE if isCurrent(),
+    isOptimized() or getVersion() is called. (Michael Busch)
       
 New features
 
