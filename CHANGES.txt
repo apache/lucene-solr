@@ -18,7 +18,7 @@ API Changes
  2. LUCENE-944: Remove deprecated methods setUseScorer14() and
     getUseScorer14() from BooleanQuery. (Paul Elschot via Michael Busch)
  
- 5. LUCENE-963: Add setters to Field to allow for re-using a single
+ 3. LUCENE-963: Add setters to Field to allow for re-using a single
     Field instance during indexing.  This is a sizable performance
     gain, especially for small documents.  (Mike McCandless)
 
