@@ -928,6 +928,8 @@ public class IndexWriter {
 
       if (commitPending) {
         segmentInfos.write(directory);         // now commit changes
+        if (infoStream != null)
+          infoStream.println("close: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
         deleter.checkpoint(segmentInfos, true);
         commitPending = false;
         rollbackSegmentInfos = null;
@@ -1478,6 +1480,8 @@ public class IndexWriter {
   private void checkpoint() throws IOException {
     if (autoCommit) {
       segmentInfos.write(directory);
+      if (infoStream != null)
+        infoStream.println("checkpoint: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
     } else {
       commitPending = true;
     }

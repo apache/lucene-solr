@@ -61,6 +61,11 @@ Bug fixes
  9. LUCENE-832: ParallelReader fixed to not throw NPE if isCurrent(),
     isOptimized() or getVersion() is called. (Michael Busch)
       
+10. LUCENE-948: Fix FNFE exception caused by stale NFS client
+    directory listing caches when writers on different machines are
+    sharing an index over NFS and using a custom deletion policy (Mike
+    McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

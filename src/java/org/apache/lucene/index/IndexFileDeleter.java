@@ -23,6 +23,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
@@ -123,6 +124,9 @@ final class IndexFileDeleter {
     this.docWriter = docWriter;
     this.infoStream = infoStream;
 
+    if (infoStream != null)
+      message("init: current segments file is \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
+
     this.policy = policy;
     this.directory = directory;
 
@@ -156,13 +160,29 @@ final class IndexFileDeleter {
               message("init: load commit \"" + fileName + "\"");
             }
             SegmentInfos sis = new SegmentInfos();
-            sis.read(directory, fileName);
-            CommitPoint commitPoint = new CommitPoint(sis);
-            if (sis.getGeneration() == segmentInfos.getGeneration()) {
-              currentCommitPoint = commitPoint;
+            try {
+              sis.read(directory, fileName);
+            } catch (FileNotFoundException e) {
+              // LUCENE-948: on NFS (and maybe others), if
+              // you have writers switching back and forth
+              // between machines, it's very likely that the
+              // dir listing will be stale and will claim a
+              // file segments_X exists when in fact it
+              // doesn't.  So, we catch this and handle it
+              // as if the file does not exist
+              if (infoStream != null) {
+                message("init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
+              }
+              sis = null;
             }
-            commits.add(commitPoint);
-            incRef(sis, true);
+            if (sis != null) {
+              CommitPoint commitPoint = new CommitPoint(sis);
+              if (sis.getGeneration() == segmentInfos.getGeneration()) {
+                currentCommitPoint = commitPoint;
+              }
+              commits.add(commitPoint);
+              incRef(sis, true);
+            }
           }
         }
       }
