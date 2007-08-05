@@ -140,7 +140,7 @@ public class TestHarness {
    * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
    * 
    * @param xml The XML of the update
-   * @return null if succesful, otherwise the XML response to the update
+   * @return null if successful, otherwise the XML response to the update
    */
   public String validateUpdate(String xml) throws SAXException {
     return checkUpdateStatus(xml, "0");
@@ -152,7 +152,7 @@ public class TestHarness {
    * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
    * 
    * @param xml The XML of the update
-   * @return null if succesful, otherwise the XML response to the update
+   * @return null if successful, otherwise the XML response to the update
    */
   public String validateErrorUpdate(String xml) throws SAXException {
     return checkUpdateStatus(xml, "1");
@@ -164,7 +164,7 @@ public class TestHarness {
    * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
    * 
    * @param xml The XML of the update
-   * @return null if succesful, otherwise the XML response to the update
+   * @return null if successful, otherwise the XML response to the update
    */
   public String checkUpdateStatus(String xml, String code) throws SAXException {
     try {
@@ -181,7 +181,7 @@ public class TestHarness {
    * Validates that an add of a single document results in success.
    *
    * @param fieldsAndValues Odds are field names, Evens are values
-   * @return null if succesful, otherwise the XML response to the update
+   * @return null if successful, otherwise the XML response to the update
    * @see #appendSimpleDoc
    */
   public String validateAddDoc(String... fieldsAndValues)
@@ -383,7 +383,7 @@ public class TestHarness {
     try {
       StringWriter r = new StringWriter();
 
-      // this is anoying
+      // this is annoying
       if (null == args || 0 == args.length) {
         XML.writeXML(r, tag, null);
       } else {
