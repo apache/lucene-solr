@@ -17,12 +17,12 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 
 /** Normalizes tokens extracted with {@link StandardTokenizer}. */
 
-public final class StandardFilter extends TokenFilter
-  implements StandardTokenizerConstants  {
+public final class StandardFilter extends TokenFilter {
 
 
   /** Construct filtering <i>in</i>. */
@@ -30,9 +30,9 @@ public final class StandardFilter extends TokenFilter
     super(in);
   }
 
-  private static final String APOSTROPHE_TYPE = tokenImage[APOSTROPHE];
-  private static final String ACRONYM_TYPE = tokenImage[ACRONYM];
-  
+  private static final String APOSTROPHE_TYPE = StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.APOSTROPHE];
+  private static final String ACRONYM_TYPE = StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM];
+
   /** Returns the next token in the stream, or null at EOS.
    * <p>Removes <tt>'s</tt> from the end of words.
    * <p>Removes dots from acronyms.

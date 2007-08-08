@@ -18,8 +18,7 @@ package org.apache.lucene.misc;
  */
 
 import junit.framework.TestCase;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import org.apache.lucene.index.IndexWriter;
@@ -131,7 +130,7 @@ public class ChainedFilterTest extends TestCase {
   }
 
   private Date parseDate(String s) throws ParseException {
-    return new SimpleDateFormat("yyyy MMM dd").parse(s);
+    return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
   }
 
 }

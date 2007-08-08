@@ -414,22 +414,7 @@
     </delete>
   </target>
 
-  <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-HTMLParser"/>
-
-  <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
-    <!-- generate this in a build directory so we can exclude ParseException -->
-    <mkdir dir="${build.dir}/gen/org/apache/lucene/analysis/standard"/>
-
-    <invoke-javacc target="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
-                   outputDir="${build.dir}/gen/org/apache/lucene/analysis/standard"
-    />
-    <copy todir="src/java/org/apache/lucene/analysis/standard">
-      <fileset dir="${build.dir}/gen/org/apache/lucene/analysis/standard">
-        <include name="*.java"/>
-        <exclude name="ParseException.java"/>
-      </fileset>
-    </copy>
-  </target>
+  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
@@ -443,6 +428,30 @@
     />
   </target>
   
+  <!-- ================================================================== -->
+  <!-- Build the JFlex files into the source tree                         -->
+  <!-- ================================================================== -->
+
+  <target name="jflex" depends="clean-jflex,jflex-StandardAnalyzer" />
+
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
+    <taskdef classname="JFlex.anttask.JFlexTask" name="jflex">
+      <classpath location="${jflex.home}/lib/JFlex.jar" />
+    </taskdef>
+
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+  </target>
+
+  <target name="clean-jflex">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+    </delete>
+  </target>
+
   <macrodef name="contrib-crawl">
     <attribute name="target" default=""/>
     <attribute name="failonerror" default="true"/>

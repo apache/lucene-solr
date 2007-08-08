@@ -58,6 +58,7 @@
   <property name="maven.dist.dir" location="dist/maven"/>
 
   <property name="javacc.home" location="${common.dir}"/>
+  <property name="jflex.home" location="${common.dir}"/>
 
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
@@ -97,6 +98,12 @@
     classpath="${javacc.home}/bin/lib/javacc.jar"
     />
 
+   <available
+    property="jflex.present"
+    classname="JFlex.anttask.JFlexTask"
+    classpath="${jflex.home}/lib/JFlex.jar"
+    />
+
   <available
     property="junit.present"
     classname="junit.framework.TestCase"
@@ -131,7 +138,21 @@
     </echo>
   </target>
 
-  <target name="init" depends="javacc-uptodate-check, javacc-notice">
+  <target name="init" depends="javacc-uptodate-check, javacc-notice, jflex-uptodate-check, jflex-notice">
+  </target>
+
+  <target name="jflex-uptodate-check">
+    <uptodate property="jflex.files.uptodate">
+      <srcfiles dir="src" includes="**/*.jflex" />
+      <mapper type="glob" from="*.jflex" to="*.java"/>
+    </uptodate>
+  </target>
+ 
+  <target name="jflex-notice" unless="jflex.files.uptodate">
+    <echo>
+      One or more of the JFlex .jflex files is newer than its corresponding
+      .java file.  Run the "jflex" target to regenerate the artifacts.
+    </echo>
   </target>
 
   <target name="javacc-check">
@@ -162,6 +183,28 @@
 
   </target>
 	
+  <target name="jflex-check">
+    <fail unless="jflex.present">
+      ##################################################################
+      JFlex not found.
+      JFlex Home: ${jflex.home}
+
+      Please download and install JFlex from:
+
+      &lt;http://jflex.de/download.html&gt;
+
+      Then, create a build.properties file either in your home
+      directory, or within the Lucene directory and set the jflex.home
+      property to the path where JFlex is installed. For example,
+      if you installed JFlex in /usr/local/java/jflex-1.4.1, then set the
+      jflex.home property to:
+
+      jflex.home=/usr/local/java/jflex-1.4.1
+
+      ##################################################################
+    </fail>
+  </target>
+
   <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile

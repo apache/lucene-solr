@@ -102,6 +102,11 @@ Optimizations
  6. LUCENE-939: Check explicitly for boundary conditions in FieldInfos
     and don't rely on exceptions. (Michael Busch)
 
+ 7. LUCENE-966: Very substantial speedups (~6X faster) for
+    StandardTokenizer (StandardAnalyzer) by using JFlex instead of
+    JavaCC to generate the tokenizer.
+    (Stanislaw Osinski via Mike McCandless)
+
 Documentation
 
 Build
