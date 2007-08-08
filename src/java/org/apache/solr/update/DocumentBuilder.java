@@ -188,8 +188,13 @@ public class DocumentBuilder {
       SchemaField[] destArr = schema.getCopyFields(name);
       
       // load each field value
+      boolean hasField = false;
       for( Object v : field ) {
+        if( v == null ) {
+          continue;
+        }
         String val = null;
+        hasField = true;
         
         // TODO!!! HACK -- date conversion
         if( sfield != null && v instanceof Date && sfield.getType() instanceof DateField ) {
@@ -232,7 +237,7 @@ public class DocumentBuilder {
       }
       
       // make sure the field was used somehow...
-      if( !used ) {
+      if( !used && hasField ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
       }
     }

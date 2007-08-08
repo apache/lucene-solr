@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.document.Document;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -46,5 +47,16 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
     catch( SolrException ex ) {
       assertEquals( "should be bad request", 400, ex.code() );
     }
+  }
+
+  public void testNullField() 
+  {
+    SolrCore core = SolrCore.getSolrCore();
+    
+    // make sure a null value is not indexed
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "name", null, 1.0f );
+    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    assertNull( out.get( "name" ) );
   }
 }
