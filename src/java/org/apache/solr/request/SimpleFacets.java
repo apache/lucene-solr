@@ -548,7 +548,7 @@ public class SimpleFacets {
   protected int rangeCount(String field, String low, String high,
                            boolean iLow, boolean iHigh) throws IOException {
     return searcher.numDocs(new ConstantScoreRangeQuery(field,low,high,
-                                                        iHigh,iLow),
+                                                        iLow,iHigh),
                             docs);
   }
   
