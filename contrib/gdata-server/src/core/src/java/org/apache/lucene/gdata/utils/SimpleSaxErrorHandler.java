@@ -23,7 +23,7 @@ import org.xml.sax.SAXParseException;
 
 /**
  * For use with Digester to throw exceptions on errors
- * @author Simon Willnauer
+ *
  *
  */
 public final class SimpleSaxErrorHandler implements ErrorHandler{

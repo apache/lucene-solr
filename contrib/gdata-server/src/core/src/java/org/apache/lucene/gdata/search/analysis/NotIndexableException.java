@@ -21,7 +21,7 @@ package org.apache.lucene.gdata.search.analysis;
  * This exception will be thrown by ContentStrategy instances if an exception
  * occurs while retrieving content from entries
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class NotIndexableException extends Exception {

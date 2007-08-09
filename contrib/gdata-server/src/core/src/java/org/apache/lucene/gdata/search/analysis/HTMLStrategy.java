@@ -38,7 +38,7 @@ import org.w3c.dom.Node;
  * plain string content from the returning node. All of the nodes text content
  * will cleaned from any html tags.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class HTMLStrategy extends

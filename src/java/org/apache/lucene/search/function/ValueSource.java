@@ -37,7 +37,7 @@ import java.io.Serializable;
  * The APIs introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
  *
- * @author yonik
+ *
  */
 public abstract class ValueSource implements Serializable {
 

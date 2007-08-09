@@ -57,7 +57,7 @@ import org.apache.lucene.store.FSDirectory;
  * on the index will be controlled from this class. Only this class grants read
  * or write actions access to the index.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 @Component(componentType = ComponentType.SEARCHCONTROLLER)

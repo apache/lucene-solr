@@ -22,7 +22,7 @@ package org.apache.lucene.gdata.server.registry;
  * {@link org.apache.lucene.gdata.server.registry.ScopeVisitor} objects and call
  * their methods on the desired action.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public interface ScopeVisitable {

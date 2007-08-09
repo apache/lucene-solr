@@ -28,7 +28,7 @@ import java.util.HashSet;
 /**
  * Loader for text files that represent a list of stopwords.
  *
- * @author Gerhard Schwarz
+ *
  * @version $Id$
  */
 public class WordlistLoader {

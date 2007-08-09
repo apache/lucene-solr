@@ -29,7 +29,7 @@ import org.apache.lucene.util.English;
 import java.io.IOException;
 
 /**
- * @author Bernhard Messer
+ *
  * @version $rcs = ' $Id$ ' ;
  */
 public class TestMultiThreadTermVectors extends TestCase {

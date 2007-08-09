@@ -34,7 +34,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField;
  * 
  * @see org.apache.lucene.gdata.search.analysis.Indexable
  * @see org.apache.lucene.gdata.search.analysis.ContentStrategy
- * @author Simon Willnauer
+ *
  * 
  */
 class IndexDocumentBuilderTask<T extends IndexDocument> implements IndexDocumentBuilder<T> {

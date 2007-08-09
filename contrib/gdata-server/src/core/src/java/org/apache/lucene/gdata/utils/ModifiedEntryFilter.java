@@ -32,7 +32,7 @@ import org.apache.lucene.search.Filter;
  *  
  * @see org.apache.lucene.search.Filter 
  *  
- * @author Simon Willnauer 
+ *
  *  
  */ 
 public class ModifiedEntryFilter extends Filter { 

@@ -39,7 +39,7 @@ package org.apache.lucene.gdata.server.registry;
  * Visitor pattern in detail.
  * </p>
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public interface ScopeVisitor {

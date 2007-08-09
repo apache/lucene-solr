@@ -27,7 +27,7 @@ import org.w3c.dom.Node;
  * <tt>applyPath</tt> method to access an element, attribute etc. in the gdata
  * entity.
  * 
- * @author Simon Willnauer
+ *
  * @param <R> -
  *            a subtype of {@link org.w3c.dom.Node} returned by the applyPath
  *            method

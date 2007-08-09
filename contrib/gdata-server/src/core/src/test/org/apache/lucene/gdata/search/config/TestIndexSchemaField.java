@@ -27,7 +27,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField.ContentType;
 import org.w3c.dom.Node;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestIndexSchemaField extends TestCase {

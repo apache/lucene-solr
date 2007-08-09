@@ -17,21 +17,21 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import java.io.Reader;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
-
-import java.io.Reader;
-import java.util.Hashtable;
-import java.util.Set;
-import java.util.HashSet;
 
 /**
  * Analyzer for Russian language. Supports an external list of stopwords (words that
  * will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  *
- * @author  Boris Okner, b.okner@rogers.com
+ *
  * @version $Id$
  */
 public final class RussianAnalyzer extends Analyzer

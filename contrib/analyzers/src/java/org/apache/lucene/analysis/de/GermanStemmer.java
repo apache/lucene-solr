@@ -23,7 +23,7 @@ package org.apache.lucene.analysis.de;
  * "A Fast and Simple Stemming Algorithm for German Words" by J&ouml;rg
  * Caumanns (joerg.caumanns at isst.fhg.de).
  *
- * @author    Gerhard Schwarz
+ *
  * @version   $Id$
  */
 public class GermanStemmer

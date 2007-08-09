@@ -33,7 +33,7 @@ import org.apache.commons.logging.LogFactory;
  * queue. This class calls the commit method of the indexer if commit is
  * scheduled.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 class IndexTask implements Runnable {

@@ -42,7 +42,7 @@ import java.io.Serializable;
  * <p/>
  * <p>Created: Apr 21, 2004 5:34:47 PM
  *
- * @author Tim Jones
+ *
  * @version $Id$
  * @since 1.4
  */

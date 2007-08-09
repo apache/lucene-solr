@@ -26,7 +26,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 /** Document boost unit test.
  *
- * @author Doug Cutting
+ *
  * @version $Revision$
  */
 public class TestDocBoost extends TestCase {

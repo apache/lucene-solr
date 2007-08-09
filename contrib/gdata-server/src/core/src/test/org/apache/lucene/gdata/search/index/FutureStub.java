@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class FutureStub<T> implements Future<T>{

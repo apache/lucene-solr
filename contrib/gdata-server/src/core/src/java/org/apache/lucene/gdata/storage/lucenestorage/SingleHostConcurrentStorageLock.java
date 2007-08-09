@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class SingleHostConcurrentStorageLock implements ConcurrentStorageLock {

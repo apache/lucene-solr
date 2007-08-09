@@ -25,7 +25,7 @@ import org.apache.lucene.gdata.data.ServerBaseEntry;
 import com.google.gdata.data.BaseEntry;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class MultiThreadEntryStub extends ServerBaseEntry {

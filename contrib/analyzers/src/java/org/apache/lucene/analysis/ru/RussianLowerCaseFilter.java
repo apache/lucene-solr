@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Normalizes token text to lower case, analyzing given ("russian") charset.
  *
- * @author  Boris Okner, b.okner@rogers.com
+ *
  * @version $Id$
  */
 public final class RussianLowerCaseFilter extends TokenFilter

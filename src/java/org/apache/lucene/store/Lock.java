@@ -28,7 +28,7 @@ import java.io.IOException;
  *   }.run();
  * </pre>
  *
- * @author Doug Cutting
+ *
  * @version $Id$
  * @see Directory#makeLock(String)
  */

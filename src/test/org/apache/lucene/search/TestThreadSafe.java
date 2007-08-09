@@ -29,7 +29,7 @@ import java.util.List;
 import java.io.IOException;
 
 /**
- * @author yonik
+ * 
  * @version $Id$
  */
 public class TestThreadSafe extends TestCase {

@@ -25,7 +25,7 @@ import com.db4o.Db4o;
 import com.db4o.ObjectServer;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class ObjectServerDecorator implements InvocationHandler {

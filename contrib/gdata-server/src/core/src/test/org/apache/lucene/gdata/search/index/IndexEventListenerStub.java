@@ -20,7 +20,7 @@ package org.apache.lucene.gdata.search.index;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class IndexEventListenerStub implements IndexEventListener {

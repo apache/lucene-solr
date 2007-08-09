@@ -24,7 +24,7 @@ import org.apache.lucene.gdata.search.index.IndexDocument;
 import junit.framework.TestCase;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestIndexSchema extends TestCase {

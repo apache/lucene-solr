@@ -33,7 +33,7 @@ import java.util.BitSet;
  *
  * <p>Created: Apr 21, 2004 1:21:46 PM
  *
- * @author  Tim Jones
+ *
  * @version $Id$
  * @since   1.4
  */

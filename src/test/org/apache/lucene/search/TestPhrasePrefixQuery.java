@@ -33,7 +33,7 @@ import java.util.LinkedList;
 /**
  * This class tests PhrasePrefixQuery class.
  *
- * @author Otis Gospodnetic
+ *
  * @version $Id$
  */
 public class TestPhrasePrefixQuery

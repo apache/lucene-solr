@@ -26,7 +26,7 @@ import java.io.Serializable;
  *
  * <p>Created: Apr 21, 2004 3:49:28 PM
  * 
- * @author  Tim Jones
+ *
  * @version $Id$
  * @since   1.4
  */

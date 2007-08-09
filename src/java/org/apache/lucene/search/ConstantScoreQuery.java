@@ -27,7 +27,7 @@ import java.util.Set;
  * A query that wraps a filter and simply returns a constant score equal to the
  * query boost for every document in the filter.
  *
- * @author yonik
+ *
  * @version $Id$
  */
 public class ConstantScoreQuery extends Query {

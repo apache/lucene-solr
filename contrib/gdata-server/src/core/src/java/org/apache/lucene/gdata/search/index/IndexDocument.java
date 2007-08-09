@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
  * produce instances of this interface concurrently.
  * </p>
  * 
- * @author Simon Willnauer
+ *
  * 
  * 
  */

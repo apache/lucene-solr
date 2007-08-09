@@ -28,7 +28,7 @@ import org.apache.lucene.search.RangeQuery;
 import junit.framework.TestCase;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestQueryTranslator extends TestCase {

@@ -30,7 +30,7 @@ import com.google.gdata.data.BaseFeed;
 import com.google.gdata.util.ParseException;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class StorageQueryStub extends StorageQuery {

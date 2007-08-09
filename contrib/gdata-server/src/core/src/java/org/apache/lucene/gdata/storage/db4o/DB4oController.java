@@ -68,7 +68,7 @@ import com.google.gdata.data.BaseFeed;
  * @see org.apache.lucene.gdata.utils.Pool
  * 
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 @Component(componentType = ComponentType.STORAGECONTROLLER)

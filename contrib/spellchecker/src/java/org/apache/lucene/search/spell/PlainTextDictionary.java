@@ -30,7 +30,7 @@ import java.io.*;
  * word2<br/>
  * word3<br/>
  *
- * @author Nicolas Maisonneuve
+ *
  */
 public class PlainTextDictionary implements Dictionary {
 

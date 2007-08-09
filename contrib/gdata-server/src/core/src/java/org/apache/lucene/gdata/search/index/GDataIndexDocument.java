@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 /**
  * Simple implementation
  * 
- * @author Simon Willnauer
+ *
  * @see org.apache.lucene.gdata.search.index.IndexDocument
  */
 class GDataIndexDocument implements IndexDocument {

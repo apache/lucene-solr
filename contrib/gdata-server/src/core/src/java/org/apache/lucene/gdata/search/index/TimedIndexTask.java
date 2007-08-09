@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * If the idle time exceeds the task will force a commit on the index. The timer
  * will be reset if a task is on the queue.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 class TimedIndexTask extends IndexTask {

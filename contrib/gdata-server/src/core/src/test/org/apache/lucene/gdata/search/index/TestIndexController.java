@@ -42,7 +42,7 @@ import org.apache.lucene.search.TermQuery;
 
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 public class TestIndexController extends TestCase {

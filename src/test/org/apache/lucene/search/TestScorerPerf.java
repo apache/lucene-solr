@@ -34,7 +34,7 @@ import org.apache.lucene.document.Field;
  */
 
 /**
- * @author yonik
+ *
  * @version $Id$
  */
 public class TestScorerPerf extends TestCase {

@@ -32,7 +32,7 @@ import org.apache.lucene.util._TestUtil;
 
 
 /**
- * @author dmitrys@earthlink.net
+ *
  * @version $Id$
  */
 public class TestCompoundFile extends TestCase

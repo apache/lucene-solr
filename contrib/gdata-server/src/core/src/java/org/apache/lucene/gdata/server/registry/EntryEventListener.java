@@ -28,7 +28,7 @@ import org.apache.lucene.gdata.data.ServerBaseFeed;
  * GdataServerRegistry.registerEntryEventListener(EntryEventListener);
  * <tt>
  * </p>
- * @author Simon Willnauer
+ *
  *
  */
 public interface EntryEventListener {

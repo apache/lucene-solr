@@ -35,7 +35,7 @@ import org.apache.lucene.gdata.server.registry.Scope.ScopeType;
  * 
  * @see org.apache.lucene.gdata.server.registry.ScopeVisitable
  * @see javax.servlet.ServletRequestListener
- * @author Simon Willnauer
+ *
  * 
  */
 @Scope(scope = ScopeType.REQUEST)

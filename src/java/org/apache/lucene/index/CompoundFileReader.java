@@ -32,7 +32,7 @@ import java.io.IOException;
  * This class implements a directory, but is limited to only read operations.
  * Directory methods that would normally modify data throw an exception.
  *
- * @author Dmitry Serebrennikov
+ *
  * @version $Id$
  */
 class CompoundFileReader extends Directory {

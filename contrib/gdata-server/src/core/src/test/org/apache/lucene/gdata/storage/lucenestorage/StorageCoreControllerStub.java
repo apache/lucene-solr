@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexModifier;
 import org.apache.lucene.store.Directory;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 @Component(componentType = ComponentType.STORAGECONTROLLER)

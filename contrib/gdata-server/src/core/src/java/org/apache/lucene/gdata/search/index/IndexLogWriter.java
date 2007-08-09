@@ -26,7 +26,7 @@ import java.io.RandomAccessFile;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 class IndexLogWriter {

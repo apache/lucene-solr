@@ -33,7 +33,7 @@ package org.apache.lucene.gdata.utils;
  * 
  * 
  * @see org.apache.lucene.gdata.utils.Pool
- * @author Simon Willnauer
+ *
  * @param <Type> -
  *            the type to be created
  * 

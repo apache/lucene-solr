@@ -19,7 +19,7 @@ package org.apache.lucene.gdata.search.index;
  * This interface should be implemented by classes need to be notified when an
  * index is commited
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public interface IndexEventListener {

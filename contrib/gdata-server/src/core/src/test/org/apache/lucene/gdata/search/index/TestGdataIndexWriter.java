@@ -28,7 +28,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestGdataIndexWriter extends TestCase {

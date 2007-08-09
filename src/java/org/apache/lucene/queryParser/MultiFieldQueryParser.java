@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * A QueryParser which constructs queries to search multiple fields.
  *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>, Daniel Naber
+ *
  * @version $Revision$
  */
 public class MultiFieldQueryParser extends QueryParser

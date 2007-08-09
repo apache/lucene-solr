@@ -36,7 +36,7 @@ import java.util.LinkedList;
 /**
  * This class tests the MultiPhraseQuery class.
  *
- * @author Otis Gospodnetic, Daniel Naber
+ *
  * @version $Id$
  */
 public class TestMultiPhraseQuery extends TestCase

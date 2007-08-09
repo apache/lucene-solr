@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * Removes words that are too long and too short from the stream.
  *
- * @author David Spencer
+ *
  * @version $Id$
  */
 public final class LengthFilter extends TokenFilter {

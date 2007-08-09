@@ -46,7 +46,7 @@ import java.io.IOException;
  * contains a long pointer to the start of this file's data section, and a String
  * with that file's name.
  *
- * @author Dmitry Serebrennikov
+ *
  * @version $Id$
  */
 final class CompoundFileWriter {

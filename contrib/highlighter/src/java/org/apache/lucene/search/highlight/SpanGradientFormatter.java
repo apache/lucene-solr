@@ -22,7 +22,7 @@ package org.apache.lucene.search.highlight;
  * doesn't work in Mozilla, thus this class.
  *
  * @see GradientFormatter
- * @author David Spencer dave@searchmorph.com
+ *
  */
 
 public class SpanGradientFormatter

@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class IndexDocumentStub implements IndexDocument {

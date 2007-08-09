@@ -22,7 +22,7 @@ import org.apache.lucene.gdata.search.config.IndexSchema;
 import org.apache.lucene.queryParser.QueryParser;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 public class GDataQueryParser extends QueryParser {

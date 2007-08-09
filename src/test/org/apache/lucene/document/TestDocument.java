@@ -34,7 +34,7 @@ import org.apache.lucene.search.Hits;
 /**
  * Tests {@link Document} class.
  *
- * @author Otis Gospodnetic
+ *
  * @version $Id$
  */
 public class TestDocument extends TestCase

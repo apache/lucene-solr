@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 
 /**
  * Interface for DocumentBuilders
- * @author Simon Willnauer
+ *
  * @param <T> IndexDocument implementation
  *
  */

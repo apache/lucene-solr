@@ -41,7 +41,7 @@ import org.w3c.dom.Node;
  * <tt>&lt;category scheme="http://www.example.com/type" term="blog.post"/&gt;<tt>
  * </p>
  * TODO extend javadoc for search info
- * @author Simon Willnauer
+ *
  *
  */
 public class GdataCategoryStrategy extends ContentStrategy {

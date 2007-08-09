@@ -21,7 +21,7 @@ package org.apache.lucene.gdata.storage;
  * This exception will be thrown if a Version conflict occures while updateing
  * or deleteing an entry. Or if one entry is modified concurrently.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class ModificationConflictException extends StorageException {

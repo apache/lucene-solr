@@ -26,7 +26,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class IndexableStub extends Indexable {

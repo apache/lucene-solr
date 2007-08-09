@@ -32,7 +32,7 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 class IndexLogReader {

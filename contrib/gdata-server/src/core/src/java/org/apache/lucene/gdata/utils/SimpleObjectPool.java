@@ -40,7 +40,7 @@ import org.apache.commons.logging.LogFactory;
  * the pool after aquired.
  * </p>
  * 
- * @author Simon Willnauer
+ *
  * @param <Type>
  * 
  */

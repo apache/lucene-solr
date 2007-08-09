@@ -50,7 +50,7 @@ import org.w3c.dom.Node;
  * @see org.apache.lucene.gdata.search.config.IndexSchemaField.ContentType
  * @see org.apache.lucene.gdata.search.index.IndexDocumentBuilder
  * 
- * @author Simon Willnauer
+ *
  */
 public abstract class ContentStrategy {
     protected final Store store;

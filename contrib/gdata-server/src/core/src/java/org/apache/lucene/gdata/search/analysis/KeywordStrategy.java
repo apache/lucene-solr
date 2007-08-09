@@ -24,7 +24,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField;
 import org.w3c.dom.Node;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class KeywordStrategy extends ContentStrategy {

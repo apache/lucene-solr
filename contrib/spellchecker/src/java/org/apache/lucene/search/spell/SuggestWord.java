@@ -21,7 +21,7 @@ package org.apache.lucene.search.spell;
 /**
  *  SuggestWord, used in suggestSimilar method in SpellChecker class.
  * 
- *  @author Nicolas Maisonneuve
+ *
  */
 final class SuggestWord {
   /**

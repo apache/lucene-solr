@@ -28,7 +28,7 @@ import org.apache.lucene.gdata.data.ServerBaseFeed;
  * distributes all event to all registered
  * {@link org.apache.lucene.gdata.server.registry.EntryEventListener}
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public abstract class EntryEventMediator {

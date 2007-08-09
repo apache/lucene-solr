@@ -20,7 +20,7 @@ package org.apache.lucene.util;
 /**
  * Some useful constants.
  *
- * @author  Doug Cutting
+ *
  * @version $Id$
  **/
 

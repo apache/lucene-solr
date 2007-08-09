@@ -35,7 +35,7 @@ import org.apache.lucene.util.English;
 /**
  * Spell checker test case
  *
- * @author Nicolas Maisonneuve
+ *
  */
 public class TestSpellChecker extends TestCase {
   private SpellChecker spellChecker;

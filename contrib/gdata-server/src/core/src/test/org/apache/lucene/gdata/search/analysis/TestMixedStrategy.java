@@ -22,7 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.gdata.search.config.IndexSchemaField;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 public class TestMixedStrategy extends TestCase {

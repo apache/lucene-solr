@@ -37,7 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestGdataIndexer extends TestCase {

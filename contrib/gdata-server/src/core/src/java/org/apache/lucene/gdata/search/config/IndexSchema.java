@@ -54,7 +54,7 @@ import org.apache.lucene.gdata.utils.ReflectionUtils;
  * @see org.apache.lucene.gdata.search.config.IndexSchemaField
  * 
  * 
- * @author Simon Willnauer
+ *
  */
 public class IndexSchema {
     private final Set<String> searchableFieldNames = new HashSet<String>();

@@ -16,7 +16,7 @@
 package org.apache.lucene.gdata.utils;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public interface Visitor {

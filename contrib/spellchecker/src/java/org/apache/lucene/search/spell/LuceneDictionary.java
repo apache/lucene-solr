@@ -33,8 +33,8 @@ import java.io.*;
  * When using IndexReader.terms(Term) the code must not call next() on TermEnum
  * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
  *
- * @author Nicolas Maisonneuve
- * @author Christian Mallwitz
+ *
+ *
  */
 public class LuceneDictionary implements Dictionary {
   private IndexReader reader;

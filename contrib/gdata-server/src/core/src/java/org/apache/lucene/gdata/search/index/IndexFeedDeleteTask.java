@@ -25,7 +25,7 @@ import org.apache.lucene.index.Term;
  * passed to if the feed has any entries in the search index. Each created and
  * passed IndexFeedDeleteTask forces a commit.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class IndexFeedDeleteTask implements IndexDocumentBuilder<IndexDocument> {

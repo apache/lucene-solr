@@ -25,7 +25,7 @@ package org.apache.lucene.gdata.utils;
  * 
  * @see org.apache.lucene.gdata.utils.PoolObjectFactory
  * 
- * @author Simon Willnauer
+ *
  * @param <Type> -
  *            the type of the pooled objects
  * 

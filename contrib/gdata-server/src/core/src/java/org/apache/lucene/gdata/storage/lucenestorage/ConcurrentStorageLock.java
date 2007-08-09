@@ -19,7 +19,7 @@ package org.apache.lucene.gdata.storage.lucenestorage;
 
 /**
  * 
- * @author Simon Willnauer
+ *
  *
  */
 public interface ConcurrentStorageLock {

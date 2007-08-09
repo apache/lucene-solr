@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.lucene.search.Query;
 
 /**
- * @author Simon Willnauer
+ *
  * @param <T> 
  *
  */

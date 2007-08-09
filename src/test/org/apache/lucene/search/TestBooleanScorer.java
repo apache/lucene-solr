@@ -29,7 +29,7 @@ import org.apache.lucene.store.RAMDirectory;
 import junit.framework.TestCase;
 
 /**
- * @author Christoph Goller
+ *
  * @version $rcs = ' $Id$ ' ;
  */
 public class TestBooleanScorer extends TestCase

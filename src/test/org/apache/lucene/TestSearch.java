@@ -33,7 +33,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
 /** JUnit adaptation of an older test case SearchTest.
- * @author dmitrys@earthlink.net
+ *
  * @version $Id$
  */
 public class TestSearch extends TestCase {

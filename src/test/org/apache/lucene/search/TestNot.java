@@ -28,7 +28,7 @@ import org.apache.lucene.document.Field;
 
 /** Similarity unit test.
  *
- * @author Doug Cutting
+ *
  * @version $Revision$
  */
 public class TestNot extends TestCase {

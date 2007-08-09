@@ -31,7 +31,7 @@ import java.io.IOException;
  /**
   * DateFilter JUnit tests.
   *
-  * @author Otis Gospodnetic
+  *
   * @version $Revision$
   */
 public class TestDateFilter

@@ -56,7 +56,7 @@ import org.apache.lucene.gdata.utils.ReflectionUtils;
  * the property is present in the ComponentConfiguration
  * </p>
  * <p>This class does not support overloaded setter methods.</p>
- * @author Simon Willnauer
+ *
  * @see org.apache.lucene.gdata.server.registry.configuration.Requiered
  * @see org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration
  */

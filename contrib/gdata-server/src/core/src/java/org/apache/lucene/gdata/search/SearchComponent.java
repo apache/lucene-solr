@@ -23,7 +23,7 @@ import org.apache.lucene.gdata.server.registry.ServerComponent;
 /**
  * TODO document this when Search comes into play
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public interface SearchComponent extends ServerComponent {

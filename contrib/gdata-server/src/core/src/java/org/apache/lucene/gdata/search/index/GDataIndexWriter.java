@@ -29,7 +29,7 @@ import org.apache.lucene.store.Directory;
 /**
  * Configurable decorator for a lucene {@link IndexWriter}
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class GDataIndexWriter extends IndexWriter {

@@ -26,7 +26,7 @@ import java.util.Map;
  * contain duplicate keys the first use of a key can not be replaced. If a key
  * is used twice a {@link java.lang.IllegalArgumentException} will be thrown.
  * @see Map
- * @author Simon Willnauer
+ *
  * 
  */
 public class ComponentConfiguration {

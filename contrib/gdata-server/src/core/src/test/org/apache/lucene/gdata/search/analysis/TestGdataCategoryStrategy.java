@@ -23,7 +23,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField;
 import org.apache.lucene.gdata.search.index.GdataIndexerException;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 public class TestGdataCategoryStrategy extends TestCase {

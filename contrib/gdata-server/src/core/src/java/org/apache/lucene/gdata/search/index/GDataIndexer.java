@@ -62,7 +62,7 @@ import org.apache.lucene.store.Directory;
  * 
  * 
  * 
- * @author Simon Willnauer
+ *
  */
 public class GDataIndexer {
     private static final Log LOG = LogFactory.getLog(GDataIndexer.class);

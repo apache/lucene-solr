@@ -22,7 +22,7 @@ import java.lang.reflect.Constructor;
 /**
  * A collection of static helper methods solve common reflection problems
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class ReflectionUtils {
@@ -162,7 +162,7 @@ public static final Class getPrimitiveWrapper(Class primitive) {
 
 /**
  * Exception wrapper for all thrown exception in the ReflectionUtils methods
- * @author Simon Willnauer
+ *
  *
  */
 public static class ReflectionException extends RuntimeException{

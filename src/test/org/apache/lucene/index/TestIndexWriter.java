@@ -45,7 +45,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 
 /**
- * @author goller
+ *
  * @version $Id$
  */
 public class TestIndexWriter extends TestCase

@@ -21,7 +21,7 @@ package org.apache.lucene.gdata.search.index;
  * 
  * @see org.apache.lucene.gdata.search.index.IndexDocument
  * @see org.apache.lucene.gdata.search.index.IndexDocumentBuilderTask
- * @author Simon Willnauer
+ *
  * 
  */
 public enum IndexAction {

@@ -35,7 +35,7 @@ import java.io.IOException;
  * TestWildcard tests the '*' and '?' wildcard characters.
  *
  * @version $Id$
- * @author Otis Gospodnetic
+ * 
  */
 public class TestWildcard
     extends TestCase {

@@ -23,7 +23,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Sorts SuggestWord instances
- * @author Nicolas Maisonneuve
+ *
  */
 final class SuggestWordQueue extends PriorityQueue {
 

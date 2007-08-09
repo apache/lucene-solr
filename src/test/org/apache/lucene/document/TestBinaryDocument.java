@@ -27,7 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Tests {@link Document} class.
  *
- * @author Bernhard Messer
+ *
  * @version $Id$
  */
 public class TestBinaryDocument extends TestCase

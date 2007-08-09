@@ -27,7 +27,7 @@ import com.google.gdata.data.DateTime;
 
 /**
  * Simple static methods to translate the http query to a lucene query string.
- * @author Simon Willnauer
+ *
  * 
  */
 public class QueryTranslator {

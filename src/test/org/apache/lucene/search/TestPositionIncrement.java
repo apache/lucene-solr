@@ -38,7 +38,7 @@ import junit.framework.TestCase;
 /**
  * Term position unit test.
  *
- * @author Doug Cutting
+ *
  * @version $Revision$
  */
 public class TestPositionIncrement extends TestCase {

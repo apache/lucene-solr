@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * {@link org.apache.lucene.gdata.server.registry.ScopeVisitor} implementations
  * to indicate which scope should be visited.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 @Target( { TYPE })
@@ -43,7 +43,7 @@ public @interface Scope {
     /**
      * Defines a Scope for {@link Scope} annotations
      * 
-     * @author Simon Willnauer
+     *
      * 
      */
     public static enum ScopeType {

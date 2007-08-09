@@ -23,7 +23,7 @@ package org.apache.lucene.gdata.server.registry.configuration;
  * {@link org.apache.lucene.gdata.server.registry.configuration.Requiered}
  * property is not available.
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class InjectionException extends RuntimeException {

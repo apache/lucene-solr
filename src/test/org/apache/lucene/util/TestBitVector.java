@@ -26,7 +26,7 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * <code>TestBitVector</code> tests the <code>BitVector</code>, obviously.
  *
- * @author "Peter Mularien" <pmularien@deploy.com>
+ * 
  * @version $Id$
  */
 public class TestBitVector extends TestCase

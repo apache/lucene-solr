@@ -20,7 +20,7 @@ import org.apache.lucene.gdata.search.config.IndexSchemaField;
 
 
 /**
- * @author Simon Willnauer
+ *
  * @see org.apache.lucene.gdata.search.analysis.TestHTMLStrategy
  */
 public class XHtmlStrategy extends HTMLStrategy {

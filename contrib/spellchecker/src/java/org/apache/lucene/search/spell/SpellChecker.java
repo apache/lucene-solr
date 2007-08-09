@@ -18,6 +18,7 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,7 +33,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import java.util.*;
 
 /**
  * <p>
@@ -51,7 +51,7 @@ import java.util.*;
  *  String[] suggestions = spellchecker.suggestSimilar("misspelt", 5);
  * </pre>
  * 
- * @author Nicolas Maisonneuve
+ *
  * @version 1.0
  */
 public class SpellChecker {

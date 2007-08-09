@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Token;
 /**
  * Test case for RussianAnalyzer.
  *
- * @author    Boris Okner
+ *
  * @version   $Id$
  */
 

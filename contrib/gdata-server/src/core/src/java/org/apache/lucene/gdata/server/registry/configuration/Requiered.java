@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * 
  * @see org.apache.lucene.gdata.server.registry.configuration.PropertyInjector
  * @see org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration
- * @author Simon Willnauer
+ *
  * 
  */
 @Target( { METHOD })

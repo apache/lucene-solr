@@ -35,7 +35,7 @@ import org.apache.lucene.search.BooleanQuery;
 import java.io.IOException;
 
 /**
- * @author schnee
+ *
  * @version $Id$
  **/
 

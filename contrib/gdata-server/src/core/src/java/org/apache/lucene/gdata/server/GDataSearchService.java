@@ -39,7 +39,7 @@ import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.BaseFeed;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class GDataSearchService extends GDataService {

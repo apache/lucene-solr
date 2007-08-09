@@ -22,7 +22,7 @@ import java.util.Iterator;
  * A simple interface representing a Dictionary. A Dictionary
  * here is just a list of words.
  * 
- * @author Nicolas Maisonneuve
+ *
  * @version 1.0
  */
 public interface Dictionary {

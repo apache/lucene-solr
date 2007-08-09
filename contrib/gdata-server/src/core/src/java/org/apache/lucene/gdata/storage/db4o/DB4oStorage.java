@@ -41,7 +41,7 @@ import com.google.gdata.data.DateTime;
 /**
  * 
  * Storage implementation for the DB4o storage component
- * @author Simon Willnauer
+ *
  * 
  */
 public class DB4oStorage implements Storage {

@@ -21,7 +21,7 @@ package org.apache.lucene.gdata.search.index;
  * This exception will be thrown if an exception in the indexing component
  * occurs
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class GdataIndexerException extends RuntimeException {

@@ -25,7 +25,7 @@ import org.apache.lucene.gdata.search.index.GdataIndexerException;
 import com.google.gdata.data.DateTime;
 
 /**
- * @author Simon Willnauer
+ *
  * 
  */
 public class TestGdataDateStrategy extends TestCase {

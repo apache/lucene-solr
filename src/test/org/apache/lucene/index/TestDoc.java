@@ -34,7 +34,7 @@ import java.util.*;
 
 
 /** JUnit adaptation of an older test case DocTest.
- * @author dmitrys@earthlink.net
+ *
  * @version $Id$
  */
 public class TestDoc extends TestCase {

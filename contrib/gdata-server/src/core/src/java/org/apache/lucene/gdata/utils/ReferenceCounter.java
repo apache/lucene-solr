@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A reference counting utility. This is use to keep track of released objects 
  * of <code>Type</code>. 
  *  
- * @author Simon Willnauer 
+ *
  * @param <Type> - 
  *            the type of the object 
  *  

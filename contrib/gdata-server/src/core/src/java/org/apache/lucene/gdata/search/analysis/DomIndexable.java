@@ -41,7 +41,7 @@ import com.google.gdata.util.common.xml.XmlWriter;
  * <tt>Indexable</tt> implementation using the W3C Dom API and JAXP XPath
  * engine
  * 
- * @author Simon Willnauer
+ *
  * @param <R> -
  *            a subtype of {@link org.w3c.dom.Node} returned by the applyPath
  *            method

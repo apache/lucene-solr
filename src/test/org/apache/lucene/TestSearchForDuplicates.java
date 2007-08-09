@@ -34,7 +34,7 @@ import junit.textui.TestRunner;
 
 
 /** JUnit adaptation of an older test case DocTest.
- * @author dmitrys@earthlink.net
+ *
  * @version $Id$
  */
 public class TestSearchForDuplicates extends TestCase {

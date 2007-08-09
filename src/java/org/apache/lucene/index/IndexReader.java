@@ -44,7 +44,7 @@ import java.util.Collection;
  <p> An IndexReader can be opened on a directory for which an IndexWriter is
  opened already, but it cannot be used to delete documents from the index then.
 
- @author Doug Cutting
+
  @version $Id$
 */
 public abstract class IndexReader {

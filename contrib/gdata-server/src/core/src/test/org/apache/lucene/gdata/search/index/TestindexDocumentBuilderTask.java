@@ -31,7 +31,7 @@ import org.apache.lucene.gdata.utils.ProvidedServiceStub;
 import com.google.gdata.data.PlainTextConstruct;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestindexDocumentBuilderTask extends TestCase {

@@ -27,7 +27,7 @@ import java.io.IOException;
  * The input should be filtered by RussianLowerCaseFilter before passing it to RussianStemFilter ,
  * because RussianStemFilter only works  with lowercase part of any "russian" charset.
  *
- * @author    Boris Okner, b.okner@rogers.com
+ *
  * @version   $Id$
  */
 public final class RussianStemFilter extends TokenFilter

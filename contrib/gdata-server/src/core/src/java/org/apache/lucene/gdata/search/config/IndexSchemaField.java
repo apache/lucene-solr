@@ -50,7 +50,7 @@ import org.apache.lucene.gdata.utils.ReflectionUtils;
  * @see org.apache.lucene.gdata.search.analysis.ContentStrategy
  * @see org.apache.lucene.gdata.search.config.IndexSchema
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class IndexSchemaField {
@@ -251,7 +251,7 @@ public class IndexSchemaField {
      * Defines the {@link ContentStrategy} to use for a
      * <tt>IndexSchemaField</tt> to extract the content from the entry
      * 
-     * @author Simon Willnauer
+     *
      * 
      */
     public enum ContentType {

@@ -18,6 +18,13 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -26,13 +33,6 @@ import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
-
 /**
  * Analyzer for German language. Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
@@ -40,7 +40,7 @@ import java.util.Set;
  * A default set of stopwords is used unless an alternative list is specified, the
  * exclusion list is empty by default.
  *
- * @author Gerhard Schwarz
+ * 
  * @version $Id$
  */
 public class GermanAnalyzer extends Analyzer {

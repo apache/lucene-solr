@@ -26,7 +26,7 @@ import org.xml.sax.SAXException;
 import junit.framework.TestCase;
 
 /**
- * @author Simon Willnauer
+ *
  *
  */
 public class TestIndexLogReader extends TestCase {

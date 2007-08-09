@@ -39,7 +39,7 @@ import org.apache.lucene.search.TermQuery;
  * Standard implementation of
  * {@link org.apache.lucene.gdata.search.GDataSearcher}
  * 
- * @author Simon Willnauer
+ *
  * 
  */
 public class StandardGdataSearcher implements GDataSearcher<String> {
