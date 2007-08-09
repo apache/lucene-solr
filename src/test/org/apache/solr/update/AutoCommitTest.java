@@ -81,7 +81,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     req.setContentStreams( toContentStreams(
         adoc("id", "A14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
-    // Wait longer then the autocommit time
+    // Wait longer than the autocommit time
     Thread.sleep( 1000 );
     // blocks until commit is complete
     req.setContentStreams( toContentStreams(
@@ -144,7 +144,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // Check it it is in the index
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
-    // Wait longer then the autocommit time
+    // Wait longer than the autocommit time
     Thread.sleep( 1000 );
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
@@ -158,7 +158,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // Delete the document
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
-    // Wait longer then the autocommit time
+    // Wait longer than the autocommit time
     Thread.sleep( 1000 );
     assertQ("deleted and time has passed", req("id:529") ,"//result[@numFound=0]" );
     
@@ -172,7 +172,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     assertEquals( 2, tracker.autoCommitCount );
     
-    // Wait longer then the autocommit time
+    // Wait longer than the autocommit time
     Thread.sleep( 1000 );
     req.setContentStreams( toContentStreams(
       adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
