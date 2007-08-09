@@ -82,7 +82,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "A14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
     // Wait longer then the autocommit time
-    Thread.sleep( 500 );
+    Thread.sleep( 1000 );
     // blocks until commit is complete
     req.setContentStreams( toContentStreams(
         adoc("id", "A15", "subject", "info" ), null ) );
@@ -108,7 +108,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     req.setContentStreams( toContentStreams(
         adoc("id", "B14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
-    Thread.sleep( 500 );
+    Thread.sleep( 1000 );
 
     // add request will block if commit has already started or completed
     req.setContentStreams( toContentStreams(
