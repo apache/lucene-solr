@@ -4,6 +4,12 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/9/07
+  LUCENE-971: Change enwiki tasks to a doc maker (extending
+  LineDocMaker) that directly processes the Wikipedia XML and produces
+  documents.  Intermediate files (one per document) are no longer
+  created.
+
 8/1/07
   LUCENE-967: Add "ReadTokensTask" to allow for benchmarking just tokenization.
 

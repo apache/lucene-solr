@@ -18,7 +18,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -59,7 +60,7 @@ public class WriteLineDocTask extends PerfTask {
       String fileName = config.get("line.file.out", null);
       if (fileName == null)
         throw new Exception("line.file.out must be set");
-      lineFileOut = new BufferedWriter(new FileWriter(fileName));
+      lineFileOut = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName),"UTF-8"));
     }
     docMaker = getRunData().getDocMaker();
   }

@@ -23,7 +23,7 @@
         
         <available file="temp/enwiki-20070527-pages-articles.xml.bz2" property="enwiki.exists"/>
         <available file="temp/enwiki-20070527-pages-articles.xml" property="enwiki.expanded"/>
-        <available file="${working.dir}/enwiki" property="enwiki.extracted"/>
+        <available file="${working.dir}/enwiki.txt" property="enwiki.extracted"/>
 
     </target>
 
@@ -31,7 +31,6 @@
         <mkdir dir="temp"/>
         <antcall target="get-enwiki"/>
         <antcall target="expand-enwiki"/>
-        <antcall target="extract-enwiki"/>
     </target>
 
     <target name="get-enwiki" unless="enwiki.exists">
@@ -41,14 +40,6 @@
 
     <target name="expand-enwiki"  unless="enwiki.expanded">
         <bunzip2 src="temp/enwiki-20070527-pages-articles.xml.bz2" dest="temp"/>
-    </target>
-
-    <target name="extract-enwiki" depends="check-files" unless="enwiki.extracted">
-        <mkdir dir="${working.dir}/enwiki"/>
-        <java classname="org.apache.lucene.benchmark.utils.ExtractWikipedia" maxmemory="1024M" fork="true">
-            <classpath refid="run.classpath"/>
-            <arg line="temp/enwiki-20070527-pages-articles.xml ${working.dir}/enwiki"/>
-        </java>
     </target>
 
     <target name="get-news-20" unless="20news-18828.exists">
@@ -164,7 +155,7 @@
               <enable/>
             </assertions>
             <classpath refid="run.classpath"/>
-            <arg line="conf/wikipedia.alg"/>
+            <arg line="conf/extractWikipedia.alg"/>
         </java>
     </target>
 

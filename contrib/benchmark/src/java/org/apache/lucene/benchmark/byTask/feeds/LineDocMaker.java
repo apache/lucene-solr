@@ -25,7 +25,8 @@ import org.apache.lucene.document.Field;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 
 /**
  * A DocMaker reading one line at a time as a Document from
@@ -39,13 +40,14 @@ import java.io.FileReader;
  */
 public class LineDocMaker extends BasicDocMaker {
 
-  private BufferedReader fileIn;
-  private ThreadLocal docState = new ThreadLocal();
+  FileInputStream fileIS;
+  BufferedReader fileIn;
+  ThreadLocal docState = new ThreadLocal();
   private String fileName;
 
   private static int READER_BUFFER_BYTES = 64*1024;
-
-  private class DocState {
+  
+  class DocState {
     Document doc;
     Field bodyField;
     Field titleField;
@@ -63,7 +65,7 @@ public class LineDocMaker extends BasicDocMaker {
                              storeVal,
                              Field.Index.TOKENIZED,
                              termVecVal);
-      dateField = new Field(BasicDocMaker.TITLE_FIELD,
+      dateField = new Field(BasicDocMaker.DATE_FIELD,
                             "",
                             storeVal,
                             Field.Index.TOKENIZED,
@@ -143,11 +145,12 @@ public class LineDocMaker extends BasicDocMaker {
     openFile();
   }
 
-  private void openFile() {
+  void openFile() {
     try {
       if (fileIn != null)
         fileIn.close();
-      fileIn = new BufferedReader(new FileReader(fileName), READER_BUFFER_BYTES);
+      fileIS = new FileInputStream(fileName);
+      fileIn = new BufferedReader(new InputStreamReader(fileIS,"UTF-8"), READER_BUFFER_BYTES);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
