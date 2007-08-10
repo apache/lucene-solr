@@ -198,4 +198,8 @@ public class MMapDirectory extends FSDirectory {
       raf.close();
     }
   }
+
+  public IndexInput openInput(String name, int bufferSize) throws IOException {
+    return openInput(name);
+  }
 }
