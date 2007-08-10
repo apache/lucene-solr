@@ -20,6 +20,12 @@ package org.apache.solr.analysis;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Token;
+
+import java.io.IOException;
+
+import junit.framework.Assert;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
@@ -81,5 +87,58 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
             req("subword:(good jon)")
             ,"//result[@numFound=1]"
     );
+  }
+
+  public void testOffsets() throws IOException {
+
+    // test that subwords and catenated subwords have
+    // the correct offsets.
+    WordDelimiterFilter wdf = new WordDelimiterFilter(
+            new TokenStream() {
+              Token t;
+              public Token next() throws IOException {
+                if (t!=null) return null;
+                t = new Token("foo-bar", 5, 12);  // actual
+                return t;
+              }
+            },
+    1,1,0,0,1,1);
+
+    int i=0;
+    for(Token t; (t=wdf.next())!=null;) {
+      if (t.termText().equals("foo")) {
+        assertEquals(5, t.startOffset());
+        assertEquals(8, t.endOffset());
+        i++;
+      }
+      if (t.termText().equals("bar")) {
+        assertEquals(9, t.startOffset());
+        assertEquals(12, t.endOffset());
+        i++;
+      }
+      if (t.termText().equals("foobar")) {
+        assertEquals(5, t.startOffset());
+        assertEquals(12, t.endOffset());
+        i++;
+      }
+    }
+    assertEquals(3,i); // make sure all 3 tokens were generated
+
+    // test that if splitting or catenating a synonym, that the offsets
+    // are not altered (they would be incorrect).
+    wdf = new WordDelimiterFilter(
+            new TokenStream() {
+              Token t;
+              public Token next() throws IOException {
+                if (t!=null) return null;
+                t = new Token("foo-bar", 5, 6);  // a synonym
+                return t;
+              }
+            },
+    1,1,0,0,1,1);
+    for(Token t; (t=wdf.next())!=null;) {
+      assertEquals(5, t.startOffset());
+      assertEquals(6, t.endOffset());
+    }
   }
 }

@@ -205,9 +205,20 @@ final class WordDelimiterFilter extends TokenFilter {
 
 
   private Token newTok(Token orig, int start, int end) {
+    int startOff = orig.startOffset();
+    int endOff = orig.endOffset();
+    String origStr = orig.termText();
+
+    // if length by start + end offsets doesn't match the term text then assume
+    // this is a synonym and don't adjust the offsets.
+    if (origStr.length() == endOff-startOff) {
+      endOff = startOff + end;
+      startOff += start;     
+    }
+
     return new Token(orig.termText().substring(start,end),
-            orig.startOffset() + start,
-            orig.startOffset() + end,
+            startOff,
+            endOff,
             orig.type());
   }
 
