@@ -75,4 +75,23 @@ public class StandardAnalyzer extends Analyzer {
     result = new StopFilter(result, stopSet);
     return result;
   }
+
+  private class SavedStreams {
+    StandardTokenizer tokenStream;
+    TokenStream filteredTokenStream;
+  };
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      setPreviousTokenStream(streams);
+      streams.tokenStream = new StandardTokenizer(reader);
+      streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
+      streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
+      streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopSet);
+    } else
+      streams.tokenStream.reset(reader);
+    
+    return streams.filteredTokenStream;
+  }
 }

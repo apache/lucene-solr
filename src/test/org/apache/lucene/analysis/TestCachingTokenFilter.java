@@ -94,7 +94,7 @@ public class TestCachingTokenFilter extends TestCase {
     Token token;
     while ((token = stream.next()) != null) {
       assertTrue(count < tokens.length);
-      assertEquals(tokens[count], token.termText);
+      assertEquals(tokens[count], token.termText());
       count++;
     }
     

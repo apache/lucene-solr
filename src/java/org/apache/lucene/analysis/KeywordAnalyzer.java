@@ -28,4 +28,13 @@ public class KeywordAnalyzer extends Analyzer {
                                  final Reader reader) {
     return new KeywordTokenizer(reader);
   }
+  public TokenStream reusableTokenStream(String fieldName,
+                                         final Reader reader) {
+    Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
+    if (tokenizer == null) {
+      tokenizer = new KeywordTokenizer(reader);
+      setPreviousTokenStream(tokenizer);
+    }
+    return tokenizer;
+  }
 }

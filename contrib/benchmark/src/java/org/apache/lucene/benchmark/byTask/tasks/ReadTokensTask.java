@@ -73,7 +73,7 @@ public class ReadTokensTask extends PerfTask {
     super.tearDown();
   }
 
-  Token token = new Token("", 0, 0);
+  Token token = new Token();
 
   public int doLogic() throws Exception {
     List fields = doc.getFields();
@@ -104,13 +104,13 @@ public class ReadTokensTask extends PerfTask {
         }
         
         // Tokenize field
-        stream = analyzer.tokenStream(field.name(), reader);
+        stream = analyzer.reusableTokenStream(field.name(), reader);
       }
 
       // reset the TokenStream to the first token
       stream.reset();
 
-      while(stream.next() != null)
+      while(stream.next(token) != null)
         tokenCount++;
     }
     totalTokenCount += tokenCount;

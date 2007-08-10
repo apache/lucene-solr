@@ -23,6 +23,8 @@ import java.io.IOException;
 /** A Tokenizer is a TokenStream whose input is a Reader.
   <p>
   This is an abstract class.
+  NOTE: subclasses must override at least one of {@link
+  #next()} or {@link #next(Token)}.
  */
 
 public abstract class Tokenizer extends TokenStream {
@@ -40,6 +42,13 @@ public abstract class Tokenizer extends TokenStream {
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();
+  }
+
+  /** Reset the tokenizer to a new reader.  Typically, an
+   *  analyzer (in its reusableTokenStream method) will use
+   *  this to re-use a previously created tokenizer. */
+  protected void reset(Reader input) throws IOException {
+    this.input = input;
   }
 }
 

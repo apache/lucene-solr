@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Token;
+
 %%
 
 %class StandardTokenizerImpl
@@ -51,6 +53,13 @@ public static final String [] TOKEN_TYPES = new String [] {
 public final int yychar()
 {
     return yychar;
+}
+
+/**
+ * Fills Lucene token with the current token text.
+ */
+final void getText(Token t) {
+  t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 %}
 

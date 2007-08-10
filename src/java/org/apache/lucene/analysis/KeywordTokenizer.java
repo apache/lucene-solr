@@ -28,7 +28,6 @@ public class KeywordTokenizer extends Tokenizer {
   private static final int DEFAULT_BUFFER_SIZE = 256;
 
   private boolean done;
-  private final char[] buffer;
 
   public KeywordTokenizer(Reader input) {
     this(input, DEFAULT_BUFFER_SIZE);
@@ -36,23 +35,23 @@ public class KeywordTokenizer extends Tokenizer {
 
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
-    this.buffer = new char[bufferSize];
     this.done = false;
   }
 
-  public Token next() throws IOException {
+  public Token next(Token result) throws IOException {
     if (!done) {
       done = true;
-      StringBuffer buffer = new StringBuffer();
-      int length;
+      int upto = 0;
+      char[] buffer = result.termBuffer();
       while (true) {
-        length = input.read(this.buffer);
+        final int length = input.read(buffer, upto, buffer.length-upto);
         if (length == -1) break;
-
-        buffer.append(this.buffer, 0, length);
+        upto += length;
+        if (upto == buffer.length)
+          buffer = result.resizeTermBuffer(1+buffer.length);
       }
-      String text = buffer.toString();
-      return new Token(text, 0, text.length());
+      result.termLength = upto;
+      return result;
     }
     return null;
   }

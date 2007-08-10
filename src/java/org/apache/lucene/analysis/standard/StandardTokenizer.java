@@ -43,6 +43,9 @@ import org.apache.lucene.analysis.Tokenizer;
 public class StandardTokenizer extends Tokenizer {
     /** A private instance of the JFlex-constructed scanner */
     private final StandardTokenizerImpl scanner;
+  void setInput(Reader reader) {
+    this.input = reader;
+  }
 
     /**
      * Creates a new instance of the {@link StandardTokenizer}. Attaches the
@@ -58,19 +61,19 @@ public class StandardTokenizer extends Tokenizer {
      *
      * @see org.apache.lucene.analysis.TokenStream#next()
      */
-    public Token next() throws IOException {
+    public Token next(Token result) throws IOException {
 	int tokenType = scanner.getNextToken();
 
 	if (tokenType == StandardTokenizerImpl.YYEOF) {
 	    return null;
 	}
 
-	int startPosition = scanner.yychar();
-
-	final String tokenImage = scanner.yytext();
-	return new Token(tokenImage, startPosition, startPosition
-		+ tokenImage.length(),
-		StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
+        scanner.getText(result);
+        final int start = scanner.yychar();
+        result.setStartOffset(start);
+        result.setEndOffset(start+result.termLength());
+        result.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
+        return result;
     }
 
     /*
@@ -81,5 +84,10 @@ public class StandardTokenizer extends Tokenizer {
     public void reset() throws IOException {
 	super.reset();
 	scanner.yyreset(input);
+    }
+
+    public void reset(Reader reader) throws IOException {
+        input = reader;
+        reset();
     }
 }

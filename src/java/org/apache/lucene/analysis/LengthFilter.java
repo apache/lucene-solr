@@ -44,12 +44,12 @@ public final class LengthFilter extends TokenFilter {
   /**
    * Returns the next input Token whose termText() is the right len
    */
-  public final Token next() throws IOException
+  public final Token next(Token result) throws IOException
   {
     // return the first non-stop word found
-    for (Token token = input.next(); token != null; token = input.next())
+    for (Token token = input.next(result); token != null; token = input.next(result))
     {
-      int len = token.termText().length();
+      int len = token.termLength();
       if (len >= min && len <= max) {
           return token;
       }

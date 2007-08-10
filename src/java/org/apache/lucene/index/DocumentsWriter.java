@@ -960,27 +960,17 @@ final class DocumentsWriter {
 
     /** Test whether the text for current Posting p equals
      *  current tokenText. */
-    boolean postingEquals(final String tokenString, final char[] tokenText,
-                          final int tokenTextLen, final int tokenTextOffset) {
+    boolean postingEquals(final char[] tokenText, final int tokenTextLen) {
 
       final char[] text = charPool.buffers[p.textStart >> CHAR_BLOCK_SHIFT];
       assert text != null;
       int pos = p.textStart & CHAR_BLOCK_MASK;
 
-      if (tokenText == null) {
-        // Compare to String
-        for(int i=0;i<tokenTextLen;i++)
-          if (tokenString.charAt(i) != text[pos++])
-            return false;
-        return text[pos] == 0xffff;
-      } else {
-        int tokenPos = tokenTextOffset;
-        final int stopAt = tokenTextLen+tokenPos;
-        for(;tokenPos<stopAt;pos++,tokenPos++)
-          if (tokenText[tokenPos] != text[pos])
-            return false;
-        return 0xffff == text[pos];
-      }
+      int tokenPos = 0;
+      for(;tokenPos<tokenTextLen;pos++,tokenPos++)
+        if (tokenText[tokenPos] != text[pos])
+          return false;
+      return 0xffff == text[pos];
     }
 
     /** Compares term text for two Posting instance and
@@ -1241,8 +1231,7 @@ final class DocumentsWriter {
       }
 
       int offsetEnd;
-      Token token;
-      Token localToken = new Token("", 0, 0);
+      Token localToken = new Token();
 
       /* Invert one occurrence of one field in the document */
       public void invertField(Fieldable field, Analyzer analyzer, final int maxFieldLength) throws IOException {
@@ -1251,12 +1240,12 @@ final class DocumentsWriter {
           position += analyzer.getPositionIncrementGap(fieldInfo.name);
 
         if (!field.isTokenized()) {		  // un-tokenized field
-          token = localToken;
           String stringValue = field.stringValue();
+          Token token = localToken;
           token.setTermText(stringValue);
           token.setStartOffset(offset);
           token.setEndOffset(offset + stringValue.length());
-          addPosition();
+          addPosition(token);
           offset += stringValue.length();
           length++;
         } else {                                  // tokenized field
@@ -1282,7 +1271,7 @@ final class DocumentsWriter {
             }
           
             // Tokenize field and add to postingTable
-            stream = analyzer.tokenStream(fieldInfo.name, reader);
+            stream = analyzer.reusableTokenStream(fieldInfo.name, reader);
           }
 
           // reset the TokenStream to the first token
@@ -1290,9 +1279,10 @@ final class DocumentsWriter {
 
           try {
             offsetEnd = offset-1;
-            for (token = stream.next(); token != null; token = stream.next()) {
+            Token token;
+            while((token = stream.next(localToken)) != null) {
               position += (token.getPositionIncrement() - 1);
-              addPosition();
+              addPosition(token);
               if (++length >= maxFieldLength) {
                 if (infoStream != null)
                   infoStream.println("maxFieldLength " +maxFieldLength+ " reached for field " + fieldInfo.name + ", ignoring following tokens");
@@ -1357,55 +1347,32 @@ final class DocumentsWriter {
        *  for every term of every document.  Its job is to *
        *  update the postings byte stream (Postings hash) *
        *  based on the occurence of a single term. */
-      private void addPosition() {
+      private void addPosition(Token token) {
 
         final Payload payload = token.getPayload();
-
-        final String tokenString;
-        final int tokenTextLen;
-        final int tokenTextOffset;
 
         // Get the text of this term.  Term can either
         // provide a String token or offset into a char[]
         // array
         final char[] tokenText = token.termBuffer();
+        final int tokenTextLen = token.termLength();
 
         int code = 0;
         int code2 = 0;
 
-        if (tokenText == null) {
+        // Compute hashcode
+        int downto = tokenTextLen;
+        while (downto > 0)
+          code = (code*31) + tokenText[--downto];
 
-          // Fallback to String token
-          tokenString = token.termText();
-          tokenTextLen = tokenString.length();
-          tokenTextOffset = 0;
-
-          // Compute hashcode.
-          int downto = tokenTextLen;
-          while (downto > 0)
-            code = (code*31) + tokenString.charAt(--downto);
-          
-          // System.out.println("  addPosition: field=" + fieldInfo.name + " string=" + tokenString + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset+token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
-
-        } else {
-          tokenString = null;
-          tokenTextLen = token.termBufferLength();
-          tokenTextOffset = token.termBufferOffset();
-
-          // Compute hashcode
-          int downto = tokenTextLen+tokenTextOffset;
-          while (downto > tokenTextOffset)
-            code = (code*31) + tokenText[--downto];
-
-          // System.out.println("  addPosition: buffer=" + new String(tokenText, tokenTextOffset, tokenTextLen) + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset + token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
-        }
+        // System.out.println("  addPosition: buffer=" + new String(tokenText, 0, tokenTextLen) + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset + token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
 
         int hashPos = code & postingsHashMask;
 
         // Locate Posting in hash
         p = postingsHash[hashPos];
 
-        if (p != null && !postingEquals(tokenString, tokenText, tokenTextLen, tokenTextOffset)) {
+        if (p != null && !postingEquals(tokenText, tokenTextLen)) {
           // Conflict: keep searching different locations in
           // the hash table.
           final int inc = code*1347|1;
@@ -1413,7 +1380,7 @@ final class DocumentsWriter {
             code += inc;
             hashPos = code & postingsHashMask;
             p = postingsHash[hashPos];
-          } while (p != null && !postingEquals(tokenString, tokenText, tokenTextLen, tokenTextOffset));
+          } while (p != null && !postingEquals(tokenText, tokenTextLen));
         }
         
         final int proxCode;
@@ -1492,10 +1459,7 @@ final class DocumentsWriter {
           p.textStart = textUpto + charPool.byteOffset;
           charPool.byteUpto += textLen1;
 
-          if (tokenString == null)
-            System.arraycopy(tokenText, tokenTextOffset, text, textUpto, tokenTextLen);
-          else
-            tokenString.getChars(0, tokenTextLen, text, textUpto);
+          System.arraycopy(tokenText, 0, text, textUpto, tokenTextLen);
 
           text[textUpto+tokenTextLen] = 0xffff;
           

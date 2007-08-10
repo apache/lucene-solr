@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -73,6 +74,14 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     }
 
     return analyzer.tokenStream(fieldName, reader);
+  }
+  
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
+    if (analyzer == null)
+      analyzer = defaultAnalyzer;
+
+    return analyzer.reusableTokenStream(fieldName, reader);
   }
   
   /** Return the positionIncrementGap from the analyzer assigned to fieldName */

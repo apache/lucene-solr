@@ -29,11 +29,36 @@ import java.io.IOException;
   <li>{@link TokenFilter}, a TokenStream
   whose input is another TokenStream.
   </ul>
+  NOTE: subclasses must override at least one of {@link
+  #next()} or {@link #next(Token)}.
   */
 
 public abstract class TokenStream {
-  /** Returns the next token in the stream, or null at EOS. */
-  public abstract Token next() throws IOException;
+
+  /** Returns the next token in the stream, or null at EOS.
+   *  The returned Token is a "full private copy" (not
+   *  re-used across calls to next()) but will be slower
+   *  than calling {@link #next(Token)} instead.. */
+  public Token next() throws IOException {
+    Token result = next(new Token());
+    return result;
+  }
+
+  /** Returns the next token in the stream, or null at EOS.
+   *  When possible, the input Token should be used as the
+   *  returned Token (this gives fastest tokenization
+   *  performance), but this is not required and a new Token
+   *  may be returned.  Callers may re-use a single Token
+   *  instance for successive calls to this method and must
+   *  therefore fully consume the previously returned Token
+   *  before calling this method again.
+   *  @param result a Token that may or may not be used to
+   *   return
+   *  @return next token in the stream or null if
+   *   end-of-stream was hit*/
+  public Token next(Token result) throws IOException {
+    return next();
+  }
 
   /** Resets this stream to the beginning. This is an
    *  optional operation, so subclasses may or may not

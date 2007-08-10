@@ -22,6 +22,12 @@ API Changes
     Field instance during indexing.  This is a sizable performance
     gain, especially for small documents.  (Mike McCandless)
 
+ 4. LUCENE-969: Add new APIs to Token, TokenStream and Analyzer to
+    permit re-using of Token and TokenStream instances during
+    indexing.  Changed Token to use a char[] as the store for the
+    termText instead of String.  This gives faster tokenization
+    performance (~10-15%).  (Mike McCandless)
+
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
@@ -106,6 +112,10 @@ Optimizations
     StandardTokenizer (StandardAnalyzer) by using JFlex instead of
     JavaCC to generate the tokenizer.
     (Stanislaw Osinski via Mike McCandless)
+
+ 8. LUCENE-969: Changed core tokenizers & filters to re-use Token and
+    TokenStream instances when possible to improve tokenization
+    performance (~10-15%). (Mike McCandless)
 
 Documentation
 

@@ -28,8 +28,7 @@ public abstract class CharTokenizer extends Tokenizer {
 
   private int offset = 0, bufferIndex = 0, dataLen = 0;
   private static final int MAX_WORD_LEN = 255;
-  private static final int IO_BUFFER_SIZE = 1024;
-  private final char[] buffer = new char[MAX_WORD_LEN];
+  private static final int IO_BUFFER_SIZE = 4096;
   private final char[] ioBuffer = new char[IO_BUFFER_SIZE];
 
   /** Returns true iff a character should be included in a token.  This
@@ -45,31 +44,32 @@ public abstract class CharTokenizer extends Tokenizer {
     return c;
   }
 
-  /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws IOException {
+  public final Token next(Token token) throws IOException {
     int length = 0;
-    int start = offset;
+    int start = bufferIndex;
+    char[] buffer = token.termBuffer();
     while (true) {
-      final char c;
 
-      offset++;
       if (bufferIndex >= dataLen) {
+        offset += dataLen;
         dataLen = input.read(ioBuffer);
+        if (dataLen == -1) {
+          if (length > 0)
+            break;
+          else
+            return null;
+        }
         bufferIndex = 0;
       }
-      ;
-      if (dataLen == -1) {
-        if (length > 0)
-          break;
-        else
-          return null;
-      } else
-        c = ioBuffer[bufferIndex++];
+
+      final char c = ioBuffer[bufferIndex++];
 
       if (isTokenChar(c)) {               // if it's a token char
 
         if (length == 0)			           // start of token
-          start = offset - 1;
+          start = offset + bufferIndex - 1;
+        else if (length == buffer.length)
+          buffer = token.resizeTermBuffer(1+length);
 
         buffer[length++] = normalize(c); // buffer it, normalized
 
@@ -78,9 +78,18 @@ public abstract class CharTokenizer extends Tokenizer {
 
       } else if (length > 0)             // at non-Letter w/ chars
         break;                           // return 'em
-
     }
 
-    return new Token(new String(buffer, 0, length), start, start + length);
+    token.termLength = length;
+    token.startOffset = start;
+    token.endOffset = start+length;
+    return token;
+  }
+
+  public void reset(Reader input) throws IOException {
+    super.reset(input);
+    bufferIndex = 0;
+    offset = 0;
+    dataLen = 0;
   }
 }

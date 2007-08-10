@@ -71,5 +71,22 @@ public final class StopAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(new LowerCaseTokenizer(reader), stopWords);
   }
+
+  /** Filters LowerCaseTokenizer with StopFilter. */
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new LowerCaseTokenizer(reader);
+      streams.result = new StopFilter(streams.source, stopWords);
+      setPreviousTokenStream(streams);
+    } else
+      streams.source.reset(reader);
+    return streams.result;
+  }
 }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
+import java.io.IOException;
 
 /** An Analyzer builds TokenStreams, which analyze text.  It thus represents a
  *  policy for extracting index terms from text.
@@ -36,6 +37,33 @@ public abstract class Analyzer {
     strategy based on document and/or field.  Must be able to handle null
     field name for backward compatibility. */
   public abstract TokenStream tokenStream(String fieldName, Reader reader);
+
+  /** Creates a TokenStream that is allowed to be re-used
+   *  from the previous time that the same thread called
+   *  this method.  Callers that do not need to use more
+   *  than one TokenStream at the same time from this
+   *  analyzer should use this method for better
+   *  performance.
+   */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    return tokenStream(fieldName, reader);
+  }
+
+  private ThreadLocal tokenStreams = new ThreadLocal();
+
+  /** Used by Analyzers that implement reusableTokenStream
+   *  to retrieve previously saved TokenStreams for re-use
+   *  by the same thread. */
+  protected Object getPreviousTokenStream() {
+    return tokenStreams.get();
+  }
+
+  /** Used by Analyzers that implement reusableTokenStream
+   *  to save a TokenStream for later re-use by the same
+   *  thread. */
+  protected void setPreviousTokenStream(Object obj) {
+    tokenStreams.set(obj);
+  }
 
 
   /**
@@ -56,4 +84,3 @@ public abstract class Analyzer {
     return 0;
   }
 }
-

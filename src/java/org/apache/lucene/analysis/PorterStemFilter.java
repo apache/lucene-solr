@@ -45,16 +45,13 @@ public final class PorterStemFilter extends TokenFilter {
     stemmer = new PorterStemmer();
   }
 
-  /** Returns the next input Token, after being stemmed */
-  public final Token next() throws IOException {
-    Token token = input.next();
-    if (token == null)
+  public final Token next(Token result) throws IOException {
+    result = input.next(result);
+    if (result != null) {
+      if (stemmer.stem(result.termBuffer(), 0, result.termLength))
+        result.setTermBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
+      return result;
+    } else
       return null;
-    else {
-      String s = stemmer.stem(token.termText);
-      if (s != token.termText) // Yes, I mean object reference comparison here
-  	    token.termText = s;
-      return token;
-    }
   }
 }
