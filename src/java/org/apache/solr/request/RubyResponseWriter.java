@@ -37,3 +37,46 @@ public class RubyResponseWriter implements QueryResponseWriter {
     return CONTENT_TYPE_TEXT_UTF8;
   }
 }
+
+class RubyWriter extends JSONWriter {
+  public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    super(writer, req, rsp);
+  }
+
+  @Override
+  public void writeNull(String name) throws IOException {
+    writer.write("nil");
+  }
+
+  @Override
+  protected void writeKey(String fname, boolean needsEscaping) throws IOException {
+    writeStr(null, fname, needsEscaping);
+    writer.write("=>");
+  }
+
+  @Override
+  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
+    // Ruby doesn't do unicode escapes... so let the servlet container write raw UTF-8
+    // bytes into the string.
+    //
+    // Use single quoted strings for safety since no evaluation is done within them.
+    // Also, there are very few escapes recognized in a single quoted string, so
+    // only escape the backslash and single quote.
+    writer.write('\'');
+    // it might be more efficient to use a stringbuilder or write substrings
+    // if writing chars to the stream is slow.
+    if (needsEscaping) {
+      for (int i=0; i<val.length(); i++) {
+        char ch = val.charAt(i);
+        switch(ch) {
+          case '\'':
+          case '\\': writer.write('\\'); writer.write(ch); break;
+          default: writer.write(ch); break;
+        }
+      }
+    } else {
+      writer.write(val);
+    }
+    writer.write('\'');
+  }
+}

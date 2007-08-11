@@ -96,7 +96,7 @@ class JSONWriter extends TextResponseWriter {
    */
   protected void writeNamedListAsMapMangled(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writer.write('{');
+    writeMapOpener(sz);
     incLevel();
 
     // In JSON objects (maps) we can't have null keys or duplicates...
@@ -121,7 +121,7 @@ class JSONWriter extends TextResponseWriter {
         first=false;
         repeats.put(key,0);
       } else {
-        writer.write(',');
+        writeMapSeparator();
 
         Integer repeatCount = repeats.get(key);
         if (repeatCount==null) {
@@ -145,7 +145,7 @@ class JSONWriter extends TextResponseWriter {
     }
 
     decLevel();
-    writer.write('}');
+    writeMapCloser();
   }
 
   /** Represents a NamedList directly as a JSON Object (essentially a Map)
@@ -154,12 +154,12 @@ class JSONWriter extends TextResponseWriter {
    */ 
   protected void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writer.write('{');
+    writeMapOpener(sz);
     incLevel();
 
     for (int i=0; i<sz; i++) {
       if (i!=0) {
-        writer.write(',');
+        writeMapSeparator();
       }
 
       String key = val.getName(i);
@@ -170,7 +170,7 @@ class JSONWriter extends TextResponseWriter {
     }
 
     decLevel();
-    writer.write('}');
+    writeMapCloser();
   }
 
   // Represents a NamedList directly as an array of JSON objects...
@@ -178,7 +178,7 @@ class JSONWriter extends TextResponseWriter {
   protected void writeNamedListAsArrMap(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
-    writer.write('[');
+    writeArrayOpener(sz);
     incLevel();
 
     boolean first=true;
@@ -188,7 +188,7 @@ class JSONWriter extends TextResponseWriter {
       if (first) {
         first=false;
       } else {
-        writer.write(',');
+        writeArraySeparator();
       }
 
       indent();
@@ -196,16 +196,16 @@ class JSONWriter extends TextResponseWriter {
       if (key==null) {
         writeVal(null,val.getVal(i));
       } else {
-        writer.write('{');
+        writeMapOpener(1);
         writeKey(key, true);
         writeVal(key,val.getVal(i));
-        writer.write('}');
+        writeMapCloser();
       }
 
     }
 
     decLevel();
-    writer.write(']');
+    writeArrayCloser();
   }
 
   // Represents a NamedList directly as an array of JSON objects...
@@ -213,7 +213,7 @@ class JSONWriter extends TextResponseWriter {
   protected void writeNamedListAsArrArr(String name, NamedList val) throws IOException {
     int sz = val.size();
     indent();
-    writer.write('[');
+    writeArrayOpener(sz);
     incLevel();
 
     boolean first=true;
@@ -223,7 +223,7 @@ class JSONWriter extends TextResponseWriter {
       if (first) {
         first=false;
       } else {
-        writer.write(',');
+        writeArraySeparator();
       }
 
       indent();
@@ -234,19 +234,19 @@ class JSONWriter extends TextResponseWriter {
       } else {
      ***/
 
-        writer.write('[');
+        writeArrayOpener(1);
         incLevel();
         writeStr(null,key,true);
-        writer.write(',');
+        writeArraySeparator();
         writeVal(key,val.getVal(i));
         decLevel();
-        writer.write(']');
+        writeArrayCloser();
 
 
     }
 
     decLevel();
-    writer.write(']');
+    writeArrayCloser();
   }
 
   // Represents a NamedList directly as an array with keys/values
@@ -254,12 +254,12 @@ class JSONWriter extends TextResponseWriter {
   // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
-    writer.write('[');
+    writeArrayOpener(sz);
     incLevel();
 
     for (int i=0; i<sz; i++) {
       if (i!=0) {
-        writer.write(',');
+        writeArraySeparator();
       }
       String key = val.getName(i);
       indent();
@@ -268,12 +268,12 @@ class JSONWriter extends TextResponseWriter {
       } else {
         writeStr(null, key, true);
       }
-      writer.write(',');
+      writeArraySeparator();
       writeVal(key, val.getVal(i));
     }
 
     decLevel();
-    writer.write(']');
+    writeArrayCloser();
   }
 
 
@@ -292,7 +292,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
 
-  private static class MultiValueField {
+  protected static class MultiValueField {
     final SchemaField sfield;
     final ArrayList<Fieldable> fields;
     MultiValueField(SchemaField sfield, Fieldable firstVal) {
@@ -303,7 +303,7 @@ class JSONWriter extends TextResponseWriter {
   }
 
   public void writeDoc(String name, Collection<Fieldable> fields, Set<String> returnFields, Map pseudoFields) throws IOException {
-    writer.write('{');
+    writeMapOpener(-1); // no trivial way to determine map size
     incLevel();
 
     HashMap<String, MultiValueField> multi = new HashMap<String, MultiValueField>();
@@ -332,7 +332,7 @@ class JSONWriter extends TextResponseWriter {
         if (first) {
           first=false;
         } else {
-          writer.write(',');
+          writeMapSeparator();
         }
         indent();
         writeKey(fname,true);
@@ -344,7 +344,7 @@ class JSONWriter extends TextResponseWriter {
       if (first) {
         first=false;
       } else {
-        writer.write(',');
+        writeMapSeparator();
       }
 
       indent();
@@ -357,7 +357,7 @@ class JSONWriter extends TextResponseWriter {
         indentArrElems = (mvf.sfield.getType() instanceof TextField);
       }
 
-      writer.write('[');
+      writeArrayOpener(-1); // no trivial way to determine array size
       boolean firstArrElem=true;
       incLevel();
 
@@ -365,12 +365,12 @@ class JSONWriter extends TextResponseWriter {
         if (firstArrElem) {
           firstArrElem=false;
         } else {
-          writer.write(',');
+          writeArraySeparator();
         }
         if (indentArrElems) indent();
         mvf.sfield.write(this, null, ff);
       }
-      writer.write(']');
+      writeArrayCloser();
       decLevel();
     }
 
@@ -379,7 +379,7 @@ class JSONWriter extends TextResponseWriter {
     }
 
     decLevel();
-    writer.write('}');
+    writeMapCloser();
   }
 
   // reusable map to store the "score" pseudo-field.
@@ -406,23 +406,23 @@ class JSONWriter extends TextResponseWriter {
 
     int sz=ids.size();
 
-    writer.write('{');
+    writeMapOpener(includeScore ? 4 : 3);
     incLevel();
     writeKey("numFound",false);
     writeInt(null,ids.matches());
-    writer.write(',');
+    writeMapSeparator();
     writeKey("start",false);
     writeInt(null,ids.offset());
 
     if (includeScore) {
-      writer.write(',');
+      writeMapSeparator();
       writeKey("maxScore",false);
       writeFloat(null,ids.maxScore());
     }
-    writer.write(',');
+    writeMapSeparator();
     // indent();
     writeKey("docs",false);
-    writer.write('[');
+    writeArrayOpener(sz);
 
     incLevel();
     boolean first=true;
@@ -436,13 +436,13 @@ class JSONWriter extends TextResponseWriter {
       if (first) {
         first=false;
       } else {
-        writer.write(',');
+        writeArraySeparator();
       }
       indent();
       writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
     }
     decLevel();
-    writer.write(']');
+    writeArrayCloser();
 
     if (otherFields !=null) {
       writeMap(null, otherFields, true, false);
@@ -450,11 +450,39 @@ class JSONWriter extends TextResponseWriter {
 
     decLevel();
     indent();
-    writer.write('}');
+    writeMapCloser();
   }
 
+  //
+  // Data structure tokens
+  // NOTE: a positive size paramater indicates the number of elements
+  //       contained in an array or map, a negative value indicates 
+  //       that the size could not be reliably determined.
+  // 
+  
+  public void writeMapOpener(int size) throws IOException, IllegalArgumentException {
+    writer.write('{');
+  }
+  
+  public void writeMapSeparator() throws IOException {
+    writer.write(',');
+  }
 
+  public void writeMapCloser() throws IOException {
+    writer.write('}');
+  }
+  
+  public void writeArrayOpener(int size) throws IOException, IllegalArgumentException {
+    writer.write('[');
+  }
+  
+  public void writeArraySeparator() throws IOException {
+    writer.write(',');
+  }
 
+  public void writeArrayCloser() throws IOException {
+    writer.write(']');
+  }
 
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // it might be more efficient to use a stringbuilder or write substrings
@@ -508,7 +536,7 @@ class JSONWriter extends TextResponseWriter {
 
   public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
     if (!excludeOuter) {
-      writer.write('{');
+      writeMapOpener(val.size());
       incLevel();
       isFirstVal=true;
     }
@@ -523,7 +551,7 @@ class JSONWriter extends TextResponseWriter {
       if (isFirstVal) {
         isFirstVal=false;
       } else {
-        writer.write(',');
+        writeMapSeparator();
       }
 
       if (doIndent) indent();
@@ -533,7 +561,7 @@ class JSONWriter extends TextResponseWriter {
 
     if (!excludeOuter) {
       decLevel();
-      writer.write('}');
+      writeMapCloser();
     }
   }
 
@@ -542,19 +570,19 @@ class JSONWriter extends TextResponseWriter {
   }
 
   public void writeArray(String name, Iterator val) throws IOException {
-    writer.write('[');
+    writeArrayOpener(-1); // no trivial way to determine array size
     incLevel();
     boolean first=true;
     while( val.hasNext() ) {
       if( !first ) indent();
       writeVal(null, val.next());
       if( val.hasNext() ) {
-        writer.write(',');
+        writeArraySeparator();
       }
       first=false;
     }
     decLevel();
-    writer.write(']');
+    writeArrayCloser();
   }
 
   //
@@ -656,144 +684,4 @@ class JSONWriter extends TextResponseWriter {
     sb.append(str);
   }
 
-}
-
-class PythonWriter extends JSONWriter {
-  public PythonWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp);
-  }
-
-  @Override
-  public void writeNull(String name) throws IOException {
-    writer.write("None");
-  }
-
-  @Override
-  public void writeBool(String name, boolean val) throws IOException {
-    writer.write(val ? "True" : "False");
-  }
-
-  @Override
-  public void writeBool(String name, String val) throws IOException {
-    writeBool(name,val.charAt(0)=='t');
-  }
-
-  /* optionally use a unicode python string if necessary */
-  @Override
-  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    if (!needsEscaping) {
-      writer.write('\'');
-      writer.write(val);
-      writer.write('\'');
-      return;
-    }
-
-    // use python unicode strings...
-    // python doesn't tolerate newlines in strings in it's eval(), so we must escape them.
-
-    StringBuilder sb = new StringBuilder(val.length());
-    boolean needUnicode=false;
-
-    for (int i=0; i<val.length(); i++) {
-      char ch = val.charAt(i);
-      switch(ch) {
-        case '\'':
-        case '\\': sb.append('\\'); sb.append(ch); break;
-        case '\r': sb.append("\\r"); break;
-        case '\n': sb.append("\\n"); break;
-        case '\t': sb.append("\\t"); break;
-        default:
-          // we don't strictly have to escape these chars, but it will probably increase
-          // portability to stick to visible ascii
-          if (ch<' ' || ch>127) {
-            unicodeEscape(sb, ch);
-            needUnicode=true;
-          } else {
-            sb.append(ch);
-          }
-      }
-    }
-
-    writer.write( needUnicode ? "u'" : "'");
-    writer.append(sb);
-    writer.write('\'');
-  }
-
-  /*
-  old version that always used unicode
-  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // use python unicode strings...
-    // python doesn't tolerate newlines in strings in it's eval(), so we must escape them.
-    writer.write("u'");
-    // it might be more efficient to use a stringbuilder or write substrings
-    // if writing chars to the stream is slow.
-    if (needsEscaping) {
-      for (int i=0; i<val.length(); i++) {
-        char ch = val.charAt(i);
-        switch(ch) {
-          case '\'':
-          case '\\': writer.write('\\'); writer.write(ch); break;
-          case '\r': writer.write("\\r"); break;
-          case '\n': writer.write("\\n"); break;
-          default:
-            // we don't strictly have to escape these chars, but it will probably increase
-            // portability to stick to visible ascii
-            if (ch<' ' || ch>127) {
-              unicodeChar(ch);
-            } else {
-              writer.write(ch);
-            }
-        }
-      }
-    } else {
-      writer.write(val);
-    }
-    writer.write('\'');
-  }
-  */
-
-}
-
-
-class RubyWriter extends JSONWriter {
-  public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp);
-  }
-
-  @Override
-  public void writeNull(String name) throws IOException {
-    writer.write("nil");
-  }
-
-  @Override
-  protected void writeKey(String fname, boolean needsEscaping) throws IOException {
-    writeStr(null, fname, needsEscaping);
-    writer.write("=>");
-  }
-
-  @Override
-  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // Ruby doesn't do unicode escapes... so let the servlet container write raw UTF-8
-    // bytes into the string.
-    //
-    // Use single quoted strings for safety since no evaluation is done within them.
-    // Also, there are very few escapes recognized in a single quoted string, so
-    // only escape the backslash and single quote.
-    writer.write('\'');
-    // it might be more efficient to use a stringbuilder or write substrings
-    // if writing chars to the stream is slow.
-    if (needsEscaping) {
-      for (int i=0; i<val.length(); i++) {
-        char ch = val.charAt(i);
-        switch(ch) {
-          case '\'':
-          case '\\': writer.write('\\'); writer.write(ch); break;
-          default: writer.write(ch); break;
-        }
-      }
-    } else {
-      writer.write(val);
-    }
-    writer.write('\'');
-  }
 }

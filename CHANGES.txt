@@ -117,6 +117,11 @@ New Features
     computed for ranges of size facet.date.gap (a DateMath expression) 
     between facet.date.start and facet.date.end.  (hossman)
 
+22. SOLR-196: A PHP serialized "phps" response writer that returns a
+    serialized array that can be used with the PHP function unserialize,
+    and a PHP response writer "php" that may be used by eval.
+    (Nick Jenkin, Paul Borgermans, Pieter Berkel via yonik)
+
 Changes in runtime behavior
 
 Optimizations
