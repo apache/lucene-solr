@@ -27,7 +27,6 @@ import org.xml.sax.SAXException;
 import junit.framework.TestCase;
 import javax.xml.xpath.XPathExpressionException;
 
-import java.util.*;
 import java.io.*;
 
 /**

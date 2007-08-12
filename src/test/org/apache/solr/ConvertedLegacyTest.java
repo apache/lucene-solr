@@ -21,7 +21,6 @@ import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 
 import java.util.*;
-import java.io.IOException;
 
     
 /**

@@ -24,10 +24,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 
-import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Map;
 import java.util.concurrent.Executors;

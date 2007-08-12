@@ -18,7 +18,6 @@
 package org.apache.solr.update;
 
 import org.apache.solr.core.SolrConfig;
-import org.apache.lucene.index.IndexWriter;
 
 //
 // For performance reasons, we don't want to re-read

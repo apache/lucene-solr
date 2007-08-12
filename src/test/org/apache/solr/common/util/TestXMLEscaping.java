@@ -21,9 +21,6 @@ import junit.framework.TestCase;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Random;
-import java.util.BitSet;
-
 import org.apache.solr.common.util.XML;
 
 /** Test (some of the) character escaping functions of the XML class

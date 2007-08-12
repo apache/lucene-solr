@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;

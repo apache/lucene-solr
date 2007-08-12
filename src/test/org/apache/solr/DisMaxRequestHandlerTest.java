@@ -17,18 +17,7 @@
 
 package org.apache.solr;
 
-import org.apache.solr.request.*;
 import org.apache.solr.util.*;
-import org.w3c.dom.Document;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.regex.Pattern;
 
 /**

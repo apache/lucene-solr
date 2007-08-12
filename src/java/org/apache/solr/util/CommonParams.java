@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 import java.util.logging.Logger;

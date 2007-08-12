@@ -19,10 +19,7 @@ package org.apache.solr.util;
 
 import org.apache.solr.util.DateMathParser;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -32,7 +29,6 @@ import java.util.Locale;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.text.ParseException;
 
 /**

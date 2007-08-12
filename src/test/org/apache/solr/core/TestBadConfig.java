@@ -19,10 +19,6 @@ package org.apache.solr.core;
 
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.xml.xpath.XPathConstants;
 import java.io.File;
 
 public class TestBadConfig extends AbstractSolrTestCase {

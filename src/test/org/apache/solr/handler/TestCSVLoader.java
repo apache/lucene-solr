@@ -18,9 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 

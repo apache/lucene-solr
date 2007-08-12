@@ -23,7 +23,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * @version $Id$

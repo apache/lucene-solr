@@ -18,10 +18,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.*;
 import org.apache.solr.util.*;
-import org.apache.solr.schema.*;
-
 import java.util.HashMap;
 
 /**

@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
@@ -30,8 +29,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.request.XSLTResponseWriter;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
  *  For now, only caches the last created Transformer, but

@@ -23,7 +23,6 @@ import java.util.Random;
 
 import org.apache.solr.util.OpenBitSet;
 import org.apache.solr.util.BitSetIterator;
-import org.apache.solr.util.BitUtil;
 
 /**
  * @version $Id$

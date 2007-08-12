@@ -17,8 +17,6 @@
 
 package org.apache.solr.schema;
 
-import java.util.Collection;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;

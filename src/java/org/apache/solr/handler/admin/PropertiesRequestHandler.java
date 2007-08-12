@@ -18,8 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.util.Properties;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;

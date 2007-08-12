@@ -26,7 +26,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
 

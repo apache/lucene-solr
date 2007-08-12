@@ -18,14 +18,10 @@
 package org.apache.solr.analysis;
 
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.TestHarness;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
 
 import java.io.IOException;
-
-import junit.framework.Assert;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest

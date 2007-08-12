@@ -25,7 +25,6 @@ import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.TestHarness;
 
 /** Tests the ability to configure multiple query output writers, and select those
  * at query time.

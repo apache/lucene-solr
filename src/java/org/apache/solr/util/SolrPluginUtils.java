@@ -119,7 +119,7 @@ public class SolrPluginUtils {
         
     String v = req.getParam(param);
     // Note: parameters passed but given only white-space value are
-    // considered equvalent to passing nothing for that parameter.
+    // considered equivalent to passing nothing for that parameter.
     if (null == v || "".equals(v.trim())) {
       return def;
     }

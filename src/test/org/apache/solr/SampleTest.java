@@ -20,9 +20,6 @@ package org.apache.solr;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 
-import java.util.*;
-import java.io.IOException;
-
 /**
  * This is an example of how to write a JUnit tests for Solr using the
  * AbstractSolrTestCase

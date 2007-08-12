@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.analysis.TokenizerFactory;
 

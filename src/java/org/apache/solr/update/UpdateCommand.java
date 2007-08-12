@@ -17,8 +17,6 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.document.Document;
-
 
 /** An index update command encapsulated in an object (Command pattern)
  *

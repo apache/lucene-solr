@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.TokenStream;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Handles input and output buffering of TokenStream

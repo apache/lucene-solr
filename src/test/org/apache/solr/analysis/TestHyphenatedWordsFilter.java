@@ -17,12 +17,8 @@
 
 package org.apache.solr.analysis;
 
-import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 

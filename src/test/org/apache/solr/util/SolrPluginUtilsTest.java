@@ -17,8 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 
@@ -31,18 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import java.io.File;
-import java.math.BigDecimal;
-import java.util.Random;
-import java.util.Date;
 import java.util.List;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;

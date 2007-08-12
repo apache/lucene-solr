@@ -17,24 +17,12 @@
 
 package org.apache.solr.update;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
