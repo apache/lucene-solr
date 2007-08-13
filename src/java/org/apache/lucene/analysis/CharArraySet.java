@@ -55,7 +55,7 @@ final class CharArraySet {
     int pos = code & mask;
     char[] text2 = entries[pos];
     if (text2 != null && !equals(text, len, text2)) {
-      final int inc = code*1347|1;
+      final int inc = ((code>>8)+code)|1;
       do {
         code += inc;
         pos = code & mask;
@@ -79,7 +79,7 @@ final class CharArraySet {
     int pos = code & mask;
     char[] text2 = entries[pos];
     if (text2 != null) {
-      final int inc = code*1347|1;
+      final int inc = ((code>>8)+code)|1;
       do {
         code += inc;
         pos = code & mask;
@@ -120,7 +120,7 @@ final class CharArraySet {
         int code = getHashCode(text, text.length);
         int pos = code & mask;
         if (newEntries[pos] != null) {
-          final int inc = code*1347|1;
+          final int inc = ((code>>8)+code)|1;
           do {
             code += inc;
             pos = code & mask;

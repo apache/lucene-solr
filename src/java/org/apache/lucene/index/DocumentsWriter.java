@@ -1375,7 +1375,7 @@ final class DocumentsWriter {
         if (p != null && !postingEquals(tokenText, tokenTextLen)) {
           // Conflict: keep searching different locations in
           // the hash table.
-          final int inc = code*1347|1;
+          final int inc = ((code>>8)+code)|1;
           do {
             code += inc;
             hashPos = code & postingsHashMask;
@@ -1550,7 +1550,7 @@ final class DocumentsWriter {
             int hashPos = code & postingsHashMask;
             assert hashPos >= 0;
             if (newHash[hashPos] != null) {
-              final int inc = code*1347|1;
+              final int inc = ((code>>8)+code)|1;
               do {
                 code += inc;
                 hashPos = code & postingsHashMask;
