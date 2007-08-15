@@ -156,6 +156,7 @@ Bug Fixes
 
 10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jürgen Hermann via    bill)
 
+11. SOLR-133: Changed distributiondump.jsp to use Solr HOME instead of CWD to set path.
  
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

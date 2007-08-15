@@ -29,7 +29,7 @@
 <%@include file="header.jsp" %>
 
 <%
-  File slaveinfo = new File(cwd + "/solr/logs/snappuller.status");
+  File slaveinfo = new File(solrHome + "logs/snappuller.status");
 
   StringBuffer buffer = new StringBuffer();
   StringBuffer buffer2 = new StringBuffer();
@@ -38,7 +38,7 @@
   if (slaveinfo.canRead()) {
     // Slave instance
     mode = "Slave";
-    File slavevers = new File(cwd + "/solr/logs/snapshot.current");
+    File slavevers = new File(solrHome + "logs/snapshot.current");
     BufferedReader inforeader = new BufferedReader(new FileReader(slaveinfo));
     BufferedReader versreader = new BufferedReader(new FileReader(slavevers));
     buffer.append("<tr>\n" +
@@ -61,7 +61,7 @@
   } else {
     // Master instance
     mode = "Master";
-    File masterdir = new File(cwd + "/solr/logs/clients");
+    File masterdir = new File(solrHome + "logs/clients");
     FilenameFilter sfilter = new FilenameFilter() {
         public boolean accept(File dir, String name) {
             return name.startsWith("snapshot.status");
