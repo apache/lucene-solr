@@ -83,6 +83,8 @@ New features
     This implementation contains several extensions of the new abstract TermVectorMapper class.  The new API should be back-compatible.  No changes in the
      actual storage of Term Vectors has taken place.
 
+ 4. LUCENE-975: Added PositionBasedTermVectorMapper that allows for position based lookup of term vector information.  See item #3 above (LUCENE-868).
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
