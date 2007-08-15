@@ -147,6 +147,15 @@ Bug Fixes
 
  7. SOLR-331: Fix WordDelimiterFilter handling of offsets for synonyms or 
     other injected tokens that can break highlighting. (yonik)
+
+ 8. SOLR-282: Snapshooter does not work on Solaris and OS X since the cp command
+    there does not have the -l option.  (bill)
+
+ 9. SOLR-294: Logging of elapsed time broken on Solaris because the date command
+    there does not support the %s output format.  (bill)
+
+10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jürgen Hermann via    bill)
+
  
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
@@ -501,14 +510,6 @@ Bug Fixes
 15. SOLR-241: Undefined system properties used in configuration files now
     cause a clear message to be logged rather than an obscure exception thrown.
     (Koji Sekiguchi via ehatcher) 
-
-16. SOLR-282: Snapshooter does not work on Solaris and OS X since the cp command
-    there does not have the -l option.  (bill)
-
-17. SOLR-294: Logging of elapsed time broken on Solaris because the date command
-    there does not support the %s output format.  (bill)
-
-18. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jürgen Hermann via    bill)
 
 Other Changes
  1. Updated to Lucene 2.1
