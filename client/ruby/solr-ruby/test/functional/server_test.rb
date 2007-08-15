@@ -199,6 +199,13 @@ class ServerTest < Test::Unit::TestCase
     response = @connection.send(request)
     assert_equal ["Apache >>Solr<<"], response.highlighted(1, :title_text)
   end
+  
+  def test_entities
+    @connection.add(:id => 1, :title_text => "&nbsp;")
+    response = @connection.query('nbsp')
+    assert_equal 1, response.total_hits
+    assert_equal '1', response.hits[0]['id']
+  end
 
   # wipe the index clean
   def clean
