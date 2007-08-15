@@ -25,7 +25,7 @@ class Solr::Importer::Mapper
       when String
         field_mapping
       when Proc
-        field_mapping.call(orig_data)
+        field_mapping.call(orig_data)  # TODO pass in more context, like self or a function for field_data, etc
       when Symbol
         field_data(orig_data, @options[:stringify_symbols] ? field_mapping.to_s : field_mapping)
       when Enumerable

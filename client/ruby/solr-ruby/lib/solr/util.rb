@@ -22,13 +22,7 @@ class Solr::Util
 
   # paired_array_to_hash([key1,value1,key2,value2]) => {key1 => value1, key2, value2}
   def self.paired_array_to_hash(a)
-    h = {}
-    
-    paired_array_each(a) do |key,value|
-      h[key] = value
-    end
-    
-    h
+    Hash[*a]
   end
   
 end

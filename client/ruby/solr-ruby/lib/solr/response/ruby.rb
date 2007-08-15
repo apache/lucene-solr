@@ -14,7 +14,7 @@ class Solr::Response::Ruby < Solr::Response::Base
   attr_reader :data
 
   def initialize(ruby_code)
-    super(ruby_code)
+    super
     begin
       #TODO: what about pulling up data/header/response to ResponseBase,
       #      or maybe a new middle class like SelectResponseBase since

@@ -19,7 +19,7 @@ class Solr::Request::Dismax < Solr::Request::Standard
     @alternate_query = params.delete(:alternate_query)
     @sort_values = params.delete(:sort)
     
-    super(params)
+    super
     
     @query_type = "dismax"
   end

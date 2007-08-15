@@ -15,7 +15,7 @@ require 'rexml/xpath'
 class Solr::Response::Ping < Solr::Response::Xml
 
   def initialize(xml)
-    super(xml)
+    super
     @ok = REXML::XPath.first(@doc, './solr/ping') ? true : false
   end
 
