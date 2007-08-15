@@ -98,8 +98,8 @@
       -->
     <!-- A postCommit event is fired after every commit or optimize command
     <listener event="postCommit" class="solr.RunExecutableListener">
-      <str name="exe">snapshooter</str>
-      <str name="dir">solr/bin</str>
+      <str name="exe">solr/bin/snapshooter</str>
+      <str name="dir">.</str>
       <bool name="wait">true</bool>
       <arr name="args"> <str>arg1</str> <str>arg2</str> </arr>
       <arr name="env"> <str>MYVAR=val1</str> </arr>
