@@ -17,14 +17,14 @@ package org.apache.lucene.benchmark;
  */
 
 
-import java.io.File;
-
 import org.apache.lucene.benchmark.stats.TestData;
+
+import java.io.File;
 
 
 /**
  *
- *
+ * @deprecated Use the Task based benchmarker
  **/
 public interface Benchmarker
 {

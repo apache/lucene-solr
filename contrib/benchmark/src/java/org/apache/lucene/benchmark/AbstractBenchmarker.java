@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /**
  *
- *
+ * @deprecated Use the Task based benchmarker
  **/
 public abstract class AbstractBenchmarker implements Benchmarker
 {

@@ -23,6 +23,7 @@ package org.apache.lucene.benchmark;
  * As benchmarks are added, perhaps a common set of Options will become clear
  *
  *
+ * @deprecated Use the task based approach instead
  **/
 public interface BenchmarkOptions
 {
