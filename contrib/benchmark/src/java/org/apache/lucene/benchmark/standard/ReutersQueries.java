@@ -1,12 +1,12 @@
 package org.apache.lucene.benchmark.standard;
 
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.search.spans.SpanFirstQuery;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.spans.SpanFirstQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 
 /**
  * Copyright 2005 The Apache Software Foundation
@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 
 
 /**
- *
+ * @deprecated Use Task based benchmarker
  *
  **/
 public class ReutersQueries
