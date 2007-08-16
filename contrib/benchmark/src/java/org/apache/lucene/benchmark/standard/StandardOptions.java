@@ -20,7 +20,7 @@ import org.apache.lucene.benchmark.Constants;
 
 /**
  *
- *
+ * @deprecated Use the Task based stuff instead
  **/
 public class StandardOptions implements BenchmarkOptions
 {
