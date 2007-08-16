@@ -1,3 +1,10 @@
+- v0.0.4
+  release_date: 2007-08-16
+  changes:
+    - Solr::Indexer#solr added to gain access to the Solr::Connection instance
+    - Fixed issue with multi-line String field values when field set multiValued="false"
+    - Fixed tests to work without either Hpricot or libxml2
+      
 - v0.0.3
   release_date: 2007-05-22
   changes:
