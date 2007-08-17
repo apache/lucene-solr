@@ -119,6 +119,9 @@ Optimizations
     TokenStream instances when possible to improve tokenization
     performance (~10-15%). (Mike McCandless)
 
+ 9. LUCENE-871: Speedup ISOLatin1AccentFilter (Ian Boston via Mike
+    McCandless)
+
 Documentation
 
 Build
