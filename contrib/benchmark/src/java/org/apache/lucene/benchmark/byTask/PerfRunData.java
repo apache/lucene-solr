@@ -17,10 +17,6 @@ package org.apache.lucene.benchmark.byTask;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Iterator;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.HTMLParser;
@@ -28,13 +24,17 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
 import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.FileUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.FileUtils;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Iterator;
 
 
 /**
@@ -205,6 +205,11 @@ public class PerfRunData {
    */
   public Analyzer getAnalyzer() {
     return analyzer;
+  }
+
+
+  public void setAnalyzer(Analyzer analyzer) {
+    this.analyzer = analyzer;
   }
 
   /**

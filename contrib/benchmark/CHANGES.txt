@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/15/07
+  LUCENE-
+
 8/9/07
   LUCENE-971: Change enwiki tasks to a doc maker (extending
   LineDocMaker) that directly processes the Wikipedia XML and produces

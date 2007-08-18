@@ -82,7 +82,8 @@ public class Format {
    * @return formatted string.
    */
   public static String format(String s, String col) {
-    return (s + padd).substring(0, col.length());
+    String s1 = (s + padd);
+    return s1.substring(0, Math.min(col.length(), s1.length()));
   }
 
   /**
