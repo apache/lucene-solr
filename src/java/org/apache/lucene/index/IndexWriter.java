@@ -1091,6 +1091,10 @@ public class IndexWriter {
    * temporary space usage) then the maximum free disk space
    * required is the same as {@link #optimize}.</p>
    *
+   * <p>Note that each term in the document can be no longer
+   * than 16383 characters, otherwise an
+   * IllegalArgumentException will be thrown.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */

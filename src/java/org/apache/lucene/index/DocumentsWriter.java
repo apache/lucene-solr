@@ -1452,8 +1452,11 @@ final class DocumentsWriter {
           p = postingsFreeList[--postingsFreeCount];
 
           final int textLen1 = 1+tokenTextLen;
-          if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE)
+          if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
+            if (textLen1 > CHAR_BLOCK_SIZE)
+              throw new IllegalArgumentException("term length " + tokenTextLen + " exceeds max term length " + (CHAR_BLOCK_SIZE-1));
             charPool.nextBuffer();
+          }
           final char[] text = charPool.buffer;
           final int textUpto = charPool.byteUpto;
           p.textStart = textUpto + charPool.byteOffset;

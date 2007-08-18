@@ -25,6 +25,7 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -488,6 +489,28 @@ public class TestIndexWriter extends TestCase
       if (!Arrays.equals(startFiles, endFiles)) {
         fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
       }
+    }
+
+    /**
+     * Make sure we get a friendly exception for a wicked
+     * long term.
+    */
+    public void testWickedLongTerm() throws IOException {
+      RAMDirectory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new StandardAnalyzer(), true);
+
+      char[] chars = new char[16384];
+      Arrays.fill(chars, 'x');
+      Document doc = new Document();
+      String contents = "a b c " + new String(chars);
+      doc.add(new Field("content", contents, Field.Store.NO, Field.Index.TOKENIZED));
+      try {
+        writer.addDocument(doc);
+        fail("did not hit expected exception");
+      } catch (IllegalArgumentException e) {
+      }
+      writer.close();
+      dir.close();
     }
 
     /**

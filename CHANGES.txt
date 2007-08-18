@@ -76,6 +76,11 @@ Bug fixes
     close any streams they had opened if an exception is hit in the
     constructor.  (Ning Li via Mike McCandless)
 
+12. LUCENE-985: If an extremely long term is in a doc (> 16383 chars),
+    we now throw an IllegalArgumentException saying the term is too
+    long, instead of cryptic ArrayIndexOutOfBoundsException.  (Karl
+    Wettin via Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.
