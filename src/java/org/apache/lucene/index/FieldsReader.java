@@ -66,23 +66,38 @@ final class FieldsReader {
   }
 
   FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
-    fieldInfos = fn;
+    boolean success = false;
 
-    cloneableFieldsStream = d.openInput(segment + ".fdt", readBufferSize);
-    fieldsStream = (IndexInput)cloneableFieldsStream.clone();
-    indexStream = d.openInput(segment + ".fdx", readBufferSize);
+    try {
+      fieldInfos = fn;
 
-    if (docStoreOffset != -1) {
-      // We read only a slice out of this shared fields file
-      this.docStoreOffset = docStoreOffset;
-      this.size = size;
+      cloneableFieldsStream = d.openInput(segment + ".fdt", readBufferSize);
+      fieldsStream = (IndexInput) cloneableFieldsStream.clone();
+      indexStream = d.openInput(segment + ".fdx", readBufferSize);
 
-      // Verify the file is long enough to hold all of our
-      // docs
-      assert ((int) (indexStream.length()/8)) >= size + this.docStoreOffset;
-    } else {
-      this.docStoreOffset = 0;
-      this.size = (int) (indexStream.length() >> 3);
+      if (docStoreOffset != -1) {
+        // We read only a slice out of this shared fields file
+        this.docStoreOffset = docStoreOffset;
+        this.size = size;
+
+        // Verify the file is long enough to hold all of our
+        // docs
+        assert ((int) (indexStream.length() / 8)) >= size + this.docStoreOffset;
+      } else {
+        this.docStoreOffset = 0;
+        this.size = (int) (indexStream.length() >> 3);
+      }
+
+      success = true;
+    } finally {
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above. In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        close();
+      }
     }
   }
 
@@ -103,9 +118,15 @@ final class FieldsReader {
    */
   final void close() throws IOException {
     if (!closed) {
-      fieldsStream.close();
-      cloneableFieldsStream.close();
-      indexStream.close();
+      if (fieldsStream != null) {
+        fieldsStream.close();
+      }
+      if (cloneableFieldsStream != null) {
+        cloneableFieldsStream.close();
+      }
+      if (indexStream != null) {
+        indexStream.close();
+      }
       IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
       if (localFieldsStream != null) {
         localFieldsStream.close();

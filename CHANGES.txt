@@ -72,6 +72,10 @@ Bug fixes
     sharing an index over NFS and using a custom deletion policy (Mike
     McCandless)
 
+11. LUCENE-978: Ensure TermInfosReader, FieldsReader, and FieldsReader
+    close any streams they had opened if an exception is hit in the
+    constructor.  (Ning Li via Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

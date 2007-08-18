@@ -53,26 +53,40 @@ class TermVectorsReader implements Cloneable {
     
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize, int docStoreOffset, int size)
     throws CorruptIndexException, IOException {
-    if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
-      tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION, readBufferSize);
-      checkValidFormat(tvx);
-      tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION, readBufferSize);
-      tvdFormat = checkValidFormat(tvd);
-      tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION, readBufferSize);
-      tvfFormat = checkValidFormat(tvf);
-      if (-1 == docStoreOffset) {
-        this.docStoreOffset = 0;
-        this.size = (int) (tvx.length() >> 3);
-      } else {
-        this.docStoreOffset = docStoreOffset;
-        this.size = size;
-        // Verify the file is long enough to hold all of our
-        // docs
-        assert ((int) (tvx.length()/8)) >= size + docStoreOffset;
+    boolean success = false;
+
+    try {
+      if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
+        tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION, readBufferSize);
+        checkValidFormat(tvx);
+        tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION, readBufferSize);
+        tvdFormat = checkValidFormat(tvd);
+        tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION, readBufferSize);
+        tvfFormat = checkValidFormat(tvf);
+        if (-1 == docStoreOffset) {
+          this.docStoreOffset = 0;
+          this.size = (int) (tvx.length() >> 3);
+        } else {
+          this.docStoreOffset = docStoreOffset;
+          this.size = size;
+          // Verify the file is long enough to hold all of our
+          // docs
+          assert ((int) (tvx.length() / 8)) >= size + docStoreOffset;
+        }
+      }
+
+      this.fieldInfos = fieldInfos;
+      success = true;
+    } finally {
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above. In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        close();
       }
     }
-
-    this.fieldInfos = fieldInfos;
   }
   
   private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException

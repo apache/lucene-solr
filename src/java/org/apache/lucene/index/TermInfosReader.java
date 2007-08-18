@@ -48,17 +48,31 @@ final class TermInfosReader {
 
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize)
        throws CorruptIndexException, IOException {
-    directory = dir;
-    segment = seg;
-    fieldInfos = fis;
+    boolean success = false;
 
-    origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis", readBufferSize),
-                                   fieldInfos, false);
-    size = origEnum.size;
+    try {
+      directory = dir;
+      segment = seg;
+      fieldInfos = fis;
 
-    indexEnum =
-      new SegmentTermEnum(directory.openInput(segment + ".tii", readBufferSize),
-			  fieldInfos, true);
+      origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis",
+          readBufferSize), fieldInfos, false);
+      size = origEnum.size;
+
+      indexEnum = new SegmentTermEnum(directory.openInput(segment + ".tii",
+          readBufferSize), fieldInfos, true);
+
+      success = true;
+    } finally {
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above. In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        close();
+      }
+    }
   }
 
   public int getSkipInterval() {
