@@ -104,7 +104,8 @@ class StandardRequestTest < Test::Unit::TestCase
         :max_snippets => 3,
         :require_field_match => true,
         :prefix => "<blink>",
-        :suffix => "</blink>"
+        :suffix => "</blink>",
+        :fragment_size => 300
       }
     )
     
@@ -114,6 +115,31 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal true, hash["hl.requireFieldMatch"]
     assert_equal "<blink>", hash["hl.simple.pre"]
     assert_equal "</blink>", hash["hl.simple.post"]
+    assert_equal 300, hash["hl.fragsize"]
+  end
+  
+  def test_mlt
+    request = Solr::Request::Standard.new(:query => 'query',
+      :mlt => {
+        :count => 5, :field_list => ['field1', 'field2'],
+        :min_term_freq => 3, :min_doc_freq => 10,
+        :min_word_length => 4, :max_word_length => 17,
+        :max_query_terms => 20, :max_tokens_parsed => 100,
+        :boost => true
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:mlt]
+    assert_equal 5, hash["mlt.count"]
+    assert_equal ['field1', 'field2'], hash["mlt.fl"]
+    assert_equal 3, hash["mlt.mintf"]
+    assert_equal 10, hash["mlt.mindf"]
+    assert_equal 4, hash["mlt.minwl"]
+    assert_equal 17, hash["mlt.maxwl"]
+    assert_equal 20, hash["mlt.maxqt"]
+    assert_equal 100, hash["mlt.maxntp"]
+    assert_equal true, hash["mlt.boost"]
   end
 
 end

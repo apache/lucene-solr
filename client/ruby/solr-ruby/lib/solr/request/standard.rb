@@ -13,7 +13,7 @@
 class Solr::Request::Standard < Solr::Request::Select
 
   VALID_PARAMS = [:query, :sort, :default_field, :operator, :start, :rows,
-    :filter_queries, :field_list, :debug_query, :explain_other, :facets, :highlighting]
+    :filter_queries, :field_list, :debug_query, :explain_other, :facets, :highlighting, :mlt]
   
   def initialize(params)
     super('standard')
@@ -98,8 +98,21 @@ class Solr::Request::Standard < Solr::Request::Select
       hash["hl.requireFieldMatch"] = @params[:highlighting][:require_field_match]
       hash["hl.simple.pre"] = @params[:highlighting][:prefix]
       hash["hl.simple.post"] = @params[:highlighting][:suffix]
+      hash["hl.fragsize"] = @params[:highlighting][:fragment_size]
     end
     
+    if @params[:mlt]
+      hash[:mlt] = true
+      hash["mlt.count"] = @params[:mlt][:count]
+      hash["mlt.fl"] = @params[:mlt][:field_list]
+      hash["mlt.mintf"] = @params[:mlt][:min_term_freq]
+      hash["mlt.mindf"] = @params[:mlt][:min_doc_freq]
+      hash["mlt.minwl"] = @params[:mlt][:min_word_length]
+      hash["mlt.maxwl"] = @params[:mlt][:max_word_length]
+      hash["mlt.maxqt"] = @params[:mlt][:max_query_terms]
+      hash["mlt.maxntp"] = @params[:mlt][:max_tokens_parsed]
+      hash["mlt.boost"] = @params[:mlt][:boost]
+    end
     
     hash.merge(super.to_hash)
   end
