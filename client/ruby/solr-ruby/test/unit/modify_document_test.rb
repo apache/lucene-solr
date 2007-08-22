@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Response; end; end
-require 'solr/response/base'
-require 'solr/response/xml'
-require 'solr/response/ruby'
-require 'solr/response/ping'
-require 'solr/response/add_document'
-require 'solr/response/modify_document'
-require 'solr/response/standard'
-require 'solr/response/dismax'
-require 'solr/response/commit'
-require 'solr/response/delete'
-require 'solr/response/index_info'
-require 'solr/response/optimize'
+require 'test/unit'
+require 'solr'
+
+class ModifyDocumentTest < Test::Unit::TestCase
+
+  def test_update_formatting
+    request = Solr::Request::ModifyDocument.new(:id => 10, :overwrite => {:name => :value})
+    assert_equal :xml, request.response_format
+    assert_equal 'update?mode=name:OVERWRITE', request.handler
+    
+    assert_match(/<add>[\s]*<doc>[\s]*<field name=["']id['"]>10<\/field>[\s]*<field name=['"]name['"]>value<\/field>[\s]*<\/doc>[\s]*<\/add>/, request.to_s)
+  end
+end

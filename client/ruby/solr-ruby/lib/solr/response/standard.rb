@@ -36,6 +36,7 @@ class Solr::Response::Standard < Solr::Response::Ruby
     @response['maxScore']
   end
   
+  # TODO: consider the use of json.nl parameter
   def field_facets(field)
     facets = []
     values = @data['facet_counts']['facet_fields'][field]

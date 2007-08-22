@@ -14,9 +14,11 @@ require 'solr'
 require 'test/unit'
 
 class UtilTest < Test::Unit::TestCase
-
   def test_paired_array_to_hash
     assert_equal({:key1 => :value1, :key2 => :value2}, Solr::Util.paired_array_to_hash([:key1, :value1, :key2, :value2]))
   end
 
+  def test_query_parser_escape
+    assert_equal %q(http\:\/\/lucene\.apache\.org\/solr), Solr::Util.query_parser_escape("http://lucene.apache.org/solr")
+  end
 end

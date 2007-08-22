@@ -25,4 +25,8 @@ class Solr::Util
     Hash[*a]
   end
   
+  def self.query_parser_escape(string)
+    # backslash prefix everything that isn't a word character
+    string.gsub(/(\W)/,'\\\\\1')
+  end
 end

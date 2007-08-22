@@ -10,16 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Response; end; end
-require 'solr/response/base'
-require 'solr/response/xml'
-require 'solr/response/ruby'
-require 'solr/response/ping'
-require 'solr/response/add_document'
-require 'solr/response/modify_document'
-require 'solr/response/standard'
-require 'solr/response/dismax'
-require 'solr/response/commit'
-require 'solr/response/delete'
-require 'solr/response/index_info'
-require 'solr/response/optimize'
+class Solr::Response::ModifyDocument < Solr::Response::Xml
+  def initialize(xml)
+    super
+  end
+end

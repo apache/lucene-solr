@@ -28,7 +28,7 @@ class Solr::Connection
   #   conn = Solr::Connection.new('http://example.com:8080/solr', 
   #     :autocommit => :on)
 
-  def initialize(url, opts={})
+  def initialize(url="http://localhost:8983/solr", opts={})
     @url = URI.parse(url)
     unless @url.kind_of? URI::HTTP
       raise "invalid http url: #{url}"

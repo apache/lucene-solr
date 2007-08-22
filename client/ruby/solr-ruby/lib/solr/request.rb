@@ -12,6 +12,7 @@
 
 module Solr; module Request; end; end
 require 'solr/request/add_document'
+require 'solr/request/modify_document'
 require 'solr/request/base'
 require 'solr/request/commit'
 require 'solr/request/delete'

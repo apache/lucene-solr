@@ -1,3 +1,11 @@
+- v0.0.5
+  release_date: 2007-08-??
+  changes:
+    - Added support for highlighter fragment size to Solr::Request::Standard
+    - Added support for MoreLikeThese to Solr::Request::Standard
+    - Added Solr::Request::ModifyDocument (requires SOLR-139 patch)
+    - Added Solr::Util.query_parser_escape()
+
 - v0.0.4
   release_date: 2007-08-16
   changes:
