@@ -210,13 +210,6 @@
          iterate over, and faster to take intersections.  -->
     <HashDocSet maxSize="3000" loadFactor="0.75"/>
 
-
-    <!-- boolToFilterOptimizer converts boolean clauses with zero boost
-         into cached filters if the number of docs selected by the clause exceeds
-         the threshold (represented as a fraction of the total index) -->
-    <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
-
-
     <!-- a newSearcher event is fired whenever a new searcher is being prepared
          and there is a current searcher handling requests (aka registered). -->
     <!-- QuerySenderListener takes an array of NamedList and executes a
