@@ -20,37 +20,27 @@ class Solr::Request::ModifyDocument < Solr::Request::Update
   # Example: ModifyDocument.new(:id => 10, :overwrite => {:field_name => "new value"})
   def initialize(update_data)
     modes = []
-    @fields = {}
+    @doc = {}
     [:overwrite, :append, :distinct, :increment].each do |mode|
       field_data = update_data[mode]
       if field_data
         field_data.each do |field_name, field_value|
           modes << "#{field_name}:#{mode.to_s.upcase}"
-          @fields[field_name] = field_value
+          @doc[field_name] = field_value
         end
         update_data.delete mode
       end
     end
     @mode = modes.join(",")
-    @id = update_data  # should only be one key remaining
+    
+    # only one key should be left over, the id
+    @doc[update_data.keys[0].to_s] = update_data.values[0]
   end
 
   # returns the request as a string suitable for posting
   def to_s
     e = Solr::XML::Element.new 'add'
-    doc = Solr::XML::Element.new 'doc'
-    e.add_element doc
-    f = Solr::XML::Element.new 'field'
-    f.attributes['name'] = @id.keys[0].to_s
-    f.text = @id.values[0]
-    doc.add_element f
-    @fields.each do |key, value|
-      f = Solr::XML::Element.new 'field'
-      f.attributes['name'] = key.to_s
-      # TODO - what about boost?  - can it be updated too?
-      f.text = value
-      doc.add_element f
-    end
+    e.add_element(Solr::Document.new(@doc).to_xml)
     return e.to_s
   end
   
