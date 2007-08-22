@@ -45,7 +45,9 @@ for current_index in (1..max) do
          :type_en_facet => type_en, :author_en_facet => author_en, :title_en_text => title_en, :body_en_text => body_en
         }
   doc.each {|k,v| doc[k] = v.inner_text}
-  doc[:id] = current_index
+  doc[:id] = current_index    # TODO: namespace the id, something like "etext_tang:#{current_index}"
+  doc[:source_facet] = 'etext_tang'
+  doc[:language_facet] = ['chi','eng']
 
   puts "----",doc[:id],doc[:title_en_text],doc[:author_en_facet],doc[:type_en_facet]
 #  puts doc.inspect if debug
@@ -53,4 +55,4 @@ for current_index in (1..max) do
 end
 
 solr.commit unless debug
-solr.optimize unless debug
+#solr.optimize unless debug
