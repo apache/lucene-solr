@@ -30,7 +30,7 @@ class Solr::Request::Base
   # respond to this type of request
   
   def handler
-    raise "unkown request type: #{self.class}"
+    raise "unknown request type: #{self.class}"
   end
 
 end

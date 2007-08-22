@@ -23,7 +23,7 @@ class Solr::Request::AddDocument < Solr::Request::Update
   #
   # as a short cut you can pass in a Hash instead:
   #
-  #   request = Solr::Request.new :creator => 'Jorge Luis Borges'
+  #   request = Solr::Request::AddDocument.new :creator => 'Jorge Luis Borges'
   # 
   # or an array, to add multiple documents at the same time:
   # 
