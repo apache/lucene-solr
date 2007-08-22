@@ -135,6 +135,13 @@ Documentation
 
 Build
 
+ 1. LUCENE-908: Improvements and simplifications for how the MANIFEST
+    file and the META-INF dir are created. (Michael Busch)
+
+ 2. LUCENE-935: Various improvements for the maven artifacts. Now the
+    artifacts also include the sources as .jar files. (Michael Busch)
+
+
 Test Cases
 
 ======================= Release 2.2.0 2007-06-19 =======================

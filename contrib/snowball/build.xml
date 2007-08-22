@@ -30,10 +30,28 @@
   <property name="snowball.root" value="snowball/website"/>
   <property name="bin.dir" location="bin"/>
 
-  <patternset id="metainf.includes">
-    <include name="SNOWBALL-LICENSE.txt"/>
-  </patternset>
+  <target name="jar" depends="compile" description="Create JAR">
+    <jarify>
+      <metainf-includes>
+        <metainf dir=".">
+          <include name="SNOWBALL-LICENSE.txt"/>
+        </metainf>
+      </metainf-includes>
+    </jarify>
+  </target>
 
+  <target name="jar-src" depends="init"
+    description="Packages the sources as JAR file">
+  	<jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+  	  <metainf-includes>
+        <metainf dir=".">
+          <include name="SNOWBALL-LICENSE.txt"/>
+        </metainf>
+      </metainf-includes>
+  	</jarify>
+  </target>
+
+	
   <!-- ====================================================== -->
   <!-- Download Snowball code                                 -->
   <!-- ====================================================== -->

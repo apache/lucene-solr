@@ -20,7 +20,11 @@
     specific language governing permissions and limitations
     under the License.
   -->
-
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>4</version>
+  </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-parent</artifactId>

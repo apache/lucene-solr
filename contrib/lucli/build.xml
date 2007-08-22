@@ -45,5 +45,14 @@
         <attribute name="Class-Path" value="lib/jline.jar lib/lucene.jar" />
       </manifest-attributes>
     </jarify>
-  </target>
+   </target>
+   
+  <target name="jar-src" depends="init">
+  	<jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+      <manifest-attributes>
+        <attribute name="Main-Class" value="lucli.Lucli" />
+        <attribute name="Class-Path" value="lib/jline.jar lib/lucene.jar" />
+      </manifest-attributes>
+  	</jarify>
+  </target>   
 </project>
