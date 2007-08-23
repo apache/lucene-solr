@@ -16,9 +16,9 @@ require 'solr'
 class ModifyDocumentTest < Test::Unit::TestCase
 
   def test_update_formatting
-    request = Solr::Request::ModifyDocument.new(:id => 10, :overwrite => {:name => ['val1', 'val2']})
+    request = Solr::Request::ModifyDocument.new(:id => 10, :overwrite => {:name => ['val1', 'val2'], :copyfield => nil})
     assert_equal :xml, request.response_format
-    assert_equal 'update?mode=name:OVERWRITE', request.handler
+    assert_equal 'update?mode=copyfield:OVERWRITE,name:OVERWRITE', request.handler
     
     assert_match(/<add>[\s]*<doc>[\s]*<field name=["']id['"]>10<\/field>[\s]*<field name=['"]name['"]>val1<\/field>[\s]*<field name=['"]name['"]>val2<\/field>[\s]*<\/doc>[\s]*<\/add>/, request.to_s)
   end

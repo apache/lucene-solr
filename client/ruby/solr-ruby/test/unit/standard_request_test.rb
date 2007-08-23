@@ -132,7 +132,7 @@ class StandardRequestTest < Test::Unit::TestCase
     hash = request.to_hash
     assert_equal true, hash[:mlt]
     assert_equal 5, hash["mlt.count"]
-    assert_equal ['field1', 'field2'], hash["mlt.fl"]
+    assert_equal 'field1,field2', hash["mlt.fl"]
     assert_equal 3, hash["mlt.mintf"]
     assert_equal 10, hash["mlt.mindf"]
     assert_equal 4, hash["mlt.minwl"]

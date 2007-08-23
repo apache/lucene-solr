@@ -26,7 +26,7 @@ class Solr::Request::ModifyDocument < Solr::Request::Update
       if field_data
         field_data.each do |field_name, field_value|
           modes << "#{field_name}:#{mode.to_s.upcase}"
-          @doc[field_name] = field_value
+          @doc[field_name] = field_value if field_value  # if value is nil, omit so it can be removed
         end
         update_data.delete mode
       end

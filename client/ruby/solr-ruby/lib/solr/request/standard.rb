@@ -104,7 +104,7 @@ class Solr::Request::Standard < Solr::Request::Select
     if @params[:mlt]
       hash[:mlt] = true
       hash["mlt.count"] = @params[:mlt][:count]
-      hash["mlt.fl"] = @params[:mlt][:field_list]
+      hash["mlt.fl"] = @params[:mlt][:field_list].join(',')
       hash["mlt.mintf"] = @params[:mlt][:min_term_freq]
       hash["mlt.mindf"] = @params[:mlt][:min_doc_freq]
       hash["mlt.minwl"] = @params[:mlt][:min_word_length]
