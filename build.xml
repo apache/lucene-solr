@@ -623,4 +623,17 @@
       </concat>
     </sequential>
   </macrodef>
+
+  <!--
+   Committer helpers
+   -->
+
+  <property name="patch.file" value="${basedir}/../patches/${patch.name}"/>
+  <!-- Apply a patch.  Assumes  patch can be applied in the basedir.
+  -Dpatch.name assumes the patch is located in ${basedir}/../patches/${patch.name}
+  -Dpatch.file means the patch can be located anywhere on the file system
+  -->
+  <target name="apply-patch" depends="clean" description="Apply a patch file.  Set -Dpatch.file, or -Dpatch.name when the patch is in the directory ../patches/">
+    <patch patchfile="${patch.file}" strip="0"/>
+  </target>
 </project>

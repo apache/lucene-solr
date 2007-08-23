@@ -141,6 +141,11 @@ Build
  2. LUCENE-935: Various improvements for the maven artifacts. Now the
     artifacts also include the sources as .jar files. (Michael Busch)
 
+ 3. Added apply-patch target to top-level build.  Defaults to looking for a patch in ${basedir}/../patches with name
+ specified by -Dpatch.name.  Can also specify any location by -Dpatch.file property on the command line.  This 
+ should be helpful for easy application of patches, but it is also a step towards integrating automatic patch
+ application with JIRA and Hudson, and is thus subject to change.  (Grant Ingersoll)
+
 
 Test Cases
 
