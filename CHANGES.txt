@@ -122,6 +122,11 @@ New Features
     and a PHP response writer "php" that may be used by eval.
     (Nick Jenkin, Paul Borgermans, Pieter Berkel via yonik)
 
+23. SOLR-308: A new UUIDField class which accepts UUID string values, 
+    as well as the special value of "NEW" which triggers generation of 
+    a new random UUID.
+    (Thomas Peuss via hossman)
+
 Changes in runtime behavior
 
 Optimizations
