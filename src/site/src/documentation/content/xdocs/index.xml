@@ -23,6 +23,21 @@
         <section id="Lucene News">
           <title>Lucene News</title>
           <section>
+            <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
+            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png"  alt="ApacheCon US logo" /></a>
+              Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
+            </p>
+            <p>The following talks and trainings are scheduled for this year's conference:
+              <ul>
+                <li>November 12: <a href="http://us.apachecon.com/us2007/program/talk/1859">Lucene Boot Camp</a> by Grant Ingersoll.  An all-day training focusing on getting started with Lucene.</li>
+                <li>November 16, 9:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1992">Apache Solr out of the Box</a> by Chris Hostetter. Introduction to Solr.</li>
+                <li>November 16, 10:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1943">Building a Vertical Search Site using Apache Software</a> by Ken Krugler. Will cover many Lucene-based projects.</li>
+                <li>November 16, 3:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/1953">Apache Lucene Performance</a> by Grant Ingersoll. Tips and techniques for improving Lucene performance.</li>
+                <li>November 16, 4:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/2017"> Advanced Indexing Techniques with Apache Lucene</a> by Michael Busch. Information on payloads and advanced indexing techniques.</li>
+              </ul>
+            </p>
+          </section>
+          <section>
             <title>19 June 2007 - Release 2.2 available</title>
 
             <p>This release has many improvements since release 2.1. New major features:
