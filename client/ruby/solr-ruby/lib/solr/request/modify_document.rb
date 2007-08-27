@@ -21,7 +21,7 @@ class Solr::Request::ModifyDocument < Solr::Request::Update
   def initialize(update_data)
     modes = []
     @doc = {}
-    [:overwrite, :append, :distinct, :increment].each do |mode|
+    [:overwrite, :append, :distinct, :increment, :delete].each do |mode|
       field_data = update_data[mode]
       if field_data
         field_data.each do |field_name, field_value|
