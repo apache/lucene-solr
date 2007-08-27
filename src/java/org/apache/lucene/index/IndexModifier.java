@@ -89,6 +89,7 @@ import java.io.PrintStream;
  * then add all the new documents.
  *
  * @author Daniel Naber
+ * @deprecated Please use {@link IndexWriter} instead.
  */
 public class IndexModifier {
 

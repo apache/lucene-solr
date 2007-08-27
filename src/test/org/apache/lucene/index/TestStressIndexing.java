@@ -37,12 +37,12 @@ public class TestStressIndexing extends TestCase {
   private static int RUN_TIME_SEC = 15;
 
   private static class IndexerThread extends Thread {
-    IndexModifier modifier;
+    IndexWriter modifier;
     int nextID;
     public int count;
     boolean failed;
 
-    public IndexerThread(IndexModifier modifier) {
+    public IndexerThread(IndexWriter modifier) {
       this.modifier = modifier;
     }
 
@@ -116,7 +116,7 @@ public class TestStressIndexing extends TestCase {
     stress test.
   */
   public void runStressTest(Directory directory) throws Exception {
-    IndexModifier modifier = new IndexModifier(directory, ANALYZER, true);
+    IndexWriter modifier = new IndexWriter(directory, ANALYZER, true);
 
     // One modifier that writes 10 docs then removes 5, over
     // and over:
@@ -141,7 +141,7 @@ public class TestStressIndexing extends TestCase {
     modifier.close();
 
     assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
-    assertTrue("hit unexpected exception in indexer 2", !indexerThread2.failed);
+    assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);
     assertTrue("hit unexpected exception in search1", !searcherThread1.failed);
     assertTrue("hit unexpected exception in search2", !searcherThread2.failed);
     //System.out.println("    Writer: " + indexerThread.count + " iterations");

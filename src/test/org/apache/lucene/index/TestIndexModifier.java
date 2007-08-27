@@ -40,6 +40,7 @@ import java.util.Stack;
  * same time.
  * 
  * @author Daniel Naber
+ * @deprecated
  */
 public class TestIndexModifier extends TestCase {
 

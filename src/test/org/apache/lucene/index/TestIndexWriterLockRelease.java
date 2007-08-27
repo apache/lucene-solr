@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import junit.framework.TestCase;
-import org.apache.lucene.index.IndexModifier;
+import org.apache.lucene.index.IndexWriter;
 
 /**
  * This tests the patch for issue #LUCENE-715 (IndexWriter does not
@@ -70,13 +70,13 @@ public class TestIndexWriterLockRelease extends TestCase {
     }
 
     public void testIndexWriterLockRelease() throws IOException {
-        IndexModifier im;
+        IndexWriter im;
 
         try {
-            im = new IndexModifier(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
+            im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
         } catch (FileNotFoundException e) {
             try {
-                im = new IndexModifier(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
+                im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
             } catch (FileNotFoundException e1) {
             }
         }
