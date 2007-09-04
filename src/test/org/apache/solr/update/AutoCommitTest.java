@@ -114,7 +114,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     req.setContentStreams( toContentStreams(
         adoc("id", "B15", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
-
+    
     assertQ("should find one", req("id:B14") ,"//result[@numFound=1]" );
     assertEquals( 2, tracker.autoCommitCount );
     assertQ("should find none", req("id:B15") ,"//result[@numFound=0]" );
@@ -176,9 +176,40 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     Thread.sleep( 1000 );
     req.setContentStreams( toContentStreams(
       adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
+    handler.handleRequest( req, rsp );
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
     assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
     assertEquals( 3, tracker.autoCommitCount );
   }
+
+  public void testMaxPending() throws Exception {
+    
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
+    updater.maxPendingDeletes = 14;
+    
+    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+    handler.init( null );
+    
+    SolrCore core = SolrCore.getSolrCore();
+    MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
+    
+    // Add a single document
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
+    for( int i=0; i<14; i++ ) {
+      req.setContentStreams( toContentStreams(
+        adoc("id", "A"+i, "subject", "info" ), null ) );
+      handler.handleRequest( req, rsp );
+    }
+    assertEquals(updater.numDocsPending.get(), 14);
+
+    req.setContentStreams( toContentStreams(
+        adoc("id", "A14", "subject", "info" ), null ) );
+    handler.handleRequest( req, rsp );
+
+    assertEquals(updater.numDocsPending.get(), 0);
+    assertEquals(updater.commitCommands.get(), 0);
+  }
+
 }

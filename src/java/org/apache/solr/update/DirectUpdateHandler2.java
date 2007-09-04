@@ -143,6 +143,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   // The key is the id, the value (Integer) is the number
   // of docs to save (delete all except the last "n" added)
   protected final Map<String,Integer> pset;
+  protected int maxPendingDeletes = SolrConfig.config.getInt("updateHandler/maxPendingDeletes", -1);
 
   // commonly used constants for the count in the pset
   protected final static Integer ZERO = 0;
@@ -274,6 +275,17 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         numDocsPending.incrementAndGet();
       }
     }
+    if (maxPendingDeletes > 0 && pset.size() > maxPendingDeletes) {
+      iwCommit.lock();
+      try {
+        // note: this may be entered multiple times since the synchro is 
+        // inside the if(), but doDeletions() is a cheap no-op if it has
+        // already executed
+        doDeletions();
+      } finally {
+        iwCommit.unlock();
+      }
+    }    
     return rc;
   }
 

@@ -130,7 +130,11 @@ New Features
 Changes in runtime behavior
 
 Optimizations
- 1.  SOLR-276: improve JSON writer speed. (yonik)
+ 1. SOLR-276: improve JSON writer speed. (yonik)
+ 
+ 2. SOLR-310: bound and reduce memory usage by providing <maxBufferedDeletes> parameter,
+    which flushes deleted without forcing the user to use <commit/> for this purpose.
+    (klaas) 
 
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
