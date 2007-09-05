@@ -121,7 +121,7 @@ class SolrConnection:
     return self.encoder(key)[0]  #to utf8
 
   def delete(self, id):
-    xstr = '<delete><id>'+self.escapeVal(`id`)+'</id></delete>'
+    xstr = '<delete><id>'+self.escapeVal(unicode(id))+'</id></delete>'
     return self.doUpdateXML(xstr)
 
   def deleteByQyery(self, query):
