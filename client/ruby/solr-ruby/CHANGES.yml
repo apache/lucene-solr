@@ -1,4 +1,4 @@
-- v0.0.5
+v0.0.5:
   release_date: 2007-08-??
   changes:
     - Added support for highlighter fragment size to Solr::Request::Standard
@@ -6,24 +6,24 @@
     - Added Solr::Request::ModifyDocument (requires SOLR-139 patch)
     - Added Solr::Util.query_parser_escape()
 
-- v0.0.4
+v0.0.4:
   release_date: 2007-08-16
   changes:
     - Solr::Indexer#solr added to gain access to the Solr::Connection instance
     - Fixed issue with multi-line String field values when field set multiValued="false"
     - Fixed tests to work without either Hpricot or libxml2
       
-- v0.0.3
+v0.0.3:
   release_date: 2007-05-22
   changes:
     - Adjusted HpricotMapper and XPathMapper, and tests, to load only if their dependencies are available.
 
-- v0.0.2
+v0.0.2:
   release_date: 2007-05-15
   changes:
     - mappers, etc
 
-- v0.0.1: 
+v0.0.1: 
   release_date: 2007-02-15
   changes:
     - initial release
