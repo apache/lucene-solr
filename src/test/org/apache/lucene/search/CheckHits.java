@@ -327,7 +327,7 @@ public class CheckHits {
         }
         TestCase.assertTrue(
             q+": multi valued explanation description=\""+descr
-            +"\" must be 'max of plus x times others' or end with 'prodoct of'"
+            +"\" must be 'max of plus x times others' or end with 'product of'"
             +" or 'sum of:' or 'max of:' - "+expl,
             productOf || sumOf || maxOf || maxTimesOthers);
         float sum = 0;
