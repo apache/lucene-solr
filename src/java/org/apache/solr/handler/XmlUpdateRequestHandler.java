@@ -357,9 +357,9 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
    * @since solr 1.2
    */
   @Deprecated
-  public void doLegacyUpdate(Reader input, Writer output) {
+  public void doLegacyUpdate(SolrCore core, Reader input, Writer output) {
     try {
-      SolrCore core = SolrCore.getSolrCore();
+      //SolrCore core = SolrCore.getSolrCore();
 
       // Old style requests do not choose a custom handler
       UpdateRequestProcessorFactory processorFactory = core.getUpdateProcessorFactory( null );

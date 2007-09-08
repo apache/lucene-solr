@@ -27,8 +27,8 @@ import org.apache.solr.core.SolrConfig;
 
 final class DocSetHitCollector extends HitCollector {
 
-  static float HASHSET_INVERSE_LOAD_FACTOR = 1.0f / SolrConfig.config.getFloat("//HashDocSet/@loadFactor",0.75f);
-  static int HASHDOCSET_MAXSIZE= SolrConfig.config.getInt("//HashDocSet/@maxSize",-1);
+  final float HASHSET_INVERSE_LOAD_FACTOR;
+  final int HASHDOCSET_MAXSIZE;
 
   int pos=0;
   OpenBitSet bits;
@@ -37,11 +37,14 @@ final class DocSetHitCollector extends HitCollector {
   // in case there aren't that many hits, we may not want a very sparse
   // bit array.  Optimistically collect the first few docs in an array
   // in case there are only a few.
-  final int[] scratch = new int[HASHDOCSET_MAXSIZE];
+  final int[] scratch;
 
   // todo - could pass in bitset and an operation also...
-  DocSetHitCollector(int maxDoc) {
+  DocSetHitCollector(float inverseLoadFactor, int maxSize, int maxDoc) {
     this.maxDoc = maxDoc;
+    HASHSET_INVERSE_LOAD_FACTOR = inverseLoadFactor;
+    HASHDOCSET_MAXSIZE = maxSize;
+    scratch = new int[HASHDOCSET_MAXSIZE];
   }
 
   public void collect(int doc, float score) {

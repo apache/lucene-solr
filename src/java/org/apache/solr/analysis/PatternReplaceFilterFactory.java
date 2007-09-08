@@ -16,7 +16,7 @@
  */
 
 package org.apache.solr.analysis;
-
+import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.util.Map;
@@ -32,8 +32,8 @@ public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {
   String replacement;
   boolean all = true;
   
-  public void init(Map<String, String> args) {
-    super.init(args);
+  public void init(SolrConfig solrConfig, Map<String, String> args) {
+    super.init(solrConfig, args);
     try {
       p = Pattern.compile(args.get("pattern"));
     } catch (PatternSyntaxException e) {

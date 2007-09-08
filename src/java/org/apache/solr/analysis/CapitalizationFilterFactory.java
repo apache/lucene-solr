@@ -27,6 +27,7 @@ import java.util.StringTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.analysis.BaseTokenFilterFactory;
 
 /**
@@ -71,8 +72,8 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory
   boolean forceFirstLetter = true; // make sure the first letter is capitol even if it is in the keep list
   
   @Override
-  public void init(Map<String,String> args) {
-    super.init( args );
+  public void init(SolrConfig solrConfig, Map<String,String> args) {
+    super.init( solrConfig, args );
     
     String k = args.get( KEEP );
     if( k != null ) {

@@ -23,6 +23,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 /**
  */
 class AbstractSolrEventListener implements SolrEventListener {
+  protected final SolrCore core;
+  public AbstractSolrEventListener(SolrCore core) {
+    this.core = core;
+  }
   protected NamedList args;
 
   public void init(NamedList args) {

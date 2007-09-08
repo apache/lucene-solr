@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.core.SolrConfig;
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
@@ -60,8 +61,8 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   protected Encoder encoder = null;
 
   @Override
-  public void init(Map<String,String> args) {
-    super.init( args );
+  public void init(SolrConfig solrConfig, Map<String,String> args) {
+    super.init( solrConfig, args );
     
     if( args.get( "inject" ) != null ) {
       inject = Boolean.getBoolean( args.get( INJECT ) );

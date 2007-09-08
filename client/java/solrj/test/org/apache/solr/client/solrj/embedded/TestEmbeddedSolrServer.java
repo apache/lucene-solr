@@ -36,7 +36,7 @@ public class TestEmbeddedSolrServer extends SolrExampleTestBase {
     super.setUp();
     
     // setup the server...
-    server = new EmbeddedSolrServer( SolrCore.getSolrCore() );
+    server = new EmbeddedSolrServer( h.getCore() );
   }
 
   @Override

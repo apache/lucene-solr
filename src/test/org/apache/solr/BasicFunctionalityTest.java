@@ -48,6 +48,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   public String getSchemaFile() { return "schema.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
+  public String getCoreName() { return "basic"; }
 
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
@@ -292,7 +293,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   
   public void testTermVectorFields() {
     
-    IndexSchema ischema = new IndexSchema(getSchemaFile());
+    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile());
     SchemaField f; // Solr field type
     Field luf; // Lucene field
 
@@ -1172,7 +1173,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }   
   public void testCompressableFieldType() {
     
-    IndexSchema ischema = new IndexSchema(getSchemaFile());
+    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile());
     SchemaField f; // Solr field type
     Field luf; // Lucene field
 

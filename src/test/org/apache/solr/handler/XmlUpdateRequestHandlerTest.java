@@ -1,5 +1,6 @@
 package org.apache.solr.handler;
 
+import org.apache.solr.util.AbstractSolrTestCase;
 import java.io.StringReader;
 import java.util.Collection;
 
@@ -12,14 +13,18 @@ import junit.framework.TestCase;
 
 import org.apache.solr.common.SolrInputDocument;
 
-public class XmlUpdateRequestHandlerTest extends TestCase 
+public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase 
 {
   private XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
-  protected XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
+  protected XmlUpdateRequestHandler handler;
+
+@Override public String getSchemaFile() { return "schema.xml"; }
+@Override public String getSolrConfigFile() { return "solrconfig.xml"; }
 
   @Override 
   public void setUp() throws Exception {
     super.setUp();
+    handler = new XmlUpdateRequestHandler();
   }
   
   @Override 

@@ -32,7 +32,6 @@ import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,7 +59,7 @@ public class EmbeddedSolrServer extends BaseSolrServer
   public EmbeddedSolrServer( SolrCore core )
   {
     this.core = core;
-    this.parser = new SolrRequestParsers( core, SolrConfig.config );
+    this.parser = new SolrRequestParsers( core );
     
     // by default use the XML one
     _processor = new XMLResponseParser();

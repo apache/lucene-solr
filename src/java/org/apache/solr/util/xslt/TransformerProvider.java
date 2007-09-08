@@ -28,7 +28,7 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
  *  For now, only caches the last created Transformer, but
@@ -64,7 +64,7 @@ public class TransformerProvider {
   /** Return a new Transformer, possibly created from our cached Templates object  
    * @throws TransformerConfigurationException 
    */ 
-  public synchronized Transformer getTransformer(String filename,int cacheLifetimeSeconds) throws IOException {
+  public synchronized Transformer getTransformer(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     // For now, the Templates are blindly reloaded once cacheExpires is over.
     // It'd be better to check the file modification time to reload only if needed.
     if(lastTemplates!=null && filename.equals(lastFilename) && System.currentTimeMillis() < cacheExpires) {
@@ -72,7 +72,7 @@ public class TransformerProvider {
         log.fine("Using cached Templates:" + filename);
       }
     } else {
-      lastTemplates = getTemplates(filename,cacheLifetimeSeconds);
+      lastTemplates = getTemplates(solrConfig, filename,cacheLifetimeSeconds);
     }
     
     Transformer result = null;
@@ -90,7 +90,7 @@ public class TransformerProvider {
   }
   
   /** Return a Templates object for the given filename */
-  private Templates getTemplates(String filename,int cacheLifetimeSeconds) throws IOException {
+  private Templates getTemplates(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
     
     Templates result = null;
     lastFilename = null;
@@ -98,7 +98,7 @@ public class TransformerProvider {
       if(log.isLoggable(Level.FINE)) {
         log.fine("compiling XSLT templates:" + filename);
       }
-      final InputStream xsltStream = Config.openResource("xslt/" + filename);
+      final InputStream xsltStream = solrConfig.openResource("xslt/" + filename);
       result = tFactory.newTemplates(new StreamSource(xsltStream));
     } catch (Exception e) {
       log.throwing(getClass().getName(), "newTemplates", e);

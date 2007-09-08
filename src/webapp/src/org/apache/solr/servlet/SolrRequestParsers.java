@@ -65,15 +65,16 @@ public class SolrRequestParsers
   private boolean enableRemoteStreams = false;
   private StandardRequestParser standard;
   
-  public SolrRequestParsers( SolrCore core, Config config )
+  public SolrRequestParsers( SolrCore core )
   {
     this.core = core;
+    Config config = core.getSolrConfig();
     
     // Read the configuration
-    long uploadLimitKB = SolrConfig.config.getInt( 
+    long uploadLimitKB = config.getInt( 
         "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2000 ); // 2MB default
     
-    this.enableRemoteStreams = SolrConfig.config.getBool( 
+    this.enableRemoteStreams = config.getBool( 
         "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
         
     MultipartRequestParser multi = new MultipartRequestParser( uploadLimitKB );

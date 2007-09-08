@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,14 +31,16 @@ import java.io.IOException;
  * @version $Id$
  */
 public class StopFilterFactory extends BaseTokenFilterFactory {
-  public void init(Map<String, String> args) {
-    super.init(args);
+  
+  @Override
+  public void init(SolrConfig solrConfig, Map<String, String> args) {
+    super.init(solrConfig, args);
     String stopWordFile = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
 
     if (stopWordFile != null) {
       try {
-        List<String> wlist = Config.getLines(stopWordFile);
+        List<String> wlist = solrConfig.getLines(stopWordFile);
         stopWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase);
       } catch (IOException e) {
         throw new RuntimeException(e);

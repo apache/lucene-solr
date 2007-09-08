@@ -28,7 +28,7 @@ public class RequestHandlersTest extends AbstractSolrTestCase {
 
   
   public void testLazyLoading() {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     SolrRequestHandler handler = core.getRequestHandler( "lazy" );
     assertFalse( handler instanceof StandardRequestHandler ); 
     
@@ -65,7 +65,7 @@ public class RequestHandlersTest extends AbstractSolrTestCase {
   
   public void testPathNormalization()
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     SolrRequestHandler h1 = core.getRequestHandler("/update/csv" );
     assertNotNull( h1 );
 

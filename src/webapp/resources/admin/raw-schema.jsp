@@ -21,7 +21,8 @@
 <%@ page import="java.io.Reader"%>
 <%@ page contentType="text/plain;charset=UTF-8" language="java" %>
 <%
-  SolrCore core = SolrCore.getSolrCore();
+  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
+  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
   IndexSchema schema = core.getSchema();
   Reader input = new InputStreamReader(schema.getInputStream());
   char[] buf = new char[4096];

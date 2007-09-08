@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -37,14 +37,14 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void init(Map<String, String> args) {
-    super.init(args);
+  public void init(SolrConfig config, Map<String, String> args) {
+    super.init(config, args);
     String wordFile = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
 
     if (wordFile != null) {
       try {
-        List<String> wlist = Config.getLines(wordFile);
+        List<String> wlist = config.getLines(wordFile);
         words = StopFilter.makeStopSet(
             (String[])wlist.toArray(new String[0]), ignoreCase);
       } 

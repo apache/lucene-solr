@@ -50,13 +50,14 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
    */
   public void testDynamicCopy() 
   {
+    SolrCore core = h.getCore();
     assertU(adoc("id", "10", "title", "test", "aaa_dynamic", "aaa"));
     assertU(commit());
     
     Map<String,String> args = new HashMap<String, String>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
@@ -66,7 +67,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     args = new HashMap<String, String>();
     args.put( CommonParams.Q, "aaa_dynamic:aaa" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic source", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
@@ -75,7 +76,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     args = new HashMap<String, String>();
     args.put( CommonParams.Q, "dynamic_aaa:aaa" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic destination", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"

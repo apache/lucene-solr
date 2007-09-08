@@ -58,16 +58,22 @@ public class Config {
     this.name = name;
     this.prefix = prefix;
     if (prefix!=null && !prefix.endsWith("/")) prefix += '/';
-
-    javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-    doc = builder.parse(is);
-
+    InputStream lis = is;
     try{
+      if (lis == null)
+        lis = openResource(name);
+      
+      javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      doc = builder.parse(lis);
+
     	DOMUtil.substituteSystemProperties(doc);
-    }
-    catch( SolrException e ){
+    } catch( SolrException e ){
     	SolrException.log(log,"Error in "+name,e);
     	throw e;
+    } finally {
+      // if this opens the resource, it also closes it
+      if (lis != is)
+        lis.close();
     }
   }
 
@@ -185,6 +191,75 @@ public class Config {
   }
 
 
+  // The directory where solr will look for config files by default.
+  // defaults to "./solr/conf/"
+  public String getConfigDir() {
+    return getInstanceDir() + "conf/";
+  }
+  
+  public InputStream openResource(String resource) {
+    InputStream is=null;
+    
+    try {
+      File f = new File(resource);
+      if (!f.isAbsolute()) {
+        // try $CWD/solrconf/
+        f = new File(getConfigDir() + resource);
+      }
+      if (f.isFile() && f.canRead()) {
+        return new FileInputStream(f);
+      } else {
+        // try $CWD
+        f = new File(resource);
+        if (f.isFile() && f.canRead()) {
+          return new FileInputStream(f);
+        }
+      }
+      
+      ClassLoader loader = getClassLoader();
+      is = loader.getResourceAsStream(resource);
+    } catch (Exception e) {
+      throw new RuntimeException("Error opening " + resource, e);
+    }
+    if (is==null) {
+      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+    }
+    return is;
+  }
+  
+  /**
+   * Accesses a resource by name and returns the (non comment) lines
+   * containing data.
+   *
+   * <p>
+   * A comment line is any line that starts with the character "#"
+   * </p>
+   *
+   * @param resource
+   * @return a list of non-blank non-comment lines with whitespace trimmed
+   * from front and back.
+   * @throws IOException
+   */
+  public List<String> getLines(String resource) throws IOException {
+    BufferedReader input = null;
+    try {
+      // todo - allow configurable charset?
+      input = new BufferedReader(new InputStreamReader(openResource(resource), "UTF-8"));
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
+    ArrayList<String> lines = new ArrayList<String>();
+    for (String word=null; (word=input.readLine())!=null;) {
+      // skip comments
+      if (word.startsWith("#")) continue;
+      word=word.trim();
+      // skip blank lines
+      if (word.length()==0) continue;
+      lines.add(word);
+    }
+    return lines;
+  }
+  
   //
   // classloader related functions
   //
@@ -280,15 +355,8 @@ public class Config {
     return instanceDir;
   }
   
-  public static boolean isInstanceDirInitialized()
-  {
+  public static boolean isInstanceDirInitialized() {
     return instanceDir != null;
-  }
-
-  // The directory where solr will look for config files by default.
-  // defaults to "./solr/conf/"
-  static String getConfigDir() {
-    return getInstanceDir() + "conf/";
   }
 
   /** Singleton classloader loading resources specified in any configs */
@@ -306,7 +374,8 @@ public class Config {
    */
   static ClassLoader getClassLoader() {
     if (null == classLoader) {
-      classLoader = Thread.currentThread().getContextClassLoader();
+      // NB5.5/win32/1.5_10: need to go thru local var or classLoader is not set!
+      ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
       File f = new File(getInstanceDir() + "lib/");
       if (f.canRead() && f.isDirectory()) {
@@ -317,78 +386,14 @@ public class Config {
             jars[j] = jarFiles[j].toURI().toURL();
             log.info("Adding '" + jars[j].toString() + "' to Solr classloader");
           }
-          classLoader = URLClassLoader.newInstance(jars, classLoader);
+          loader = URLClassLoader.newInstance(jars, loader);
         } catch (MalformedURLException e) {
           SolrException.log(log,"Can't construct solr lib class loader", e);
         }
       }
+      classLoader = loader;
     }
     return classLoader;
   }
-
-
-  public static InputStream openResource(String resource) {
-    InputStream is=null;
-
-    try {
-      File f = new File(resource);
-      if (!f.isAbsolute()) {
-        // try $CWD/solrconf/
-        f = new File(getConfigDir() + resource);
-      }
-      if (f.isFile() && f.canRead()) {
-        return new FileInputStream(f);
-      } else {
-        // try $CWD
-        f = new File(resource);
-        if (f.isFile() && f.canRead()) {
-          return new FileInputStream(f);
-        }
-      }
-
-      ClassLoader loader = getClassLoader();
-      is = loader.getResourceAsStream(resource);
-    } catch (Exception e) {
-      throw new RuntimeException("Error opening " + resource, e);
-    }
-    if (is==null) {
-      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
-    }
-    return is;
-  }
-
-  /**
-   * Accesses a resource by name and returns the (non comment) lines
-   * containing data.
-   *
-   * <p>
-   * A comment line is any line that starts with the character "#"
-   * </p>
-   *
-   * @param resource
-   * @return a list of non-blank non-comment lines with whitespace trimmed
-   * from front and back.
-   * @throws IOException
-   */
-  public static List<String> getLines(String resource) throws IOException {
-    BufferedReader input = null;
-    try {
-      // todo - allow configurable charset?
-      input = new BufferedReader(new InputStreamReader(openResource(resource), "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-    ArrayList<String> lines = new ArrayList<String>();
-    for (String word=null; (word=input.readLine())!=null;) {
-      // skip comments
-      if (word.startsWith("#")) continue;
-      word=word.trim();
-      // skip blank lines
-      if (word.length()==0) continue;
-      lines.add(word);
-    }
-    return lines;
-  }
-
 
 }

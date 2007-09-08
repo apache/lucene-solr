@@ -16,34 +16,25 @@
  */
 
 package org.apache.solr.analysis;
-
-import java.util.Map;
-import java.util.logging.Logger;
-
 import org.apache.solr.core.SolrConfig;
-
+import org.apache.solr.util.TestHarness;
+import junit.framework.TestCase;
 /**
- * Simple abstract implementation that handles init arg processing.
- * 
- * @version $Id$
+ *
+ * @author hbiestro
  */
-public abstract class BaseTokenizerFactory implements TokenizerFactory, SolrConfig.Initializable {
-  final static Logger log = Logger.getLogger(BaseTokenizerFactory.class.getName());
-  
-  /** The init args */
-  protected Map<String,String> args;
-  
-  @Deprecated
-  public void init(Map<String,String> args) {
-    log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args)");
-    this.args=args;
+public class AnalysisTestCase extends TestCase {
+  protected SolrConfig solrConfig;
+  /** Creates a new instance of AnalysisTestCase */
+  public AnalysisTestCase() {
   }
   
-  public void init(SolrConfig solrConfig, Map<String,String> args) {
-    this.args=args;
-  }
-  
-  public Map<String,String> getArgs() {
-    return args;
+  public String getSolrConfigFile() { return "solrconfig.xml"; }
+
+  public void setUp() throws Exception {
+    // if you override setUp or tearDown, you better call
+    // the super classes version
+    super.setUp();
+    solrConfig = TestHarness.createConfig(getSolrConfigFile());
   }
 }

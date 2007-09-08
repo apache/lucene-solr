@@ -61,13 +61,14 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
   private void parseEventListeners() {
-    NodeList nodes = (NodeList) SolrConfig.config.evaluate("updateHandler/listener[@event=\"postCommit\"]", XPathConstants.NODESET);
+    final SolrConfig solrConfig = core.getSolrConfig();
+    NodeList nodes = (NodeList) solrConfig.evaluate("updateHandler/listener[@event=\"postCommit\"]", XPathConstants.NODESET);
     if (nodes!=null) {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
         try {
           String className = DOMUtil.getAttr(node,"class");
-          SolrEventListener listener = (SolrEventListener)Config.newInstance(className);
+          SolrEventListener listener = core.createEventListener(className);
           listener.init(DOMUtil.childNodesToNamedList(node));
           // listener.init(DOMUtil.toMapExcept(node.getAttributes(),"class","synchronized"));
           commitCallbacks.add(listener);
@@ -77,13 +78,13 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         }
       }
     }
-    nodes = (NodeList)SolrConfig.config.evaluate("updateHandler/listener[@event=\"postOptimize\"]", XPathConstants.NODESET);
+    nodes = (NodeList) solrConfig.evaluate("updateHandler/listener[@event=\"postOptimize\"]", XPathConstants.NODESET);
     if (nodes!=null) {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
         try {
           String className = DOMUtil.getAttr(node,"class");
-          SolrEventListener listener = (SolrEventListener)Config.newInstance(className);
+          SolrEventListener listener = core.createEventListener(className);
           listener.init(DOMUtil.childNodesToNamedList(node));
           optimizeCallbacks.add(listener);
           log.info("added SolarEventListener for postOptimize: " + listener);
@@ -113,11 +114,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
 
     parseEventListeners();
-    SolrInfoRegistry.getRegistry().put("updateHandler", this);
+    core.getInfoRegistry().put("updateHandler", this);
   }
 
   protected SolrIndexWriter createMainIndexWriter(String name) throws IOException {
-    SolrIndexWriter writer = new SolrIndexWriter(name,core.getIndexDir(), false, schema,SolrCore.mainIndexConfig);
+    SolrIndexWriter writer = new SolrIndexWriter(name,core.getIndexDir(), false, schema, core.getSolrConfig().mainIndexConfig);
     return writer;
   }
 

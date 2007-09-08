@@ -30,7 +30,11 @@ import java.util.List;
  * @version $Id$
  */
 class QuerySenderListener extends AbstractSolrEventListener {
-
+  public QuerySenderListener(SolrCore core) {
+    super(core);
+  }
+  
+  @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
     SolrCore core = SolrCore.getSolrCore();
@@ -39,11 +43,8 @@ class QuerySenderListener extends AbstractSolrEventListener {
       try {
         // bind the request to a particular searcher (the newSearcher)
         LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,nlst) {
-          public SolrIndexSearcher getSearcher() {
-            return searcher;
-          }
-          public void close() {
-          }
+          @Override public SolrIndexSearcher getSearcher() { return searcher; }
+          @Override public void close() { }
         };
 
         SolrQueryResponse rsp = new SolrQueryResponse();

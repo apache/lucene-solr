@@ -55,7 +55,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
   
   public void testSevereErrorsForDuplicateNames() 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
 
     for( Throwable t : SolrConfig.severeErrors ) {

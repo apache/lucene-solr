@@ -32,7 +32,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
   public void testConfiguration() throws Exception 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
 
     // make sure it loaded the factories
     ChainedUpdateProcessorFactory chained = 

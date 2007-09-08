@@ -16,15 +16,18 @@
  limitations under the License.
 --%>
 <%@ page import="org.apache.solr.core.Config,
+                 org.apache.solr.core.SolrCore,
                  org.apache.solr.core.SolrConfig,
                  java.io.InputStream,
                  java.io.InputStreamReader,
                  java.io.Reader,
                  java.util.StringTokenizer"%>
 <%
+  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
+  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
   String fname = request.getParameter("file");
   String optional = request.getParameter("optional");
-  String gettableFiles = SolrConfig.config.get("admin/gettableFiles","");
+  String gettableFiles = core.getSolrConfig().get("admin/gettableFiles","");
   StringTokenizer st = new StringTokenizer(gettableFiles);
   InputStream is;
   boolean isValid = false;
@@ -40,7 +43,7 @@
   }
   if (isValid) {
     try {
-    is= Config.openResource(fname);
+    is= core.getSolrConfig().openResource(fname);
     Reader input = new InputStreamReader(is);
     char[] buf = new char[4096];
     while (true) {

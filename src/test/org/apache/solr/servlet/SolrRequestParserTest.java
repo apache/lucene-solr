@@ -48,7 +48,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    parser = new SolrRequestParsers( SolrCore.getSolrCore(), SolrConfig.config );
+    parser = new SolrRequestParsers(h.getCore() );
   }
   
   public void testStreamBody() throws Exception

@@ -43,7 +43,7 @@ final class RequestHandlers {
   public static Logger log = Logger.getLogger(RequestHandlers.class.getName());
 
   public static final String DEFAULT_HANDLER_NAME="standard";
-
+  protected final SolrCore core;
   // Use a synchronized map - since the handlers can be changed at runtime, 
   // the map implementation should be thread safe
   private final Map<String, SolrRequestHandler> handlers = Collections.synchronizedMap(
@@ -64,6 +64,10 @@ final class RequestHandlers {
       return p.substring( 0, p.length()-1 );
     
     return p;
+  }
+  
+  public RequestHandlers(SolrCore core) {
+      this.core = core;
   }
   
   /**
@@ -89,7 +93,7 @@ final class RequestHandlers {
     SolrRequestHandler old = handlers.put(norm, handler);
     if (handlerName != null && handlerName != "") {
       if (handler instanceof SolrInfoMBean) {
-        SolrInfoRegistry.getRegistry().put(handlerName, (SolrInfoMBean)handler);
+        core.getInfoRegistry().put(handlerName, (SolrInfoMBean)handler);
       }
     }
     return old;
@@ -129,20 +133,20 @@ final class RequestHandlers {
       new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true, true )
     {
       @Override
-      protected SolrRequestHandler create( String name, String className, Node node ) throws Exception
+      protected SolrRequestHandler create( SolrCore core, String name, String className, Node node ) throws Exception
       {    
         String startup = DOMUtil.getAttr( node, "startup" );
         if( startup != null ) {
           if( "lazy".equals( startup ) ) {
             log.info("adding lazy requestHandler: " + className );
             NamedList args = DOMUtil.childNodesToNamedList(node);
-            return new LazyRequestHandlerWrapper( className, args );
+            return new LazyRequestHandlerWrapper( core, className, args );
           }
           else {
             throw new Exception( "Unknown startup value: '"+startup+"' for: "+className );
           }
         }
-        return super.create( name, className, node );
+        return super.create( core, name, className, node );
       }
 
       @Override
@@ -159,7 +163,7 @@ final class RequestHandlers {
     NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
     
     // Load the handlers and get the default one
-    SolrRequestHandler defaultHandler = loader.load( nodes );
+    SolrRequestHandler defaultHandler = loader.load( core, nodes );
     if( defaultHandler == null ) {
       defaultHandler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
       if( defaultHandler == null ) {
@@ -194,12 +198,14 @@ final class RequestHandlers {
    */
   private static final class LazyRequestHandlerWrapper implements SolrRequestHandler, SolrInfoMBean
   {
+    private final SolrCore core;
     private String _className;
     private NamedList _args;
     private SolrRequestHandler _handler;
     
-    public LazyRequestHandlerWrapper( String className, NamedList args )
+    public LazyRequestHandlerWrapper( SolrCore core, String className, NamedList args )
     {
+      this.core = core;
       _className = className;
       _args = args;
       _handler = null; // don't initialize
@@ -223,8 +229,7 @@ final class RequestHandlers {
     {
       if( _handler == null ) {
         try {
-          Class clazz = Config.findClass( _className, new String[]{} );
-          _handler = (SolrRequestHandler)clazz.newInstance();
+          _handler = (SolrRequestHandler)core.createRequestHandler(_className);
           _handler.init( _args );
         }
         catch( Exception ex ) {

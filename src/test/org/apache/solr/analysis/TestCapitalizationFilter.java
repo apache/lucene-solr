@@ -22,7 +22,7 @@ import java.util.Map;
 
 
 /**
- * @version $Id:$
+ * @version $Id$
  */
 public class TestCapitalizationFilter extends BaseTokenTestCase {
   
@@ -33,7 +33,7 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );  
     
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
-    factory.init( args );
+    factory.init( solrConfig, args );
 
     assertEquals( "Kitten", factory.processWord( "kiTTEN", 0 ) );
     factory.forceFirstLetter = true;
@@ -63,7 +63,7 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     // Now try some prefixes
     factory = new CapitalizationFilterFactory();
     args.put( "okPrefix", "McK" );  // all words
-    factory.init( args );
+    factory.init( solrConfig, args );
     out = tsToString( factory.create( new IterTokenStream( "McKinley" ) ) );
     assertEquals( "McKinley", out );
     

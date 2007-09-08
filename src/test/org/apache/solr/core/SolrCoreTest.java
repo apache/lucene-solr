@@ -30,7 +30,7 @@ public class SolrCoreTest extends AbstractSolrTestCase {
 
   public void testRequestHandlerRegistry() {
     // property values defined in build.xml
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
 
     EmptyRequestHandler handler1 = new EmptyRequestHandler();
     EmptyRequestHandler handler2 = new EmptyRequestHandler();

@@ -18,7 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.core.SolrInfoMBean;
-
+import org.apache.solr.core.SolrCore;
 import java.util.*;
 
 /**
@@ -27,10 +27,11 @@ import java.util.*;
 
 // A Registry to hold a collection of SolrInfo objects
 
+@Deprecated
 public class SolrInfoRegistry {
-  private static final Map<String,SolrInfoMBean> inst = Collections.synchronizedMap(new LinkedHashMap<String,SolrInfoMBean>());
-
+  
+  @Deprecated
   public static Map<String, SolrInfoMBean> getRegistry() {
-    return inst;
+    return SolrCore.getSolrCore().getInfoRegistry();
   }
 }

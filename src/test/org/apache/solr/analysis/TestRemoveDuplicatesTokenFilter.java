@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import java.util.Iterator;
 import java.util.Arrays;
 
-public class TestRemoveDuplicatesTokenFilter extends TestCase {
+public class TestRemoveDuplicatesTokenFilter extends AnalysisTestCase {
 
   public static Token tok(int pos, String t, int start, int end) {
     Token tok = new Token(t,start,end);

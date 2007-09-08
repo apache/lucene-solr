@@ -45,6 +45,11 @@ import org.apache.solr.request.SolrQueryResponse;
 public class TestRequestHandler implements SolrRequestHandler {
   private static Logger log = Logger.getLogger(SolrIndexSearcher.class.getName());
 
+  SolrCore core;
+
+  public TestRequestHandler(SolrCore core) {
+    this.core = core;
+  }
   public void init(NamedList args) {
     SolrCore.log.log(Level.INFO, "Unused request handler arguments:" + args);
   }

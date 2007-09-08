@@ -18,8 +18,8 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 
 import java.io.IOException;
@@ -30,8 +30,9 @@ import java.util.Map;
  * @version $Id$
  */
 public class SynonymFilterFactory extends BaseTokenFilterFactory {
-  public void init(Map<String, String> args) {
-    super.init(args);
+  @Override
+  public void init(SolrConfig solrConfig, Map<String, String> args) {
+    super.init(solrConfig, args);
     String synonyms = args.get("synonyms");
 
     ignoreCase = getBoolean("ignoreCase",false);
@@ -40,7 +41,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory {
     if (synonyms != null) {
       List<String> wlist=null;
       try {
-        wlist = Config.getLines(synonyms);
+        wlist = solrConfig.getLines(synonyms);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -50,7 +51,6 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory {
         SolrCore.log.fine("SynonymMap "+synonyms +":"+synMap);
       }
     }
-
   }
 
   private SynonymMap synMap;

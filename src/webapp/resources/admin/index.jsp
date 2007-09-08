@@ -34,8 +34,8 @@
 	<h3>Solr</h3>
   </td>
   <td>
-    [<a href="get-file.jsp?file=schema.xml">Schema</a>]
-    [<a href="get-file.jsp?file=solrconfig.xml">Config</a>]
+    [<a href="get-file.jsp?file=<%=core.getSchemaFile()%>">Schema</a>]
+    [<a href="get-file.jsp?file=<%=core.getConfigFile()%>">Config</a>]
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
     <br>
     [<a href="stats.jsp">Statistics</a>]

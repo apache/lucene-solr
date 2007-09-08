@@ -21,10 +21,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.update.SolrIndexConfig;
+import org.apache.lucene.search.BooleanQuery;
+
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.util.Map;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.StringTokenizer;
@@ -39,63 +44,119 @@ import java.io.InputStream;
  *
  * @version $Id$
  */
-public class SolrConfig {
+public class SolrConfig extends Config {
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
   /**
    * Singleton containing all configuration.
+   * Compatibility feature for single-core (pre-solr215 patch) code.
+   * Most usage should be converted by:
+   * - using the configuration directly when used in Abstract{Tokeinizer,TokenFilter}Factory.init().
+   * - getting the configuration through the owning core if accessible (SolrCore.getSolrConfig()).
+   * - getting the core by name then its configuration as above
    */
-  public static Config config;
+  @Deprecated
+  public static SolrConfig config = null; 
+
+  /** An interface to denote objects that need a SolrConfig to be initialized.
+   *  These are mainly TokenFilterFactory and TokenizerFactory subclasses.
+   */
+  public interface Initializable {
+    /** <code>init</code> will be called just once, immediately after creation.
+     */
+    void init(SolrConfig solrConfig, Map<String,String> args);
+  }
+
+  public final String configFile;
 
   /**
    * Singleton keeping track of configuration errors
    */
   public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
-
   /**
-   * (Re)loads the static configuration information from the specified file.
-   *
-   * <p>
-   * This method is called implicitly on ClassLoad, but it may be
-   * called explicitly to change the Configuration used for the purpose
-   * of testing - in which case it should be called prior to initializing
-   * a SolrCore.
-   * </p>
-   *
-   * <p>
-   * This method should <b>only</b> be called for testing purposes.
-   * Because it modifies a singleton, it is not suitable for running
-   * multi-threaded tests.
-   * </p>
-   *
+   * Creates a configation information from the specified file.
+   * Add any exception that might occur to the severeErrors singleton.
    * @param file file name to load
    * @see Config#openResource
    */
-  public static synchronized void initConfig(String file)
-    throws ParserConfigurationException, IOException, SAXException {
-
-    InputStream is = Config.openResource(file);
-    config=new Config(file, is, "/config/");
-    is.close();
-    Config.log.info("Loaded SolrConfig: " + file);
-  }
-  
-  static {
+  public static SolrConfig createInstance(String file) {
     try {
-      initConfig(DEFAULT_CONF_FILE);
+      return new SolrConfig(file);
     } catch (Exception ee) {
       severeErrors.add( ee );
-      throw new RuntimeException("Error in " + DEFAULT_CONF_FILE, ee);
+      throw new RuntimeException("Error in " + file, ee);
     }
   }
 
-  /**
-   * Returns a Request object based on the admin/pingQuery section
-   * of the Solr config file.
-   */
-  public static SolrQueryRequest getPingQueryRequest(SolrCore core) {
+  /** Creates a default instance from the solrconfig.xml. */
+  public SolrConfig()
+  throws ParserConfigurationException, IOException, SAXException {
+    this(DEFAULT_CONF_FILE);
+  }
+  /** Creates a configuration instance from a file. */
+  public SolrConfig(String file)
+  throws ParserConfigurationException, IOException, SAXException {
+     this(file, null);
+  }
+  /** Creates a configuration instance from an input stream. */
+  public SolrConfig(String file, InputStream is)
+  throws ParserConfigurationException, IOException, SAXException {
+    super(file, is, "/config/");
+    this.configFile = file;
+    defaultIndexConfig = new SolrIndexConfig(this, null, null);
+    mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
+    
+    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
+    filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
+    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
+    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
+    
+    useFilterForSortedQuery = getBool("query/useFilterForSortedQuery", false);
+    queryResultWindowSize = getInt("query/queryResultWindowSize", 1);
+    queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
+    enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
 
+    
+    filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
+    queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
+    documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
+    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
+    org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
+
+    hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor",0.75f);
+    hashDocSetMaxSize= getInt("//HashDocSet/@maxSize",-1);
+    
+    pingQueryParams = readPingQueryParams(this);
+    Config.log.info("Loaded SolrConfig: " + file);
+  }
+
+  /* The set of materialized parameters: */
+  public final int booleanQueryMaxClauseCount;
+  // SolrIndexSearcher - nutch optimizer
+  public final boolean filtOptEnabled;
+  public final int filtOptCacheSize;
+  public final float filtOptThreshold;
+  // SolrIndexSearcher - caches configurations
+  public final CacheConfig filterCacheConfig ;
+  public final CacheConfig queryResultCacheConfig;
+  public final CacheConfig documentCacheConfig;
+  public final CacheConfig[] userCacheConfigs;
+  // SolrIndexSearcher - more...
+  public final boolean useFilterForSortedQuery;
+  public final int queryResultWindowSize;
+  public final int queryResultMaxDocsCached;
+  public final boolean enableLazyFieldLoading;
+  // DocSet
+  public final float hashSetInverseLoadFactor;
+  public final int hashDocSetMaxSize;
+  // default & main index configurations
+  public final SolrIndexConfig defaultIndexConfig;
+  public final SolrIndexConfig mainIndexConfig;
+  // ping query request parameters
+  private final NamedList pingQueryParams;
+
+  static private NamedList readPingQueryParams(SolrConfig config) {  
     // TODO: check for nested tags and parse as a named list instead
     String urlSnippet = config.get("admin/pingQuery", "").trim();
     
@@ -107,6 +168,14 @@ public class SolrConfig {
       String[] split = tok.split("=", 2);
       params.add(split[0], split[1]);
     }
-    return new LocalSolrQueryRequest(core, params);
+    return params;
+  }
+  
+  /**
+   * Returns a Request object based on the admin/pingQuery section
+   * of the Solr config file.
+   */
+  public SolrQueryRequest getPingQueryRequest(SolrCore core) {
+    return new LocalSolrQueryRequest(core, pingQueryParams);
   }
 }

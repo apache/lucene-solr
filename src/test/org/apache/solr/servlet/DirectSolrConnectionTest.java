@@ -33,7 +33,7 @@ public class DirectSolrConnectionTest extends AbstractSolrTestCase
   public void setUp() throws Exception
   {
     super.setUp();
-    direct = new DirectSolrConnection();
+    direct = new DirectSolrConnection(h.getCore());
   }
 
   // Check that a request gets back the echoParams call

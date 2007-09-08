@@ -68,7 +68,7 @@ public class SolrDispatchFilter implements Filter
       
       log.info("user.dir=" + System.getProperty("user.dir"));
       core = SolrCore.getSolrCore();
-      parsers = new SolrRequestParsers( core, SolrConfig.config );
+      parsers = new SolrRequestParsers( core );
     }
     catch( Throwable t ) {
       // catch this so our filter still works

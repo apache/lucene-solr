@@ -36,7 +36,7 @@ import javax.xml.xpath.XPathConstants;
  *
  * @version $Id$
  */
-class CacheConfig {
+public class CacheConfig {
   private String nodeName;
   private Map args;
 
@@ -56,8 +56,8 @@ class CacheConfig {
     this.regenerator = regenerator;
   }
 
-  public static CacheConfig[] getMultipleConfigs(String configPath) {
-    NodeList nodes = (NodeList)SolrConfig.config.evaluate(configPath, XPathConstants.NODESET);
+  public static CacheConfig[] getMultipleConfigs(SolrConfig solrConfig, String configPath) {
+    NodeList nodes = (NodeList)solrConfig.evaluate(configPath, XPathConstants.NODESET);
     if (nodes==null || nodes.getLength()==0) return null;
     CacheConfig[] configs = new CacheConfig[nodes.getLength()];
     for (int i=0; i<nodes.getLength(); i++) {
@@ -67,8 +67,8 @@ class CacheConfig {
   }
 
 
-  public static CacheConfig getConfig(String xpath) {
-    Node node = (Node)SolrConfig.config.getNode(xpath, false);
+  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
+    Node node = (Node)solrConfig.getNode(xpath, false);
     return getConfig(node);
   }
 

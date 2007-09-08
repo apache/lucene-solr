@@ -17,7 +17,7 @@
 --%>
 <%@ page import="org.apache.solr.core.SolrConfig,
                  org.apache.solr.core.SolrCore,
-                 org.apache.solr.util.XML,
+                 org.apache.solr.common.util.XML,
                  org.apache.solr.core.SolrException"%>
 <%@ page import="org.apache.solr.request.LocalSolrQueryRequest"%>
 <%@ page import="org.apache.solr.request.SolrQueryResponse"%>
@@ -29,12 +29,13 @@
 <solr>
   <ping>
 <%
-  SolrCore core = SolrCore.getSolrCore();
+  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
+  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
 
   SolrQueryRequest req = null;
 
   if (null == request.getQueryString()) {
-    req = SolrConfig.getPingQueryRequest(core);
+    req = core.getPingQueryRequest();
   } else {
     req = new LocalSolrQueryRequest(core, new ServletSolrParams(request));
   }

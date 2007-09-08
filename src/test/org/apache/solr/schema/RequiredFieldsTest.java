@@ -43,8 +43,7 @@ public class RequiredFieldsTest extends AbstractSolrTestCase {
 
   
   public void testRequiredFieldsConfig() {
-
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
     SchemaField uniqueKey = schema.getUniqueKeyField();
 
@@ -59,6 +58,7 @@ public class RequiredFieldsTest extends AbstractSolrTestCase {
   }
   
   public void testRequiredFieldsSingleAdd() {      
+    SolrCore core = h.getCore();     
     // Add a single document
     assertU("adding document",
       adoc("id", "529", "name", "document with id, name, and subject", "field_t", "what's inside?", "subject", "info"));
@@ -74,12 +74,12 @@ public class RequiredFieldsTest extends AbstractSolrTestCase {
     assertU(commit());
 
     // Add another document without a subject, which has a default in schema
-    String subjectDefault = SolrCore.getSolrCore().getSchema().getField("subject").getDefaultValue();
+    String subjectDefault = core.getSchema().getField("subject").getDefaultValue();
     assertNotNull("subject has no default value", subjectDefault);
     assertQ("should find one with subject="+subjectDefault, req("id:530 subject:"+subjectDefault) ,"//result[@numFound=1]" );
 
     // Add another document without a required name, which has no default
-    assertNull(SolrCore.getSolrCore().getSchema().getField("name").getDefaultValue());
+    assertNull(core.getSchema().getField("name").getDefaultValue());
     assertFailedU("adding doc without required field",
           adoc("id", "531", "subject", "no name document", "field_t", "what's inside?") );
     assertU(commit());

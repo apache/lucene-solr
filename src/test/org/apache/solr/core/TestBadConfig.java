@@ -30,12 +30,13 @@ public class TestBadConfig extends AbstractSolrTestCase {
 
     dataDir = new File(System.getProperty("java.io.tmpdir")
                        + System.getProperty("file.separator")
-                       + getClass().getName() + "-" + getName() + "-"
-                       + System.currentTimeMillis());
+                       + getClass().getName());
     dataDir.mkdirs();
     try {
-      h = new TestHarness(dataDir.getAbsolutePath(),
-                          getSolrConfigFile(),
+      solrConfig = new SolrConfig(getSolrConfigFile());
+      h = new TestHarness(getName() + "-" + System.currentTimeMillis(),
+                        dataDir.getAbsolutePath(),
+                        solrConfig,
                           getSchemaFile());
       fail("Exception should have been thrown");
     } catch (Exception e) {

@@ -143,8 +143,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   // The key is the id, the value (Integer) is the number
   // of docs to save (delete all except the last "n" added)
   protected final Map<String,Integer> pset;
-  protected int maxPendingDeletes = SolrConfig.config.getInt("updateHandler/maxPendingDeletes", -1);
-
+  protected int maxPendingDeletes = -1;
+  
   // commonly used constants for the count in the pset
   protected final static Integer ZERO = 0;
   protected final static Integer ONE = 1;
@@ -164,6 +164,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
        which makes commits more efficient
      */
     pset = new TreeMap<String,Integer>(); 
+    maxPendingDeletes = core.getSolrConfig().getInt("updateHandler/maxPendingDeletes", -1);
 
     ReadWriteLock rwl = new ReentrantReadWriteLock();
     iwAccess = rwl.readLock();
@@ -616,8 +617,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       docsSinceCommit = 0;
       pending = null;
 
-      docsUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxDocs", -1);
-      timeUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxTime", -1);
+      docsUpperBound = core.getSolrConfig().getInt("updateHandler/autoCommit/maxDocs", -1);
+      timeUpperBound = core.getSolrConfig().getInt("updateHandler/autoCommit/maxTime", -1);
 
       SolrCore.log.info("AutoCommit: " + this);
     }

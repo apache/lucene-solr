@@ -25,6 +25,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -55,7 +56,7 @@ import java.util.logging.Logger;
 
 public final class IndexSchema {
   final static Logger log = Logger.getLogger(IndexSchema.class.getName());
-
+  private final SolrConfig solrConfig;
   private final String schemaFile;
   private String name;
   private float version;
@@ -66,20 +67,28 @@ public final class IndexSchema {
    *
    * @see Config#openResource
    */
-  public IndexSchema(String schemaFile) {
+  public IndexSchema(SolrConfig solrConfig, String schemaFile) {
+    this.solrConfig = solrConfig;
     this.schemaFile=schemaFile;
-    readConfig();
+    readSchema(solrConfig);
   }
 
+  public SolrConfig getSolrConfig() {
+    return solrConfig;
+  }
   /**
    * Direct acess to the InputStream for the schemaFile used by this instance.
    *
    * @see Config#openResource
    */
   public InputStream getInputStream() {
-    return Config.openResource(schemaFile);
+    return solrConfig.openResource(schemaFile);
   }
 
+  /** Gets the name of the schema file. */
+  public String getSchemaFile() {
+    return schemaFile;
+  }
 
   float getVersion() {
     return version;
@@ -284,7 +293,7 @@ public final class IndexSchema {
   }
 
 
-  private void readConfig() {
+  private void readSchema(SolrConfig solrConfig) {
     log.info("Reading Solr Schema");
 
     try {
@@ -293,9 +302,9 @@ public final class IndexSchema {
       Document document = builder.parse(getInputStream());
       ***/
 
-      Config config = new Config("schema", getInputStream(), "/schema/");
-      Document document = config.getDocument();
-      final XPath xpath = config.getXPath();
+      Config schemaConf = new Config("schema", getInputStream(), "/schema/");
+      Document document = schemaConf.getDocument();
+      final XPath xpath = schemaConf.getXPath();
 
       Node nd = (Node) xpath.evaluate("/schema/@name", document, XPathConstants.NODE);
       if (nd==null) {
@@ -305,13 +314,13 @@ public final class IndexSchema {
         log.info("Schema name=" + name);
       }
 
-      version = config.getFloat("/schema/@version", 1.0f);
+      version = schemaConf.getFloat("/schema/@version", 1.0f);
 
       final IndexSchema schema = this;
       AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType" ) {
 
         @Override
-        protected FieldType create( String name, String className, Node node ) throws Exception
+        protected FieldType create( SolrCore core, String name, String className, Node node ) throws Exception
         {
           FieldType ft = (FieldType)Config.newInstance(className);
           ft.setTypeName(name);
@@ -448,7 +457,7 @@ public final class IndexSchema {
       similarity = new DefaultSimilarity();
       log.fine("using default similarity");
     } else {
-      similarity = (Similarity)Config.newInstance(node.getNodeValue().trim());
+      similarity = (Similarity)solrConfig.newInstance(node.getNodeValue().trim());
       log.fine("using similarity " + similarity.getClass().getName());
     }
 
@@ -583,7 +592,7 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      return (Analyzer)Config.newInstance(analyzerName);
+      return (Analyzer)solrConfig.newInstance(analyzerName);
     }
 
     XPath xpath = XPathFactory.newInstance().newXPath();
@@ -593,7 +602,7 @@ public final class IndexSchema {
     if (tokNode==null){
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
     }
-    TokenizerFactory tfac = readTokenizerFactory(tokNode);
+    TokenizerFactory tfac = readTokenizerFactory(solrConfig, tokNode);
 
     /******
     // oops, getChildNodes() includes text (newlines, etc) in addition
@@ -607,7 +616,7 @@ public final class IndexSchema {
 
     ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>();
     for (int i=0; i<nList.getLength(); i++) {
-      TokenFilterFactory filt = readTokenFilterFactory(nList.item(i));
+      TokenFilterFactory filt = readTokenFilterFactory(solrConfig, nList.item(i));
       if (filt != null) filters.add(filt);
     }
 
@@ -615,21 +624,27 @@ public final class IndexSchema {
   };
 
   // <tokenizer class="solr.StandardFilterFactory"/>
-  private TokenizerFactory readTokenizerFactory(Node node) {
+  private TokenizerFactory readTokenizerFactory(SolrConfig solrConfig, Node node) {
     // if (node.getNodeName() != "tokenizer") return null;
     NamedNodeMap attrs = node.getAttributes();
     String className = DOMUtil.getAttr(attrs,"class","tokenizer");
-    TokenizerFactory tfac = (TokenizerFactory)Config.newInstance(className);
+    TokenizerFactory tfac = (TokenizerFactory)solrConfig.newInstance(className);
+    if (tfac instanceof SolrConfig.Initializable)
+      ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
+    else
     tfac.init(DOMUtil.toMapExcept(attrs,"class"));
     return tfac;
   }
 
   // <tokenizer class="solr.StandardFilterFactory"/>
-  private TokenFilterFactory readTokenFilterFactory(Node node) {
+  private TokenFilterFactory readTokenFilterFactory(SolrConfig solrConfig, Node node) {
     // if (node.getNodeName() != "filter") return null;
     NamedNodeMap attrs = node.getAttributes();
     String className = DOMUtil.getAttr(attrs,"class","token filter");
-    TokenFilterFactory tfac = (TokenFilterFactory)Config.newInstance(className);
+    TokenFilterFactory tfac = (TokenFilterFactory)solrConfig.newInstance(className);
+    if (tfac instanceof SolrConfig.Initializable)
+      ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
+    else
     tfac.init(DOMUtil.toMapExcept(attrs,"class"));
     return tfac;
   }

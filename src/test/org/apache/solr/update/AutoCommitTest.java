@@ -54,8 +54,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testMaxDocs() throws Exception {
-    
-    DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
+    SolrCore core = h.getCore();
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2)core.getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
     tracker.timeUpperBound = 100000;
     tracker.docsUpperBound = 14;
@@ -63,7 +63,6 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
     
-    SolrCore core = SolrCore.getSolrCore();
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
     
     // Add a single document
@@ -122,8 +121,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testMaxTime() throws Exception {
-    
-    DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
+    SolrCore core = h.getCore();
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
     tracker.timeUpperBound = 500;
     tracker.docsUpperBound = -1;
@@ -131,7 +130,6 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
     
-    SolrCore core = SolrCore.getSolrCore();
     MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
     
     // Add a single document
@@ -165,9 +163,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // now make the call 10 times really fast and make sure it 
     // only commits once
     req.setContentStreams( toContentStreams(
-	      adoc("id", "500" ), null ) );
+        adoc("id", "500" ), null ) );
     for( int i=0;i<10; i++ ) {
-    	handler.handleRequest( req, rsp );
+      handler.handleRequest( req, rsp );
     }
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     assertEquals( 2, tracker.autoCommitCount );

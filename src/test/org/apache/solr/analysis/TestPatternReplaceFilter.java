@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 /**
  * @version $Id:$
  */
-public class TestPatternReplaceFilter extends TestCase {
+public class TestPatternReplaceFilter extends AnalysisTestCase {
   
   public void testReplaceAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";

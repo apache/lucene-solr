@@ -41,6 +41,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
   }
   
   public void testSorting() throws Exception {
+    SolrCore core = h.getCore();
     assertU(adoc("id", "10", "title", "test", "val_s", "aaa"));
     assertU(adoc("id", "11", "title", "test", "val_s", "bbb"));
     assertU(adoc("id", "12", "title", "test", "val_s", "ccc"));
@@ -49,7 +50,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     Map<String,String> args = new HashMap<String, String>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( SolrCore.getSolrCore(), new MapSolrParams( args) );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     
     
     assertQ("Make sure they got in", req

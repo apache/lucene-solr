@@ -31,23 +31,23 @@ public class TestConfig extends AbstractSolrTestCase {
   public void testJavaProperty() {
     // property values defined in build.xml
 
-    String s = SolrConfig.config.get("propTest");
+    String s = solrConfig.get("propTest");
     assertEquals("prefix-proptwo-suffix", s);
 
-    s = SolrConfig.config.get("propTest/@attr1", "default");
+    s = solrConfig.get("propTest/@attr1", "default");
     assertEquals("propone-${literal}", s);
 
-    s = SolrConfig.config.get("propTest/@attr2", "default");
+    s = solrConfig.get("propTest/@attr2", "default");
     assertEquals("default-from-config", s);
 
-    s = SolrConfig.config.get("propTest[@attr2='default-from-config']", "default");
+    s = solrConfig.get("propTest[@attr2='default-from-config']", "default");
     assertEquals("prefix-proptwo-suffix", s);
 
-    NodeList nl = (NodeList) SolrConfig.config.evaluate("propTest", XPathConstants.NODESET);
+    NodeList nl = (NodeList) solrConfig.evaluate("propTest", XPathConstants.NODESET);
     assertEquals(1, nl.getLength());
     assertEquals("prefix-proptwo-suffix", nl.item(0).getTextContent());
 
-    Node node = SolrConfig.config.getNode("propTest", true);
+    Node node = solrConfig.getNode("propTest", true);
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 }

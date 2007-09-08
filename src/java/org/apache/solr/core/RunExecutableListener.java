@@ -30,6 +30,9 @@ import java.util.logging.Level;
 /**
  */
 class RunExecutableListener extends AbstractSolrEventListener {
+  public RunExecutableListener(SolrCore core) {
+    super(core);
+  }
   protected String[] cmd;
   protected File dir;
   protected String[] envp;

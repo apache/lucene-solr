@@ -29,24 +29,18 @@ import org.apache.solr.core.SolrConfig;
  */
 public class SolrIndexConfig {
   public static final String defaultsName ="indexDefaults";
+  static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
 
-  //default values
-  public static final boolean defUseCompoundFile=SolrConfig.config.getBool(defaultsName +"/useCompoundFile", true);
-  public static final int defMaxBufferedDocs=SolrConfig.config.getInt(defaultsName +"/maxBufferedDocs", -1);
-  public static final int defMaxMergeDocs=SolrConfig.config.getInt(defaultsName +"/maxMergeDocs", -1);
-  public static final int defMergeFactor=SolrConfig.config.getInt(defaultsName +"/mergeFactor", -1);
-  public static final int defMaxFieldLength=SolrConfig.config.getInt(defaultsName +"/maxFieldLength", -1);
-  public static final int defWriteLockTimeout=SolrConfig.config.getInt(defaultsName +"/writeLockTimeout", -1);
-  public static final int defCommitLockTimeout=SolrConfig.config.getInt(defaultsName +"/commitLockTimeout", -1);
-  public static final String defLockType=SolrConfig.config.get(defaultsName +"/lockType", null);
-  
-  
-  /*** These are "final" in lucene 1.9
-  static {
-    if (writeLockTimeout != -1) IndexWriter.WRITE_LOCK_TIMEOUT=writeLockTimeout;
-    if (commitLockTimeout != -1) IndexWriter.COMMIT_LOCK_TIMEOUT=commitLockTimeout;
+  private SolrIndexConfig() {
+    useCompoundFile = true;
+    maxBufferedDocs = -1;
+    maxMergeDocs = -1;
+    mergeFactor = -1;
+    maxFieldLength = -1;
+    writeLockTimeout = -1;
+    commitLockTimeout = -1;
+    lockType = null;
   }
-  ***/
   
   public final boolean useCompoundFile;
   public final int maxBufferedDocs;
@@ -57,14 +51,18 @@ public class SolrIndexConfig {
   public final int commitLockTimeout;
   public final String lockType;
 
-  public SolrIndexConfig(String prefix)  {
-    useCompoundFile=SolrConfig.config.getBool(prefix+"/useCompoundFile", defUseCompoundFile);
-    maxBufferedDocs=SolrConfig.config.getInt(prefix+"/maxBufferedDocs",defMaxBufferedDocs);
-    maxMergeDocs=SolrConfig.config.getInt(prefix+"/maxMergeDocs",defMaxMergeDocs);
-    mergeFactor=SolrConfig.config.getInt(prefix+"/mergeFactor",defMergeFactor);
-    maxFieldLength= SolrConfig.config.getInt(prefix+"/maxFieldLength",defMaxFieldLength);
-    writeLockTimeout= SolrConfig.config.getInt(prefix+"/writeLockTimeout", defWriteLockTimeout);
-    commitLockTimeout= SolrConfig.config.getInt(prefix+"/commitLockTimeout", defCommitLockTimeout);
-    lockType=SolrConfig.config.get(prefix+"/lockType", defLockType);
+  public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
+    if (prefix == null)
+      prefix = defaultsName;
+    if (def == null)
+      def = defaultDefaults;
+    useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
+    maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
+    maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
+    mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
+    maxFieldLength=solrConfig.getInt(prefix+"/maxFieldLength",def.maxFieldLength);
+    writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
+    commitLockTimeout=solrConfig.getInt(prefix+"/commitLockTimeout", def.commitLockTimeout);
+    lockType=solrConfig.get(prefix+"/lockType", def.lockType);
   }
 }

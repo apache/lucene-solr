@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
@@ -32,12 +32,13 @@ import java.io.IOException;
  * @version $Id$
  */
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory {
-  public void init(Map<String, String> args) {
-    super.init(args);
+  @Override
+  public void init(SolrConfig solrConfig, Map<String, String> args) {
+    super.init(solrConfig, args);
     String wordFile = args.get("protected");
     if (wordFile != null) {
       try {
-        List<String> wlist = Config.getLines(wordFile);
+        List<String> wlist = solrConfig.getLines(wordFile);
          protectedWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]));
       } catch (IOException e) {
         throw new RuntimeException(e);

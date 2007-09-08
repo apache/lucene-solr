@@ -45,8 +45,8 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
   
   public void testInterface()
   {
+    SolrCore core = h.getCore();
     MoreLikeThisHandler mlt = new MoreLikeThisHandler();
-    SolrCore core = SolrCore.getSolrCore();
     
     Map<String,String[]> params = new HashMap<String,String[]>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams( params );

@@ -26,7 +26,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 
-public class TestPatternTokenizerFactory extends TestCase 
+public class TestPatternTokenizerFactory extends AnalysisTestCase 
 {
 	public void testSplitting() throws Exception 
   {
@@ -50,7 +50,7 @@ public class TestPatternTokenizerFactory extends TestCase
       args.put( PatternTokenizerFactory.PATTERN, test[1] );
 
       PatternTokenizerFactory tokenizer = new PatternTokenizerFactory();
-      tokenizer.init( args );
+      tokenizer.init(solrConfig, args );
       
       TokenStream stream = tokenizer.create( new StringReader( test[2] ) );
       String out = TestHyphenatedWordsFilter.tsToString( stream );

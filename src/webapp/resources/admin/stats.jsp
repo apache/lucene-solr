@@ -35,7 +35,7 @@ for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
 %>
     <<%= cat.toString() %>>
 <%
- Map<String,SolrInfoMBean> reg = SolrInfoRegistry.getRegistry();
+ Map<String,SolrInfoMBean> reg = core.getInfoRegistry();
  synchronized(reg) {
   for (Map.Entry<String,SolrInfoMBean> entry : reg.entrySet()) {
     String key = entry.getKey();

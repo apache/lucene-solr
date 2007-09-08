@@ -45,7 +45,7 @@ public class NotRequiredUniqueKeyTest extends AbstractSolrTestCase {
   
   public void testSchemaLoading() 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
     SchemaField uniqueKey = schema.getUniqueKeyField();
     

@@ -44,6 +44,7 @@
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
 
+    <lockType>single</lockType>
   </indexDefaults>
 
   <mainIndex>

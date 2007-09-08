@@ -23,8 +23,8 @@ import java.util.Map;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -49,17 +49,17 @@ public class PluginInfoHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
     
     boolean stats = params.getBool( "stats", false );
-    rsp.add( "plugins", getSolrInfoBeans( stats ) );
+    rsp.add( "plugins", getSolrInfoBeans( req.getCore(), stats ) );
   }
   
-  private static SimpleOrderedMap<Object> getSolrInfoBeans( boolean stats )
+  private static SimpleOrderedMap<Object> getSolrInfoBeans( SolrCore core, boolean stats )
   {
     SimpleOrderedMap<Object> list = new SimpleOrderedMap<Object>();
     for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) 
     {
       SimpleOrderedMap<Object> category = new SimpleOrderedMap<Object>();
       list.add( cat.name(), category );
-      Map<String, SolrInfoMBean> reg = SolrInfoRegistry.getRegistry();
+      Map<String, SolrInfoMBean> reg = core.getInfoRegistry();
       synchronized(reg) {
         for (Map.Entry<String,SolrInfoMBean> entry : reg.entrySet()) {
           SolrInfoMBean m = entry.getValue();

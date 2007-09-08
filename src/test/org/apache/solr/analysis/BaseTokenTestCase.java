@@ -31,7 +31,7 @@ import junit.framework.TestCase;
 /**
  * General token testing helper functions
  */
-public abstract class BaseTokenTestCase extends TestCase 
+public abstract class BaseTokenTestCase extends AnalysisTestCase
 {
   public static String tsToString(TokenStream in) throws IOException {
     StringBuffer out = new StringBuffer();

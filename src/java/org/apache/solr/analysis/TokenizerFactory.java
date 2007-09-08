@@ -19,7 +19,7 @@ package org.apache.solr.analysis;
 
 import java.io.*;
 import java.util.Map;
-
+import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.*;
 
 
@@ -52,7 +52,10 @@ public interface TokenizerFactory {
    * <p>The args are user-level initialization parameters that
    * may be specified when declaring a the factory in the
    * schema.xml
+   * This method is deprecated; the replacement is to have your class implement SolrConfig.Initializable
+   * and implement 'void init(SolrConfig solrConfig, Map<String,String> args);'
    */
+  @Deprecated
   public void init(Map<String,String> args);
   /**
    * Accessor method for reporting the args used to initialize this factory.

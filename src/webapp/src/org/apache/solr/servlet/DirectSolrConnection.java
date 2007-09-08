@@ -59,7 +59,7 @@ public class DirectSolrConnection
   public DirectSolrConnection()
   {
     core = SolrCore.getSolrCore();
-    parser = new SolrRequestParsers( core, SolrConfig.config );
+    parser = new SolrRequestParsers( core );
   }
 
   /**
@@ -68,7 +68,7 @@ public class DirectSolrConnection
   public DirectSolrConnection( SolrCore c )
   {
     core = c;
-    parser = new SolrRequestParsers( core, SolrConfig.config );
+    parser = new SolrRequestParsers( core );
   }
 
   /**
@@ -110,15 +110,17 @@ public class DirectSolrConnection
       }
       Config.setInstanceDir( instanceDir );
     }
+    SolrConfig config = SolrConfig.createInstance("solrconfig.xml");
     
-    // If the Data directory is specified, initalize SolrCore directly
+    // If the Data directory is specified, initialize SolrCore directly
     if( dataDir != null ) {
-      core = new SolrCore( dataDir, new IndexSchema(instanceDir+"/conf/schema.xml"));
+      IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml");
+      core = new SolrCore( dataDir, config, schema );
     }
     else {
       core = SolrCore.getSolrCore();
     }
-    parser = new SolrRequestParsers( core, SolrConfig.config );
+    parser = new SolrRequestParsers( core );
   }
   
 

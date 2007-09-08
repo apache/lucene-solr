@@ -25,7 +25,9 @@
 <%@ page import="org.apache.lucene.LucenePackage"%>
 
 <%
-  SolrCore core = SolrCore.getSolrCore();
+  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
+  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
+  SolrConfig solrConfig = core.getSolrConfig();
   int port = request.getServerPort();
   IndexSchema schema = core.getSchema();
 
@@ -33,7 +35,7 @@
   // and has no effect on local server function.  If there is no healthcheck
   // configured, don't put any status on the admin pages.
   String enabledStatus = null;
-  String enabledFile = SolrConfig.config.get("admin/healthcheck/text()",null);
+  String enabledFile = solrConfig.get("admin/healthcheck/text()",null);
   boolean isEnabled = false;
   if (enabledFile!=null) {
     isEnabled = new File(enabledFile).exists();
@@ -47,7 +49,7 @@
   { 
     StringWriter tmp = new StringWriter();
     XML.escapeCharData
-      (SolrConfig.config.get("admin/defaultQuery/text()", null), tmp);
+      (solrConfig.get("admin/defaultQuery/text()", null), tmp);
     defaultSearch = tmp.toString();
   }
 

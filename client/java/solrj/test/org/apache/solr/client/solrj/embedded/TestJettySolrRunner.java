@@ -34,6 +34,11 @@ public class TestJettySolrRunner extends SolrExampleTestBase {
   SolrServer server;
   JettySolrRunner jetty;
 
+  @Override
+  public String getCoreName() {
+    return null;
+  }
+  
   @Override public void setUp() throws Exception 
   {
     super.setUp();

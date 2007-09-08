@@ -31,6 +31,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.xslt.TransformerProvider;
@@ -106,13 +107,14 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     if(xslt==null) {
       throw new IOException("'" + TRANSFORM_PARAM + "' request parameter is required to use the XSLTResponseWriter");
     }
-    
+    // not the cleanest way to achieve this
+    SolrConfig solrConfig = request.getSearcher().getSchema().getSolrConfig();
     // no need to synchronize access to context, right? 
     // Nothing else happens with it at the same time
     final Map<Object,Object> ctx = request.getContext();
     Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
     if(result==null) {
-      result = TransformerProvider.instance.getTransformer(xslt,xsltCacheLifetimeSeconds.intValue());
+      result = TransformerProvider.instance.getTransformer(solrConfig, xslt,xsltCacheLifetimeSeconds.intValue());
       ctx.put(CONTEXT_TRANSFORMER_KEY,result);
     }
     return result;

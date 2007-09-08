@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.XMLResponseWriter;
@@ -51,7 +52,8 @@ public class SolrUpdateServlet extends HttpServlet {
     BufferedReader requestReader = request.getReader();
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
+    SolrCore core = SolrCore.getSolrCore();
     PrintWriter writer = response.getWriter();
-    legacyUpdateHandler.doLegacyUpdate(requestReader, writer);
+    legacyUpdateHandler.doLegacyUpdate(core,requestReader, writer);
   }
 }

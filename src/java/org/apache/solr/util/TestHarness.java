@@ -66,14 +66,26 @@ public class TestHarness {
   private DocumentBuilder builder;
   public XmlUpdateRequestHandler updater;
         
+  public static SolrConfig createConfig(String confFile) {
+      // set some system properties for use by tests
+      System.setProperty("solr.test.sys.prop1", "propone");
+      System.setProperty("solr.test.sys.prop2", "proptwo");
+      try {
+      return new SolrConfig(confFile);
+      }
+      catch(Exception xany) {
+        throw new RuntimeException(xany);
+      }
+  }
+        
   /**
    * Assumes "solrconfig.xml" is the config file to use, and
    * "schema.xml" is the schema path to use.
    *
    * @param dataDirectory path for index data, will not be cleaned up
    */
-  public TestHarness(String dataDirectory) {
-    this(dataDirectory, "schema.xml");
+  public TestHarness(String name, String dataDirectory) {
+    this(name, dataDirectory, "schema.xml");
   }
   /**
    * Assumes "solrconfig.xml" is the config file to use.
@@ -81,24 +93,42 @@ public class TestHarness {
    * @param dataDirectory path for index data, will not be cleaned up
    * @param schemaFile path of schema file
    */
-  public TestHarness(String dataDirectory, String schemaFile) {
-    this(dataDirectory, "solrconfig.xml", schemaFile);
+  public TestHarness(String name, String dataDirectory, String schemaFile) {
+    this(name, dataDirectory, "solrconfig.xml", schemaFile);
   }
   /**
+    * @param name the core name
    * @param dataDirectory path for index data, will not be cleaned up
-   * @param confFile solrconfig filename
+    * @param configFile solrconfig filename
    * @param schemaFile schema filename
    */
-  public TestHarness(String dataDirectory,
-                     String confFile,
+   public TestHarness(String name, String dataDirectory, String configFile, String schemaFile) {
+     this(name, dataDirectory, createConfig(configFile), schemaFile);
+   }
+   /**
+    * @param name the core name
+    * @param dataDirectory path for index data, will not be cleaned up
+    * @param solrConfig solronfig instance
+    * @param schemaFile schema filename
+    */
+      public TestHarness(String name,
+                      String dataDirectory,
+                      SolrConfig solrConfig,
                      String schemaFile) {
+     this(name, dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile));
+   }
+   /**
+    * @param name the core name
+    * @param dataDirectory path for index data, will not be cleaned up
+    * @param solrConfig solrconfig instance
+    * @param schema schema instance
+    */
+  public TestHarness(String name,
+                      String dataDirectory,
+                      SolrConfig solrConfig,
+                      IndexSchema indexSchema) {
     try {
-      // set some system properties for use by tests
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
-      SolrConfig.initConfig(confFile);
-      core = new SolrCore(dataDirectory, new IndexSchema(schemaFile));
+      core = new SolrCore(name, dataDirectory, solrConfig, indexSchema);
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       
       updater = new XmlUpdateRequestHandler();
@@ -108,7 +138,9 @@ public class TestHarness {
     }
   }
 
-  
+  public SolrCore getCore() {
+    return core;
+  }
         
   /**
    * Processes an "update" (add, commit or optimize) and
@@ -125,7 +157,7 @@ public class TestHarness {
     StringReader req = new StringReader(xml);
     StringWriter writer = new StringWriter(32000);
     
-    updater.doLegacyUpdate(req, writer);
+    updater.doLegacyUpdate(core, req, writer);
     return writer.toString();
   }
   
@@ -287,10 +319,6 @@ public class TestHarness {
                 
   }
 
-  public SolrCore getCore() {
-    return core;
-  }
-        
   /**
    * Shuts down and frees any resources
    */

@@ -21,6 +21,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrConfig;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -57,7 +58,7 @@ import java.util.regex.Pattern;
  * @since solr1.2
  * @version $Id:$
  */
-public class PatternTokenizerFactory implements TokenizerFactory 
+public class PatternTokenizerFactory extends BaseTokenizerFactory 
 {
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
@@ -69,7 +70,7 @@ public class PatternTokenizerFactory implements TokenizerFactory
   /**
    * Require a configured pattern
    */
-  public void init(Map<String,String> args) 
+  public void init(SolrConfig solrConfig, Map<String,String> args) 
   {
     this.args = args;
     String regex = args.get( PATTERN );

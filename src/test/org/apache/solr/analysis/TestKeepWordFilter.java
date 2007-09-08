@@ -44,7 +44,7 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     // Test Stopwords
     KeepWordFilterFactory factory = new KeepWordFilterFactory();
     args.put( "ignoreCase", "true" );
-    factory.init( args );
+    factory.init( solrConfig, args );
     factory.setWords( words );
     
     List<Token> expect = tokens( "aaa BBB" );
@@ -53,7 +53,7 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     
     // Now force case
     args.put( "ignoreCase", "false" );
-    factory.init( args );
+    factory.init( solrConfig, args );
     
     expect = tokens( "aaa" );
     real = getTokens(factory.create( new IterTokenStream(input) ));

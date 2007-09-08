@@ -35,7 +35,7 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
 
   public void testBuildDocument() throws Exception 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     
     // undefined field
     try {
