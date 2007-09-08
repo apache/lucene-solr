@@ -46,7 +46,6 @@ public class TestBoostingTermQuery extends TestCase {
   private class PayloadAnalyzer extends Analyzer {
 
 
-
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);
@@ -66,18 +65,12 @@ public class TestBoostingTermQuery extends TestCase {
     public Token next() throws IOException {
       Token result = input.next();
       if (result != null) {
-        if (fieldName.equals("field"))
-        {
+        if (fieldName.equals("field")) {
           result.setPayload(new Payload(payloadField));
-        }
-        else if (fieldName.equals("multiField"))
-        {
-          if (numSeen  % 2 == 0)
-          {
+        } else if (fieldName.equals("multiField")) {
+          if (numSeen % 2 == 0) {
             result.setPayload(new Payload(payloadMultiField1));
-          }
-          else
-          {
+          } else {
             result.setPayload(new Payload(payloadMultiField2));
           }
           numSeen++;
@@ -97,19 +90,19 @@ public class TestBoostingTermQuery extends TestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
+      Field noPayloadField = new Field("noPayLoad", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED);
+      noPayloadField.setBoost(0);
+      doc.add(noPayloadField);
       doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
       doc.add(new Field("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
-    //writer.optimize();
+    writer.optimize();
     writer.close();
 
     searcher = new IndexSearcher(directory);
     searcher.setSimilarity(similarity);
   }
-
-
-
 
 
   protected void tearDown() {
@@ -148,7 +141,6 @@ public class TestBoostingTermQuery extends TestCase {
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
 
-
     //they should all have the exact same score, because they all contain seventy once, and we set
     //all the other similarity factors to be 1
 
@@ -159,13 +151,10 @@ public class TestBoostingTermQuery extends TestCase {
     int numTens = 0;
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
-      if (doc.doc % 10 == 0)
-      {
+      if (doc.doc % 10 == 0) {
         numTens++;
         assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
-      }
-      else
-      {
+      } else {
         assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
       }
     }
@@ -177,8 +166,7 @@ public class TestBoostingTermQuery extends TestCase {
     //should be two matches per document
     int count = 0;
     //100 hits times 2 matches per hit, we should have 200 in count
-    while (spans.next())
-    {
+    while (spans.next()) {
       count++;
     }
     assertTrue(count + " does not equal: " + 200, count == 200);
@@ -192,9 +180,23 @@ public class TestBoostingTermQuery extends TestCase {
 
   }
 
+  public void testNoPayload() throws Exception {
+    BoostingTermQuery q1 = new BoostingTermQuery(new Term("noPayLoad", "zero"));
+    BoostingTermQuery q2 = new BoostingTermQuery(new Term("noPayLoad", "foo"));
+    BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
+    BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
+    BooleanQuery query = new BooleanQuery();
+    query.add(c1);
+    query.add(c2);
+    TopDocs hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    //assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
+    int[] results = new int[1];
+    results[0] = 0;//hits.scoreDocs[0].doc;
+    CheckHits.checkHitCollector(query, "noPayLoad", searcher, results);
+  }
 
-  class BoostingSimilarity extends DefaultSimilarity
-  {
+  class BoostingSimilarity extends DefaultSimilarity {
 
     // TODO: Remove warning after API has been finalized
     public float scorePayload(byte[] payload, int offset, int length) {
@@ -226,7 +228,7 @@ public class TestBoostingTermQuery extends TestCase {
     }
 
     public float tf(float freq) {
-      return 1;
+      return freq == 0 ? 0 : 1;
     }
   }
 }

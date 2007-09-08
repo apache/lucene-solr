@@ -165,7 +165,7 @@ public class BoostingTermQuery extends SpanTermQuery{
         }
 */
 
-        float avgPayloadScore = payloadScore / payloadsSeen;
+        float avgPayloadScore =  (payloadsSeen > 0 ? (payloadScore / payloadsSeen) : 1); 
         payloadBoost.setValue(avgPayloadScore);
         //GSI: I suppose we could toString the payload, but I don't think that would be a good idea 
         payloadBoost.setDescription("scorePayload(...)");
