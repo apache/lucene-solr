@@ -248,7 +248,7 @@ public class SimpleFacets {
 
     final int nTerms=endTermIndex-startTermIndex;
 
-    if (nTerms>0) {
+    if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are
       // going to collect counts for.
@@ -351,6 +351,8 @@ public class SimpleFacets {
     String startTerm = prefix==null ? "" : ft.toInternal(prefix);
     TermEnum te = r.terms(new Term(field,startTerm));
     TermDocs td = r.termDocs();
+
+    if (docs.size() >= mincount) { 
     do {
       Term t = te.term();
 
@@ -392,6 +394,7 @@ public class SimpleFacets {
         }
       }
     } while (te.next());
+    }
 
     if (sort) {
       for (CountPair<String,Integer> p : queue) {

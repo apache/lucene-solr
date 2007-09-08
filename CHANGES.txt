@@ -136,6 +136,8 @@ Optimizations
     which flushes deleted without forcing the user to use <commit/> for this purpose.
     (klaas) 
 
+ 3. SOLR-348: short-circuit faceting if less than mincount docs match. (yonik)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
