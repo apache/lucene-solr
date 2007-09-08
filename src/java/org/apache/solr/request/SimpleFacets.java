@@ -79,7 +79,7 @@ public class SimpleFacets {
    * @see #getFacetQueryCounts
    * @see #getFacetFieldCounts
    * @see #getFacetDateCounts
-   * @see SolrParams#FACET
+   * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
   public NamedList getFacetCounts() {
@@ -106,7 +106,7 @@ public class SimpleFacets {
    * Returns a list of facet counts for each of the facet queries 
    * specified in the params
    *
-   * @see SolrParams#FACET_QUERY
+   * @see FacetParams#FACET_QUERY
    */
   public NamedList getFacetQueryCounts() throws IOException,ParseException {
 
@@ -165,7 +165,7 @@ public class SimpleFacets {
    * Returns a list of value constraints and the associated facet counts 
    * for each facet field specified in the params.
    *
-   * @see SolrParams#FACET_FIELD
+   * @see FacetParams#FACET_FIELD
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
@@ -186,7 +186,7 @@ public class SimpleFacets {
    * Returns a count of the documents in the set which do not have any 
    * terms for for the specified field.
    *
-   * @see SolrParams#FACET_MISSING
+   * @see FacetParams#FACET_MISSING
    */
   public static int getFieldMissingCount(SolrIndexSearcher searcher, DocSet docs, String fieldName)
     throws IOException {
@@ -321,9 +321,9 @@ public class SimpleFacets {
    * This method uses the FilterCache to get the intersection count between <code>docs</code>
    * and the DocSet for each term in the filter.
    *
-   * @see SolrParams#FACET_LIMIT
-   * @see SolrParams#FACET_ZEROS
-   * @see SolrParams#FACET_MISSING
+   * @see FacetParams#FACET_LIMIT
+   * @see FacetParams#FACET_ZEROS
+   * @see FacetParams#FACET_MISSING
    */
   public NamedList getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix)
     throws IOException {
@@ -419,7 +419,7 @@ public class SimpleFacets {
    * for each facet date field, range, and interval specified in the
    * SolrParams
    *
-   * @see SolrParams#FACET_DATE
+   * @see FacetParams#FACET_DATE
    */
   public NamedList getFacetDateCounts()
           throws IOException {
@@ -545,7 +545,6 @@ public class SimpleFacets {
 
   /**
    * Macro for getting the numDocs of a ConstantScoreRangeQuery over docs
-   * @see docs
    * @see SolrIndexSearcher#numDocs
    * @see ConstantScoreRangeQuery
    */
