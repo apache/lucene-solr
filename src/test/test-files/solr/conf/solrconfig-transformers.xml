@@ -19,26 +19,22 @@
 
 <config>
 
- <requestHandler name="custom" class="solr.CustomUpdateRequestHandler" >
-   <str name="update.processor.factory">custom</str>
- </requestHandler>
-
  <updateRequestProcessor>
    <factory name="standard" class="solr.ChainedUpdateProcessorFactory" >
      <chain class="solr.LogUpdateProcessorFactory" >
-	   <int name="maxNumToLog">100</int>
+      <int name="maxNumToLog">100</int>
      </chain>
      <chain class="solr.CustomUpdateRequestProcessorFactory" >
-	    <lst name="name">
-	      <str name="n1">x1</str>
-	      <str name="n2">x2</str>
-	    </lst>
+      <lst name="name">
+        <str name="n1">x1</str>
+        <str name="n2">x2</str>
+      </lst>
      </chain>
      <chain class="solr.CustomUpdateRequestProcessorFactory" >
-	    <lst name="name">
-	      <str name="nA">xA</str>
-	      <str name="nA">xA</str>
-	    </lst>
+      <lst name="name">
+        <str name="nA">xA</str>
+        <str name="nA">xA</str>
+      </lst>
      </chain>
    </factory>
    

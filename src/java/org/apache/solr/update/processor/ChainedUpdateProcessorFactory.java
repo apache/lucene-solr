@@ -25,6 +25,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
@@ -54,7 +55,7 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
   protected UpdateRequestProcessorFactory[] factory;
   
   @Override
-  public void init( Node node ) {
+  public void init( final SolrCore core, final Node node ) {
     final ArrayList<UpdateRequestProcessorFactory> factories = new ArrayList<UpdateRequestProcessorFactory>();
     if( node != null ) {
       // Load and initialize the plugin chain
@@ -62,7 +63,7 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
           = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "processor chain", false, false ) {
         @Override
         protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
-          plugin.init( node );
+          plugin.init( core, node );
         }
   
         @Override
@@ -74,7 +75,7 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
       
       XPath xpath = XPathFactory.newInstance().newXPath();
       try {
-        loader.load( (NodeList) xpath.evaluate( "chain", node, XPathConstants.NODESET ) );
+        loader.load( core.getSolrConfig(), (NodeList) xpath.evaluate( "chain", node, XPathConstants.NODESET ) );
       } 
       catch (XPathExpressionException e) {
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,

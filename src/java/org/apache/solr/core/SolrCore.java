@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,6 @@ import java.util.logging.Logger;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -57,7 +55,6 @@ import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler;
-import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.processor.ChainedUpdateProcessorFactory;
@@ -134,7 +131,7 @@ public final class SolrCore {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
           String className = DOMUtil.getAttr(node,"class");
-          SolrEventListener listener = (SolrEventListener)Config.newInstance(className);
+          SolrEventListener listener = (SolrEventListener)solrConfig.newInstance(className);
           listener.init(DOMUtil.childNodesToNamedList(node));
           lst.add(listener);
           log.info("added SolrEventListener: " + listener);
@@ -209,6 +206,7 @@ public final class SolrCore {
         clazz = solrConfig.findClass(className);
         if (cast != null && !cast.isAssignableFrom(clazz))
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
+        
         java.lang.reflect.Constructor cons = clazz.getConstructor(new Class[]{SolrCore.class});
         return (T) cons.newInstance(new Object[]{this});
       } catch(NoSuchMethodException xnomethod) {
@@ -235,9 +233,10 @@ public final class SolrCore {
 
   
   // The registry of known cores
-  private static Map<String, SolrCore> cores = new HashMap();
+  private static Map<String, SolrCore> cores = new HashMap<String, SolrCore>();
   
   /** Alias for SolrCore.getSolrCore(null). */
+  @Deprecated
   public static SolrCore getSolrCore() {
     return getSolrCore(null);
   }
@@ -328,7 +327,7 @@ public final class SolrCore {
     else
       this.schema = schema;
     
-      this.dataDir = dataDir;
+    this.dataDir = dataDir;
     if (name == null)
       this.index_path = dataDir + "/index";
     else
@@ -339,33 +338,33 @@ public final class SolrCore {
     booleanQueryMaxClauseCount();
     this.maxWarmingSearchers = solrConfig.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
-      parseListeners();
+    parseListeners();
 
-      initIndex();
-      
-      initWriters();
-      
-      // Processors initialized before the handlers
-      updateProcessors = loadUpdateProcessors();
-      reqHandlers = new RequestHandlers(this);
-      reqHandlers.initHandlersFromConfig( solrConfig );
+    initIndex();
+    
+    initWriters();
+    
+    // Processors initialized before the handlers
+    updateProcessors = loadUpdateProcessors();
+    reqHandlers = new RequestHandlers(this);
+    reqHandlers.initHandlersFromConfig( solrConfig );
 
-      // TODO? could select the highlighter implementation
-      highlighter = new SolrHighlighter();
+    // TODO? could select the highlighter implementation
+    highlighter = new SolrHighlighter();
     highlighter.initalize( solrConfig );
-      
-      try {
-        // Open the searcher *before* the handler so we don't end up opening
-        // one in the middle.
-        getSearcher(false,false,null);
+    
+    try {
+      // Open the searcher *before* the handler so we don't end up opening
+      // one in the middle.
+      getSearcher(false,false,null);
 
-        updateHandler = createUpdateHandler(
-              solrConfig.get("updateHandler/@class", DirectUpdateHandler.class.getName())
-        );
+      updateHandler = createUpdateHandler(
+            solrConfig.get("updateHandler/@class", DirectUpdateHandler.class.getName())
+      );
 
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     // register this core
     synchronized(cores) {
       SolrCore previous = cores.get(name);
@@ -383,12 +382,13 @@ public final class SolrCore {
     final Map<String,UpdateRequestProcessorFactory> map = new HashMap<String, UpdateRequestProcessorFactory>();
     
     // If this is a more general use-case, this could be a regular type
+    final SolrCore thiscore = this;
     AbstractPluginLoader<UpdateRequestProcessorFactory> loader 
       = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "updateRequestProcessor" ) {
 
       @Override
       protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
-        plugin.init( node );
+        plugin.init( thiscore, node );
       }
 
       @Override
@@ -398,10 +398,10 @@ public final class SolrCore {
     };
 
     NodeList nodes = (NodeList)solrConfig.evaluate("updateRequestProcessor/factory", XPathConstants.NODESET);
-    UpdateRequestProcessorFactory def = loader.load( nodes ); 
+    UpdateRequestProcessorFactory def = loader.load( solrConfig, nodes ); 
     if( def == null ) {
       def = new ChainedUpdateProcessorFactory(); // the default
-      def.init( null );
+      def.init( thiscore, null );
     }
     map.put( null, def );
     map.put( "", def );
@@ -956,7 +956,7 @@ public final class SolrCore {
     NamedListPluginLoader<QueryResponseWriter> loader = 
       new NamedListPluginLoader<QueryResponseWriter>( "[solrconfig.xml] "+xpath, responseWriters );
     
-    defaultResponseWriter = loader.load( this, nodes );
+    defaultResponseWriter = loader.load( solrConfig, nodes );
     
     // configure the default response writer; this one should never be null
     if (defaultResponseWriter == null) {

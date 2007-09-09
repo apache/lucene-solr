@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -34,7 +35,7 @@ public class CustomUpdateRequestProcessorFactory extends UpdateRequestProcessorF
   public NamedList args = null;
   
   @Override
-  public void init( Node node )
+  public void init( final SolrCore core, final Node node )
   {
     if( node != null ) {
       args = DOMUtil.childNodesToNamedList( node );

@@ -37,7 +37,6 @@ class QuerySenderListener extends AbstractSolrEventListener {
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
-    SolrCore core = SolrCore.getSolrCore();
     log.info("QuerySenderListener sending requests to " + newSearcher);
     for (NamedList nlst : (List<NamedList>)args.get("queries")) {
       try {

@@ -268,7 +268,7 @@ public class Config {
   private static final String base = "org.apache" + "." + project;
   private static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util."};
 
-  public static Class findClass(String cname, String... subpackages) {
+  public Class findClass(String cname, String... subpackages) {
     ClassLoader loader = getClassLoader();
     if (subpackages.length==0) subpackages = packages;
 
@@ -294,16 +294,24 @@ public class Config {
     }
   }
 
-  public static Object newInstance(String cname, String... subpackages) {
+  public Object newInstance(String cname, String... subpackages) {
     Class clazz = findClass(cname,subpackages);
+    if( clazz == null ) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "Can not find class: "+cname + " in " + getClassLoader(), false);
+    }
     try {
       return clazz.newInstance();
-    } catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error instantiating class " + clazz, e, false);
+    } 
+    catch (Exception e) {
+      e.printStackTrace();
+      
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "Error instantiating class: '" + clazz.getName()+"'", e, false );
     }
   }
 
-  private static String instanceDir; // solr home directory
+  private String instanceDir; // solr home directory
   private static String normalizeDir(String path) {
     if (path==null) return null;
     if ( !(path.endsWith("/") || path.endsWith("\\")) ) {
@@ -312,14 +320,14 @@ public class Config {
     return path;
   }
 
-  public static void setInstanceDir(String dir) {
+  public void setInstanceDir(String dir) {
     instanceDir = normalizeDir(dir);
     classLoader = null;
     log.info("Solr home set to '" + instanceDir + "'");
   }
 
-  public static String getInstanceDir() {
-    if ( ! isInstanceDirInitialized() ) {
+  public String getInstanceDir() {
+    if ( !isInstanceDirInitialized() ) {
       String home = null;
       // Try JNDI
       try {
@@ -355,7 +363,7 @@ public class Config {
     return instanceDir;
   }
   
-  public static boolean isInstanceDirInitialized() {
+  public boolean isInstanceDirInitialized() {
     return instanceDir != null;
   }
 
@@ -372,7 +380,7 @@ public class Config {
    * found in the "lib/" directory in the "Solr Home" directory.
    * <p>
    */
-  static ClassLoader getClassLoader() {
+  ClassLoader getClassLoader() {
     if (null == classLoader) {
       // NB5.5/win32/1.5_10: need to go thru local var or classLoader is not set!
       ClassLoader loader = Thread.currentThread().getContextClassLoader();

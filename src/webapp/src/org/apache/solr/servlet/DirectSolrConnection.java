@@ -100,16 +100,16 @@ public class DirectSolrConnection
       }
     }
     
-    // Set the instance directory
-    if( instanceDir != null ) {
-      if( Config.isInstanceDirInitialized() ) {
-        String dir = Config.getInstanceDir();
-        if( !dir.equals( instanceDir ) ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "already initalized: "+dir  );
-        }
-      }
-      Config.setInstanceDir( instanceDir );
-    }
+// TODO! Set the instance directory
+//    if( instanceDir != null ) {
+//      if( Config.isInstanceDirInitialized() ) {
+//        String dir = Config.getInstanceDir();
+//        if( !dir.equals( instanceDir ) ) {
+//          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "already initalized: "+dir  );
+//        }
+//      }
+//      Config.setInstanceDir( instanceDir );
+//    }
     SolrConfig config = SolrConfig.createInstance("solrconfig.xml");
     
     // If the Data directory is specified, initialize SolrCore directly
@@ -129,7 +129,6 @@ public class DirectSolrConnection
    * 
    * String json = solr.request( "/select?qt=dismax&wt=json&q=...", null );
    * String xml = solr.request( "/update", "&lt;add><doc><field ..." );
-   * 
    */
   public String request( String pathAndParams, String body ) throws Exception
   {

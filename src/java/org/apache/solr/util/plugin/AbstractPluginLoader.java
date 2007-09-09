@@ -78,11 +78,9 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( SolrCore core, String name, String className, Node node ) throws Exception
+  protected T create( Config config, String name, String className, Node node ) throws Exception
   {
-    if (core != null)
-      return (T) core.createInstance(className, null, "plug-in");
-    return (T) Config.newInstance( className, getDefaultPackages() );
+    return (T) config.newInstance( className, getDefaultPackages() );
   }
   
   /**
@@ -123,10 +121,7 @@ public abstract class AbstractPluginLoader<T>
    * If a default element is defined, it will be returned from this function.
    * 
    */
-  public T load( NodeList nodes ) {
-    return load(null, nodes);
-  }
-  public T load( SolrCore core, NodeList nodes )
+  public T load( Config config, NodeList nodes )
   {
     List<PluginInitInfo> info = new ArrayList<PluginInitInfo>();
     T defaultPlugin = null;
@@ -142,7 +137,7 @@ public abstract class AbstractPluginLoader<T>
           String className  = DOMUtil.getAttr(node,"class", type);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
             
-          T plugin = create(core, name, className, node );
+          T plugin = create(config, name, className, node );
           log.info("created "+name+": " + plugin.getClass().getName() );
           
           // Either initialize now or wait till everything has been registered

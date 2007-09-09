@@ -37,16 +37,10 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * @version $Id$
  */
-
-
+@Deprecated
 public class OldRequestHandler implements SolrRequestHandler {
-  SolrCore core;
   long numRequests;
   long numErrors;
-
-  public OldRequestHandler(SolrCore core) {
-    this.core = core;
-  }
   
   public void init(NamedList args) {
     SolrCore.log.log(Level.INFO, "Unused request handler arguments:" + args);

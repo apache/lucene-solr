@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.w3c.dom.Node;
@@ -28,7 +29,7 @@ import org.w3c.dom.Node;
  */
 public abstract class UpdateRequestProcessorFactory 
 {    
-  public void init( Node node )
+  public void init( final SolrCore core, final Node node )
   {
     // could process the Node
   }

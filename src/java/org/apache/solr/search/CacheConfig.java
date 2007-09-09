@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.Config;
 
 import javax.xml.xpath.XPathConstants;
 
@@ -38,7 +37,7 @@ import javax.xml.xpath.XPathConstants;
  */
 public class CacheConfig {
   private String nodeName;
-  private Map args;
+  private Map<String,String> args;
 
   private String cacheImpl;
   private Class clazz;
@@ -61,7 +60,7 @@ public class CacheConfig {
     if (nodes==null || nodes.getLength()==0) return null;
     CacheConfig[] configs = new CacheConfig[nodes.getLength()];
     for (int i=0; i<nodes.getLength(); i++) {
-      configs[i] = getConfig(nodes.item(i));
+      configs[i] = getConfig(solrConfig, nodes.item(i));
     }
     return configs;
   }
@@ -69,11 +68,11 @@ public class CacheConfig {
 
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = (Node)solrConfig.getNode(xpath, false);
-    return getConfig(node);
+    return getConfig(solrConfig, node);
   }
 
 
-  public static CacheConfig getConfig(Node node) {
+  public static CacheConfig getConfig(SolrConfig solrConfig, Node node) {
     if (node==null) return null;
     CacheConfig config = new CacheConfig();
     config.nodeName = node.getNodeName();
@@ -85,9 +84,9 @@ public class CacheConfig {
 
     config.cacheImpl = (String)config.args.get("class");
     config.regenImpl = (String)config.args.get("regenerator");
-    config.clazz = Config.findClass(config.cacheImpl);
+    config.clazz = solrConfig.findClass(config.cacheImpl);
     if (config.regenImpl != null) {
-      config.regenerator = (CacheRegenerator) Config.newInstance(config.regenImpl);
+      config.regenerator = (CacheRegenerator) solrConfig.newInstance(config.regenImpl);
     }
 
 

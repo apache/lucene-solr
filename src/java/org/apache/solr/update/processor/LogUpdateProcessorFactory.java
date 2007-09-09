@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -45,7 +46,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   int maxNumToLog = 8;
   
   @Override
-  public void init( Node node ) {
+  public void init( final SolrCore core, final Node node ) {
     if( node != null ) {
       NamedList<Object> args = DOMUtil.childNodesToNamedList( node );
       SolrParams params = SolrParams.toSolrParams( args );

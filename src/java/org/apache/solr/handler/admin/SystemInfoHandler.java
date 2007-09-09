@@ -88,7 +88,7 @@ public class SystemInfoHandler extends RequestHandlerBase
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<Object>();
-    dirs.add( "instance", new File( Config.getInstanceDir() ).getAbsolutePath() );
+    dirs.add( "instance", new File( core.getSolrConfig().getInstanceDir() ).getAbsolutePath() );
     dirs.add( "data", new File( core.getDataDir() ).getAbsolutePath() );
     dirs.add( "index", new File( core.getIndexDir() ).getAbsolutePath() );
     info.add( "directory", dirs );

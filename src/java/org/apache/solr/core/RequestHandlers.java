@@ -126,14 +126,14 @@ final class RequestHandlers {
    * 
    * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
-  void initHandlersFromConfig( Config config )  
+  void initHandlersFromConfig( final Config config )  
   {
     final RequestHandlers handlers = this;
     AbstractPluginLoader<SolrRequestHandler> loader = 
       new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true, true )
     {
       @Override
-      protected SolrRequestHandler create( SolrCore core, String name, String className, Node node ) throws Exception
+      protected SolrRequestHandler create( Config config, String name, String className, Node node ) throws Exception
       {    
         String startup = DOMUtil.getAttr( node, "startup" );
         if( startup != null ) {
@@ -146,7 +146,7 @@ final class RequestHandlers {
             throw new Exception( "Unknown startup value: '"+startup+"' for: "+className );
           }
         }
-        return super.create( core, name, className, node );
+        return super.create( config, name, className, node );
       }
 
       @Override
@@ -163,7 +163,7 @@ final class RequestHandlers {
     NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
     
     // Load the handlers and get the default one
-    SolrRequestHandler defaultHandler = loader.load( core, nodes );
+    SolrRequestHandler defaultHandler = loader.load( config, nodes );
     if( defaultHandler == null ) {
       defaultHandler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
       if( defaultHandler == null ) {

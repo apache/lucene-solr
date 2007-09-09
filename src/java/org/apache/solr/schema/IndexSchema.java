@@ -77,7 +77,7 @@ public final class IndexSchema {
     return solrConfig;
   }
   /**
-   * Direct acess to the InputStream for the schemaFile used by this instance.
+   * Direct access to the InputStream for the schemaFile used by this instance.
    *
    * @see Config#openResource
    */
@@ -293,7 +293,7 @@ public final class IndexSchema {
   }
 
 
-  private void readSchema(SolrConfig solrConfig) {
+  private void readSchema(final SolrConfig solrConfig) {
     log.info("Reading Solr Schema");
 
     try {
@@ -320,9 +320,9 @@ public final class IndexSchema {
       AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType" ) {
 
         @Override
-        protected FieldType create( SolrCore core, String name, String className, Node node ) throws Exception
+        protected FieldType create( Config config, String name, String className, Node node ) throws Exception
         {
-          FieldType ft = (FieldType)Config.newInstance(className);
+          FieldType ft = (FieldType)solrConfig.newInstance(className);
           ft.setTypeName(name);
 
           String expression = "./analyzer[@type='query']";
@@ -359,7 +359,7 @@ public final class IndexSchema {
 
       String expression = "/schema/types/fieldtype | /schema/types/fieldType";
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      loader.load( nodes );
+      loader.load( solrConfig, nodes );
 
       
 
