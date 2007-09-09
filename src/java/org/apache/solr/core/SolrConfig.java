@@ -129,6 +129,9 @@ public class SolrConfig extends Config {
     
     pingQueryParams = readPingQueryParams(this);
     Config.log.info("Loaded SolrConfig: " + file);
+    
+    // TODO -- at solr 2.0. this should go away
+    config = this;
   }
 
   /* The set of materialized parameters: */

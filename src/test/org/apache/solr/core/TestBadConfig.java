@@ -34,10 +34,9 @@ public class TestBadConfig extends AbstractSolrTestCase {
     dataDir.mkdirs();
     try {
       solrConfig = new SolrConfig(getSolrConfigFile());
-      h = new TestHarness(getName() + "-" + System.currentTimeMillis(),
-                        dataDir.getAbsolutePath(),
-                        solrConfig,
-                          getSchemaFile());
+      h = new TestHarness( dataDir.getAbsolutePath(),
+                           solrConfig,
+                           getSchemaFile());
       fail("Exception should have been thrown");
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("unset.sys.property"));

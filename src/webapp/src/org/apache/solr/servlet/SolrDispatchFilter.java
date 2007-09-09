@@ -68,7 +68,7 @@ public class SolrDispatchFilter implements Filter
 
       // Let this filter take care of /select?xxx format
       this.handleSelect = 
-        SolrConfig.config.getBool( "requestDispatcher/@handleSelect", false ); 
+        core.getSolrConfig().getBool( "requestDispatcher/@handleSelect", false ); 
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -78,7 +78,7 @@ public class SolrDispatchFilter implements Filter
     }
     
     // Optionally abort if we found a sever error
-    boolean abortOnConfigurationError = SolrConfig.config.getBool("abortOnConfigurationError",true);
+    boolean abortOnConfigurationError = core.getSolrConfig().getBool("abortOnConfigurationError",true);
     if( abortOnConfigurationError && SolrConfig.severeErrors.size() > 0 ) {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter( sw );

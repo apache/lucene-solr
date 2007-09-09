@@ -63,14 +63,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
    * </p>
    */
   protected TestHarness.LocalRequestFactory lrf;
-    /**
-     * Subclasses may define this method to return the name of the
-     * Solr core they wish to use.
-     */
-    public String getCoreName() {
-      return this.getClass().getPackage().getName();
-    }
-
+    
   /**
    * Subclasses must define this method to return the name of the
    * schema.xml they wish to use.
@@ -99,27 +92,17 @@ public abstract class AbstractSolrTestCase extends TestCase {
    *
    */
   public void setUp() throws Exception {
-        String coreName = getCoreName();
-        if (coreName != null) {
     dataDir = new File(System.getProperty("java.io.tmpdir")
-                       + System.getProperty("file.separator")
-                       + System.currentTimeMillis());
-        } else {
-            dataDir = new File(System.getProperty("java.io.tmpdir")
-            + System.getProperty("file.separator")
-            + getClass().getName() + "-" + System.currentTimeMillis());
-            
-        }
+        + System.getProperty("file.separator")
+        + getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
         
-        solrConfig = h.createConfig(getSolrConfigFile());
-        h = new TestHarness(coreName,
-                dataDir.getAbsolutePath(),
-                        solrConfig,
-                        getSchemaFile());
+    solrConfig = h.createConfig(getSolrConfigFile());
+    h = new TestHarness( dataDir.getAbsolutePath(),
+                    solrConfig,
+                    getSchemaFile());
     lrf = h.getRequestFactory
       ("standard",0,20,"version","2.2");
-
   }
     
   /**

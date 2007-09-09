@@ -84,17 +84,18 @@ public class TestHarness {
    *
    * @param dataDirectory path for index data, will not be cleaned up
    */
-  public TestHarness(String name, String dataDirectory) {
-    this(name, dataDirectory, "schema.xml");
+  public TestHarness( String dataDirectory) {
+    this( dataDirectory, "schema.xml");
   }
+  
   /**
    * Assumes "solrconfig.xml" is the config file to use.
    *
    * @param dataDirectory path for index data, will not be cleaned up
    * @param schemaFile path of schema file
    */
-  public TestHarness(String name, String dataDirectory, String schemaFile) {
-    this(name, dataDirectory, "solrconfig.xml", schemaFile);
+  public TestHarness( String dataDirectory, String schemaFile) {
+    this( dataDirectory, "solrconfig.xml", schemaFile);
   }
   /**
     * @param name the core name
@@ -102,8 +103,8 @@ public class TestHarness {
     * @param configFile solrconfig filename
    * @param schemaFile schema filename
    */
-   public TestHarness(String name, String dataDirectory, String configFile, String schemaFile) {
-     this(name, dataDirectory, createConfig(configFile), schemaFile);
+   public TestHarness( String dataDirectory, String configFile, String schemaFile) {
+     this( dataDirectory, createConfig(configFile), schemaFile);
    }
    /**
     * @param name the core name
@@ -111,11 +112,10 @@ public class TestHarness {
     * @param solrConfig solronfig instance
     * @param schemaFile schema filename
     */
-      public TestHarness(String name,
-                      String dataDirectory,
-                      SolrConfig solrConfig,
-                     String schemaFile) {
-     this(name, dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile));
+      public TestHarness( String dataDirectory,
+                          SolrConfig solrConfig,
+                          String schemaFile) {
+     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile));
    }
    /**
     * @param name the core name
@@ -123,12 +123,11 @@ public class TestHarness {
     * @param solrConfig solrconfig instance
     * @param schema schema instance
     */
-  public TestHarness(String name,
-                      String dataDirectory,
+  public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
     try {
-      core = new SolrCore(name, dataDirectory, solrConfig, indexSchema);
+      core = new SolrCore( dataDirectory, solrConfig, indexSchema);
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       
       updater = new XmlUpdateRequestHandler();
