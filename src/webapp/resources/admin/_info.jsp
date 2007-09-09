@@ -94,5 +94,5 @@
   }
   
   String cwd=System.getProperty("user.dir");
-  String solrHome= Config.getInstanceDir();
+  String solrHome= solrConfig.getInstanceDir();
 %>
