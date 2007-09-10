@@ -81,7 +81,7 @@ Bug fixes
     long, instead of cryptic ArrayIndexOutOfBoundsException.  (Karl
     Wettin via Mike McCandless)
 
-13 LUCENE-991: The explain() method of BoostingTermQuery had errors when no payloads were present on a document.  (Peter Keegan via Grant Ingersoll)
+13. LUCENE-991: The explain() method of BoostingTermQuery had errors when no payloads were present on a document.  (Peter Keegan via Grant Ingersoll)
 
 New features
 
