@@ -129,6 +129,16 @@ final class DocumentsWriter {
 
   private PrintStream infoStream;
 
+  // This Hashmap buffers delete terms in ram before they
+  // are applied.  The key is delete term; the value is
+  // number of buffered documents the term applies to.
+  private HashMap bufferedDeleteTerms = new HashMap();
+  private int numBufferedDeleteTerms = 0;
+
+  // The max number of delete terms that can be buffered before
+  // they must be flushed to disk.
+  private int maxBufferedDeleteTerms = IndexWriter.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
+
   // How much RAM we can use before flushing.  This is 0 if
   // we are flushing by doc count instead.
   private long ramBufferSize = (long) (IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
@@ -265,8 +275,8 @@ final class DocumentsWriter {
 
   /** Called if we hit an exception when adding docs,
    *  flushing, etc.  This resets our state, discarding any
-   *  * docs added since last flush. */
-  void abort() throws IOException {
+   *  docs added since last flush. */
+  synchronized void abort() throws IOException {
 
     // Forcefully remove waiting ThreadStates from line
     for(int i=0;i<numWaiting;i++)
@@ -274,6 +284,9 @@ final class DocumentsWriter {
     numWaiting = 0;
 
     pauseAllThreads();
+
+    bufferedDeleteTerms.clear();
+    numBufferedDeleteTerms = 0;
 
     try {
 
@@ -2063,8 +2076,10 @@ final class DocumentsWriter {
 
   /** Returns a free (idle) ThreadState that may be used for
    * indexing this one document.  This call also pauses if a
-   * flush is pending. */
-  synchronized ThreadState getThreadState(Document doc) throws IOException {
+   * flush is pending.  If delTerm is non-null then we
+   * buffer this deleted term after the thread state has
+   * been acquired. */
+  synchronized ThreadState getThreadState(Document doc, Term delTerm) throws IOException {
 
     // First, find a thread state.  If this thread already
     // has affinity to a specific ThreadState, use that one
@@ -2134,6 +2149,9 @@ final class DocumentsWriter {
       }
     }
 
+    if (delTerm != null)
+      addDeleteTerm(delTerm, state.docID);
+
     return state;
   }
 
@@ -2141,9 +2159,19 @@ final class DocumentsWriter {
    * flush. */
   boolean addDocument(Document doc, Analyzer analyzer)
     throws CorruptIndexException, IOException {
+    return updateDocument(doc, analyzer, null);
+  }
+
+  boolean updateDocument(Term t, Document doc, Analyzer analyzer)
+    throws CorruptIndexException, IOException {
+    return updateDocument(doc, analyzer, t);
+  }
+
+  boolean updateDocument(Document doc, Analyzer analyzer, Term delTerm)
+    throws CorruptIndexException, IOException {
 
     // This call is synchronized but fast
-    final ThreadState state = getThreadState(doc);
+    final ThreadState state = getThreadState(doc, delTerm);
     boolean success = false;
     try {
       // This call is not synchronized and does all the work
@@ -2157,7 +2185,96 @@ final class DocumentsWriter {
         abort();
       }
     }
-    return state.doFlushAfter;
+    return state.doFlushAfter || timeToFlushDeletes();
+  }
+
+  synchronized int getNumBufferedDeleteTerms() {
+    return numBufferedDeleteTerms;
+  }
+
+  synchronized HashMap getBufferedDeleteTerms() {
+    return bufferedDeleteTerms;
+  }
+
+  // Reset buffered deletes.
+  synchronized void clearBufferedDeleteTerms() {
+    bufferedDeleteTerms.clear();
+    numBufferedDeleteTerms = 0;
+  }
+
+  synchronized boolean bufferDeleteTerms(Term[] terms) throws IOException {
+    while(pauseThreads != 0 || flushPending)
+      try {
+        wait();
+      } catch (InterruptedException e) {}
+      for (int i = 0; i < terms.length; i++)
+        addDeleteTerm(terms[i], numDocsInRAM);
+    return timeToFlushDeletes();
+  }
+
+  synchronized boolean bufferDeleteTerm(Term term) throws IOException {
+    while(pauseThreads != 0 || flushPending)
+      try {
+        wait();
+      } catch (InterruptedException e) {}
+    addDeleteTerm(term, numDocsInRAM);
+    return timeToFlushDeletes();
+  }
+
+  synchronized private boolean timeToFlushDeletes() {
+    return numBufferedDeleteTerms >= maxBufferedDeleteTerms && setFlushPending();
+  }
+
+  void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
+    if (maxBufferedDeleteTerms < 1)
+      throw new IllegalArgumentException("maxBufferedDeleteTerms must at least be 1");
+    this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
+  }
+
+  int getMaxBufferedDeleteTerms() {
+    return maxBufferedDeleteTerms;
+  }
+
+  synchronized boolean hasDeletes() {
+    return bufferedDeleteTerms.size() > 0;
+  }
+
+  // Number of documents a delete term applies to.
+  static class Num {
+    private int num;
+
+    Num(int num) {
+      this.num = num;
+    }
+
+    int getNum() {
+      return num;
+    }
+
+    void setNum(int num) {
+      // Only record the new number if it's greater than the
+      // current one.  This is important because if multiple
+      // threads are replacing the same doc at nearly the
+      // same time, it's possible that one thread that got a
+      // higher docID is scheduled before the other
+      // threads.
+      if (num > this.num)
+        this.num = num;
+    }
+  }
+
+  // Buffer a term in bufferedDeleteTerms, which records the
+  // current number of documents buffered in ram so that the
+  // delete term will be applied to those documents as well
+  // as the disk segments.
+  synchronized private void addDeleteTerm(Term term, int docCount) {
+    Num num = (Num) bufferedDeleteTerms.get(term);
+    if (num == null) {
+      bufferedDeleteTerms.put(term, new Num(docCount));
+    } else {
+      num.setNum(docCount);
+    }
+    numBufferedDeleteTerms++;
   }
 
   /** Does the synchronized work to finish/flush the

@@ -83,6 +83,9 @@ Bug fixes
 
 13. LUCENE-991: The explain() method of BoostingTermQuery had errors when no payloads were present on a document.  (Peter Keegan via Grant Ingersoll)
 
+14. LUCENE-992: Fixed IndexWriter.updateDocument to be atomic again
+    (this was broken by LUCENE-843).  (Ning Li via Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

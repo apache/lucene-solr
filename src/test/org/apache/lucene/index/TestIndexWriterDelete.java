@@ -436,6 +436,7 @@ public class TestIndexWriterDelete extends TestCase {
           catch (IOException e) {
             if (debug) {
               System.out.println("  hit IOException: " + e);
+              e.printStackTrace(System.out);
             }
             err = e;
             if (1 == x) {
@@ -503,10 +504,20 @@ public class TestIndexWriterDelete extends TestCase {
           }
           int result2 = hits.length();
           if (success) {
-            if (result2 != END_COUNT) {
+            if (x == 0 && result2 != END_COUNT) {
               fail(testName
                    + ": method did not throw exception but hits.length for search on term 'aaa' is "
                    + result2 + " instead of expected " + END_COUNT);
+            } else if (x == 1 && result2 != START_COUNT && result2 != END_COUNT) {
+              // It's possible that the first exception was
+              // "recoverable" wrt pending deletes, in which
+              // case the pending deletes are retained and
+              // then re-flushing (with plenty of disk
+              // space) will succeed in flushing the
+              // deletes:
+              fail(testName
+                   + ": method did not throw exception but hits.length for search on term 'aaa' is "
+                   + result2 + " instead of expected " + START_COUNT + " or " + END_COUNT);
             }
           } else {
             // On hitting exception we still may have added
@@ -515,7 +526,7 @@ public class TestIndexWriterDelete extends TestCase {
               err.printStackTrace();
               fail(testName
                    + ": method did throw exception but hits.length for search on term 'aaa' is "
-                   + result2 + " instead of expected " + START_COUNT);
+                   + result2 + " instead of expected " + START_COUNT + " or " + END_COUNT);
             }
           }
 
@@ -535,10 +546,8 @@ public class TestIndexWriterDelete extends TestCase {
     }
   }
 
-  // This test tests that buffered deletes are not lost due to i/o
-  // errors occurring after the buffered deletes have been flushed but
-  // before the segmentInfos have been successfully written
-
+  // This test tests that buffered deletes are cleared when
+  // an Exception is hit during flush.
   public void testErrorAfterApplyDeletes() throws IOException {
     
     MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
@@ -662,9 +671,11 @@ public class TestIndexWriterDelete extends TestCase {
 
       hitCount = getHitCount(dir, term);
 
-      // If we haven't lost the delete the hit count will be zero
-
-      assertEquals(0, hitCount);
+      // If the delete was not cleared then hit count will
+      // be 0.  With autoCommit=false, we hit the exception
+      // on creating the compound file, so the delete was
+      // flushed successfully.
+      assertEquals(autoCommit ? 1:0, hitCount);
 
       if (autoCommit) {
         modifier.close();
