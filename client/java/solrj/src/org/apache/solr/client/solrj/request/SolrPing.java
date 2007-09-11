@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
@@ -43,7 +44,9 @@ public class SolrPing extends RequestBase
   }
 
   public SolrParams getParams() {
-    return null;
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set( "q", "solrpingquery" );
+    return params;
   }
 
   public SolrPingResponse process( SolrServer server ) throws SolrServerException, IOException 

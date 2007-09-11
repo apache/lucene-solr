@@ -83,6 +83,9 @@ public class XMLResponseParser implements ResponseParser
             if( name.equals( "response" ) || name.equals( "result" ) ) {
               response = readNamedList( parser );
             }
+            else if( name.equals( "solr" ) ) {
+              return new NamedList<Object>();
+            }
             else {
               throw new Exception( "really needs to be response or result.  " +
                   "not:"+parser.getLocalName() );
