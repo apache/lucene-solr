@@ -63,11 +63,23 @@ public abstract class SolrResponseBase implements SolrResponse
   
   // these two methods are based on the logic in SolrCore.setResponseHeaderValues(...)
   public int getStatus() {
-    return (Integer) getResponseHeader().get("status");
+    NamedList header = getResponseHeader();
+    if (header != null) {
+        return (Integer) header.get("status");
+    }
+    else {
+        return 0;
+    }
   }
   
   public int getQTime() {
-    return (Integer) getResponseHeader().get("QTime");
+    NamedList header = getResponseHeader();
+    if (header != null) {
+        return (Integer) header.get("QTime");
+    }
+    else {
+        return 0;
+    }
   }
 
   public String getRequestUrl() {
