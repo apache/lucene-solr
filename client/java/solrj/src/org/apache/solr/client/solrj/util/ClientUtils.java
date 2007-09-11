@@ -56,9 +56,12 @@ public class ClientUtils
    */
   public static Collection<ContentStream> toContentStreams( final String str, final String contentType )
   {
+    if( str == null )
+      return null;
+    
+    ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 1 );
     ContentStreamBase ccc = new ContentStreamBase.StringStream( str );
     ccc.setContentType( contentType );
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
     streams.add( ccc );
     return streams;
   }

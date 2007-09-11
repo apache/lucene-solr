@@ -169,24 +169,9 @@ public class UpdateRequest extends RequestBase
       writer.append( "</delete>" );
     }
     
-    // add the commits
-    if (action == ACTION.COMMIT) {
-      writer.append("<commit ");
-      writer.append("waitFlush=\"" + waitFlush + "\" ");
-      writer.append("waitSearcher=\"" + waitSearcher + "\" ");
-      writer.append(">");
-      writer.append("</commit>");
-    }
-    
-    // add the optimizes
-    if (action == ACTION.OPTIMIZE) {
-      writer.append("<optimize ");
-      writer.append("waitFlush=\"" + waitFlush + "\" ");
-      writer.append("waitSearcher=\"" + waitSearcher + "\" ");
-      writer.append(">");
-      writer.append("</optimize>");
-    }
-    return writer.toString();
+    // If action is COMMIT or OPTIMIZE, it is sent with params
+    String xml = writer.toString();
+    return (xml.length() > 0) ? xml : null;
   }
 
   //--------------------------------------------------------------------------
