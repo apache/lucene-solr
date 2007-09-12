@@ -49,8 +49,8 @@ public class UpdateRequest extends RequestBase
   private boolean waitFlush = true;
   private boolean waitSearcher = true;
   private boolean allowDups = false;
-  private boolean overwriteCommitted = false;
-  private boolean overwritePending = false;
+  private boolean overwriteCommitted = true;
+  private boolean overwritePending = true;
   private ACTION action = null;
   
   private List<SolrInputDocument> documents = null;
