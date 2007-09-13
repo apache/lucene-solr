@@ -186,6 +186,7 @@ public class ClientUtils
       case '*':
       case ':':
       case '~':
+      case '!':
       case '\\':
         str.append( '\\' );
       }
