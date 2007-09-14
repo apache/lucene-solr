@@ -29,6 +29,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.httpclient.util.DateUtil;
@@ -161,38 +163,15 @@ public class ClientUtils
     }
   }
   
-
+  private static final Pattern escapePattern = Pattern.compile( "(\\W)" );
+  
   /**
    * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping Special Characters
    */
   public static String escapeQueryChars( String input ) 
   {
-    char buff[] = input.toCharArray();
-    StringBuilder str = new StringBuilder( buff.length+5 );
-    for( char c : buff ) {
-      switch( c ) {
-      case '+':
-      case '-':
-      case '&':
-      case '|':
-      case '(':
-      case ')':
-      case '{':
-      case '}':
-      case '[':
-      case ']':
-      case '^':
-      case '"':
-      case '*':
-      case ':':
-      case '~':
-      case '!':
-      case '\\':
-        str.append( '\\' );
-      }
-      str.append( c );
-    }
-    return str.toString();
+    Matcher matcher = escapePattern.matcher( input );
+    return matcher.replaceAll( "\\\\$1" );
   }
   
 
