@@ -6,6 +6,8 @@ $Id:$
 
 9/18/07
   LUCENE-941: infinite loop for alg: {[AddDoc(4000)]: 4} : *
+  ResetInputsTask fixed to work also after exhaustion.
+  All Reset Tasks now subclas ResetInputsTask.
 
 8/9/07
   LUCENE-971: Change enwiki tasks to a doc maker (extending
