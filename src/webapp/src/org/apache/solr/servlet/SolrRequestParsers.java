@@ -97,7 +97,7 @@ public class SolrRequestParsers
     
     // TODO -- in the future, we could pick a different parser based on the request
     
-    // Pick the parer from the request...
+    // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<ContentStream>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
     SolrQueryRequest sreq = buildRequestFrom( params, streams );
