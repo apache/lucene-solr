@@ -127,6 +127,10 @@ New Features
     a new random UUID.
     (Thomas Peuss via hossman)
 
+24. SOLR-349: New FunctionQuery functions: sum, product, div, pow, log,
+    sqrt, abs, scale, map.  Constants may now be used as a value source.
+    (yonik)
+
 Changes in runtime behavior
 
 Optimizations

@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.MatchAllDocsQuery;
 
 import java.util.TreeMap;
 import java.util.Map;
@@ -174,9 +175,18 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
   // must only be called when iwCommit lock held
+  private void deleteAll() throws IOException {
+    SolrCore.log.info("REMOVING ALL DOCUMENTS FROM INDEX");
+    closeWriter();
+    closeSearcher();
+    pset.clear(); // ignore docs marked for deletion since we are removing all
+    writer = createMainIndexWriter("DirectUpdateHandler2", true);
+  }
+
+  // must only be called when iwCommit lock held
   protected void openWriter() throws IOException {
     if (writer==null) {
-      writer = createMainIndexWriter("DirectUpdateHandler2");
+      writer = createMainIndexWriter("DirectUpdateHandler2", false);
     }
   }
 
@@ -337,32 +347,41 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      }
 
     boolean madeIt=false;
+    boolean delAll=false;
     try {
      Query q = QueryParsing.parseQuery(cmd.query, schema);
+     delAll = MatchAllDocsQuery.class == q.getClass();
 
      int totDeleted = 0;
      iwCommit.lock();
      try {
-       // we need to do much of the commit logic (mainly doing queued
-       // deletes since deleteByQuery can throw off our counts.
-       doDeletions();
-       
-       closeWriter();
-       openSearcher();
+       if (delAll) {
+         deleteAll();
+       } else {
+         // we need to do much of the commit logic (mainly doing queued
+         // deletes since deleteByQuery can throw off our counts.
+         doDeletions();
 
-       // if we want to count the number of docs that were deleted, then
-       // we need a new instance of the DeleteHitCollector
-       final DeleteHitCollector deleter = new DeleteHitCollector(searcher);
-       searcher.search(q, null, deleter);
-       totDeleted = deleter.deleted;
+         closeWriter();
+         openSearcher();
+
+         // if we want to count the number of docs that were deleted, then
+         // we need a new instance of the DeleteHitCollector
+         final DeleteHitCollector deleter = new DeleteHitCollector(searcher);
+         searcher.search(q, null, deleter);
+         totDeleted = deleter.deleted;
+       }
      } finally {
        iwCommit.unlock();
      }
 
-     if (SolrCore.log.isLoggable(Level.FINE)) {
-       SolrCore.log.fine("docs deleted by query:" + totDeleted);
-     }
-     numDocsDeleted.getAndAdd(totDeleted);
+      if (!delAll) {
+        if (SolrCore.log.isLoggable(Level.FINE)) {
+          SolrCore.log.fine("docs deleted by query:" + totDeleted);
+        }
+        numDocsDeleted.getAndAdd(totDeleted);
+      }
+
      madeIt=true;
 
      if( tracker.timeUpperBound > 0 ) {

@@ -117,8 +117,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     core.getInfoRegistry().put("updateHandler", this);
   }
 
-  protected SolrIndexWriter createMainIndexWriter(String name) throws IOException {
-    SolrIndexWriter writer = new SolrIndexWriter(name,core.getIndexDir(), false, schema, core.getSolrConfig().mainIndexConfig);
+  protected SolrIndexWriter createMainIndexWriter(String name, boolean removeAllExisting) throws IOException {
+    SolrIndexWriter writer = new SolrIndexWriter(name,core.getIndexDir(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig);
     return writer;
   }
 

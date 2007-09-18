@@ -32,6 +32,8 @@ import org.apache.solr.schema.FieldType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.logging.Level;
 import java.io.IOException;
@@ -485,30 +487,43 @@ public class QueryParsing {
     return out;
   }
 
-  private static ValueSource parseValSource(StrParser sp, IndexSchema schema) throws ParseException {
-    String id = sp.getId();
-    if (sp.opt("(")) {
-      // a function: could contain a fieldname or another function.
-      ValueSource vs=null;
-      if (id.equals("ord")) {
+  private abstract static class VSParser {
+    abstract ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException;
+  }
+  private static Map<String, VSParser> vsParsers = new HashMap<String, VSParser>();
+  static {
+    vsParsers.put("ord", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
         String field = sp.getId();
-        vs = new OrdFieldSource(field);
-      } else if (id.equals("rord")) {
+        return new OrdFieldSource(field);
+      }
+    });
+    vsParsers.put("rord", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
         String field = sp.getId();
-        vs = new ReverseOrdFieldSource(field);
-      } else if (id.equals("linear")) {
+        return new ReverseOrdFieldSource(field);
+      }
+    });
+    vsParsers.put("linear", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
         ValueSource source = parseValSource(sp, schema);
         sp.expect(",");
         float slope = sp.getFloat();
         sp.expect(",");
         float intercept = sp.getFloat();
-        vs = new LinearFloatFunction(source,slope,intercept);
-      } else if (id.equals("max")) {
+        return new LinearFloatFunction(source,slope,intercept);
+      }
+    });
+    vsParsers.put("max", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
         ValueSource source = parseValSource(sp, schema);
         sp.expect(",");
         float val = sp.getFloat();
-        vs = new MaxFloatFunction(source,val);
-      } else if (id.equals("recip")) {
+        return new MaxFloatFunction(source,val);
+      }
+    });
+    vsParsers.put("recip", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {      
         ValueSource source = parseValSource(sp,schema);
         sp.expect(",");
         float m = sp.getFloat();
@@ -516,10 +531,125 @@ public class QueryParsing {
         float a = sp.getFloat();
         sp.expect(",");
         float b = sp.getFloat();
-        vs = new ReciprocalFloatFunction(source,m,a,b);
-      } else {
+        return new ReciprocalFloatFunction(source,m,a,b);
+      }
+    });
+    vsParsers.put("scale", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource source = parseValSource(sp,schema);
+        sp.expect(",");
+        float min = sp.getFloat();
+        sp.expect(",");
+        float max = sp.getFloat();
+        return new ScaleFloatFunction(source,min,max);
+      }
+    });
+    vsParsers.put("pow", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource a = parseValSource(sp,schema);
+        sp.expect(",");
+        ValueSource b = parseValSource(sp,schema);
+        return new PowFloatFunction(a,b);
+      }
+    });
+    vsParsers.put("div", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource a = parseValSource(sp,schema);
+        sp.expect(",");
+        ValueSource b = parseValSource(sp,schema);
+        return new DivFloatFunction(a,b);
+      }
+    });
+    vsParsers.put("map", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource source = parseValSource(sp,schema);
+        sp.expect(",");
+        float min = sp.getFloat();
+        sp.expect(",");
+        float max = sp.getFloat();
+        sp.expect(",");
+        float target = sp.getFloat();
+        return new RangeMapFloatFunction(source,min,max,target);
+      }
+    });
+    vsParsers.put("sqrt", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource source = parseValSource(sp,schema);
+        return new SimpleFloatFunction(source) {
+          protected String name() {
+            return "sqrt";
+          }
+          protected float func(int doc, DocValues vals) {
+            return (float)Math.sqrt(vals.floatVal(doc));
+          }
+        };
+      }
+    });
+    vsParsers.put("log", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource source = parseValSource(sp,schema);
+        return new SimpleFloatFunction(source) {
+          protected String name() {
+            return "log";
+          }
+          protected float func(int doc, DocValues vals) {
+            return (float)Math.log10(vals.floatVal(doc));
+          }
+        };
+      }
+    });
+    vsParsers.put("abs", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        ValueSource source = parseValSource(sp,schema);
+        return new SimpleFloatFunction(source) {
+          protected String name() {
+            return "log";
+          }
+          protected float func(int doc, DocValues vals) {
+            return (float)Math.abs(vals.floatVal(doc));
+          }
+        };
+      }
+    });
+    vsParsers.put("sum", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        List<ValueSource> sources = parseValueSourceList(sp,schema);
+        return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+      }
+    });
+    vsParsers.put("product", new VSParser() {
+      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
+        List<ValueSource> sources = parseValueSourceList(sp,schema);
+        return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+      }
+    });
+  }
+
+  private static List<ValueSource> parseValueSourceList(StrParser sp, IndexSchema schema) throws ParseException {
+    List<ValueSource> sources = new ArrayList<ValueSource>(3);
+    for (;;) {
+      sources.add(parseValSource(sp,schema)); 
+      char ch = sp.peek();
+      if (ch==')') break;
+      sp.expect(",");
+    }
+    return sources;    
+  }
+
+  private static ValueSource parseValSource(StrParser sp, IndexSchema schema) throws ParseException {
+    int ch = sp.peek();
+    if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
+      return new ConstValueSource(sp.getFloat());
+    }
+
+    String id = sp.getId();
+    if (sp.opt("(")) {
+      // a function... look it up.
+      VSParser argParser = vsParsers.get(id);
+      if (argParser==null) {
         throw new ParseException("Unknown function " + id + " in FunctionQuery(" + sp + ")");
       }
+      ValueSource vs = argParser.parse(sp, schema);
       sp.expect(")");
       return vs;
     }

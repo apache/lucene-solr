@@ -33,11 +33,15 @@ public class FunctionQuery extends Query {
   ValueSource func;
 
   /**
-   *
    * @param func defines the function to be used for scoring
    */
   public FunctionQuery(ValueSource func) {
     this.func=func;
+  }
+
+  /** @return The associated ValueSource */
+  public ValueSource getValueSource() {
+    return func;
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
@@ -169,7 +173,7 @@ public class FunctionQuery extends Query {
 
   /** Returns a hash code value for this object. */
   public int hashCode() {
-    return func.hashCode() ^ Float.floatToIntBits(getBoost());
+    return func.hashCode()*31 + Float.floatToIntBits(getBoost());
   }
 
 }

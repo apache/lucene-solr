@@ -17,32 +17,22 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
-
-import java.io.IOException;
-import java.io.Serializable;
-
-/**
- * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
- * <br>
- * Often used when creating a {@link FunctionQuery}.
- *
- * @version $Id$
+/** Function to divide "a" by "b"
  */
-public abstract class ValueSource implements Serializable {
-
-  public abstract DocValues getValues(IndexReader reader) throws IOException;
-
-  public abstract boolean equals(Object o);
-
-  public abstract int hashCode();
-
-  /** description of field, used in explain() */
-  public abstract String description();
-
-  public String toString() {
-    return description();
+public class DivFloatFunction extends DualFloatFunction {
+ /**
+   * @param   a  the numerator.
+   * @param   b  the denominator.
+   */
+  public DivFloatFunction(ValueSource a, ValueSource b) {
+    super(a,b);
   }
 
+  protected String name() {
+    return "div";
+  }
+
+  protected float func(int doc, DocValues aVals, DocValues bVals) {
+    return aVals.floatVal(doc) / bVals.floatVal(doc);
+  }
 }

@@ -71,7 +71,7 @@ public class DirectUpdateHandler extends UpdateHandler {
 
   protected void openWriter() throws IOException {
     if (writer==null) {
-      writer = createMainIndexWriter("DirectUpdateHandler");
+      writer = createMainIndexWriter("DirectUpdateHandler", false);
     }
   }
 

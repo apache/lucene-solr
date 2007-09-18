@@ -17,32 +17,23 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
-
-import java.io.IOException;
-import java.io.Serializable;
-
 /**
- * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
- * <br>
- * Often used when creating a {@link FunctionQuery}.
- *
- * @version $Id$
+ * <code>ProductFloatFunction</code> returns the product of it's components.
  */
-public abstract class ValueSource implements Serializable {
-
-  public abstract DocValues getValues(IndexReader reader) throws IOException;
-
-  public abstract boolean equals(Object o);
-
-  public abstract int hashCode();
-
-  /** description of field, used in explain() */
-  public abstract String description();
-
-  public String toString() {
-    return description();
+public class ProductFloatFunction extends MultiFloatFunction {
+  public ProductFloatFunction(ValueSource[] sources) {
+    super(sources);
   }
 
+  protected String name() {
+    return "product";
+  }
+
+  protected float func(int doc, DocValues[] valsArr) {
+    float val = 1.0f;
+    for (DocValues vals : valsArr) {
+      val *= vals.floatVal(doc);
+    }
+    return val;
+  }
 }
