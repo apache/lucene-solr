@@ -47,7 +47,7 @@ public class MockRAMDirectory extends RAMDirectory {
   // like super is called, then our members are initialized:
   Map openFiles;
 
-  public MockRAMDirectory() throws IOException {
+  public MockRAMDirectory() {
     super();
     if (openFiles == null) {
       openFiles = new HashMap();

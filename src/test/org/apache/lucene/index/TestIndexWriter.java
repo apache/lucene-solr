@@ -1444,6 +1444,26 @@ public class TestIndexWriter extends TestCase
         }
         dir.delete();
     }
+  
+  /**
+   * Test that no NullPointerException will be raised,
+   * when adding one document with a single, empty field
+   * and term vectors enabled.
+   * @throws IOException
+   *
+   */
+  public void testBadSegment() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter ir = new IndexWriter(dir, new StandardAnalyzer(), true);
+    
+    Document document = new Document();
+    document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
+        Field.TermVector.YES));
+    ir.addDocument(document);
+    ir.close();
+    dir.close();
+  }
+
 }
 
 

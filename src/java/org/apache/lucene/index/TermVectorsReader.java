@@ -27,6 +27,14 @@ import java.io.IOException;
  * @version $Id$
  */
 class TermVectorsReader implements Cloneable {
+
+  static final int FORMAT_VERSION = 2;
+  //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
+  static final int FORMAT_SIZE = 4;
+
+  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  
   private FieldInfos fieldInfos;
 
   private IndexInput tvx;
@@ -56,12 +64,12 @@ class TermVectorsReader implements Cloneable {
     boolean success = false;
 
     try {
-      if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
-        tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION, readBufferSize);
+      if (d.fileExists(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION)) {
+        tvx = d.openInput(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION, readBufferSize);
         checkValidFormat(tvx);
-        tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION, readBufferSize);
+        tvd = d.openInput(segment + "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION, readBufferSize);
         tvdFormat = checkValidFormat(tvd);
-        tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION, readBufferSize);
+        tvf = d.openInput(segment + "." + IndexFileNames.VECTORS_FIELDS_EXTENSION, readBufferSize);
         tvfFormat = checkValidFormat(tvf);
         if (-1 == docStoreOffset) {
           this.docStoreOffset = 0;
@@ -92,10 +100,10 @@ class TermVectorsReader implements Cloneable {
   private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
-    if (format > TermVectorsWriter.FORMAT_VERSION)
+    if (format > FORMAT_VERSION)
     {
       throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                      + TermVectorsWriter.FORMAT_VERSION + " or less");
+                                      + FORMAT_VERSION + " or less");
     }
     return format;
   }
@@ -125,7 +133,7 @@ class TermVectorsReader implements Cloneable {
       //We don't need to do this in other seeks because we already have the
       // file pointer
       //that was written in another file
-      tvx.seek(((docNum + docStoreOffset) * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      tvx.seek(((docNum + docStoreOffset) * 8L) + FORMAT_SIZE);
       //System.out.println("TVX Pointer: " + tvx.getFilePointer());
       long position = tvx.readLong();
 
@@ -138,7 +146,7 @@ class TermVectorsReader implements Cloneable {
       int number = 0;
       int found = -1;
       for (int i = 0; i < fieldCount; i++) {
-        if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+        if(tvdFormat == FORMAT_VERSION)
           number = tvd.readVInt();
         else
           number += tvd.readVInt();
@@ -192,7 +200,7 @@ class TermVectorsReader implements Cloneable {
     TermFreqVector[] result = null;
     if (tvx != null) {
       //We need to offset by
-      tvx.seek(((docNum + docStoreOffset) * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      tvx.seek(((docNum + docStoreOffset) * 8L) + FORMAT_SIZE);
       long position = tvx.readLong();
 
       tvd.seek(position);
@@ -204,7 +212,7 @@ class TermVectorsReader implements Cloneable {
         String[] fields = new String[fieldCount];
 
         for (int i = 0; i < fieldCount; i++) {
-          if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+          if(tvdFormat == FORMAT_VERSION)
             number = tvd.readVInt();
           else
             number += tvd.readVInt();
@@ -232,7 +240,7 @@ class TermVectorsReader implements Cloneable {
     // Check if no term vectors are available for this segment at all
     if (tvx != null) {
       //We need to offset by
-      tvx.seek((docNumber * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      tvx.seek((docNumber * 8L) + FORMAT_SIZE);
       long position = tvx.readLong();
 
       tvd.seek(position);
@@ -244,7 +252,7 @@ class TermVectorsReader implements Cloneable {
         String[] fields = new String[fieldCount];
 
         for (int i = 0; i < fieldCount; i++) {
-          if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+          if(tvdFormat == FORMAT_VERSION)
             number = tvd.readVInt();
           else
             number += tvd.readVInt();
@@ -313,10 +321,10 @@ class TermVectorsReader implements Cloneable {
     boolean storePositions;
     boolean storeOffsets;
     
-    if(tvfFormat == TermVectorsWriter.FORMAT_VERSION){
+    if(tvfFormat == FORMAT_VERSION){
       byte bits = tvf.readByte();
-      storePositions = (bits & TermVectorsWriter.STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      storeOffsets = (bits & TermVectorsWriter.STORE_OFFSET_WITH_TERMVECTOR) != 0;
+      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
     }
     else{
       tvf.readVInt();

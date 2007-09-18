@@ -733,12 +733,12 @@ final class DocumentsWriter {
       if (docHasVectors) {
         if (tvx == null) {
           assert docStoreSegment != null;
-          tvx = directory.createOutput(docStoreSegment + TermVectorsWriter.TVX_EXTENSION);
-          tvx.writeInt(TermVectorsWriter.FORMAT_VERSION);
-          tvd = directory.createOutput(docStoreSegment +  TermVectorsWriter.TVD_EXTENSION);
-          tvd.writeInt(TermVectorsWriter.FORMAT_VERSION);
-          tvf = directory.createOutput(docStoreSegment +  TermVectorsWriter.TVF_EXTENSION);
-          tvf.writeInt(TermVectorsWriter.FORMAT_VERSION);
+          tvx = directory.createOutput(docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
+          tvx.writeInt(TermVectorsReader.FORMAT_VERSION);
+          tvd = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+          tvd.writeInt(TermVectorsReader.FORMAT_VERSION);
+          tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
+          tvf.writeInt(TermVectorsReader.FORMAT_VERSION);
           files = null;
 
           // We must "catch up" for all docIDs that had no
@@ -1613,9 +1613,9 @@ final class DocumentsWriter {
         tvfLocal.writeVInt(numPostingsVectors);
         byte bits = 0x0;
         if (doVectorPositions)
-          bits |= TermVectorsWriter.STORE_POSITIONS_WITH_TERMVECTOR;
+          bits |= TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
         if (doVectorOffsets) 
-          bits |= TermVectorsWriter.STORE_OFFSET_WITH_TERMVECTOR;
+          bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
         tvfLocal.writeByte(bits);
 
         doVectorSort(postingsVectors, numPostingsVectors);

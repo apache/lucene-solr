@@ -18,16 +18,21 @@ package org.apache.lucene.index;
  */
 
 import junit.framework.TestCase;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Document;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 
 public class TestTermVectorsReader extends TestCase {
-  private TermVectorsWriter writer = null;
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
   private String[] testFields = {"f1", "f2", "f3", "f4"};
   private boolean[] testFieldsStorePos = {true, false, true, false};
@@ -35,49 +40,105 @@ public class TestTermVectorsReader extends TestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
-  private RAMDirectory dir = new RAMDirectory();
-  private String seg = "testSegment";
+  private MockRAMDirectory dir = new MockRAMDirectory();
+  private String seg;
   private FieldInfos fieldInfos = new FieldInfos();
+  private static int TERM_FREQ = 3;
 
   public TestTermVectorsReader(String s) {
     super(s);
   }
+  
+  private class TestToken implements Comparable {
+    String text;
+    int pos;
+    int startOffset;
+    int endOffset;
+    public int compareTo(Object other) {
+      return pos - ((TestToken) other).pos;
+    }
+  }
+
+  TestToken[] tokens = new TestToken[testTerms.length * TERM_FREQ];
 
   protected void setUp() throws IOException {
+    /*
     for (int i = 0; i < testFields.length; i++) {
       fieldInfos.add(testFields[i], true, true, testFieldsStorePos[i], testFieldsStoreOff[i]);
     }
+    */
 
-    for (int i = 0; i < testTerms.length; i++) {
-      positions[i] = new int[3];
-      for (int j = 0; j < positions[i].length; j++) {
-        // poditions are always sorted in increasing order
-        positions[i][j] = (int) (j * 10 + Math.random() * 10);
-      }
-      offsets[i] = new TermVectorOffsetInfo[3];
-      for (int j = 0; j < offsets[i].length; j++) {
-        // ofsets are alway sorted in increasing order
-        offsets[i][j] = new TermVectorOffsetInfo(j * 10, j * 10 + testTerms[i].length());
-      }
-    }
     Arrays.sort(testTerms);
-    //Create 5 documents for testing, they all have the same terms
-    writer = new TermVectorsWriter(dir, seg, fieldInfos);
-    for (int j = 0; j < 5; j++) {
-
-      writer.openDocument();
-
-      for (int k = 0; k < testFields.length; k++) {
-        writer.openField(testFields[k]);
-        for (int i = 0; i < testTerms.length; i++) {
-          writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);
-        }
-        writer.closeField();
+    int tokenUpto = 0;
+    for (int i = 0; i < testTerms.length; i++) {
+      positions[i] = new int[TERM_FREQ];
+      offsets[i] = new TermVectorOffsetInfo[TERM_FREQ];
+      // first position must be 0
+      for (int j = 0; j < TERM_FREQ; j++) {
+        // positions are always sorted in increasing order
+        positions[i][j] = (int) (j * 10 + Math.random() * 10);
+        // offsets are always sorted in increasing order
+        offsets[i][j] = new TermVectorOffsetInfo(j * 10, j * 10 + testTerms[i].length());
+        TestToken token = tokens[tokenUpto++] = new TestToken();
+        token.text = testTerms[i];
+        token.pos = positions[i][j];
+        token.startOffset = offsets[i][j].getStartOffset();
+        token.endOffset = offsets[i][j].getEndOffset();
       }
-      writer.closeDocument();
-
     }
+    Arrays.sort(tokens);
+
+    IndexWriter writer = new IndexWriter(dir, new MyAnalyzer(), true);
+    writer.setUseCompoundFile(false);
+    Document doc = new Document();
+    for(int i=0;i<testFields.length;i++) {
+      final Field.TermVector tv;
+      if (testFieldsStorePos[i] && testFieldsStoreOff[i])
+        tv = Field.TermVector.WITH_POSITIONS_OFFSETS;
+      else if (testFieldsStorePos[i] && !testFieldsStoreOff[i])
+        tv = Field.TermVector.WITH_POSITIONS;
+      else if (!testFieldsStorePos[i] && testFieldsStoreOff[i])
+        tv = Field.TermVector.WITH_OFFSETS;
+      else
+        tv = Field.TermVector.YES;
+      doc.add(new Field(testFields[i], "", Field.Store.NO, Field.Index.TOKENIZED, tv));
+    }
+
+    //Create 5 documents for testing, they all have the same
+    //terms
+    for(int j=0;j<5;j++)
+      writer.addDocument(doc);
+    writer.flush();
+    seg = writer.newestSegment().name;
     writer.close();
+
+    fieldInfos = new FieldInfos(dir, seg + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
+  }
+
+  private class MyTokenStream extends TokenStream {
+    int tokenUpto;
+    public Token next() {
+      if (tokenUpto >= tokens.length)
+        return null;
+      else {
+        final Token t = new Token();
+        final TestToken testToken = tokens[tokenUpto++];
+        t.setTermText(testToken.text);
+        if (tokenUpto > 1)
+          t.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
+        else
+          t.setPositionIncrement(testToken.pos+1);
+        t.setStartOffset(testToken.startOffset);
+        t.setEndOffset(testToken.endOffset);
+        return t;
+      }
+    }
+  }
+
+  private class MyAnalyzer extends Analyzer {
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new MyTokenStream();
+    }
   }
 
   protected void tearDown() {
@@ -86,9 +147,8 @@ public class TestTermVectorsReader extends TestCase {
 
   public void test() {
     //Check to see the files were created properly in setup
-    assertTrue(writer.isDocumentOpen() == false);
-    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
-    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
+    assertTrue(dir.fileExists(seg + "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+    assertTrue(dir.fileExists(seg + "." + IndexFileNames.VECTORS_INDEX_EXTENSION));
   }
 
   public void testReader() throws IOException {
@@ -106,8 +166,6 @@ public class TestTermVectorsReader extends TestCase {
         assertTrue(term.equals(testTerms[i]));
       }
     }
-
-
   }
 
   public void testPositionReader() throws IOException {
