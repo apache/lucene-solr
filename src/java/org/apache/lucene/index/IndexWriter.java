@@ -1472,6 +1472,12 @@ public class IndexWriter {
     // Cannot synchronize on IndexWriter because that causes
     // deadlock
     synchronized(segmentInfos) {
+      // Important to set commitPending so that the
+      // segmentInfos is written on close.  Otherwise we
+      // could close, re-open and re-return the same segment
+      // name that was previously returned which can cause
+      // problems at least with ConcurrentMergeScheduler.
+      commitPending = true;
       return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
     }
   }
@@ -1906,6 +1912,7 @@ public class IndexWriter {
   private synchronized void checkpoint() throws IOException {
     if (autoCommit) {
       segmentInfos.write(directory);
+      commitPending = false;
       if (infoStream != null)
         message("checkpoint: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
     } else {

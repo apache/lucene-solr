@@ -698,6 +698,7 @@ public class TestIndexWriterDelete extends TestCase {
         }
         public void eval(MockRAMDirectory dir)  throws IOException {
           if (!failed) {
+            failed = true;
             throw new IOException("fail in add doc");
           }
         }
