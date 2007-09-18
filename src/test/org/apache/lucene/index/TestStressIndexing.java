@@ -32,82 +32,84 @@ import java.io.File;
 public class TestStressIndexing extends TestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
   private static final Random RANDOM = new Random();
-  private static Searcher SEARCHER;
 
-  private static int RUN_TIME_SEC = 15;
-
-  private static class IndexerThread extends Thread {
-    IndexWriter modifier;
-    int nextID;
-    public int count;
+  private static abstract class TimedThread extends Thread {
     boolean failed;
+    int count;
+    private static int RUN_TIME_SEC = 6;
+    private TimedThread[] allThreads;
 
-    public IndexerThread(IndexWriter modifier) {
-      this.modifier = modifier;
+    abstract public void doWork() throws Throwable;
+
+    TimedThread(TimedThread[] threads) {
+      this.allThreads = threads;
     }
 
     public void run() {
-      long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
+      final long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
+
+      count = 0;
+
       try {
-        while(true) {
-
-          if (System.currentTimeMillis() > stopTime) {
-            break;
-          }
-
-          // Add 10 docs:
-          for(int j=0; j<10; j++) {
-            Document d = new Document();
-            int n = RANDOM.nextInt();
-            d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.UN_TOKENIZED));
-            d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.TOKENIZED));
-            modifier.addDocument(d);
-          }
-
-          // Delete 5 docs:
-          int deleteID = nextID;
-          for(int j=0; j<5; j++) {
-            modifier.deleteDocuments(new Term("id", ""+deleteID));
-            deleteID -= 2;
-          }
-
+        while(System.currentTimeMillis() < stopTime && !anyErrors()) {
+          doWork();
           count++;
         }
-        
-      } catch (Exception e) {
-        System.out.println(e.toString());
-        e.printStackTrace();
+      } catch (Throwable e) {
+        e.printStackTrace(System.out);
         failed = true;
+      }
+    }
+
+    private boolean anyErrors() {
+      for(int i=0;i<allThreads.length;i++)
+        if (allThreads[i] != null && allThreads[i].failed)
+          return true;
+      return false;
+    }
+  }
+
+  private static class IndexerThread extends TimedThread {
+    IndexWriter writer;
+    public int count;
+    int nextID;
+
+    public IndexerThread(IndexWriter writer, TimedThread[] threads) {
+      super(threads);
+      this.writer = writer;
+    }
+
+    public void doWork() throws Exception {
+      // Add 10 docs:
+      for(int j=0; j<10; j++) {
+        Document d = new Document();
+        int n = RANDOM.nextInt();
+        d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.UN_TOKENIZED));
+        d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.TOKENIZED));
+        writer.addDocument(d);
+      }
+
+      // Delete 5 docs:
+      int deleteID = nextID-1;
+      for(int j=0; j<5; j++) {
+        writer.deleteDocuments(new Term("id", ""+deleteID));
+        deleteID -= 2;
       }
     }
   }
 
-  private static class SearcherThread extends Thread {
+  private static class SearcherThread extends TimedThread {
     private Directory directory;
-    public int count;
-    boolean failed;
 
-    public SearcherThread(Directory directory) {
+    public SearcherThread(Directory directory, TimedThread[] threads) {
+      super(threads);
       this.directory = directory;
     }
 
-    public void run() {
-      long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
-      try {
-        while(true) {
-          for (int i=0; i<100; i++) {
-            (new IndexSearcher(directory)).close();
-          }
-          count += 100;
-          if (System.currentTimeMillis() > stopTime) {
-            break;
-          }
-        }
-      } catch (Exception e) {
-        System.out.println(e.toString());
-        e.printStackTrace();
-        failed = true;
-      }
+    public void doWork() throws Throwable {
+      for (int i=0; i<100; i++)
+        (new IndexSearcher(directory)).close();
+      count += 100;
     }
   }
 
@@ -115,22 +117,34 @@ public class TestStressIndexing extends TestCase {
     Run one indexer and 2 searchers against single index as
     stress test.
   */
-  public void runStressTest(Directory directory) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, ANALYZER, true);
+  public void runStressTest(Directory directory, boolean autoCommit, MergeScheduler mergeScheduler) throws Exception {
+    IndexWriter modifier = new IndexWriter(directory, autoCommit, ANALYZER, true);
+
+    modifier.setMaxBufferedDocs(10);
+
+    TimedThread[] threads = new TimedThread[4];
+
+    if (mergeScheduler != null)
+      modifier.setMergeScheduler(mergeScheduler);
 
     // One modifier that writes 10 docs then removes 5, over
     // and over:
-    IndexerThread indexerThread = new IndexerThread(modifier);
+    IndexerThread indexerThread = new IndexerThread(modifier, threads);
+    threads[0] = indexerThread;
     indexerThread.start();
       
-    IndexerThread indexerThread2 = new IndexerThread(modifier);
+    IndexerThread indexerThread2 = new IndexerThread(modifier, threads);
+    threads[2] = indexerThread2;
     indexerThread2.start();
       
-    // Two searchers that constantly just re-instantiate the searcher:
-    SearcherThread searcherThread1 = new SearcherThread(directory);
+    // Two searchers that constantly just re-instantiate the
+    // searcher:
+    SearcherThread searcherThread1 = new SearcherThread(directory, threads);
+    threads[3] = searcherThread1;
     searcherThread1.start();
 
-    SearcherThread searcherThread2 = new SearcherThread(directory);
+    SearcherThread searcherThread2 = new SearcherThread(directory, threads);
+    threads[3] = searcherThread2;
     searcherThread2.start();
 
     indexerThread.join();
@@ -144,6 +158,7 @@ public class TestStressIndexing extends TestCase {
     assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);
     assertTrue("hit unexpected exception in search1", !searcherThread1.failed);
     assertTrue("hit unexpected exception in search2", !searcherThread2.failed);
+
     //System.out.println("    Writer: " + indexerThread.count + " iterations");
     //System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");
     //System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
@@ -155,25 +170,38 @@ public class TestStressIndexing extends TestCase {
   */
   public void testStressIndexAndSearching() throws Exception {
 
-    // First in a RAM directory:
+    // RAMDir
     Directory directory = new MockRAMDirectory();
-    runStressTest(directory);
+    runStressTest(directory, true, null);
     directory.close();
 
-    // Second in an FSDirectory:
+    // FSDir
     String tempDir = System.getProperty("java.io.tmpdir");
     File dirPath = new File(tempDir, "lucene.test.stress");
     directory = FSDirectory.getDirectory(dirPath);
-    runStressTest(directory);
+    runStressTest(directory, true, null);
     directory.close();
-    rmDir(dirPath);
-  }
 
-  private void rmDir(File dir) {
-    File[] files = dir.listFiles();
-    for (int i = 0; i < files.length; i++) {
-      files[i].delete();
-    }
-    dir.delete();
+    // With ConcurrentMergeScheduler, in RAMDir
+    directory = new MockRAMDirectory();
+    runStressTest(directory, true, new ConcurrentMergeScheduler());
+    directory.close();
+
+    // With ConcurrentMergeScheduler, in FSDir
+    directory = FSDirectory.getDirectory(dirPath);
+    runStressTest(directory, true, new ConcurrentMergeScheduler());
+    directory.close();
+
+    // With ConcurrentMergeScheduler and autoCommit=false, in RAMDir
+    directory = new MockRAMDirectory();
+    runStressTest(directory, false, new ConcurrentMergeScheduler());
+    directory.close();
+
+    // With ConcurrentMergeScheduler and autoCommit=false, in FSDir
+    directory = FSDirectory.getDirectory(dirPath);
+    runStressTest(directory, false, new ConcurrentMergeScheduler());
+    directory.close();
+
+    _TestUtil.rmDir(dirPath);
   }
 }

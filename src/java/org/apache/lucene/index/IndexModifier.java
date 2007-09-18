@@ -202,6 +202,10 @@ public class IndexModifier {
         indexReader = null;
       }
       indexWriter = new IndexWriter(directory, analyzer, false);
+      // IndexModifier cannot use ConcurrentMergeScheduler
+      // because it synchronizes on the directory which can
+      // cause deadlock
+      indexWriter.setMergeScheduler(new SerialMergeScheduler());
       indexWriter.setInfoStream(infoStream);
       indexWriter.setUseCompoundFile(useCompoundFile);
       if (maxBufferedDocs != 0)

@@ -168,7 +168,7 @@ public class TestDoc extends TestCase {
       Document doc = FileDocument.Document(file);
       writer.addDocument(doc);
       writer.flush();
-      return writer.segmentInfos.info(writer.segmentInfos.size()-1);
+      return writer.newestSegment();
    }
 
 

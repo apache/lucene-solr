@@ -236,7 +236,7 @@ class DocHelper {
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);
     writer.flush();
-    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    SegmentInfo info = writer.newestSegment();
     writer.close();
     return info;
   }

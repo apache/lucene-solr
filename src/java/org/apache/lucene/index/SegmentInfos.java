@@ -330,6 +330,9 @@ final class SegmentInfos extends Vector {
   public long getGeneration() {
     return generation;
   }
+  public long getLastGeneration() {
+    return lastGeneration;
+  }
 
   /**
    * Current version number from segments file.
@@ -660,5 +663,17 @@ final class SegmentInfos extends Vector {
      * a writer committing.
      */
     protected abstract Object doBody(String segmentFileName) throws CorruptIndexException, IOException;
+  }
+
+  /**
+   * Returns a new SegmentInfos containg the SegmentInfo
+   * instances in the specified range first (inclusive) to
+   * last (exclusive), so total number of segments returned
+   * is last-first.
+   */
+  public SegmentInfos range(int first, int last) {
+    SegmentInfos infos = new SegmentInfos();
+    infos.addAll(super.subList(first, last));
+    return infos;
   }
 }

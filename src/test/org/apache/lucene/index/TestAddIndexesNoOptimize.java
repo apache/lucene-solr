@@ -272,7 +272,6 @@ public class TestAddIndexesNoOptimize extends TestCase {
 
     writer.addIndexesNoOptimize(new Directory[] { aux, aux });
     assertEquals(1020, writer.docCount());
-    assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -373,7 +372,7 @@ public class TestAddIndexesNoOptimize extends TestCase {
 
     writer = newWriter(dir, true);
     writer.setMaxBufferedDocs(1000);
-    // add 1000 documents
+    // add 1000 documents in 1 segment
     addDocs(writer, 1000);
     assertEquals(1000, writer.docCount());
     assertEquals(1, writer.getSegmentCount());

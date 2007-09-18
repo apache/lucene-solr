@@ -62,7 +62,7 @@ public class TestDocumentWriter extends TestCase {
     IndexWriter writer = new IndexWriter(dir, analyzer, true);
     writer.addDocument(testDoc);
     writer.flush();
-    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
     SegmentReader reader = SegmentReader.get(info);
@@ -123,7 +123,7 @@ public class TestDocumentWriter extends TestCase {
 
     writer.addDocument(doc);
     writer.flush();
-    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    SegmentInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = SegmentReader.get(info);
 
@@ -156,7 +156,7 @@ public class TestDocumentWriter extends TestCase {
     
     writer.addDocument(doc);
     writer.flush();
-    SegmentInfo info = writer.segmentInfos.info(writer.segmentInfos.size()-1);
+    SegmentInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = SegmentReader.get(info);
 

@@ -65,6 +65,8 @@ final class SegmentInfo {
   private List files;                             // cached list of files that this segment uses
                                                   // in the Directory
 
+  long sizeInBytes = -1;                          // total byte size of all of our files (computed on demand)
+
   private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
   private String docStoreSegment;                 // name used to derive fields/vectors file we share with
@@ -104,7 +106,7 @@ final class SegmentInfo {
    * Copy everything from src SegmentInfo into our instance.
    */
   void reset(SegmentInfo src) {
-    files = null;
+    clearFiles();
     name = src.name;
     docCount = src.docCount;
     dir = src.dir;
@@ -199,6 +201,19 @@ final class SegmentInfo {
     }
   }
 
+  /** Returns total size in bytes of all of files used by
+   *  this segment. */
+  long sizeInBytes() throws IOException {
+    if (sizeInBytes == -1) {
+      List files = files();
+      final int size = files.size();
+      sizeInBytes = 0;
+      for(int i=0;i<size;i++) 
+        sizeInBytes += dir.fileLength((String) files.get(i));
+    }
+    return sizeInBytes;
+  }
+
   boolean hasDeletions()
     throws IOException {
     // Cases:
@@ -231,12 +246,12 @@ final class SegmentInfo {
     } else {
       delGen++;
     }
-    files = null;
+    clearFiles();
   }
 
   void clearDelGen() {
     delGen = NO;
-    files = null;
+    clearFiles();
   }
 
   public Object clone () {
@@ -345,7 +360,7 @@ final class SegmentInfo {
     } else {
       normGen[fieldIndex]++;
     }
-    files = null;
+    clearFiles();
   }
 
   /**
@@ -392,7 +407,7 @@ final class SegmentInfo {
     } else {
       this.isCompoundFile = NO;
     }
-    files = null;
+    clearFiles();
   }
 
   /**
@@ -419,7 +434,7 @@ final class SegmentInfo {
   
   void setDocStoreIsCompoundFile(boolean v) {
     docStoreIsCompoundFile = v;
-    files = null;
+    clearFiles();
   }
   
   String getDocStoreSegment() {
@@ -428,7 +443,7 @@ final class SegmentInfo {
   
   void setDocStoreOffset(int offset) {
     docStoreOffset = offset;
-    files = null;
+    clearFiles();
   }
   
   /**
@@ -560,5 +575,53 @@ final class SegmentInfo {
       }
     }
     return files;
+  }
+
+  /* Called whenever any change is made that affects which
+   * files this segment has. */
+  private void clearFiles() {
+    files = null;
+    sizeInBytes = -1;
+  }
+
+  /** Used for debugging */
+  public String segString(Directory dir) {
+    String cfs;
+    try {
+      if (getUseCompoundFile())
+        cfs = "c";
+      else
+        cfs = "C";
+    } catch (IOException ioe) {
+      cfs = "?";
+    }
+
+    String docStore;
+
+    if (docStoreOffset != -1)
+      docStore = "->" + docStoreSegment;
+    else
+      docStore = "";
+
+    return name + ":" +
+      cfs +
+      (this.dir == dir ? "" : "x") +
+      docCount + docStore;
+  }
+
+  /** We consider another SegmentInfo instance equal if it
+   *  has the same dir and same name. */
+  public boolean equals(Object obj) {
+    SegmentInfo other;
+    try {
+      other = (SegmentInfo) obj;
+    } catch (ClassCastException cce) {
+      return false;
+    }
+    return other.dir == dir && other.name.equals(name);
+  }
+
+  public int hashCode() {
+    return dir.hashCode() + name.hashCode();
   }
 }

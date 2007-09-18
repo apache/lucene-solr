@@ -195,7 +195,7 @@ public class MockRAMDirectory extends RAMDirectory {
    * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
    */
 
-  final long getRecomputedActualSizeInBytes() {
+  final synchronized long getRecomputedActualSizeInBytes() {
     long size = 0;
     Iterator it = fileMap.values().iterator();
     while (it.hasNext())

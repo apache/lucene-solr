@@ -19,6 +19,9 @@ package org.apache.lucene.util;
 
 import java.io.File;
 import java.io.IOException;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 
 public class _TestUtil {
 
@@ -36,5 +39,14 @@ public class _TestUtil {
 
   public static void rmDir(String dir) throws IOException {
     rmDir(new File(dir));
+  }
+
+  public static void syncConcurrentMerges(IndexWriter writer) {
+    syncConcurrentMerges(writer.getMergeScheduler());
+  }
+
+  public static void syncConcurrentMerges(MergeScheduler ms) {
+    if (ms instanceof ConcurrentMergeScheduler)
+      ((ConcurrentMergeScheduler) ms).sync();
   }
 }

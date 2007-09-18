@@ -39,6 +39,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.LockFactory;
@@ -134,7 +135,6 @@ public class TestIndexWriter extends TestCase
     */
     public void testAddIndexOnDiskFull() throws IOException
     {
-
       int START_COUNT = 57;
       int NUM_DIR = 50;
       int END_COUNT = START_COUNT + NUM_DIR*25;
@@ -200,6 +200,9 @@ public class TestIndexWriter extends TestCase
 
       for(int iter=0;iter<6;iter++) {
 
+        if (debug)
+          System.out.println("TEST: iter=" + iter);
+
         // Start with 100 bytes more than we are currently using:
         long diskFree = diskUsage+100;
 
@@ -229,7 +232,16 @@ public class TestIndexWriter extends TestCase
           writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
           IOException err = null;
 
+          MergeScheduler ms = writer.getMergeScheduler();
           for(int x=0;x<2;x++) {
+            if (ms instanceof ConcurrentMergeScheduler)
+              // This test intentionally produces exceptions
+              // in the threads that CMS launches; we don't
+              // want to pollute test output with these.
+              if (0 == x)
+                ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+              else
+                ((ConcurrentMergeScheduler) ms).clearSuppressExceptions();
 
             // Two loops: first time, limit disk space &
             // throw random IOExceptions; second time, no
@@ -301,7 +313,7 @@ public class TestIndexWriter extends TestCase
               err = e;
               if (debug) {
                 System.out.println("  hit IOException: " + e);
-                // e.printStackTrace(System.out);
+                e.printStackTrace(System.out);
               }
 
               if (1 == x) {
@@ -309,6 +321,10 @@ public class TestIndexWriter extends TestCase
                 fail(methodName + " hit IOException after disk space was freed up");
               }
             }
+
+            // Make sure all threads from
+            // ConcurrentMergeScheduler are done
+            _TestUtil.syncConcurrentMerges(writer);
 
             if (autoCommit) {
 
@@ -411,6 +427,12 @@ public class TestIndexWriter extends TestCase
           }
 
           writer.close();
+
+          // Wait for all BG threads to finish else
+          // dir.close() will throw IOException because
+          // there are still open files
+          _TestUtil.syncConcurrentMerges(ms);
+
           dir.close();
 
           // Try again with 2000 more bytes of free space:
@@ -427,21 +449,38 @@ public class TestIndexWriter extends TestCase
      */
     public void testAddDocumentOnDiskFull() throws IOException {
 
+      boolean debug = false;
+
       for(int pass=0;pass<3;pass++) {
+        if (debug)
+          System.out.println("TEST: pass=" + pass);
         boolean autoCommit = pass == 0;
         boolean doAbort = pass == 2;
         long diskFree = 200;
         while(true) {
+          if (debug)
+            System.out.println("TEST: cycle: diskFree=" + diskFree);
           MockRAMDirectory dir = new MockRAMDirectory();
           dir.setMaxSizeInBytes(diskFree);
           IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+
+          MergeScheduler ms = writer.getMergeScheduler();
+          if (ms instanceof ConcurrentMergeScheduler)
+            // This test intentionally produces exceptions
+            // in the threads that CMS launches; we don't
+            // want to pollute test output with these.
+            ((ConcurrentMergeScheduler) ms).setSuppressExceptions();
+
           boolean hitError = false;
           try {
             for(int i=0;i<200;i++) {
               addDoc(writer);
             }
           } catch (IOException e) {
-            // e.printStackTrace();
+            if (debug) {
+              System.out.println("TEST: exception on addDoc");
+              e.printStackTrace(System.out);
+            }
             hitError = true;
           }
 
@@ -452,11 +491,16 @@ public class TestIndexWriter extends TestCase
               try {
                 writer.close();
               } catch (IOException e) {
-                // e.printStackTrace();
+                if (debug) {
+                  System.out.println("TEST: exception on close");
+                  e.printStackTrace(System.out);
+                }
                 dir.setMaxSizeInBytes(0);
                 writer.close();
               }
             }
+
+            _TestUtil.syncConcurrentMerges(ms);
 
             assertNoUnreferencedFiles(dir, "after disk full during addDocument with autoCommit=" + autoCommit);
 
@@ -468,15 +512,15 @@ public class TestIndexWriter extends TestCase
             // Now try again w/ more space:
             diskFree += 500;
           } else {
+            _TestUtil.syncConcurrentMerges(writer);
             dir.close();
             break;
           }
         }
       }
-    
     }                                               
 
-    public void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
+    public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
       String[] startFiles = dir.list();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
@@ -544,7 +588,7 @@ public class TestIndexWriter extends TestCase
       dir.close();
     }
 
-    private String arrayToString(String[] l) {
+    static String arrayToString(String[] l) {
       String s = "";
       for(int i=0;i<l.length;i++) {
         if (i > 0) {
@@ -1107,12 +1151,14 @@ public class TestIndexWriter extends TestCase
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       writer.setMaxBufferedDocs(10);
+
       int lastNumFile = dir.list().length;
       long lastGen = -1;
       for(int j=1;j<52;j++) {
         Document doc = new Document();
         doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
         writer.addDocument(doc);
+        _TestUtil.syncConcurrentMerges(writer);
         long gen = SegmentInfos.generationFromSegmentsFileName(SegmentInfos.getCurrentSegmentFileName(dir.list()));
         if (j == 1)
           lastGen = gen;
@@ -1153,7 +1199,6 @@ public class TestIndexWriter extends TestCase
     public void testDiverseDocs() throws IOException {
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-      // writer.setInfoStream(System.out);
       long t0 = System.currentTimeMillis();
       writer.setRAMBufferSizeMB(0.5);
       Random rand = new Random(31415);
@@ -1346,6 +1391,48 @@ public class TestIndexWriter extends TestCase
       writer.close();
       IndexReader reader = IndexReader.open(dir);
       assertEquals(2, reader.numDocs());
+    }
+
+    // Test calling optimize(false) whereby optimize is kicked
+    // off but we don't wait for it to finish (but
+    // writer.close()) does wait
+    public void testBackgroundOptimize() throws IOException {
+
+      Directory dir = new MockRAMDirectory();
+      for(int pass=0;pass<2;pass++) {
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);      
+        writer.setMergeScheduler(new ConcurrentMergeScheduler());
+        Document doc = new Document();
+        doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        writer.setMaxBufferedDocs(2);
+        writer.setMergeFactor(101);
+        for(int i=0;i<200;i++)
+          writer.addDocument(doc);
+        writer.optimize(false);
+
+        if (0 == pass) {
+          writer.close();
+          IndexReader reader = IndexReader.open(dir);
+          assertTrue(reader.isOptimized());
+          reader.close();
+        } else {
+          // Get another segment to flush so we can verify it is
+          // NOT included in the optimization
+          writer.addDocument(doc);
+          writer.addDocument(doc);
+          writer.close();
+
+          IndexReader reader = IndexReader.open(dir);
+          assertTrue(!reader.isOptimized());
+          reader.close();
+
+          SegmentInfos infos = new SegmentInfos();
+          infos.read(dir);
+          assertEquals(2, infos.size());
+        }
+      }      
+
+      dir.close();
     }
 
     private void rmDir(File dir) {

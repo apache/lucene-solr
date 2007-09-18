@@ -105,7 +105,7 @@ final class IndexFileDeleter {
   }
   
   private void message(String message) {
-    infoStream.println(this + " " + Thread.currentThread().getName() + ": " + message);
+    infoStream.println("Deleter [" + Thread.currentThread().getName() + "]: " + message);
   }
 
   /**
@@ -275,21 +275,55 @@ final class IndexFileDeleter {
    * Writer calls this when it has hit an error and had to
    * roll back, to tell us that there may now be
    * unreferenced files in the filesystem.  So we re-list
-   * the filesystem and delete such files:
+   * the filesystem and delete such files.  If segmentName
+   * is non-null, we will only delete files corresponding to
+   * that segment.
    */
-  public void refresh() throws IOException {
+  public void refresh(String segmentName) throws IOException {
     String[] files = directory.list();
     if (files == null)
       throw new IOException("cannot read directory " + directory + ": list() returned null");
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+    String segmentPrefix1;
+    String segmentPrefix2;
+    if (segmentName != null) {
+      segmentPrefix1 = segmentName + ".";
+      segmentPrefix2 = segmentName + "_";
+    } else {
+      segmentPrefix1 = null;
+      segmentPrefix2 = null;
+    }
+    
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
-      if (filter.accept(null, fileName) && !refCounts.containsKey(fileName) && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+      if (filter.accept(null, fileName) &&
+          (segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
+          !refCounts.containsKey(fileName) &&
+          !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
         // Unreferenced file, so remove it
         if (infoStream != null) {
-          message("refresh: removing newly created unreferenced file \"" + fileName + "\"");
+          message("refresh [prefix=" + segmentName + "]: removing newly created unreferenced file \"" + fileName + "\"");
         }
         deleteFile(fileName);
+      }
+    }
+  }
+
+  public void refresh() throws IOException {
+    refresh(null);
+  }
+
+  public void close() throws IOException {
+    deletePendingFiles();
+  }
+
+  private void deletePendingFiles() throws IOException {
+    if (deletable != null) {
+      List oldDeletable = deletable;
+      deletable = null;
+      int size = oldDeletable.size();
+      for(int i=0;i<size;i++) {
+        deleteFile((String) oldDeletable.get(i));
       }
     }
   }
@@ -322,19 +356,17 @@ final class IndexFileDeleter {
 
     // Try again now to delete any previously un-deletable
     // files (because they were in use, on Windows):
-    if (deletable != null) {
-      List oldDeletable = deletable;
-      deletable = null;
-      int size = oldDeletable.size();
-      for(int i=0;i<size;i++) {
-        deleteFile((String) oldDeletable.get(i));
-      }
-    }
+    deletePendingFiles();
 
     // Incref the files:
     incRef(segmentInfos, isCommit);
-    if (docWriter != null)
-      incRef(docWriter.files());
+    final List docWriterFiles;
+    if (docWriter != null) {
+      docWriterFiles = docWriter.files();
+      if (docWriterFiles != null)
+        incRef(docWriterFiles);
+    } else
+      docWriterFiles = null;
 
     if (isCommit) {
       // Append to our commits list:
@@ -364,9 +396,9 @@ final class IndexFileDeleter {
           lastFiles.add(segmentInfo.files());
         }
       }
-      if (docWriter != null)
-        lastFiles.add(docWriter.files());
     }
+    if (docWriterFiles != null)
+      lastFiles.add(docWriterFiles);
   }
 
   void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
@@ -385,7 +417,7 @@ final class IndexFileDeleter {
     }
   }
 
-  private void incRef(List files) throws IOException {
+  void incRef(List files) throws IOException {
     int size = files.size();
     for(int i=0;i<size;i++) {
       String fileName = (String) files.get(i);
@@ -397,7 +429,7 @@ final class IndexFileDeleter {
     }
   }
 
-  private void decRef(List files) throws IOException {
+  void decRef(List files) throws IOException {
     int size = files.size();
     for(int i=0;i<size;i++) {
       decRef((String) files.get(i));
@@ -438,7 +470,22 @@ final class IndexFileDeleter {
     return rc;
   }
 
-  private void deleteFile(String fileName)
+  void deleteFiles(List files) throws IOException {
+    final int size = files.size();
+    for(int i=0;i<size;i++)
+      deleteFile((String) files.get(i));
+  }
+
+  /** Delets the specified files, but only if they are new
+   *  (have not yet been incref'd). */
+  void deleteNewFiles(List files) throws IOException {
+    final int size = files.size();
+    for(int i=0;i<size;i++)
+      if (!refCounts.containsKey(files.get(i)))
+        deleteFile((String) files.get(i));
+  }
+
+  void deleteFile(String fileName)
        throws IOException {
     try {
       if (infoStream != null) {
@@ -490,11 +537,12 @@ final class IndexFileDeleter {
 
     int count;
 
-    final private int IncRef() {
+    final public int IncRef() {
       return ++count;
     }
 
-    final private int DecRef() {
+    final public int DecRef() {
+      assert count > 0;
       return --count;
     }
   }

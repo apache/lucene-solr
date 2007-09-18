@@ -54,7 +54,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
 
   /**
    * Never ignores positions.  This mapper doesn't make much sense unless there are positions
-   * @return
+   * @return false
    */
   public boolean isIgnoringPositions() {
     return false;

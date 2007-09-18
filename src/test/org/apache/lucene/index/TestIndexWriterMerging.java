@@ -16,7 +16,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,8 +37,8 @@ public class TestIndexWriterMerging extends TestCase
 
     int num=100;
 
-    Directory indexA = new RAMDirectory();
-    Directory indexB = new RAMDirectory();
+    Directory indexA = new MockRAMDirectory();
+    Directory indexB = new MockRAMDirectory();
 
     fillIndex(indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
@@ -54,7 +54,7 @@ public class TestIndexWriterMerging extends TestCase
       fail("Index b is invalid");
     }
 
-    Directory merged = new RAMDirectory();
+    Directory merged = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(merged, new StandardAnalyzer(), true);
     writer.setMergeFactor(2);
@@ -85,6 +85,7 @@ public class TestIndexWriterMerging extends TestCase
         System.out.println("Document " + (i + startAt) + " is returning document " + temp.getField("count").stringValue());
       }
     }
+    reader.close();
     return fail;
   }
 

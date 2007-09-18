@@ -55,7 +55,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
     writeBytes(singleByte, 0, 1);
   }
   
-    public void writeBytes(byte[] b, int offset, int len) throws IOException {
+  public void writeBytes(byte[] b, int offset, int len) throws IOException {
     long freeSpace = dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 

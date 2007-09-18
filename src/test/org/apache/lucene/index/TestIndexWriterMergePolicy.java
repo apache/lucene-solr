@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util._TestUtil;
 
 import junit.framework.TestCase;
 
@@ -73,13 +74,19 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
+    MergePolicy mp = writer.getMergePolicy();
+    if (mp instanceof LogDocMergePolicy)
+      ((LogDocMergePolicy) mp).setMinMergeDocs(100);
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
       writer.close();
 
       writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+      mp = writer.getMergePolicy();
       writer.setMaxBufferedDocs(10);
+      if (mp instanceof LogDocMergePolicy)
+        ((LogDocMergePolicy) mp).setMinMergeDocs(100);
       writer.setMergeFactor(10);
       checkInvariants(writer);
     }
@@ -191,6 +198,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
   }
 
   private void checkInvariants(IndexWriter writer) throws IOException {
+    _TestUtil.syncConcurrentMerges(writer);
     int maxBufferedDocs = writer.getMaxBufferedDocs();
     int mergeFactor = writer.getMergeFactor();
     int maxMergeDocs = writer.getMaxMergeDocs();

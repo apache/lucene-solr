@@ -113,6 +113,7 @@ final class DocumentsWriter {
 
   private int nextDocID;                          // Next docID to be added
   private int numDocsInRAM;                       // # docs buffered in RAM
+  private int numDocsInStore;                     // # docs written to doc stores
   private int nextWriteDocID;                     // Next docID to be written
 
   // Max # ThreadState instances; if there are more threads
@@ -238,6 +239,7 @@ final class DocumentsWriter {
       String s = docStoreSegment;
       docStoreSegment = null;
       docStoreOffset = 0;
+      numDocsInStore = 0;
       return s;
     } else {
       return null;
@@ -245,6 +247,11 @@ final class DocumentsWriter {
   }
 
   private List files = null;                      // Cached list of files we've created
+  private List abortedFiles = null;               // List of files that were written before last abort()
+
+  List abortedFiles() {
+    return abortedFiles;
+  }
 
   /* Returns list of files in use by this instance,
    * including any flushed segments. */
@@ -278,6 +285,9 @@ final class DocumentsWriter {
    *  docs added since last flush. */
   synchronized void abort() throws IOException {
 
+    if (infoStream != null)
+      infoStream.println("docWriter: now abort");
+
     // Forcefully remove waiting ThreadStates from line
     for(int i=0;i<numWaiting;i++)
       waitingThreadStates[i].isIdle = true;
@@ -289,6 +299,8 @@ final class DocumentsWriter {
     numBufferedDeleteTerms = 0;
 
     try {
+
+      abortedFiles = files();
 
       // Discard pending norms:
       final int numField = fieldInfos.size();
@@ -332,6 +344,7 @@ final class DocumentsWriter {
       }
 
       files = null;
+
     } finally {
       resumeAllThreads();
     }
@@ -398,7 +411,7 @@ final class DocumentsWriter {
 
     newFiles = new ArrayList();
 
-    docStoreOffset += numDocsInRAM;
+    docStoreOffset = numDocsInStore;
 
     if (closeDocStore) {
       assert docStoreSegment != null;
@@ -2119,6 +2132,7 @@ final class DocumentsWriter {
       segment = writer.newSegmentName();
 
     numDocsInRAM++;
+    numDocsInStore++;
 
     // We must at this point commit to flushing to ensure we
     // always get N docs when we flush by doc count, even if

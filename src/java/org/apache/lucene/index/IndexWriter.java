@@ -25,13 +25,19 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.BitVector;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.Map.Entry;
 
 /**
@@ -71,7 +77,10 @@ import java.util.Map.Entry;
   a large RAM buffer.  You can also force a flush by calling
   {@link #flush}.  When a flush occurs, both pending deletes
   and added documents are flushed to the index.  A flush may
-  also trigger one or more segment merges.</p>
+  also trigger one or more segment merges which by default
+  run (blocking) with the current thread (see <a
+  href="#mergePolicy">below</a> for changing the {@link
+  MergeScheduler}).</p>
 
   <a name="autoCommit"></a>
   <p>The optional <code>autoCommit</code> argument to the
@@ -135,7 +144,20 @@ import java.util.Map.Entry;
   filesystems like NFS that do not support "delete on last
   close" semantics, which Lucene's "point in time" search
   normally relies on. </p>
-  */
+
+  <a name="mergePolicy"></a> <p>Expert:
+  <code>IndexWriter</code> allows you to separately change
+  the {@link MergePolicy} and the {@link MergeScheduler}.
+  The {@link MergePolicy} is invoked whenever there are
+  changes to the segments in the index.  Its role is to
+  select which merges to do, if any, and return a {@link
+  MergePolicy.MergeSpecification} describing the merges.  It
+  also selects merges to do for optimize().  (The default is
+  {@link LogDocMergePolicy}.  Then, the {@link
+  MergeScheduler} is invoked with the requested merges and
+  it decides when and how to run the merges.  The default is
+  {@link SerialMergeScheduler}. </p>
+*/
 
 /*
  * Clarification: Check Points (and commits)
@@ -177,9 +199,10 @@ public class IndexWriter {
   public static final String WRITE_LOCK_NAME = "write.lock";
 
   /**
-   * Default value is 10. Change using {@link #setMergeFactor(int)}.
+   * @deprecated
+   * @see LogMergePolicy#DEFAULT_MERGE_FACTOR
    */
-  public final static int DEFAULT_MERGE_FACTOR = 10;
+  public final static int DEFAULT_MERGE_FACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
 
   /**
    * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
@@ -205,9 +228,10 @@ public class IndexWriter {
   public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = 1000;
 
   /**
-   * Default value is {@link Integer#MAX_VALUE}. Change using {@link #setMaxMergeDocs(int)}.
+   * @deprecated
+   * @see LogDocMergePolicy#DEFAULT_MAX_MERGE_DOCS
    */
-  public final static int DEFAULT_MAX_MERGE_DOCS = Integer.MAX_VALUE;
+  public final static int DEFAULT_MAX_MERGE_DOCS = LogDocMergePolicy.DEFAULT_MAX_MERGE_DOCS;
 
   /**
    * Default value is 10,000. Change using {@link #setMaxFieldLength(int)}.
@@ -239,22 +263,30 @@ public class IndexWriter {
   private boolean localAutoCommit;                // saved autoCommit during local transaction
   private boolean autoCommit = true;              // false if we should commit only on close
 
-  SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
+
+  private Set segmentsToOptimize = new HashSet();           // used by optimize to note those needing optimization
 
   private Lock writeLock;
 
   private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
 
-  /** Use compound file setting. Defaults to true, minimizing the number of
-   * files used.  Setting this to false may improve indexing performance, but
-   * may also cause file handle problems.
-   */
-  private boolean useCompoundFile = true;
-
   private boolean closeDir;
   private boolean closed;
+  private boolean closing;
+
+  // Holds all SegmentInfo instances currently involved in
+  // merges
+  private HashSet mergingSegments = new HashSet();
+
+  private MergePolicy mergePolicy = new LogDocMergePolicy();
+  private MergeScheduler mergeScheduler = new SerialMergeScheduler();
+  private LinkedList pendingMerges = new LinkedList();
+  private Set runningMerges = new HashSet();
+  private List mergeExceptions = new ArrayList();
+  private long mergeGen;
 
   /**
    * Used internally to throw an {@link
@@ -268,23 +300,57 @@ public class IndexWriter {
     }
   }
 
-  /** Get the current setting of whether to use the compound file format.
-   *  Note that this just returns the value you set with setUseCompoundFile(boolean)
-   *  or the default. You cannot use this to query the status of an existing index.
+  private void message(String message) {
+    infoStream.println("IW [" + Thread.currentThread().getName() + "]: " + message);
+  }
+
+  /**
+   * Casts current mergePolicy to LogMergePolicy, and throws
+   * an exception if the mergePolicy is not a LogMergePolicy.
+   */
+  private LogMergePolicy getLogMergePolicy() {
+    if (mergePolicy instanceof LogMergePolicy)
+      return (LogMergePolicy) mergePolicy;
+    else
+      throw new IllegalArgumentException("this method can only be called when the merge policy is the default LogMergePolicy");
+  }
+
+  private LogDocMergePolicy getLogDocMergePolicy() {
+    if (mergePolicy instanceof LogDocMergePolicy)
+      return (LogDocMergePolicy) mergePolicy;
+    else
+      throw new IllegalArgumentException("this method can only be called when the merge policy is LogDocMergePolicy");
+  }
+
+  /** <p>Get the current setting of whether newly flushed
+   *  segments will use the compound file format.  Note that
+   *  this just returns the value previously set with
+   *  setUseCompoundFile(boolean), or the default value
+   *  (true).  You cannot use this to query the status of
+   *  previously flushed segments.</p>
+   *
+   *  <p>Note that this method is a convenience method: it
+   *  just calls mergePolicy.getUseCompoundFile as long as
+   *  mergePolicy is an instance of {@link LogMergePolicy}.
+   *  Otherwise an IllegalArgumentException is thrown.</p>
+   *
    *  @see #setUseCompoundFile(boolean)
    */
   public boolean getUseCompoundFile() {
-    ensureOpen();
-    return useCompoundFile;
+    return getLogMergePolicy().getUseCompoundFile();
   }
 
-  /** Setting to turn on usage of a compound file. When on, multiple files
-   *  for each segment are merged into a single file once the segment creation
-   *  is finished. This is done regardless of what directory is in use.
+  /** <p>Setting to turn on usage of a compound file. When on,
+   *  multiple files for each segment are merged into a
+   *  single file when a new segment is flushed.</p>
+   *
+   *  <p>Note that this method is a convenience method: it
+   *  just calls mergePolicy.setUseCompoundFile as long as
+   *  mergePolicy is an instance of {@link LogMergePolicy}.
+   *  Otherwise an IllegalArgumentException is thrown.</p>
    */
   public void setUseCompoundFile(boolean value) {
-    ensureOpen();
-    useCompoundFile = value;
+    getLogMergePolicy().setUseCompoundFile(value);
   }
 
   /** Expert: Set the Similarity implementation used by this IndexWriter.
@@ -635,11 +701,61 @@ public class IndexWriter {
                                      deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                      segmentInfos, infoStream, docWriter);
 
+      pushMaxBufferedDocs();
+
     } catch (IOException e) {
       this.writeLock.release();
       this.writeLock = null;
       throw e;
     }
+  }
+
+  /**
+   * Expert: set the merge policy used by this writer.
+   */
+  public void setMergePolicy(MergePolicy mp) {
+    ensureOpen();
+    if (mp == null)
+      throw new NullPointerException("MergePolicy must be non-null");
+
+    if (mergePolicy != mp)
+      mergePolicy.close();
+    mergePolicy = mp;
+    pushMaxBufferedDocs();
+  }
+
+  /**
+   * Expert: returns the current MergePolicy in use by this writer.
+   * @see #setMergePolicy
+   */
+  public MergePolicy getMergePolicy() {
+    ensureOpen();
+    return mergePolicy;
+  }
+
+  /**
+   * Expert: set the merge scheduler used by this writer.
+   */
+  public void setMergeScheduler(MergeScheduler mergeScheduler) throws CorruptIndexException, IOException {
+    ensureOpen();
+    if (mergeScheduler == null)
+      throw new NullPointerException("MergeScheduler must be non-null");
+
+    if (this.mergeScheduler != mergeScheduler) {
+      finishMerges(true);
+      this.mergeScheduler.close();
+    }
+    this.mergeScheduler = mergeScheduler;
+  }
+
+  /**
+   * Expert: returns the current MergePolicy in use by this
+   * writer.
+   * @see #setMergePolicy
+   */
+  public MergeScheduler getMergeScheduler() {
+    ensureOpen();
+    return mergeScheduler;
   }
 
   /** Determines the largest number of documents ever merged by addDocument().
@@ -648,20 +764,29 @@ public class IndexWriter {
    * Larger values are best for batched indexing and speedier searches.
    *
    * <p>The default value is {@link Integer#MAX_VALUE}.
+   *
+   * <p>Note that this method is a convenience method: it
+   * just calls mergePolicy.setMaxMergeDocs as long as
+   * mergePolicy is an instance of {@link LogMergePolicy}.
+   * Otherwise an IllegalArgumentException is thrown.</p>
    */
   public void setMaxMergeDocs(int maxMergeDocs) {
-    ensureOpen();
-    this.maxMergeDocs = maxMergeDocs;
+    getLogDocMergePolicy().setMaxMergeDocs(maxMergeDocs);
   }
 
-  /**
+   /**
    * Returns the largest number of documents allowed in a
    * single segment.
+   *
+   * <p>Note that this method is a convenience method: it
+   * just calls mergePolicy.getMaxMergeDocs as long as
+   * mergePolicy is an instance of {@link LogMergePolicy}.
+   * Otherwise an IllegalArgumentException is thrown.</p>
+   *
    * @see #setMaxMergeDocs
    */
   public int getMaxMergeDocs() {
-    ensureOpen();
-    return maxMergeDocs;
+    return getLogDocMergePolicy().getMaxMergeDocs();
   }
 
   /**
@@ -713,6 +838,27 @@ public class IndexWriter {
     if (maxBufferedDocs < 2)
       throw new IllegalArgumentException("maxBufferedDocs must at least be 2");
     docWriter.setMaxBufferedDocs(maxBufferedDocs);
+    pushMaxBufferedDocs();
+  }
+
+  /**
+   * If we are flushing by doc count (not by RAM usage), and
+   * using LogDocMergePolicy then push maxBufferedDocs down
+   * as its minMergeDocs, to keep backwards compatibility.
+   */
+  private void pushMaxBufferedDocs() {
+    if (docWriter.getRAMBufferSizeMB() == 0.0) {
+      final MergePolicy mp = mergePolicy;
+      if (mp instanceof LogDocMergePolicy) {
+        LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
+        final int maxBufferedDocs = docWriter.getMaxBufferedDocs();
+        if (lmp.getMinMergeDocs() != maxBufferedDocs) {
+          if (infoStream != null)
+            message("now push maxBufferedDocs " + maxBufferedDocs + " to LogDocMergePolicy");
+          lmp.setMinMergeDocs(maxBufferedDocs);
+        }
+      }
+    }
   }
 
   /**
@@ -784,24 +930,31 @@ public class IndexWriter {
    * for batch index creation, and smaller values (< 10) for indices that are
    * interactively maintained.
    *
+   * <p>Note that this method is a convenience method: it
+   * just calls mergePolicy.setMergeFactor as long as
+   * mergePolicy is an instance of {@link LogMergePolicy}.
+   * Otherwise an IllegalArgumentException is thrown.</p>
+   *
    * <p>This must never be less than 2.  The default value is 10.
    */
   public void setMergeFactor(int mergeFactor) {
-    ensureOpen();
-    if (mergeFactor < 2)
-      throw new IllegalArgumentException("mergeFactor cannot be less than 2");
-    this.mergeFactor = mergeFactor;
+    getLogMergePolicy().setMergeFactor(mergeFactor);
   }
 
   /**
-   * Returns the number of segments that are merged at once
-   * and also controls the total number of segments allowed
-   * to accumulate in the index.
+   * <p>Returns the number of segments that are merged at
+   * once and also controls the total number of segments
+   * allowed to accumulate in the index.</p>
+   *
+   * <p>Note that this method is a convenience method: it
+   * just calls mergePolicy.getMergeFactor as long as
+   * mergePolicy is an instance of {@link LogMergePolicy}.
+   * Otherwise an IllegalArgumentException is thrown.</p>
+   *
    * @see #setMergeFactor
    */
   public int getMergeFactor() {
-    ensureOpen();
-    return mergeFactor;
+    return getLogMergePolicy().getMergeFactor();
   }
 
   /** If non-null, this will be the default infoStream used
@@ -910,15 +1063,75 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public synchronized void close() throws CorruptIndexException, IOException {
-    if (!closed) {
+  public void close() throws CorruptIndexException, IOException {
+    close(true);
+  }
+
+  /**
+   * Closes the index with or without waiting for currently
+   * running merges to finish.  This is only meaningful when
+   * using a MergeScheduler that runs merges in background
+   * threads.
+   * @param waitForMerges if true, this call will block
+   * until all merges complete; else, it will abort all
+   * running merges and return right away
+   */
+  public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
+    boolean doClose;
+    synchronized(this) {
+      // Ensure that only one thread actually gets to do the closing:
+      if (!closing) {
+        doClose = true;
+        closing = true;
+      } else
+        doClose = false;
+    }
+    if (doClose)
+      closeInternal(waitForMerges);
+    else
+      // Another thread beat us to it (is actually doing the
+      // close), so we will block until that other thread
+      // has finished closing
+      waitForClose();
+  }
+
+  synchronized private void waitForClose() {
+    while(!closed && closing) {
+      try {
+        wait();
+      } catch (InterruptedException ie) {
+      }
+    }
+  }
+
+  private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
+    try {
+
       flush(true, true);
 
+      mergePolicy.close();
+
+      finishMerges(waitForMerges);
+
+      mergeScheduler.close();
+
       if (commitPending) {
-        segmentInfos.write(directory);         // now commit changes
+        boolean success = false;
+        try {
+          segmentInfos.write(directory);         // now commit changes
+          success = true;
+        } finally {
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception committing segments file during close");
+            deletePartialSegmentsFile();
+          }
+        }
         if (infoStream != null)
-          infoStream.println("close: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
-        deleter.checkpoint(segmentInfos, true);
+          message("close: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
+        synchronized(this) {
+          deleter.checkpoint(segmentInfos, true);
+        }
         commitPending = false;
         rollbackSegmentInfos = null;
       }
@@ -930,16 +1143,30 @@ public class IndexWriter {
       closed = true;
       docWriter = null;
 
-      if(closeDir)
+      synchronized(this) {
+        deleter.close();
+      }
+      
+      if (closeDir)
         directory.close();
+    } finally {
+      synchronized(this) {
+        if (!closed)
+          closing = false;
+        notifyAll();
+      }
     }
   }
 
   /** Tells the docWriter to close its currently open shared
-   *  doc stores (stored fields & vectors files). */
-  private void flushDocStores() throws IOException {
+   *  doc stores (stored fields & vectors files).
+   *  Return value specifices whether new doc store files are compound or not.
+   */
+  private synchronized boolean flushDocStores() throws IOException {
 
     List files = docWriter.files();
+
+    boolean useCompoundDocStore = false;
 
     if (files.size() > 0) {
       String docStoreSegment;
@@ -949,20 +1176,25 @@ public class IndexWriter {
         docStoreSegment = docWriter.closeDocStore();
         success = true;
       } finally {
-        if (!success)
+        if (!success) {
+          if (infoStream != null)
+            message("hit exception closing doc store segment");
           docWriter.abort();
+        }
       }
 
-      if (useCompoundFile && docStoreSegment != null) {
+      useCompoundDocStore = mergePolicy.useCompoundDocStore(segmentInfos);
+      
+      if (useCompoundDocStore && docStoreSegment != null) {
         // Now build compound doc store file
-        checkpoint();
 
         success = false;
 
         final int numSegments = segmentInfos.size();
+        final String compoundFileName = docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
 
         try {
-          CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
+          CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
           final int size = files.size();
           for(int i=0;i<size;i++)
             cfsWriter.addFile((String) files.get(i));
@@ -980,6 +1212,10 @@ public class IndexWriter {
           success = true;
         } finally {
           if (!success) {
+
+            if (infoStream != null)
+              message("hit exception building compound file doc store for segment " + docStoreSegment);
+            
             // Rollback to no compound file
             for(int i=0;i<numSegments;i++) {
               SegmentInfo si = segmentInfos.info(i);
@@ -987,13 +1223,16 @@ public class IndexWriter {
                   si.getDocStoreSegment().equals(docStoreSegment))
                 si.setDocStoreIsCompoundFile(false);
             }
-            deleter.refresh();
+            deleter.deleteFile(compoundFileName);
+            deletePartialSegmentsFile();
           }
         }
 
         deleter.checkpoint(segmentInfos, false);
       }
     }
+
+    return useCompoundDocStore;
   }
 
   /** Release the write lock, if needed. */
@@ -1067,17 +1306,13 @@ public class IndexWriter {
    * free temporary space in the Directory to do the
    * merging.</p>
    *
-   * <p>The amount of free space required when a merge is
-   * triggered is up to 1X the size of all segments being
-   * merged, when no readers/searchers are open against the
-   * index, and up to 2X the size of all segments being
-   * merged when readers/searchers are open against the
-   * index (see {@link #optimize()} for details).  Most
-   * merges are small (merging the smallest segments
-   * together), but whenever a full merge occurs (all
-   * segments in the index, which is the worst case for
-   * temporary space usage) then the maximum free disk space
-   * required is the same as {@link #optimize}.</p>
+   * <p>The amount of free space required when a merge is triggered is
+   * up to 1X the size of all segments being merged, when no
+   * readers/searchers are open against the index, and up to 2X the
+   * size of all segments being merged when readers/searchers are open
+   * against the index (see {@link #optimize()} for details). The
+   * sequence of primitive merge operations performed is governed by
+   * the merge policy.
    *
    * <p>Note that each term in the document can be no longer
    * than 16383 characters, otherwise an
@@ -1105,14 +1340,27 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
+    boolean doFlush = false;
     boolean success = false;
     try {
-      success = docWriter.addDocument(doc, analyzer);
-    } catch (IOException ioe) {
-      deleter.refresh();
-      throw ioe;
+      doFlush = docWriter.addDocument(doc, analyzer);
+      success = true;
+    } finally {
+      if (!success) {
+
+        if (infoStream != null)
+          message("hit exception adding document");
+
+        synchronized (this) {
+          // If docWriter has some aborted files that were
+          // never incref'd, then we clean them up here
+          final List files = docWriter.abortedFiles();
+          if (files != null)
+            deleter.deleteNewFiles(files);
+        }
+      }
     }
-    if (success)
+    if (doFlush)
       flush(true, false);
   }
 
@@ -1178,11 +1426,24 @@ public class IndexWriter {
       throws CorruptIndexException, IOException {
     ensureOpen();
     boolean doFlush = false;
+    boolean success = false;
     try {
       doFlush = docWriter.updateDocument(term, doc, analyzer);
-    } catch (IOException ioe) {
-      deleter.refresh();
-      throw ioe;
+      success = true;
+    } finally {
+      if (!success) {
+
+        if (infoStream != null)
+          message("hit exception updating document");
+
+        synchronized (this) {
+          // If docWriter has some aborted files that were
+          // never incref'd, then we clean them up here
+          final List files = docWriter.abortedFiles();
+          if (files != null)
+            deleter.deleteNewFiles(files);
+        }
+      }
     }
     if (doFlush)
       flush(true, false);
@@ -1208,46 +1469,32 @@ public class IndexWriter {
   }
 
   final String newSegmentName() {
-    return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
+    // Cannot synchronize on IndexWriter because that causes
+    // deadlock
+    synchronized(segmentInfos) {
+      return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
+    }
   }
-
-  /** Determines how often segment indices are merged by addDocument().  With
-   * smaller values, less RAM is used while indexing, and searches on
-   * unoptimized indices are faster, but indexing speed is slower.  With larger
-   * values, more RAM is used during indexing, and while searches on unoptimized
-   * indices are slower, indexing is faster.  Thus larger values (> 10) are best
-   * for batch index creation, and smaller values (< 10) for indices that are
-   * interactively maintained.
-   *
-   * <p>This must never be less than 2.  The default value is {@link #DEFAULT_MERGE_FACTOR}.
-
-   */
-  private int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   /** Determines amount of RAM usage by the buffered docs at
    * which point we trigger a flush to the index.
    */
   private double ramBufferSize = DEFAULT_RAM_BUFFER_SIZE_MB*1024F*1024F;
 
-  /** Determines the largest number of documents ever merged by addDocument().
-   * Small values (e.g., less than 10,000) are best for interactive indexing,
-   * as this limits the length of pauses while indexing to a few seconds.
-   * Larger values are best for batched indexing and speedier searches.
-   *
-   * <p>The default value is {@link #DEFAULT_MAX_MERGE_DOCS}.
-
-   */
-  private int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
-
   /** If non-null, information about merges will be printed to this.
 
    */
   private PrintStream infoStream = null;
-
   private static PrintStream defaultInfoStream = null;
 
-  /** Merges all segments together into a single segment,
-   * optimizing an index for search.
+  /**
+   * Requests an "optimize" operation on an index, priming the index
+   * for the fastest available search. Traditionally this has meant
+   * merging all segments into a single segment as is done in the
+   * default merge policy, but individaul merge policies may implement
+   * optimize in different ways.
+   *
+   * @see LogMergePolicy#findMergesForOptimize
    *
    * <p>It is recommended that this method be called upon completion of indexing.  In
    * environments with frequent updates, optimize is best done during low volume times, if at all. 
@@ -1255,7 +1502,7 @@ public class IndexWriter {
    * </p>
    * <p>See http://www.gossamer-threads.com/lists/lucene/java-dev/47895 for more discussion. </p>
    *
-   * <p>Note that this requires substantial temporary free
+   * <p>Note that this can require substantial temporary free
    * space in the Directory (see <a target="_top"
    * href="http://issues.apache.org/jira/browse/LUCENE-764">LUCENE-764</a>
    * for details):</p>
@@ -1293,7 +1540,7 @@ public class IndexWriter {
    * <p>The actual temporary usage could be much less than
    * these figures (it depends on many factors).</p>
    *
-   * <p>Once the optimize completes, the total size of the
+   * <p>In general, once the optimize completes, the total size of the
    * index will be less than the size of the starting index.
    * It could be quite a bit smaller (if there were many
    * pending deletes) or just slightly smaller.</p>
@@ -1307,21 +1554,155 @@ public class IndexWriter {
    * using compound file format.  This will occur when the
    * Exception is hit during conversion of the segment into
    * compound format.</p>
+   *
+   * <p>This call will optimize those segments present in
+   * the index when the call started.  If other threads are
+   * still adding documents and flushing segments, those
+   * newly created segments will not be optimized unless you
+   * call optimize again.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
   */
-  public synchronized void optimize() throws CorruptIndexException, IOException {
+  public void optimize() throws CorruptIndexException, IOException {
+    optimize(true);
+  }
+
+  /** Just like {@link #optimize()}, except you can specify
+   *  whether the call should block until the optimize
+   *  completes.  This is only meaningful with a
+   *  {@link MergeScheduler} that is able to run merges in
+   *  background threads. */
+  public void optimize(boolean doWait) throws CorruptIndexException, IOException {
     ensureOpen();
     flush();
-    while (segmentInfos.size() > 1 ||
-           (segmentInfos.size() == 1 &&
-            (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
-             SegmentReader.hasSeparateNorms(segmentInfos.info(0)) ||
-             segmentInfos.info(0).dir != directory ||
-             (useCompoundFile &&
-              !segmentInfos.info(0).getUseCompoundFile())))) {
-      int minSegment = segmentInfos.size() - mergeFactor;
-      mergeSegments(minSegment < 0 ? 0 : minSegment, segmentInfos.size());
+
+    if (infoStream != null)
+      message("optimize: index now " + segString());
+
+    synchronized(this) {
+      resetMergeExceptions();
+      segmentsToOptimize = new HashSet();
+      final int numSegments = segmentInfos.size();
+      for(int i=0;i<numSegments;i++)
+        segmentsToOptimize.add(segmentInfos.info(i));
+      
+      // Now mark all pending & running merges as optimize
+      // merge:
+      Iterator it = pendingMerges.iterator();
+      while(it.hasNext())
+        ((MergePolicy.OneMerge) it.next()).optimize = true;
+
+      it = runningMerges.iterator();
+      while(it.hasNext())
+        ((MergePolicy.OneMerge) it.next()).optimize = true;
+    }
+
+    maybeMerge(true);
+
+    if (doWait) {
+      synchronized(this) {
+        while(optimizeMergesPending()) {
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+          }
+
+          if (mergeExceptions.size() > 0) {
+            // Forward any exceptions in background merge
+            // threads to the current thread:
+            final int size = mergeExceptions.size();
+            for(int i=0;i<size;i++) {
+              final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) mergeExceptions.get(0);
+              if (merge.optimize) {
+                IOException err = new IOException("background merge hit exception: " + merge.segString(directory));
+                err.initCause(merge.getException());
+                throw err;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // NOTE: in the ConcurrentMergeScheduler case, when
+    // doWait is false, we can return immediately while
+    // background threads accomplish the optimization
+  }
+
+  /** Returns true if any merges in pendingMerges or
+   *  runningMerges are optimization merges. */
+  private synchronized boolean optimizeMergesPending() {
+    Iterator it = pendingMerges.iterator();
+    while(it.hasNext())
+      if (((MergePolicy.OneMerge) it.next()).optimize)
+        return true;
+
+    it = runningMerges.iterator();
+    while(it.hasNext())
+      if (((MergePolicy.OneMerge) it.next()).optimize)
+        return true;
+
+    return false;
+  }
+
+  /**
+   * Expert: asks the mergePolicy whether any merges are
+   * necessary now and if so, runs the requested merges and
+   * then iterate (test again if merges are needed) until no
+   * more merges are returned by the mergePolicy.
+   *
+   * Explicit calls to maybeMerge() are usually not
+   * necessary. The most common case is when merge policy
+   * parameters have changed.
+   */
+  public final void maybeMerge() throws CorruptIndexException, IOException {
+    maybeMerge(false);
+  }
+
+  private final void maybeMerge(boolean optimize) throws CorruptIndexException, IOException {
+    updatePendingMerges(optimize);
+    mergeScheduler.merge(this);
+  }
+
+  private synchronized void updatePendingMerges(boolean optimize)
+    throws CorruptIndexException, IOException {
+
+    final MergePolicy.MergeSpecification spec;
+    if (optimize) {
+      // Currently hardwired to 1, but once we add method to
+      // IndexWriter to allow "optimizing to <= N segments"
+      // then we will change this.
+      final int maxSegmentCount = 1;
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, this, maxSegmentCount, segmentsToOptimize);
+
+      if (spec != null) {
+        final int numMerges = spec.merges.size();
+        for(int i=0;i<numMerges;i++)
+          ((MergePolicy.OneMerge) spec.merges.get(i)).optimize = true;
+      }
+
+    } else
+      spec = mergePolicy.findMerges(segmentInfos, this);
+
+    if (spec != null) {
+      final int numMerges = spec.merges.size();
+      for(int i=0;i<numMerges;i++)
+        registerMerge((MergePolicy.OneMerge) spec.merges.get(i));
+    }
+  }
+
+  /** Expert: the {@link MergeScheduler} calls this method
+   *  to retrieve the next merge requested by the
+   *  MergePolicy */
+  synchronized MergePolicy.OneMerge getNextMerge() {
+    if (pendingMerges.size() == 0)
+      return null;
+    else {
+      // Advance the merge from pending to running
+      MergePolicy.OneMerge merge = (MergePolicy.OneMerge) pendingMerges.removeFirst();
+      runningMerges.add(merge);
+      return merge;
     }
   }
 
@@ -1339,6 +1720,9 @@ public class IndexWriter {
    * transaction is started.
    */
   private void startTransaction() throws IOException {
+
+    if (infoStream != null)
+      message("now start transaction");
 
     assert docWriter.getNumBufferedDeleteTerms() == 0 :
            "calling startTransaction with buffered delete terms not supported";
@@ -1363,6 +1747,9 @@ public class IndexWriter {
    */
   private void rollbackTransaction() throws IOException {
 
+    if (infoStream != null)
+      message("now rollback transaction");
+
     // First restore autoCommit in case we hit an exception below:
     autoCommit = localAutoCommit;
 
@@ -1383,6 +1770,7 @@ public class IndexWriter {
       deleter.decRef(segmentInfos);
 
     deleter.refresh();
+    finishMerges(false);
   }
 
   /*
@@ -1391,6 +1779,9 @@ public class IndexWriter {
    * accumulated during the transaction
    */
   private void commitTransaction() throws IOException {
+
+    if (infoStream != null)
+      message("now commit transaction");
 
     // First restore autoCommit in case we hit an exception below:
     autoCommit = localAutoCommit;
@@ -1401,6 +1792,9 @@ public class IndexWriter {
       success = true;
     } finally {
       if (!success) {
+        if (infoStream != null)
+          message("hit exception committing transaction");
+
         rollbackTransaction();
       }
     }
@@ -1427,30 +1821,78 @@ public class IndexWriter {
    *  the writer was opened with <code>autoCommit=true</code>.
    * @throws IOException if there is a low-level IO error
    */
-  public synchronized void abort() throws IOException {
+  public void abort() throws IOException {
     ensureOpen();
-    if (!autoCommit) {
+    if (autoCommit)
+      throw new IllegalStateException("abort() can only be called when IndexWriter was opened with autoCommit=false");
 
-      // Keep the same segmentInfos instance but replace all
-      // of its SegmentInfo instances.  This is so the next
-      // attempt to commit using this instance of IndexWriter
-      // will always write to a new generation ("write once").
-      segmentInfos.clear();
-      segmentInfos.addAll(rollbackSegmentInfos);
+    boolean doClose;
+    synchronized(this) {
+      // Ensure that only one thread actually gets to do the closing:
+      if (!closing) {
+        doClose = true;
+        closing = true;
+      } else
+        doClose = false;
+    }
 
-      docWriter.abort();
+    if (doClose) {
 
-      // Ask deleter to locate unreferenced files & remove
-      // them:
-      deleter.checkpoint(segmentInfos, false);
-      deleter.refresh();
+      finishMerges(false);
+
+      // Must pre-close these two, in case they set
+      // commitPending=true, so that we can then set it to
+      // false before calling closeInternal
+      mergePolicy.close();
+      mergeScheduler.close();
+
+      synchronized(this) {
+        // Keep the same segmentInfos instance but replace all
+        // of its SegmentInfo instances.  This is so the next
+        // attempt to commit using this instance of IndexWriter
+        // will always write to a new generation ("write
+        // once").
+        segmentInfos.clear();
+        segmentInfos.addAll(rollbackSegmentInfos);
+
+        docWriter.abort();
+
+        // Ask deleter to locate unreferenced files & remove
+        // them:
+        deleter.checkpoint(segmentInfos, false);
+        deleter.refresh();
+        finishMerges(false);
+      }
 
       commitPending = false;
-      docWriter.abort();
-      close();
+      closeInternal(false);
+    } else
+      waitForClose();
+  }
 
+  private synchronized void finishMerges(boolean waitForMerges) {
+    if (!waitForMerges) {
+      // Abort all pending & running merges:
+      Iterator it = pendingMerges.iterator();
+      while(it.hasNext())
+        ((MergePolicy.OneMerge) it.next()).abort();
+
+      pendingMerges.clear();
+      it = runningMerges.iterator();
+      while(it.hasNext())
+        ((MergePolicy.OneMerge) it.next()).abort();
+
+      runningMerges.clear();
+      mergingSegments.clear();
+      notifyAll();
     } else {
-      throw new IllegalStateException("abort() can only be called when IndexWriter was opened with autoCommit=false");
+      while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
+        try {
+          wait();
+        } catch (InterruptedException ie) {
+        }
+      }
+      assert 0 == mergingSegments.size();
     }
   }
  
@@ -1461,11 +1903,11 @@ public class IndexWriter {
    * commit the change immediately.  Else, we mark
    * commitPending.
    */
-  private void checkpoint() throws IOException {
+  private synchronized void checkpoint() throws IOException {
     if (autoCommit) {
       segmentInfos.write(directory);
       if (infoStream != null)
-        infoStream.println("checkpoint: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
+        message("checkpoint: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
     } else {
       commitPending = true;
     }
@@ -1521,7 +1963,7 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
-    optimize();					  // start with zero or 1 seg
+    flush();
 
     int start = segmentInfos.size();
 
@@ -1538,15 +1980,8 @@ public class IndexWriter {
         }
       }
 
-      // merge newly added segments in log(n) passes
-      while (segmentInfos.size() > start+mergeFactor) {
-        for (int base = start; base < segmentInfos.size(); base++) {
-          int end = Math.min(segmentInfos.size(), base+mergeFactor);
-          if (end-base > 1) {
-            mergeSegments(base, end);
-          }
-        }
-      }
+      optimize();
+
       success = true;
     } finally {
       if (success) {
@@ -1555,8 +1990,11 @@ public class IndexWriter {
         rollbackTransaction();
       }
     }
+  }
 
-    optimize();					  // final cleanup
+  private synchronized void resetMergeExceptions() {
+    mergeExceptions = new ArrayList();
+    mergeGen++;
   }
 
   /**
@@ -1578,39 +2016,9 @@ public class IndexWriter {
    */
   public synchronized void addIndexesNoOptimize(Directory[] dirs)
       throws CorruptIndexException, IOException {
-    // Adding indexes can be viewed as adding a sequence of segments S to
-    // a sequence of segments T. Segments in T follow the invariants but
-    // segments in S may not since they could come from multiple indexes.
-    // Here is the merge algorithm for addIndexesNoOptimize():
-    //
-    // 1 Flush ram.
-    // 2 Consider a combined sequence with segments from T followed
-    //   by segments from S (same as current addIndexes(Directory[])).
-    // 3 Assume the highest level for segments in S is h. Call
-    //   maybeMergeSegments(), but instead of starting w/ lowerBound = -1
-    //   and upperBound = maxBufferedDocs, start w/ lowerBound = -1 and
-    //   upperBound = upperBound of level h. After this, the invariants
-    //   are guaranteed except for the last < M segments whose levels <= h.
-    // 4 If the invariants hold for the last < M segments whose levels <= h,
-    //   if some of those < M segments are from S (not merged in step 3),
-    //   properly copy them over*, otherwise done.
-    //   Otherwise, simply merge those segments. If the merge results in
-    //   a segment of level <= h, done. Otherwise, it's of level h+1 and call
-    //   maybeMergeSegments() starting w/ upperBound = upperBound of level h+1.
-    //
-    // * Ideally, we want to simply copy a segment. However, directory does
-    // not support copy yet. In addition, source may use compound file or not
-    // and target may use compound file or not. So we use mergeSegments() to
-    // copy a segment, which may cause doc count to change because deleted
-    // docs are garbage collected.
-
-    // 1 flush ram
 
     ensureOpen();
     flush();
-
-    // 2 copy segment infos and find the highest level from dirs
-    int startUpperBound = docWriter.getMaxBufferedDocs();
 
     /* new merge policy
     if (startUpperBound == 0)
@@ -1634,69 +2042,52 @@ public class IndexWriter {
         for (int j = 0; j < sis.size(); j++) {
           SegmentInfo info = sis.info(j);
           segmentInfos.addElement(info); // add each info
-          
-          while (startUpperBound < info.docCount) {
-            startUpperBound *= mergeFactor; // find the highest level from dirs
-            if (startUpperBound > maxMergeDocs) {
-              // upper bound cannot exceed maxMergeDocs
-              throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
-            }
-          }
         }
       }
 
-      // 3 maybe merge segments starting from the highest level from dirs
-      maybeMergeSegments(startUpperBound);
+      maybeMerge();
 
-      // get the tail segments whose levels <= h
-      int segmentCount = segmentInfos.size();
-      int numTailSegments = 0;
-      while (numTailSegments < segmentCount
-             && startUpperBound >= segmentInfos.info(segmentCount - 1 - numTailSegments).docCount) {
-        numTailSegments++;
-      }
-      if (numTailSegments == 0) {
-        success = true;
-        return;
-      }
-
-      // 4 make sure invariants hold for the tail segments whose levels <= h
-      if (checkNonDecreasingLevels(segmentCount - numTailSegments)) {
-        // identify the segments from S to be copied (not merged in 3)
-        int numSegmentsToCopy = 0;
-        while (numSegmentsToCopy < segmentCount
-               && directory != segmentInfos.info(segmentCount - 1 - numSegmentsToCopy).dir) {
-          numSegmentsToCopy++;
-        }
-        if (numSegmentsToCopy == 0) {
-          success = true;
-          return;
-        }
-
-        // copy those segments from S
-        for (int i = segmentCount - numSegmentsToCopy; i < segmentCount; i++) {
-          mergeSegments(i, i + 1);
-        }
-        if (checkNonDecreasingLevels(segmentCount - numSegmentsToCopy)) {
-          success = true;
-          return;
-        }
-      }
-
-      // invariants do not hold, simply merge those segments
-      mergeSegments(segmentCount - numTailSegments, segmentCount);
-
-      // maybe merge segments again if necessary
-      if (segmentInfos.info(segmentInfos.size() - 1).docCount > startUpperBound) {
-        maybeMergeSegments(startUpperBound * mergeFactor);
-      }
+      // If after merging there remain segments in the index
+      // that are in a different directory, just copy these
+      // over into our index.  This is necessary (before
+      // finishing the transaction) to avoid leaving the
+      // index in an unusable (inconsistent) state.
+      copyExternalSegments();
 
       success = true;
+
     } finally {
       if (success) {
         commitTransaction();
       } else {
         rollbackTransaction();
+      }
+    }
+  }
+
+  /* If any of our segments are using a directory != ours
+   * then copy them over.  Currently this is only used by
+   * addIndexesNoOptimize(). */
+  private synchronized void copyExternalSegments() throws CorruptIndexException, IOException {
+    final int numSegments = segmentInfos.size();
+    for(int i=0;i<numSegments;i++) {
+      SegmentInfo info = segmentInfos.info(i);
+      if (info.dir != directory) {
+        MergePolicy.OneMerge merge = new MergePolicy.OneMerge(segmentInfos.range(i, 1+i), info.getUseCompoundFile());
+        if (registerMerge(merge)) {
+          pendingMerges.remove(merge);
+          runningMerges.add(merge);
+          merge(merge);
+        } else
+          // This means there is a bug in the
+          // MergeScheduler.  MergeSchedulers in general are
+          // not allowed to run a merge involving segments
+          // external to this IndexWriter's directory in the
+          // background because this would put the index
+          // into an inconsistent state (where segmentInfos
+          // has been written with such external segments
+          // that an IndexReader would fail to load).
+          throw new MergePolicy.MergeException("segment \"" + info.name + " exists in external directory yet the MergeScheduler executed the merge in a separate thread");
       }
     }
   }
@@ -1754,6 +2145,9 @@ public class IndexWriter {
 
       } finally {
         if (!success) {
+          if (infoStream != null)
+            message("hit exception in addIndexes during merge");
+
           rollbackTransaction();
         } else {
           commitTransaction();
@@ -1765,7 +2159,7 @@ public class IndexWriter {
       }
     }
     
-    if (useCompoundFile) {
+    if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
 
       boolean success = false;
 
@@ -1776,6 +2170,9 @@ public class IndexWriter {
         info.setUseCompoundFile(true);
       } finally {
         if (!success) {
+          if (infoStream != null)
+            message("hit exception building compound file in addIndexes during merge");
+
           rollbackTransaction();
         } else {
           commitTransaction();
@@ -1783,40 +2180,6 @@ public class IndexWriter {
       }
     }
   }
-
-  // Overview of merge policy:
-  //
-  // A flush is triggered either by close() or by the number of ram segments
-  // reaching maxBufferedDocs. After a disk segment is created by the flush,
-  // further merges may be triggered.
-  //
-  // LowerBound and upperBound set the limits on the doc count of a segment
-  // which may be merged. Initially, lowerBound is set to 0 and upperBound
-  // to maxBufferedDocs. Starting from the rightmost* segment whose doc count
-  // > lowerBound and <= upperBound, count the number of consecutive segments
-  // whose doc count <= upperBound.
-  //
-  // Case 1: number of worthy segments < mergeFactor, no merge, done.
-  // Case 2: number of worthy segments == mergeFactor, merge these segments.
-  //         If the doc count of the merged segment <= upperBound, done.
-  //         Otherwise, set lowerBound to upperBound, and multiply upperBound
-  //         by mergeFactor, go through the process again.
-  // Case 3: number of worthy segments > mergeFactor (in the case mergeFactor
-  //         M changes), merge the leftmost* M segments. If the doc count of
-  //         the merged segment <= upperBound, consider the merged segment for
-  //         further merges on this same level. Merge the now leftmost* M
-  //         segments, and so on, until number of worthy segments < mergeFactor.
-  //         If the doc count of all the merged segments <= upperBound, done.
-  //         Otherwise, set lowerBound to upperBound, and multiply upperBound
-  //         by mergeFactor, go through the process again.
-  // Note that case 2 can be considerd as a special case of case 3.
-  //
-  // This merge policy guarantees two invariants if M does not change and
-  // segment doc count is not reaching maxMergeDocs:
-  // B for maxBufferedDocs, f(n) defined as ceil(log_M(ceil(n/B)))
-  //      1: If i (left*) and i+1 (right*) are two consecutive segments of doc
-  //         counts x and y, then f(x) >= f(y).
-  //      2: The number of committed segments on the same level (f(n)) <= M.
 
   // This is called after pending added and deleted
   // documents have been flushed to the Directory but before
@@ -1833,7 +2196,7 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void flush() throws CorruptIndexException, IOException {  
+  public final void flush() throws CorruptIndexException, IOException {  
     flush(true, false);
   }
 
@@ -1845,8 +2208,14 @@ public class IndexWriter {
    * @param flushDocStores if false we are allowed to keep
    *  doc stores open to share with the next segment
    */
-  protected final synchronized void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
+  protected final void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
     ensureOpen();
+
+    if (doFlush(flushDocStores) && triggerMerge)
+      maybeMerge();
+  }
+
+  private synchronized final boolean doFlush(boolean flushDocStores) throws CorruptIndexException, IOException {
 
     // Make sure no threads are actively adding a document
     docWriter.pauseAllThreads();
@@ -1877,10 +2246,14 @@ public class IndexWriter {
       boolean flushDeletes = docWriter.hasDeletes();
 
       if (infoStream != null)
-        infoStream.println("  flush: flushDocs=" + flushDocs +
-                           " flushDeletes=" + flushDeletes +
-                           " flushDocStores=" + flushDocStores +
-                           " numDocs=" + numDocs);
+        message("  flush: segment=" + docWriter.getSegment() +
+                " docStoreSegment=" + docWriter.getDocStoreSegment() +
+                " docStoreOffset=" + docWriter.getDocStoreOffset() +
+                " flushDocs=" + flushDocs +
+                " flushDeletes=" + flushDeletes +
+                " flushDocStores=" + flushDocStores +
+                " numDocs=" + numDocs +
+                " numBufDelTerms=" + docWriter.getNumBufferedDeleteTerms());
 
       int docStoreOffset = docWriter.getDocStoreOffset();
       boolean docStoreIsCompoundFile = false;
@@ -1891,14 +2264,16 @@ public class IndexWriter {
       if (flushDocStores && (!flushDocs || !docWriter.getSegment().equals(docWriter.getDocStoreSegment()))) {
         // We must separately flush the doc store
         if (infoStream != null)
-          infoStream.println("  flush shared docStore segment " + docStoreSegment);
+          message("  flush shared docStore segment " + docStoreSegment);
       
-        flushDocStores();
+        docStoreIsCompoundFile = flushDocStores();
         flushDocStores = false;
-        docStoreIsCompoundFile = useCompoundFile;
       }
 
       String segment = docWriter.getSegment();
+
+      // If we are flushing docs, segment must not be null:
+      assert segment != null || !flushDocs;
 
       if (flushDocs || flushDeletes) {
 
@@ -1948,7 +2323,22 @@ public class IndexWriter {
           success = true;
         } finally {
           if (!success) {
+
+            if (infoStream != null)
+              message("hit exception flushing segment " + segment);
+                
             if (flushDeletes) {
+
+              // Carefully check if any partial .del files
+              // should be removed:
+              final int size = rollback.size();
+              for(int i=0;i<size;i++) {
+                final String newDelFileName = segmentInfos.info(i).getDelFileName();
+                final String delFileName = rollback.info(i).getDelFileName();
+                if (newDelFileName != null && !newDelFileName.equals(delFileName))
+                  deleter.deleteFile(newDelFileName);
+              }
+
               // Fully replace the segmentInfos since flushed
               // deletes could have changed any of the
               // SegmentInfo instances:
@@ -1964,14 +2354,18 @@ public class IndexWriter {
             }
             if (flushDocs)
               docWriter.abort();
+            deletePartialSegmentsFile();
             deleter.checkpoint(segmentInfos, false);
-            deleter.refresh();
+
+            if (segment != null)
+              deleter.refresh(segment);
           }
         }
 
         deleter.checkpoint(segmentInfos, autoCommit);
 
-        if (flushDocs && useCompoundFile) {
+        if (flushDocs && mergePolicy.useCompoundFile(segmentInfos,
+                                                     newSegment)) {
           success = false;
           try {
             docWriter.createCompoundFile(segment);
@@ -1980,23 +2374,22 @@ public class IndexWriter {
             success = true;
           } finally {
             if (!success) {
+              if (infoStream != null)
+                message("hit exception creating compound file for newly flushed segment " + segment);
               newSegment.setUseCompoundFile(false);
-              deleter.refresh();
+              deleter.deleteFile(segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
+              deletePartialSegmentsFile();
             }
           }
 
           deleter.checkpoint(segmentInfos, autoCommit);
         }
-
-        /* new merge policy
-        if (0 == docWriter.getMaxBufferedDocs())
-          maybeMergeSegments(mergeFactor * numDocs / 2);
-        else
-          maybeMergeSegments(docWriter.getMaxBufferedDocs());
-        */
-        if (triggerMerge)
-          maybeMergeSegments(docWriter.getMaxBufferedDocs());
+      
+        return true;
+      } else {
+        return false;
       }
+
     } finally {
       docWriter.clearFlushPending();
       docWriter.resumeAllThreads();
@@ -2018,259 +2411,606 @@ public class IndexWriter {
     ensureOpen();
     return docWriter.getNumDocsInRAM();
   }
-  
-  /** Incremental segment merger.  */
-  private final void maybeMergeSegments(int startUpperBound) throws CorruptIndexException, IOException {
-    long lowerBound = -1;
-    long upperBound = startUpperBound;
 
-    /* new merge policy
-    if (upperBound == 0) upperBound = 10;
-    */
+  private int ensureContiguousMerge(MergePolicy.OneMerge merge) {
 
-    while (upperBound < maxMergeDocs) {
-      int minSegment = segmentInfos.size();
-      int maxSegment = -1;
+    int first = segmentInfos.indexOf(merge.segments.info(0));
+    if (first == -1)
+      throw new MergePolicy.MergeException("could not find segment " + merge.segments.info(0).name + " in current segments");
 
-      // find merge-worthy segments
-      while (--minSegment >= 0) {
-        SegmentInfo si = segmentInfos.info(minSegment);
+    final int numSegments = segmentInfos.size();
+    
+    final int numSegmentsToMerge = merge.segments.size();
+    for(int i=0;i<numSegmentsToMerge;i++) {
+      final SegmentInfo info = merge.segments.info(i);
 
-        if (maxSegment == -1 && si.docCount > lowerBound && si.docCount <= upperBound) {
-          // start from the rightmost* segment whose doc count is in bounds
-          maxSegment = minSegment;
-        } else if (si.docCount > upperBound) {
-          // until the segment whose doc count exceeds upperBound
-          break;
-        }
+      if (first + i >= numSegments || !segmentInfos.info(first+i).equals(info)) {
+        if (segmentInfos.indexOf(info) == -1)
+          throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the index");
+        else
+          throw new MergePolicy.MergeException("MergePolicy selected non-contiguous segments to merge (" + merge + " vs " + segString() + "), which IndexWriter (currently) cannot handle");
+      }
+    }
+
+    return first;
+  }
+
+  /* FIXME if we want to support non-contiguous segment merges */
+  synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
+
+    assert merge.registerDone;
+
+    // If merge was explicitly aborted, or, if abort() or
+    // rollbackTransaction() had been called since our merge
+    // started (which results in an unqualified
+    // deleter.refresh() call that will remove any index
+    // file that current segments does not reference), we
+    // abort this merge
+    if (merge.isAborted()) {
+
+      if (infoStream != null) {
+        if (merge.isAborted())
+          message("commitMerge: skipping merge " + merge.segString(directory) + ": it was aborted");
       }
 
-      minSegment++;
-      maxSegment++;
-      int numSegments = maxSegment - minSegment;
+      assert merge.increfDone;
+      decrefMergeSegments(merge);
+      deleter.refresh(merge.info.name);
+      return false;
+    }
 
-      if (numSegments < mergeFactor) {
-        break;
-      } else {
-        boolean exceedsUpperLimit = false;
+    boolean success = false;
 
-        // number of merge-worthy segments may exceed mergeFactor when
-        // mergeFactor and/or maxBufferedDocs change(s)
-        while (numSegments >= mergeFactor) {
-          // merge the leftmost* mergeFactor segments
+    int start;
 
-          int docCount = mergeSegments(minSegment, minSegment + mergeFactor);
-          numSegments -= mergeFactor;
+    try {
+      SegmentInfos sourceSegmentsClone = merge.segmentsClone;
+      SegmentInfos sourceSegments = merge.segments;
+      final int numSegments = segmentInfos.size();
 
-          if (docCount > upperBound) {
-            // continue to merge the rest of the worthy segments on this level
-            minSegment++;
-            exceedsUpperLimit = true;
-          } else {
-            // if the merged segment does not exceed upperBound, consider
-            // this segment for further merges on this same level
-            numSegments++;
+      start = ensureContiguousMerge(merge);
+      if (infoStream != null)
+        message("commitMerge " + merge.segString(directory));
+
+      // Carefully merge deletes that occurred after we
+      // started merging:
+
+      BitVector deletes = null;
+      int docUpto = 0;
+
+      final int numSegmentsToMerge = sourceSegments.size();
+      for(int i=0;i<numSegmentsToMerge;i++) {
+        final SegmentInfo previousInfo = sourceSegmentsClone.info(i);
+        final SegmentInfo currentInfo = sourceSegments.info(i);
+
+        assert currentInfo.docCount == previousInfo.docCount;
+
+        final int docCount = currentInfo.docCount;
+
+        if (previousInfo.hasDeletions()) {
+
+          // There were deletes on this segment when the merge
+          // started.  The merge has collapsed away those
+          // deletes, but, if new deletes were flushed since
+          // the merge started, we must now carefully keep any
+          // newly flushed deletes but mapping them to the new
+          // docIDs.
+
+          assert currentInfo.hasDeletions();
+
+          // Load deletes present @ start of merge, for this segment:
+          BitVector previousDeletes = new BitVector(previousInfo.dir, previousInfo.getDelFileName());
+
+          if (!currentInfo.getDelFileName().equals(previousInfo.getDelFileName())) {
+            // This means this segment has had new deletes
+            // committed since we started the merge, so we
+            // must merge them:
+            if (deletes == null)
+              deletes = new BitVector(merge.info.docCount);
+
+            BitVector currentDeletes = new BitVector(currentInfo.dir, currentInfo.getDelFileName());
+            for(int j=0;j<docCount;j++) {
+              if (previousDeletes.get(j))
+                assert currentDeletes.get(j);
+              else {
+                if (currentDeletes.get(j))
+                  deletes.set(docUpto);
+                docUpto++;
+              }
+            }
+          } else
+            docUpto += docCount - previousDeletes.count();
+        
+        } else if (currentInfo.hasDeletions()) {
+          // This segment had no deletes before but now it
+          // does:
+          if (deletes == null)
+            deletes = new BitVector(merge.info.docCount);
+          BitVector currentDeletes = new BitVector(directory, currentInfo.getDelFileName());
+
+          for(int j=0;j<docCount;j++) {
+            if (currentDeletes.get(j))
+              deletes.set(docUpto);
+            docUpto++;
           }
-        }
+            
+        } else
+          // No deletes before or after
+          docUpto += currentInfo.docCount;
+      }
 
-        if (!exceedsUpperLimit) {
-          // if none of the merged segments exceed upperBound, done
+      if (deletes != null) {
+        merge.info.advanceDelGen();
+        deletes.write(directory, merge.info.getDelFileName());
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream != null)
+          message("hit exception creating merged deletes file");
+        deleter.refresh(merge.info.name);
+      }
+    }
+
+    // Simple optimization: if the doc store we are using
+    // has been closed and is in now compound format (but
+    // wasn't when we started), then we will switch to the
+    // compound format as well:
+    final String mergeDocStoreSegment = merge.info.getDocStoreSegment(); 
+    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
+      final int size = segmentInfos.size();
+      for(int i=0;i<size;i++) {
+        final SegmentInfo info = segmentInfos.info(i);
+        final String docStoreSegment = info.getDocStoreSegment();
+        if (docStoreSegment != null &&
+            docStoreSegment.equals(mergeDocStoreSegment) && 
+            info.getDocStoreIsCompoundFile()) {
+          merge.info.setDocStoreIsCompoundFile(true);
           break;
         }
       }
+    }
 
-      lowerBound = upperBound;
-      upperBound *= mergeFactor;
+    success = false;
+    SegmentInfos rollback = null;
+    try {
+      rollback = (SegmentInfos) segmentInfos.clone();
+      segmentInfos.subList(start, start + merge.segments.size()).clear();
+      segmentInfos.add(start, merge.info);
+      checkpoint();
+      success = true;
+    } finally {
+      if (!success && rollback != null) {
+        if (infoStream != null)
+          message("hit exception when checkpointing after merge");
+        segmentInfos.clear();
+        segmentInfos.addAll(rollback);
+        deletePartialSegmentsFile();
+        deleter.refresh(merge.info.name);
+      }
+    }
+
+    if (merge.optimize)
+      segmentsToOptimize.add(merge.info);
+
+    // Must checkpoint before decrefing so any newly
+    // referenced files in the new merge.info are incref'd
+    // first:
+    deleter.checkpoint(segmentInfos, autoCommit);
+
+    decrefMergeSegments(merge);
+
+    return true;
+  }
+
+  private void decrefMergeSegments(MergePolicy.OneMerge merge) throws IOException {
+    final SegmentInfos sourceSegmentsClone = merge.segmentsClone;
+    final int numSegmentsToMerge = sourceSegmentsClone.size();
+    assert merge.increfDone;
+    merge.increfDone = false;
+    for(int i=0;i<numSegmentsToMerge;i++) {
+      final SegmentInfo previousInfo = sourceSegmentsClone.info(i);
+      // Decref all files for this SegmentInfo (this
+      // matches the incref in mergeInit):
+      if (previousInfo.dir == directory)
+        deleter.decRef(previousInfo.files());
     }
   }
 
   /**
-   * Merges the named range of segments, replacing them in the stack with a
+   * Merges the indicated segments, replacing them in the stack with a
    * single segment.
    */
 
-  private final int mergeSegments(int minSegment, int end)
+  final void merge(MergePolicy.OneMerge merge)
     throws CorruptIndexException, IOException {
 
-    final String mergedName = newSegmentName();
+    assert merge.registerDone;
+
+    int mergedDocCount;
+    boolean success = false;
+
+    try {
+
+      if (merge.info == null)
+        mergeInit(merge);
+
+      if (infoStream != null)
+        message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
+
+      mergedDocCount = mergeMiddle(merge);
+
+      success = true;
+    } finally {
+      synchronized(this) {
+        if (!success && infoStream != null)
+          message("hit exception during merge");
+
+        mergeFinish(merge);
+
+        // This merge (and, generally, any change to the
+        // segments) may now enable new merges, so we call
+        // merge policy & update pending merges.
+        if (success && !merge.isAborted() && !closed && !closing)
+          updatePendingMerges(merge.optimize);
+
+        runningMerges.remove(merge);
+
+        // Optimize may be waiting on the final optimize
+        // merge to finish; and finishMerges() may be
+        // waiting for all merges to finish:
+        notifyAll();
+      }
+    }
+  }
+
+  /** Checks whether this merge involves any segments
+   *  already participating in a merge.  If not, this merge
+   *  is "registered", meaning we record that its segments
+   *  are now participating in a merge, and true is
+   *  returned.  Else (the merge conflicts) false is
+   *  returned. */
+  final synchronized boolean registerMerge(MergePolicy.OneMerge merge) {
+
+    if (merge.registerDone)
+      return true;
+
+    final int count = merge.segments.size();
+    boolean isExternal = false;
+    for(int i=0;i<count;i++) {
+      final SegmentInfo info = merge.segments.info(i);
+      if (mergingSegments.contains(info))
+        return false;
+      if (segmentInfos.indexOf(info) == -1)
+        return false;
+      if (info.dir != directory)
+        isExternal = true;
+    }
+
+    pendingMerges.add(merge);
+
+    if (infoStream != null)
+      message("add merge to pendingMerges: " + merge.segString(directory) + " [total " + pendingMerges.size() + " pending]");
+
+    merge.mergeGen = mergeGen;
+    merge.isExternal = isExternal;
+
+    // OK it does not conflict; now record that this merge
+    // is running (while synchronized) to avoid race
+    // condition where two conflicting merges from different
+    // threads, start
+    for(int i=0;i<count;i++)
+      mergingSegments.add(merge.segments.info(i));
+
+    // Merge is now registered
+    merge.registerDone = true;
+    return true;
+  }
+
+  /** Does initial setup for a merge, which is fast but holds
+   *  the synchronized lock on IndexWriter instance. */
+  final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
+
+    // Bind a new segment name here so even with
+    // ConcurrentMergePolicy we keep deterministic segment
+    // names.
+
+    assert merge.registerDone;
+
+    final SegmentInfos sourceSegments = merge.segments;
+    final int end = sourceSegments.size();
+    final int numSegments = segmentInfos.size();
+
+    final int start = ensureContiguousMerge(merge);
+
+    // Check whether this merge will allow us to skip
+    // merging the doc stores (stored field & vectors).
+    // This is a very substantial optimization (saves tons
+    // of IO) that can only be applied with
+    // autoCommit=false.
+
+    Directory lastDir = directory;
+    String lastDocStoreSegment = null;
+    int next = -1;
+
+    boolean mergeDocStores = false;
+    boolean doFlushDocStore = false;
+    final String currentDocStoreSegment = docWriter.getDocStoreSegment();
+
+    // Test each segment to be merged: check if we need to
+    // flush/merge doc stores
+    for (int i = 0; i < end; i++) {
+      SegmentInfo si = sourceSegments.info(i);
+
+      // If it has deletions we must merge the doc stores
+      if (si.hasDeletions())
+        mergeDocStores = true;
+
+      // If it has its own (private) doc stores we must
+      // merge the doc stores
+      if (-1 == si.getDocStoreOffset())
+        mergeDocStores = true;
+
+      // If it has a different doc store segment than
+      // previous segments, we must merge the doc stores
+      String docStoreSegment = si.getDocStoreSegment();
+      if (docStoreSegment == null)
+        mergeDocStores = true;
+      else if (lastDocStoreSegment == null)
+        lastDocStoreSegment = docStoreSegment;
+      else if (!lastDocStoreSegment.equals(docStoreSegment))
+        mergeDocStores = true;
+
+      // Segments' docScoreOffsets must be in-order,
+      // contiguous.  For the default merge policy now
+      // this will always be the case but for an arbitrary
+      // merge policy this may not be the case
+      if (-1 == next)
+        next = si.getDocStoreOffset() + si.docCount;
+      else if (next != si.getDocStoreOffset())
+        mergeDocStores = true;
+      else
+        next = si.getDocStoreOffset() + si.docCount;
+      
+      // If the segment comes from a different directory
+      // we must merge
+      if (lastDir != si.dir)
+        mergeDocStores = true;
+
+      // If the segment is referencing the current "live"
+      // doc store outputs then we must merge
+      if (si.getDocStoreOffset() != -1 && currentDocStoreSegment != null && si.getDocStoreSegment().equals(currentDocStoreSegment))
+        doFlushDocStore = true;
+    }
+
+    final int docStoreOffset;
+    final String docStoreSegment;
+    final boolean docStoreIsCompoundFile;
+
+    if (mergeDocStores) {
+      docStoreOffset = -1;
+      docStoreSegment = null;
+      docStoreIsCompoundFile = false;
+    } else {
+      SegmentInfo si = sourceSegments.info(0);        
+      docStoreOffset = si.getDocStoreOffset();
+      docStoreSegment = si.getDocStoreSegment();
+      docStoreIsCompoundFile = si.getDocStoreIsCompoundFile();
+    }
+
+    if (mergeDocStores && doFlushDocStore) {
+      // SegmentMerger intends to merge the doc stores
+      // (stored fields, vectors), and at least one of the
+      // segments to be merged refers to the currently
+      // live doc stores.
+
+      // TODO: if we know we are about to merge away these
+      // newly flushed doc store files then we should not
+      // make compound file out of them...
+      flush(false, true);
+    }
+
+    // We must take a full copy at this point so that we can
+    // properly merge deletes in commitMerge()
+    merge.segmentsClone = (SegmentInfos) merge.segments.clone();
+
+    for (int i = 0; i < end; i++) {
+      SegmentInfo si = merge.segmentsClone.info(i);
+
+      // IncRef all files for this segment info to make sure
+      // they are not removed while we are trying to merge.
+      if (si.dir == directory)
+        deleter.incRef(si.files());
+    }
+
+    merge.increfDone = true;
+
+    merge.mergeDocStores = mergeDocStores;
+    merge.info = new SegmentInfo(newSegmentName(), 0,
+                                 directory, false, true,
+                                 docStoreOffset,
+                                 docStoreSegment,
+                                 docStoreIsCompoundFile);
+  }
+
+  /** Does fininishing for a merge, which is fast but holds
+   *  the synchronized lock on IndexWriter instance. */
+  final synchronized void mergeFinish(MergePolicy.OneMerge merge) throws IOException {
+
+    if (merge.increfDone)
+      decrefMergeSegments(merge);
+
+    assert merge.registerDone;
+
+    final SegmentInfos sourceSegments = merge.segments;
+    final SegmentInfos sourceSegmentsClone = merge.segmentsClone;
+    final int end = sourceSegments.size();
+    for(int i=0;i<end;i++)
+      mergingSegments.remove(sourceSegments.info(i));
+    merge.registerDone = false;
+  }
+
+  /** Does the actual (time-consuming) work of the merge,
+   *  but without holding synchronized lock on IndexWriter
+   *  instance */
+  final private int mergeMiddle(MergePolicy.OneMerge merge) 
+    throws CorruptIndexException, IOException {
+
+    final String mergedName = merge.info.name;
     
     SegmentMerger merger = null;
-    SegmentInfo newSegment = null;
 
     int mergedDocCount = 0;
 
-    // This is try/finally to make sure merger's readers are closed:
+    SegmentInfos sourceSegments = merge.segments;
+    SegmentInfos sourceSegmentsClone = merge.segmentsClone;
+    final int numSegments = sourceSegments.size();
+
+    if (infoStream != null)
+      message("merging " + merge.segString(directory));
+
+    merger = new SegmentMerger(this, mergedName);
+
+    // This is try/finally to make sure merger's readers are
+    // closed:
+
+    boolean success = false;
+
     try {
-
-      if (infoStream != null) infoStream.print("merging segments");
-
-      // Check whether this merge will allow us to skip
-      // merging the doc stores (stored field & vectors).
-      // This is a very substantial optimization (saves tons
-      // of IO) that can only be applied with
-      // autoCommit=false.
-
-      Directory lastDir = directory;
-      String lastDocStoreSegment = null;
-      boolean mergeDocStores = false;
-      boolean doFlushDocStore = false;
-      int next = -1;
-
-      // Test each segment to be merged
-      for (int i = minSegment; i < end; i++) {
-        SegmentInfo si = segmentInfos.info(i);
-
-        // If it has deletions we must merge the doc stores
-        if (si.hasDeletions())
-          mergeDocStores = true;
-
-        // If it has its own (private) doc stores we must
-        // merge the doc stores
-        if (-1 == si.getDocStoreOffset())
-          mergeDocStores = true;
-
-        // If it has a different doc store segment than
-        // previous segments, we must merge the doc stores
-        String docStoreSegment = si.getDocStoreSegment();
-        if (docStoreSegment == null)
-          mergeDocStores = true;
-        else if (lastDocStoreSegment == null)
-          lastDocStoreSegment = docStoreSegment;
-        else if (!lastDocStoreSegment.equals(docStoreSegment))
-          mergeDocStores = true;
-
-        // Segments' docScoreOffsets must be in-order,
-        // contiguous.  For the default merge policy now
-        // this will always be the case but for an arbitrary
-        // merge policy this may not be the case
-        if (-1 == next)
-          next = si.getDocStoreOffset() + si.docCount;
-        else if (next != si.getDocStoreOffset())
-          mergeDocStores = true;
-        else
-          next = si.getDocStoreOffset() + si.docCount;
-      
-        // If the segment comes from a different directory
-        // we must merge
-        if (lastDir != si.dir)
-          mergeDocStores = true;
-
-        // If the segment is referencing the current "live"
-        // doc store outputs then we must merge
-        if (si.getDocStoreOffset() != -1 && si.getDocStoreSegment().equals(docWriter.getDocStoreSegment()))
-          doFlushDocStore = true;
-      }
-
-      final int docStoreOffset;
-      final String docStoreSegment;
-      final boolean docStoreIsCompoundFile;
-      if (mergeDocStores) {
-        docStoreOffset = -1;
-        docStoreSegment = null;
-        docStoreIsCompoundFile = false;
-      } else {
-        SegmentInfo si = segmentInfos.info(minSegment);        
-        docStoreOffset = si.getDocStoreOffset();
-        docStoreSegment = si.getDocStoreSegment();
-        docStoreIsCompoundFile = si.getDocStoreIsCompoundFile();
-      }
-
-      if (mergeDocStores && doFlushDocStore)
-        // SegmentMerger intends to merge the doc stores
-        // (stored fields, vectors), and at least one of the
-        // segments to be merged refers to the currently
-        // live doc stores.
-        flushDocStores();
-
-      merger = new SegmentMerger(this, mergedName);
-
-      for (int i = minSegment; i < end; i++) {
-        SegmentInfo si = segmentInfos.info(i);
-        if (infoStream != null)
-          infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-        IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, mergeDocStores); // no need to set deleter (yet)
+      int totDocCount = 0;
+      for (int i = 0; i < numSegments; i++) {
+        SegmentInfo si = sourceSegmentsClone.info(i);
+        IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, merge.mergeDocStores); // no need to set deleter (yet)
         merger.add(reader);
+        if (infoStream != null)
+          totDocCount += reader.numDocs();
+      }
+      if (infoStream != null) {
+        message("merge: total "+totDocCount+" docs");
       }
 
-      SegmentInfos rollback = null;
-      boolean success = false;
+      mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 
-      // This is try/finally to rollback our internal state
-      // if we hit exception when doing the merge:
-      try {
+      if (infoStream != null)
+        assert mergedDocCount == totDocCount;
 
-        mergedDocCount = merger.merge(mergeDocStores);
+      success = true;
 
-        if (infoStream != null) {
-          infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
-        }
-
-        newSegment = new SegmentInfo(mergedName, mergedDocCount,
-                                     directory, false, true,
-                                     docStoreOffset,
-                                     docStoreSegment,
-                                     docStoreIsCompoundFile);
-        
-        rollback = (SegmentInfos) segmentInfos.clone();
-
-        for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
-          segmentInfos.remove(i);
-
-        segmentInfos.set(minSegment, newSegment);
-
-        checkpoint();
-
-        success = true;
-
-      } finally {
-        if (!success) {
-          if (rollback != null) {
-            // Rollback the individual SegmentInfo
-            // instances, but keep original SegmentInfos
-            // instance (so we don't try to write again the
-            // same segments_N file -- write once):
-            segmentInfos.clear();
-            segmentInfos.addAll(rollback);
-          }
-
-          // Delete any partially created and now unreferenced files:
-          deleter.refresh();
-        }
-      }
     } finally {
-      // close readers before we attempt to delete now-obsolete segments
+      // close readers before we attempt to delete
+      // now-obsolete segments
       if (merger != null) {
         merger.closeReaders();
       }
-    }
-
-    // Give deleter a chance to remove files now.
-    deleter.checkpoint(segmentInfos, autoCommit);
-
-    if (useCompoundFile) {
-
-      boolean success = false;
-
-      try {
-
-        merger.createCompoundFile(mergedName + ".cfs");
-        newSegment.setUseCompoundFile(true);
-        checkpoint();
-        success = true;
-
-      } finally {
-        if (!success) {  
-          // Must rollback:
-          newSegment.setUseCompoundFile(false);
-          deleter.refresh();
+      if (!success) {
+        if (infoStream != null)
+          message("hit exception during merge; now refresh deleter on segment " + mergedName);
+        synchronized(this) {
+          addMergeException(merge);
+          deleter.refresh(mergedName);
         }
       }
+    }
+
+    if (!commitMerge(merge))
+      // commitMerge will return false if this merge was aborted
+      return 0;
+
+    if (merge.useCompoundFile) {
       
-      // Give deleter a chance to remove files now.
-      deleter.checkpoint(segmentInfos, autoCommit);
+      success = false;
+      boolean skip = false;
+      final String compoundFileName = mergedName + "." + IndexFileNames.COMPOUND_FILE_EXTENSION;
+
+      try {
+        try {
+          merger.createCompoundFile(compoundFileName);
+          success = true;
+        } catch (IOException ioe) {
+          synchronized(this) {
+            if (segmentInfos.indexOf(merge.info) == -1) {
+              // If another merge kicked in and merged our
+              // new segment away while we were trying to
+              // build the compound file, we can hit a
+              // FileNotFoundException and possibly
+              // IOException over NFS.  We can tell this has
+              // happened because our SegmentInfo is no
+              // longer in the segments; if this has
+              // happened it is safe to ignore the exception
+              // & skip finishing/committing our compound
+              // file creating.
+              if (infoStream != null)
+                message("hit exception creating compound file; ignoring it because our info (segment " + merge.info.name + ") has been merged away");
+              skip = true;
+            } else
+              throw ioe;
+          }
+        }
+      } finally {
+        if (!success) {
+          if (infoStream != null)
+            message("hit exception creating compound file during merge: skip=" + skip);
+
+          synchronized(this) {
+            if (!skip)
+              addMergeException(merge);
+            deleter.deleteFile(compoundFileName);
+          }
+        }
+      }
+
+      if (!skip) {
+
+        synchronized(this) {
+          if (skip || segmentInfos.indexOf(merge.info) == -1 || merge.isAborted()) {
+            // Our segment (committed in non-compound
+            // format) got merged away while we were
+            // building the compound format.
+            deleter.deleteFile(compoundFileName);
+          } else {
+            success = false;
+            try {
+              merge.info.setUseCompoundFile(true);
+              checkpoint();
+              success = true;
+            } finally {
+              if (!success) {  
+                if (infoStream != null)
+                  message("hit exception checkpointing compound file during merge");
+
+                // Must rollback:
+                addMergeException(merge);
+                merge.info.setUseCompoundFile(false);
+                deletePartialSegmentsFile();
+                deleter.deleteFile(compoundFileName);
+              }
+            }
+      
+            // Give deleter a chance to remove files now.
+            deleter.checkpoint(segmentInfos, autoCommit);
+          }
+        }
+      }
     }
 
     return mergedDocCount;
+  }
+
+  void addMergeException(MergePolicy.OneMerge merge) {
+    if (!mergeExceptions.contains(merge) && mergeGen == merge.mergeGen)
+      mergeExceptions.add(merge);
+  }
+
+  private void deletePartialSegmentsFile() throws IOException  {
+    if (segmentInfos.getLastGeneration() != segmentInfos.getGeneration()) {
+      String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
+                                                                     "",
+                                                                     segmentInfos.getGeneration());
+      if (infoStream != null)
+        message("now delete partial segments file \"" + segmentFileName + "\"");
+
+      deleter.deleteFile(segmentFileName);
+    }
   }
 
   // Called during flush to apply any buffered deletes.  If
@@ -2284,8 +3024,8 @@ public class IndexWriter {
     int delCount = 0;
     if (bufferedDeleteTerms.size() > 0) {
       if (infoStream != null)
-        infoStream.println("flush " + docWriter.getNumBufferedDeleteTerms() + " buffered deleted terms on "
-                           + segmentInfos.size() + " segments.");
+        message("flush " + docWriter.getNumBufferedDeleteTerms() + " buffered deleted terms on "
+                + segmentInfos.size() + " segments.");
 
       if (flushedNewSegment) {
         IndexReader reader = null;
@@ -2341,29 +3081,6 @@ public class IndexWriter {
     return delCount;
   }
 
-  private final boolean checkNonDecreasingLevels(int start) {
-    int lowerBound = -1;
-    int upperBound = docWriter.getMaxBufferedDocs();
-
-    /* new merge policy
-    if (upperBound == 0)
-      upperBound = 10;
-    */
-
-    for (int i = segmentInfos.size() - 1; i >= start; i--) {
-      int docCount = segmentInfos.info(i).docCount;
-      if (docCount <= lowerBound) {
-        return false;
-      }
-
-      while (docCount > upperBound) {
-        lowerBound = upperBound;
-        upperBound *= mergeFactor;
-      }
-    }
-    return true;
-  }
-
   // For test purposes.
   final synchronized int getBufferedDeleteTermsSize() {
     return docWriter.getBufferedDeleteTerms().size();
@@ -2417,13 +3134,18 @@ public class IndexWriter {
     return delCount;
   }
 
+  // utility routines for tests
+  SegmentInfo newestSegment() {
+    return segmentInfos.info(segmentInfos.size()-1);
+  }
+
   public synchronized String segString() {
     StringBuffer buffer = new StringBuffer();
     for(int i = 0; i < segmentInfos.size(); i++) {
       if (i > 0) {
         buffer.append(' ');
       }
-      buffer.append(segmentInfos.info(i).name + ":" + segmentInfos.info(i).docCount);
+      buffer.append(segmentInfos.info(i).segString(directory));
     }
 
     return buffer.toString();
