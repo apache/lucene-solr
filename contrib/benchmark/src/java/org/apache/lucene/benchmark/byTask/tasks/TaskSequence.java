@@ -35,7 +35,9 @@ public class TaskSequence extends PerfTask {
   private boolean letChildReport = true;
   private int rate = 0;
   private boolean perMin = false; // rate, if set, is, by default, be sec.
-  private String seqName; 
+  private String seqName;
+  private boolean exhausted = false;
+  private boolean resetExhausted = false;
   
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
@@ -90,6 +92,7 @@ public class TaskSequence extends PerfTask {
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#doLogic()
    */
   public int doLogic() throws Exception {
+    resetExhausted = false;
     return ( parallel ? doParallelTasks() : doSerialTasks());
   }
 
@@ -99,7 +102,6 @@ public class TaskSequence extends PerfTask {
     }
     
     int count = 0;
-    boolean exhausted = false;
     
     final int numTasks = tasks.size();
     final PerfTask[] tasksArray = new PerfTask[numTasks];
@@ -110,6 +112,7 @@ public class TaskSequence extends PerfTask {
       for(int l=0;l<numTasks;l++)
         try {
           count += tasksArray[l].runAndMaybeStats(letChildReport);
+          updateExhausted(tasksArray[l]);
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
@@ -121,7 +124,6 @@ public class TaskSequence extends PerfTask {
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
     int count = 0;
-    boolean exhausted = false;
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       for (Iterator it = tasks.iterator(); it.hasNext();) {
         PerfTask task = (PerfTask) it.next();
@@ -133,12 +135,32 @@ public class TaskSequence extends PerfTask {
         nextStartTime += delayStep; // this aims at avarage rate. 
         try {
           count += task.runAndMaybeStats(letChildReport);
+          updateExhausted(task);
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
       }
     }
     return count;
+  }
+
+  // update state regarding exhaustion.
+  private void updateExhausted(PerfTask task) {
+    if (task instanceof ResetInputsTask) {
+      exhausted = false;
+      resetExhausted = true;
+    } else {
+      if (task instanceof TaskSequence) {
+        TaskSequence t = (TaskSequence) task;
+        if (t.resetExhausted) {
+          exhausted = false;
+          resetExhausted = true;
+          t.resetExhausted = false;
+        } else {
+          exhausted |= t.exhausted;
+        }
+      }
+    }
   }
 
   private int doParallelTasks() throws Exception {
@@ -154,11 +176,14 @@ public class TaskSequence extends PerfTask {
             int n;
             try {
               n = task.runAndMaybeStats(letChildReport);
+              updateExhausted(task);
+              synchronized (count) {
+                count[0] += n;
+              }
+            } catch (NoMoreDataException e) {
+              exhausted = true;
             } catch (Exception e) {
               throw new RuntimeException(e);
-            }
-            synchronized (count) {
-              count[0] += n;
             }
           }
         };

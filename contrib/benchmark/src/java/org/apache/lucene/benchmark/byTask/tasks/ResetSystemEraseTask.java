@@ -28,7 +28,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
  * Index is erased.
  * Directory is erased.
  */
-public class ResetSystemEraseTask extends PerfTask {
+public class ResetSystemEraseTask extends ResetSystemSoftTask {
 
   public ResetSystemEraseTask(PerfRunData runData) {
     super(runData);
@@ -39,12 +39,4 @@ public class ResetSystemEraseTask extends PerfTask {
     return 0;
   }
   
-  /*
-   * (non-Javadoc)
-   * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#shouldNotRecordStats()
-   */
-  protected boolean shouldNotRecordStats() {
-    return true;
-  }
-
 }

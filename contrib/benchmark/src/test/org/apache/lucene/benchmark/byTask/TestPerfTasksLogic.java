@@ -282,6 +282,39 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals(totalTokenCount1, totalTokenCount2);
   }
   
+  /**
+   * Test that " {[AddDoc(4000)]: 4} : * " works corrcetly (for LUCENE-941)
+   */
+  public void testParallelExhausted() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "CreateIndex",
+        "{ [ AddDoc]: 4} : * ",
+        "ResetInputs ",
+        "{ [ AddDoc]: 4} : * ",
+        "CloseIndex",
+    };
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 2 * 20; // Reuters20DocMaker exhausts after 20 docs.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+  }
+
   // create the benchmark and execute it. 
   public static Benchmark execBenchmark(String[] algLines) throws Exception {
     String algText = algLinesToText(algLines);
@@ -320,6 +353,10 @@ public class TestPerfTasksLogic extends TestCase {
       }
       nDocs++;
       return super.getNextDocData();
+    }
+    public synchronized void resetInputs() {
+      super.resetInputs();
+      nDocs = 0;
     }
   }
 }
