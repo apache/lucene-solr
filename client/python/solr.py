@@ -37,10 +37,18 @@ import urllib
 
 
 class SolrException(Exception):
-  def __init__(self, httpcode, appcode=None, reason=None, body=None):
-    self.httpcode,self.appcode,self.reason,self.body = httpcode,appcode,reason,body
-  def __str__(self):
-    return 'HTTP code=%s, Application code=%s, Reason=%s, body=%s' % (self.httpcode,self.appcode,self.reason,self.body)
+    """ An exception thrown by solr connections """
+    def __init__(self, httpcode, reason=None, body=None):
+        self.httpcode = httpcode
+        self.reason = reason
+        self.body = body
+
+    def __repr__(self):
+        return 'HTTP code=%s, Reason=%s, body=%s' % (
+                    self.httpcode, self.reason, self.body)
+
+    def __str__(self):
+        return 'HTTP code=%s, reason=%s' % (self.httpcode, self.reason)
 
 
 class SolrConnection:
@@ -72,7 +80,7 @@ class SolrConnection:
 
   def __errcheck(self,rsp):
     if rsp.status != 200:
-      ex = SolrException(rsp.status)
+      ex = SolrException(rsp.status, rsp.reason)
       try:
         ex.body = rsp.read()
       except:
@@ -99,14 +107,15 @@ class SolrConnection:
       data = rsp.read()
     finally:
       if not self.persistent: self.conn.close()
-    #fast path... don't parse XML if we recognize response as success
-    if not data.startswith('<result status="0"'):
+    #detect old-style error response (HTTP response code of
+    #200 with a non-zero status.
+    if data.startswith('<result status="') and not data.startswith('<result status="0"'):
       data = self.decoder(data)[0]
-      d = parseString(data)
-      status = d.documentElement.getAttribute('status')
-      if status!=0:
-        reason = d.documentElement.firstChild.nodeValue
-        raise SolrException(rsp.status, status, reason)
+      parsed = parseString(data)
+      status = parsed.documentElement.getAttribute('status')
+      if status != 0:
+        reason = parsed.documentElement.firstChild.nodeValue
+        raise SolrException(rsp.status, reason)
     return data
 
   def escapeVal(self,val):
