@@ -73,12 +73,23 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String OVERWRITE_COMMITTED = "overwriteCommitted"; // @Deprecated
   public static final String OVERWRITE_PENDING = "overwritePending";  // @Deprecated
   public static final String ALLOW_DUPS = "allowDups"; 
+
+  XMLInputFactory inputFactory;
   
-  @SuppressWarnings("unchecked")
   @Override
   public void init(NamedList args)
   {
     super.init(args);
+    
+    inputFactory = BaseXMLInputFactory.newInstance();
+    try {
+      inputFactory.setProperty("reuse-instance", Boolean.FALSE);
+    }
+    catch( IllegalArgumentException ex ) {
+      // The java 1.5 com.bea.xml does not support this property, but behaves properly in a
+      // multi-threaded environment.  Ignore the error for 1.5
+      log.info( "Unable to set the 'reuse-instance' property for the input factory: "+inputFactory );
+    }
   }
   
   @Override
@@ -102,7 +113,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       for( ContentStream stream : req.getContentStreams() ) {
         Reader reader = stream.getReader();
         try {
-          XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
           XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
           this.processUpdate( processor, parser );
         }
@@ -365,7 +375,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       SolrParams params = new MapSolrParams( new HashMap<String, String>() );
       SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
       SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
-      XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
       XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
       UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
       this.processUpdate( processor, parser );
