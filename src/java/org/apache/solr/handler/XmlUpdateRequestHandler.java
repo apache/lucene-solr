@@ -74,14 +74,11 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String OVERWRITE_PENDING = "overwritePending";  // @Deprecated
   public static final String ALLOW_DUPS = "allowDups"; 
   
-  private XMLInputFactory inputFactory;
-  
   @SuppressWarnings("unchecked")
   @Override
   public void init(NamedList args)
   {
     super.init(args);
-    inputFactory = BaseXMLInputFactory.newInstance();
   }
   
   @Override
@@ -105,6 +102,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       for( ContentStream stream : req.getContentStreams() ) {
         Reader reader = stream.getReader();
         try {
+          XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
           XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
           this.processUpdate( processor, parser );
         }
@@ -367,6 +365,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       SolrParams params = new MapSolrParams( new HashMap<String, String>() );
       SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
       SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
+      XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
       XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
       UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
       this.processUpdate( processor, parser );
