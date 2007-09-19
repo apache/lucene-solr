@@ -17,31 +17,65 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.SolrExampleTestBase;
+import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.SchemaField;
 
 /**
- * This runs SolrServer test using 
+ * TODO? perhaps use:
+ *  http://docs.codehaus.org/display/JETTY/ServletTester
+ * rather then open a real connection?
  * 
  * @version $Id$
  * @since solr 1.3
  */
-public class TestEmbeddedSolrServer extends SolrExampleTestBase {
+public class SolrExampleJettyTest extends SolrExampleTests {
 
   SolrServer server;
+  JettySolrRunner jetty;
+
+  static final int port = 8984; // not 8983
+  static final String context = "/example";
   
   @Override public void setUp() throws Exception 
   {
     super.setUp();
     
-    // setup the server...
-    server = new EmbeddedSolrServer( h.getCore() );
+    jetty = new JettySolrRunner( context, port );
+    jetty.start();
+    
+    server = this.createNewSolrServer();
   }
 
+  @Override public void tearDown() throws Exception 
+  {
+    super.tearDown();
+    jetty.stop();  // stop the server
+  }
+  
+  
   @Override
   protected SolrServer getSolrServer()
   {
     return server;
+  }
+
+  @Override
+  protected SolrServer createNewSolrServer()
+  {
+    try {
+      // setup the server...
+      String url = "http://localhost:"+port+context;
+      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+      s.setConnectionTimeout(5);
+      s.setDefaultMaxConnectionsPerHost(100);
+      s.setMaxTotalConnections(100);
+      return s;
+    }
+    catch( Exception ex ) {
+      throw new RuntimeException( ex );
+    }
   }
 }
