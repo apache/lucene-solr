@@ -237,13 +237,16 @@ public final class SolrCore {
    */
   @Deprecated
   public static SolrCore getSolrCore() {
-    if( instance == null ) {
-      try {
-        instance = new SolrCore(null, new SolrConfig(), null);
-      } 
-      catch(Exception xany) {
-        log.throwing("SolrCore", "getSolrCore", xany);
-        return null;
+    synchronized( SolrCore.class ) {
+      if( instance == null ) {
+        try {
+          // sets 'instance' to the latest solr core
+          instance = new SolrCore(null, new SolrConfig(), null);  
+        }
+        catch(Exception xany) {
+          log.throwing("SolrCore", "getSolrCore", xany);
+          return null;
+        }
       }
     }
     return instance;
