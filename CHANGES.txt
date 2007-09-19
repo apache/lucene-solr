@@ -142,6 +142,9 @@ Optimizations
 
  3. SOLR-348: short-circuit faceting if less than mincount docs match. (yonik)
 
+ 4. SOLR-354: Optimize removing all documents.  Now when a delete by query
+    of *:* is issued, the current index is removed. (yonik)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
