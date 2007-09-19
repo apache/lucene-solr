@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Assert;
 
 /**
  * @version $Id$
@@ -58,8 +57,8 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
   private void query(int count) throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = gserver.query(query);
-    Assert.assertEquals(0, response.getStatus());
-    Assert.assertEquals(count, response.getResults().getNumFound());
+    assertEquals(0, response.getStatus());
+    assertEquals(count, response.getResults().getNumFound());
   }
 
   public class DocThread extends Thread {
@@ -103,7 +102,7 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
 
       } catch (Exception e) {
         e.printStackTrace();
-        Assert.fail( getName() + "---" + e.getMessage() );
+        fail( getName() + "---" + e.getMessage() );
       }
     }
   }
