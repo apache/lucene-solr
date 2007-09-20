@@ -39,7 +39,8 @@ public class TestDateFormater extends TestCase {
             Date date = new Date();
             String formatedDate = DateFormater.formatDate(date,DateFormater.HTTP_HEADER_DATE_FORMAT);
             System.out.println("DATE: " + formatedDate);
-            assertTrue(pattern.matcher(formatedDate).matches());    
+            assertTrue(formatedDate + " does not match expected pattern",
+                       pattern.matcher(formatedDate).matches());
             DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 +0000",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
             DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 CEST",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
             //TODO extend this
