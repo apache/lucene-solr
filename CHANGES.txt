@@ -136,6 +136,12 @@ Optimizations
  9. LUCENE-871: Speedup ISOLatin1AccentFilter (Ian Boston via Mike
     McCandless)
 
+10. LUCENE-986: Refactored SegmentInfos from IndexReader into the new
+    subclass DirectoryIndexReader. SegmentReader and MultiSegmentReader
+    now extend DirectoryIndexReader and are the only IndexReader 
+    implementations that use SegmentInfos to access an index and 
+    acquire a write lock for index modifications. (Michael Busch)
+
 Documentation
 
 Build

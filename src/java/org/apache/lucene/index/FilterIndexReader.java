@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -99,10 +100,14 @@ public class FilterIndexReader extends IndexReader {
    * @param in specified base reader.
    */
   public FilterIndexReader(IndexReader in) {
-    super(in.directory());
+    super();
     this.in = in;
   }
 
+  public Directory directory() {
+    return in.directory();
+  }
+  
   public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException {
     ensureOpen();

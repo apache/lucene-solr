@@ -17,128 +17,33 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 import java.io.IOException;
 
-public class TestMultiReader extends TestCase {
-  private Directory dir = new RAMDirectory();
-  private Document doc1 = new Document();
-  private Document doc2 = new Document();
-  private SegmentReader reader1;
-  private SegmentReader reader2;
-  private SegmentReader [] readers = new SegmentReader[2];
-  private SegmentInfos sis = new SegmentInfos();
-  
+import org.apache.lucene.store.Directory;
+
+public class TestMultiReader extends TestMultiSegmentReader {
   public TestMultiReader(String s) {
     super(s);
   }
 
-  protected void setUp() throws IOException {
-    DocHelper.setupDoc(doc1);
-    DocHelper.setupDoc(doc2);
-    SegmentInfo info1 = DocHelper.writeDoc(dir, doc1);
-    SegmentInfo info2 = DocHelper.writeDoc(dir, doc2);
-    sis.write(dir);
-    openReaders();
-  }
+  protected IndexReader openReader() throws IOException {
+    IndexReader reader;
 
-  private void openReaders() throws IOException {
     sis.read(dir);
-    reader1 = SegmentReader.get(sis.info(0));
-    reader2 = SegmentReader.get(sis.info(1));
+    SegmentReader reader1 = SegmentReader.get(sis.info(0));
+    SegmentReader reader2 = SegmentReader.get(sis.info(1));
     readers[0] = reader1;
     readers[1] = reader2;
-  }
-
-  public void test() {
-    assertTrue(dir != null);
     assertTrue(reader1 != null);
     assertTrue(reader2 != null);
+
+    reader = new MultiReader(readers);
+
+    assertTrue(dir != null);
     assertTrue(sis != null);
-  }    
-
-  public void testDocument() throws IOException {
-    sis.read(dir);
-    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
     assertTrue(reader != null);
-    Document newDoc1 = reader.document(0);
-    assertTrue(newDoc1 != null);
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    Document newDoc2 = reader.document(1);
-    assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
-    TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-    assertTrue(vector != null);
-    TestSegmentReader.checkNorms(reader);
+    
+    return reader;
   }
 
-  public void testUndeleteAll() throws IOException {
-    sis.read(dir);
-    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
-    assertTrue(reader != null);
-    assertEquals( 2, reader.numDocs() );
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.undeleteAll();
-    assertEquals( 2, reader.numDocs() );
-
-    // Ensure undeleteAll survives commit/close/reopen:
-    reader.commit();
-    reader.close();
-    sis.read(dir);
-    openReaders();
-    reader = new MultiSegmentReader(dir, sis, false, readers);
-    assertEquals( 2, reader.numDocs() );
-
-    reader.deleteDocument(0);
-    assertEquals( 1, reader.numDocs() );
-    reader.commit();
-    reader.close();
-    sis.read(dir);
-    reader = new MultiSegmentReader(dir, sis, false, readers);
-    assertEquals( 1, reader.numDocs() );
-  }
-        
-  
-  public void testTermVectors() {
-    MultiSegmentReader reader = new MultiSegmentReader(dir, sis, false, readers);
-    assertTrue(reader != null);
-  }
-  
-
-  public void testIsCurrent() throws IOException {
-    RAMDirectory ramDir1=new RAMDirectory();
-    addDoc(ramDir1, "test foo", true);
-    RAMDirectory ramDir2=new RAMDirectory();
-    addDoc(ramDir2, "test blah", true);
-    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2)};
-    MultiReader mr = new MultiReader(readers);
-    assertTrue(mr.isCurrent());   // just opened, must be current
-    addDoc(ramDir1, "more text", false);
-    assertFalse(mr.isCurrent());   // has been modified, not current anymore
-    addDoc(ramDir2, "even more text", false);
-    assertFalse(mr.isCurrent());   // has been modified even more, not current anymore
-    try {
-      mr.getVersion();
-      fail();
-    } catch (UnsupportedOperationException e) {
-      // expected exception
-    }
-    mr.close();
-  }
-
-  private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(), create);
-    Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
-    iw.addDocument(doc);
-    iw.close();
-  }
 }

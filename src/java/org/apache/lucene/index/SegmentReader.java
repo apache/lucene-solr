@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * @version $Id$
  */
-class SegmentReader extends IndexReader {
+class SegmentReader extends DirectoryIndexReader {
   private String segment;
   private SegmentInfo si;
 
@@ -122,8 +122,6 @@ class SegmentReader extends IndexReader {
     }
   }
 
-  protected SegmentReader() { super(null); }
-
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -193,7 +191,7 @@ class SegmentReader extends IndexReader {
     } catch (Exception e) {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
-    instance.init(dir, sis, closeDir, ownDir);
+    instance.init(dir, sis, closeDir);
     instance.initialize(si, readBufferSize, doOpenStores);
     return instance;
   }
@@ -289,7 +287,7 @@ class SegmentReader extends IndexReader {
     }
   }
 
-  protected void doCommit() throws IOException {
+  protected void commitChanges() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted
       si.advanceDelGen();
 
@@ -339,6 +337,9 @@ class SegmentReader extends IndexReader {
 
     if (storeCFSReader != null)
       storeCFSReader.close();
+    
+    // maybe close directory
+    super.doClose();
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {

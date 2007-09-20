@@ -30,8 +30,8 @@ import java.util.Set;
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
-class MultiSegmentReader extends IndexReader {
-  protected IndexReader[] subReaders;
+class MultiSegmentReader extends DirectoryIndexReader {
+  protected SegmentReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private Hashtable normsCache = new Hashtable();
   private int maxDoc = 0;
@@ -39,12 +39,30 @@ class MultiSegmentReader extends IndexReader {
   private boolean hasDeletions = false;
 
   /** Construct reading the named set of readers. */
-  MultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory, IndexReader[] subReaders) {
+  MultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory) throws IOException {
     super(directory, sis, closeDirectory);
-    initialize(subReaders);
+    // To reduce the chance of hitting FileNotFound
+    // (and having to retry), we open segments in
+    // reverse because IndexWriter merges & deletes
+    // the newest segments first.
+
+    SegmentReader[] readers = new SegmentReader[sis.size()];
+    for (int i = sis.size()-1; i >= 0; i--) {
+      try {
+        readers[i] = SegmentReader.get(sis.info(i));
+      } catch (IOException e) {
+        // Close all readers we had opened:
+        for(i++;i<sis.size();i++) {
+          readers[i].close();
+        }
+        throw e;
+      }
+    }
+
+    initialize(readers);
   }
 
-  private void initialize(IndexReader[] subReaders) {
+  private void initialize(SegmentReader[] subReaders) {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
     for (int i = 0; i < subReaders.length; i++) {
@@ -138,8 +156,12 @@ class MultiSegmentReader extends IndexReader {
   }
 
   private int readerIndex(int n) {    // find reader for doc n:
+    return readerIndex(n, this.starts, this.subReaders.length);
+  }
+  
+  static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
     int lo = 0;                                      // search starts array
-    int hi = subReaders.length - 1;                  // for first element less
+    int hi = numSubReaders - 1;                  // for first element less
 
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
@@ -149,7 +171,7 @@ class MultiSegmentReader extends IndexReader {
       else if (n > midValue)
         lo = mid + 1;
       else {                                      // found a match
-        while (mid+1 < subReaders.length && starts[mid+1] == midValue) {
+        while (mid+1 < numSubReaders && starts[mid+1] == midValue) {
           mid++;                                  // scan to last match
         }
         return mid;
@@ -234,7 +256,7 @@ class MultiSegmentReader extends IndexReader {
     return new MultiTermPositions(subReaders, starts);
   }
 
-  protected void doCommit() throws IOException {
+  protected void commitChanges() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit();
   }
@@ -256,11 +278,18 @@ class MultiSegmentReader extends IndexReader {
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].close();
+    
+    // maybe close directory
+    super.doClose();
   }
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
-    // maintain a unique set of field names
     ensureOpen();
+    return getFieldNames(fieldNames, this.subReaders);
+  }
+  
+  static Collection getFieldNames (IndexReader.FieldOption fieldNames, IndexReader[] subReaders) {
+    // maintain a unique set of field names
     Set fieldSet = new HashSet();
     for (int i = 0; i < subReaders.length; i++) {
       IndexReader reader = subReaders[i];

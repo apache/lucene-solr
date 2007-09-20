@@ -44,6 +44,13 @@ import java.util.Collection;
  <p> An IndexReader can be opened on a directory for which an IndexWriter is
  opened already, but it cannot be used to delete documents from the index then.
 
+ <p>
+ NOTE: for backwards API compatibility, several methods are not listed 
+ as abstract, but have no useful implementations in this base class and 
+ instead always throw UnsupportedOperationException.  Subclasses are 
+ strongly encouraged to override these methods, but in many cases may not 
+ need to.
+ </p>
 
  @version $Id$
 */
@@ -80,41 +87,35 @@ public abstract class IndexReader {
     public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
   }
 
+  protected boolean closed;
+  protected boolean hasChanges;
+  
+  /** 
+   * @deprecated will be deleted when IndexReader(Directory) is deleted
+   * @see #directory()
+   */
+  private Directory directory;
+
   /**
-   * Constructor used if IndexReader is not owner of its directory. 
-   * This is used for IndexReaders that are used within other IndexReaders that take care or locking directories.
+   * Legacy Constructor for backwards compatibility.
+   *
+   * <p>
+   * This Constructor should not be used, it exists for backwards 
+   * compatibility only to support legacy subclasses that did not "own" 
+   * a specific directory, but needed to specify something to be returned 
+   * by the directory() method.  Future subclasses should delegate to the 
+   * no arg constructor and implement the directory() method as appropriate.
    * 
-   * @param directory Directory where IndexReader files reside.
+   * @param directory Directory to be returned by the directory() method
+   * @see #directory()
+   * @deprecated - use IndexReader()
    */
   protected IndexReader(Directory directory) {
     this.directory = directory;
   }
-
-  /**
-   * Constructor used if IndexReader is owner of its directory.
-   * If IndexReader is owner of its directory, it locks its directory in case of write operations.
-   * 
-   * @param directory Directory where IndexReader files reside.
-   * @param segmentInfos Used for write-l
-   * @param closeDirectory
-   */
-  IndexReader(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory) {
-    init(directory, segmentInfos, closeDirectory, true);
-  }
-
-  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory, boolean directoryOwner) {
-    this.directory = directory;
-    this.segmentInfos = segmentInfos;
-    this.directoryOwner = directoryOwner;
-    this.closeDirectory = closeDirectory;
-  }
-
-  private Directory directory;
-  private boolean directoryOwner;
-  private boolean closeDirectory;
-  private IndexDeletionPolicy deletionPolicy;
-  private boolean closed;
-
+  
+  protected IndexReader() { /* NOOP */ }
+  
   /**
    * @throws AlreadyClosedException if this IndexReader is closed
    */
@@ -123,16 +124,6 @@ public abstract class IndexReader {
       throw new AlreadyClosedException("this IndexReader is closed");
     }
   }
-
-  private SegmentInfos segmentInfos;
-  private Lock writeLock;
-  private boolean stale;
-  private boolean hasChanges;
-
-  /** Used by commit() to record pre-commit state in case
-   * rollback is necessary */
-  private boolean rollbackHasChanges;
-  private SegmentInfos rollbackSegmentInfos;
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    path.
@@ -184,43 +175,33 @@ public abstract class IndexReader {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
 
-        IndexReader reader;
+        DirectoryIndexReader reader;
 
         if (infos.size() == 1) {		  // index is optimized
           reader = SegmentReader.get(infos, infos.info(0), closeDirectory);
         } else {
-
-          // To reduce the chance of hitting FileNotFound
-          // (and having to retry), we open segments in
-          // reverse because IndexWriter merges & deletes
-          // the newest segments first.
-
-          IndexReader[] readers = new IndexReader[infos.size()];
-          for (int i = infos.size()-1; i >= 0; i--) {
-            try {
-              readers[i] = SegmentReader.get(infos.info(i));
-            } catch (IOException e) {
-              // Close all readers we had opened:
-              for(i++;i<infos.size();i++) {
-                readers[i].close();
-              }
-              throw e;
-            }
-          }
-
-          reader = new MultiSegmentReader(directory, infos, closeDirectory, readers);
+          reader = new MultiSegmentReader(directory, infos, closeDirectory);
         }
-        reader.deletionPolicy = deletionPolicy;
+        reader.setDeletionPolicy(deletionPolicy);
         return reader;
       }
     }.run();
   }
 
-  /** Returns the directory this index resides in.
+  /** 
+   * Returns the directory associated with this index.  The Default 
+   * implementation returns the directory specified by subclasses when 
+   * delegating to the IndexReader(Directory) constructor, or throws an 
+   * UnsupportedOperationException if one was not specified.
+   * @throws UnsupportedOperationException if no directory
    */
   public Directory directory() {
     ensureOpen();
-    return directory;
+    if (null != directory) {
+      return directory;
+    } else {
+      throw new UnsupportedOperationException("This reader does not support this method.");  
+    }
   }
 
   /**
@@ -310,11 +291,11 @@ public abstract class IndexReader {
   }
 
   /**
-   * Version number when this IndexReader was opened.
+   * Version number when this IndexReader was opened. Not implemented in the IndexReader base class.
+   * @throws UnsupportedOperationException unless overridden in subclass
    */
   public long getVersion() {
-    ensureOpen();
-    return segmentInfos.getVersion();
+    throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
   /**
@@ -328,23 +309,27 @@ public abstract class IndexReader {
    * flag which controls when the {@link IndexWriter}
    * actually commits changes to the index.
    * 
+   * <p>
+   * Not implemented in the IndexReader base class.
+   * </p>
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @throws UnsupportedOperationException unless overridden in subclass
    */
   public boolean isCurrent() throws CorruptIndexException, IOException {
-    ensureOpen();
-    return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+    throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
   /**
-   * Checks is the index is optimized (if it has a single segment and no deletions)
+   * Checks is the index is optimized (if it has a single segment and 
+   * no deletions).  Not implemented in the IndexReader base class.
    * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
+   * @throws UnsupportedOperationException unless overridden in subclass
    */
   public boolean isOptimized() {
-    ensureOpen();
-    return segmentInfos.size() == 1 && hasDeletions() == false;
+    throw new UnsupportedOperationException("This reader does not support this method.");
   }
-
+  
   /**
    *  Return an array of term frequency vectors for the specified document.
    *  The array contains a vector for each vectorized field in the document.
@@ -524,8 +509,7 @@ public abstract class IndexReader {
   public final synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
-    if(directoryOwner)
-      acquireWriteLock();
+    acquireWriteLock();
     hasChanges = true;
     doSetNorm(doc, field, value);
   }
@@ -630,39 +614,6 @@ public abstract class IndexReader {
    */
   public abstract TermPositions termPositions() throws IOException;
 
-  /**
-   * Tries to acquire the WriteLock on this directory.
-   * this method is only valid if this IndexReader is directory owner.
-   * 
-   * @throws StaleReaderException if the index has changed
-   * since this reader was opened
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if there is a low-level IO error
-   */
-  private void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
-    ensureOpen();
-    if (stale)
-      throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
-
-    if (writeLock == null) {
-      Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-      if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
-        throw new LockObtainFailedException("Index locked for write: " + writeLock);
-      this.writeLock = writeLock;
-
-      // we have to check whether index has changed since this reader was opened.
-      // if so, this reader is no longer valid for deletion
-      if (SegmentInfos.readCurrentVersion(directory) > segmentInfos.getVersion()) {
-        stale = true;
-        this.writeLock.release();
-        this.writeLock = null;
-        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
-      }
-    }
-  }
 
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
@@ -682,8 +633,7 @@ public abstract class IndexReader {
    */
   public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
-    if(directoryOwner)
-      acquireWriteLock();
+    acquireWriteLock();
     hasChanges = true;
     doDelete(docNum);
   }
@@ -740,8 +690,7 @@ public abstract class IndexReader {
    */
   public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
-    if(directoryOwner)
-      acquireWriteLock();
+    acquireWriteLock();
     hasChanges = true;
     doUndeleteAll();
   }
@@ -749,35 +698,10 @@ public abstract class IndexReader {
   /** Implements actual undeleteAll() in subclass. */
   protected abstract void doUndeleteAll() throws CorruptIndexException, IOException;
 
-  /**
-   * Should internally checkpoint state that will change
-   * during commit so that we can rollback if necessary.
-   */
-  void startCommit() {
-    if (directoryOwner) {
-      rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
-    }
-    rollbackHasChanges = hasChanges;
-  }
-
-  /**
-   * Rolls back state to just before the commit (this is
-   * called by commit() if there is some exception while
-   * committing).
-   */
-  void rollbackCommit() {
-    if (directoryOwner) {
-      for(int i=0;i<segmentInfos.size();i++) {
-        // Rollback each segmentInfo.  Because the
-        // SegmentReader holds a reference to the
-        // SegmentInfo we can't [easily] just replace
-        // segmentInfos, so we reset it in place instead:
-        segmentInfos.info(i).reset(rollbackSegmentInfos.info(i));
-      }
-      rollbackSegmentInfos = null;
-    }
-
-    hasChanges = rollbackHasChanges;
+  /** Does nothing by default. Subclasses that require a write lock for
+   *  index modifications must implement this method. */
+  protected synchronized void acquireWriteLock() throws IOException {
+    /* NOOP */
   }
 
   /**
@@ -791,52 +715,7 @@ public abstract class IndexReader {
    */
   protected final synchronized void commit() throws IOException {
     if(hasChanges){
-      if(directoryOwner){
-
-        // Default deleter (for backwards compatibility) is
-        // KeepOnlyLastCommitDeleter:
-        IndexFileDeleter deleter =  new IndexFileDeleter(directory,
-                                                         deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
-                                                         segmentInfos, null, null);
-
-        // Checkpoint the state we are about to change, in
-        // case we have to roll back:
-        startCommit();
-
-        boolean success = false;
-        try {
-          doCommit();
-          segmentInfos.write(directory);
-          success = true;
-        } finally {
-
-          if (!success) {
-
-            // Rollback changes that were made to
-            // SegmentInfos but failed to get [fully]
-            // committed.  This way this reader instance
-            // remains consistent (matched to what's
-            // actually in the index):
-            rollbackCommit();
-
-            // Recompute deletable files & remove them (so
-            // partially written .del files, etc, are
-            // removed):
-            deleter.refresh();
-          }
-        }
-
-        // Have the deleter remove any now unreferenced
-        // files due to this commit:
-        deleter.checkpoint(segmentInfos, true);
-
-        if (writeLock != null) {
-          writeLock.release();  // release write lock
-          writeLock = null;
-        }
-      }
-      else
-        doCommit();
+      doCommit();
     }
     hasChanges = false;
   }
@@ -854,27 +733,11 @@ public abstract class IndexReader {
     if (!closed) {
       commit();
       doClose();
-      if (directoryOwner)
-        closed = true;
-      if(closeDirectory)
-        directory.close();
     }
   }
 
   /** Implements close. */
   protected abstract void doClose() throws IOException;
-
-  /** Release the write lock, if needed. */
-  protected void finalize() throws Throwable {
-    try {
-      if (writeLock != null) {
-        writeLock.release();                        // release write lock
-        writeLock = null;
-      }
-    } finally {
-      super.finalize();
-    }
-  }
 
 
   /**

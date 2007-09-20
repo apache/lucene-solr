@@ -54,7 +54,7 @@ public class ParallelReader extends IndexReader {
   private boolean hasDeletions;
 
  /** Construct a ParallelReader. */
-  public ParallelReader() throws IOException { super(null); }
+  public ParallelReader() throws IOException { super(); }
 
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
@@ -485,6 +485,7 @@ public class ParallelReader extends IndexReader {
   }
 
 }
+
 
 
 
