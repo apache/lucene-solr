@@ -38,6 +38,7 @@ public class TestDateFormater extends TestCase {
             java.util.regex.Pattern pattern =  java.util.regex.Pattern.compile("[A-Z][a-z]{1,2}, [0-9]{1,2} [A-Z][a-z]{2} [0-9]{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2} [A-Z]{2,4}");
             Date date = new Date();
             String formatedDate = DateFormater.formatDate(date,DateFormater.HTTP_HEADER_DATE_FORMAT);
+            System.out.println("DATE: " + formatedDate);
             assertTrue(pattern.matcher(formatedDate).matches());    
             DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 +0000",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
             DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 CEST",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
