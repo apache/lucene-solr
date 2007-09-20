@@ -603,7 +603,7 @@ public class QueryParsing {
         ValueSource source = parseValSource(sp,schema);
         return new SimpleFloatFunction(source) {
           protected String name() {
-            return "log";
+            return "abs";
           }
           protected float func(int doc, DocValues vals) {
             return (float)Math.abs(vals.floatVal(doc));
