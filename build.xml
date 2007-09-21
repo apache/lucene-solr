@@ -93,8 +93,6 @@
   <property name="junit.output.dir" location="${dest}/test-results"/>
   <property name="junit.reports" location="${dest}/test-results/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
-  <available property="junitPresent"
-             classname="junit.framework.TestCase" />
 
   <!-- Macro for compilation -->
   <macrodef name="solr-javac">
@@ -385,6 +383,8 @@
 
   <!-- Check that JUnit is present. -->
   <target name="checkJunitPresence">
+    <available property="junitPresent"
+             classname="junit.framework.TestCase" classpathref="compile.classpath"/>
     <!-- no description so it doesn't show up in -projecthelp -->  
     <fail unless="junitPresent"> 
       ##################################################################

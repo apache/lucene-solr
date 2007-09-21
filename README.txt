@@ -85,11 +85,6 @@ Instructions for Building Apache Solr from Source
 4. Navigate to that folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
   
-   NOTE:
-   Solr uses JUnit (http://www.junit.org/index.htm) for unit testing.  You will need
-   the JUnit library in your Ant classpath in order to compile and run the unit tests.
-   See http://ant.apache.org/manual/OptionalTasks/junit.html for instructions.
-
    NOTE: 
    To see Solr in action, you may want to use the "ant example" command to build
    and package Solr into the example/webapps directory. See also example/README.txt.
