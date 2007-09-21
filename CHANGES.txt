@@ -167,7 +167,8 @@ Bug Fixes
     other injected tokens that can break highlighting. (yonik)
 
  8. SOLR-282: Snapshooter does not work on Solaris and OS X since the cp command
-    there does not have the -l option.  (bill)
+    there does not have the -l option.  Also updated commit/optimize related
+    scripts to handle both old and new response format.  (bill)
 
  9. SOLR-294: Logging of elapsed time broken on Solaris because the date command
     there does not support the %s output format.  (bill)
