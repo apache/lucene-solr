@@ -130,11 +130,11 @@ public final class SolrCore {
     if (nodes!=null) {
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
-          String className = DOMUtil.getAttr(node,"class");
-          SolrEventListener listener = (SolrEventListener)solrConfig.newInstance(className);
-          listener.init(DOMUtil.childNodesToNamedList(node));
-          lst.add(listener);
-          log.info("added SolrEventListener: " + listener);
+        String className = DOMUtil.getAttr(node,"class");
+        SolrEventListener listener = createEventListener(className);
+        listener.init(DOMUtil.childNodesToNamedList(node));
+        lst.add(listener);
+        log.info("added SolrEventListener: " + listener);
       }
     }
     return lst;
