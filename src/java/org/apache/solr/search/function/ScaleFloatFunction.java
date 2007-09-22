@@ -66,6 +66,11 @@ public class ScaleFloatFunction extends ValueSource {
 
     for (int i=0; i<maxDoc; i++) {
       float val = vals.floatVal(i);
+      if ((Float.floatToRawIntBits(val) & (0xff<<23)) == 0xff<<23) {
+        // if the exponent in the float is all ones, then this is +Inf, -Inf or NaN
+        // which don't make sense to factor into the scale function
+        continue;
+      }
       if (val < minVal) {
         minVal = val;
       } else if (val > maxVal) {

@@ -128,6 +128,9 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     singleTest(field,"scale(\0,-1,1)",-4,-1, 100,1, 0,-0.9230769f);
     singleTest(field,"scale(\0,-10,1000)",-4,-10, 100,1000, 0,28.846153f);
 
+    // test that infinity doesn't mess up scale function
+    singleTest(field,"scale(log(\0),-1000,1000)",100,1000);
+
   }
 
   public void testFunctions() {
