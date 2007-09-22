@@ -59,7 +59,7 @@ public class EmbeddedSolrServer extends BaseSolrServer
   public EmbeddedSolrServer( SolrCore core )
   {
     this.core = core;
-    this.parser = new SolrRequestParsers( core );
+    this.parser = new SolrRequestParsers( true, Long.MAX_VALUE );
     
     // by default use the XML one
     _processor = new XMLResponseParser();
@@ -100,7 +100,7 @@ public class EmbeddedSolrServer extends BaseSolrServer
     }
     
     try {
-      SolrQueryRequest req = parser.buildRequestFrom( params, request.getContentStreams() );
+      SolrQueryRequest req = parser.buildRequestFrom( core, params, request.getContentStreams() );
       req.getContext().put( "path", path );
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute( handler, req, rsp );

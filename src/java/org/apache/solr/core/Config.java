@@ -50,16 +50,37 @@ public class Config {
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
-  private Document doc;
-  private String prefix;
-  private String name;
+  private final String instanceDir; // solr home directory
+  private final Document doc;
+  private final String prefix;
+  private final String name;
 
-  public Config(String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException {
+  @Deprecated
+  public Config(String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  {
+    this( Config.locateInstanceDir(), name, is, prefix );
+  }
+
+  public Config(String instanceDir, String name) throws ParserConfigurationException, IOException, SAXException 
+  {
+    this( instanceDir, name, null, null );
+  }
+  
+  public Config(String instanceDir, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  {
+    if( instanceDir == null ) {
+      instanceDir = Config.locateInstanceDir();
+    }
+    
+    this.instanceDir = normalizeDir(instanceDir);
+    log.info("Solr home set to '" + instanceDir + "'");
+    classLoader = null;
+    
     this.name = name;
     this.prefix = prefix;
     if (prefix!=null && !prefix.endsWith("/")) prefix += '/';
     InputStream lis = is;
-    try{
+    try {
       if (lis == null)
         lis = openResource(name);
       
@@ -194,7 +215,7 @@ public class Config {
   // The directory where solr will look for config files by default.
   // defaults to "./solr/conf/"
   public String getConfigDir() {
-    return getInstanceDir() + "conf/";
+    return instanceDir + "conf/";
   }
   
   public InputStream openResource(String resource) {
@@ -311,7 +332,6 @@ public class Config {
     }
   }
 
-  private String instanceDir; // solr home directory
   private static String normalizeDir(String path) {
     if (path==null) return null;
     if ( !(path.endsWith("/") || path.endsWith("\\")) ) {
@@ -320,55 +340,44 @@ public class Config {
     return path;
   }
 
-  public void setInstanceDir(String dir) {
-    instanceDir = normalizeDir(dir);
-    classLoader = null;
-    log.info("Solr home set to '" + instanceDir + "'");
-  }
-
   public String getInstanceDir() {
-    if ( !isInstanceDirInitialized() ) {
-      String home = null;
-      // Try JNDI
-      try {
-        Context c = new InitialContext();
-        home = (String)c.lookup("java:comp/env/solr/home");
-        log.info("Using JNDI solr.home: "+home );
-      } catch (NoInitialContextException e) {
-        log.info("JNDI not configured for Solr (NoInitialContextEx)");
-      } catch (NamingException e) {
-        log.info("No /solr/home in JNDI");
-      } catch( RuntimeException ex ) {
-        log.warning("Odd RuntimeException while testing for JNDI: " 
-                    + ex.getMessage());
-      } 
-      
-      // Now try system property
-      if( home == null ) {
-        String prop = project + ".solr.home";
-        home = normalizeDir(System.getProperty(prop));
-        if( home != null ) {
-          log.info("using system property solr.home: " + home );
-        }
-      }
-      
-      // if all else fails, try 
-      if( home == null ) {
-        home = project + '/';
-        log.info("Solr home defaulted to '" + instanceDir + "' (could not find system property or JNDI)");
-      }
-      
-      setInstanceDir(home);
-    }
     return instanceDir;
   }
-  
-  public boolean isInstanceDirInitialized() {
-    return instanceDir != null;
+
+  public static String locateInstanceDir() {
+    String home = null;
+    // Try JNDI
+    try {
+      Context c = new InitialContext();
+      home = (String)c.lookup("java:comp/env/solr/home");
+      log.info("Using JNDI solr.home: "+home );
+    } catch (NoInitialContextException e) {
+      log.info("JNDI not configured for Solr (NoInitialContextEx)");
+    } catch (NamingException e) {
+      log.info("No /solr/home in JNDI");
+    } catch( RuntimeException ex ) {
+      log.warning("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
+    } 
+    
+    // Now try system property
+    if( home == null ) {
+      String prop = project + ".solr.home";
+      home = normalizeDir(System.getProperty(prop));
+      if( home != null ) {
+        log.info("using system property solr.home: " + home );
+      }
+    }
+    
+    // if all else fails, try 
+    if( home == null ) {
+      home = project + '/';
+      log.info("Solr home defaulted to '" + home + "' (could not find system property or JNDI)");
+    }
+    return normalizeDir( home );
   }
 
   /** Singleton classloader loading resources specified in any configs */
-  private static ClassLoader classLoader = null;
+  private ClassLoader classLoader = null;
 
   /**
    * Returns the singleton classloader to be use when loading resources
@@ -380,12 +389,12 @@ public class Config {
    * found in the "lib/" directory in the "Solr Home" directory.
    * <p>
    */
-  ClassLoader getClassLoader() {
+  private ClassLoader getClassLoader() {
     if (null == classLoader) {
       // NB5.5/win32/1.5_10: need to go thru local var or classLoader is not set!
       ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
-      File f = new File(getInstanceDir() + "lib/");
+      File f = new File(instanceDir + "lib/");
       if (f.canRead() && f.isDirectory()) {
         File[] jarFiles = f.listFiles();
         URL[] jars = new URL[jarFiles.length];
@@ -404,4 +413,10 @@ public class Config {
     return classLoader;
   }
 
+  /**
+   * @return the XML filename
+   */
+  public String getName() {
+    return name;
+  }
 }

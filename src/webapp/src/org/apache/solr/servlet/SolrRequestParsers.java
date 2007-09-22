@@ -42,8 +42,6 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.ServletSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -61,22 +59,13 @@ public class SolrRequestParsers
   public static final String STANDARD = "standard";
   
   private HashMap<String, SolrRequestParser> parsers;
-  private SolrCore core;
   private boolean enableRemoteStreams = false;
   private StandardRequestParser standard;
   
-  public SolrRequestParsers( SolrCore core )
+  public SolrRequestParsers( boolean enableRemoteStreams, long uploadLimitKB )
   {
-    this.core = core;
-    Config config = core.getSolrConfig();
-    
-    // Read the configuration
-    long uploadLimitKB = config.getInt( 
-        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2000 ); // 2MB default
-    
-    this.enableRemoteStreams = config.getBool( 
-        "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
-        
+    this.enableRemoteStreams = enableRemoteStreams;
+   
     MultipartRequestParser multi = new MultipartRequestParser( uploadLimitKB );
     RawRequestParser raw = new RawRequestParser();
     standard = new StandardRequestParser( multi, raw );
@@ -91,7 +80,7 @@ public class SolrRequestParsers
     parsers.put( "", standard );
   }
   
-  public SolrQueryRequest parse( String path, HttpServletRequest req ) throws Exception
+  public SolrQueryRequest parse( SolrCore core, String path, HttpServletRequest req ) throws Exception
   {
     SolrRequestParser parser = standard;
     
@@ -100,7 +89,7 @@ public class SolrRequestParsers
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<ContentStream>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    SolrQueryRequest sreq = buildRequestFrom( params, streams );
+    SolrQueryRequest sreq = buildRequestFrom( core, params, streams );
 
     // Handlers and loggin will want to know the path. If it contains a ':' 
     // the handler could use it for RESTfull URLs
@@ -108,7 +97,7 @@ public class SolrRequestParsers
     return sreq;
   }
   
-  public SolrQueryRequest buildRequestFrom( SolrParams params, Collection<ContentStream> streams ) throws Exception
+  public SolrQueryRequest buildRequestFrom( SolrCore core, SolrParams params, Collection<ContentStream> streams ) throws Exception
   {
     // The content type will be applied to all streaming content
     String contentType = params.get( CommonParams.STREAM_CONTENTTYPE );

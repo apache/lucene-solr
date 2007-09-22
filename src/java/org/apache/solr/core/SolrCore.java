@@ -72,7 +72,8 @@ public final class SolrCore {
   public static final String version="1.0";  
 
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
-  
+
+  private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
   private final String index_path;
@@ -81,6 +82,7 @@ public final class SolrCore {
   private final RequestHandlers reqHandlers;
   private final SolrHighlighter highlighter;
   private final Map<String,UpdateRequestProcessorFactory> updateProcessors;
+  private final Map<String,SolrInfoMBean> infoRegistry = new java.util.HashMap<String,SolrInfoMBean>();
   
   public long getStartTime() { return startTime; }
 
@@ -94,8 +96,9 @@ public final class SolrCore {
       if (boolean_query_max_clause_count == Integer.MIN_VALUE) {
         boolean_query_max_clause_count = solrConfig.booleanQueryMaxClauseCount;
         BooleanQuery.setMaxClauseCount(boolean_query_max_clause_count);
-      } else if (boolean_query_max_clause_count != solrConfig.booleanQueryMaxClauseCount )
+      } else if (boolean_query_max_clause_count != solrConfig.booleanQueryMaxClauseCount ) {
         log.fine("BooleanQuery.maxClauseCount= " +boolean_query_max_clause_count+ ", ignoring " +solrConfig.booleanQueryMaxClauseCount);
+      }
     }
   }
 
@@ -111,9 +114,6 @@ public final class SolrCore {
     return schema.getSchemaFile();
   }
   
-  /** The configuration used by this core (to load resources, find classes, etc). */
-  private final SolrConfig solrConfig;
-  private Map<String,SolrInfoMBean> infoRegistry = new java.util.HashMap<String,SolrInfoMBean>();
   
   /**
    * @since solr 1.3

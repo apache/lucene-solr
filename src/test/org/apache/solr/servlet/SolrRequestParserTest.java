@@ -48,7 +48,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    parser = new SolrRequestParsers(h.getCore() );
+    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
   }
   
   public void testStreamBody() throws Exception
@@ -57,19 +57,21 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     String body2 = "qwertasdfgzxcvb";
     String body3 = "1234567890";
     
+    SolrCore core = SolrCore.getSolrCore();
+    
     Map<String,String[]> args = new HashMap<String, String[]>();
     args.put( CommonParams.STREAM_BODY, new String[] {body1} );
     
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<ContentStream>();
-    parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
+    parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
     assertEquals( body1, IOUtils.toString( streams.get(0).getStream() ) );
     
     // Now add three and make sure they come out ok
     streams = new ArrayList<ContentStream>();
     args.put( CommonParams.STREAM_BODY, new String[] {body1,body2,body3} );
-    parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
+    parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 3, streams.size() );
     ArrayList<String> input  = new ArrayList<String>();
     ArrayList<String> output = new ArrayList<String>();
@@ -88,7 +90,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     String ctype = "text/xxx";
     streams = new ArrayList<ContentStream>();
     args.put( CommonParams.STREAM_CONTENTTYPE, new String[] {ctype} );
-    parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
+    parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     for( ContentStream s : streams ) {
       assertEquals( ctype, s.getContentType() );
     }
@@ -108,13 +110,15 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
       fail( "this test only works if you have a network connection." );
       return;
     }
+
+    SolrCore core = SolrCore.getSolrCore();
     
     Map<String,String[]> args = new HashMap<String, String[]>();
     args.put( CommonParams.STREAM_URL, new String[] {url} );
     
     // Make sure it got a single stream in and out ok
     List<ContentStream> streams = new ArrayList<ContentStream>();
-    parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
+    parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
     assertEquals( txt, IOUtils.toString( streams.get(0).getStream() ) );
   }

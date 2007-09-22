@@ -29,7 +29,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.QueryResponseWriter;
@@ -59,7 +58,7 @@ public class DirectSolrConnection
   public DirectSolrConnection()
   {
     core = SolrCore.getSolrCore();
-    parser = new SolrRequestParsers( core );
+    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
   }
 
   /**
@@ -68,7 +67,7 @@ public class DirectSolrConnection
   public DirectSolrConnection( SolrCore c )
   {
     core = c;
-    parser = new SolrRequestParsers( core );
+    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
   }
 
   /**
@@ -100,27 +99,20 @@ public class DirectSolrConnection
       }
     }
     
-// TODO! Set the instance directory
-//    if( instanceDir != null ) {
-//      if( Config.isInstanceDirInitialized() ) {
-//        String dir = Config.getInstanceDir();
-//        if( !dir.equals( instanceDir ) ) {
-//          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "already initalized: "+dir  );
-//        }
-//      }
-//      Config.setInstanceDir( instanceDir );
-//    }
-    SolrConfig config = SolrConfig.createInstance("solrconfig.xml");
-    
-    // If the Data directory is specified, initialize SolrCore directly
-    if( dataDir != null ) {
+    // Initalize SolrConfig
+    SolrConfig config = null;
+    try {
+      config = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
+      instanceDir = config.getInstanceDir();
+
+      // If the Data directory is specified, initialize SolrCore directly
       IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml");
       core = new SolrCore( dataDir, config, schema );
+      parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+    } 
+    catch (Exception ee) {
+      throw new RuntimeException(ee);
     }
-    else {
-      core = SolrCore.getSolrCore();
-    }
-    parser = new SolrRequestParsers( core );
   }
   
 
@@ -165,7 +157,7 @@ public class DirectSolrConnection
       streams.add( new ContentStreamBase.StringStream( body ) );
     }
     
-    SolrQueryRequest req = parser.buildRequestFrom( params, streams );
+    SolrQueryRequest req = parser.buildRequestFrom( core, params, streams );
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute( handler, req, rsp );
     if( rsp.getException() != null ) {

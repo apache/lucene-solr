@@ -156,7 +156,9 @@ public class TestHarness {
     StringReader req = new StringReader(xml);
     StringWriter writer = new StringWriter(32000);
     
-    updater.doLegacyUpdate(core, req, writer);
+    // This relies on the fact that SolrCore.getSolrCore() uses the 
+    // last instantiated SolrCore.
+    updater.doLegacyUpdate(req, writer);
     return writer.toString();
   }
   

@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.XMLResponseWriter;
@@ -40,6 +39,7 @@ public class SolrUpdateServlet extends HttpServlet {
   XmlUpdateRequestHandler legacyUpdateHandler;
   XMLResponseWriter xmlResponseWriter;
 
+  @Override
   public void init() throws ServletException
   {
     legacyUpdateHandler = new XmlUpdateRequestHandler();
@@ -48,12 +48,12 @@ public class SolrUpdateServlet extends HttpServlet {
     log.info("SolrUpdateServlet.init() done");
   }
 
+  @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     BufferedReader requestReader = request.getReader();
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
-    SolrCore core = SolrCore.getSolrCore();
     PrintWriter writer = response.getWriter();
-    legacyUpdateHandler.doLegacyUpdate(core,requestReader, writer);
+    legacyUpdateHandler.doLegacyUpdate(requestReader, writer);
   }
 }

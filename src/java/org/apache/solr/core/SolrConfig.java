@@ -74,35 +74,30 @@ public class SolrConfig extends Config {
    * Singleton keeping track of configuration errors
    */
   public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
-  /**
-   * Creates a configation information from the specified file.
-   * Add any exception that might occur to the severeErrors singleton.
-   * @param file file name to load
-   * @see Config#openResource
-   */
-  public static SolrConfig createInstance(String file) {
-    try {
-      return new SolrConfig(file);
-    } catch (Exception ee) {
-      severeErrors.add( ee );
-      throw new RuntimeException("Error in " + file, ee);
-    }
-  }
 
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {
-    this(DEFAULT_CONF_FILE);
+    this( null, DEFAULT_CONF_FILE, null );
   }
   /** Creates a configuration instance from a file. */
   public SolrConfig(String file)
   throws ParserConfigurationException, IOException, SAXException {
-     this(file, null);
+     this( null, file, null);
   }
-  /** Creates a configuration instance from an input stream. */
+
+  @Deprecated
   public SolrConfig(String file, InputStream is)
-  throws ParserConfigurationException, IOException, SAXException {
-    super(file, is, "/config/");
+  throws ParserConfigurationException, IOException, SAXException 
+  {
+    this( null, file, is );
+  }
+  
+  /** Creates a configuration instance from an input stream. */
+  public SolrConfig(String instanceDir, String file, InputStream is)
+  throws ParserConfigurationException, IOException, SAXException 
+  {
+    super(instanceDir, file, is, "/config/");
     this.configFile = file;
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);

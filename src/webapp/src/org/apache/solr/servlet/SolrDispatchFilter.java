@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.QueryResponseWriter;
@@ -57,18 +58,31 @@ public class SolrDispatchFilter implements Filter
   public void init(FilterConfig config) throws ServletException 
   {
     log.info("SolrDispatchFilter.init()");
-    
+
+    boolean abortOnConfigurationError = true;
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       
       log.info("user.dir=" + System.getProperty("user.dir"));
       core = SolrCore.getSolrCore();
-      parsers = new SolrRequestParsers( core );
+      
+      // Read the configuration
+      Config solrConfig = core.getSolrConfig();
 
+      long uploadLimitKB = solrConfig.getInt( 
+          "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2000 ); // 2MB default
+      
+      boolean enableRemoteStreams = solrConfig.getBool( 
+          "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
+
+      parsers = new SolrRequestParsers( enableRemoteStreams, uploadLimitKB );
+      
       // Let this filter take care of /select?xxx format
-      this.handleSelect = 
-        core.getSolrConfig().getBool( "requestDispatcher/@handleSelect", false ); 
+      this.handleSelect = solrConfig.getBool( "requestDispatcher/@handleSelect", false ); 
+      
+      // should it keep going if we hit an error?
+      abortOnConfigurationError = solrConfig.getBool("abortOnConfigurationError",true);
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -78,7 +92,6 @@ public class SolrDispatchFilter implements Filter
     }
     
     // Optionally abort if we found a sever error
-    boolean abortOnConfigurationError = core.getSolrConfig().getBool("abortOnConfigurationError",true);
     if( abortOnConfigurationError && SolrConfig.severeErrors.size() > 0 ) {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter( sw );
@@ -142,7 +155,7 @@ public class SolrDispatchFilter implements Filter
         }
         if( handler == null && handleSelect ) {
           if( "/select".equals( path ) || "/select/".equals( path ) ) {
-            solrReq = parsers.parse( path, req );
+            solrReq = parsers.parse( core, path, req );
             String qt = solrReq.getParams().get( CommonParams.QT );
             if( qt != null && qt.startsWith( "/" ) ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
@@ -155,7 +168,7 @@ public class SolrDispatchFilter implements Filter
         }
         if( handler != null ) {
           if( solrReq == null ) {
-            solrReq = parsers.parse( path, req );
+            solrReq = parsers.parse( core, path, req );
           }
           SolrQueryResponse solrRsp = new SolrQueryResponse();
           this.execute( req, handler, solrReq, solrRsp );
