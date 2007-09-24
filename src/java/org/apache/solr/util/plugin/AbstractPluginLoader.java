@@ -45,7 +45,7 @@ public abstract class AbstractPluginLoader<T>
   
   /**
    * @param type is the 'type' name included in error messages.
-   * @param preRegister, if true, this will first register all Plugins, then it will initialize them.
+   * @param preRegister if true, this will first register all Plugins, then it will initialize them.
    */
   public AbstractPluginLoader( String type, boolean preRegister, boolean requireName )
   {

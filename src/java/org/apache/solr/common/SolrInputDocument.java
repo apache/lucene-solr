@@ -57,7 +57,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>
   /** 
    * Add a field with implied null value for boost.
    * 
-   * @see addField(String, Object, Float)
+   * @see #addField(String, Object, float)
    * @param name name of the field to add
    * @param value value of the field
    */
@@ -104,7 +104,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>
   
   /** Set a field with implied null value for boost.
    * 
-   * @see setField(String, Object, Float)
+   * @see #setField(String, Object, float)
    * @param name name of the field to set
    * @param value value of the field
    */
@@ -137,7 +137,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>
   /**
    * Remove a field from the document
    * 
-   * @param key The field name whose field is to be removed from the document
+   * @param name The field name whose field is to be removed from the document
    * @return the previous field with <tt>name</tt>, or
    *         <tt>null</tt> if there was no field for <tt>key</tt>.
    */

@@ -36,7 +36,7 @@ public interface SolrFormatter extends SolrInfoMBean, NamedListInitializedPlugin
    * Return a formatter appropriate for this field.
    * 
    * @param fieldName The name of the field
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    * @return An appropriate Formatter.
    */
   public Formatter getFormatter(String fieldName, SolrParams params );

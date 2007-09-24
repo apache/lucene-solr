@@ -36,7 +36,7 @@ public interface SolrFragmenter extends SolrInfoMBean, NamedListInitializedPlugi
    * Return a fragmenter appropriate for this field. 
    * 
    * @param fieldName The name of the field
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    * @return An appropriate Fragmenter.
    */
   public Fragmenter getFragmenter(String fieldName, SolrParams params);

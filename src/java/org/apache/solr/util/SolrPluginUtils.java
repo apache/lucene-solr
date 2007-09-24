@@ -813,7 +813,7 @@ public class SolrPluginUtils {
 
   /**
    * Builds a list of Query objects that should be used to filter results
-   * @see SolrParams#FQ
+   * @see CommonParams#FQ
    * @return null if no filter queries
    */
   public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {

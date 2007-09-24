@@ -103,7 +103,7 @@ public class SolrHighlighter
   
   /**
    * Check whether Highlighting is enabled for this request.
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    * @return <code>true</code> if highlighting enabled, <code>false</code> if not.
    */
   public boolean isHighlightingEnabled(SolrParams params) {
@@ -182,7 +182,7 @@ public class SolrHighlighter
    * been configured for this field, fall back to the configured default
    * or the solr default.
    * @param fieldName The name of the field
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    */
   protected int getMaxSnippets(String fieldName, SolrParams params) {
      return params.getFieldInt(fieldName, HighlightParams.SNIPPETS,1);
@@ -194,7 +194,7 @@ public class SolrHighlighter
    * default or the solr default (SimpleHTMLFormatter).
    * 
    * @param fieldName The name of the field
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    * @return An appropriate Formatter.
    */
   protected Formatter getFormatter(String fieldName, SolrParams params ) 
@@ -213,7 +213,7 @@ public class SolrHighlighter
    * default or the solr default (GapFragmenter).
    * 
    * @param fieldName The name of the field
-   * @param request The current SolrQueryRequest
+   * @param params The params controlling Highlighting
    * @return An appropriate Fragmenter.
    */
   protected Fragmenter getFragmenter(String fieldName, SolrParams params) 
