@@ -198,7 +198,7 @@
   <!-- Compile common classes. -->
   <target name="compile-common"
           description="Compile the source code."
-          depends="init-forrest-entities,checkJunitPresence">
+          depends="init-forrest-entities">
 
     <solr-javac destdir="${dest}/common"
                 classpathref="compile.classpath">
@@ -218,7 +218,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="compile-common,init-forrest-entities,checkJunitPresence">
+          depends="compile-common,init-forrest-entities">
 
     <solr-javac destdir="${dest}/core"
                 classpathref="compile.classpath">
@@ -233,19 +233,8 @@
 
     <mkdir dir="${build.javadoc}"/>
         
-    <!-- we do this to make sure whatever classes where in ant's
-         classpath at runtime are in the classpath used by javadoc
-         (ie: junit.jar)
-     -->
     <path id="javadoc.classpath">
        <path refid="compile.classpath"/>
-       <!-- aparently ant.library.dir isn't allways set right? -->
-       <fileset dir="${ant.home}/lib">
-          <include name="**/*.jar"/>
-       </fileset>
-       <fileset dir="${ant.library.dir}">
-          <include name="**/*.jar"/>
-       </fileset>
     </path>
 
     <javadoc
@@ -326,13 +315,6 @@
     <mkdir dir="${build.javadoc.solrj}"/>  
     <path id="javadoc.classpath.solrj">
        <path refid="compile.classpath"/>
-       <!-- aparently ant.library.dir isn't allways set right? -->
-       <fileset dir="${ant.home}/lib">
-          <include name="**/*.jar"/>
-       </fileset>
-       <fileset dir="${ant.library.dir}">
-          <include name="**/*.jar"/>
-       </fileset>
     </path>
     <javadoc
       destdir="${build.javadoc.solrj}"
@@ -381,24 +363,10 @@
     <path refid="compile.classpath.solrj" />
   </path>
 
-  <!-- Check that JUnit is present. -->
-  <target name="checkJunitPresence">
-    <available property="junitPresent"
-             classname="junit.framework.TestCase" classpathref="compile.classpath"/>
-    <!-- no description so it doesn't show up in -projecthelp -->  
-    <fail unless="junitPresent"> 
-      ##################################################################
-      JUnit not found.
-      Please make sure junit.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-    </fail>
-  </target>
-
   <!-- Compile unit tests. -->
   <target name="compileTests"
           description="Compile unit tests."
-          depends="compile,compile-solrj,checkJunitPresence">
+          depends="compile,compile-solrj">
 
     <mkdir dir="${dest}/tests" />
     <solr-javac 
