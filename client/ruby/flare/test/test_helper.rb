@@ -6,7 +6,6 @@ require File.expand_path(File.dirname(__FILE__) + "/../config/environment")
 require 'application'
 require 'test/unit'
 require 'action_controller/test_process'
-require 'action_web_service/test_invoke'
 require 'breakpoint'
 #require 'test_help'
 
