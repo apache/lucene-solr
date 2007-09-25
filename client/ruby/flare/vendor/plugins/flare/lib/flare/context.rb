@@ -55,6 +55,7 @@ class Flare::Context
   end
 
   def search(start=0, max=25)
+    # TODO: Allow the search method to facilitate acts_as_solr somehow too
     facet_queries = @facet_queries.collect do |k,v|
       clauses = filter_queries(v[:filters])
       clauses << build_boolean_query(v[:queries])
