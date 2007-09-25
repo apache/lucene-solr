@@ -71,16 +71,16 @@ import java.util.Map.Entry;
   or enough added documents since the last flush, whichever
   is sooner.  For the added documents, flushing is triggered
   either by RAM usage of the documents (see {@link
-  #setRAMBufferSizeMB}) or the number of added documents
-  (this is the default; see {@link #setMaxBufferedDocs}).
-  For best indexing speed you should flush by RAM usage with
-  a large RAM buffer.  You can also force a flush by calling
+  #setRAMBufferSizeMB}) or the number of added documents.
+  The default is to flush when RAM usage hits 16 MB.  For
+  best indexing speed you should flush by RAM usage with a
+  large RAM buffer.  You can also force a flush by calling
   {@link #flush}.  When a flush occurs, both pending deletes
   and added documents are flushed to the index.  A flush may
   also trigger one or more segment merges which by default
-  run (blocking) with the current thread (see <a
-  href="#mergePolicy">below</a> for changing the {@link
-  MergeScheduler}).</p>
+  run with a background thread so as not to block the
+  addDocument calls (see <a href="#mergePolicy">below</a>
+  for changing the {@link MergeScheduler}).</p>
 
   <a name="autoCommit"></a>
   <p>The optional <code>autoCommit</code> argument to the
@@ -153,10 +153,10 @@ import java.util.Map.Entry;
   select which merges to do, if any, and return a {@link
   MergePolicy.MergeSpecification} describing the merges.  It
   also selects merges to do for optimize().  (The default is
-  {@link LogDocMergePolicy}.  Then, the {@link
+  {@link LogByteMergePolicy}.  Then, the {@link
   MergeScheduler} is invoked with the requested merges and
   it decides when and how to run the merges.  The default is
-  {@link SerialMergeScheduler}. </p>
+  {@link ConcurrentMergeScheduler}. </p>
 */
 
 /*
@@ -205,22 +205,16 @@ public class IndexWriter {
   public final static int DEFAULT_MERGE_FACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
 
   /**
-   * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
+   * Default value is 0 (because IndexWriter flushes by RAM
+   * usage by default). Change using {@link #setMaxBufferedDocs(int)}.
    */
-
-  public final static int DEFAULT_MAX_BUFFERED_DOCS = 10;
-  /* new merge policy
   public final static int DEFAULT_MAX_BUFFERED_DOCS = 0;
-  */
 
   /**
-   * Default value is 0 MB (which means flush only by doc
-   * count).  Change using {@link #setRAMBufferSizeMB}.
+   * Default value is 16 MB (which means flush when buffered
+   * docs consume 16 MB RAM).  Change using {@link #setRAMBufferSizeMB}.
    */
-  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 0.0;
-  /* new merge policy
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
-  */
 
   /**
    * Default value is 1000. Change using {@link #setMaxBufferedDeleteTerms(int)}.
@@ -281,8 +275,8 @@ public class IndexWriter {
   // merges
   private HashSet mergingSegments = new HashSet();
 
-  private MergePolicy mergePolicy = new LogDocMergePolicy();
-  private MergeScheduler mergeScheduler = new SerialMergeScheduler();
+  private MergePolicy mergePolicy = new LogByteSizeMergePolicy();
+  private MergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
   private LinkedList pendingMerges = new LinkedList();
   private Set runningMerges = new HashSet();
   private List mergeExceptions = new ArrayList();
@@ -1135,6 +1129,9 @@ public class IndexWriter {
         commitPending = false;
         rollbackSegmentInfos = null;
       }
+
+      if (infoStream != null)
+        message("at close: " + segString());
 
       if (writeLock != null) {
         writeLock.release();                          // release write lock
@@ -2252,7 +2249,7 @@ public class IndexWriter {
       // apply to more than just the last flushed segment
       boolean flushDeletes = docWriter.hasDeletes();
 
-      if (infoStream != null)
+      if (infoStream != null) {
         message("  flush: segment=" + docWriter.getSegment() +
                 " docStoreSegment=" + docWriter.getDocStoreSegment() +
                 " docStoreOffset=" + docWriter.getDocStoreOffset() +
@@ -2261,6 +2258,8 @@ public class IndexWriter {
                 " flushDocStores=" + flushDocStores +
                 " numDocs=" + numDocs +
                 " numBufDelTerms=" + docWriter.getNumBufferedDeleteTerms());
+        message("  index before flush " + segString());
+      }
 
       int docStoreOffset = docWriter.getDocStoreOffset();
       boolean docStoreIsCompoundFile = false;

@@ -49,18 +49,20 @@ public class CreateIndexTask extends PerfTask {
     int mrgf = config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR);
     int mxbf = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
     int mxfl = config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH);
-    double flushAtRAMUsage = config.get("ram.flush.mb", OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
+    double flushAtRAMUsage = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
     boolean autoCommit = config.get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT);
 
     IndexWriter iw = new IndexWriter(dir, autoCommit, analyzer, true);
     
     iw.setUseCompoundFile(cmpnd);
     iw.setMergeFactor(mrgf);
-    iw.setMaxBufferedDocs(mxbf);
     iw.setMaxFieldLength(mxfl);
     if (flushAtRAMUsage > 0)
       iw.setRAMBufferSizeMB(flushAtRAMUsage);
-
+    else if (mxbf != 0)
+      iw.setMaxBufferedDocs(mxbf);
+    else
+      throw new RuntimeException("either max.buffered or ram.flush.mb must be non-zero");
     getRunData().setIndexWriter(iw);
     return 1;
   }

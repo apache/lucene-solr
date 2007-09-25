@@ -176,6 +176,36 @@ public class Config {
   }
   
   /**
+   * Return a double property.
+   * If the property contain ":", e.g. "10:100:5", it is interpreted 
+   * as array of doubles. It is extracted once, on first call
+   * to get() it, and a by-round-value is returned. 
+   * @param name name of property
+   * @param dflt default value
+   * @return a double property.
+   */
+  public double get (String name, double dflt) {
+    // use value by round if already parsed
+    double vals[] = (double[]) valByRound.get(name);
+    if (vals != null) {
+      return vals[roundNumber % vals.length];
+    }
+    // done if not by round 
+    String sval = props.getProperty(name,""+dflt);
+    if (sval.indexOf(":")<0) {
+      return Double.parseDouble(sval);
+    }
+    // first time this prop is extracted by round
+    int k = sval.indexOf(":");
+    String colName = sval.substring(0,k);
+    sval = sval.substring(k+1);
+    colForValByRound.put(name,colName);
+    vals = propToDoubleArray(sval);
+    valByRound.put(name,vals);
+    return vals[roundNumber % vals.length];
+  }
+  
+  /**
    * Return a boolean property.
    * If the property contain ":", e.g. "true.true.false", it is interpreted 
    * as array of boleans. It is extracted once, on first call
@@ -241,7 +271,7 @@ public class Config {
     return roundNumber;
   }
   
-  // extract properties to array, e.g. for "10.100.5" return int[]{10,100,5}. 
+  // extract properties to array, e.g. for "10:100:5" return int[]{10,100,5}. 
   private int[] propToIntArray (String s) {
     if (s.indexOf(":")<0) {
       return new int [] { Integer.parseInt(s) };
@@ -260,7 +290,26 @@ public class Config {
     return res;
   }
     
-  // extract properties to array, e.g. for "true.true.false" return booleab[]{true,false,false}. 
+  // extract properties to array, e.g. for "10.7:100.4:-2.3" return int[]{10.7,100.4,-2.3}. 
+  private double[] propToDoubleArray (String s) {
+    if (s.indexOf(":")<0) {
+      return new double [] { Double.parseDouble(s) };
+    }
+    
+    ArrayList a = new ArrayList();
+    StringTokenizer st = new StringTokenizer(s,":");
+    while (st.hasMoreTokens()) {
+      String t = st.nextToken();
+      a.add(new Double(t));
+    }
+    double res[] = new double[a.size()]; 
+    for (int i=0; i<a.size(); i++) {
+      res[i] = ((Double) a.get(i)).doubleValue();
+    }
+    return res;
+  }
+    
+  // extract properties to array, e.g. for "true:true:false" return boolean[]{true,false,false}. 
   private boolean[] propToBooleanArray (String s) {
     if (s.indexOf(":")<0) {
       return new boolean [] { Boolean.valueOf(s).booleanValue() };

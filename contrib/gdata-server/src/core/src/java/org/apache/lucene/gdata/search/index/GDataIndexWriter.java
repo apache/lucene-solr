@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.gdata.search.config.IndexSchema;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.store.Directory;
 
 /**
@@ -42,7 +43,7 @@ public class GDataIndexWriter extends IndexWriter {
         setUseCompoundFile(config.isUseCompoundFile());
         if (config.getMaxBufferedDocs() != IndexSchema.NOT_SET_VALUE)
             setMaxBufferedDocs(config.getMaxBufferedDocs());
-        if (config.getMaxMergeDocs() != IndexSchema.NOT_SET_VALUE)
+        if (config.getMaxMergeDocs() != IndexSchema.NOT_SET_VALUE && getMergePolicy() instanceof LogDocMergePolicy)
             setMaxMergeDocs(config.getMaxMergeDocs());
         if (config.getMergeFactor() != IndexSchema.NOT_SET_VALUE)
             setMergeFactor(config.getMergeFactor());

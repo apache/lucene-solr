@@ -326,7 +326,9 @@ public class TestAddIndexesNoOptimize extends TestCase {
 
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
-    return new IndexWriter(dir, new WhitespaceAnalyzer(), create);
+    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create);
+    writer.setMergePolicy(new LogDocMergePolicy());
+    return writer;
   }
 
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {

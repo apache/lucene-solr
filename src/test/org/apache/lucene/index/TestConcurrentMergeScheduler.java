@@ -113,10 +113,13 @@ public class TestConcurrentMergeScheduler extends TestCase {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     writer.setMergeScheduler(cms);
 
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    writer.setMergePolicy(mp);
+
     // Force degenerate merging so we can get a mix of
     // merging of segments with and without deletes at the
     // start:
-    ((LogDocMergePolicy) writer.getMergePolicy()).setMinMergeDocs(1000);
+    mp.setMinMergeDocs(1000);
 
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);

@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.gdata.search.config.IndexSchema;
 import org.apache.lucene.gdata.search.config.IndexSchemaField;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.LogDocMergePolicy;
 
 /**
  *
@@ -72,7 +73,8 @@ public class TestGdataIndexWriter extends TestCase {
 //        assertEquals(VALUE_GT_DEFAULT_LONG,writer.getCommitLockTimeout());
         assertEquals(VALUE_GT_DEFAULT_LONG,writer.getWriteLockTimeout());
         assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxBufferedDocs());
-        assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxMergeDocs());
+        if (writer.getMergePolicy() instanceof LogDocMergePolicy)
+          assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxMergeDocs());
         assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxFieldLength());
         assertEquals(VALUE_GT_DEFAULT_INT,writer.getMergeFactor());
         assertTrue(writer.getUseCompoundFile());

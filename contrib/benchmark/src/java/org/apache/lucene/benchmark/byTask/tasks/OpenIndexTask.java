@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
@@ -35,10 +36,10 @@ import java.io.IOException;
  */
 public class OpenIndexTask extends PerfTask {
 
-  public static final int DEFAULT_MAX_BUFFERED = 10;
-  public static final int DEFAULT_MAX_FIELD_LENGTH = 10000;
-  public static final int DEFAULT_MERGE_PFACTOR = 10;
-  public static final int DEFAULT_RAM_FLUSH_MB = 0;
+  public static final int DEFAULT_MAX_BUFFERED = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
+  public static final int DEFAULT_MAX_FIELD_LENGTH = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
+  public static final int DEFAULT_MERGE_PFACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
+  public static final double DEFAULT_RAM_FLUSH_MB = (int) IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB;
   public static final boolean DEFAULT_AUTO_COMMIT = true;
 
   public OpenIndexTask(PerfRunData runData) {
@@ -55,12 +56,17 @@ public class OpenIndexTask extends PerfTask {
     int mrgf = config.get("merge.factor",DEFAULT_MERGE_PFACTOR);
     int mxbf = config.get("max.buffered",DEFAULT_MAX_BUFFERED);
     int mxfl = config.get("max.field.length",DEFAULT_MAX_FIELD_LENGTH);
-    double flushAtRAMUsage = config.get("ram.flush.mb", OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
-    boolean autoCommit = config.get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT);
+    double flushAtRAMUsage = config.get("ram.flush.mb", DEFAULT_RAM_FLUSH_MB);
+    boolean autoCommit = config.get("autocommit", DEFAULT_AUTO_COMMIT);
     IndexWriter writer = new IndexWriter(dir, autoCommit, analyzer, false);
 
     // must update params for newly opened writer
-    writer.setMaxBufferedDocs(mxbf);
+    if (flushAtRAMUsage > 0)
+      writer.setRAMBufferSizeMB(flushAtRAMUsage);
+    else if (mxbf != 0)
+      writer.setMaxBufferedDocs(mxbf);
+    else
+      throw new RuntimeException("either max.buffered or ram.flush.mb must be non-zero");
     writer.setMaxFieldLength(mxfl);
     writer.setMergeFactor(mrgf);
     writer.setUseCompoundFile(cmpnd); // this one redundant?

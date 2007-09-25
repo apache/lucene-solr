@@ -127,6 +127,7 @@ public class TestAtomicUpdate extends TestCase {
       d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.TOKENIZED));
       writer.addDocument(d);
     }
+    writer.flush();
 
     IndexerThread indexerThread = new IndexerThread(writer, threads);
     threads[0] = indexerThread;

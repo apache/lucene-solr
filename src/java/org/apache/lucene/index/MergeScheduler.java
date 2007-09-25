@@ -22,7 +22,7 @@ import java.io.IOException;
 /** Expert: {@link IndexWriter} uses an instance
  *  implementing this interface to execute the merges
  *  selected by a {@link MergePolicy}.  The default
- *  MergeScheduler is {@link SerialMergeScheduler}. */
+ *  MergeScheduler is {@link ConcurrentMergeScheduler}. */
 
 public interface MergeScheduler {
 

@@ -6,6 +6,25 @@ $Id$
 
 Changes in runtime behavior
 
+ 1. LUCENE-994: Defaults for IndexWriter have been changed to maximize
+    out-of-the-box indexing speed.  First, IndexWriter now flushes by
+    RAM usage (16 MB by default) instead of a fixed doc count (call
+    IndexWriter.setMaxBufferedDocs to get backwards compatible
+    behavior).  Second, ConcurrentMergeScheduler is used to run merges
+    using background threads (call IndexWriter.setMergeScheduler(new
+    SerialMergeScheduler()) to get backwards compatible behavior).
+    Third, merges are chosen based on size in bytes of each segment
+    rather than document count of each segment (call
+    IndexWriter.setMergePolicy(new LogDocMergePolicy()) to get
+    backwards compatible behavior).
+
+    NOTE: users of ParallelReader must change back all of these
+    defaults in order to ensure the docIDs "align" across all parallel
+    indices.
+
+    (Mike McCandless)
+
+
 API Changes
 
  1. LUCENE-843: Added IndexWriter.setRAMBufferSizeMB(...) to have

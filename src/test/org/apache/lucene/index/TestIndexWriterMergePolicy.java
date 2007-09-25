@@ -37,6 +37,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
@@ -53,6 +54,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     boolean noOverMerge = false;
     for (int i = 0; i < 100; i++) {
@@ -74,19 +76,18 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
-    MergePolicy mp = writer.getMergePolicy();
-    if (mp instanceof LogDocMergePolicy)
-      ((LogDocMergePolicy) mp).setMinMergeDocs(100);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
+    mp.setMinMergeDocs(100);
+    writer.setMergePolicy(mp);
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
       writer.close();
 
       writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-      mp = writer.getMergePolicy();
       writer.setMaxBufferedDocs(10);
-      if (mp instanceof LogDocMergePolicy)
-        ((LogDocMergePolicy) mp).setMinMergeDocs(100);
+      writer.setMergePolicy(mp);
+      mp.setMinMergeDocs(100);
       writer.setMergeFactor(10);
       checkInvariants(writer);
     }
@@ -101,6 +102,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(100);
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     for (int i = 0; i < 250; i++) {
       addDoc(writer);
@@ -126,6 +128,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(101);
     writer.setMergeFactor(101);
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     // leftmost* segment has 1 doc
     // rightmost* segment has 100 docs
@@ -139,6 +142,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
       writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
       writer.setMaxBufferedDocs(101);
       writer.setMergeFactor(101);
+      writer.setMergePolicy(new LogDocMergePolicy());
     }
 
     writer.setMaxBufferedDocs(10);
@@ -164,6 +168,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     Directory dir = new RAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(100);
 
@@ -178,6 +183,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     reader.close();
 
     writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+    writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(5);
 
