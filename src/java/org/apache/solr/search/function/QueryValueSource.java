@@ -38,6 +38,9 @@ public class QueryValueSource extends ValueSource {
     this.defVal = defVal;
   }
 
+  public Query getQuery() { return q; }
+  public float getDefaultValue() { return defVal; }
+
   public String description() {
     return "query(" + q + ",def=" + defVal + ")";
   }
