@@ -40,7 +40,11 @@ public class BoostedQuery extends Query {
   public ValueSource getValueSource() { return boostVal; }
 
   public Query rewrite(IndexReader reader) throws IOException {
-    return q.rewrite(reader);
+    Query newQ = q.rewrite(reader);
+    if (newQ == q) return this;
+    BoostedQuery bq = (BoostedQuery)this.clone();
+    bq.q = newQ;
+    return bq;
   }
 
   public void extractTerms(Set terms) {
@@ -53,12 +57,11 @@ public class BoostedQuery extends Query {
 
   private class BoostedWeight implements Weight {
     Searcher searcher;
-    Weight weight;
-    boolean qStrict;
+    Weight qWeight;
 
     public BoostedWeight(Searcher searcher) throws IOException {
       this.searcher = searcher;
-      this.weight = q.weight(searcher);
+      this.qWeight = q.weight(searcher);
     }
 
     public Query getQuery() {
@@ -70,18 +73,18 @@ public class BoostedQuery extends Query {
     }
 
     public float sumOfSquaredWeights() throws IOException {
-      float sum = weight.sumOfSquaredWeights();
+      float sum = qWeight.sumOfSquaredWeights();
       sum *= getBoost() * getBoost();
       return sum ;
     }
 
     public void normalize(float norm) {
       norm *= getBoost();
-      weight.normalize(norm);
+      qWeight.normalize(norm);
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
-      Scorer subQueryScorer = weight.scorer(reader);
+      Scorer subQueryScorer = qWeight.scorer(reader);
       return new BoostedQuery.CustomScorer(getSimilarity(searcher), reader, this, subQueryScorer, boostVal);
     }
 
@@ -125,7 +128,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.weight.explain(reader,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
