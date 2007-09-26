@@ -34,4 +34,8 @@ New Features
 2. GData Object Model
 	- The GOM will replace the Google Client API as a internal and extensible object representation.
 	- GOM provides a easier extension mechanimn for creating custom GData feeds and entries
-	
+
+Bug Fixes
+
+1. LUCENE-1005: DateFormater (sic) was not properly formatting dates on certain machines (lucene.zones.a.o).  Added a
+setTimeZone() call after the instantiation of the DateFormat to set the TimeZone to GMT.  (Chris Hostetter, Mike McCandless, Grant Ingersoll)
