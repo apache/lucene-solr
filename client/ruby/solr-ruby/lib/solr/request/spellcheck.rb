@@ -10,17 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Request; end; end
-require 'solr/request/add_document'
-require 'solr/request/modify_document'
-require 'solr/request/base'
-require 'solr/request/commit'
-require 'solr/request/delete'
-require 'solr/request/ping'
-require 'solr/request/select'
-require 'solr/request/standard'
-require 'solr/request/spellcheck'
-require 'solr/request/dismax'
-require 'solr/request/update'
-require 'solr/request/index_info'
-require 'solr/request/optimize'
+class Solr::Request::Spellcheck < Solr::Request::Select
+
+  def initialize(params)
+    super('spellchecker')
+    @params = params
+  end
+  
+  def to_hash
+    hash = super
+    hash[:q] = @params[:query]
+    hash[:suggestionCount] = @params[:suggestion_count]
+    hash[:accuracy] = @params[:accuracy]
+    hash[:onlyMorePopular] = @params[:only_more_popular]
+    hash[:cmd] = @params[:command]
+    return hash
+  end
+
+end

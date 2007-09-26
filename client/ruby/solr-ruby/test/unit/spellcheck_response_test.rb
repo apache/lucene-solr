@@ -10,17 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Request; end; end
-require 'solr/request/add_document'
-require 'solr/request/modify_document'
-require 'solr/request/base'
-require 'solr/request/commit'
-require 'solr/request/delete'
-require 'solr/request/ping'
-require 'solr/request/select'
-require 'solr/request/standard'
-require 'solr/request/spellcheck'
-require 'solr/request/dismax'
-require 'solr/request/update'
-require 'solr/request/index_info'
-require 'solr/request/optimize'
+require 'solr_mock_base'
+
+class SpellcheckResponseTest <  SolrMockBaseTestCase
+  def test_basic
+    ruby_code = "{'responseHeader'=>{'status'=>0,'QTime'=>5},'suggestions'=>['whately','whatcha','whatever']}"
+    conn = Solr::Connection.new 'http://localhost:9999'
+    set_post_return(ruby_code)
+    response = conn.send(Solr::Request::Spellcheck.new(:query => 'whateva'))
+    assert_equal true, response.ok?
+    assert_equal 3, response.suggestions.size
+    assert_equal ['whately','whatcha','whatever'], response.suggestions
+  end
+end
+

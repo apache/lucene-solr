@@ -10,17 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Request; end; end
-require 'solr/request/add_document'
-require 'solr/request/modify_document'
-require 'solr/request/base'
-require 'solr/request/commit'
-require 'solr/request/delete'
-require 'solr/request/ping'
-require 'solr/request/select'
-require 'solr/request/standard'
-require 'solr/request/spellcheck'
-require 'solr/request/dismax'
-require 'solr/request/update'
-require 'solr/request/index_info'
-require 'solr/request/optimize'
+class Solr::Response::Spellcheck < Solr::Response::Ruby
+  attr_reader :suggestions
+  
+  def initialize(ruby_code)
+    super
+    @suggestions = @data['suggestions']
+  end
+end

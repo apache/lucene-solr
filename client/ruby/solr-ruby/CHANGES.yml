@@ -1,5 +1,10 @@
+v0.0.6:
+  release_date: TBD
+  changes:
+    - Added Solr::Request::Spellcheck
+  
 v0.0.5:
-  release_date: 2007-08-??
+  release_date: 2007-08-27
   changes:
     - Added support for highlighter fragment size to Solr::Request::Standard
     - Added support for MoreLikeThese to Solr::Request::Standard

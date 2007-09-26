@@ -10,17 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Request; end; end
-require 'solr/request/add_document'
-require 'solr/request/modify_document'
-require 'solr/request/base'
-require 'solr/request/commit'
-require 'solr/request/delete'
-require 'solr/request/ping'
-require 'solr/request/select'
-require 'solr/request/standard'
-require 'solr/request/spellcheck'
-require 'solr/request/dismax'
-require 'solr/request/update'
-require 'solr/request/index_info'
-require 'solr/request/optimize'
+require 'test/unit'
+require 'solr'
+
+class SpellcheckRequestTest < Test::Unit::TestCase
+  def test_spellcheck_request
+    request = Solr::Request::Spellcheck.new(:query => 'whateva', :suggestion_count => 5, :accuracy => 0.7, :only_more_popular => true)
+    assert_equal :ruby, request.response_format
+    assert_equal 'select', request.handler
+    hash = request.to_hash
+    assert_equal 'whateva', hash[:q]
+    assert_equal 5, hash[:suggestionCount]
+    assert_equal 0.7, hash[:accuracy]
+    assert_equal true, hash[:onlyMorePopular]
+  end
+end
