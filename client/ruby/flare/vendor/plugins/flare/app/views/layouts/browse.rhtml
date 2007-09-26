@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title>Solr flare: <%=controller.action_name%></title>
+    <%= javascript_include_tag :defaults %>
+    <%= stylesheet_link_tag 'flare'%>
+  </head>
+  <body>
+    <div>
+      <div id="header">
+        <a href="http://lucene.apache.org/solr"><%=image_tag "solr.png"%></a><a href="http://wiki.apache.org/solr/Flare">flare</a> 
+      </div>
+      <%= yield %>
+    </div>
+  </body>
+</html>
