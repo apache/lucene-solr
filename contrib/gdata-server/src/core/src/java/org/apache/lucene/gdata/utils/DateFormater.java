@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Stack;
+import java.util.TimeZone;
 
 /**
  * This class uses the {@link java.text.SimpleDateFormat} class to format dates
@@ -123,9 +124,12 @@ public class DateFormater {
     }
 
     protected SimpleDateFormat getFormater() {
-        if (this.objectStack.empty())
-            return new SimpleDateFormat(DateFormater.HTTP_HEADER_DATE_FORMAT,Locale.ENGLISH);
-        return this.objectStack.pop();
+        if (this.objectStack.empty()) {
+          SimpleDateFormat dateFormat = new SimpleDateFormat(DateFormater.HTTP_HEADER_DATE_FORMAT, Locale.ENGLISH);
+          dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+          return dateFormat;
+        }
+      return this.objectStack.pop();
     
     }
 
