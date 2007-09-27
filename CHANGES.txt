@@ -131,6 +131,11 @@ New Features
     sqrt, abs, scale, map.  Constants may now be used as a value source.
     (yonik)
 
+25. SOLR-359: Add field type className to Luke response, and enabled access
+    to the detailed field information from the solrj client API.
+    (Grant Ingersoll via ehatcher)
+    
+
 Changes in runtime behavior
 
 Optimizations

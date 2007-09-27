@@ -17,21 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
@@ -44,6 +29,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -58,6 +44,13 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -150,26 +143,28 @@ public class LukeRequestHandler extends RequestHandlerBase
     info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." ); 
     rsp.add( "info", info );
   }
+
   
+
   /**
    * @return a string representing a Fieldable's flags.  
    */
   private static String getFieldFlags( Fieldable f )
   {
     StringBuilder flags = new StringBuilder();
-    flags.append( (f != null && f.isIndexed())                     ? 'I' : '-' );
-    flags.append( (f != null && f.isTokenized())                   ? 'T' : '-' );
-    flags.append( (f != null && f.isStored())                      ? 'S' : '-' );
-    flags.append( (false)                                          ? 'M' : '-' ); // SchemaField Specific
-    flags.append( (f != null && f.isTermVectorStored())            ? 'V' : '-' );
-    flags.append( (f != null && f.isStoreOffsetWithTermVector())   ? 'o' : '-' );
-    flags.append( (f != null && f.isStorePositionWithTermVector()) ? 'p' : '-' );
-    flags.append( (f != null && f.getOmitNorms())                  ? 'O' : '-' );
-    flags.append( (f != null && f.isLazy())                        ? 'L' : '-' );
-    flags.append( (f != null && f.isBinary())                      ? 'B' : '-' );
-    flags.append( (f != null && f.isCompressed())                  ? 'C' : '-' );
-    flags.append( (false)                                          ? 'f' : '-' ); // SchemaField Specific
-    flags.append( (false)                                          ? 'l' : '-' ); // SchemaField Specific
+    flags.append( (f != null && f.isIndexed())                     ? FieldFlag.INDEXED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isTokenized())                   ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isStored())                      ? FieldFlag.STORED.getAbbreviation() : '-' );
+    flags.append( (false)                                          ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' ); // SchemaField Specific
+    flags.append( (f != null && f.isTermVectorStored())            ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isStoreOffsetWithTermVector())   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isStorePositionWithTermVector()) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
+    flags.append( (f != null && f.getOmitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isLazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isBinary())                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isCompressed())                  ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
+    flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
+    flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
   }
   
@@ -185,41 +180,41 @@ public class LukeRequestHandler extends RequestHandlerBase
     boolean binary = false; // Currently not possible
     
     StringBuilder flags = new StringBuilder();
-    flags.append( (f != null && f.indexed())             ? 'I' : '-' );
-    flags.append( (t != null && t.isTokenized())         ? 'T' : '-' );
-    flags.append( (f != null && f.stored())              ? 'S' : '-' );
-    flags.append( (f != null && f.multiValued())         ? 'M' : '-' );
-    flags.append( (f != null && f.storeTermVector() )    ? 'V' : '-' );
-    flags.append( (f != null && f.storeTermOffsets() )   ? 'o' : '-' );
-    flags.append( (f != null && f.storeTermPositions() ) ? 'p' : '-' );
-    flags.append( (f != null && f.omitNorms())           ? 'O' : '-' );
-    flags.append( (lazy)                                 ? 'L' : '-' );
-    flags.append( (binary)                               ? 'B' : '-' );
-    flags.append( (f != null && f.isCompressed())        ? 'C' : '-' );
-    flags.append( (f != null && f.sortMissingFirst() )   ? 'f' : '-' );
-    flags.append( (f != null && f.sortMissingLast() )    ? 'l' : '-' );
+    flags.append( (f != null && f.indexed())             ? FieldFlag.INDEXED.getAbbreviation() : '-' );
+    flags.append( (t != null && t.isTokenized())         ? FieldFlag.TOKENIZED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.stored())              ? FieldFlag.STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.multiValued())         ? FieldFlag.MULTI_VALUED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermVector() )    ? FieldFlag.TERM_VECTOR_STORED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermOffsets() )   ? FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation() : '-' );
+    flags.append( (f != null && f.storeTermPositions() ) ? FieldFlag.TERM_VECTOR_POSITION.getAbbreviation() : '-' );
+    flags.append( (f != null && f.omitNorms())           ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
+    flags.append( (lazy)                                 ? FieldFlag.LAZY.getAbbreviation() : '-' );
+    flags.append( (binary)                               ? FieldFlag.BINARY.getAbbreviation() : '-' );
+    flags.append( (f != null && f.isCompressed())        ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
+    flags.append( (f != null && f.sortMissingFirst() )   ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' );
+    flags.append( (f != null && f.sortMissingLast() )    ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' );
     return flags.toString();
   }
   
   /**
    * @return a key to what each character means
    */
-  private static SimpleOrderedMap<String> getFieldFlagsKey()
+  public static SimpleOrderedMap<String> getFieldFlagsKey()
   {
     SimpleOrderedMap<String> key = new SimpleOrderedMap<String>();
-    key.add( "I", "Indexed" );                     
-    key.add( "T", "Tokenized" );                   
-    key.add( "S", "Stored" );                   
-    key.add( "M", "Multivalued" );                     
-    key.add( "V", "TermVector Stored" );            
-    key.add( "o", "Store Offset With TermVector" );   
-    key.add( "p", "Store Position With TermVector" ); 
-    key.add( "O", "Omit Norms" );                  
-    key.add( "L", "Lazy" );                        
-    key.add( "B", "Binary" );                      
-    key.add( "C", "Compressed" );                  
-    key.add( "f", "Sort Missing First" );                  
-    key.add( "l", "Sort Missing Last" );                  
+    key.add(String.valueOf(FieldFlag.INDEXED.getAbbreviation()), FieldFlag.INDEXED.getDisplay() );
+    key.add(String.valueOf(FieldFlag.TOKENIZED.getAbbreviation()), FieldFlag.TOKENIZED.getDisplay() );
+    key.add( String.valueOf(FieldFlag.STORED.getAbbreviation()), FieldFlag.STORED.getDisplay() );
+    key.add( String.valueOf(FieldFlag.MULTI_VALUED.getAbbreviation()), FieldFlag.MULTI_VALUED.getDisplay() );
+    key.add( String.valueOf(FieldFlag.TERM_VECTOR_STORED.getAbbreviation()), FieldFlag.TERM_VECTOR_STORED.getDisplay() );
+    key.add( String.valueOf(FieldFlag.TERM_VECTOR_OFFSET.getAbbreviation()), FieldFlag.TERM_VECTOR_OFFSET.getDisplay() );
+    key.add( String.valueOf(FieldFlag.TERM_VECTOR_POSITION.getAbbreviation()), FieldFlag.TERM_VECTOR_POSITION.getDisplay() );
+    key.add( String.valueOf(FieldFlag.OMIT_NORMS.getAbbreviation()), FieldFlag.OMIT_NORMS.getDisplay() );
+    key.add( String.valueOf(FieldFlag.LAZY.getAbbreviation()), FieldFlag.LAZY.getDisplay() );
+    key.add( String.valueOf(FieldFlag.BINARY.getAbbreviation()), FieldFlag.BINARY.getDisplay() );
+    key.add( String.valueOf(FieldFlag.COMPRESSED.getAbbreviation()), FieldFlag.COMPRESSED.getDisplay() );
+    key.add( String.valueOf(FieldFlag.SORT_MISSING_FIRST.getAbbreviation()), FieldFlag.SORT_MISSING_FIRST.getDisplay() );
+    key.add( String.valueOf(FieldFlag.SORT_MISSING_LAST.getAbbreviation()), FieldFlag.SORT_MISSING_LAST.getDisplay() );
     return key;
   }
   
@@ -372,7 +367,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
       field.add( "fields", typeusemap.get( ft.getTypeName() ) );
       field.add( "tokenized", ft.isTokenized() );
-      field.add( "analyzer", ft.getAnalyzer()+"" );
+      field.add("className", ft.getClass().getName());
+      field.add( "analyzer", ft.getAnalyzer().getClass().getName());
       types.add( ft.getTypeName(), field );
     }
 
