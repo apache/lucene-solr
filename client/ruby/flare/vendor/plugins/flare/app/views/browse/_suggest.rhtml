@@ -1,0 +1,11 @@
+<ul class="cookies">
+<%
+@values.each do |value|
+  if value[1] > 0
+-%>
+   <li class="cookie"><span class="informal">&nbsp;</span><%=value[0]%><span class="informal"> (<%=value[1]%>)<br/></span></li>
+<%
+  end
+end
+-%>
+</ul>
