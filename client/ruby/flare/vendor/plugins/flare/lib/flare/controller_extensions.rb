@@ -18,8 +18,6 @@ module Flare
     end
 
     module ClassMethods
-      # 
-      
       def flare(options={})
         include Flare::ActionControllerExtensions::InstanceMethods
         
@@ -48,7 +46,6 @@ module Flare
       end
 
       def auto_complete_for_search_query
-        # TODO instead of "text", default to the default search field configured in schema.xml
         @values = @flare.retrieve_field_facets(self.class.suggest_field, 5, params['search']['query'].downcase)
 
         render :partial => 'suggest'

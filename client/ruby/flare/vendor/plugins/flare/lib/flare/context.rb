@@ -14,7 +14,7 @@ require 'solr'
 
 class Flare::Context
   attr_accessor :queries, :filters, :facet_queries, :applied_facet_queries, :page, :sort
-  attr_reader :facet_fields, :text_fields
+  attr_reader :facet_fields, :text_fields, :connection
 
   def initialize(solr_config={})
     @solr_config = solr_config
