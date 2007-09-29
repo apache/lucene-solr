@@ -1464,7 +1464,29 @@ public class TestIndexWriter extends TestCase
     dir.close();
   }
 
+  // LUCENE-1008
+  public void testNoTermVectorAfterTermVector() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true);
+    Document document = new Document();
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+        Field.TermVector.YES));
+    iw.addDocument(document);
+    document = new Document();
+    document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.TOKENIZED,
+                           Field.TermVector.NO));
+    iw.addDocument(document);
+    // Make first segment
+    iw.flush();
+
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+        Field.TermVector.YES));
+    iw.addDocument(document);
+    // Make 2nd segment
+    iw.flush();
+
+    iw.optimize();
+    iw.close();
+    dir.close();
+  }
 }
-
-
-

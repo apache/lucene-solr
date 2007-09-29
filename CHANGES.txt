@@ -105,6 +105,11 @@ Bug fixes
 14. LUCENE-992: Fixed IndexWriter.updateDocument to be atomic again
     (this was broken by LUCENE-843).  (Ning Li via Mike McCandless)
 
+15. LUCENE-1008: Fixed corruption case when document with no term
+    vector fields is added after documents with term vector fields.
+    This bug was introduced with LUCENE-843.  (Grant Ingersoll via
+    Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

@@ -552,8 +552,8 @@ final class DocumentsWriter {
       // Append term vectors to the real outputs:
       if (tvx != null) {
         tvx.writeLong(tvd.getFilePointer());
+        tvd.writeVInt(numVectorFields);
         if (numVectorFields > 0) {
-          tvd.writeVInt(numVectorFields);
           for(int i=0;i<numVectorFields;i++)
             tvd.writeVInt(vectorFieldNumbers[i]);
           assert 0 == vectorFieldPointers[0];
