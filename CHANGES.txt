@@ -119,6 +119,10 @@ Bug fixes
     This bug was introduced with LUCENE-984.  (Andi Vajda via Mike
     McCandless)
 
+19. LUCENE-1009: Fix merge slowdown with LogByteSizeMergePolicy when
+    autoCommit=false and documents are using stored fields and/or term
+    vectors.  (Mark Miller via Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

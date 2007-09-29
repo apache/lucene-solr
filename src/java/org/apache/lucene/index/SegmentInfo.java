@@ -208,8 +208,13 @@ final class SegmentInfo {
       List files = files();
       final int size = files.size();
       sizeInBytes = 0;
-      for(int i=0;i<size;i++) 
-        sizeInBytes += dir.fileLength((String) files.get(i));
+      for(int i=0;i<size;i++) {
+        final String fileName = (String) files.get(i);
+        // We don't count bytes used by a shared doc store
+        // against this segment:
+        if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName))
+          sizeInBytes += dir.fileLength(fileName);
+      }
     }
     return sizeInBytes;
   }
