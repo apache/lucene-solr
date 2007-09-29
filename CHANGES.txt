@@ -113,6 +113,12 @@ Bug fixes
 16. LUCENE-1006: Fixed QueryParser to accept a "" field value (zero
     length quoted string.)  (yonik)
 
+17. LUCENE-1010: Fixed corruption case when document with no term
+    vector fields is added after documents with term vector fields.
+    This case is hit during merge and would cause an EOFException.
+    This bug was introduced with LUCENE-984.  (Andi Vajda via Mike
+    McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.

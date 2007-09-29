@@ -155,7 +155,8 @@ final class TermVectorsWriter {
         tvd.writeVLong(fieldPointer-lastFieldPointer);
         lastFieldPointer = fieldPointer;
       }
-    }
+    } else
+      tvd.writeVInt(0);
   }
   
   /** Close all streams. */
