@@ -153,7 +153,7 @@ import java.util.Map.Entry;
   select which merges to do, if any, and return a {@link
   MergePolicy.MergeSpecification} describing the merges.  It
   also selects merges to do for optimize().  (The default is
-  {@link LogByteMergePolicy}.  Then, the {@link
+  {@link LogByteSizeMergePolicy}.  Then, the {@link
   MergeScheduler} is invoked with the requested merges and
   it decides when and how to run the merges.  The default is
   {@link ConcurrentMergeScheduler}. </p>
