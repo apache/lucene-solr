@@ -18,13 +18,8 @@ package org.apache.lucene.queryParser;
  */
 
 import junit.framework.TestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
@@ -199,6 +194,9 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", new WhitespaceAnalyzer(), "türm term term");
     assertQueryEquals("ümlaut", new WhitespaceAnalyzer(), "ümlaut");
+
+    assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
+    assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
 
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");

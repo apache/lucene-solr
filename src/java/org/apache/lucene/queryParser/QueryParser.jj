@@ -888,7 +888,7 @@ PARSER_END(QueryParser)
 | <COLON:     ":" >
 | <STAR:      "*" >
 | <CARAT:     "^" > : Boost
-| <QUOTED:     "\"" (~["\""] | "\\\"")+ "\"">
+| <QUOTED:     "\"" (~["\""] | "\\\"")* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >

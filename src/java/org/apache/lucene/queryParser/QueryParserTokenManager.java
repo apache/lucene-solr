@@ -142,7 +142,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                         kind = 6;
                   }
                   else if (curChar == 34)
-                     jjCheckNAddTwoStates(15, 17);
+                     jjCheckNAddStates(0, 2);
                   else if (curChar == 33)
                   {
                      if (kind > 9)
@@ -152,7 +152,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                   {
                      if (kind > 18)
                         kind = 18;
-                     jjCheckNAddStates(0, 4);
+                     jjCheckNAddStates(3, 7);
                   }
                   else if (curChar == 42)
                   {
@@ -175,16 +175,13 @@ private final int jjMoveNfa_3(int startState, int curPos)
                      kind = 9;
                   break;
                case 14:
+               case 16:
                   if (curChar == 34)
-                     jjCheckNAddTwoStates(15, 17);
+                     jjCheckNAddStates(0, 2);
                   break;
                case 15:
                   if ((0xfffffffbffffffffL & l) != 0L)
-                     jjCheckNAddStates(5, 7);
-                  break;
-               case 16:
-                  if (curChar == 34)
-                     jjCheckNAddStates(5, 7);
+                     jjCheckNAddStates(0, 2);
                   break;
                case 18:
                   if (curChar == 34 && kind > 17)
@@ -229,7 +226,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                      break;
                   if (kind > 18)
                      kind = 18;
-                  jjCheckNAddStates(0, 4);
+                  jjCheckNAddStates(3, 7);
                   break;
                case 29:
                   if ((0x7bfff8f8ffffd9ffL & l) == 0L)
@@ -276,7 +273,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                   {
                      if (kind > 18)
                         kind = 18;
-                     jjCheckNAddStates(0, 4);
+                     jjCheckNAddStates(3, 7);
                   }
                   else if (curChar == 92)
                      jjCheckNAddStates(13, 15);
@@ -342,7 +339,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                      jjstateSet[jjnewStateCnt++] = 11;
                   break;
                case 15:
-                  jjAddStates(5, 7);
+                  jjAddStates(0, 2);
                   break;
                case 17:
                   if (curChar == 92)
@@ -383,7 +380,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                      break;
                   if (kind > 18)
                      kind = 18;
-                  jjCheckNAddStates(0, 4);
+                  jjCheckNAddStates(3, 7);
                   break;
                case 29:
                   if ((0x97ffffff87ffffffL & l) == 0L)
@@ -451,12 +448,12 @@ private final int jjMoveNfa_3(int startState, int curPos)
                   {
                      if (kind > 18)
                         kind = 18;
-                     jjCheckNAddStates(0, 4);
+                     jjCheckNAddStates(3, 7);
                   }
                   break;
                case 15:
                   if (jjCanMove_0(hiByte, i1, i2, l1, l2))
-                     jjAddStates(5, 7);
+                     jjAddStates(0, 2);
                   break;
                case 24:
                   if (!jjCanMove_0(hiByte, i1, i2, l1, l2))
@@ -470,7 +467,7 @@ private final int jjMoveNfa_3(int startState, int curPos)
                      break;
                   if (kind > 18)
                      kind = 18;
-                  jjCheckNAddStates(0, 4);
+                  jjCheckNAddStates(3, 7);
                   break;
                case 29:
                case 31:
@@ -955,7 +952,7 @@ private final int jjMoveNfa_2(int startState, int curPos)
    }
 }
 static final int[] jjnextStates = {
-   29, 32, 23, 33, 30, 15, 17, 18, 20, 21, 32, 23, 33, 31, 34, 27, 
+   15, 17, 18, 29, 32, 23, 33, 30, 20, 21, 32, 23, 33, 31, 34, 27, 
    2, 4, 5, 0, 1, 
 };
 private static final boolean jjCanMove_0(int hiByte, int i1, int i2, long l1, long l2)

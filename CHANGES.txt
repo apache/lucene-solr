@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+Lucene Change Log
 
 $Id$
 
@@ -109,6 +109,9 @@ Bug fixes
     vector fields is added after documents with term vector fields.
     This bug was introduced with LUCENE-843.  (Grant Ingersoll via
     Mike McCandless)
+
+16. LUCENE-1006: Fixed QueryParser to accept a "" field value (zero
+    length quoted string.)  (yonik)
 
 New features
 
