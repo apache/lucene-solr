@@ -117,7 +117,6 @@ public class LukeResponse extends SolrResponseBase {
       name = n;
     }
 
-
     @SuppressWarnings("unchecked")
     public void read(NamedList<Object> nl) {
       for (Map.Entry<String, Object> entry : nl) {
@@ -152,7 +151,6 @@ public class LukeResponse extends SolrResponseBase {
       return result;
     }
 
-
     public EnumSet<FieldFlag> getFlags() {
       return flags;
     }
@@ -163,6 +161,26 @@ public class LukeResponse extends SolrResponseBase {
 
     public String getType() {
       return type;
+    }
+
+    public int getDistinct() {
+      return distinct;
+    }
+
+    public int getDocs() {
+      return docs;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getSchema() {
+      return schema;
+    }
+
+    public NamedList<Integer> getTopTerms() {
+      return topTerms;
     }
   }
 
