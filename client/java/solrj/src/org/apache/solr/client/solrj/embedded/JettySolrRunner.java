@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.servlet.SolrServlet;
-import org.apache.solr.servlet.SolrUpdateServlet;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -70,9 +68,7 @@ public class JettySolrRunner
     
     // Initialize the servlets
     Context root = new Context( server, context, Context.SESSIONS );
-    root.addServlet( SolrServlet.class, "/select" );
-    root.addServlet( SolrUpdateServlet.class, "/update" );
-
+    
     // for some reason, there must be a servlet for this to get applied
     root.addServlet( Servlet404.class, "/*" );
     dispatchFilter = root.addFilter( SolrDispatchFilter.class, "*", Handler.REQUEST );
@@ -107,6 +103,21 @@ public class JettySolrRunner
     public void service(HttpServletRequest req, HttpServletResponse res ) throws IOException
     {
       res.sendError( 404, "Can not find: "+req.getRequestURI() );
+    }
+  }
+  
+  /**
+   * A main class that starts jetty+solr 
+   * This is useful for debugging
+   */
+  public static void main( String[] args )
+  {
+    try {
+      JettySolrRunner jetty = new JettySolrRunner( "/solr", 3456 );
+      jetty.start();
+    }
+    catch( Exception ex ) {
+      ex.printStackTrace();
     }
   }
 }
