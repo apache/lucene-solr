@@ -113,6 +113,7 @@ public class EmbeddedSolrServer extends BaseSolrServer
       StringWriter out = new StringWriter();
       responseWriter.write(out, req, rsp);
       
+      req.close();
       return _processor.processResponse( new StringReader( out.toString() ) );
     }
     catch( IOException iox ) {
