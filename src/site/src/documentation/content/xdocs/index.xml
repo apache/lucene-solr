@@ -23,6 +23,20 @@
         <section id="Lucene News">
           <title>Lucene News</title>
           <section>
+            <title>2 October 2007 - Lucene at OSSummit Asia</title>
+            <p><a href="http://www.ossummit.com"><img src="http://ossummit.com/2007/images/banners/Banner_125x125.jpg"  alt="OSSummit Asia logo" /></a>
+              Lucene and Solr tutorials!
+            </p>
+            <p>The following talks and trainings are scheduled for this year's conference:
+              <ul>
+                <li>November 26: <a href="http://www.ossummit.com/2007/program/talk/8">Lucene Boot Camp</a> by <s>Grant Ingersoll</s>Erik Hatcher.  An all-day training focusing on getting started with Lucene.</li>
+                <li>November 27: <a href="http://www.ossummit.com/2007/program/talk/25">Solr in a Day</a> by Erik Hatcher.  All you need to know to use Solr effectively.</li>
+                <li>November 30, 11:30 am: <a href="http://www.ossummit.com/2007/program/talk/67">Lucene Case Studies</a> by Erik Hatcher.  A rapid series of examples of many Lucene-using applications.</li>
+              </ul>
+            </p>
+          </section>
+
+          <section>
             <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
             <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png"  alt="ApacheCon US logo" /></a>
               Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
