@@ -15,29 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestBase;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
 /**
+ * Send arbitrary XML to a request handler
  * 
  * @version $Id$
  * @since solr 1.3
  */
-public class DirectXmlUpdateRequest extends RequestBase
+public class DirectXmlRequest extends RequestBase
 {
   final String xml;
   
-  public DirectXmlUpdateRequest( String path, String body )
+  public DirectXmlRequest( String path, String body )
   {
     super( METHOD.POST, path );
     xml = body;

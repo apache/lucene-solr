@@ -26,6 +26,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -246,7 +247,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
       xml.append( "</id>" );
     }
     xml.append( "</delete>" );
-    DirectXmlUpdateRequest up = new DirectXmlUpdateRequest( "/update", xml.toString() );
+    DirectXmlRequest up = new DirectXmlRequest( "/update", xml.toString() );
     server.request( up );
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got out
