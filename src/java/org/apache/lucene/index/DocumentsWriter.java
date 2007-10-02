@@ -2305,7 +2305,7 @@ final class DocumentsWriter {
       bufferedDeleteTerms.put(term, new Num(docCount));
       // This is coarse approximation of actual bytes used:
       numBytesUsed += (term.field().length() + term.text().length()) * BYTES_PER_CHAR
-          + Integer.SIZE/8 + 5 * OBJECT_HEADER_BYTES + 5 * OBJECT_POINTER_BYTES;
+          + 4 + 5 * OBJECT_HEADER_BYTES + 5 * OBJECT_POINTER_BYTES;
       if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
           && numBytesUsed > ramBufferSize) {
         bufferIsFull = true;
