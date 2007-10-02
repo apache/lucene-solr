@@ -302,7 +302,7 @@
         text^0.2 features^1.1 name^1.5 manu^1.4 manu_exact^1.9
      </str>
      <str name="bf">
-        ord(poplarity)^0.5 recip(rord(price),1,1000,1000)^0.3
+        ord(popularity)^0.5 recip(rord(price),1,1000,1000)^0.3
      </str>
      <str name="fl">
         id,name,price,score
