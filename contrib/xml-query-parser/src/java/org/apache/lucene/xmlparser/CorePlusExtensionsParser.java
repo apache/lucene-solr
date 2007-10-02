@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.xmlparser.builders.BooleanFilterBuilder;
 import org.apache.lucene.xmlparser.builders.BoostingQueryBuilder;
+import org.apache.lucene.xmlparser.builders.DuplicateFilterBuilder;
 import org.apache.lucene.xmlparser.builders.FuzzyLikeThisQueryBuilder;
 import org.apache.lucene.xmlparser.builders.LikeThisQueryBuilder;
 import org.apache.lucene.xmlparser.builders.TermsFilterBuilder;
@@ -31,6 +32,7 @@ public class CorePlusExtensionsParser extends CoreParser
 		super(analyzer, parser);
 		filterFactory.addBuilder("TermsFilter",new TermsFilterBuilder(analyzer));
 		filterFactory.addBuilder("BooleanFilter",new BooleanFilterBuilder(filterFactory));
+		filterFactory.addBuilder("DuplicateFilter",new DuplicateFilterBuilder());
 		String fields[]={"contents"};
 		queryFactory.addBuilder("LikeThisQuery",new LikeThisQueryBuilder(analyzer,fields));
 		queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));

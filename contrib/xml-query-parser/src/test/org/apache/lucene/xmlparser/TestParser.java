@@ -173,6 +173,12 @@ public class TestParser extends TestCase {
 			Query q=parse("CachedFilter.xml");
 			dumpResults("Cached filter", q, 5);
 	}
+	public void testDuplicateFilterQueryXML() throws ParserException, IOException
+	{
+			Query q=parse("DuplicateFilterQuery.xml");
+			Hits h = searcher.search(q);
+			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h.length());
+	}
 	
 
 

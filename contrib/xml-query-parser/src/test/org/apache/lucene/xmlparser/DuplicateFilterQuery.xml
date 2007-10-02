@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FilteredQuery>
+	<Query>
+		<BooleanQuery fieldName="contents">
+			<Clause occurs="should">
+				<TermQuery>money</TermQuery>
+			</Clause>
+			<Clause occurs="must">
+				<TermQuery fieldName="date">19870408</TermQuery>
+			</Clause>
+		</BooleanQuery>
+	</Query>	
+	<Filter>
+		<!-- Filters to last document with this date -->
+		<DuplicateFilter fieldName="date" keepMode="last"/>
+	</Filter>
+	
+</FilteredQuery>
