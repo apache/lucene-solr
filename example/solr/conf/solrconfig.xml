@@ -272,7 +272,7 @@
      Names starting with a '/' are accessed with the a path equal to the 
      registered name.  Names without a leading '/' are accessed with:
       http://host/app/select?qt=name
-     If no qt is defined, the requestHandlere that declares default="true"
+     If no qt is defined, the requestHandler that declares default="true"
      will be used.
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true">
