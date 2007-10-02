@@ -70,19 +70,6 @@ public class ClientUtils
   
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
-
-  private static void writeFieldValue(Writer writer, String fieldName, Float boost, Object fieldValue) throws IOException 
-  {
-    if (fieldValue instanceof Date) {
-      fieldValue = fmtThreadLocal.get().format( (Date)fieldValue );
-    }
-    if( boost != null ) {
-      XML.writeXML(writer, "field", fieldValue.toString(), "name", fieldName, "boost", boost );          
-    }
-    else if( fieldValue != null ){
-      XML.writeXML(writer, "field", fieldValue.toString(), "name", fieldName);
-    }
-  }
   
   public static void writeXML( SolrInputDocument doc, Writer writer ) throws IOException
   {
@@ -90,8 +77,18 @@ public class ClientUtils
    
     for( SolrInputField field : doc ) {
       float boost = field.getBoost();
-      for( Object o : field ) {
-        writeFieldValue(writer, field.getName(), boost, o );
+      String name = field.getName();
+      for( Object v : field ) {
+        if (v instanceof Date) {
+          v = fmtThreadLocal.get().format( (Date)v );
+        }
+        if( boost != 1.0f ) {
+          XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost ); 
+        }
+        else {
+          XML.writeXML(writer, "field", v.toString(), "name", name ); 
+        }
+        
         // only write the boost for the first multi-valued field
         // otherwise, the used boost is the product of all the boost values
         boost = 1.0f; 
