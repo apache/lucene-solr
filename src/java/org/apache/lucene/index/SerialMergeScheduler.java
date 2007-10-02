@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.LinkedList;
 
 /** A {@link MergeScheduler} that simply does each merge
  *  sequentially, using the current thread. */

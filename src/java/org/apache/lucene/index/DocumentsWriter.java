@@ -126,7 +126,7 @@ final class DocumentsWriter {
   private int pauseThreads;                       // Non-zero when we need all threads to
                                                   // pause (eg to flush)
   private boolean flushPending;                   // True when a thread has decided to flush
-  private boolean postingsIsFull;                 // True when it's time to write segment
+  private boolean bufferIsFull;                 // True when it's time to write segment
 
   private PrintStream infoStream;
 
@@ -148,6 +148,11 @@ final class DocumentsWriter {
   // non-zero we will flush by RAM usage instead.
   private int maxBufferedDocs = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
 
+  // Coarse estimates used to measure RAM usage of buffered deletes
+  private static int OBJECT_HEADER_BYTES = 12;
+  private static int OBJECT_POINTER_BYTES = 4;    // TODO: should be 8 on 64-bit platform
+  private static int BYTES_PER_CHAR = 2;
+
   private BufferedNorms[] norms = new BufferedNorms[0];   // Holds norms until we flush
 
   DocumentsWriter(Directory directory, IndexWriter writer) throws IOException {
@@ -165,18 +170,25 @@ final class DocumentsWriter {
 
   /** Set how much RAM we can use before flushing. */
   void setRAMBufferSizeMB(double mb) {
-    ramBufferSize = (long) (mb*1024*1024);
+    if (mb == IndexWriter.DISABLE_AUTO_FLUSH) {
+      ramBufferSize = IndexWriter.DISABLE_AUTO_FLUSH;
+    } else {
+      ramBufferSize = (long) (mb*1024*1024);
+    }
   }
 
   double getRAMBufferSizeMB() {
-    return ramBufferSize/1024./1024.;
+    if (ramBufferSize == IndexWriter.DISABLE_AUTO_FLUSH) {
+      return ramBufferSize;
+    } else {
+      return ramBufferSize/1024./1024.;
+    }
   }
 
   /** Set max buffered docs, which means we will flush by
    *  doc count instead of by RAM usage. */
   void setMaxBufferedDocs(int count) {
     maxBufferedDocs = count;
-    ramBufferSize = 0;
   }
 
   int getMaxBufferedDocs() {
@@ -361,7 +373,7 @@ final class DocumentsWriter {
     threadBindings.clear();
     numBytesUsed = 0;
     balanceRAM();
-    postingsIsFull = false;
+    bufferIsFull = false;
     flushPending = false;
     segment = null;
     numDocsInRAM = 0;
@@ -582,7 +594,7 @@ final class DocumentsWriter {
         }
       }
 
-      if (postingsIsFull && !flushPending) {
+      if (bufferIsFull && !flushPending) {
         flushPending = true;
         doFlushAfter = true;
       }
@@ -961,7 +973,8 @@ final class DocumentsWriter {
       for(int i=0;i<numFields;i++)
         fieldDataArray[i].processField(analyzer);
 
-      if (numBytesUsed > 0.95 * ramBufferSize)
+      if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
+          && numBytesUsed > 0.95 * ramBufferSize)
         balanceRAM();
     }
 
@@ -2137,10 +2150,8 @@ final class DocumentsWriter {
     // We must at this point commit to flushing to ensure we
     // always get N docs when we flush by doc count, even if
     // > 1 thread is adding documents:
-    /* new merge policy
-    if (!flushPending && maxBufferedDocs > 0 && numDocsInRAM >= maxBufferedDocs) {
-    */
-    if (!flushPending && ramBufferSize == 0 && numDocsInRAM >= maxBufferedDocs) {
+    if (!flushPending && maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH
+        && numDocsInRAM >= maxBufferedDocs) {
       flushPending = true;
       state.doFlushAfter = true;
     } else
@@ -2163,8 +2174,12 @@ final class DocumentsWriter {
       }
     }
 
-    if (delTerm != null)
+    if (delTerm != null) {
       addDeleteTerm(delTerm, state.docID);
+      if (!state.doFlushAfter) {
+        state.doFlushAfter = timeToFlushDeletes();
+      }
+    }
 
     return state;
   }
@@ -2211,9 +2226,11 @@ final class DocumentsWriter {
   }
 
   // Reset buffered deletes.
-  synchronized void clearBufferedDeleteTerms() {
+  synchronized void clearBufferedDeleteTerms() throws IOException {
     bufferedDeleteTerms.clear();
     numBufferedDeleteTerms = 0;
+    if (numBytesUsed > 0)
+      resetPostingsData();
   }
 
   synchronized boolean bufferDeleteTerms(Term[] terms) throws IOException {
@@ -2236,12 +2253,13 @@ final class DocumentsWriter {
   }
 
   synchronized private boolean timeToFlushDeletes() {
-    return numBufferedDeleteTerms >= maxBufferedDeleteTerms && setFlushPending();
+    return (bufferIsFull
+            || (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH
+                && numBufferedDeleteTerms >= maxBufferedDeleteTerms))
+           && setFlushPending();
   }
 
   void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
-    if (maxBufferedDeleteTerms < 1)
-      throw new IllegalArgumentException("maxBufferedDeleteTerms must at least be 1");
     this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
   }
 
@@ -2285,6 +2303,13 @@ final class DocumentsWriter {
     Num num = (Num) bufferedDeleteTerms.get(term);
     if (num == null) {
       bufferedDeleteTerms.put(term, new Num(docCount));
+      // This is coarse approximation of actual bytes used:
+      numBytesUsed += (term.field().length() + term.text().length()) * BYTES_PER_CHAR
+          + Integer.SIZE/8 + 5 * OBJECT_HEADER_BYTES + 5 * OBJECT_POINTER_BYTES;
+      if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
+          && numBytesUsed > ramBufferSize) {
+        bufferIsFull = true;
+      }
     } else {
       num.setNum(docCount);
     }
@@ -2827,7 +2852,7 @@ final class DocumentsWriter {
    * pools to match the current docs. */
   private synchronized void balanceRAM() {
 
-    if (ramBufferSize == 0.0 || postingsIsFull)
+    if (ramBufferSize == IndexWriter.DISABLE_AUTO_FLUSH || bufferIsFull)
       return;
 
     // We free our allocations if we've allocated 5% over
@@ -2864,9 +2889,9 @@ final class DocumentsWriter {
       while(numBytesAlloc > freeLevel) {
         if (0 == freeByteBlocks.size() && 0 == freeCharBlocks.size() && 0 == postingsFreeCount) {
           // Nothing else to free -- must flush now.
-          postingsIsFull = true;
+          bufferIsFull = true;
           if (infoStream != null)
-            infoStream.println("    nothing to free; now set postingsIsFull");
+            infoStream.println("    nothing to free; now set bufferIsFull");
           break;
         }
 
@@ -2909,7 +2934,7 @@ final class DocumentsWriter {
                              " allocMB=" + nf.format(numBytesAlloc/1024./1024.) +
                              " triggerMB=" + nf.format(flushTrigger/1024./1024.));
 
-        postingsIsFull = true;
+        bufferIsFull = true;
       }
     }
   }

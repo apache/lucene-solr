@@ -1151,8 +1151,8 @@ public class TestIndexWriter extends TestCase
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       writer.setMaxBufferedDocs(10);
+      writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
 
-      int lastNumFile = dir.list().length;
       long lastGen = -1;
       for(int j=1;j<52;j++) {
         Document doc = new Document();
@@ -1169,25 +1169,89 @@ public class TestIndexWriter extends TestCase
           assertTrue(gen > lastGen);
           lastGen = gen;
           writer.setRAMBufferSizeMB(0.000001);
+          writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 20) {
           assertTrue(gen > lastGen);
           lastGen = gen;
         } else if (20 == j) {
           writer.setRAMBufferSizeMB(16);
+          writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
           lastGen = gen;
         } else if (j < 30) {
           assertEquals(gen, lastGen);
         } else if (30 == j) {
           writer.setRAMBufferSizeMB(0.000001);
+          writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 40) {
           assertTrue(gen> lastGen);
           lastGen = gen;
         } else if (40 == j) {
           writer.setMaxBufferedDocs(10);
+          writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
           lastGen = gen;
         } else if (j < 50) {
           assertEquals(gen, lastGen);
           writer.setMaxBufferedDocs(10);
+          writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+        } else if (50 == j) {
+          assertTrue(gen > lastGen);
+        }
+      }
+      writer.close();
+      dir.close();
+    }
+
+    public void testChangingRAMBuffer2() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.setMaxBufferedDocs(10);
+      writer.setMaxBufferedDeleteTerms(10);
+      writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+
+      for(int j=1;j<52;j++) {
+        Document doc = new Document();
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        writer.addDocument(doc);
+      }
+      
+      long lastGen = -1;
+      for(int j=1;j<52;j++) {
+        writer.deleteDocuments(new Term("field", "aaa" + j));
+        _TestUtil.syncConcurrentMerges(writer);
+        long gen = SegmentInfos.generationFromSegmentsFileName(SegmentInfos.getCurrentSegmentFileName(dir.list()));
+        if (j == 1)
+          lastGen = gen;
+        else if (j < 10) {
+          // No new files should be created
+          assertEquals(gen, lastGen);
+        } else if (10 == j) {
+          assertTrue(gen > lastGen);
+          lastGen = gen;
+          writer.setRAMBufferSizeMB(0.000001);
+          writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
+        } else if (j < 20) {
+          assertTrue(gen > lastGen);
+          lastGen = gen;
+        } else if (20 == j) {
+          writer.setRAMBufferSizeMB(16);
+          writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
+          lastGen = gen;
+        } else if (j < 30) {
+          assertEquals(gen, lastGen);
+        } else if (30 == j) {
+          writer.setRAMBufferSizeMB(0.000001);
+          writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
+        } else if (j < 40) {
+          assertTrue(gen> lastGen);
+          lastGen = gen;
+        } else if (40 == j) {
+          writer.setMaxBufferedDeleteTerms(10);
+          writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+          lastGen = gen;
+        } else if (j < 50) {
+          assertEquals(gen, lastGen);
+          writer.setMaxBufferedDeleteTerms(10);
+          writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (50 == j) {
           assertTrue(gen > lastGen);
         }

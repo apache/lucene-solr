@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Iterator;
-import java.util.ListIterator;
 import java.util.Map.Entry;
 
 /**
@@ -205,10 +204,15 @@ public class IndexWriter {
   public final static int DEFAULT_MERGE_FACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
 
   /**
-   * Default value is 0 (because IndexWriter flushes by RAM
-   * usage by default). Change using {@link #setMaxBufferedDocs(int)}.
+   * Value to denote a flush trigger is disabled
    */
-  public final static int DEFAULT_MAX_BUFFERED_DOCS = 0;
+  public final static int DISABLE_AUTO_FLUSH = -1;
+
+  /**
+   * Disabled by default (because IndexWriter flushes by RAM usage
+   * by default). Change using {@link #setMaxBufferedDocs(int)}.
+   */
+  public final static int DEFAULT_MAX_BUFFERED_DOCS = DISABLE_AUTO_FLUSH;
 
   /**
    * Default value is 16 MB (which means flush when buffered
@@ -217,9 +221,10 @@ public class IndexWriter {
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
 
   /**
-   * Default value is 1000. Change using {@link #setMaxBufferedDeleteTerms(int)}.
+   * Disabled by default (because IndexWriter flushes by RAM usage
+   * by default). Change using {@link #setMaxBufferedDeleteTerms(int)}.
    */
-  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = 1000;
+  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = DISABLE_AUTO_FLUSH;
 
   /**
    * @deprecated
@@ -817,20 +822,28 @@ public class IndexWriter {
    * indexing.
    *
    * <p>When this is set, the writer will flush every
-   * maxBufferedDocs added documents and never flush by RAM
-   * usage.</p>
+   * maxBufferedDocs added documents.  Pass in {@link
+   * #DISABLE_AUTO_FLUSH} to prevent triggering a flush due
+   * to number of buffered documents.  Note that if flushing
+   * by RAM usage is also enabled, then the flush will be
+   * triggered by whichever comes first.</p>
    *
-   * <p> The default value is 0 (writer flushes by RAM
-   * usage).</p>
+   * <p>Disabled by default (writer flushes by RAM usage).</p>
    *
    * @throws IllegalArgumentException if maxBufferedDocs is
-   * smaller than 2
+   * enabled but smaller than 2, or it disables maxBufferedDocs
+   * when ramBufferSize is already disabled
    * @see #setRAMBufferSizeMB
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     ensureOpen();
-    if (maxBufferedDocs < 2)
-      throw new IllegalArgumentException("maxBufferedDocs must at least be 2");
+    if (maxBufferedDocs != DISABLE_AUTO_FLUSH && maxBufferedDocs < 2)
+      throw new IllegalArgumentException(
+          "maxBufferedDocs must at least be 2 when enabled");
+    if (maxBufferedDocs == DISABLE_AUTO_FLUSH
+        && getRAMBufferSizeMB() == DISABLE_AUTO_FLUSH)
+      throw new IllegalArgumentException(
+          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
     docWriter.setMaxBufferedDocs(maxBufferedDocs);
     pushMaxBufferedDocs();
   }
@@ -841,7 +854,7 @@ public class IndexWriter {
    * as its minMergeDocs, to keep backwards compatibility.
    */
   private void pushMaxBufferedDocs() {
-    if (docWriter.getRAMBufferSizeMB() == 0.0) {
+    if (docWriter.getMaxBufferedDocs() != DISABLE_AUTO_FLUSH) {
       final MergePolicy mp = mergePolicy;
       if (mp instanceof LogDocMergePolicy) {
         LogDocMergePolicy lmp = (LogDocMergePolicy) mp;
@@ -856,9 +869,8 @@ public class IndexWriter {
   }
 
   /**
-   * Returns 0 if this writer is flushing by RAM usage, else
-   * returns the number of buffered added documents that will
-   * trigger a flush.
+   * Returns the number of buffered added documents that will
+   * trigger a flush if enabled.
    * @see #setMaxBufferedDocs
    */
   public int getMaxBufferedDocs() {
@@ -873,20 +885,30 @@ public class IndexWriter {
    * count and use as large a RAM buffer as you can.
    *
    * <p>When this is set, the writer will flush whenever
-   * buffered documents use this much RAM.</p>
+   * buffered documents use this much RAM.  Pass in {@link
+   * #DISABLE_AUTO_FLUSH} to prevent triggering a flush due
+   * to RAM usage.  Note that if flushing by document count
+   * is also enabled, then the flush will be triggered by
+   * whichever comes first.</p>
    *
    * <p> The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.</p>
+   * 
+   * @throws IllegalArgumentException if ramBufferSize is
+   * enabled but non-positive, or it disables ramBufferSize
+   * when maxBufferedDocs is already disabled
    */
   public void setRAMBufferSizeMB(double mb) {
-    if (mb <= 0.0)
-      throw new IllegalArgumentException("ramBufferSize should be > 0.0 MB");
+    if (mb != DISABLE_AUTO_FLUSH && mb <= 0.0)
+      throw new IllegalArgumentException(
+          "ramBufferSize should be > 0.0 MB when enabled");
+    if (mb == DISABLE_AUTO_FLUSH && getMaxBufferedDocs() == DISABLE_AUTO_FLUSH)
+      throw new IllegalArgumentException(
+          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
     docWriter.setRAMBufferSizeMB(mb);
   }
 
   /**
-   * Returns 0.0 if this writer is flushing by document
-   * count, else returns the value set by {@link
-   * #setRAMBufferSizeMB}.
+   * Returns the value set by {@link #setRAMBufferSizeMB} if enabled.
    */
   public double getRAMBufferSizeMB() {
     return docWriter.getRAMBufferSizeMB();
@@ -898,17 +920,24 @@ public class IndexWriter {
    * buffered in memory at the time, they are merged and a new segment is
    * created.</p>
 
-   * <p>The default value is {@link #DEFAULT_MAX_BUFFERED_DELETE_TERMS}.
-   * @throws IllegalArgumentException if maxBufferedDeleteTerms is smaller than 1</p>
+   * <p>Disabled by default (writer flushes by RAM usage).</p>
+   * 
+   * @throws IllegalArgumentException if maxBufferedDeleteTerms
+   * is enabled but smaller than 1
+   * @see #setRAMBufferSizeMB
    */
   public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
     ensureOpen();
+    if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
+        && maxBufferedDeleteTerms < 1)
+      throw new IllegalArgumentException(
+          "maxBufferedDeleteTerms must at least be 1 when enabled");
     docWriter.setMaxBufferedDeleteTerms(maxBufferedDeleteTerms);
   }
 
   /**
    * Returns the number of buffered deleted terms that will
-   * trigger a flush.
+   * trigger a flush if enabled.
    * @see #setMaxBufferedDeleteTerms
    */
   public int getMaxBufferedDeleteTerms() {
@@ -1479,13 +1508,7 @@ public class IndexWriter {
     }
   }
 
-  /** Determines amount of RAM usage by the buffered docs at
-   * which point we trigger a flush to the index.
-   */
-  private double ramBufferSize = DEFAULT_RAM_BUFFER_SIZE_MB*1024F*1024F;
-
   /** If non-null, information about merges will be printed to this.
-
    */
   private PrintStream infoStream = null;
   private static PrintStream defaultInfoStream = null;

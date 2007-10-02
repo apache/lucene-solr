@@ -21,7 +21,6 @@ import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.LinkedList;
 import java.util.ArrayList;
 
 /** A {@link MergeScheduler} that runs each merge using a

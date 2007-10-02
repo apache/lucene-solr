@@ -179,6 +179,11 @@ Optimizations
     implementations that use SegmentInfos to access an index and 
     acquire a write lock for index modifications. (Michael Busch)
 
+11. LUCENE-1007: Allow flushing in IndexWriter to be triggered by
+    either RAM usage or document count or both (whichever comes
+    first), by adding symbolic constant DISABLE_AUTO_FLUSH to disable
+    one of the flush triggers.  (Ning Li via Mike McCandless)
+
 Documentation
 
 Build

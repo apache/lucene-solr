@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Set;
 
 import org.apache.lucene.store.Directory;

@@ -208,7 +208,7 @@ public class IndexModifier {
       indexWriter.setMergeScheduler(new SerialMergeScheduler());
       indexWriter.setInfoStream(infoStream);
       indexWriter.setUseCompoundFile(useCompoundFile);
-      if (maxBufferedDocs != 0)
+      if (maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH)
         indexWriter.setMaxBufferedDocs(maxBufferedDocs);
       indexWriter.setMaxFieldLength(maxFieldLength);
       indexWriter.setMergeFactor(mergeFactor);

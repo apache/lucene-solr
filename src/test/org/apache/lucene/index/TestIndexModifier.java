@@ -75,7 +75,7 @@ public class TestIndexModifier extends TestCase {
     //  Lucene defaults:
     assertNull(i.getInfoStream());
     assertTrue(i.getUseCompoundFile());
-    assertEquals(0, i.getMaxBufferedDocs());
+    assertEquals(IndexWriter.DISABLE_AUTO_FLUSH, i.getMaxBufferedDocs());
     assertEquals(10000, i.getMaxFieldLength());
     assertEquals(10, i.getMergeFactor());
     // test setting properties:
