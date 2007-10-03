@@ -191,6 +191,11 @@ which will be used to configure the chosen Forrest skin.
       background-color: #f0f0f0;
       font-family: monospace;
     }
+    img.float-right {
+      float: right;
+      margin-left: 2em;
+      padding: .5em;
+    }
     <!--Example:
         To override the colours of links only in the footer.
     -->

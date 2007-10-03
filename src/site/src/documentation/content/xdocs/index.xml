@@ -24,7 +24,7 @@
           <title>Lucene News</title>
           <section>
             <title>2 October 2007 - Lucene at OSSummit Asia</title>
-            <p><a href="http://www.ossummit.com"><img src="http://ossummit.com/2007/images/banners/Banner_125x125.jpg"  alt="OSSummit Asia logo" /></a>
+            <p><a href="http://www.ossummit.com"><img src="http://ossummit.com/2007/images/banners/Banner_125x125.jpg" class="float-right" alt="OSSummit Asia logo" /></a>
               Lucene and Solr tutorials!
             </p>
             <p>The following talks and trainings are scheduled for this year's conference:
@@ -38,7 +38,7 @@
 
           <section>
             <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
-            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png"  alt="ApacheCon US logo" /></a>
+            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png" class="float-right" alt="ApacheCon US logo" /></a>
               Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
             </p>
             <p>The following talks and trainings are scheduled for this year's conference:
@@ -81,7 +81,7 @@
           <section>
             <title>18 February 2007 - Lucene at ApacheCon Europe</title>
             <p>
-              <a href="http://www.eu.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png" style="float: left; padding: 3px;" alt="ApacheCon Europe logo" /></a>
+              <a href="http://www.eu.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png" class="float-right" alt="ApacheCon Europe logo" /></a>
               Lucene Java and related <a href="http://lucene.apache.org/">Lucene</a> projects will have extensive representation at <a href="http://www.eu.apachecon.com">ApacheCon Europe</a> in Amsterdam this year. For the 2007 session,
               Yonik Seeley will be giving the <a href="http://www.eu.apachecon.com/program/talk/11">Full-Text Search with Lucene</a> talk at 10:30 am on May 2nd.  Immediately following, Grant Ingersoll
               will be presenting <a href="http://www.eu.apachecon.com/program/talk/12">Advanced Lucene</a> at 11:30.  Grant will also be leading a full day tutorial session on May 1st titled
