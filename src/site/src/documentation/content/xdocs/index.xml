@@ -22,7 +22,7 @@
   </header> 
   <body> 
     <section id="intro">
-      <title>Introduction</title>
+      <title>What Is Solr?</title>
       <p>
         Solr is an open source enterprise search server based on the
         <a href="http://lucene.apache.org/java/">Lucene Java</a> search library, with XML/HTTP and JSON APIs,
@@ -39,7 +39,7 @@
 
       <section>
         <title>02 October 2007 - Solr at OSSummit Asia</title>
-        <p><a href="http://www.ossummit.com"><img src="http://ossummit.com/2007/images/banners/Banner_125x125.jpg"  alt="OSSummit Asia logo" /></a>
+        <p><a href="http://www.ossummit.com"><img src="http://ossummit.com/2007/images/banners/Banner_125x125.jpg" class="float-right" alt="OSSummit Asia logo" /></a>
           Lucene and Solr tutorials!
         </p>
         <p>The following talks and trainings are scheduled for this year's conference:</p>
@@ -53,7 +53,7 @@
 
       <section>
             <title>03 September 2007 - Lucene at ApacheCon Atlanta</title>
-            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png"  alt="ApacheCon US logo" /></a>
+            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png" class="float-right" alt="ApacheCon US logo" /></a>
               Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
             </p>
             <p>The following talks and trainings are scheduled for this year's conference:</p>

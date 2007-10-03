@@ -155,6 +155,11 @@ a:hover { color:#6587ff}
       background-color: #f0f0f0;
       font-family: monospace;
     }
+    img.float-right {
+      float: right;
+      margin-left: 2em;
+      padding: .5em;
+    }
     
     #footer a { color: #0F3660; }
     #footer a:visited { color: #009999; }
