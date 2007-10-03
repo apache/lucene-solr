@@ -21,11 +21,33 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Implements {@link LockFactory} using {@link File#createNewFile()}.  This is
- * currently the default LockFactory used for {@link FSDirectory} if no
- * LockFactory instance is otherwise provided.
+ * <p>Implements {@link LockFactory} using {@link
+ * File#createNewFile()}.  This is the default LockFactory
+ * for {@link FSDirectory}.</p>
  *
- * Note that there are known problems with this locking implementation on NFS.
+ * <p><b>NOTE:</b> the <a target="_top"
+ * href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">javadocs
+ * for <code>File.createNewFile</code></a> contain a vague
+ * yet spooky warning about not using the API for file
+ * locking.  This warning was added due to <a target="_top"
+ * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4676183">this
+ * bug</a>, and in fact the only known problem with using
+ * this API for locking is that the Lucene write lock may
+ * not be released when the JVM exits abnormally.</p>
+
+ * <p>When this happens, a {@link LockObtainFailedException}
+ * is hit when trying to create a writer, in which case you
+ * need to explicitly clear the lock file first.  You can
+ * either manually remove the file, or use the {@link
+ * org.apache.lucene.index.IndexReader#unlock(Directory)}
+ * API.  But, first be certain that no writer is in fact
+ * writing to the index otherwise you can easily corrupt
+ * your index.</p>
+ *
+ * <p>If you suspect that this or any other LockFactory is
+ * not working properly in your environment, you can easily
+ * test it by using {@link VerifyingLockFactory}, {@link
+ * LockVerifyServer} and {@link LockStressTest}.</p>
  *
  * @see LockFactory
  */

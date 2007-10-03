@@ -135,16 +135,13 @@ public class MockRAMDirectory extends RAMDirectory {
     super.deleteFile(name);
   }
 
-  public IndexOutput createOutput(String name) {
+  public IndexOutput createOutput(String name) throws IOException {
     if (openFiles == null) {
       openFiles = new HashMap();
     }
     synchronized(openFiles) {
-      if (noDeleteOpenFile && openFiles.containsKey(name)) {
-        // RuntimeException instead of IOException because
-        // super() does not throw IOException currently:
-        throw new RuntimeException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
-      }
+      if (noDeleteOpenFile && openFiles.containsKey(name))
+       throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
     }
     RAMFile file = new RAMFile(this);
     synchronized (this) {

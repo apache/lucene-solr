@@ -102,10 +102,12 @@ final class IndexFileDeleter {
 
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
+    if (infoStream != null)
+      message("setInfoStream deletionPolicy=" + policy);
   }
   
   private void message(String message) {
-    infoStream.println("Deleter [" + Thread.currentThread().getName() + "]: " + message);
+    infoStream.println("IFD [" + Thread.currentThread().getName() + "]: " + message);
   }
 
   /**
@@ -125,7 +127,7 @@ final class IndexFileDeleter {
     this.infoStream = infoStream;
 
     if (infoStream != null)
-      message("init: current segments file is \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
+      message("init: current segments file is \"" + segmentInfos.getCurrentSegmentFileName() + "\"; deletionPolicy=" + policy);
 
     this.policy = policy;
     this.directory = directory;
@@ -189,7 +191,24 @@ final class IndexFileDeleter {
     }
 
     if (currentCommitPoint == null) {
-      throw new CorruptIndexException("failed to locate current segments_N file");
+      // We did not in fact see the segments_N file
+      // corresponding to the segmentInfos that was passed
+      // in.  Yet, it must exist, because our caller holds
+      // the write lock.  This can happen when the directory
+      // listing was stale (eg when index accessed via NFS
+      // client with stale directory listing cache).  So we
+      // try now to explicitly open this commit point:
+      SegmentInfos sis = new SegmentInfos();
+      try {
+        sis.read(directory, segmentInfos.getCurrentSegmentFileName());
+      } catch (IOException e) {
+        throw new CorruptIndexException("failed to locate current segments_N file");
+      }
+      if (infoStream != null)
+        message("forced open of current segments file " + segmentInfos.getCurrentSegmentFileName());
+      currentCommitPoint = new CommitPoint(sis);
+      commits.add(currentCommitPoint);
+      incRef(sis, true);
     }
 
     // We keep commits list in sorted order (oldest to newest):

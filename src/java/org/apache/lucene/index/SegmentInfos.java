@@ -194,6 +194,9 @@ final class SegmentInfos extends Vector {
   public final void read(Directory directory, String segmentFileName) throws CorruptIndexException, IOException {
     boolean success = false;
 
+    // Clear any previous segments:
+    clear();
+
     IndexInput input = directory.openInput(segmentFileName);
 
     generation = generationFromSegmentsFileName(segmentFileName);
@@ -234,6 +237,7 @@ final class SegmentInfos extends Vector {
       }
     }
   }
+
   /**
    * This version of read uses the retry logic (for lock-less
    * commits) to find the right segments file to load.
@@ -444,7 +448,7 @@ final class SegmentInfos extends Vector {
 
   private static void message(String message) {
     if (infoStream != null) {
-      infoStream.println(Thread.currentThread().getName() + ": " + message);
+      infoStream.println("SIS [" + Thread.currentThread().getName() + "]: " + message);
     }
   }
 
@@ -492,54 +496,50 @@ final class SegmentInfos extends Vector {
       // it.
       
       // We have three methods for determining the current
-      // generation.  We try each in sequence.
+      // generation.  We try the first two in parallel, and
+      // fall back to the third when necessary.
 
       while(true) {
 
-        // Method 1: list the directory and use the highest
-        // segments_N file.  This method works well as long
-        // as there is no stale caching on the directory
-        // contents:
-        String[] files = null;
-
         if (0 == method) {
-          if (directory != null) {
+
+          // Method 1: list the directory and use the highest
+          // segments_N file.  This method works well as long
+          // as there is no stale caching on the directory
+          // contents (NOTE: NFS clients often have such stale
+          // caching):
+          String[] files = null;
+
+          long genA = -1;
+
+          if (directory != null)
             files = directory.list();
-            if (files == null)
-              throw new FileNotFoundException("cannot read directory " + directory + ": list() returned null");
-          } else {
+          else
             files = fileDirectory.list();
-            if (files == null)
-              throw new FileNotFoundException("cannot read directory " + fileDirectory + ": list() returned null");
-          }
+          
+          if (files != null)
+            genA = getCurrentSegmentGeneration(files);
 
-          gen = getCurrentSegmentGeneration(files);
+          message("directory listing genA=" + genA);
 
-          if (gen == -1) {
-            String s = "";
-            for(int i=0;i<files.length;i++) {
-              s += " " + files[i];
-            }
-            throw new FileNotFoundException("no segments* file found in " + directory + ": files:" + s);
-          }
-        }
-
-        // Method 2 (fallback if Method 1 isn't reliable):
-        // if the directory listing seems to be stale, then
-        // try loading the "segments.gen" file.
-        if (1 == method || (0 == method && lastGen == gen && retry)) {
-
-          method = 1;
-            
+          // Method 2: open segments.gen and read its
+          // contents.  Then we take the larger of the two
+          // gen's.  This way, if either approach is hitting
+          // a stale cache (NFS) we have a better chance of
+          // getting the right generation.
+          long genB = -1;
           for(int i=0;i<defaultGenFileRetryCount;i++) {
             IndexInput genInput = null;
             try {
               genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
+            } catch (FileNotFoundException e) {
+              message("segments.gen open: FileNotFoundException " + e);
+              break;
             } catch (IOException e) {
               message("segments.gen open: IOException " + e);
             }
-            if (genInput != null) {
 
+            if (genInput != null) {
               try {
                 int version = genInput.readInt();
                 if (version == FORMAT_LOCKLESS) {
@@ -548,10 +548,7 @@ final class SegmentInfos extends Vector {
                   message("fallback check: " + gen0 + "; " + gen1);
                   if (gen0 == gen1) {
                     // The file is consistent.
-                    if (gen0 > gen) {
-                      message("fallback to '" + IndexFileNames.SEGMENTS_GEN + "' check: now try generation " + gen0 + " > " + gen);
-                      gen = gen0;
-                    }
+                    genB = gen0;
                     break;
                   }
                 }
@@ -567,15 +564,35 @@ final class SegmentInfos extends Vector {
               // will retry
             }
           }
+
+          message(IndexFileNames.SEGMENTS_GEN + " check: genB=" + genB);
+
+          // Pick the larger of the two gen's:
+          if (genA > genB)
+            gen = genA;
+          else
+            gen = genB;
+          
+          if (gen == -1) {
+            // Neither approach found a generation
+            String s;
+            if (files != null) {
+              s = "";
+              for(int i=0;i<files.length;i++)
+                s += " " + files[i];
+            } else
+              s = " null";
+            throw new FileNotFoundException("no segments* file found in " + directory + ": files:" + s);
+          }
         }
 
-        // Method 3 (fallback if Methods 2 & 3 are not
-        // reliable): since both directory cache and file
-        // contents cache seem to be stale, just advance the
-        // generation.
-        if (2 == method || (1 == method && lastGen == gen && retry)) {
+        // Third method (fallback if first & second methods
+        // are not reliable): since both directory cache and
+        // file contents cache seem to be stale, just
+        // advance the generation.
+        if (1 == method || (0 == method && lastGen == gen && retry)) {
 
-          method = 2;
+          method = 1;
 
           if (genLookaheadCount < defaultGenLookaheadCount) {
             gen++;

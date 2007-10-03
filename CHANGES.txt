@@ -123,6 +123,10 @@ Bug fixes
     autoCommit=false and documents are using stored fields and/or term
     vectors.  (Mark Miller via Mike McCandless)
 
+20. LUCENE-1011: Fixed corruption case when two or more machines,
+    sharing an index over NFS, can be writers in quick succession.
+    (Patrick Kimber vis Mike McCandless)
+
 New features
 
  1. LUCENE-906: Elision filter for French.
@@ -135,6 +139,15 @@ New features
      actual storage of Term Vectors has taken place.
 
  4. LUCENE-975: Added PositionBasedTermVectorMapper that allows for position based lookup of term vector information.  See item #3 above (LUCENE-868).
+
+ 5. LUCENE-1011: Added simple tools (all in org.apache.lucene.store)
+    to verify that locking is working properly.  LockVerifyServer runs
+    a separate server to verify locks.  LockStressTest runs a simple
+    tool that rapidly obtains and releases locks.
+    VerifyingLockFactory is a LockFactory that wraps any other
+    LockFactory and consults the LockVerifyServer whenever a lock is
+    obtained or released, throwing an exception if an illegal lock
+    obtain occurred.  (Patrick Kimber vis Mike McCandless)
 
 Optimizations
 

@@ -41,14 +41,14 @@ public class TestMultiSegmentReader extends TestCase {
 
   protected void setUp() throws IOException {
     dir = new RAMDirectory();
-    sis = new SegmentInfos();
     doc1 = new Document();
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
     DocHelper.setupDoc(doc2);
     SegmentInfo info1 = DocHelper.writeDoc(dir, doc1);
     SegmentInfo info2 = DocHelper.writeDoc(dir, doc2);
-    sis.write(dir);
+    sis = new SegmentInfos();
+    sis.read(dir);
   }
 
   protected IndexReader openReader() throws IOException {
@@ -97,6 +97,12 @@ public class TestMultiSegmentReader extends TestCase {
     // Ensure undeleteAll survives commit/close/reopen:
     reader.commit();
     reader.close();
+
+    if (reader instanceof MultiReader)
+      // MultiReader does not "own" the directory so it does
+      // not write the changes to sis on commit:
+      sis.write(dir);
+
     sis.read(dir);
     reader = openReader();
     assertEquals( 2, reader.numDocs() );
@@ -105,6 +111,10 @@ public class TestMultiSegmentReader extends TestCase {
     assertEquals( 1, reader.numDocs() );
     reader.commit();
     reader.close();
+    if (reader instanceof MultiReader)
+      // MultiReader does not "own" the directory so it does
+      // not write the changes to sis on commit:
+      sis.write(dir);
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );

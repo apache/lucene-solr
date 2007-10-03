@@ -250,6 +250,11 @@ public class IndexWriter {
   // LUCENE-888 for details.
   private final static int MERGE_READ_BUFFER_SIZE = 4096;
 
+  // Used for printing messages
+  private static Object MESSAGE_ID_LOCK = new Object();
+  private static int MESSAGE_ID = 0;
+  private int messageID = -1;
+
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
 
@@ -300,7 +305,15 @@ public class IndexWriter {
   }
 
   private void message(String message) {
-    infoStream.println("IW [" + Thread.currentThread().getName() + "]: " + message);
+    infoStream.println("IW " + messageID + " [" + Thread.currentThread().getName() + "]: " + message);
+  }
+
+  private synchronized void setMessageID() {
+    if (infoStream != null && messageID == -1) {
+      synchronized(MESSAGE_ID_LOCK) {
+        messageID = MESSAGE_ID++;
+      }
+    }
   }
 
   /**
@@ -658,6 +671,7 @@ public class IndexWriter {
     directory = d;
     analyzer = a;
     this.infoStream = defaultInfoStream;
+    setMessageID();
 
     if (create) {
       // Clear the write lock in case it's leftover:
@@ -702,6 +716,11 @@ public class IndexWriter {
 
       pushMaxBufferedDocs();
 
+      if (infoStream != null) {
+        message("init: create=" + create);
+        messageState();
+      }
+
     } catch (IOException e) {
       this.writeLock.release();
       this.writeLock = null;
@@ -721,6 +740,8 @@ public class IndexWriter {
       mergePolicy.close();
     mergePolicy = mp;
     pushMaxBufferedDocs();
+    if (infoStream != null)
+      message("setMergePolicy " + mp);
   }
 
   /**
@@ -745,6 +766,8 @@ public class IndexWriter {
       this.mergeScheduler.close();
     }
     this.mergeScheduler = mergeScheduler;
+    if (infoStream != null)
+      message("setMergeScheduler " + mergeScheduler);
   }
 
   /**
@@ -804,6 +827,8 @@ public class IndexWriter {
   public void setMaxFieldLength(int maxFieldLength) {
     ensureOpen();
     this.maxFieldLength = maxFieldLength;
+    if (infoStream != null)
+      message("setMaxFieldLength " + maxFieldLength);
   }
 
   /**
@@ -846,6 +871,8 @@ public class IndexWriter {
           "at least one of ramBufferSize and maxBufferedDocs must be enabled");
     docWriter.setMaxBufferedDocs(maxBufferedDocs);
     pushMaxBufferedDocs();
+    if (infoStream != null)
+      message("setMaxBufferedDocs " + maxBufferedDocs);
   }
 
   /**
@@ -905,6 +932,8 @@ public class IndexWriter {
       throw new IllegalArgumentException(
           "at least one of ramBufferSize and maxBufferedDocs must be enabled");
     docWriter.setRAMBufferSizeMB(mb);
+    if (infoStream != null)
+      message("setRAMBufferSizeMB " + mb);
   }
 
   /**
@@ -933,6 +962,8 @@ public class IndexWriter {
       throw new IllegalArgumentException(
           "maxBufferedDeleteTerms must at least be 1 when enabled");
     docWriter.setMaxBufferedDeleteTerms(maxBufferedDeleteTerms);
+    if (infoStream != null)
+      message("setMaxBufferedDeleteTerms " + maxBufferedDeleteTerms);
   }
 
   /**
@@ -1004,8 +1035,23 @@ public class IndexWriter {
   public void setInfoStream(PrintStream infoStream) {
     ensureOpen();
     this.infoStream = infoStream;
+    setMessageID();
     docWriter.setInfoStream(infoStream);
     deleter.setInfoStream(infoStream);
+    if (infoStream != null)
+      messageState();
+  }
+
+  private void messageState() {
+    message("setInfoStream: dir=" + directory +
+            " autoCommit=" + autoCommit +
+            " mergePolicy=" + mergePolicy +
+            " mergeScheduler=" + mergeScheduler +
+            " ramBufferSizeMB=" + docWriter.getRAMBufferSizeMB() +
+            " maxBuffereDocs=" + docWriter.getMaxBufferedDocs() +
+            " maxBuffereDeleteTerms=" + docWriter.getMaxBufferedDeleteTerms() +
+            " maxFieldLength=" + maxFieldLength +
+            " index=" + segString());
   }
 
   /**
@@ -1129,6 +1175,8 @@ public class IndexWriter {
 
   private void closeInternal(boolean waitForMerges) throws CorruptIndexException, IOException {
     try {
+      if (infoStream != null)
+        message("now flush at close");
 
       flush(true, true);
 
@@ -1601,10 +1649,11 @@ public class IndexWriter {
    *  background threads. */
   public void optimize(boolean doWait) throws CorruptIndexException, IOException {
     ensureOpen();
-    flush();
 
     if (infoStream != null)
       message("optimize: index now " + segString());
+
+    flush();
 
     synchronized(this) {
       resetMergeExceptions();
@@ -1758,6 +1807,10 @@ public class IndexWriter {
     localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     localAutoCommit = autoCommit;
     if (localAutoCommit) {
+
+      if (infoStream != null)
+        message("flush at startTransaction");
+
       flush();
       // Turn off auto-commit during our local transaction:
       autoCommit = false;
@@ -1990,6 +2043,8 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
+    if (infoStream != null)
+      message("flush at addIndexes");
     flush();
 
     int start = segmentInfos.size();
@@ -2045,6 +2100,8 @@ public class IndexWriter {
       throws CorruptIndexException, IOException {
 
     ensureOpen();
+    if (infoStream != null)
+      message("flush at addIndexesNoOptimize");
     flush();
 
     /* new merge policy
@@ -2836,6 +2893,8 @@ public class IndexWriter {
       // TODO: if we know we are about to merge away these
       // newly flushed doc store files then we should not
       // make compound file out of them...
+      if (infoStream != null)
+        message("flush at merge");
       flush(false, true);
     }
 

@@ -20,8 +20,17 @@ package org.apache.lucene.store;
 import java.io.IOException;
 
 /**
- * Base class for Locking implementation.  {@link Directory} uses
- * instances of this class to implement locking.
+ * <p>Base class for Locking implementation.  {@link Directory} uses
+ * instances of this class to implement locking.</p>
+ *
+ * <p>Note that there are some useful tools to verify that
+ * your LockFactory is working correctly: {@link
+ * VerifyingLockFactory}, {@link LockStressTest}, {@link
+ * LockVerifyServer}.</p>
+ *
+ * @see LockVerifyServer
+ * @see LockStressTest
+ * @see VerifyingLockFactory
  */
 
 public abstract class LockFactory {

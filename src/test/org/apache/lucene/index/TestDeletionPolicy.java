@@ -220,6 +220,7 @@ public class TestDeletionPolicy extends TestCase
     String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                             "",
                                                             gen);
+    dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
     while(gen > 0) {
       try {
         IndexReader reader = IndexReader.open(dir);
@@ -279,6 +280,7 @@ public class TestDeletionPolicy extends TestCase
 
       // Simplistic check: just verify all segments_N's still
       // exist, and, I can open a reader on each:
+      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
       while(gen > 0) {
         IndexReader reader = IndexReader.open(dir);
@@ -386,6 +388,7 @@ public class TestDeletionPolicy extends TestCase
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
+      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
       for(int i=0;i<N+1;i++) {
         try {
@@ -470,6 +473,7 @@ public class TestDeletionPolicy extends TestCase
       // exist, and, I can open a reader on each:
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
 
+      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 176;
 
       for(int i=0;i<N+1;i++) {
@@ -575,6 +579,7 @@ public class TestDeletionPolicy extends TestCase
       // exist, and, I can open a reader on each:
       long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
 
+      dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 0;
 
       for(int i=0;i<N+1;i++) {

@@ -209,7 +209,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
-  public IndexOutput createOutput(String name) {
+  public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
     RAMFile file = new RAMFile(this);
     synchronized (this) {
