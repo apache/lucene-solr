@@ -17,8 +17,9 @@ class Solr::Request::Select < Solr::Request::Base
       
   attr_reader :query_type
   
-  def initialize(qt=nil)
+  def initialize(qt=nil, params={})
     @query_type = qt
+    @select_params = params
   end
   
   def response_format
@@ -34,7 +35,7 @@ class Solr::Request::Select < Solr::Request::Base
   end
 
   def to_hash
-    return {:qt => query_type, :wt => 'ruby'}
+    return {:qt => query_type, :wt => 'ruby'}.merge(@select_params)
   end
   
   def to_s

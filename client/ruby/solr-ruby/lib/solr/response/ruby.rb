@@ -11,7 +11,7 @@
 # limitations under the License.
 
 class Solr::Response::Ruby < Solr::Response::Base
-  attr_reader :data
+  attr_reader :data, :header
 
   def initialize(ruby_code)
     super

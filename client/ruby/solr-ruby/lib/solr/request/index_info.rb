@@ -17,6 +17,6 @@ class Solr::Request::IndexInfo < Solr::Request::Select
   end
   
   def to_hash
-    {:numTerms => 0, :show => 'schema'}.merge(super.to_hash)
+    {:numTerms => 0}.merge(super.to_hash)
   end
 end

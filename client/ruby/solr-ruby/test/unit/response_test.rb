@@ -32,11 +32,12 @@ class ResponseTest < SolrMockBaseTestCase
       Solr::Response::Ruby.new(' {...')
     end
   end
-  
-  def test_bogus_request_handling
-    assert_raise(Solr::Exception) do
-      Solr::Response::Base.make_response(Solr::Request::Select.new, "response data")
-    end
-  end
+
+  # This is now an acceptable use of Select, for the default request handler with no parameters (other than &wt=ruby)  
+  # def test_bogus_request_handling
+  #   assert_raise(Solr::Exception) do
+  #     Solr::Response::Base.make_response(Solr::Request::Select.new, "response data")
+  #   end
+  # end
 
 end

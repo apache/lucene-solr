@@ -10,18 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Response; end; end
-require 'solr/response/base'
-require 'solr/response/xml'
-require 'solr/response/ruby'
-require 'solr/response/ping'
-require 'solr/response/add_document'
-require 'solr/response/modify_document'
-require 'solr/response/standard'
-require 'solr/response/spellcheck'
-require 'solr/response/dismax'
-require 'solr/response/commit'
-require 'solr/response/delete'
-require 'solr/response/index_info'
-require 'solr/response/optimize'
-require 'solr/response/select'
+require 'test/unit'
+require 'solr'
+
+class SelectTest < Test::Unit::TestCase
+
+  def test_basic_query
+    request = Solr::Request::Select.new('custom', :q => 'query')
+    assert_equal :ruby, request.response_format
+    assert_equal 'select', request.handler
+    assert_equal 'query', request.to_hash[:q]
+  end
+  
+end

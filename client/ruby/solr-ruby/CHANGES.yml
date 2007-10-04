@@ -2,6 +2,8 @@ v0.0.6:
   release_date: TBD
   changes:
     - Added Solr::Request::Spellcheck
+    - Enabled Solr::Requst::Select to work as a general pass through to any registered request handler
+    - Fixed modify_document_test.rb so as to not be brittle with Hash ordering
   
 v0.0.5:
   release_date: 2007-08-27
