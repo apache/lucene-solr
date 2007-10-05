@@ -327,13 +327,6 @@ public class IndexWriter {
       throw new IllegalArgumentException("this method can only be called when the merge policy is the default LogMergePolicy");
   }
 
-  private LogDocMergePolicy getLogDocMergePolicy() {
-    if (mergePolicy instanceof LogDocMergePolicy)
-      return (LogDocMergePolicy) mergePolicy;
-    else
-      throw new IllegalArgumentException("this method can only be called when the merge policy is LogDocMergePolicy");
-  }
-
   /** <p>Get the current setting of whether newly flushed
    *  segments will use the compound file format.  Note that
    *  this just returns the value previously set with
@@ -794,7 +787,7 @@ public class IndexWriter {
    * Otherwise an IllegalArgumentException is thrown.</p>
    */
   public void setMaxMergeDocs(int maxMergeDocs) {
-    getLogDocMergePolicy().setMaxMergeDocs(maxMergeDocs);
+    getLogMergePolicy().setMaxMergeDocs(maxMergeDocs);
   }
 
    /**
@@ -809,7 +802,7 @@ public class IndexWriter {
    * @see #setMaxMergeDocs
    */
   public int getMaxMergeDocs() {
-    return getLogDocMergePolicy().getMaxMergeDocs();
+    return getLogMergePolicy().getMaxMergeDocs();
   }
 
   /**

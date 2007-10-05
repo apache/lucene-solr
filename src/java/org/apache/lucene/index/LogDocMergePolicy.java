@@ -26,30 +26,16 @@ public class LogDocMergePolicy extends LogMergePolicy {
   /** Default minimum segment size.  @see setMinMergeDocs */
   public static final int DEFAULT_MIN_MERGE_DOCS = 1000;
 
-  /** Default maximum segment size.  A segment of this size
-   *  or larger will never be merged.  @see setMaxMergeDocs */
-  public static final int DEFAULT_MAX_MERGE_DOCS = Integer.MAX_VALUE;
-
   public LogDocMergePolicy() {
     super();
     minMergeSize = DEFAULT_MIN_MERGE_DOCS;
-    maxMergeSize = DEFAULT_MAX_MERGE_DOCS;
+
+    // maxMergeSize is never used by LogDocMergePolicy; set
+    // it to Long.MAX_VALUE to disable it
+    maxMergeSize = Long.MAX_VALUE;
   }
   protected long size(SegmentInfo info) {
     return info.docCount;
-  }
-
-  /** Sets the maximum size for a segment to be merged.
-   *  When a segment is this size or larger it will never be
-   *  merged. */
-  public void setMaxMergeDocs(int maxMergeDocs) {
-    maxMergeSize = maxMergeDocs;
-  }
-
-  /** Get the maximum size for a segment to be merged.
-   *  @see #setMaxMergeDocs */
-  public int getMaxMergeDocs() {
-    return (int) maxMergeSize;
   }
 
   /** Sets the minimum size for the lowest level segments.

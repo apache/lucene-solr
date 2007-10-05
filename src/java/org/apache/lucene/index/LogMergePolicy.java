@@ -49,10 +49,15 @@ public abstract class LogMergePolicy implements MergePolicy {
    *  merged at a time */
   public static final int DEFAULT_MERGE_FACTOR = 10;
 
+  /** Default maximum segment size.  A segment of this size
+   *  or larger will never be merged.  @see setMaxMergeDocs */
+  public static final int DEFAULT_MAX_MERGE_DOCS = Integer.MAX_VALUE;
+
   private int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   long minMergeSize;
   long maxMergeSize;
+  int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
@@ -219,6 +224,9 @@ public abstract class LogMergePolicy implements MergePolicy {
       long size = size(info);
 
       // Refuse to import a segment that's too large
+      if (info.docCount > maxMergeDocs && info.dir != directory)
+        throw new IllegalArgumentException("Segment is too large (" + info.docCount + " docs vs max docs " + maxMergeDocs + ")");
+
       if (size >= maxMergeSize && info.dir != directory)
         throw new IllegalArgumentException("Segment is too large (" + size + " vs max size " + maxMergeSize + ")");
 
@@ -281,8 +289,10 @@ public abstract class LogMergePolicy implements MergePolicy {
       int end = start + mergeFactor;
       while(end <= 1+upto) {
         boolean anyTooLarge = false;
-        for(int i=start;i<end;i++)
-          anyTooLarge |= size(infos.info(i)) >= maxMergeSize;
+        for(int i=start;i<end;i++) {
+          final SegmentInfo info = infos.info(i);
+          anyTooLarge |= (size(info) >= maxMergeSize || info.docCount >= maxMergeDocs);
+        }
 
         if (!anyTooLarge) {
           if (spec == null)
@@ -298,4 +308,18 @@ public abstract class LogMergePolicy implements MergePolicy {
 
     return spec;
   }
+
+  /** Sets the maximum docs for a segment to be merged.
+   *  When a segment has this many docs or more it will never be
+   *  merged. */
+  public void setMaxMergeDocs(int maxMergeDocs) {
+    this.maxMergeDocs = maxMergeDocs;
+  }
+
+  /** Get the maximum docs for a segment to be merged.
+   *  @see #setMaxMergeDocs */
+  public int getMaxMergeDocs() {
+    return maxMergeDocs;
+  }
+
 }

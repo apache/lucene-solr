@@ -41,7 +41,9 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
 
   /** Sets the maximum size for a segment to be merged.
    *  When a segment is this size or larger it will never be
-   *  merged. */
+   *  merged.  Note that {@link #setMaxMergeDocs} is also
+   *  used to check whether a segment is too large for
+   *  merging (it's either or). */
   public void setMaxMergeMB(double mb) {
     maxMergeSize = (long) (mb*1024*1024);
   }

@@ -1583,4 +1583,39 @@ public class TestIndexWriter extends TestCase
     iw.close();
     dir.close();
   }
+
+  // Just intercepts all merges & verifies that we are never
+  // merging a segment with >= 20 (maxMergeDocs) docs
+  private class MyMergeScheduler implements MergeScheduler {
+    synchronized public void merge(IndexWriter writer)
+      throws CorruptIndexException, IOException {
+
+      while(true) {
+        MergePolicy.OneMerge merge = writer.getNextMerge();
+        if (merge == null)
+          break;
+        for(int i=0;i<merge.segments.size();i++)
+          assert merge.segments.info(i).docCount < 20;
+        writer.merge(merge);
+      }
+    }
+
+    public void close() {}
+  }
+
+  // LUCENE-1013
+  public void testSetMaxMergeDocs() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true);
+    iw.setMergeScheduler(new MyMergeScheduler());
+    iw.setMaxMergeDocs(20);
+    iw.setMaxBufferedDocs(2);
+    iw.setMergeFactor(2);
+    Document document = new Document();
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+                           Field.TermVector.YES));
+    for(int i=0;i<177;i++)
+      iw.addDocument(document);
+    iw.close();
+  }
 }

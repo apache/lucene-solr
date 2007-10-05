@@ -381,6 +381,12 @@ Bug fixes
 23. LUCENE-913: Two consecutive score() calls return different 
     scores for Boolean Queries. (Michael Busch, Doron Cohen)
 
+24. LUCENE-1013: Fix IndexWriter.setMaxMergeDocs to work "out of the
+    box", again, by moving set/getMaxMergeDocs up from
+    LogDocMergePolicy into LogMergePolicy.  This fixes the API
+    breakage (non backwards compatible change) caused by LUCENE-994.
+    (Yonik Seeley via Mike McCandless)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
