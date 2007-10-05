@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -41,11 +42,27 @@ import org.apache.solr.common.util.NamedList;
  */
 public class XMLResponseParser implements ResponseParser
 {
+  public static Logger log = Logger.getLogger(XMLResponseParser.class.getName());
+  
   XMLInputFactory factory;
   
   public XMLResponseParser()
   {
     factory = XMLInputFactory.newInstance();
+    try {
+      // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
+      // XMLInputFactory, as that implementation tries to cache and reuse the
+      // XMLStreamReader.  Setting the parser-specific "reuse-instance" property to false
+      // prevents this.
+      // All other known open-source stax parsers (and the bea ref impl)
+      // have thread-safe factories.
+      factory.setProperty("reuse-instance", Boolean.FALSE);
+    }
+    catch( IllegalArgumentException ex ) {
+      // Other implementations will likely throw this exception since "reuse-instance"
+      // isimplementation specific.
+      log.fine( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
+    }
   }
   
   public String getWriterType()
