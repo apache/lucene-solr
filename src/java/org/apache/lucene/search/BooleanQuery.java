@@ -313,15 +313,25 @@ public class BooleanQuery extends Query {
   private static boolean allowDocsOutOfOrder = false;
 
   /**
-   * Indicates whether hit docs may be collected out of docid
-   * order. In other words, with this setting, 
+   * Expert: Indicates whether hit docs may be collected out of docid
+   * order.
+   *
+   * <p>
+   * Background: llthough the contract of the Scorer class requires that
+   * documents be iterated in order of doc id this was not true in early
+   * versions of Lucene.  Many pieces of functionality in the current
+   * Lucene code base have undefined behavior if this contract is not
+   * upheld, but in some specific simple cases may be faster.  (For
+   * example: disjunction queries with less than 32 prohibited clauses;
+   * This setting has no effect for other queries.)
+   * </p>
+   *
+   * <p>
+   * Specifics: By setting this option to this true, calls to 
    * {@link HitCollector#collect(int,float)} might be
    * invoked first for docid N and only later for docid N-1.
    * Being static, this setting is system wide.
-   * If collecting docs out of order is allowed, scoring might be faster
-   * for certain queries, for example disjunction queries with
-   * less than 32 prohibited clauses.
-   * This setting has no effect for other queries.
+   * </p>
    */
   public static void setAllowDocsOutOfOrder(boolean allow) {
     allowDocsOutOfOrder = allow;
