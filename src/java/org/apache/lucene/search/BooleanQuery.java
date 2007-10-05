@@ -317,8 +317,8 @@ public class BooleanQuery extends Query {
    * order.
    *
    * <p>
-   * Background: llthough the contract of the Scorer class requires that
-   * documents be iterated in order of doc id this was not true in early
+   * Background: although the contract of the Scorer class requires that
+   * documents be iterated in order of doc id, this was not true in early
    * versions of Lucene.  Many pieces of functionality in the current
    * Lucene code base have undefined behavior if this contract is not
    * upheld, but in some specific simple cases may be faster.  (For
@@ -327,7 +327,7 @@ public class BooleanQuery extends Query {
    * </p>
    *
    * <p>
-   * Specifics: By setting this option to this true, calls to 
+   * Specifics: By setting this option to true, calls to 
    * {@link HitCollector#collect(int,float)} might be
    * invoked first for docid N and only later for docid N-1.
    * Being static, this setting is system wide.
