@@ -189,6 +189,8 @@ final class IndexFileNames {
    * STORE_INDEX_EXTENSIONS).
    */
   static final boolean isDocStoreFile(String fileName) {
+    if (fileName.endsWith(COMPOUND_FILE_STORE_EXTENSION))
+      return true;
     for(int i=0;i<STORE_INDEX_EXTENSIONS.length;i++)
       if (fileName.endsWith(STORE_INDEX_EXTENSIONS[i]))
         return true;

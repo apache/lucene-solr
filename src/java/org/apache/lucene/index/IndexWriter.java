@@ -363,6 +363,7 @@ public class IndexWriter {
    */
   public void setUseCompoundFile(boolean value) {
     getLogMergePolicy().setUseCompoundFile(value);
+    getLogMergePolicy().setUseCompoundDocStore(value);
   }
 
   /** Expert: Set the Similarity implementation used by this IndexWriter.
