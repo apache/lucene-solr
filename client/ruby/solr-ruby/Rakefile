@@ -108,7 +108,7 @@ task :clobber => [:clobber_package]
 desc "Generate rdoc documentation"
 Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_files.include("lib/**/*.rb")
-  rd.rdoc_files.include('README', 'CHANGES.txt', 'LICENSE.txt')
+  rd.rdoc_files.include('README', 'CHANGES.yml', 'LICENSE.txt')
   rd.main = 'README'
   rd.rdoc_dir = 'doc'
 end
