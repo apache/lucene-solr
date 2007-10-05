@@ -61,7 +61,7 @@ import com.google.gdata.util.common.xml.XmlWriter.Namespace;
  * 
  * For this purpose the {@link GDataResponse} class provides the overloaded
  * method
- * {@link org.apache.lucene.gdata.server.GDataResponse#sendResponse(BaseEntry, ExtensionProfile)}
+ * {@link org.apache.lucene.gdata.server.GDataResponse#sendResponse}
  * which sends the entry e.g feed to the output stream.
  * </p>
  * <p>

@@ -85,10 +85,6 @@ public class GOMUtils {
 
 	}
 
-	/**
-	 * @param type
-	 * @return
-	 */
 	public static GOMAttribute getAttributeByContentType(ContentType type) {
 		switch (type) {
 		case HTML:
@@ -102,10 +98,6 @@ public class GOMUtils {
 
 	}
 
-	/**
-	 * @param type
-	 * @return
-	 */
 	public static GOMAttribute getAttributeByContentTypeDefaultNs(
 			ContentType type) {
 		if (type == null)
@@ -136,40 +128,22 @@ public class GOMUtils {
 				GOMNamespace.ATOM_NS_PREFIX, aName, aValue);
 	}
 
-	/**
-	 * @param aValue
-	 * @param aName
-	 * @return
-	 */
 	public static GOMAttribute buildDefaultNamespaceAttribute(String aValue,
 			String aName) {
 		return new GOMAttributeImpl(aName, aValue);
 	}
 
-	/**
-	 * @param aValue
-	 * @param aName
-	 * @return
-	 */
 	public static GOMAttribute buildXMLNamespaceAttribute(String aValue,
 			String aName) {
 		return new GOMAttributeImpl(GOMNamespace.XML_NS_URI,
 				GOMNamespace.XML_NS_PREFIX, aName, aValue);
 	}
 
-	/**
-	 * @param aString
-	 * @return
-	 */
 	public static boolean isRfc3339DateFormat(String aString) {
 		Matcher aMatcher = RFC3339_DATE_PATTERN.matcher(aString);
 		return aMatcher.matches();
 	}
 
-	/**
-	 * @param aString
-	 * @return
-	 */
 	public static long parseRfc3339DateFormat(String aString) {
 		if (aString == null)
 			throw new IllegalArgumentException(
@@ -237,10 +211,6 @@ public class GOMUtils {
 		return retVal;
 	}
 
-	/**
-	 * @param aMillisecondLong
-	 * @return
-	 */
 	public static String buildRfc3339DateFormat(long aMillisecondLong) {
 		Calendar instance = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
 		instance.setTimeInMillis(aMillisecondLong);
@@ -289,10 +259,6 @@ public class GOMUtils {
 		return builder.toString();
 	}
 
-	/**
-	 * @param aMillisecondLong
-	 * @return
-	 */
 	public static String buildRfc822Date(long aMillisecondLong) {
 		/*
 		 * Rather implement it for a special case as use SDF. SDF is very

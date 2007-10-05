@@ -102,7 +102,7 @@ public class GOMPersonImpl extends AbstractGOMElement implements
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeAtomOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {
@@ -127,7 +127,7 @@ public class GOMPersonImpl extends AbstractGOMElement implements
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {

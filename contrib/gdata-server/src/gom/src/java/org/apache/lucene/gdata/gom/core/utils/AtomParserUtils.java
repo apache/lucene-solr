@@ -83,19 +83,11 @@ public class AtomParserUtils {
 
 	}
 
-	/**
-	 * @param aMediaType
-	 * @return
-	 */
 	public static boolean isAtomMediaType(String aMediaType) {
 		return (aMediaType == null || aMediaType.length() < 3) ? false
 				: ATOM_MEDIA_TYPE_PATTERN.matcher(aMediaType).matches();
 	}
 
-	/**
-	 * @param aMediaType
-	 * @return
-	 */
 	public static AtomMediaType getAtomMediaType(String aMediaType) {
 		if (aMediaType == null || !isAtomMediaType(aMediaType))
 			throw new IllegalArgumentException(
@@ -107,12 +99,6 @@ public class AtomParserUtils {
 		return AtomMediaType.BINARY;
 	}
 
-	/**
-	 * @param xmlBase
-	 * @param atomUri
-	 * @return
-	 * @throws URISyntaxException
-	 */
 	public static String getAbsolutAtomURI(String xmlBase, String atomUri)
 			throws URISyntaxException {
 		if (atomUri == null)

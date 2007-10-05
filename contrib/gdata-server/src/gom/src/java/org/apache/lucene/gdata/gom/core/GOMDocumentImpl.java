@@ -92,7 +92,7 @@ public class GOMDocumentImpl<T extends GOMElement> implements GOMDocument<T> {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMDocument#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMDocument#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeAtomOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {
@@ -112,7 +112,7 @@ public class GOMDocumentImpl<T extends GOMElement> implements GOMDocument<T> {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMDocument#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMDocument#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {

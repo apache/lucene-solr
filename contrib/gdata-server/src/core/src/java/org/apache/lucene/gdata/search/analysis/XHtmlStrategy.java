@@ -18,14 +18,7 @@ package org.apache.lucene.gdata.search.analysis;
 
 import org.apache.lucene.gdata.search.config.IndexSchemaField;
 
-
-/**
- *
- * @see org.apache.lucene.gdata.search.analysis.TestHTMLStrategy
- */
 public class XHtmlStrategy extends HTMLStrategy {
-
-	
 
     /**
      * @param fieldConfig

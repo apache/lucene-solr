@@ -150,7 +150,7 @@ public class GOMContentImpl extends GOMTextContructImpl implements GOMContent {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeAtomOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {
@@ -175,7 +175,7 @@ public class GOMContentImpl extends GOMTextContructImpl implements GOMContent {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.core.GOMTextContructImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.core.GOMTextContructImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	@Override
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)

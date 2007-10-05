@@ -37,7 +37,7 @@ public class GOMAuthorImpl extends GOMPersonImpl implements GOMAuthor {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.core.GOMPersonImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.core.GOMPersonImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	@Override
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)

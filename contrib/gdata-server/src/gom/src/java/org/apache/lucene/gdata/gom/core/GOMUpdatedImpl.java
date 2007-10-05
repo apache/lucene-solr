@@ -42,7 +42,7 @@ public class GOMUpdatedImpl extends GOMDateConstructImpl implements GOMUpdated {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {

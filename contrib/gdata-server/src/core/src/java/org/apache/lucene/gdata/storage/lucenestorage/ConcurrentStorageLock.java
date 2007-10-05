@@ -24,28 +24,10 @@ package org.apache.lucene.gdata.storage.lucenestorage;
  */
 public interface ConcurrentStorageLock {
     
-    /**
-     * @param key
-     * @return
-     */
     public abstract boolean setLock(final String key);
-    /**
-     * @param key
-     * @return
-     */
     public abstract boolean releaseLock(final String key);
-    /**
-     * @return
-     */
     public abstract boolean releaseThreadLocks();
-    /**
-     * @param key
-     * @return
-     */
     public abstract boolean isKeyLocked(final String key);
-    /**
-     * 
-     */
     public abstract void close();
 
 }

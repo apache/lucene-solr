@@ -521,6 +521,7 @@
           doctitle="${Name} ${version} API"
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
+        <tag name="uml.property" description="UML Property:"/>
 
         <!-- TODO: find a dynamic way to do include multiple source roots -->
 

@@ -29,7 +29,7 @@ public class GDataQueryParser extends QueryParser {
 
     /**
      * Creates a new QueryParser instance and sets the default operator to
-     * {@link Operator#AND}
+     * {@link org.apache.lucene.queryParser.QueryParser.Operator#AND}
      * 
      * @param field -
      *            the parser field
@@ -43,7 +43,8 @@ public class GDataQueryParser extends QueryParser {
 
     /**
      * Creates a new QueryParser instance and sets the default operator to
-     * {@link Operator#AND}. The parser will use
+     * {@link org.apache.lucene.queryParser.QueryParser.Operator#AND}.
+     * The parser will use
      * {@link IndexSchema#getDefaultSearchField} as the field and
      * {@link IndexSchema#getSchemaAnalyzer()} as the analyzer.
      * 

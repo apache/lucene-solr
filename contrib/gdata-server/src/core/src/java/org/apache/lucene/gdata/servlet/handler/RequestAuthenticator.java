@@ -48,7 +48,7 @@ import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
  * feed to alter. If the accountname in the token does not match the name of the
  * account which belongs to the feed the given role will be used for
  * autentication. Authentication using the
- * {@link RequestAuthenticator#authenticateAccount(HttpServletRequest, AccountRole)}
+ * {@link #authenticateAccount(HttpServletRequest, org.apache.lucene.gdata.data.GDataAccount.AccountRole)}
  * method, the account name will be ignored, authentication will be based on the
  * given <tt>AccountRole</tt>
  * </p>

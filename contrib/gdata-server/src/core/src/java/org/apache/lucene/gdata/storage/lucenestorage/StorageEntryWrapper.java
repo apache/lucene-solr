@@ -210,12 +210,9 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>, Ser
     /**
      * This compare method compares the timestamps of the wrapper instances.
      * 
-     * @param arg0 -
-     *            the wrapper to compare
-     * @par
-     * @return - 0 if the wrappers timestamp are the same, an integer > 0 if the
+     * @param arg0 the wrapper to compare
+     * @return 0 if the wrappers timestamp are the same, an integer > 0 if the
      *         given wrapper is after this wrapper
-     * 
      */
     public int compareTo(StorageEntryWrapper arg0) {
         return arg0.timestamp.equals(this.timestamp) ? 0

@@ -239,7 +239,7 @@ public class GOMStaxWriter implements GOMOutputWriter {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.writer.GOMOutputWriter#writeDefaultNamespace(java.lang.String)
+	 * @see XMLStreamWriter#writeDefaultNamespace(java.lang.String)
 	 */
 	public void writeDefaultNamespace(String aNsUri) throws XMLStreamException {
 		this.writer.writeDefaultNamespace(aNsUri);

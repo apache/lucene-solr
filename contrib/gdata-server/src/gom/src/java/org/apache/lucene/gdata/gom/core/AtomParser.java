@@ -109,26 +109,12 @@ public interface AtomParser {
 	 */
 	public static final String INVALID_ELEMENT_VALUE = "The element value '%s' must be an %s";
 
-	/**
-	 * @param aValue
-	 */
 	public abstract void processElementValue(String aValue);
 
-	/**
-	 * @param aQName
-	 * @param aValue
-	 */
 	public abstract void processAttribute(QName aQName, String aValue);
 
-	/**
-	 * 
-	 */
 	public abstract void processEndElement();
 
-	/**
-	 * @param name
-	 * @return
-	 */
 	public abstract AtomParser getChildParser(QName name);
 
 }

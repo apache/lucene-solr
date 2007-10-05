@@ -49,7 +49,6 @@ public class RecoverReader {
     }
     /**
      * @param reader
-     * @return
      * @throws IOException
      */
     public List<StorageEntryWrapper> recoverEntries(final BufferedReader reader) throws IOException{

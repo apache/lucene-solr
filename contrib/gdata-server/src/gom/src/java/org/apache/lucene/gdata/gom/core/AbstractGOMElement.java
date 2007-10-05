@@ -197,7 +197,7 @@ public abstract class AbstractGOMElement implements GOMElement {
 	/**
 	 * {@inheritDoc}
 	 * 
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter,
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter,
 	 *      java.lang.String)
 	 */
 	public void writeRssOutput(GOMOutputWriter aStreamWriter, String aRssName)

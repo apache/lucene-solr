@@ -96,7 +96,7 @@ public class GOMLinkImpl extends AbstractGOMElement implements GOMLink {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMLink#setLength(java.lang.String)
+	 * @see org.apache.lucene.gdata.gom.GOMLink#setLength(java.lang.Integer)
 	 */
 	public void setLength(Integer aLength) {
 		length = aLength;
@@ -217,7 +217,7 @@ public class GOMLinkImpl extends AbstractGOMElement implements GOMLink {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeAtomOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeAtomOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {
@@ -245,7 +245,7 @@ public class GOMLinkImpl extends AbstractGOMElement implements GOMLink {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.GOMElement#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)
 			throws XMLStreamException {

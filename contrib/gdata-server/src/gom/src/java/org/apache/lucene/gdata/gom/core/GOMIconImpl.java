@@ -39,7 +39,7 @@ public class GOMIconImpl extends AtomUriElement implements GOMIcon {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.core.SimpleGOMElementImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.core.SimpleGOMElementImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	@Override
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)

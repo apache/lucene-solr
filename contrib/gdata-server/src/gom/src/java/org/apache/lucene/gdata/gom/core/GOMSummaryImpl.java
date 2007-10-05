@@ -41,7 +41,7 @@ public class GOMSummaryImpl extends GOMTextContructImpl implements GOMSummary {
 	}
 
 	/**
-	 * @see org.apache.lucene.gdata.gom.core.GOMTextContructImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMStaxWriter)
+	 * @see org.apache.lucene.gdata.gom.core.GOMTextContructImpl#writeRssOutput(org.apache.lucene.gdata.gom.writer.GOMOutputWriter)
 	 */
 	@Override
 	public void writeRssOutput(GOMOutputWriter aStreamWriter)

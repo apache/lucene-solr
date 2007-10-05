@@ -54,7 +54,7 @@ import org.apache.lucene.store.Directory;
  * Inside this class runs an instance of
  * {@link org.apache.lucene.gdata.search.index.IndexTask} listening on this
  * queue. The analysis of the actual documents happens inside the
- * {@link com.sun.corba.se.impl.orbutil.closure.Future} object added to the
+ * {@link java.util.concurrent.Future} object added to the
  * queue. This enables the indexer to do his actual work. Documents will be
  * build / analyzed concurrently while already finished tasks can be added to
  * the index.
@@ -407,7 +407,7 @@ public class GDataIndexer {
 
     /**
      * This factory method creates a new GDataIndexer using a instance of
-     * {@link IndexTask}
+     * {@link org.apache.lucene.gdata.search.index.IndexTask}
      * 
      * @param config -
      *            the config to be used to configure the indexer
@@ -431,10 +431,12 @@ public class GDataIndexer {
 
     /**
      * This factory method creates a new GDataIndexer using a instance of
-     * {@link TimedIndexTask}. This indexer will automatically commit the index
+     * {@link org.apache.lucene.gdata.search.index.TimedIndexTask}.
+     * This indexer will automatically commit the index
      * if no modification to the index occur for the given time. The used time
      * unit is {@link TimeUnit#SECONDS}. Values less than the default value
-     * will be ignored. For the default value see {@link TimedIndexTask}.
+     * will be ignored. For the default value see
+     * {@link org.apache.lucene.gdata.search.index.TimedIndexTask}.
      * 
      * @param config -
      *            the config to be used to configure the indexer
