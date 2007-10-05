@@ -212,6 +212,7 @@
         both match, the first appearing in the schema will be used.  -->
    <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_text"   type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="*_date"   type="date"    indexed="true"  stored="true"/>
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->

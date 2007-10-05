@@ -35,12 +35,15 @@ class ServerTest < Test::Unit::TestCase
     @connection.delete(123456)
 
     # add it
-    @connection.add(:id => 123456, :text => 'Borges')
+    @connection.add(:id => 123456, :text => 'Borges') # add :some_date => 'NOW/HOUR' to test richer data type handling
+    # now = DateTime.now
 
     # look for it
     response = @connection.query('Borges')
     assert_equal 1, response.total_hits
-    assert_equal '123456', response.hits[0]['id']
+    hit = response.hits[0]
+    assert_equal '123456', hit['id']
+    # assert_equal now.year, hit['whatever_date'].year
     
     # look for it via dismax
     response = @connection.search('Borges')

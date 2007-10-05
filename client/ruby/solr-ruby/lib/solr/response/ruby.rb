@@ -38,5 +38,5 @@ class Solr::Response::Ruby < Solr::Response::Base
   def query_time
     @header['QTime']
   end
-
+  
 end
