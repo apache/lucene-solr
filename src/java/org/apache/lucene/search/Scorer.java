@@ -78,7 +78,7 @@ public abstract class Scorer {
 
   /**
    * Advances to the document matching this Scorer with the lowest doc Id
-   * greater then the current value of {@link doc()} (or to the matching
+   * greater then the current value of {@link #doc()} (or to the matching
    * document with the lowest doc Id if next has never been called on
    * this Scorer).
    *
