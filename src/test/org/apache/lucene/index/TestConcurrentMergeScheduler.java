@@ -225,8 +225,8 @@ public class TestConcurrentMergeScheduler extends TestCase {
 
     try {
       directory.close();
-    } catch (RuntimeException ioe) {
-      // MockRAMDirectory will throw IOExceptions when there
+    } catch (RuntimeException re) {
+      // MockRAMDirectory will throw RuntimeExceptions when there
       // are still open files, which is OK since some merge
       // threads may still be running at this point.
     }

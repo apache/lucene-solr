@@ -1172,7 +1172,9 @@ public class IndexWriter {
       if (infoStream != null)
         message("now flush at close");
 
-      flush(true, true);
+      // Only allow a new merge to be triggered if we are
+      // going to wait for merges:
+      flush(waitForMerges, true);
 
       mergePolicy.close();
 
@@ -1947,15 +1949,23 @@ public class IndexWriter {
     if (!waitForMerges) {
       // Abort all pending & running merges:
       Iterator it = pendingMerges.iterator();
-      while(it.hasNext())
-        ((MergePolicy.OneMerge) it.next()).abort();
-
+      while(it.hasNext()) {
+        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+        if (infoStream != null)
+          message("now abort pending merge " + merge.segString(directory));
+        merge.abort();
+      }
       pendingMerges.clear();
-      it = runningMerges.iterator();
-      while(it.hasNext())
-        ((MergePolicy.OneMerge) it.next()).abort();
 
+      it = runningMerges.iterator();
+      while(it.hasNext()) {
+        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+        if (infoStream != null)
+          message("now abort running merge " + merge.segString(directory));
+        merge.abort();
+      }
       runningMerges.clear();
+
       mergingSegments.clear();
       notifyAll();
     } else {
@@ -3078,7 +3088,7 @@ public class IndexWriter {
     return mergedDocCount;
   }
 
-  void addMergeException(MergePolicy.OneMerge merge) {
+  synchronized void addMergeException(MergePolicy.OneMerge merge) {
     if (!mergeExceptions.contains(merge) && mergeGen == merge.mergeGen)
       mergeExceptions.add(merge);
   }

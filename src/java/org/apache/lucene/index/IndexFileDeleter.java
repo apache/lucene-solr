@@ -100,6 +100,10 @@ final class IndexFileDeleter {
   private IndexDeletionPolicy policy;
   private DocumentsWriter docWriter;
 
+  /** Change to true to see details of reference counts when
+   *  infoStream != null */
+  public static boolean VERBOSE_REF_COUNTS = false;
+
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
     if (infoStream != null)
@@ -342,6 +346,8 @@ final class IndexFileDeleter {
       deletable = null;
       int size = oldDeletable.size();
       for(int i=0;i<size;i++) {
+        if (infoStream != null)
+          message("delete pending file " + oldDeletable.get(i));
         deleteFile((String) oldDeletable.get(i));
       }
     }
@@ -441,7 +447,7 @@ final class IndexFileDeleter {
     for(int i=0;i<size;i++) {
       String fileName = (String) files.get(i);
       RefCount rc = getRefCount(fileName);
-      if (infoStream != null) {
+      if (infoStream != null && VERBOSE_REF_COUNTS) {
         message("  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
       }
       rc.IncRef();
@@ -457,7 +463,7 @@ final class IndexFileDeleter {
 
   private void decRef(String fileName) throws IOException {
     RefCount rc = getRefCount(fileName);
-    if (infoStream != null) {
+    if (infoStream != null && VERBOSE_REF_COUNTS) {
       message("  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
     }
     if (0 == rc.DecRef()) {

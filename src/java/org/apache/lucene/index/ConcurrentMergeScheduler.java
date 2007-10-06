@@ -107,10 +107,8 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
     while(mergeThreads.size() > 0) {
       if (VERBOSE) {
         message("now wait for threads; currently " + mergeThreads.size() + " still running");
-        for(int i=0;i<mergeThreads.size();i++) {
-          final MergeThread mergeThread = ((MergeThread) mergeThreads.get(i));
-          message("    " + i + ": " + mergeThread.merge.segString(dir));
-        }
+        for(int i=0;i<mergeThreads.size();i++)
+          message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
       }
 
       try {
@@ -210,24 +208,35 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   private class MergeThread extends Thread {
 
     IndexWriter writer;
-    MergePolicy.OneMerge merge;
+    MergePolicy.OneMerge startMerge;
+    MergePolicy.OneMerge runningMerge;
 
-    public MergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+    public MergeThread(IndexWriter writer, MergePolicy.OneMerge startMerge) throws IOException {
       this.writer = writer;
-      this.merge = merge;
+      this.startMerge = startMerge;
+    }
+
+    public synchronized void setRunningMerge(MergePolicy.OneMerge merge) {
+      runningMerge = merge;
+    }
+
+    public synchronized MergePolicy.OneMerge getRunningMerge() {
+      return runningMerge;
     }
 
     public void run() {
+      
+      // First time through the while loop we do the merge
+      // that we were started with:
+      MergePolicy.OneMerge merge = this.startMerge;
+      
       try {
 
         if (VERBOSE)
           message("  merge thread: start");
 
-        // First time through the while loop we do the merge
-        // that we were started with:
-        MergePolicy.OneMerge merge = this.merge;
-
         while(true) {
+          setRunningMerge(merge);
           writer.merge(merge);
 
           // Subsequent times through the loop we do any new
@@ -248,13 +257,17 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
         // When a merge was aborted & IndexWriter closed,
         // it's possible to get various IOExceptions,
         // NullPointerExceptions, AlreadyClosedExceptions:
-        merge.setException(exc);
-        writer.addMergeException(merge);
+        if (merge != null) {
+          merge.setException(exc);
+          writer.addMergeException(merge);
+        }
 
-        if (!merge.isAborted()) {
+        if (merge == null || !merge.isAborted()) {
           // If the merge was not aborted then the exception
           // is real
-          exceptions.add(exc);
+          synchronized(ConcurrentMergeScheduler.this) {
+            exceptions.add(exc);
+          }
           
           if (!suppressExceptions)
             // suppressExceptions is normally only set during
@@ -270,6 +283,9 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
     }
 
     public String toString() {
+      MergePolicy.OneMerge merge = getRunningMerge();
+      if (merge == null)
+        merge = startMerge;
       return "merge thread: " + merge.segString(dir);
     }
   }
