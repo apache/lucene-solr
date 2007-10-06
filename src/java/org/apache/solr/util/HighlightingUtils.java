@@ -45,6 +45,8 @@ import org.apache.lucene.search.highlight.*;
 
 /**
  * Collection of Utility and Factory methods for Highlighting.
+ *
+ * @deprecated use highlit.SolrHighlighter
  */
 public class HighlightingUtils implements HighlightParams {
   
