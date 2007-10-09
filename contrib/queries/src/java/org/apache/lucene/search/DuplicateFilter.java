@@ -215,6 +215,7 @@ public class DuplicateFilter extends Filter
 			return false;
 		DuplicateFilter other = (DuplicateFilter)obj;
 		return keepMode == other.keepMode &&
+		processingMode == other.processingMode &&
 			(fieldName == other.fieldName || (fieldName != null && fieldName.equals(other.fieldName)));
 	}
 
@@ -224,6 +225,7 @@ public class DuplicateFilter extends Filter
 	{
 		int hash = 217;
 		hash = 31 * hash + keepMode;
+		hash = 31 * hash + processingMode;
 		hash = 31 * hash + fieldName.hashCode();
 		return hash;	
 	}
