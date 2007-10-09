@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<project name="DTDDocAnt" default="main">
+
+  <import file="../contrib-build.xml"/>
+
+    <description>
+    This file generates DTDdocumentation
+    </description>
+
+    <!-- Tell ant where to find the code of the DTDDoc task.
+         Set dtddoc.home property to the directory where DTDdoc is installed on your system
+         -->
+
+    <taskdef name="DTDDoc"
+             classname="DTDDoc.DTDDocTask"
+             classpath="${dtddoc.home}/DTDDoc.jar"/>
+
+    <!-- Execute DTDDoc -->
+
+    <target name="main">
+
+
+        <DTDDoc showHiddenTags="false"
+                showFixmeTags="false"
+                sourceDir="."
+                destDir="docs"
+                docTitle = "Lucene XML Query syntax">
+                <include name="*.dtd"/>
+        </DTDDoc>
+
+    </target>
+
+
+
+</project>

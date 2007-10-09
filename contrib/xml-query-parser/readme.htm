@@ -7,6 +7,7 @@
 			<ul>
 				<li>a modular Lucene Query Parser where queries are expressed as XML</li>
 				<li>JUnit test</li>
+				<li>DTD schemas and <a href="docs/index.html">generated documentation</a> </li>
 				<li>Example XML queries</li>
 				<li>Test index (subset of Reuters 21578)</li>
 			</ul>
@@ -18,11 +19,12 @@
 			Parser support includes:
 			<ul>
 				<li>"Span" queries</li>
+				<li>Simple caching for filters</li>
 				<li>"Like this" queries</li>
 				<li>Boolean, Term, and UserInput (parsed with existing query parser)</li>
 				<li>BoostingQuery - a class that can downgrade scores for hits on
 				certain terms rather than the hard-line approach taken by BooleanClause.Occurs.MUST_NOT</li>
-				<li>FilteredQuery, RangeFilter, and "TermsFilter" for non-sequential terms</li>
+				<li>FilteredQuery, RangeFilter, DuplicateFilter and "TermsFilter" for non-sequential terms</li>
 				<li>"FuzzyLikeThis" a new query which is a cross between "LikeThis" and "fuzzy" but with
 					better scoring of fuzzy terms than standard fuzzy queries</li>
 				<li>A modular design with expandable support for new query/filter types</li>

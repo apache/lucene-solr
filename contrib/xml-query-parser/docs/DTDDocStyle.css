@@ -1,0 +1,57 @@
+body { background-color:white; font-family: Verdana, Geneva, Arial, Helvetica, sans-serif; font-size: small; }
+table { border: none}
+th.title { font-weight:bold; text-align:center; padding-left:1em; padding-right:1em}
+th.subtitle { font-weight:normal; text-align:left; padding-left:1em; padding-right:1em}
+td { text-align:left; vertical-align:baseline; padding-left:1em; padding-right:1em}
+td.construct { vertical-align:top; padding-left:1em; padding-right:1em}
+th.ruler { background-color:black; color:black}
+table.elementTitle { width:100%; background-color:#E0F0FF}
+td.leftElementTitle { font-weight:bold; font-size: medium;}
+td.rightElementTitle { text-align:right}
+table.attributeTitle { width:100%; background-color:#DDDDDD}
+td.leftAttributeTitle { font-weight:bold; font-size: medium;}
+td.rightAttributeTitle { text-align:right}
+p { text-align:justify;}
+p.model { padding-left:3em; text-align:left; font-style:italic}
+p.DTDSource { text-align:right; width:100%; background-color:#DDDDDD}
+p.emptyTagNote { font-style:italic}
+h1 { font-family:Arial; font-size: x-large;}
+h2 { font-size: medium;}
+h2.TOCTitle { font-family:Arial; font-size: medium;}
+.inTextTitle { font-weight:bold }
+pre, code { font-family: "Courier New", Courier, monospace; font-size: small; }
+
+pre#dtd_source { border: dotted 1px Gray; padding: 6pt 6pt 6pt 6pt;}
+.xml_plain {
+color: #000;
+}
+.dtd_tag_symbols {
+color: #003bff;
+}
+.dtd_comment {
+color: #555; background-color: #f8f8f8;
+}
+.dtd_attribute_name {
+color: #000;
+}
+.dtd_tag_name {
+color: #3f3fbf;
+}
+.dtd_char_data {
+color: #000;
+}
+.dtd_processing_instruction {
+color: #000; font-weight: bold; font-style: italic;
+}
+.dtd_attribute_value {
+color: #c10000;
+}
+.dtd_dtddoc_tag {
+color: #939393;
+background-color: #f7f7f7;
+font-style: italic;
+font-weight: bold;
+}
+.dtd_keyword {
+color: #800000;
+}
