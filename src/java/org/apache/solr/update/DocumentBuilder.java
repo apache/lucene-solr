@@ -179,8 +179,13 @@ public class DocumentBuilder {
       
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
+        String id = "";
+        SchemaField sf = schema.getUniqueKeyField();
+        if( sf != null ) {
+          id = "["+doc.getFieldValue( sf.getName() )+"] ";
+        }
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: multiple values encountered for non multiValued field " + 
+            "ERROR: "+id+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
       }
       
