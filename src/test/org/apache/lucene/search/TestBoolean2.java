@@ -31,19 +31,20 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
  */
-public class TestBoolean2 extends TestCase {
+public class TestBoolean2 extends LuceneTestCase {
   private IndexSearcher searcher;
 
   public static final String field = "field";
 
   public void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < docFields.length; i++) {

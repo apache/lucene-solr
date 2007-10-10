@@ -34,9 +34,9 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util._TestUtil;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestBufferedIndexInput extends TestCase {
+public class TestBufferedIndexInput extends LuceneTestCase {
 	// Call readByte() repeatedly, past the buffer boundary, and see that it
 	// is working as expected.
 	// Our input comes from a dynamically generated/ "file" - see

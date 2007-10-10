@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -36,7 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
-public class TestIndexReader extends TestCase
+public class TestIndexReader extends LuceneTestCase
 {
     /** Main for running test case by itself. */
     public static void main(String args[]) {

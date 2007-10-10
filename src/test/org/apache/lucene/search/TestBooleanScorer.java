@@ -26,13 +26,13 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  *
  * @version $rcs = ' $Id$ ' ;
  */
-public class TestBooleanScorer extends TestCase
+public class TestBooleanScorer extends LuceneTestCase
 {
 
   public TestBooleanScorer(String name) {

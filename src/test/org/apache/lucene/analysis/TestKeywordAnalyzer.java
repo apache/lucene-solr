@@ -17,7 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
@@ -27,12 +27,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.queryParser.QueryParser;
 
-public class TestKeywordAnalyzer extends TestCase {
+public class TestKeywordAnalyzer extends LuceneTestCase {
   
   private RAMDirectory directory;
   private IndexSearcher searcher;
 
   public void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory,
                                          new SimpleAnalyzer(),

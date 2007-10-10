@@ -17,10 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.Term;
 
-public class TestBooleanQuery extends TestCase {
+public class TestBooleanQuery extends LuceneTestCase {
   
   public void testEquality() throws Exception {
     BooleanQuery bq1 = new BooleanQuery();

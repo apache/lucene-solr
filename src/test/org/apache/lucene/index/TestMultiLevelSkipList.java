@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
@@ -42,7 +42,7 @@ import org.apache.lucene.store.RAMDirectory;
  * testcases.
  * 
  */
-public class TestMultiLevelSkipList extends TestCase {
+public class TestMultiLevelSkipList extends LuceneTestCase {
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new PayloadAnalyzer(), true);

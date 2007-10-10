@@ -17,11 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 
-public class TestISOLatin1AccentFilter extends TestCase {
+public class TestISOLatin1AccentFilter extends LuceneTestCase {
   public void testU() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ"));
     ISOLatin1AccentFilter filter = new ISOLatin1AccentFilter(stream);

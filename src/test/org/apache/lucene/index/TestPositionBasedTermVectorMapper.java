@@ -15,14 +15,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Map;
 
-public class TestPositionBasedTermVectorMapper extends TestCase {
+public class TestPositionBasedTermVectorMapper extends LuceneTestCase {
   protected String[] tokens;
   protected int[][] thePositions;
   protected TermVectorOffsetInfo[][] offsets;
@@ -33,7 +33,8 @@ public class TestPositionBasedTermVectorMapper extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     tokens = new String[]{"here", "is", "some", "text", "to", "test", "extra"};
     thePositions = new int[tokens.length][];
     offsets = new TermVectorOffsetInfo[tokens.length][];
@@ -55,10 +56,6 @@ public class TestPositionBasedTermVectorMapper extends TestCase {
     thePositions[tokens.length - 1][0] = 0;//put this at the same position as "here"
     offsets[tokens.length - 1] = new TermVectorOffsetInfo[1];
     offsets[tokens.length - 1][0] = new TermVectorOffsetInfo(0, 1);
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

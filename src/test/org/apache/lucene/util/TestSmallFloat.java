@@ -16,14 +16,14 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.util.Random;
 
 /**
  * @author yonik
  * @version $Id$
  */
-public class TestSmallFloat extends TestCase {
+public class TestSmallFloat extends LuceneTestCase {
 
   // original lucene byteToFloat
   static float orig_byteToFloat(byte b) {

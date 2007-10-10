@@ -27,12 +27,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.English;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.File;
 
-public class TestThreadedOptimize extends TestCase {
+public class TestThreadedOptimize extends LuceneTestCase {
   
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
 

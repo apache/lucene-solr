@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,7 +37,7 @@ import java.util.LinkedList;
  * @version $Id$
  */
 public class TestPhrasePrefixQuery
-    extends TestCase
+    extends LuceneTestCase
 {
     public TestPhrasePrefixQuery(String name)
     {

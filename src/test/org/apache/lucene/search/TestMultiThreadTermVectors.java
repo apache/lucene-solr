@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
@@ -32,7 +32,7 @@ import java.io.IOException;
  *
  * @version $rcs = ' $Id$ ' ;
  */
-public class TestMultiThreadTermVectors extends TestCase {
+public class TestMultiThreadTermVectors extends LuceneTestCase {
   private RAMDirectory directory = new RAMDirectory();
   public int numDocs = 100;
   public int numThreads = 3;
@@ -42,6 +42,7 @@ public class TestMultiThreadTermVectors extends TestCase {
   }
   
   public void setUp() throws Exception {
+    super.setUp();
     IndexWriter writer
             = new IndexWriter(directory, new SimpleAnalyzer(), true);
     //writer.setUseCompoundFile(false);

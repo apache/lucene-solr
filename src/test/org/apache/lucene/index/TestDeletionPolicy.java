@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
@@ -40,7 +40,7 @@ import java.util.HashSet;
   against it, and add documents to it.
 */
 
-public class TestDeletionPolicy extends TestCase
+public class TestDeletionPolicy extends LuceneTestCase
 {
   private void verifyCommitOrder(List commits) {
     long last = SegmentInfos.generationFromSegmentsFileName(((IndexCommitPoint) commits.get(0)).getSegmentsFileName());

@@ -17,11 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 
-public class TestLengthFilter extends TestCase {
+public class TestLengthFilter extends LuceneTestCase {
   
   public void testFilter() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(

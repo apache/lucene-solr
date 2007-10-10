@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -42,7 +42,7 @@ import java.util.Stack;
  * @author Daniel Naber
  * @deprecated
  */
-public class TestIndexModifier extends TestCase {
+public class TestIndexModifier extends LuceneTestCase {
 
   private int docCount = 0;
   

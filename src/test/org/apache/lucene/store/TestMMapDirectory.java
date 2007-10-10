@@ -17,10 +17,10 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.lang.reflect.Method;
 
-public class TestMMapDirectory extends TestCase {
+public class TestMMapDirectory extends LuceneTestCase {
 
   // Simply verify that if there is a method in FSDirectory
   // that returns IndexInput or a subclass, that

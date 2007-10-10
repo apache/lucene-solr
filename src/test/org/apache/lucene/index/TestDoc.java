@@ -16,7 +16,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -37,7 +37,7 @@ import java.util.*;
  *
  * @version $Id$
  */
-public class TestDoc extends TestCase {
+public class TestDoc extends LuceneTestCase {
 
     /** Main for running test case by itself. */
     public static void main(String args[]) {
@@ -53,7 +53,8 @@ public class TestDoc extends TestCase {
     /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
      */
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
+        super.setUp();
         workDir = new File(System.getProperty("tempDir"),"TestDoc");
         workDir.mkdirs();
 

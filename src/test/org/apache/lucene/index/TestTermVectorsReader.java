@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 
-public class TestTermVectorsReader extends TestCase {
+public class TestTermVectorsReader extends LuceneTestCase {
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
   private String[] testFields = {"f1", "f2", "f3", "f4"};
   private boolean[] testFieldsStorePos = {true, false, true, false};
@@ -61,7 +61,8 @@ public class TestTermVectorsReader extends TestCase {
 
   TestToken[] tokens = new TestToken[testTerms.length * TERM_FREQ];
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     /*
     for (int i = 0; i < testFields.length; i++) {
       fieldInfos.add(testFields[i], true, true, testFieldsStorePos[i], testFieldsStoreOff[i]);
@@ -139,10 +140,6 @@ public class TestTermVectorsReader extends TestCase {
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new MyTokenStream();
     }
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() {

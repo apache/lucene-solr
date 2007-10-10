@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashSet;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WordlistLoader;
 
-public class TestWordlistLoader extends TestCase {
+public class TestWordlistLoader extends LuceneTestCase {
 
   public void testWordlistLoading() throws IOException {
     String s = "ONE\n  two \nthree";

@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.IndexOutput;
@@ -26,7 +26,7 @@ import java.io.IOException;
 
 //import org.cnlp.utils.properties.ResourceBundleHelper;
 
-public class TestFieldInfos extends TestCase {
+public class TestFieldInfos extends LuceneTestCase {
 
   private Document testDoc = new Document();
 
@@ -34,11 +34,9 @@ public class TestFieldInfos extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     DocHelper.setupDoc(testDoc);
-  }
-
-  protected void tearDown() {
   }
 
   public void test() throws IOException {

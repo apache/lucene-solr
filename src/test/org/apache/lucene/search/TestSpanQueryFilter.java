@@ -16,7 +16,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,18 +32,11 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 
-public class TestSpanQueryFilter extends TestCase {
+public class TestSpanQueryFilter extends LuceneTestCase {
 
 
   public TestSpanQueryFilter(String s) {
     super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
   }
 
   public void testFilterWorks() throws Exception {

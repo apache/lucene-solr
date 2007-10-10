@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -35,7 +35,7 @@ import java.io.IOException;
   * @version $Revision$
   */
 public class TestDateFilter
-    extends TestCase
+    extends LuceneTestCase
 {
     public TestDateFilter(String name)
     {

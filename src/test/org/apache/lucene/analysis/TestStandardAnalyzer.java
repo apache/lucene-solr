@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 import java.io.StringReader;
@@ -21,7 +21,7 @@ import java.io.StringReader;
  * limitations under the License.
  */
 
-public class TestStandardAnalyzer extends TestCase {
+public class TestStandardAnalyzer extends LuceneTestCase {
 
     private Analyzer a = new StandardAnalyzer();
 

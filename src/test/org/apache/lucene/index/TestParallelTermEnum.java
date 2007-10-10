@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,11 +28,12 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestParallelTermEnum extends TestCase {
+public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
     private IndexReader ir2;
 
     protected void setUp() throws Exception {
+        super.setUp();
         super.setUp();
         Document doc;
 
@@ -66,6 +67,7 @@ public class TestParallelTermEnum extends TestCase {
     }
 
     protected void tearDown() throws Exception {
+        super.tearDown();
         super.tearDown();
 
         ir1.close();

@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.io.File;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,12 +30,13 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 
-public class TestWindowsMMap extends TestCase {
+public class TestWindowsMMap extends LuceneTestCase {
 	
 	private final static String alphabet = "abcdefghijklmnopqrstuvwzyz";
 	private Random random;
 	
-	public void setUp() {
+	public void setUp() throws Exception {
+		super.setUp();
 		random = new Random();
 		System.setProperty("org.apache.lucene.FSDirectory.class", "org.apache.lucene.store.MMapDirectory");
 	}

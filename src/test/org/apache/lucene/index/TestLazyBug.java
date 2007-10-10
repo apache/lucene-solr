@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
@@ -32,7 +32,7 @@ import java.lang.reflect.Array;
  * Test demonstrating EOF bug on the last field of the last doc 
  * if other docs have allready been accessed.
  */
-public class TestLazyBug extends TestCase {
+public class TestLazyBug extends LuceneTestCase {
 
   public static int BASE_SEED = 13;
 

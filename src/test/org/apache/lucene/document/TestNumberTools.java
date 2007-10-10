@@ -17,9 +17,9 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestNumberTools extends TestCase {
+public class TestNumberTools extends LuceneTestCase {
     public void testNearZero() {
         for (int i = -100; i <= 100; i++) {
             for (int j = -100; j <= 100; j++) {

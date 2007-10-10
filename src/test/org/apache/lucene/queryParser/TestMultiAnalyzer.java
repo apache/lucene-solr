@@ -19,7 +19,7 @@ package org.apache.lucene.queryParser;
 
 import java.io.Reader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.analysis.Analyzer;
@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * 
  * @author Daniel Naber
  */
-public class TestMultiAnalyzer extends TestCase {
+public class TestMultiAnalyzer extends LuceneTestCase {
 
   private static int multiToken = 0;
 

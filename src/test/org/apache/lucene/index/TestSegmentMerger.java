@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.util.Collection;
 
-public class TestSegmentMerger extends TestCase {
+public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
   private Directory mergedDir = new RAMDirectory();
   private String mergedSegment = "test";
@@ -43,7 +43,8 @@ public class TestSegmentMerger extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     DocHelper.setupDoc(doc1);
     SegmentInfo info1 = DocHelper.writeDoc(merge1Dir, doc1);
     DocHelper.setupDoc(doc2);

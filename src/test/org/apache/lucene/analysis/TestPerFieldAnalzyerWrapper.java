@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.io.StringReader;
 
 /**
@@ -20,7 +20,7 @@ import java.io.StringReader;
  * limitations under the License.
  */
 
-public class TestPerFieldAnalzyerWrapper extends TestCase {
+public class TestPerFieldAnalzyerWrapper extends LuceneTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
     PerFieldAnalyzerWrapper analyzer =

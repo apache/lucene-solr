@@ -22,7 +22,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -50,7 +50,7 @@ import org.apache.lucene.store.SingleInstanceLockFactory;
  *
  * @version $Id$
  */
-public class TestIndexWriter extends TestCase
+public class TestIndexWriter extends LuceneTestCase
 {
     public void testDocCount() throws IOException
     {

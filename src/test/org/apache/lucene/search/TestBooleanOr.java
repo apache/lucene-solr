@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  */
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,7 +36,7 @@ import org.apache.lucene.store.RAMDirectory;
  * <br>Adapted to Lucene testcase by Paul Elschot.
  * @author appler@gmail.com
  */
-public class TestBooleanOr extends TestCase {
+public class TestBooleanOr extends LuceneTestCase {
 
 	private static String FIELD_T = "T";
 	private static String FIELD_C = "C";
@@ -133,6 +133,7 @@ public class TestBooleanOr extends TestCase {
 	}
 
 	protected void setUp() throws Exception {
+		super.setUp();
 		super.setUp();
 
 		//

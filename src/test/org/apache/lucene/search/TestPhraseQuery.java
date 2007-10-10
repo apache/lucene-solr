@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
@@ -34,7 +34,7 @@ import java.io.Reader;
  * @see TestPositionIncrement
  * @author Erik Hatcher
  */
-public class TestPhraseQuery extends TestCase {
+public class TestPhraseQuery extends LuceneTestCase {
 
   /** threshold for comparing floats */
   public static final float SCORE_COMP_THRESH = 1e-6f;
@@ -44,6 +44,7 @@ public class TestPhraseQuery extends TestCase {
   private RAMDirectory directory;
 
   public void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
     Analyzer analyzer = new Analyzer() {
       public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -80,6 +81,7 @@ public class TestPhraseQuery extends TestCase {
   }
 
   public void tearDown() throws Exception {
+    super.tearDown();
     searcher.close();
     directory.close();
   }

@@ -24,7 +24,7 @@ import java.io.ObjectOutputStream;
 import java.io.ByteArrayOutputStream;
 
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -47,7 +47,7 @@ import org.apache.lucene.store.MockRAMDirectory;
  * 
  * @version $Id: RAMDirectory.java 150537 2004-09-28 22:45:26 +0200 (Di, 28 Sep 2004) cutting $
  */
-public class TestRAMDirectory extends TestCase {
+public class TestRAMDirectory extends LuceneTestCase {
   
   private File indexDir = null;
   
@@ -55,7 +55,8 @@ public class TestRAMDirectory extends TestCase {
   private final int docsToAdd = 500;
   
   // setup the index
-  public void setUp () throws IOException {
+  public void setUp () throws Exception {
+    super.setUp();
     String tempDir = System.getProperty("java.io.tmpdir");
     if (tempDir == null)
       throw new IOException("java.io.tmpdir undefined, cannot run test");
@@ -206,7 +207,8 @@ public class TestRAMDirectory extends TestCase {
     assertTrue("contains more then just header", headerSize < bos.size());
   } 
 
-  public void tearDown() {
+  public void tearDown() throws Exception {
+    super.tearDown();
     // cleanup 
     if (indexDir != null && indexDir.exists()) {
       rmDir (indexDir);

@@ -24,18 +24,19 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 
 /**
  * @author goller
  */
-public class TestRangeQuery extends TestCase {
+public class TestRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;
   private RAMDirectory dir;
 
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     dir = new RAMDirectory();
   }
 

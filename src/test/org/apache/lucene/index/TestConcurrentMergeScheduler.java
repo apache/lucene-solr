@@ -28,12 +28,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.English;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.File;
 
-public class TestConcurrentMergeScheduler extends TestCase {
+public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
 
@@ -94,8 +94,6 @@ public class TestConcurrentMergeScheduler extends TestCase {
       }
     }
 
-    assertEquals(0, cms.getExceptions().size());
-
     writer.close();
     IndexReader reader = IndexReader.open(directory);
     assertEquals(200, reader.numDocs());
@@ -139,8 +137,6 @@ public class TestConcurrentMergeScheduler extends TestCase {
       writer.flush();
     }
 
-    assertEquals(0, cms.getExceptions().size());
-
     writer.close();
     IndexReader reader = IndexReader.open(directory);
     // Verify that we did not lose any deletes...
@@ -171,7 +167,6 @@ public class TestConcurrentMergeScheduler extends TestCase {
         
         writer.close();
         TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles autoCommit=" + autoCommit);
-        assertEquals(0, cms.getExceptions().size());
 
         // Reopen
         writer = new IndexWriter(directory, autoCommit, ANALYZER, false);
@@ -211,7 +206,6 @@ public class TestConcurrentMergeScheduler extends TestCase {
         }
 
         writer.close(false);
-        assertEquals(0, cms.getExceptions().size());
 
         IndexReader reader = IndexReader.open(directory);
         assertEquals((1+iter)*181, reader.numDocs());

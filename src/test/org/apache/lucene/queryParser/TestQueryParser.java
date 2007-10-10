@@ -17,7 +17,7 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -40,7 +40,7 @@ import java.util.Locale;
 /**
  * Tests QueryParser.
  */
-public class TestQueryParser extends TestCase {
+public class TestQueryParser extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -98,7 +98,8 @@ public class TestQueryParser extends TestCase {
 
   private int originalMaxClauses;
 
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
@@ -861,7 +862,8 @@ public class TestQueryParser extends TestCase {
     iw.addDocument(d);
   }
 
-  public void tearDown() {
+  public void tearDown() throws Exception {
+    super.tearDown();
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
   }
 

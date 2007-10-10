@@ -28,7 +28,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -37,7 +37,7 @@ import junit.textui.TestRunner;
  *
  * @version $Id$
  */
-public class TestSearchForDuplicates extends TestCase {
+public class TestSearchForDuplicates extends LuceneTestCase {
 
     /** Main for running test case by itself. */
     public static void main(String args[]) {

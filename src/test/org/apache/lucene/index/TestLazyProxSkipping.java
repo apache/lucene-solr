@@ -30,13 +30,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests lazy skipping on the proximity file.
  *
  */
-public class TestLazyProxSkipping extends TestCase {
+public class TestLazyProxSkipping extends LuceneTestCase {
     private Searcher searcher;
     private int seeksCounter = 0;
     

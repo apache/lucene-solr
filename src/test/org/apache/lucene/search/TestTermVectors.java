@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,7 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 
-public class TestTermVectors extends TestCase {
+public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
   private RAMDirectory directory = new RAMDirectory();
   public TestTermVectors(String s) {
@@ -40,6 +40,7 @@ public class TestTermVectors extends TestCase {
   }
 
   public void setUp() throws Exception {                  
+    super.setUp();
     IndexWriter writer
             = new IndexWriter(directory, new SimpleAnalyzer(), true);
     //writer.setUseCompoundFile(true);
@@ -67,10 +68,6 @@ public class TestTermVectors extends TestCase {
     }
     writer.close();
     searcher = new IndexSearcher(directory);
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() {

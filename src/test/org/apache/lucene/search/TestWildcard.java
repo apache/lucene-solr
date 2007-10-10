@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -38,7 +38,7 @@ import java.io.IOException;
  * 
  */
 public class TestWildcard
-    extends TestCase {
+    extends LuceneTestCase {
   public void testEquals() {
     WildcardQuery wq1 = new WildcardQuery(new Term("field", "b*a"));
     WildcardQuery wq2 = new WildcardQuery(new Term("field", "b*a"));

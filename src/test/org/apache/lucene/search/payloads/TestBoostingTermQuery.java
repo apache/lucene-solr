@@ -16,7 +16,7 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,7 +32,7 @@ import org.apache.lucene.util.English;
 import java.io.IOException;
 import java.io.Reader;
 
-public class TestBoostingTermQuery extends TestCase {
+public class TestBoostingTermQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private BoostingSimilarity similarity = new BoostingSimilarity();
   private byte[] payloadField = new byte[]{1};
@@ -81,7 +81,8 @@ public class TestBoostingTermQuery extends TestCase {
     }
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer
@@ -102,11 +103,6 @@ public class TestBoostingTermQuery extends TestCase {
 
     searcher = new IndexSearcher(directory);
     searcher.setSimilarity(similarity);
-  }
-
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

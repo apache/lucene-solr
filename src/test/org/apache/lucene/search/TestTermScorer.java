@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestTermScorer extends TestCase
+public class TestTermScorer extends LuceneTestCase
 {
     protected RAMDirectory directory;
     private static final String FIELD = "field";
@@ -45,8 +45,9 @@ public class TestTermScorer extends TestCase
         super(s);
     }
 
-    protected void setUp() throws IOException
+    protected void setUp() throws Exception
     {
+        super.setUp();
         directory = new RAMDirectory();
 
 
@@ -61,11 +62,6 @@ public class TestTermScorer extends TestCase
         indexSearcher = new IndexSearcher(directory);
         indexReader = indexSearcher.getIndexReader();
 
-
-    }
-
-    protected void tearDown()
-    {
 
     }
 

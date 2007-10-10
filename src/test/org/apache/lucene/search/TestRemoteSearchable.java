@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
@@ -33,7 +33,7 @@ import java.util.HashSet;
 /**
  * @version $Id$
  */
-public class TestRemoteSearchable extends TestCase {
+public class TestRemoteSearchable extends LuceneTestCase {
   public TestRemoteSearchable(String name) {
     super(name);
   }

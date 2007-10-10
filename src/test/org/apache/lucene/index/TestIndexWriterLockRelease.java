@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
 
 /**
@@ -32,10 +32,11 @@ import org.apache.lucene.index.IndexWriter;
  * @version $Id$
  */
 
-public class TestIndexWriterLockRelease extends TestCase {
+public class TestIndexWriterLockRelease extends LuceneTestCase {
     private java.io.File __test_dir;
 
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
+        super.setUp();
         if (this.__test_dir == null) {
             String tmp_dir = System.getProperty("java.io.tmpdir", "tmp");
             this.__test_dir = new File(tmp_dir, "testIndexWriter");
@@ -51,7 +52,8 @@ public class TestIndexWriterLockRelease extends TestCase {
         }
     }
 
-    public void tearDown() throws IOException {
+    public void tearDown() throws Exception {
+        super.tearDown();
         if (this.__test_dir != null) {
             File[] files = this.__test_dir.listFiles();
 

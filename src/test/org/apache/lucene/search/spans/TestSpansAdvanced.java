@@ -19,7 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,7 +36,7 @@ import org.apache.lucene.store.RAMDirectory;
  *
  * @author Reece Wilton
  */
-public class TestSpansAdvanced extends TestCase {
+public class TestSpansAdvanced extends LuceneTestCase {
 
     // location to the index
     protected Directory mDirectory;;
@@ -52,6 +52,7 @@ public class TestSpansAdvanced extends TestCase {
      */
     protected void setUp() throws Exception {
         super.setUp();
+        super.setUp();
 
         // create test index
         mDirectory = new RAMDirectory();
@@ -65,6 +66,7 @@ public class TestSpansAdvanced extends TestCase {
     }
 
     protected void tearDown() throws Exception {
+        super.tearDown();
         searcher.close();
         mDirectory.close();
         mDirectory = null;

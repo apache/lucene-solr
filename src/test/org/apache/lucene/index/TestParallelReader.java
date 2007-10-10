@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -38,12 +38,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 
-public class TestParallelReader extends TestCase {
+public class TestParallelReader extends LuceneTestCase {
 
   private Searcher parallel;
   private Searcher single;
   
   protected void setUp() throws Exception {
+    super.setUp();
     single = single();
     parallel = parallel();
   }

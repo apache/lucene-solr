@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
  *
  * @author Erik Hatcher
  */
-public class TestPrefixQuery extends TestCase {
+public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
     RAMDirectory directory = new RAMDirectory();
 

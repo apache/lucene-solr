@@ -17,7 +17,7 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -36,7 +36,7 @@ import java.util.NoSuchElementException;
  * This test intentionally not put in the search package in order
  * to test HitIterator and Hit package protection.
  */
-public class TestHitIterator extends TestCase {
+public class TestHitIterator extends LuceneTestCase {
   public void testIterator() throws Exception {
     RAMDirectory directory = new RAMDirectory();
 

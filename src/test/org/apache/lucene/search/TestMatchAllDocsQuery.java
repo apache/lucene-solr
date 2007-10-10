@@ -25,14 +25,14 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests MatchAllDocsQuery.
  * 
  * @author Daniel Naber
  */
-public class TestMatchAllDocsQuery extends TestCase {
+public class TestMatchAllDocsQuery extends LuceneTestCase {
 
   public void testQuery() throws IOException {
     RAMDirectory dir = new RAMDirectory();

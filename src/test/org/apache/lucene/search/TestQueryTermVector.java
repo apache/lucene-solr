@@ -17,21 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 
-public class TestQueryTermVector extends TestCase {
+public class TestQueryTermVector extends LuceneTestCase {
 
 
   public TestQueryTermVector(String s) {
     super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
   }
 
   public void testConstructor() {

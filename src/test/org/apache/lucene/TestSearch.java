@@ -21,7 +21,7 @@ import java.util.GregorianCalendar;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.queryParser.*;
  *
  * @version $Id$
  */
-public class TestSearch extends TestCase {
+public class TestSearch extends LuceneTestCase {
 
     /** Main for running test case by itself. */
     public static void main(String args[]) {

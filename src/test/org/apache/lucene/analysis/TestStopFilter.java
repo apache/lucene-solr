@@ -19,12 +19,12 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * @author yonik
  */
-public class TestStopFilter extends TestCase {
+public class TestStopFilter extends LuceneTestCase {
 
   // other StopFilter functionality is already tested by TestStopAnalyzer
 

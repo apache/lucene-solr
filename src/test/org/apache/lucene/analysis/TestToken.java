@@ -18,9 +18,9 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.*;
-import junit.framework.*;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestToken extends TestCase {
+public class TestToken extends LuceneTestCase {
 
   public TestToken(String name) {
     super(name);

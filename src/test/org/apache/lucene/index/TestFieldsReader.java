@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class TestFieldsReader extends TestCase {
+public class TestFieldsReader extends LuceneTestCase {
   private RAMDirectory dir = new RAMDirectory();
   private Document testDoc = new Document();
   private FieldInfos fieldInfos = null;
@@ -41,7 +41,8 @@ public class TestFieldsReader extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);

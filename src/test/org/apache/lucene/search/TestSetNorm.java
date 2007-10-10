@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
@@ -30,7 +30,7 @@ import org.apache.lucene.store.RAMDirectory;
  *
  * @version $Revision$
  */
-public class TestSetNorm extends TestCase {
+public class TestSetNorm extends LuceneTestCase {
   public TestSetNorm(String name) {
     super(name);
   }

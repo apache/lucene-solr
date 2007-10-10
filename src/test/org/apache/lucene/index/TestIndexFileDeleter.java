@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.util.Vector;
 import java.util.Arrays;
 import java.io.ByteArrayOutputStream;
@@ -44,7 +44,7 @@ import java.util.zip.*;
   against it, and add documents to it.
 */
 
-public class TestIndexFileDeleter extends TestCase
+public class TestIndexFileDeleter extends LuceneTestCase
 {
   public void testDeleteLeftoverFiles() throws IOException {
 

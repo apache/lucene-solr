@@ -17,7 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Hashtable;
 import java.util.Enumeration;
@@ -36,7 +36,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 
-public class TestLockFactory extends TestCase {
+public class TestLockFactory extends LuceneTestCase {
 
     // Verify: we can provide our own LockFactory implementation, the right
     // methods are called at the right time, locks are created, etc.

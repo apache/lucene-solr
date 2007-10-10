@@ -56,9 +56,9 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLock extends TestCase {
+public class TestLock extends LuceneTestCase {
 
     public void testObtain() {
         LockMock lock = new LockMock();

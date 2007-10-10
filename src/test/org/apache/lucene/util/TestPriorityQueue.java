@@ -18,10 +18,10 @@ package org.apache.lucene.util;
  */
 
 import java.util.Random;
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPriorityQueue
-    extends TestCase
+    extends LuceneTestCase
 {
     public TestPriorityQueue(String name)
     {

@@ -33,7 +33,7 @@ import org.apache.lucene.document.Field;
 import java.io.Reader;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Term position unit test.
@@ -41,7 +41,7 @@ import junit.framework.TestCase;
  *
  * @version $Revision$
  */
-public class TestPositionIncrement extends TestCase {
+public class TestPositionIncrement extends LuceneTestCase {
 
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {

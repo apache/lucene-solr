@@ -17,7 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
@@ -44,10 +44,11 @@ import org.apache.lucene.search.*;
  *
  * @author Doug Cutting
  */
-public class TestBasics extends TestCase {
+public class TestBasics extends LuceneTestCase {
   private IndexSearcher searcher;
 
   public void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer
       = new IndexWriter(directory, new SimpleAnalyzer(), true);

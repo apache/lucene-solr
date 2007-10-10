@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -34,7 +34,7 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * @author goller
  */
-public class TestSegmentTermEnum extends TestCase
+public class TestSegmentTermEnum extends LuceneTestCase
 {
   Directory dir = new RAMDirectory();
 

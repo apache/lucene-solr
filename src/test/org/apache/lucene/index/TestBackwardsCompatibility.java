@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import java.util.Vector;
 import java.util.Arrays;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +42,7 @@ import java.util.zip.*;
   against it, and add documents to it.
 */
 
-public class TestBackwardsCompatibility extends TestCase
+public class TestBackwardsCompatibility extends LuceneTestCase
 {
 
   // Uncomment these cases & run in a pre-lockless checkout

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.lang.StackTraceElement;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,7 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestIndexWriterDelete extends TestCase {
+public class TestIndexWriterDelete extends LuceneTestCase {
 
   // test the simple case
   public void testSimpleCase() throws IOException {

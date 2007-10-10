@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
@@ -31,7 +31,7 @@ import org.apache.lucene.document.Field;
  *
  * @version $Revision$
  */
-public class TestNot extends TestCase {
+public class TestNot extends LuceneTestCase {
   public TestNot(String name) {
     super(name);
   }

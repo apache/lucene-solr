@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.File;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 import org.apache.lucene.store.IndexOutput;
@@ -35,7 +35,7 @@ import org.apache.lucene.util._TestUtil;
  *
  * @version $Id$
  */
-public class TestCompoundFile extends TestCase
+public class TestCompoundFile extends LuceneTestCase
 {
     /** Main for running test case by itself. */
     public static void main(String args[]) {
@@ -58,7 +58,8 @@ public class TestCompoundFile extends TestCase
     private Directory dir;
 
 
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
+       super.setUp();
        File file = new File(System.getProperty("tempDir"), "testIndex");
        _TestUtil.rmDir(file);
        dir = FSDirectory.getDirectory(file);

@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexReader;
@@ -32,7 +33,7 @@ import java.io.IOException;
  * 
  * @version $Id$
  */
-public class TestThreadSafe extends TestCase {
+public class TestThreadSafe extends LuceneTestCase {
   Random r = new Random();
   Directory dir1;
   Directory dir2;

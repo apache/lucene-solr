@@ -32,7 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.util.BitSet;
@@ -49,7 +49,7 @@ import java.util.BitSet;
  *
  * @see "Subclasses for actual tests"
  */
-public class TestExplanations extends TestCase {
+public class TestExplanations extends LuceneTestCase {
   protected IndexSearcher searcher;
 
   public static final String FIELD = "field";
@@ -57,10 +57,12 @@ public class TestExplanations extends TestCase {
     new QueryParser(FIELD, new WhitespaceAnalyzer());
 
   public void tearDown() throws Exception {
+    super.tearDown();
     searcher.close();
   }
   
   public void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < docFields.length; i++) {

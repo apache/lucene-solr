@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collection;
 
@@ -34,7 +34,7 @@ import org.apache.lucene.document.Field;
  *
  * @version $Revision$
  */
-public class TestSimilarity extends TestCase {
+public class TestSimilarity extends LuceneTestCase {
   public TestSimilarity(String name) {
     super(name);
   }

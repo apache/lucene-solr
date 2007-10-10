@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,7 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 
-public class TestMultiSegmentReader extends TestCase {
+public class TestMultiSegmentReader extends LuceneTestCase {
   protected Directory dir;
   private Document doc1;
   private Document doc2;
@@ -39,7 +39,8 @@ public class TestMultiSegmentReader extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     dir = new RAMDirectory();
     doc1 = new Document();
     doc2 = new Document();
@@ -63,7 +64,7 @@ public class TestMultiSegmentReader extends TestCase {
     return reader;
   }
 
-  public void test() throws IOException {
+  public void test() throws Exception {
     setUp();
     doTestDocument();
     doTestUndeleteAll();

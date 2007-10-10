@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.util.BitSet;
@@ -37,7 +37,7 @@ import org.apache.lucene.document.Field;
  *
  * @version $Id$
  */
-public class TestScorerPerf extends TestCase {
+public class TestScorerPerf extends LuceneTestCase {
   Random r = new Random(0);
   boolean validate = true;  // set to false when doing performance testing
 

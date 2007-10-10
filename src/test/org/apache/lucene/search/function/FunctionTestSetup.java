@@ -26,12 +26,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Setup for function tests
  */
-public abstract class FunctionTestSetup extends TestCase {
+public abstract class FunctionTestSetup extends LuceneTestCase {
 
   /**
    * Actual score computation order is slightly different than assumptios
@@ -76,12 +76,14 @@ public abstract class FunctionTestSetup extends TestCase {
   /* @override */
   protected void tearDown() throws Exception {
     super.tearDown();
+    super.tearDown();
     dir = null;
     anlzr = null;
   }
 
   /* @override */
   protected void setUp() throws Exception {
+    super.setUp();
     // prepare a small index with just a few documents.  
     super.setUp();
     dir = new RAMDirectory();

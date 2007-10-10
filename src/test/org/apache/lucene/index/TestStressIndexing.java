@@ -24,12 +24,12 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.io.File;
 
-public class TestStressIndexing extends TestCase {
+public class TestStressIndexing extends LuceneTestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
   private static final Random RANDOM = new Random();
 

@@ -17,7 +17,7 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -38,7 +38,7 @@ import java.io.IOException;
  * 
  * @author Daniel Naber
  */
-public class TestDemo extends TestCase {
+public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
 

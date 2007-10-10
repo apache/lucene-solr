@@ -20,12 +20,12 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
 
-public class TestIndexWriterMerging extends TestCase
+public class TestIndexWriterMerging extends LuceneTestCase
 {
 
   /**

@@ -22,14 +22,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestSegmentReader extends TestCase {
+public class TestSegmentReader extends LuceneTestCase {
   private RAMDirectory dir = new RAMDirectory();
   private Document testDoc = new Document();
   private SegmentReader reader = null;
@@ -39,14 +39,11 @@ public class TestSegmentReader extends TestCase {
   }
   
   //TODO: Setup the reader w/ multiple documents
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
     reader = SegmentReader.get(info);
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() {

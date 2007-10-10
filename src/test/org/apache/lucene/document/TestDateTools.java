@@ -6,7 +6,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +25,7 @@ import junit.framework.TestCase;
  * limitations under the License.
  */
 
-public class TestDateTools extends TestCase {
+public class TestDateTools extends LuceneTestCase {
 
   public void testStringToDate() throws ParseException {
     

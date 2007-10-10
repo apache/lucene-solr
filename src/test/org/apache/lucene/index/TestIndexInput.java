@@ -17,12 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
 
-public class TestIndexInput extends TestCase {
+public class TestIndexInput extends LuceneTestCase {
   public void testRead() throws IOException {
     IndexInput is = new MockIndexInput(new byte[]{(byte) 0x80, 0x01,
             (byte) 0xFF, 0x7F,

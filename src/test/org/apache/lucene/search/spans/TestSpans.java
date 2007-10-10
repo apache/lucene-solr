@@ -26,16 +26,17 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
-public class TestSpans extends TestCase {
+public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
 
   public static final String field = "field";
 
   public void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < docFields.length; i++) {

@@ -17,9 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestStringHelper extends TestCase {
+public class TestStringHelper extends LuceneTestCase {
 
 
   public void testStringDifference() {

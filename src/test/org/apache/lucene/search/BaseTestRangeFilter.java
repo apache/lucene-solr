@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
 
-public class BaseTestRangeFilter extends TestCase {
+public class BaseTestRangeFilter extends LuceneTestCase {
 
     public static final boolean F = false;
     public static final boolean T = true;

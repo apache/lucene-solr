@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -41,7 +41,7 @@ import java.util.Set;
  *
  * @version $Id$
  */
-public class TestMultiSearcher extends TestCase
+public class TestMultiSearcher extends LuceneTestCase
 {
     public TestMultiSearcher(String name)
     {

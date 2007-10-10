@@ -20,10 +20,10 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.util.HashMap;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Test huge RAMFile with more than Integer.MAX_VALUE bytes. */
-public class TestHugeRamFile extends TestCase {
+public class TestHugeRamFile extends LuceneTestCase {
   
   private static final long MAX_VALUE = (long) 2 * (long) Integer.MAX_VALUE;
 

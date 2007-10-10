@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
@@ -41,7 +41,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 
-public class TestPayloads extends TestCase {
+public class TestPayloads extends LuceneTestCase {
     
     // Simple tests to test the Payload class
     public void testPayload() throws Exception {

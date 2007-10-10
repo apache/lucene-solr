@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
@@ -30,7 +30,7 @@ import org.apache.lucene.store.RAMDirectory;
  *
  * @version $Id$
  */
-public class TestBinaryDocument extends TestCase
+public class TestBinaryDocument extends LuceneTestCase
 {
 
   String binaryValStored = "this text will be stored as a byte array in the index";

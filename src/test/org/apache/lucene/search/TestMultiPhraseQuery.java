@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -39,7 +39,7 @@ import java.util.LinkedList;
  *
  * @version $Id$
  */
-public class TestMultiPhraseQuery extends TestCase
+public class TestMultiPhraseQuery extends LuceneTestCase
 {
     public TestMultiPhraseQuery(String name) {
         super(name);

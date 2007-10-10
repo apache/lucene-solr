@@ -17,7 +17,7 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -42,7 +42,7 @@ import java.util.Map;
  * Tests QueryParser.
  * @author Daniel Naber
  */
-public class TestMultiFieldQueryParser extends TestCase {
+public class TestMultiFieldQueryParser extends LuceneTestCase {
 
   /** test stop words arsing for both the non static form, and for the 
    * corresponding static form (qtxt, fields[]). */

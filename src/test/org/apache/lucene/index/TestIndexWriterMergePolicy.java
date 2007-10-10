@@ -26,9 +26,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util._TestUtil;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestIndexWriterMergePolicy extends TestCase {
+public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the normal case
   public void testNormalCase() throws IOException {

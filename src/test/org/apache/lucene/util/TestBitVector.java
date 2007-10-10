@@ -19,7 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -29,7 +29,7 @@ import org.apache.lucene.store.RAMDirectory;
  * 
  * @version $Id$
  */
-public class TestBitVector extends TestCase
+public class TestBitVector extends LuceneTestCase
 {
     public TestBitVector(String s) {
         super(s);

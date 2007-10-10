@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,7 +32,7 @@ import org.apache.lucene.store.RAMDirectory;
  *
  * @author Daniel Naber
  */
-public class TestFuzzyQuery extends TestCase {
+public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();

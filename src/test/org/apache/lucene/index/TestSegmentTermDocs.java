@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 
 import java.io.IOException;
 
-public class TestSegmentTermDocs extends TestCase {
+public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
   private Directory dir = new RAMDirectory();
   private SegmentInfo info;
@@ -35,14 +35,10 @@ public class TestSegmentTermDocs extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     DocHelper.setupDoc(testDoc);
     info = DocHelper.writeDoc(dir, testDoc);
-  }
-
-
-  protected void tearDown() {
-
   }
 
   public void test() {

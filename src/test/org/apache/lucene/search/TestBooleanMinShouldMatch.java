@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 
 import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,7 +34,7 @@ import java.util.Random;
 
 /** Test that BooleanQuery.setMinimumNumberShouldMatch works.
  */
-public class TestBooleanMinShouldMatch extends TestCase {
+public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
     public Directory index;
@@ -41,6 +42,9 @@ public class TestBooleanMinShouldMatch extends TestCase {
     public IndexSearcher s;
 
     public void setUp() throws Exception {
+
+
+        super.setUp();
 
 
         String[] data = new String [] {
@@ -325,9 +329,9 @@ public class TestBooleanMinShouldMatch extends TestCase {
         // should be a superset to the unconstrained query.
         if (top2.totalHits > top1.totalHits) {
           TestCase.fail("Constrained results not a subset:\n"
-                + CheckHits.topdocsString(top1,0,0)
-                + CheckHits.topdocsString(top2,0,0)
-                + "for query:" + q2.toString());
+                        + CheckHits.topdocsString(top1,0,0)
+                        + CheckHits.topdocsString(top2,0,0)
+                        + "for query:" + q2.toString());
         }
 
         for (int hit=0; hit<top2.totalHits; hit++) {

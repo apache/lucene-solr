@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -39,7 +39,7 @@ import java.io.IOException;
  * @version $Id$
  **/
 
-public class TestBooleanPrefixQuery extends TestCase {
+public class TestBooleanPrefixQuery extends LuceneTestCase {
 
   public static void main(String[] args) {
     TestRunner.run(suite());

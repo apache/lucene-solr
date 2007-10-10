@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -38,7 +38,7 @@ import java.util.ArrayList;
  * Test that norms info is preserved during index life - including
  * separate norms, addDocument, addIndexes, optimize.
  */
-public class TestNorms extends TestCase {
+public class TestNorms extends LuceneTestCase {
 
   private class SimilarityOne extends DefaultSimilarity {
     public float lengthNorm(String fieldName, int numTerms) {
@@ -60,12 +60,10 @@ public class TestNorms extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     similarityOne = new SimilarityOne();
     anlzr = new StandardAnalyzer();
-  }
-
-  protected void tearDown() throws IOException {
   }
 
   /**

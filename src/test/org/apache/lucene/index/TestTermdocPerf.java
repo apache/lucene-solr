@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
@@ -49,7 +49,7 @@ class RepeatingTokenStream extends TokenStream {
 }
 
 
-public class TestTermdocPerf extends TestCase {
+public class TestTermdocPerf extends LuceneTestCase {
 
   void addDocs(Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
     final Random random = new Random(0);

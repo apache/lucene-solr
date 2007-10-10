@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.Token;
@@ -34,24 +34,20 @@ import java.io.IOException;
 
 import java.util.Arrays;
 
-public class TestDocumentWriter extends TestCase {
+public class TestDocumentWriter extends LuceneTestCase {
   private RAMDirectory dir;
 
   public TestDocumentWriter(String s) {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     dir = new RAMDirectory();
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() {
     assertTrue(dir != null);
-
   }
 
   public void testAddDocument() throws Exception {

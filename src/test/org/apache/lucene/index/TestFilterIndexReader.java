@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
 
 import java.io.IOException;
 
-public class TestFilterIndexReader extends TestCase {
+public class TestFilterIndexReader extends LuceneTestCase {
 
   private static class TestReader extends FilterIndexReader {
 

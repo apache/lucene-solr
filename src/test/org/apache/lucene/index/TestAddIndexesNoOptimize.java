@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestAddIndexesNoOptimize extends TestCase {
+public class TestAddIndexesNoOptimize extends LuceneTestCase {
   public void testSimpleCase() throws IOException {
     // main directory
     Directory dir = new RAMDirectory();

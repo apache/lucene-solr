@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,7 +32,7 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestCachingTokenFilter extends TestCase {
+public class TestCachingTokenFilter extends LuceneTestCase {
   private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
   
   public void testCaching() throws IOException {

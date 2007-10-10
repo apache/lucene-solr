@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,7 +35,7 @@ import java.io.IOException;
  * Test of the DisjunctionMaxQuery.
  *
  */
-public class TestDisjunctionMaxQuery extends TestCase{
+public class TestDisjunctionMaxQuery extends LuceneTestCase{
 
     /** threshold for comparing floats */
     public static final float SCORE_COMP_THRESH = 0.0000f;
@@ -72,6 +72,8 @@ public class TestDisjunctionMaxQuery extends TestCase{
     public IndexSearcher s;
 
     public void setUp() throws Exception {
+
+        super.setUp();
 
         index = new RAMDirectory();
         IndexWriter writer = new IndexWriter(index,

@@ -17,14 +17,14 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 import java.io.IOException;
 import java.util.Set;
 import java.util.HashSet;
 
-public class TestStopAnalyzer extends TestCase {
+public class TestStopAnalyzer extends LuceneTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer();
   private Set inValidTokens = new HashSet();
@@ -33,7 +33,8 @@ public class TestStopAnalyzer extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     for (int i = 0; i < StopAnalyzer.ENGLISH_STOP_WORDS.length; i++) {
       inValidTokens.add(StopAnalyzer.ENGLISH_STOP_WORDS[i]);
     }

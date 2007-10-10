@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,7 +35,7 @@ import java.io.IOException;
  *
  * @version $Id: TestMultiSearcher.java 150492 2004-09-06 22:01:49Z dnaber $
  */
-public class TestMultiSearcherRanking extends TestCase {
+public class TestMultiSearcherRanking extends LuceneTestCase {
   
   private final boolean verbose = false;  // set to true to output hits
   private final String FIELD_NAME = "body";
@@ -111,6 +111,7 @@ public class TestMultiSearcherRanking extends TestCase {
    * initializes multiSearcher and singleSearcher with the same document set
    */
   protected void setUp() throws Exception {
+    super.setUp();
     // create MultiSearcher from two seperate searchers
     Directory d1 = new RAMDirectory();
     IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(), true);

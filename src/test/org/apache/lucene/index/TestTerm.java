@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestTerm extends TestCase {
+public class TestTerm extends LuceneTestCase {
 
   public void testEquals() {
     final Term base = new Term("same", "same");

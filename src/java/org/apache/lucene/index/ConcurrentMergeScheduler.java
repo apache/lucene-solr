@@ -43,6 +43,15 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   private List exceptions = new ArrayList();
   private Directory dir;
 
+  private boolean closed;
+
+  public ConcurrentMergeScheduler() {
+    if (allInstances != null) {
+      // Only for testing
+      addMyself();
+    }
+  }
+
   /** Sets the max # simultaneous threads that may be
    *  running.  If a merge is necessary yet we already have
    *  this many threads running, the merge is returned back
@@ -72,7 +81,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   public synchronized void setMergeThreadPriority(int pri) {
     mergeThreadPriority = pri;
 
-    final int numThreads = mergeThreads.size();
+    final int numThreads = mergeThreadCount();
     for(int i=0;i<numThreads;i++) {
       MergeThread merge = (MergeThread) mergeThreads.get(i);
       try {
@@ -82,12 +91,6 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
         // throws NPE out of here...
       }
     }
-  }
-
-  /** Returns any exceptions that were caught in the merge
-   *  threads. */
-  public List getExceptions() {
-    return exceptions;
   }
 
   private void message(String message) {
@@ -101,10 +104,12 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
       mergeThreadPriority = 1+Thread.currentThread().getPriority();
   }
 
-  public void close() {}
+  public void close() {
+    closed = true;
+  }
 
-  private synchronized void finishThreads() {
-    while(mergeThreads.size() > 0) {
+  public synchronized void sync() {
+    while(mergeThreadCount() > 0) {
       if (VERBOSE) {
         message("now wait for threads; currently " + mergeThreads.size() + " still running");
         for(int i=0;i<mergeThreads.size();i++)
@@ -117,20 +122,8 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
       }
     }
   }
-
-  public void sync() {
-    finishThreads();
-  }
-
-  // Used for testing
-  private boolean suppressExceptions;
-
-  /** Used for testing */
-  void setSuppressExceptions() {
-    suppressExceptions = true;
-  }
-  void clearSuppressExceptions() {
-    suppressExceptions = false;
+  private synchronized int mergeThreadCount() {
+    return mergeThreads.size();
   }
 
   public void merge(IndexWriter writer)
@@ -179,7 +172,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
           message("    merge involves segments from an external directory; now run in foreground");
       } else {
         synchronized(this) {
-          if (mergeThreads.size() < maxThreadCount) {
+          if (mergeThreadCount() < maxThreadCount) {
             // OK to spawn a new merge thread to handle this
             // merge:
             MergeThread merger = new MergeThread(writer, merge);
@@ -269,10 +262,12 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
             exceptions.add(exc);
           }
           
-          if (!suppressExceptions)
+          if (!suppressExceptions) {
             // suppressExceptions is normally only set during
             // testing.
+            anyExceptions = true;
             throw new MergePolicy.MergeException(exc);
+          }
         }
       } finally {
         synchronized(ConcurrentMergeScheduler.this) {
@@ -288,5 +283,54 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
         merge = startMerge;
       return "merge thread: " + merge.segString(dir);
     }
+  }
+
+  static boolean anyExceptions = false;
+
+  /** Used for testing */
+  public static boolean anyUnhandledExceptions() {
+    synchronized(allInstances) {
+      final int count = allInstances.size();
+      // Make sure all outstanding threads are done so we see
+      // any exceptions they may produce:
+      for(int i=0;i<count;i++)
+        ((ConcurrentMergeScheduler) allInstances.get(i)).sync();
+      return anyExceptions;
+    }
+  }
+
+  /** Used for testing */
+  private void addMyself() {
+    synchronized(allInstances) {
+      final int size=0;
+      int upto = 0;
+      for(int i=0;i<size;i++) {
+        final ConcurrentMergeScheduler other = (ConcurrentMergeScheduler) allInstances.get(i);
+        if (!(other.closed && 0 == other.mergeThreadCount()))
+          // Keep this one for now: it still has threads or
+          // may spawn new threads
+          allInstances.set(upto++, other);
+      }
+      allInstances.subList(upto, allInstances.size()).clear();
+      allInstances.add(this);
+    }
+  }
+
+  private boolean suppressExceptions;
+
+  /** Used for testing */
+  void setSuppressExceptions() {
+    suppressExceptions = true;
+  }
+
+  /** Used for testing */
+  void clearSuppressExceptions() {
+    suppressExceptions = false;
+  }
+
+  /** Used for testing */
+  private static List allInstances;
+  public static void setTestMode() {
+    allInstances = new ArrayList();
   }
 }
