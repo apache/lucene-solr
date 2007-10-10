@@ -2005,6 +2005,12 @@ public class IndexWriter {
    * complete index can then be created by merging sub-collection indexes
    * with this method.
    *
+   * <p><b>NOTE:</b> the index in each Directory must not be
+   * changed (opened by a writer) while this method is
+   * running.  This method does not acquire a write lock in
+   * each input Directory, so it is up to the caller to
+   * enforce this.
+   *
    * <p>After this completes, the index is optimized.
    *
    * <p>This method is transactional in how Exceptions are
@@ -2089,6 +2095,13 @@ public class IndexWriter {
    * This is similar to addIndexes(Directory[]). However, no optimize()
    * is called either at the beginning or at the end. Instead, merges
    * are carried out as necessary.
+   *
+   * <p><b>NOTE:</b> the index in each Directory must not be
+   * changed (opened by a writer) while this method is
+   * running.  This method does not acquire a write lock in
+   * each input Directory, so it is up to the caller to
+   * enforce this.
+   *
    * <p>
    * This requires this index not be among those to be added, and the
    * upper bound* of those segment doc counts not exceed maxMergeDocs.
