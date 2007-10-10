@@ -729,6 +729,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them
             if ((flags & GET_SCORES)==0 || superset.hasScores()) {
+              // NOTE: subset() returns null if the DocList has fewer docs than
+              // requested
               out.docList = superset.subset(offset,len);
             }
           }
