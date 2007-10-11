@@ -376,7 +376,7 @@ public class Config {
         else if (a instanceof double[]) {
           double ad[] = (double[]) a;
           int n = roundNum % ad.length;
-          sb.append(Format.format(2, (float) ad[n],template));
+          sb.append(Format.format(2, ad[n],template));
         }
         else {
           boolean ab[] = (boolean[]) a;

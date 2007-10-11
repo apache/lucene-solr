@@ -52,6 +52,11 @@ public class Format {
     return res.substring(res.length() - col.length());
   }
 
+  public static String format(int numFracDigits, double f, String col) {
+    String res = padd + numFormat[numFracDigits].format(f);
+    return res.substring(res.length() - col.length());
+  }
+
   /**
    * Padd a number from right.
    * @param numFracDigits number of digits in fraction part - must be 0 or 1 or 2.
@@ -60,6 +65,11 @@ public class Format {
    * @return formatted string.
    */
   public static String formatPaddRight(int numFracDigits, float f, String col) {
+    String res = numFormat[numFracDigits].format(f) + padd;
+    return res.substring(0, col.length());
+  }
+
+  public static String formatPaddRight(int numFracDigits, double f, String col) {
     String res = numFormat[numFracDigits].format(f) + padd;
     return res.substring(0, col.length());
   }

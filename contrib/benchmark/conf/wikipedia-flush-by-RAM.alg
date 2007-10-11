@@ -16,34 +16,39 @@
 # */
 # -------------------------------------------------------------------------------------
 # multi val params are iterated by NewRound's, added to reports, start with column name.
+#
+# based on micro-standard
+#
+# modified to use wikipedia sources and index entire docs
+# currently just used to measure ingest rate
 
-#merge.factor=mrg:10:100:10:100:10:100:10:100
-#max.buffered=buf:10:10:100:100:10:10:100:100
-ram.flush.mb=flush:32:40:48:56:32:40:48:56
-compound=cmpnd:true:true:true:true:false:false:false:false
+#merge.factor=mrg:10:100:10:100
+#max.buffered=buf:10:10:100:100
+ram.flush.mb=ram:32:40:48:56
+
+max.field.length=2147483647
+
+
+compound=true
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
-#directory=RamDirectory
 
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
-doc.add.log.step=2000
+doc.add.log.step=500
 
-docs.dir=reuters-out
-#docs.dir=reuters-111
+docs.dir=enwiki
 
-#doc.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+doc.maker=org.apache.lucene.benchmark.byTask.feeds.DirDocMaker
 
-#query.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
 
 # task at this depth or less would print when they start
 task.max.depth.log=2
 
-log.queries=true
+log.queries=false
 # -------------------------------------------------------------------------------------
 
 { "Rounds"
@@ -52,41 +57,13 @@ log.queries=true
 
     { "Populate"
         CreateIndex
-        { "MAddDocs" AddDoc } : 20000
-        Optimize
+        { "MAddDocs" AddDoc > : 200000
         CloseIndex
     }
-
-    OpenReader  
-    { "SearchSameRdr" Search > : 5000
-    CloseReader 
-                
-    { "WarmNewRdr" Warm > : 50
-                
-    { "SrchNewRdr" Search > : 500
-                
-    { "SrchTrvNewRdr" SearchTrav > : 300
-                
-    { "SrchTrvRetNewRdr" SearchTravRet > : 100
-                
-    OpenReader  
-    [ "SearchSameRdr" Search > : 5000 : 2500
-    CloseReader 
-                
-    [ "WarmNewRdr" Warm > : 50 : 25
-                
-    [ "SrchNewRdr" Search > : 50 : 25
-                
-    [ "SrchTrvNewRdr" SearchTrav > : 300 : 150
-                
-    [ "SrchTrvRetNewRdr" SearchTravRet > : 100 : 50
-
-    RepSumByPref MAddDocs
 
     NewRound
 
 } : 8
 
-RepSumByNameRound
 RepSumByName
 RepSumByPrefRound MAddDocs

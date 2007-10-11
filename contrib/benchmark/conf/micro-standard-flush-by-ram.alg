@@ -19,7 +19,7 @@
 
 #merge.factor=mrg:10:100:10:100
 #max.buffered=buf:10:10:100:100
-ram.flush.mb=ram:32:40:48:56
+ram.flush.mb=flush:32:40:48:56
 compound=true
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
