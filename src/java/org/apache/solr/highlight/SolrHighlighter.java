@@ -275,7 +275,7 @@ public class SolrHighlighter
            Highlighter highlighter = getHighlighter(query, fieldName, req);
            int numFragments = getMaxSnippets(fieldName, params);
 
-           String[] summaries;
+           String[] summaries = null;
            TextFragment[] frag;
            if (docTexts.length == 1) {
               // single-valued field
@@ -309,6 +309,16 @@ public class SolrHighlighter
               if (summaries.length > 0) 
                 docSummaries.add(fieldName, summaries);
            }
+           // no summeries made, copy text from alternate field
+           if (summaries == null || summaries.length == 0) {
+              String alternateField = req.getParams().getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
+              if (alternateField != null && alternateField.length() > 0) {
+                 String[] altTexts = doc.getValues(alternateField);
+                    if (altTexts != null && altTexts.length > 0)
+                       docSummaries.add(fieldName, altTexts);
+              }
+           }
+ 
         }
         String printId = schema.printableUniqueKey(doc);
         fragments.add(printId == null ? null : printId, docSummaries);

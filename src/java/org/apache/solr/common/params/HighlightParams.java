@@ -31,6 +31,7 @@ public interface HighlightParams {
   public static final String FORMATTER   = HIGHLIGHT+".formatter";
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter";
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
+  public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
 
   // Formatter
   public static final String SIMPLE = "simple";

@@ -387,4 +387,36 @@ public class HighlighterTest extends AbstractSolrTestCase {
            "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all']"
            );
   }
+  public void testAlternateSummary() {
+     //long document
+     assertU(adoc("tv_text", "keyword is only here",
+                  "t_text", "a piece of text to be substituted",
+                  "id", "1"));
+     assertU(commit());
+     assertU(optimize());
+
+    // do summarization
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fragsize","0");
+    args.put("hl.fl", "t_text");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+
+    // no alternate
+    assertQ("Alternate summarization",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=0]"
+            );
+
+    // with an alternate
+    args.put("hl.alternateField", "id");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='1']"
+            );
+  }
 }
