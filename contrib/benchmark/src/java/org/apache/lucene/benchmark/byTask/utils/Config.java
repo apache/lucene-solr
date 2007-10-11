@@ -255,7 +255,13 @@ public class Config {
           int n1 = (roundNumber-1)%ai.length;
           int n2 = roundNumber%ai.length;
           sb.append("  ").append(name).append(":").append(ai[n1]).append("-->").append(ai[n2]);
-        } else {
+        } else if (a instanceof double[]){
+          double ad[] = (double[]) a;
+          int n1 = (roundNumber-1)%ad.length;
+          int n2 = roundNumber%ad.length;
+          sb.append("  ").append(name).append(":").append(ad[n1]).append("-->").append(ad[n2]);
+        }
+        else {
           boolean ab[] = (boolean[]) a;
           int n1 = (roundNumber-1)%ab.length;
           int n2 = roundNumber%ab.length;
@@ -366,7 +372,13 @@ public class Config {
           int ai[] = (int[]) a;
           int n = roundNum % ai.length;
           sb.append(Format.format(ai[n],template));
-        } else {
+        }
+        else if (a instanceof double[]) {
+          double ad[] = (double[]) a;
+          int n = roundNum % ad.length;
+          sb.append(Format.format(2, (float) ad[n],template));
+        }
+        else {
           boolean ab[] = (boolean[]) a;
           int n = roundNum % ab.length;
           sb.append(Format.formatPaddLeft(""+ab[n],template));
