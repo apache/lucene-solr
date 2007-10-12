@@ -35,7 +35,6 @@ public abstract class BaseTokenizerFactory implements TokenizerFactory, SolrConf
   
   @Deprecated
   public void init(Map<String,String> args) {
-    //log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args)");
     this.args=args;
   }
   

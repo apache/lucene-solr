@@ -197,6 +197,16 @@ Other Changes
 
  3. Upgraded to Lucene 2.2.0; June 18, 2007.
 
+ 4. SOLR-215: In an push to support multiple SolrCores, the TokenizerFactory
+    and TokenFilterFactory initalization interface has changed to accept the 
+    solrConfig.  Initialization should happen in:
+ 		  init(SolrConfig solrConfig, Map<String,String> args)
+    rather then:
+      init(Map<String,String> args)
+    Existing classes should continue to work, but it is encouraged to update
+    the initialization code.
+ 
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1

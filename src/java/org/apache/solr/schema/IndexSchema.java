@@ -629,10 +629,13 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String className = DOMUtil.getAttr(attrs,"class","tokenizer");
     TokenizerFactory tfac = (TokenizerFactory)solrConfig.newInstance(className);
-    if (tfac instanceof SolrConfig.Initializable)
+    if (tfac instanceof SolrConfig.Initializable) {
       ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
-    else
+    }
+    else {
+      log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args) " + className );
       tfac.init(DOMUtil.toMapExcept(attrs,"class"));
+    }
     
     return tfac;
   }
@@ -643,11 +646,13 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String className = DOMUtil.getAttr(attrs,"class","token filter");
     TokenFilterFactory tfac = (TokenFilterFactory)solrConfig.newInstance(className);
-    if (tfac instanceof SolrConfig.Initializable)
+    if (tfac instanceof SolrConfig.Initializable) {
       ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
-    else
+    }
+    else {
+      log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args) " + className );
       tfac.init(DOMUtil.toMapExcept(attrs,"class"));
-    
+    }
     return tfac;
   }
 
