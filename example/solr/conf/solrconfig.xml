@@ -312,6 +312,14 @@
      </str>
      <int name="ps">100</int>
      <str name="q.alt">*:*</str>
+     <!-- example highlighter config, enable per-query with hl=true -->     
+     <str name="hl.fl">text features name</str>
+     <!-- for this field, we want no fragmenting, just highlighting -->
+     <str name="f.name.hl.fragsize">0</str>
+     <!-- instructs Solr to return the field itself if no query terms are
+          found -->
+     <str name="f.name.hl.alternateField">name</str>
+     <str name="f.text.hl.fragmenter">regex</str> <!-- defined below -->
     </lst>
   </requestHandler>
 
