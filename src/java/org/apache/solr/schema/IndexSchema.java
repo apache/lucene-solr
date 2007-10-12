@@ -632,7 +632,8 @@ public final class IndexSchema {
     if (tfac instanceof SolrConfig.Initializable)
       ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
     else
-    tfac.init(DOMUtil.toMapExcept(attrs,"class"));
+      tfac.init(DOMUtil.toMapExcept(attrs,"class"));
+    
     return tfac;
   }
 
@@ -645,7 +646,8 @@ public final class IndexSchema {
     if (tfac instanceof SolrConfig.Initializable)
       ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
     else
-    tfac.init(DOMUtil.toMapExcept(attrs,"class"));
+      tfac.init(DOMUtil.toMapExcept(attrs,"class"));
+    
     return tfac;
   }
 

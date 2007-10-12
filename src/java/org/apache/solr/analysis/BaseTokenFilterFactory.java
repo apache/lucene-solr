@@ -34,10 +34,9 @@ public abstract class BaseTokenFilterFactory implements TokenFilterFactory, Solr
   /** The init args */
   protected Map<String,String> args;
   
-
+  
   @Deprecated
   public void init(Map<String,String> args) {
-    log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args)");
     this.args=args;
   }
   
@@ -45,6 +44,7 @@ public abstract class BaseTokenFilterFactory implements TokenFilterFactory, Solr
    * @since solr 1.3
    */
   public void init(SolrConfig solrConfig, Map<String,String> args) {
+    this.init( args );  // maintain backwards compatibility
     this.args=args;
   }
 
