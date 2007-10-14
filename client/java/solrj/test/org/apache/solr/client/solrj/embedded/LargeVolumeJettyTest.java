@@ -81,7 +81,7 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
       // setup the server...
       String url = "http://localhost:"+port+context;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
-      s.setConnectionTimeout(5);
+      s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
