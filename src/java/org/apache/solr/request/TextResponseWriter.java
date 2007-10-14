@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.lucene.document.Document;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocList;
 import java.io.IOException;
@@ -34,7 +35,7 @@ import java.util.Set;
  */
 public abstract class TextResponseWriter {
   
-  protected final Writer writer;
+  protected final FastWriter writer;
   protected final IndexSchema schema;
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
@@ -47,7 +48,7 @@ public abstract class TextResponseWriter {
 
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    this.writer = writer;
+    this.writer = FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;

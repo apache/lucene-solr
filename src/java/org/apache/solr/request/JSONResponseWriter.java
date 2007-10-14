@@ -81,8 +81,9 @@ class JSONWriter extends TextResponseWriter {
     }
     writeNamedList(null, rsp.getValues());
     if(wrapperFunction!=null) {
-        writer.write(")");
+        writer.write(')');
     }
+    writer.flushBuffer();
   }
 
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {
@@ -496,36 +497,37 @@ class JSONWriter extends TextResponseWriter {
       escaped: quotation mark, reverse solidus, and the control
       characters (U+0000 through U+001F).
      */
-
-      StringBuilder sb = new StringBuilder(val.length()+8);
-      sb.append('"');
+      writer.write('"');
 
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
+        if ((ch > '#' && ch != '\\') || ch==' ') { // fast path
+          writer.write(ch);
+          continue;
+        }
         switch(ch) {
           case '"':
           case '\\':
-            sb.append('\\');
-            sb.append(ch);
+            writer.write('\\');
+            writer.write(ch);
             break;
-          case '\r': sb.append('\\').append('r'); break;
-          case '\n': sb.append('\\').append('n'); break;
-          case '\t': sb.append('\\').append('t'); break;
-          case '\b': sb.append('\\').append('b'); break;
-          case '\f': sb.append('\\').append('f'); break;
+          case '\r': writer.write('\\'); writer.write('r'); break;
+          case '\n': writer.write('\\'); writer.write('n'); break;
+          case '\t': writer.write('\\'); writer.write('t'); break;
+          case '\b': writer.write('\\'); writer.write('b'); break;
+          case '\f': writer.write('\\'); writer.write('f'); break;
           // case '/':
           default: {
             if (ch <= 0x1F) {
-              unicodeEscape(sb,ch);
+              unicodeEscape(writer,ch);
             } else {
-              sb.append(ch);
+              writer.write(ch);
             }
           }
         }
       }
 
-      sb.append('"');
-      writer.append(sb);
+      writer.write('"');
     } else {
       writer.write('"');
       writer.write(val);
@@ -673,15 +675,14 @@ class JSONWriter extends TextResponseWriter {
     writeStr(name, val, false);
   }
 
-  protected static void unicodeEscape(Appendable sb, int ch) throws IOException {
-    String str = Integer.toHexString(ch & 0xffff);
-    switch (str.length()) {
-      case 1: sb.append("\\u000"); break;
-      case 2: sb.append("\\u00"); break;
-      case 3: sb.append("\\u0");  break;
-      default: sb.append("\\u");  break;
-    }
-    sb.append(str);
+  private static char[] hexdigits = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+  protected static void unicodeEscape(Appendable out, int ch) throws IOException {
+    out.append('\\');
+    out.append('u');
+    out.append(hexdigits[(ch>>>12)     ]);
+    out.append(hexdigits[(ch>>>8) & 0xf]);
+    out.append(hexdigits[(ch>>>4) & 0xf]);
+    out.append(hexdigits[(ch)     & 0xf]);
   }
 
 }

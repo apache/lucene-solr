@@ -87,11 +87,13 @@ public class XML {
     out.write('<');
     out.write(tag);
     if (val == null) {
-      out.write("/>");
+      out.write('/');
+      out.write('>');
     } else {
       out.write('>');
       escapeCharData(val,out);
-      out.write("</");
+      out.write('<');
+      out.write('/');
       out.write(tag);
       out.write('>');
     }
@@ -104,16 +106,19 @@ public class XML {
     for (int i=0; i<attrs.length; i++) {
       out.write(' ');
       out.write(attrs[i++].toString());
-      out.write("=\"");
+      out.write('=');
+      out.write('"');
       out.write(attrs[i].toString());
-      out.write("\"");
+      out.write('"');
     }
     if (val == null) {
-      out.write("/>");
+      out.write('/');
+      out.write('>');
     } else {
       out.write('>');
       out.write(val);
-      out.write("</");
+      out.write('<');
+      out.write('/');
       out.write(tag);
       out.write('>');
     }
@@ -126,16 +131,19 @@ public class XML {
     for (int i=0; i<attrs.length; i++) {
       out.write(' ');
       out.write(attrs[i++].toString());
-      out.write("=\"");
+      out.write('=');
+      out.write('"');
       escapeAttributeValue(attrs[i].toString(), out);
-      out.write("\"");
+      out.write('"');
     }
     if (val == null) {
-      out.write("/>");
+      out.write('/');
+      out.write('>');
     } else {
       out.write('>');
       escapeCharData(val,out);
-      out.write("</");
+      out.write('<');
+      out.write('/');
       out.write(tag);
       out.write('>');
     }
@@ -143,41 +151,16 @@ public class XML {
 
 
   private static void escape(String str, Writer out, String[] escapes) throws IOException {
-    int start=0;
-    // "n" was used for counting the chars added to out...
-    // removed cause it wasn't really useful so far.
-    // int n=0;
-
-    for (int i=start; i<str.length(); i++) {
+    for (int i=0; i<str.length(); i++) {
       char ch = str.charAt(i);
-      // since I already received the char, what if I put it into
-      // a char array and wrote that to the stream instead of the
-      // string? (would cause extra GC though)
-      String subst=null;
       if (ch<escapes.length) {
-        subst=escapes[ch];
-      }
-      if (subst != null) {
-        if (start<i) {
-          out.write(str.substring(start,i));
-          // write(str,off,len) causes problems for Jetty with chars > 127
-          //out.write(str, start, i-start);
-          // n+=i-start;
+        String replacement = escapes[ch];
+        if (replacement != null) {
+          out.write(replacement);
+          continue;
         }
-        out.write(subst);
-        // n+=subst.length();
-        start=i+1;
       }
+      out.write(ch);
     }
-    if (start==0) {
-      out.write(str);
-      // n += str.length();
-    } else if (start<str.length()) {
-      out.write(str.substring(start));
-      // write(str,off,len) causes problems for Jetty with chars > 127
-      // out.write(str, start, str.length()-start);
-      // n += str.length()-start;
-    }
-    // return n;
   }
 }

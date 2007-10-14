@@ -95,7 +95,10 @@ class PythonWriter extends JSONWriter {
       }
     }
 
-    writer.write( needUnicode ? "u'" : "'");
+    if (needUnicode) {
+      writer.write('u');
+    }
+    writer.write('\'');
     writer.append(sb);
     writer.write('\'');
   }

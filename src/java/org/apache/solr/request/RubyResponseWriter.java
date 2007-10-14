@@ -51,7 +51,8 @@ class RubyWriter extends JSONWriter {
   @Override
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
-    writer.write("=>");
+    writer.write('=');
+    writer.write('>');
   }
 
   @Override
@@ -63,16 +64,13 @@ class RubyWriter extends JSONWriter {
     // Also, there are very few escapes recognized in a single quoted string, so
     // only escape the backslash and single quote.
     writer.write('\'');
-    // it might be more efficient to use a stringbuilder or write substrings
-    // if writing chars to the stream is slow.
     if (needsEscaping) {
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
-        switch(ch) {
-          case '\'':
-          case '\\': writer.write('\\'); writer.write(ch); break;
-          default: writer.write(ch); break;
+        if (ch=='\'' || ch=='\\') {
+          writer.write('\\');
         }
+        writer.write(ch);
       }
     } else {
       writer.write(val);
