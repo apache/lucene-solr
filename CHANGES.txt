@@ -202,11 +202,11 @@ Other Changes
  4. SOLR-215: In an push to support multiple SolrCores, the TokenizerFactory
     and TokenFilterFactory initalization interface has changed to accept the 
     solrConfig.  Initialization should happen in:
- 		  init(SolrConfig solrConfig, Map<String,String> args)
+      init(SolrConfig solrConfig, Map<String,String> args)
     rather then:
       init(Map<String,String> args)
     Existing classes should continue to work, but it is encouraged to update
-    the initialization code.
+    the initialization code.  (Henri Biestro vi ryan)
  
 
 ================== Release 1.2, 20070602 ==================
