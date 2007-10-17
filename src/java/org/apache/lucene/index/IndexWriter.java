@@ -774,25 +774,33 @@ public class IndexWriter {
     return mergeScheduler;
   }
 
-  /** Determines the largest number of documents ever merged by addDocument().
-   * Small values (e.g., less than 10,000) are best for interactive indexing,
-   * as this limits the length of pauses while indexing to a few seconds.
-   * Larger values are best for batched indexing and speedier searches.
+  /** <p>Determines the largest segment (measured by
+   * document count) that may be merged with other segments.
+   * Small values (e.g., less than 10,000) are best for
+   * interactive indexing, as this limits the length of
+   * pauses while indexing to a few seconds.  Larger values
+   * are best for batched indexing and speedier
+   * searches.</p>
    *
-   * <p>The default value is {@link Integer#MAX_VALUE}.
+   * <p>The default value is {@link Integer#MAX_VALUE}.</p>
    *
    * <p>Note that this method is a convenience method: it
    * just calls mergePolicy.setMaxMergeDocs as long as
    * mergePolicy is an instance of {@link LogMergePolicy}.
    * Otherwise an IllegalArgumentException is thrown.</p>
+   *
+   * <p>The default merge policy ({@link
+   * LogByteSizeMergePolicy}) also allows you to set this
+   * limit by net size (in MB) of the segment, using {@link
+   * LogByteSizeMergePolicy#setMaxMergeMB}.</p>
    */
   public void setMaxMergeDocs(int maxMergeDocs) {
     getLogMergePolicy().setMaxMergeDocs(maxMergeDocs);
   }
 
-   /**
-   * Returns the largest number of documents allowed in a
-   * single segment.
+  /**
+   * <p>Returns the largest segment (measured by document
+   * count) that may be merged with other segments.</p>
    *
    * <p>Note that this method is a convenience method: it
    * just calls mergePolicy.getMaxMergeDocs as long as
