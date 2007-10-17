@@ -64,8 +64,6 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
    * return only the words more frequent than this.
    * 
    */
-  private static IndexReader nullReader = null;
-  private String restrictToField = null;
   private boolean onlyMorePopular = false;
 
   private Directory spellcheckerIndexDir = new RAMDirectory();
@@ -73,7 +71,8 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
   private String termSourceField;
   private static final float DEFAULT_ACCURACY = 0.5f;
   private static final int DEFAULT_NUM_SUGGESTIONS = 1;
-    
+  private static final boolean DEFAULT_MORE_POPULAR = false;
+  
   public void init(NamedList args) {
     super.init(args);
     SolrParams p = SolrParams.toSolrParams(args);
@@ -116,6 +115,8 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
       }
     }
 
+    IndexReader indexReader = null;
+    String suggestionField = null;
     Float accuracy;
     int numSug;
     try {
@@ -129,11 +130,24 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     } catch (NumberFormatException e) {
       throw new RuntimeException("Spelling suggestion count must be a valid positive integer", e);
     }
+    try {
+      onlyMorePopular = p.getBool("onlyMorePopular", DEFAULT_MORE_POPULAR);
+    } catch (NumberFormatException e) {
+      throw new RuntimeException("'Only more popular' must be a valid boolean", e);
+    }
+
+    // when searching for more popular, a non null index-reader and
+    // restricted-field are required
+    if (onlyMorePopular) {
+      indexReader = req.getSearcher().getReader();
+      suggestionField = termSourceField;
+    }
+
 
     if (null != words && !"".equals(words.trim())) {
       String[] suggestions =
         spellChecker.suggestSimilar(words, numSug,
-                                    nullReader, restrictToField,
+                                    indexReader, suggestionField,
                                     onlyMorePopular);
           
       rsp.add("suggestions", Arrays.asList(suggestions));
