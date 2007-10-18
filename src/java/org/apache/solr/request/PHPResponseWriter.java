@@ -77,25 +77,24 @@ class PHPWriter extends JSONWriter {
   @Override
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
-    writer.write("=>");
+    writer.write('=');
+    writer.write('>');
   }
 
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     if (needsEscaping) {
-      StringBuilder sb = new StringBuilder(val.length());
-      sb.append('\'');
+      writer.write('\'');
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
         switch (ch) {
           case '\'':
-          case '\\': sb.append('\\'); sb.append(ch); break;
+          case '\\': writer.write('\\'); writer.write(ch); break;
           default:
-            sb.append(ch);
+            writer.write(ch);
         }
       }
-      sb.append('\'');
-      writer.append(sb);
+      writer.write('\'');
     } else {
       writer.write('\'');
       writer.write(val);
