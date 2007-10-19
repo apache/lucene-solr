@@ -195,9 +195,10 @@ public class LukeResponse extends SolrResponseBase {
     // Parse indexinfo
     indexInfo = (NamedList<Object>) res.get("index");
 
+    NamedList<Object> schema = (NamedList<Object>) res.get("schema");
     NamedList<Object> flds = (NamedList<Object>) res.get("fields");
-    if (flds == null) {
-      flds = (NamedList<Object>) ((NamedList<Object>) res.get("schema")).get("fields");
+    if (flds == null && schema != null ) {
+      flds = (NamedList<Object>) schema.get("fields");
     }
     if (flds != null) {
       fieldInfo = new HashMap<String, FieldInfo>();
@@ -208,16 +209,17 @@ public class LukeResponse extends SolrResponseBase {
       }
     }
 
-    NamedList<Object> fldTypes = (NamedList<Object>) ((NamedList<Object>) res.get("schema")).get("types");
-    if (fldTypes != null) {
-      fieldTypeInfo = new HashMap<String, FieldTypeInfo>();
-      for (Map.Entry<String, Object> fieldType : fldTypes) {
-        FieldTypeInfo ft = new FieldTypeInfo(fieldType.getKey());
-        ft.read((NamedList<Object>) fieldType.getValue());
-        fieldTypeInfo.put(fieldType.getKey(), ft);
+    if( schema != null ) {
+      NamedList<Object> fldTypes = (NamedList<Object>) schema.get("types");
+      if (fldTypes != null) {
+        fieldTypeInfo = new HashMap<String, FieldTypeInfo>();
+        for (Map.Entry<String, Object> fieldType : fldTypes) {
+          FieldTypeInfo ft = new FieldTypeInfo(fieldType.getKey());
+          ft.read((NamedList<Object>) fieldType.getValue());
+          fieldTypeInfo.put(fieldType.getKey(), ft);
+        }
       }
     }
-
   }
 
   //----------------------------------------------------------------

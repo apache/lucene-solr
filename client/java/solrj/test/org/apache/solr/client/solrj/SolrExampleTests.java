@@ -27,6 +27,8 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
+import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -251,5 +253,32 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     server.request( up );
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got out
+  }
+  
+  
+  public void testLukeHandler() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    
+    SolrInputDocument[] doc = new SolrInputDocument[5];
+    for( int i=0; i<doc.length; i++ ) {
+      doc[i] = new SolrInputDocument();
+      doc[i].setField( "id", "ID"+i, 1.0f );
+      server.add( doc[i] );
+    }
+    server.commit();
+    assertNumFound( "*:*", doc.length ); // make sure it got in
+    
+    LukeRequest luke = new LukeRequest();
+    luke.setShowSchema( false );
+    LukeResponse rsp = luke.process( server );
+    assertNull( rsp.getFieldTypeInfo() ); // if you don't ask for it, the schema is null
+    
+    luke.setShowSchema( true );
+    rsp = luke.process( server );
+    assertNotNull( rsp.getFieldTypeInfo() ); 
   }
 }
