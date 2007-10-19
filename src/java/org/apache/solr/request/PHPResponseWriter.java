@@ -31,7 +31,11 @@ public class PHPResponseWriter implements QueryResponseWriter {
   
  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PHPWriter w = new PHPWriter(writer, req, rsp);
-    w.writeResponse();
+    try {
+      w.writeResponse();
+    } finally {
+      w.close();
+    }
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {

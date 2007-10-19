@@ -59,6 +59,11 @@ public abstract class TextResponseWriter {
     returnFields = rsp.getReturnFields();
   }
 
+  /** done with this ResponseWriter... make sure any buffers are flushed to writer */
+  public void close() throws IOException {
+    writer.flushBuffer();
+  }
+
   /** returns the Writer that the response is being written to */
   public Writer getWriter() { return writer; }
 

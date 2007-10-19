@@ -43,7 +43,11 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     JSONWriter w = new JSONWriter(writer, req, rsp);
-    w.writeResponse();
+    try {
+      w.writeResponse();
+    } finally {
+      w.close();
+    }
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
@@ -83,7 +87,6 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(')');
     }
-    writer.flushBuffer();
   }
 
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {

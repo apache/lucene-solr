@@ -31,7 +31,11 @@ public class PythonResponseWriter implements QueryResponseWriter {
   
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PythonWriter w = new PythonWriter(writer, req, rsp);
-    w.writeResponse();
+    try {
+      w.writeResponse();
+    } finally {
+      w.close();
+    }
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
