@@ -50,7 +50,7 @@ API Changes
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
-    BooleanQueries "()" even if the Analyzer proudced no 
+    BooleanQueries "()" even if the Analyzer produced no 
     tokens for input. (Doron Cohen)
 
  2. LUCENE-955: Fixed SegmentTermPositions to work correctly with the
@@ -302,7 +302,7 @@ Bug fixes
     implementations to be specified via the System property
     org.apache.lucene.store.FSDirectoryLockFactoryClass.  (Mike McCandless)
 
- 4. LUCENE-821: The new single-norm-file introduded by LUCENE-756
+ 4. LUCENE-821: The new single-norm-file introduced by LUCENE-756
     failed to reduce the number of open descriptors since it was still
     opened once per field with norms. (yonik)
 
@@ -429,7 +429,7 @@ Optimizations
 
  2. LUCENE-431: RAMInputStream and RAMOutputStream extend IndexInput and
     IndexOutput directly now. This avoids further buffering and thus avoids 
-    unneccessary array copies. (Michael Busch)
+    unnecessary array copies. (Michael Busch)
 
  3. LUCENE-730: Updated BooleanScorer2 to make use of BooleanScorer in some
     cases and possibly improve scoring performance.  Documents can now be
@@ -491,7 +491,7 @@ Build
     contrib) tests. 
     (Chris Hostetter)
     
- 3. LUCENE-900: "ant test" now enables Java assertions (in Luecene packages).
+ 3. LUCENE-900: "ant test" now enables Java assertions (in Lucene packages).
     (Doron Cohen)
 
  4. LUCENE-894: Add custom build file for binary distributions that includes
@@ -597,7 +597,7 @@ New features
  7. LUCENE-573: QueryParser now allows backslash escaping in
     quoted terms and phrases. (Michael Busch via Yonik Seeley)
 
- 8. LUCENE-716: QueryParser now allows specification of unicode
+ 8. LUCENE-716: QueryParser now allows specification of Unicode
     characters in terms via a unicode escape of the form \uXXXX
     (Michael Busch via Yonik Seeley)
 
@@ -657,7 +657,7 @@ API Changes
  6. LUCENE-621: New static methods IndexWriter.setDefaultWriteLockTimeout
     and IndexWriter.setDefaultCommitLockTimeout for overriding default
     timeout values for all future instances of IndexWriter (as well
-    as for any other classes that may refrence the static values,
+    as for any other classes that may reference the static values,
     ie: IndexReader).
     (Michael McCandless via Chris Hostetter)
 
@@ -703,7 +703,7 @@ API Changes
 13. LUCENE-756: Maintain all norms in a single .nrm file to reduce the
     number of open files and file descriptors for the non-compound index
     format.  This changes the index file format, but maintains the
-    ability to read and update older indicies. The first segment merge
+    ability to read and update older indices. The first segment merge
     on an older format index will create a single .nrm file for the new
     segment.  (Doron Cohen via Yonik Seeley)
 
@@ -792,7 +792,7 @@ Bug fixes
     called on it before next().  (Yonik Seeley)
 
 19. LUCENE-569: Fixed SpanNearQuery bug, for 'inOrder' queries it would fail
-    to recognize ordered spans if they overlaped with unordered spans.
+    to recognize ordered spans if they overlapped with unordered spans.
     (Paul Elschot via Chris Hostetter)
 
 20. LUCENE-706: Updated fileformats.xml|html concerning the docdelta value
@@ -970,7 +970,7 @@ Documentation
      for info on updating the website. (Grant Ingersoll with help from Steve Rowe,
      Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)
 
-  5. Added in Developer and System Requriements sections under Resources (Grant Ingersoll)
+  5. Added in Developer and System Requirements sections under Resources (Grant Ingersoll)
 
   6. LUCENE-713 Updated the Term Vector section of File Formats to include
      documentation on how Offset and Position info are stored in the TVF file.
@@ -1266,7 +1266,7 @@ New features
 
 18. Added class org.apache.lucene.index.IndexModifier which combines
     IndexWriter and IndexReader, so you can add and delete documents without
-    worrying about synchronisation/locking issues.
+    worrying about synchronization/locking issues.
     (Daniel Naber)
 
 19. Lucene can now be used inside an unsigned applet, as Lucene's access
@@ -1444,7 +1444,7 @@ Bug fixes
     (Robert Kirchgessner via Doug Cutting, LUCENE-479)
 
 21. Race condition in IndexReader.getCurrentVersion() and isCurrent()
-    fixed by aquiring the commit lock.
+    fixed by acquiring the commit lock.
     (Luc Vanlerberghe via Yonik Seeley, LUCENE-481)
 
 22. IndexWriter.setMaxBufferedDocs(1) didn't have the expected effect,
@@ -1502,7 +1502,7 @@ Optimizations
     result in quadratic performance.  Now performance is n log(n).
     (Doug Cutting)
 
-10. Speed up the creation of TermEnum for indicies with multiple
+10. Speed up the creation of TermEnum for indices with multiple
     segments and deleted documents, and thus speed up PrefixQuery,
     RangeQuery, WildcardQuery, FuzzyQuery, RangeFilter, DateFilter,
     and sorting the first time on a field.
@@ -1804,7 +1804,7 @@ Infrastructure
  7. Fixed SegmentsReader to eliminate the confusing and slightly different
     behaviour of TermEnum when dealing with an enumeration of all terms,
     versus an enumeration starting from a specific term.
-    This patch also fixes incorrect term document frequences when the same term
+    This patch also fixes incorrect term document frequencies when the same term
     is present in multiple segments.
     (Christoph Goller via Otis)
 
@@ -2013,7 +2013,7 @@ Infrastructure
 
  4. Fixed instruction for setting up JavaCC - Bug #7017 (otis)
 
- 5. Added throwing exception if FSDirectory could not create diectory
+ 5. Added throwing exception if FSDirectory could not create directory
     - Bug #6914 (Eugene Gluzberg via otis)
 
  6. Update MultiSearcher, MultiFieldParse, Constants, DateFilter,
