@@ -652,7 +652,7 @@ public final class MoreLikeThis {
         sb.append("\t" + "maxQueryTerms  : " + maxQueryTerms + "\n");
         sb.append("\t" + "minWordLen     : " + minWordLen + "\n");
         sb.append("\t" + "maxWordLen     : " + maxWordLen + "\n");
-        sb.append("\t" + "fieldNames     : \"");
+        sb.append("\t" + "fieldNames     : ");
         String delim = "";
         for (int i = 0; i < fieldNames.length; i++) {
             String fieldName = fieldNames[i];
