@@ -35,7 +35,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.highlight.SolrHighlighter;
 
@@ -72,58 +71,31 @@ public class StandardRequestHandler extends RequestHandlerBase {
       SolrParams p = req.getParams();
       String qstr = p.required().get(CommonParams.Q);
 
-      String defaultField = p.get(CommonParams.DF);
-
       // find fieldnames to return (fieldlist)
+      // TODO: make this per-query and add method to QParser to get?
       String fl = p.get(CommonParams.FL);
       int flags = 0; 
       if (fl != null) {
         flags |= U.setReturnFields(fl, rsp);
       }
-      
-      String sortStr = p.get(CommonParams.SORT);
-      if( sortStr == null ) {  
-        // TODO? should we disable the ';' syntax with config?
-        // legacy mode, where sreq is query;sort
-        List<String> commands = StrUtils.splitSmart(qstr,';');
-        if( commands.size() == 2 ) {
-          // TODO? add a deprication warning to the response header
-          qstr = commands.get( 0 );
-          sortStr = commands.get( 1 );
-        }
-        else if( commands.size() == 1 ) {
-          // This is need to support the case where someone sends: "q=query;"
-          qstr = commands.get( 0 );
-        }
-        else if( commands.size() > 2 ) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "If you want to use multiple ';' in the query, use the 'sort' param." );
-        }
-      }
 
-      Sort sort = null;
-      if( sortStr != null ) {
-        QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(sortStr, req.getSchema());
-        if (sortSpec != null) {
-          sort = sortSpec.getSort();
-        }
-      }
+      QParser parser = QParser.getParser(qstr, OldLuceneQParserPlugin.NAME, req);
+      Query query = parser.getQuery();
+      QueryParsing.SortSpec sortSpec = parser.getSort(true);
 
-      // parse the query from the 'q' parameter (sort has been striped)
-      Query query = QueryParsing.parseQuery(qstr, defaultField, p, req.getSchema());
-      
       DocListAndSet results = new DocListAndSet();
       NamedList facetInfo = null;
       List<Query> filters = U.parseFilterQueries(req);
       SolrIndexSearcher s = req.getSearcher();
 
       if (p.getBool(FacetParams.FACET,false)) {
-        results = s.getDocListAndSet(query, filters, sort,
-                                     p.getInt(CommonParams.START,0), p.getInt(CommonParams.ROWS,10),
+        results = s.getDocListAndSet(query, filters, sortSpec.getSort(),
+                                     sortSpec.getOffset(), sortSpec.getCount(),
                                      flags);
         facetInfo = getFacetInfo(req, rsp, results.docSet);
       } else {
-        results.docList = s.getDocList(query, filters, sort,
-                                       p.getInt(CommonParams.START,0), p.getInt(CommonParams.ROWS,10),
+        results.docList = s.getDocList(query, filters, sortSpec.getSort(),
+                                       sortSpec.getOffset(), sortSpec.getCount(),
                                        flags);
       }
 
@@ -163,7 +135,10 @@ public class StandardRequestHandler extends RequestHandlerBase {
 
       SolrHighlighter highlighter = req.getCore().getHighlighter();
       NamedList sumData = highlighter.doHighlighting(
-        results.docList, query.rewrite(req.getSearcher().getReader()), req, new String[]{defaultField});
+            results.docList,
+            parser.getHighlightQuery().rewrite(req.getSearcher().getReader()),
+            req,
+            parser.getDefaultHighlightFields());
       if(sumData != null)
         rsp.add("highlighting", sumData);
   }

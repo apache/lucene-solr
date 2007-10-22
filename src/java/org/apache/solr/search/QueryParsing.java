@@ -17,26 +17,28 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.search.*;
-import org.apache.solr.search.function.*;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.function.FunctionQuery;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.regex.Pattern;
 import java.util.logging.Level;
-import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * Collection of static utilities usefull for query parsing.
@@ -46,6 +48,10 @@ import java.io.IOException;
 public class QueryParsing {
   /** the SolrParam used to override the QueryParser "default operator" */
   public static final String OP = "q.op";
+  public static final String V = "v";      // value of this parameter
+  public static final String F = "f";      // field that a query or command pertains to
+  public static final String TYPE = "type";// type of this query or command
+  public static final String DEFTYPE = "defType"; // default type for any direct subqueries
 
   /** 
    * Helper utility for parsing a query using the Lucene QueryParser syntax. 
@@ -106,16 +112,114 @@ public class QueryParsing {
     }
   }
 
+
+  // note to self: something needs to detect infinite recursion when parsing queries
+  static int parseLocalParams(String txt, int start, Map<String,String> target, SolrParams params) throws ParseException {
+    int off=start;
+    if (!txt.startsWith("<!",off)) return start;
+    StrParser p = new StrParser(txt,start,txt.length());
+    p.pos+=2; // skip over "<!"
+
+    for(;;) {
+      /*
+      if (p.pos>=txt.length()) {
+        throw new ParseException("Missing '>' parsing local params '" + txt + '"');
+      }
+      */
+      char ch = p.peek();
+      if (ch=='>') {
+        return p.pos+1;
+      }
+
+      String id = p.getId();
+      if (id.length()==0) {
+        throw new ParseException("Expected identifier '>' parsing local params '" + txt + '"');
+
+      }
+      String val=null;
+
+      ch = p.peek();
+      if (ch!='=') {
+        // single word... treat <!func> as ""=func for easy lookup
+        val = id;
+        id = TYPE;
+      } else {
+        // saw equals, so read value
+        p.pos++;
+        ch = p.peek();
+        if (ch=='\"' || ch=='\'') {
+          val = p.getQuotedString();
+        } else if (ch=='$') {
+          p.pos++;
+          // dereference parameter
+          String pname = p.getId();
+          if (params!=null) {
+            val = params.get(pname);
+          }
+        } else {
+          // read unquoted literal ended by whitespace or '>'
+          // there is no escaping.
+          int valStart = p.pos;
+          for (;;) {
+            if (p.pos >= p.end) {
+              throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt +"'");
+            }
+            char c = p.val.charAt(p.pos);
+            if (c=='>' || Character.isWhitespace(c)) {
+              val = p.val.substring(valStart, p.pos);
+              break;
+            }
+            p.pos++;
+          }
+        }
+      }
+      if (target != null) target.put(id,val);
+    }
+  }
+
+  /**
+   *  "foo" returns null
+   *  "<!prefix f=myfield>yes" returns type="prefix",f="myfield",v="yes"
+   *  "<!prefix f=myfield v=$p>" returns type="prefix",f="myfield",v=params.get("p")
+   */
+  public static SolrParams getLocalParams(String txt, SolrParams params) throws ParseException {
+    if (!txt.startsWith("<!")) {
+      return null;      
+    }
+    Map<String,String> localParams = new HashMap<String,String>();
+    int start = QueryParsing.parseLocalParams(txt, 0, localParams, params);
+
+    String val;
+    if (start >= txt.length()) {
+      // if the rest of the string is empty, check for "v" to provide the value
+      val = localParams.get(V);
+      val = val==null ? "" : val;
+    } else {
+      val = txt.substring(start);
+    }
+    localParams.put(V,val);
+    return new MapSolrParams(localParams);
+  }
+
+
+
+
   /***
    * SortSpec encapsulates a Lucene Sort and a count of the number of documents
    * to return.
    */
   public static class SortSpec {
-    private final Sort sort;
-    private final int num;
+     Sort sort;
+     int num;
+     int offset;
 
     SortSpec(Sort sort, int num) {
+      this(sort,0,num);
+    }
+
+    SortSpec(Sort sort, int offset, int num) {
       this.sort=sort;
+      this.offset=offset;
       this.num=num;
     }
 
@@ -126,11 +230,21 @@ public class QueryParsing {
     public Sort getSort() { return sort; }
 
     /**
+     * Offset into the list of results.
+     */
+    public int getOffset() { return offset; }
+
+    /**
      * Gets the number of documens to return after sorting.
      *
      * @return number of docs to return, or -1 for no cut off (just sort)
      */
     public int getCount() { return num; }
+
+    public String toString() {
+      return "start="+offset+"&rows="+num
+              + (sort==null ? "" : "sort="+sort); 
+    }
   }
 
 
@@ -407,15 +521,27 @@ public class QueryParsing {
 
 
   // simple class to help with parsing a string
-  private static class StrParser {
+  static class StrParser {
     String val;
     int pos;
     int end;
 
-    StrParser(String val) {this.val = val; end=val.length(); }
+    StrParser(String val) {
+      this(val,0,val.length());
+    }
+
+    StrParser(String val, int start, int end) {
+      this.val = val;
+      this.pos = start;
+      this.end = end;
+    }
 
     void eatws() {
       while (pos<end && Character.isWhitespace(val.charAt(pos))) pos++;
+    }
+
+    void skip(int nChars) {
+      pos = Math.max(pos+nChars, end);
     }
 
     boolean opt(String s) {
@@ -427,6 +553,16 @@ public class QueryParsing {
       }
       return false;
     }
+
+    boolean opt(char ch) {
+      eatws();
+      if (val.charAt(pos) == ch) {
+        pos++;
+        return true;
+      }
+      return false;
+    }
+
 
     void expect(String s) throws ParseException {
       eatws();
@@ -461,13 +597,54 @@ public class QueryParsing {
     String getId() throws ParseException {
       eatws();
       int id_start=pos;
-      while (pos<end && Character.isJavaIdentifierPart(val.charAt(pos))) pos++;
-      return val.substring(id_start, pos);
+      if (pos<end && Character.isJavaIdentifierStart(val.charAt(pos))) {
+        pos++;
+        while (pos<end) {
+          char ch = val.charAt(pos);
+          if (!Character.isJavaIdentifierPart(ch) && ch!='.') {
+            break;
+          }
+          pos++;
+        }
+        return val.substring(id_start, pos);
+      }
+      throw new ParseException("Expected identifier at pos " + pos + " str='" + val + "'");
     }
 
+    // return null if not a string
+    String getQuotedString() throws ParseException {
+      eatws();
+      char delim = peekChar();
+      if (!(delim=='\"' || delim=='\'')) {
+        return null;
+      }
+      int val_start = ++pos;
+      StringBuilder sb = new StringBuilder(); // needed for escaping
+      for(;;) {
+        if (pos>=end) {
+          throw new ParseException("Missing end quote for string at pos " + (val_start-1) + " str='"+val+"'");
+        }
+        char ch = val.charAt(pos);
+        if (ch=='\\') {
+          ch = pos<end ? val.charAt(pos++) : 0;
+        } else if (ch==delim) {
+          pos++;
+          return sb.toString();
+        }
+        sb.append(ch);
+        pos++;
+      }
+    }
+
+    // next non-whitespace char
     char peek() {
       eatws();
       return pos<end ? val.charAt(pos) : 0;
+    }
+
+    // next char
+    char peekChar() {
+      return pos<end ? val.charAt(pos) : 0;  
     }
 
     public String toString() {
@@ -487,177 +664,6 @@ public class QueryParsing {
     return out;
   }
 
-  private abstract static class VSParser {
-    abstract ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException;
-  }
-  private static Map<String, VSParser> vsParsers = new HashMap<String, VSParser>();
-  static {
-    vsParsers.put("ord", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        String field = sp.getId();
-        return new OrdFieldSource(field);
-      }
-    });
-    vsParsers.put("rord", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        String field = sp.getId();
-        return new ReverseOrdFieldSource(field);
-      }
-    });
-    vsParsers.put("linear", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp, schema);
-        sp.expect(",");
-        float slope = sp.getFloat();
-        sp.expect(",");
-        float intercept = sp.getFloat();
-        return new LinearFloatFunction(source,slope,intercept);
-      }
-    });
-    vsParsers.put("max", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp, schema);
-        sp.expect(",");
-        float val = sp.getFloat();
-        return new MaxFloatFunction(source,val);
-      }
-    });
-    vsParsers.put("recip", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {      
-        ValueSource source = parseValSource(sp,schema);
-        sp.expect(",");
-        float m = sp.getFloat();
-        sp.expect(",");
-        float a = sp.getFloat();
-        sp.expect(",");
-        float b = sp.getFloat();
-        return new ReciprocalFloatFunction(source,m,a,b);
-      }
-    });
-    vsParsers.put("scale", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp,schema);
-        sp.expect(",");
-        float min = sp.getFloat();
-        sp.expect(",");
-        float max = sp.getFloat();
-        return new ScaleFloatFunction(source,min,max);
-      }
-    });
-    vsParsers.put("pow", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource a = parseValSource(sp,schema);
-        sp.expect(",");
-        ValueSource b = parseValSource(sp,schema);
-        return new PowFloatFunction(a,b);
-      }
-    });
-    vsParsers.put("div", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource a = parseValSource(sp,schema);
-        sp.expect(",");
-        ValueSource b = parseValSource(sp,schema);
-        return new DivFloatFunction(a,b);
-      }
-    });
-    vsParsers.put("map", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp,schema);
-        sp.expect(",");
-        float min = sp.getFloat();
-        sp.expect(",");
-        float max = sp.getFloat();
-        sp.expect(",");
-        float target = sp.getFloat();
-        return new RangeMapFloatFunction(source,min,max,target);
-      }
-    });
-    vsParsers.put("sqrt", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp,schema);
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "sqrt";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.sqrt(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("log", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp,schema);
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "log";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.log10(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("abs", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        ValueSource source = parseValSource(sp,schema);
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "abs";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.abs(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("sum", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        List<ValueSource> sources = parseValueSourceList(sp,schema);
-        return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    vsParsers.put("product", new VSParser() {
-      ValueSource parse(StrParser sp, IndexSchema schema) throws ParseException {
-        List<ValueSource> sources = parseValueSourceList(sp,schema);
-        return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-  }
-
-  private static List<ValueSource> parseValueSourceList(StrParser sp, IndexSchema schema) throws ParseException {
-    List<ValueSource> sources = new ArrayList<ValueSource>(3);
-    for (;;) {
-      sources.add(parseValSource(sp,schema)); 
-      char ch = sp.peek();
-      if (ch==')') break;
-      sp.expect(",");
-    }
-    return sources;    
-  }
-
-  private static ValueSource parseValSource(StrParser sp, IndexSchema schema) throws ParseException {
-    int ch = sp.peek();
-    if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
-      return new ConstValueSource(sp.getFloat());
-    }
-
-    String id = sp.getId();
-    if (sp.opt("(")) {
-      // a function... look it up.
-      VSParser argParser = vsParsers.get(id);
-      if (argParser==null) {
-        throw new ParseException("Unknown function " + id + " in FunctionQuery(" + sp + ")");
-      }
-      ValueSource vs = argParser.parse(sp, schema);
-      sp.expect(")");
-      return vs;
-    }
-
-    SchemaField f = schema.getField(id);
-    return f.getType().getValueSource(f);
-  }
-
   /** 
    * Parse a function, returning a FunctionQuery
    *
@@ -668,7 +674,7 @@ public class QueryParsing {
    * <pre>
    * // Numeric fields default to correct type
    * // (ie: IntFieldSource or FloatFieldSource)
-   * // Others use implicit ord(...) to generate numeric field value
+   * // Others use explicit ord(...) to generate numeric field value
    * myfield
    *
    * // OrdFieldSource
@@ -694,7 +700,9 @@ public class QueryParsing {
    * </pre>
    */
   public static FunctionQuery parseFunction(String func, IndexSchema schema) throws ParseException {
-    return new FunctionQuery(parseValSource(new StrParser(func), schema));
+    SolrCore core = SolrCore.getSolrCore();
+    return (FunctionQuery)(QParser.getParser(func,"func",new LocalSolrQueryRequest(core,new HashMap())).parse());
+    // return new FunctionQuery(parseValSource(new StrParser(func), schema));
   }
 
 }

@@ -53,6 +53,9 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.LuceneQParserPlugin;
+import org.apache.solr.search.OldLuceneQParserPlugin;
 import org.apache.solr.update.DirectUpdateHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
@@ -289,7 +292,8 @@ public final class SolrCore {
       initIndex();
       
       initWriters();
-      
+      initQParsers();
+
       // Processors initialized before the handlers
       updateProcessors = loadUpdateProcessors();
       reqHandlers = new RequestHandlers(this);
@@ -908,6 +912,38 @@ public final class SolrCore {
    */
   public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
     return getQueryResponseWriter(request.getParam("wt")); 
+  }
+
+  private final Map<String, QParserPlugin> qParserPlugins = new HashMap<String, QParserPlugin>();
+
+  /** Configure the query parsers. */
+  private void initQParsers() {
+    String xpath = "queryParser";
+    NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
+
+    NamedListPluginLoader<QParserPlugin> loader =
+      new NamedListPluginLoader<QParserPlugin>( "[solrconfig.xml] "+xpath, qParserPlugins);
+
+    loader.load( solrConfig, nodes );
+
+    // default parsers
+    for (int i=0; i<QParserPlugin.standardPlugins.length; i+=2) {
+     try {
+       String name = (String)QParserPlugin.standardPlugins[i];
+       Class<QParserPlugin> clazz = (Class<QParserPlugin>)QParserPlugin.standardPlugins[i+1];
+       QParserPlugin plugin = clazz.newInstance();
+       qParserPlugins.put(name, plugin);
+       plugin.init(null);
+     } catch (Exception e) {
+       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+     }
+    }
+  }
+
+  public QParserPlugin getQueryPlugin(String parserName) {
+    QParserPlugin plugin = qParserPlugins.get(parserName);
+    if (plugin != null) return plugin;
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query type '"+parserName+"'");
   }
 }
 

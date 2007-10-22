@@ -317,7 +317,7 @@ public final class IndexSchema {
       version = schemaConf.getFloat("/schema/@version", 1.0f);
 
       final IndexSchema schema = this;
-      AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType" ) {
+      AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType", true, true) {
 
         @Override
         protected FieldType create( Config config, String name, String className, Node node ) throws Exception

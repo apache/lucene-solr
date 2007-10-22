@@ -17,12 +17,13 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.*;
 import org.apache.lucene.index.Term;
-import org.apache.solr.schema.IndexSchema;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 
 // TODO: implement the analysis of simple fields with
 // FieldType.toInternal() instead of going through the
@@ -49,6 +50,7 @@ import org.apache.solr.schema.FieldType;
  */
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
+  protected final QParser parser;
 
   /**
    * Constructs a SolrQueryParser using the schema to understand the
@@ -63,14 +65,32 @@ public class SolrQueryParser extends QueryParser {
   public SolrQueryParser(IndexSchema schema, String defaultField) {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
+    this.parser  = null;
     setLowercaseExpandedTerms(false);
   }
+
+  public SolrQueryParser(QParser parser, String defaultField) {
+    super(defaultField, parser.getReq().getSchema().getQueryAnalyzer());
+    this.schema = parser.getReq().getSchema();
+    this.parser = parser;
+    setLowercaseExpandedTerms(false);
+  }
+
 
   protected Query getFieldQuery(String field, String queryText) throws ParseException {
     // intercept magic field name of "_" to use as a hook for our
     // own functions.
-    if (field.equals("_val_")) {
-      return QueryParsing.parseFunction(queryText, schema);
+    if (field.charAt(0) == '_') {
+      if ("_val_".equals(field)) {
+        if (parser==null) {
+          return QueryParsing.parseFunction(queryText, schema);
+        } else {
+          QParser nested = parser.subQuery(queryText, "func");
+          return nested.getQuery();
+        }
+      } else if ("_query_".equals(field) && parser != null) {
+        return parser.subQuery(queryText, null).getQuery();
+      }
     }
 
     // default to a normal field query

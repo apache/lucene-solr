@@ -136,6 +136,9 @@ New Features
     to the detailed field information from the solrj client API.
     (Grant Ingersoll via ehatcher)
 
+26. SOLR-334L Pluggable query parsers.  Allows specification of query
+    type and arguments as a prefix on a query string. (yonik)
+
 Changes in runtime behavior
 
 Optimizations

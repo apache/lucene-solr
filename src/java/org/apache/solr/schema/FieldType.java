@@ -27,6 +27,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
+import org.apache.solr.search.QParser;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
@@ -67,6 +68,14 @@ public abstract class FieldType extends FieldProperties {
    *
    */
   protected void init(IndexSchema schema, Map<String,String> args) {
+  }
+
+  protected String getArg(String n, Map<String,String> args) {
+    String s = args.remove(n);
+    if (s == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Mising parameter '"+n+"' for FieldType=" + typeName +args);
+    }
+    return s;
   }
 
   // Handle additional arguments...
@@ -394,7 +403,13 @@ public abstract class FieldType extends FieldProperties {
   /** called to get the default value source (normally, from the
    *  Lucene FieldCache.)
    */
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return getValueSource(field);
+  }
+
+  @Deprecated
   public ValueSource getValueSource(SchemaField field) {
     return new OrdFieldSource(field.name);
   }
+
 }
