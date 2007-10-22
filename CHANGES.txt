@@ -139,6 +139,10 @@ New Features
 26. SOLR-334L Pluggable query parsers.  Allows specification of query
     type and arguments as a prefix on a query string. (yonik)
 
+27. SOLR-351L External Value Source.  An external file may be used
+     to specify the values of a field, currently usable as
+     a ValueSource in a FunctionQuery. (yonik)
+
 Changes in runtime behavior
 
 Optimizations

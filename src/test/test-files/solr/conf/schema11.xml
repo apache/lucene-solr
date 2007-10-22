@@ -232,7 +232,10 @@
     <!-- since fields of this type are by default not stored or indexed, any data added to 
          them will be ignored outright 
      --> 
-    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
+    <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
+
+    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+
 
  </types>
 
@@ -281,6 +284,8 @@
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+
+   <dynamicField name="*_extf" type="file"/>
 
    <dynamicField name="*_random" type="random" />
 

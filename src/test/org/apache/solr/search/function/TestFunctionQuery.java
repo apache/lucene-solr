@@ -18,9 +18,16 @@
 package org.apache.solr.search.function;
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.core.SolrCore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.Arrays;
+import java.io.File;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -43,12 +50,27 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     super.tearDown();
   }
 
+  String base = "external_foo_extf";
+  void makeExternalFile(String field, String contents, String charset) {
+    String dir = h.getCore().getIndexDir();
+    String filename = dir + "/external_" + field + "." + System.currentTimeMillis();
+    try {
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      out.write(contents);
+      out.close();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
   void createIndex(String field, float... values) {
     // lrf.args.put("version","2.0");
     for (float val : values) {
       String s = Float.toString(val);
-      assertU(adoc("id", s, field, s));
-      System.out.println("added doc for " + val);
+      if (field!=null) assertU(adoc("id", s, field, s));
+      else assertU(adoc("id", s));
+      // System.out.println("added doc for " + val);
     }
     assertU(optimize()); // squeeze out any possible deleted docs
   }
@@ -77,14 +99,14 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"
 
     for (int i=0; i<results.length; i+=2) {
-      String xpath = "//doc[./float[@name='" + field + "']='"
+      String xpath = "//doc[./float[@name='" + "id" + "']='"
               + results[i] + "' and ./float[@name='score']='"
               + results[i+1] + "']";
       tests.add(xpath);
     }
 
     assertQ(req("q", parseableQuery
-                ,"fl", "*,score"
+                ,"fl", "*,score","indent","on","rows","100"
                 )
             , tests.toArray(new String[tests.size()])
             );
@@ -137,4 +159,78 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
   }
+
+  public void testExternalField() {
+    String field = "foo_extf";
+
+    float[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
+
+    createIndex(null,ids);
+
+    // Unsorted field, largest first
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    // test identity (straight field value)
+    singleTest(field, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
+    Object orig = FileFloatSource.onlyForTesting;
+    singleTest(field, "log(\0)");
+    // make sure the values were cached
+    assertTrue(orig == FileFloatSource.onlyForTesting);
+    singleTest(field, "sqrt(\0)");
+    assertTrue(orig == FileFloatSource.onlyForTesting);
+
+    makeExternalFile(field, "0=1","UTF-8");
+    assertU(commit());
+    assertTrue(orig != FileFloatSource.onlyForTesting);
+
+
+    Random r = new Random();
+    for (int i=0; i<10; i++) {   // do more iterations for a thorough test
+      int len = r.nextInt(ids.length+1);
+      boolean sorted = r.nextBoolean();
+      // shuffle ids
+      for (int j=0; j<ids.length; j++) {
+        int other=r.nextInt(ids.length);
+        float v=ids[0];
+        ids[0] = ids[other];
+        ids[other] = v;
+      }
+
+      if (sorted) {
+        // sort only the first elements
+        Arrays.sort(ids,0,len);
+      }
+
+      // make random values
+      float[] vals = new float[len];
+      for (int j=0; j<len; j++) {
+        vals[j] = r.nextInt(200)-100;
+      }
+
+      // make and write the external file
+      StringBuilder sb = new StringBuilder();
+      for (int j=0; j<len; j++) {
+        sb.append("" + ids[j] + "=" + vals[j]+"\n");        
+      }
+      makeExternalFile(field, sb.toString(),"UTF-8");
+
+      // make it visible
+      assertU(commit());
+
+      // test it
+      float[] answers = new float[ids.length*2];
+      for (int j=0; j<len; j++) {
+        answers[j*2] = ids[j];
+        answers[j*2+1] = vals[j];
+      }
+      for (int j=len; j<ids.length; j++) {
+        answers[j*2] = ids[j];
+        answers[j*2+1] = 1;  // the default values
+      }
+
+      singleTest(field, "\0", answers);
+      System.out.println("Done test "+i);
+    }
+
+  }
+
 }
