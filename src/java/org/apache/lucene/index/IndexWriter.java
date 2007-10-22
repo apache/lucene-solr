@@ -304,8 +304,14 @@ public class IndexWriter {
     }
   }
 
-  private void message(String message) {
-    infoStream.println("IW " + messageID + " [" + Thread.currentThread().getName() + "]: " + message);
+  /**
+   * Prints a message to the infoStream (if non-null),
+   * prefixed with the identifying information for this
+   * writer and the thread that's calling it.
+   */
+  public void message(String message) {
+    if (infoStream != null)
+      infoStream.println("IW " + messageID + " [" + Thread.currentThread().getName() + "]: " + message);
   }
 
   private synchronized void setMessageID() {

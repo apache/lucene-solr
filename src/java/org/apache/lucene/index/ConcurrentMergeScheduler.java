@@ -33,8 +33,6 @@ import java.util.ArrayList;
 
 public class ConcurrentMergeScheduler implements MergeScheduler {
 
-  public static boolean VERBOSE = false;
-
   private int mergeThreadPriority = -1;
 
   private List mergeThreads = new ArrayList();
@@ -44,6 +42,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   private Directory dir;
 
   private boolean closed;
+  private IndexWriter writer;
 
   public ConcurrentMergeScheduler() {
     if (allInstances != null) {
@@ -94,7 +93,8 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   }
 
   private void message(String message) {
-    System.out.println("CMS [" + Thread.currentThread().getName() + "]: " + message);
+    if (writer != null)
+      writer.message("CMS: " + message);
   }
 
   private synchronized void initMergeThreadPriority() {
@@ -110,11 +110,10 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
 
   public synchronized void sync() {
     while(mergeThreadCount() > 0) {
-      if (VERBOSE) {
-        message("now wait for threads; currently " + mergeThreads.size() + " still running");
-        for(int i=0;i<mergeThreads.size();i++)
-          message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
-      }
+      message("now wait for threads; currently " + mergeThreads.size() + " still running");
+      final int count = mergeThreads.size();
+      for(int i=0;i<count;i++)
+        message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
 
       try {
         wait();
@@ -129,6 +128,8 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   public void merge(IndexWriter writer)
     throws CorruptIndexException, IOException {
 
+    this.writer = writer;
+
     initMergeThreadPriority();
 
     dir = writer.getDirectory();
@@ -140,10 +141,8 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
     // these newly proposed merges will likely already be
     // registered.
 
-    if (VERBOSE) {
-      message("now merge");
-      message("  index: " + writer.segString());
-    }
+    message("now merge");
+    message("  index: " + writer.segString());
 
     // Iterate, pulling from the IndexWriter's queue of
     // pending merges, until its empty:
@@ -155,8 +154,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
 
       MergePolicy.OneMerge merge = writer.getNextMerge();
       if (merge == null) {
-        if (VERBOSE)
-          message("  no more merges pending; now return");
+        message("  no more merges pending; now return");
         return;
       }
 
@@ -164,12 +162,10 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
       // deterministic assignment of segment names
       writer.mergeInit(merge);
 
-      if (VERBOSE)
-        message("  consider merge " + merge.segString(dir));
+      message("  consider merge " + merge.segString(dir));
       
       if (merge.isExternal) {
-        if (VERBOSE)
-          message("    merge involves segments from an external directory; now run in foreground");
+        message("    merge involves segments from an external directory; now run in foreground");
       } else {
         synchronized(this) {
           if (mergeThreadCount() < maxThreadCount) {
@@ -177,8 +173,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
             // merge:
             MergeThread merger = new MergeThread(writer, merge);
             mergeThreads.add(merger);
-            if (VERBOSE)
-              message("    launch new thread [" + merger.getName() + "]");
+            message("    launch new thread [" + merger.getName() + "]");
             try {
               merger.setPriority(mergeThreadPriority);
             } catch (NullPointerException npe) {
@@ -187,7 +182,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
             }
             merger.start();
             continue;
-          } else if (VERBOSE)
+          } else
             message("    too many merge threads running; run merge in foreground");
         }
       }
@@ -225,8 +220,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
       
       try {
 
-        if (VERBOSE)
-          message("  merge thread: start");
+        message("  merge thread: start");
 
         while(true) {
           setRunningMerge(merge);
@@ -237,14 +231,12 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
           merge = writer.getNextMerge();
           if (merge != null) {
             writer.mergeInit(merge);
-            if (VERBOSE)
-              message("  merge thread: do another merge " + merge.segString(dir));
+            message("  merge thread: do another merge " + merge.segString(dir));
           } else
             break;
         }
 
-        if (VERBOSE)
-          message("  merge thread: done");
+        message("  merge thread: done");
 
       } catch (Throwable exc) {
         // When a merge was aborted & IndexWriter closed,

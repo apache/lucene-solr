@@ -61,6 +61,12 @@ public abstract class LogMergePolicy implements MergePolicy {
 
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
+  private IndexWriter writer;
+
+  private void message(String message) {
+    if (writer != null)
+      writer.message("LMP: " + message);
+  }
 
   /** <p>Returns the number of segments that are merged at
    * once and also controls the total number of segments
@@ -211,6 +217,8 @@ public abstract class LogMergePolicy implements MergePolicy {
   public MergeSpecification findMerges(SegmentInfos infos, IndexWriter writer) throws IOException {
 
     final int numSegments = infos.size();
+    this.writer = writer;
+    message("findMerges: " + numSegments + " segments");
 
     // Compute levels, which is just log (base mergeFactor)
     // of the size of each segment
@@ -284,6 +292,7 @@ public abstract class LogMergePolicy implements MergePolicy {
         }
         upto--;
       }
+      message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments");
 
       // Finally, record all merges that are viable at this level:
       int end = start + mergeFactor;
@@ -297,8 +306,11 @@ public abstract class LogMergePolicy implements MergePolicy {
         if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
+          message("    " + start + " to " + end + ": add this merge");
           spec.add(new OneMerge(infos.range(start, end), useCompoundFile));
-        }
+        } else
+          message("    " + start + " to " + end + ": contains segment over maxMergeSize or maxMergeDocs; skipping");
+
         start = end;
         end = start + mergeFactor;
       }
