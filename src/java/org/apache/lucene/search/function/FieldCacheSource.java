@@ -43,7 +43,6 @@ import org.apache.lucene.search.FieldCache;
  */
 public abstract class FieldCacheSource extends ValueSource {
   private String field;
-  private FieldCache cache = FieldCache.DEFAULT;
 
   /**
    * Create a cached field source for the input field.  
@@ -54,7 +53,7 @@ public abstract class FieldCacheSource extends ValueSource {
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   public final DocValues getValues(IndexReader reader) throws IOException {
-    return getCachedFieldValues(cache, field, reader);
+    return getCachedFieldValues(FieldCache.DEFAULT, field, reader);
   }
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#description() */
@@ -77,7 +76,6 @@ public abstract class FieldCacheSource extends ValueSource {
     }
     FieldCacheSource other = (FieldCacheSource) o;
     return 
-      this.cache == other.cache &&
       this.field.equals(other.field) && 
       cachedFieldSourceEquals(other);
   }
@@ -85,7 +83,6 @@ public abstract class FieldCacheSource extends ValueSource {
   /*(non-Javadoc) @see java.lang.Object#hashCode() */
   public final int hashCode() {
     return 
-      cache.hashCode() + 
       field.hashCode() +
       cachedFieldSourceHashCode();
   }

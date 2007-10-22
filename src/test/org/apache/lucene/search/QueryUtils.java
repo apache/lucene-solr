@@ -2,7 +2,11 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 /**
  * Copyright 2005 Apache Software Foundation
@@ -86,11 +90,37 @@ public class QueryUtils {
           checkSkipTo(q1,is);
         }
         checkExplanations(q1,s);
+        checkSerialization(q1,s);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
+
+  /** check that the query weight is serializable. 
+   * @throws IOException if serialization check fail. 
+   */
+  private static void checkSerialization(Query q, Searcher s) throws IOException {
+    Weight w = q.weight(s);
+    try {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new ObjectOutputStream(bos);
+      oos.writeObject(w);
+      oos.close();
+      ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+      Weight w2 = (Weight) ois.readObject();
+      ois.close();
+      
+      //skip rquals() test for now - most weights don't overide equals() and we won't add this just for the tests.
+      //TestCase.assertEquals("writeObject(w) != w.  ("+w+")",w2,w);   
+      
+    } catch (Exception e) {
+      IOException e2 = new IOException("Serialization failed for "+w);
+      e2.initCause(e);
+      throw e2;
+    }
+  }
+
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
    * and ensure a hitcollector receives same docs and scores

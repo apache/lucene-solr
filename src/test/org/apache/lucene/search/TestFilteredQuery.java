@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -26,6 +25,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+
 import java.util.BitSet;
 
 /**
@@ -38,7 +39,7 @@ import java.util.BitSet;
  * @since   1.4
  */
 public class TestFilteredQuery
-extends TestCase {
+extends LuceneTestCase {
 
   private IndexSearcher searcher;
   private RAMDirectory directory;
@@ -75,7 +76,12 @@ extends TestCase {
 
     searcher = new IndexSearcher (directory);
     query = new TermQuery (new Term ("field", "three"));
-    filter = new Filter() {
+    filter = newStaticFilterB();
+  }
+
+  // must be static for serialization tests
+  private static Filter newStaticFilterB() {
+    return new Filter() {
       public BitSet bits (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
@@ -120,13 +126,7 @@ extends TestCase {
     QueryUtils.check(filteredquery,searcher);
     
     // test boost
-    Filter f = new Filter() {
-      public BitSet bits (IndexReader reader) {
-        BitSet bitset = new BitSet(5);
-        bitset.set(0, 5);
-        return bitset;
-      }
-    };
+    Filter f = newStaticFilterA();
     
     float boost = 2.5f;
     BooleanQuery bq1 = new BooleanQuery();
@@ -145,6 +145,17 @@ extends TestCase {
     
     assertEquals(boost, filteredquery.getBoost(), 0);
     assertEquals(1.0f, tq.getBoost(), 0); // the boost value of the underlying query shouldn't have changed 
+  }
+
+  // must be static for serialization tests 
+  private static Filter newStaticFilterA() {
+    return new Filter() {
+      public BitSet bits (IndexReader reader) {
+        BitSet bitset = new BitSet(5);
+        bitset.set(0, 5);
+        return bitset;
+      }
+    };
   }
   
   /**

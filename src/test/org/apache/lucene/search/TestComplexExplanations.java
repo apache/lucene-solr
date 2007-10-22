@@ -19,24 +19,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.spans.*;
-import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-
-import junit.framework.TestCase;
-
-import java.util.Random;
-import java.util.BitSet;
 
 /**
  * TestExplanations subclass that builds up super crazy complex queries
@@ -51,11 +33,16 @@ public class TestComplexExplanations extends TestExplanations {
    */
   public void setUp() throws Exception {
     super.setUp();
-    searcher.setSimilarity(new DefaultSimilarity() {
+    searcher.setSimilarity(createQnorm1Similarity());
+  }
+
+  // must be static for weight serialization tests 
+  private static DefaultSimilarity createQnorm1Similarity() {
+    return new DefaultSimilarity() {
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f; // / (float) Math.sqrt(1.0f + sumOfSquaredWeights);
         }
-      });
+      };
   }
 
   

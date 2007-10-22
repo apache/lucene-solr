@@ -192,7 +192,8 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     CheckHits.checkHitCollector(query, "noPayLoad", searcher, results);
   }
 
-  class BoostingSimilarity extends DefaultSimilarity {
+  // must be static for weight serialization tests 
+  static class BoostingSimilarity extends DefaultSimilarity {
 
     // TODO: Remove warning after API has been finalized
     public float scorePayload(byte[] payload, int offset, int length) {

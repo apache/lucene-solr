@@ -127,6 +127,11 @@ Bug fixes
     sharing an index over NFS, can be writers in quick succession.
     (Patrick Kimber vis Mike McCandless)
 
+21. LUCENE-1028: Fixed Weight serialization for few queries:
+    DisjunctionMaxQuery, ValueSourceQuery, CustomScoreQuery.
+    Serialization check added for all queries.
+    (Kyle Maxwell via Doron Cohen)
+    
 New features
 
  1. LUCENE-906: Elision filter for French.
