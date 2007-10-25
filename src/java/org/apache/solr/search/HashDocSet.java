@@ -63,6 +63,8 @@ public final class HashDocSet extends DocSetBase {
     mask=tsize-1;
 
     table = new int[tsize];
+    // (for now) better then: Arrays.fill(table, EMPTY);
+    // https://issues.apache.org/jira/browse/SOLR-390
     for (int i=tsize-1; i>=0; i--) table[i]=EMPTY;
 
     for (int i=offset; i<len; i++) {
