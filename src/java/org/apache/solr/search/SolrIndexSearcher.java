@@ -709,6 +709,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public static final int GET_SCORES             =       0x01;
 
+  /** getDocList version that uses+populates query and filter caches.
+   * This should only be called using either filterList or filter, but not both.
+   */
   private void getDocListC(DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryResultKey key=null;
     int maxDoc = offset + len;
