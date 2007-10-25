@@ -57,6 +57,7 @@ import org.apache.solr.highlight.SolrHighlighter;
  * </ul>
  *
  */
+
 public class StandardRequestHandler extends RequestHandlerBase {
 
   /** shorten the class references for utilities */
@@ -164,22 +165,27 @@ public class StandardRequestHandler extends RequestHandlerBase {
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getVersion() {
     return "$Revision$";
   }
 
+  @Override
   public String getDescription() {
     return "The standard Solr request handler";
   }
 
+  @Override
   public String getSourceId() {
     return "$Id$";
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     try {
       return new URL[] { new URL("http://wiki.apache.org/solr/StandardRequestHandler") };
