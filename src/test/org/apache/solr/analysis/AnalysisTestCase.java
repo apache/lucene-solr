@@ -23,7 +23,7 @@ import junit.framework.TestCase;
  *
  * @author hbiestro
  */
-public class AnalysisTestCase extends TestCase {
+abstract public class AnalysisTestCase extends TestCase {
   protected SolrConfig solrConfig;
   /** Creates a new instance of AnalysisTestCase */
   public AnalysisTestCase() {
