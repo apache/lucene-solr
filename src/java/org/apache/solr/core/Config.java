@@ -376,12 +376,15 @@ public class Config {
     return normalizeDir( home );
   }
 
-  /** Singleton classloader loading resources specified in any configs */
+  /** 
+   * Classloader loading resources specified in any configs 
+   * @see #getClassLoader()
+   */
   private ClassLoader classLoader = null;
 
   /**
-   * Returns the singleton classloader to be use when loading resources
-   * specified in any configs.
+   * Returns the classloader to be use when loading resources
+   * specified in this config
    *
    * <p>
    * This loader will delegate to the context classloader when possible,
