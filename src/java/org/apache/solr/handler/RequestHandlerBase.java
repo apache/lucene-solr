@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.net.URL;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -29,6 +27,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.SolrPluginUtils;
+
+import java.net.URL;
 
 /**
  *
@@ -51,6 +51,45 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     /* :NOOP */
   }
 
+  /**
+   * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named:
+   * <table border="1">
+   * <tr><th>Name</th><th>Description</th></tr>
+   * <tr><td>defaults</td><td>Contains all of the named arguments contained within the list element named "defaults".</td></tr>
+   * <tr><td>appends</td><td>Contains all of the named arguments contained within the list element named "appends".</td></tr>
+   * <tr><td>invariants</td><td>Contains all of the named arguments contained within the list element named "invariants".</td></tr>
+   * </table>
+   *
+   * Example:
+   * <pre>
+   * &lt;lst name="defaults"&gt;
+     &lt;str name="echoParams"&gt;explicit&lt;/str&gt;
+     &lt;str name="qf"&gt;text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0&lt;/str&gt;
+     &lt;str name="mm"&gt;2&lt;-1 5&lt;-2 6&lt;90%&lt;/str&gt;
+     &lt;str name="bq"&gt;incubationdate_dt:[* TO NOW/DAY-1MONTH]^2.2&lt;/str&gt;
+    &lt;/lst&gt;
+    &lt;lst name="appends"&gt;
+      &lt;str name="fq"&gt;inStock:true&lt;/str&gt;
+    &lt;/lst&gt;
+
+    &lt;lst name="invariants"&gt;
+      &lt;str name="facet.field"&gt;cat&lt;/str&gt;
+      &lt;str name="facet.field"&gt;manu_exact&lt;/str&gt;
+      &lt;str name="facet.query"&gt;price:[* TO 500]&lt;/str&gt;
+      &lt;str name="facet.query"&gt;price:[500 TO *]&lt;/str&gt;
+    &lt;/lst&gt;
+   * </pre>
+   *
+   *
+   * @param args The {@link org.apache.solr.common.util.NamedList} to initialize from
+   *
+   * @see #handleRequest(org.apache.solr.request.SolrQueryRequest, org.apache.solr.request.SolrQueryResponse)
+   * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest, org.apache.solr.request.SolrQueryResponse)
+   * @see org.apache.solr.util.SolrPluginUtils#setDefaults(org.apache.solr.request.SolrQueryRequest, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams)
+   * @see SolrParams#toSolrParams(org.apache.solr.common.util.NamedList)
+   *
+   * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
+   */
   public void init(NamedList args) {
     // Copied from StandardRequestHandler 
     if( args != null ) {
