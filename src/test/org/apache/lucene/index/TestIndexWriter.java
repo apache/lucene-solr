@@ -1584,6 +1584,27 @@ public class TestIndexWriter extends LuceneTestCase
     dir.close();
   }
 
+  // LUCENE-1036
+  public void testMaxThreadPriority() throws IOException {
+    int pri = Thread.currentThread().getPriority();
+    try {
+      MockRAMDirectory dir = new MockRAMDirectory();
+      IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true);
+      Document document = new Document();
+      document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+                             Field.TermVector.YES));
+      iw.setMaxBufferedDocs(2);
+      iw.setMergeFactor(2);
+      Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+      for(int i=0;i<4;i++)
+        iw.addDocument(document);
+      iw.close();
+      
+    } finally {
+      Thread.currentThread().setPriority(pri);
+    }
+  }
+
   // Just intercepts all merges & verifies that we are never
   // merging a segment with >= 20 (maxMergeDocs) docs
   private class MyMergeScheduler implements MergeScheduler {

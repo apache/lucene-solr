@@ -78,17 +78,14 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
 
   /** Return the priority that merge threads run at. */
   public synchronized void setMergeThreadPriority(int pri) {
+    if (pri > Thread.MAX_PRIORITY || pri < Thread.MIN_PRIORITY)
+      throw new IllegalArgumentException("priority must be in range " + Thread.MIN_PRIORITY + " .. " + Thread.MAX_PRIORITY + " inclusive");
     mergeThreadPriority = pri;
 
     final int numThreads = mergeThreadCount();
     for(int i=0;i<numThreads;i++) {
       MergeThread merge = (MergeThread) mergeThreads.get(i);
-      try {
-        merge.setPriority(pri);
-      } catch (NullPointerException npe) {
-        // Strangely, Sun's JDK 1.5 on Linux sometimes
-        // throws NPE out of here...
-      }
+      merge.setThreadPriority(pri);
     }
   }
 
@@ -98,10 +95,13 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
   }
 
   private synchronized void initMergeThreadPriority() {
-    if (mergeThreadPriority == -1)
+    if (mergeThreadPriority == -1) {
       // Default to slightly higher priority than our
       // calling thread
       mergeThreadPriority = 1+Thread.currentThread().getPriority();
+      if (mergeThreadPriority > Thread.MAX_PRIORITY)
+        mergeThreadPriority = Thread.MAX_PRIORITY;
+    }
   }
 
   public void close() {
@@ -122,7 +122,12 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
     }
   }
   private synchronized int mergeThreadCount() {
-    return mergeThreads.size();
+    int count = 0;
+    final int numThreads = mergeThreads.size();
+    for(int i=0;i<numThreads;i++)
+      if (((MergeThread) mergeThreads.get(i)).isAlive())
+        count++;
+    return count;
   }
 
   public void merge(IndexWriter writer)
@@ -174,12 +179,7 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
             MergeThread merger = new MergeThread(writer, merge);
             mergeThreads.add(merger);
             message("    launch new thread [" + merger.getName() + "]");
-            try {
-              merger.setPriority(mergeThreadPriority);
-            } catch (NullPointerException npe) {
-              // Strangely, Sun's JDK 1.5 on Linux sometimes
-              // throws NPE out of here...
-            }
+            merger.setThreadPriority(mergeThreadPriority);
             merger.start();
             continue;
           } else
@@ -210,6 +210,18 @@ public class ConcurrentMergeScheduler implements MergeScheduler {
 
     public synchronized MergePolicy.OneMerge getRunningMerge() {
       return runningMerge;
+    }
+
+    public void setThreadPriority(int pri) {
+      try {
+        setPriority(pri);
+      } catch (NullPointerException npe) {
+        // Strangely, Sun's JDK 1.5 on Linux sometimes
+        // throws NPE out of here...
+      } catch (SecurityException se) {
+        // Ignore this because we will still run fine with
+        // normal thread priority
+      }
     }
 
     public void run() {
