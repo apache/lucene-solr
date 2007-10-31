@@ -31,7 +31,7 @@ package org.apache.lucene.document;
  * This class handles <b>all</b> long values (unlike
  * {@link org.apache.lucene.document.DateField}).
  * 
- * @author Matt Quail (spud at madbean dot com)
+ * 
  */
 public class NumberTools {
 

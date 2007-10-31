@@ -60,6 +60,14 @@ implements Serializable {
    * lower values are at the front. */
   public static final int FLOAT = 5;
 
+  /** Sort using term values as encoded Longs.  Sort values are Long and
+   * lower values are at the front. */
+  public static final int LONG = 6;
+
+  /** Sort using term values as encoded Doubles.  Sort values are Double and
+   * lower values are at the front. */
+  public static final int DOUBLE = 7;
+
   /** Sort using a custom Comparator.  Sort values are any Comparable and
    * sorting is done according to natural order. */
   public static final int CUSTOM = 9;

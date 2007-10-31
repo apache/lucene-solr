@@ -21,8 +21,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.text.Collator;
+import java.util.Locale;
 
 /**
  * Expert: A hit queue for sorting by hits by terms in more than one field.
@@ -177,6 +177,12 @@ extends PriorityQueue {
         case SortField.FLOAT:
           comparator = comparatorFloat (reader, fieldname);
           break;
+        case SortField.LONG:
+          comparator = comparatorLong(reader, fieldname);
+          break;
+        case SortField.DOUBLE:
+          comparator = comparatorDouble(reader, fieldname);
+          break;
         case SortField.STRING:
           if (locale != null) comparator = comparatorStringLocale (reader, fieldname, locale);
           else comparator = comparatorString (reader, fieldname);
@@ -223,6 +229,38 @@ extends PriorityQueue {
   }
 
   /**
+   * Returns a comparator for sorting hits according to a field containing integers.
+   * @param reader  Index to use.
+   * @param fieldname  Fieldable containg integer values.
+   * @return  Comparator for sorting hits.
+   * @throws IOException If an error occurs reading the index.
+   */
+  static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname)
+  throws IOException {
+    final String field = fieldname.intern();
+    final long[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getLongs (reader, field);
+    return new ScoreDocComparator() {
+
+      public final int compare (final ScoreDoc i, final ScoreDoc j) {
+        final long li = fieldOrder[i.doc];
+        final long lj = fieldOrder[j.doc];
+        if (li < lj) return -1;
+        if (li > lj) return 1;
+        return 0;
+      }
+
+      public Comparable sortValue (final ScoreDoc i) {
+        return new Long(fieldOrder[i.doc]);
+      }
+
+      public int sortType() {
+        return SortField.LONG;
+      }
+    };
+  }
+
+
+  /**
    * Returns a comparator for sorting hits according to a field containing floats.
    * @param reader  Index to use.
    * @param fieldname  Fieldable containg float values.
@@ -249,6 +287,37 @@ extends PriorityQueue {
 
       public int sortType() {
         return SortField.FLOAT;
+      }
+    };
+  }
+
+  /**
+   * Returns a comparator for sorting hits according to a field containing doubles.
+   * @param reader  Index to use.
+   * @param fieldname  Fieldable containg float values.
+   * @return  Comparator for sorting hits.
+   * @throws IOException If an error occurs reading the index.
+   */
+  static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname)
+  throws IOException {
+    final String field = fieldname.intern();
+    final double[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getDoubles (reader, field);
+    return new ScoreDocComparator () {
+
+      public final int compare (final ScoreDoc i, final ScoreDoc j) {
+        final double di = fieldOrder[i.doc];
+        final double dj = fieldOrder[j.doc];
+        if (di < dj) return -1;
+        if (di > dj) return 1;
+        return 0;
+      }
+
+      public Comparable sortValue (final ScoreDoc i) {
+        return new Double (fieldOrder[i.doc]);
+      }
+
+      public int sortType() {
+        return SortField.DOUBLE;
       }
     };
   }

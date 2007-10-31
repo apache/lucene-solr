@@ -154,6 +154,9 @@ New features
     obtained or released, throwing an exception if an illegal lock
     obtain occurred.  (Patrick Kimber vis Mike McCandless)
 
+  6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to support doubles and longs.  
+  Added support into SortField for sorting on doubles and longs as well.  (Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
