@@ -26,7 +26,7 @@ import java.io.Reader;
  * @version $Id: LowerCaseTokenizerFactory.java 382610 2006-03-03 01:43:03Z yonik $
  */
 public class KeywordTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
+  public KeywordTokenizer create(Reader input) {
     return new KeywordTokenizer(input);
   }
 }

@@ -113,7 +113,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory {
   }
 
 
-  public TokenStream create(TokenStream input) {
+  public SynonymFilter create(TokenStream input) {
     return new SynonymFilter(input,synMap,ignoreCase);
   }
 

@@ -42,7 +42,7 @@ public class NGramTokenizerFactory extends BaseTokenizerFactory {
     }
 
     /** Creates the {@link TokenStream} of n-grams from the given {@link Reader}. */
-    public TokenStream create(Reader input) {
+    public NGramTokenizer create(Reader input) {
         return new NGramTokenizer(input, minGramSize, maxGramSize);
     }
 }

@@ -26,7 +26,7 @@ import java.io.Reader;
  * @version $Id$
  */
 public class LetterTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
+  public LetterTokenizer create(Reader input) {
     return new LetterTokenizer(input);
   }
 }

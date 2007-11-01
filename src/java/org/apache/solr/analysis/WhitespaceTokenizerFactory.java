@@ -26,7 +26,7 @@ import java.io.Reader;
  * @version $Id$
  */
 public class WhitespaceTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
+  public WhitespaceTokenizer create(Reader input) {
     return new WhitespaceTokenizer(input);
   }
 }

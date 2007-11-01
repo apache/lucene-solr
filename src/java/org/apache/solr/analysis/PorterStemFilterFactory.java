@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.PorterStemFilter;
  * @version $Id$
  */
 public class PorterStemFilterFactory extends BaseTokenFilterFactory {
-  public TokenStream create(TokenStream input) {
+  public PorterStemFilter create(TokenStream input) {
     return new PorterStemFilter(input);
   }
 }

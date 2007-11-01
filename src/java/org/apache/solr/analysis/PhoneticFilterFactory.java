@@ -86,7 +86,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     }
   }
   
-  public TokenStream create(TokenStream input) {
+  public PhoneticFilter create(TokenStream input) {
     return new PhoneticFilter(input,encoder,name,inject);
   }
 }

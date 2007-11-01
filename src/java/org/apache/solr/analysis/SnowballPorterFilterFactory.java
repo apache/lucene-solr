@@ -42,7 +42,7 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory {
     SolrCore.log.fine("SnowballPorterFilterFactory: language=" + language);
   }
   
-  public TokenStream create(TokenStream input) {
+  public SnowballFilter create(TokenStream input) {
     return new SnowballFilter(input,language);
   }
 }

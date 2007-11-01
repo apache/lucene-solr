@@ -46,7 +46,7 @@ public class TrimFilterFactory extends BaseTokenFilterFactory {
     }
   }
   
-  public TokenStream create(TokenStream input) {
+  public TrimFilter create(TokenStream input) {
     return new TrimFilter(input, updateOffsets);
   }
 }

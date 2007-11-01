@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
  * @version $Id:$
  */
 public class RemoveDuplicatesTokenFilterFactory extends BaseTokenFilterFactory {
-  public TokenStream create(TokenStream input) {
+  public RemoveDuplicatesTokenFilter create(TokenStream input) {
     return new RemoveDuplicatesTokenFilter(input);
   }
 }

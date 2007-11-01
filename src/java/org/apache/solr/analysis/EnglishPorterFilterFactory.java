@@ -48,7 +48,7 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory {
 
   private Set protectedWords = null;
 
-  public TokenStream create(TokenStream input) {
+  public EnglishPorterFilter create(TokenStream input) {
     return new EnglishPorterFilter(input,protectedWords);
   }
 }

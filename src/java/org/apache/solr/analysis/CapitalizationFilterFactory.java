@@ -153,7 +153,7 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory
     return word.toString();
   }
   
-  public TokenStream create(TokenStream input) {
+  public CapitalizationFilter create(TokenStream input) {
     return new CapitalizationFilter(input,this);
   }
 }

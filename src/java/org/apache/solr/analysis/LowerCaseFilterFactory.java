@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
  * @version $Id$
  */
 public class LowerCaseFilterFactory extends BaseTokenFilterFactory {
-  public TokenStream create(TokenStream input) {
+  public LowerCaseFilter create(TokenStream input) {
     return new LowerCaseFilter(input);
   }
 }

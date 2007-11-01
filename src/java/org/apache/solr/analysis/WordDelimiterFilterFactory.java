@@ -42,7 +42,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {
     splitOnCaseChange = getInt("splitOnCaseChange", 1);
   }
 
-  public TokenStream create(TokenStream input) {
+  public WordDelimiterFilter create(TokenStream input) {
     return new WordDelimiterFilter(input,
                                    generateWordParts, generateNumberParts,
                                    catenateWords, catenateNumbers, catenateAll,

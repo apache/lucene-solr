@@ -66,7 +66,7 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory {
     this.ignoreCase = ignoreCase;
   }
   
-  public TokenStream create(TokenStream input) {
+  public KeepWordFilter create(TokenStream input) {
     return new KeepWordFilter(input,words,ignoreCase);
   }
 }

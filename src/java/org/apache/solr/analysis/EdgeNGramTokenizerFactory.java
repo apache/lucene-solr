@@ -48,7 +48,7 @@ public class EdgeNGramTokenizerFactory extends BaseTokenizerFactory {
         }
     }
 
-    public TokenStream create(Reader input) {
+    public EdgeNGramTokenizer create(Reader input) {
         return new EdgeNGramTokenizer(input, side, minGramSize, maxGramSize);
     }
 }

@@ -26,7 +26,7 @@ import java.io.Reader;
  * @version $Id$
  */
 public class LowerCaseTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
+  public LowerCaseTokenizer create(Reader input) {
     return new LowerCaseTokenizer(input);
   }
 }

@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
  * @version $Id$
  */
 public class StandardFilterFactory extends BaseTokenFilterFactory {
-  public TokenStream create(TokenStream input) {
+  public StandardFilter create(TokenStream input) {
     return new StandardFilter(input);
   }
 }

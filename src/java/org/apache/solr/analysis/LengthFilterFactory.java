@@ -33,7 +33,7 @@ public class LengthFilterFactory extends BaseTokenFilterFactory {
     min=Integer.parseInt(args.get("min"));
     max=Integer.parseInt(args.get("max"));
   }
-  public TokenStream create(TokenStream input) {
+  public LengthFilter create(TokenStream input) {
     return new LengthFilter(input,min,max);
   }
 }

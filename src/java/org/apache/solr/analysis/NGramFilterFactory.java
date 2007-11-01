@@ -43,7 +43,7 @@ public class NGramFilterFactory extends BaseTokenFilterFactory {
         : NGramTokenFilter.DEFAULT_MIN_NGRAM_SIZE);
   }
 
-  public TokenStream create(TokenStream input) {
+  public NGramTokenFilter create(TokenStream input) {
     return new NGramTokenFilter(input, minGramSize, maxGramSize);
   }
 }

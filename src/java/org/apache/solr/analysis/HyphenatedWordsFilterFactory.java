@@ -24,7 +24,7 @@ import org.apache.solr.analysis.BaseTokenFilterFactory;
  * Factory for HyphenatedWordsFilter
  */
 public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
-	public TokenStream create(TokenStream input) {
+	public HyphenatedWordsFilter create(TokenStream input) {
 		return new HyphenatedWordsFilter(input);
 	}
 }

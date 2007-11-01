@@ -214,7 +214,11 @@ Other Changes
       init(Map<String,String> args)
     Existing classes should continue to work, but it is encouraged to update
     the initialization code.  (Henri Biestro vi ryan)
- 
+
+ 5. SOLR-367: The create method in all TokenFilter and Tokenizer Factories
+    provided by Solr now declare their specific return types instead of just
+    using "TokenStream" (hossman)
+     
 
 ================== Release 1.2, 20070602 ==================
 

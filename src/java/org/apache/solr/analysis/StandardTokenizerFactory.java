@@ -27,7 +27,7 @@ import java.io.Reader;
  */
 
 public class StandardTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
+  public StandardTokenizer create(Reader input) {
     return new StandardTokenizer(input);
   }
 }

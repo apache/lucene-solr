@@ -51,7 +51,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory {
   private Set stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS);
   private boolean ignoreCase;
 
-  public TokenStream create(TokenStream input) {
+  public StopFilter create(TokenStream input) {
     return new StopFilter(input,stopWords,ignoreCase);
   }
 }

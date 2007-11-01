@@ -60,7 +60,7 @@ public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {
     }
 
   }
-  public TokenStream create(TokenStream input) {
+  public PatternReplaceFilter create(TokenStream input) {
     return new PatternReplaceFilter(input, p, replacement, all);
   }
 }

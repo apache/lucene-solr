@@ -49,7 +49,7 @@ public class EdgeNGramFilterFactory extends BaseTokenFilterFactory {
     }
   }
 
-  public TokenStream create(TokenStream input) {
+  public EdgeNGramTokenFilter create(TokenStream input) {
     return new EdgeNGramTokenFilter(input, side, minGramSize, maxGramSize);
   }
 }
