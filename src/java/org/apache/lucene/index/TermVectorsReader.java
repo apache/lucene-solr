@@ -163,6 +163,7 @@ class TermVectorsReader implements Cloneable {
         for (int i = 0; i <= found; i++)
           position += tvd.readVLong();
 
+        mapper.setDocumentNumber(docNum);
         readTermVector(field, position, mapper);
       } else {
         //System.out.println("Fieldable not found");
@@ -228,7 +229,7 @@ class TermVectorsReader implements Cloneable {
           tvfPointers[i] = position;
         }
 
-        result = readTermVectors(fields, tvfPointers);
+        result = readTermVectors(docNum, fields, tvfPointers);
       }
     } else {
       //System.out.println("No tvx file");
@@ -268,6 +269,7 @@ class TermVectorsReader implements Cloneable {
           tvfPointers[i] = position;
         }
 
+        mapper.setDocumentNumber(docNumber);
         readTermVectors(fields, tvfPointers, mapper);
       }
     } else {
@@ -276,12 +278,13 @@ class TermVectorsReader implements Cloneable {
   }
 
 
-  private SegmentTermVector[] readTermVectors(String fields[], long tvfPointers[])
+  private SegmentTermVector[] readTermVectors(int docNum, String fields[], long tvfPointers[])
           throws IOException {
     SegmentTermVector res[] = new SegmentTermVector[fields.length];
     for (int i = 0; i < fields.length; i++) {
       ParallelArrayTermVectorMapper mapper = new ParallelArrayTermVectorMapper();
-       readTermVector(fields[i], tvfPointers[i], mapper);
+      mapper.setDocumentNumber(docNum);
+      readTermVector(fields[i], tvfPointers[i], mapper);
       res[i] = (SegmentTermVector) mapper.materializeVector();
     }
     return res;

@@ -85,4 +85,17 @@ public abstract class TermVectorMapper {
     return ignoringOffsets;
   }
 
+  /**
+   * Passes down the index of the document whose term vector is currently being mapped,
+   * once for each top level call to a term vector reader.
+   *<p/>
+   * Default implementation IGNORES the document number.  Override if your implementation needs the document number.
+   * <p/> 
+   * NOTE: Document numbers are internal to Lucene and subject to change depending on indexing operations.
+   *
+   * @param documentNumber index of document currently being mapped
+   */
+  public void setDocumentNumber(int documentNumber) {
+  }
+
 }

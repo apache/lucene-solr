@@ -17,13 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -329,6 +329,32 @@ public class TestTermVectorsReader extends LuceneTestCase {
       }
     }
 
+    // test setDocumentNumber()
+    IndexReader ir = IndexReader.open(dir);
+    DocNumAwareMapper docNumAwareMapper = new DocNumAwareMapper();
+    assertEquals(-1, docNumAwareMapper.getDocumentNumber());
+
+    ir.getTermFreqVector(0, docNumAwareMapper);
+    assertEquals(0, docNumAwareMapper.getDocumentNumber());
+    docNumAwareMapper.setDocumentNumber(-1);
+
+    ir.getTermFreqVector(1, docNumAwareMapper);
+    assertEquals(1, docNumAwareMapper.getDocumentNumber());
+    docNumAwareMapper.setDocumentNumber(-1);
+
+    ir.getTermFreqVector(0, "f1", docNumAwareMapper);
+    assertEquals(0, docNumAwareMapper.getDocumentNumber());
+    docNumAwareMapper.setDocumentNumber(-1);
+
+    ir.getTermFreqVector(1, "f2", docNumAwareMapper);
+    assertEquals(1, docNumAwareMapper.getDocumentNumber());
+    docNumAwareMapper.setDocumentNumber(-1);
+
+    ir.getTermFreqVector(0, "f1", docNumAwareMapper);
+    assertEquals(0, docNumAwareMapper.getDocumentNumber());
+
+    ir.close();
+
   }
 
 
@@ -362,6 +388,35 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertTrue(vector == null);
     } catch (IOException e) {
       fail();
+    }
+  }
+
+
+  public static class DocNumAwareMapper extends TermVectorMapper {
+
+    public DocNumAwareMapper() {
+    }
+
+    private int documentNumber = -1;
+
+    public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
+      if (documentNumber == -1) {
+        throw new RuntimeException("Documentnumber should be set at this point!");
+      }
+    }
+
+    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+      if (documentNumber == -1) {
+        throw new RuntimeException("Documentnumber should be set at this point!");
+      }
+    }
+
+    public int getDocumentNumber() {
+      return documentNumber;
+    }
+
+    public void setDocumentNumber(int documentNumber) {
+      this.documentNumber = documentNumber;
     }
   }
 }
