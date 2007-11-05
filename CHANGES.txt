@@ -136,12 +136,18 @@ New Features
     to the detailed field information from the solrj client API.
     (Grant Ingersoll via ehatcher)
 
-26. SOLR-334L Pluggable query parsers.  Allows specification of query
+26. SOLR-334: Pluggable query parsers.  Allows specification of query
     type and arguments as a prefix on a query string. (yonik)
 
-27. SOLR-351L External Value Source.  An external file may be used
+27. SOLR-351: External Value Source.  An external file may be used
      to specify the values of a field, currently usable as
      a ValueSource in a FunctionQuery. (yonik)
+
+28. SOLR-395: Many new features for the spell checker implementation, including
+    an extended response mode with much richer output, multi-word spell checking,
+    and a bevy of new and renamed options (see the wiki).
+    (Mike Krimerman, Scott Taber via klaas).
+
 
 Changes in runtime behavior
 
