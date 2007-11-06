@@ -125,7 +125,7 @@ Bug fixes
 
 20. LUCENE-1011: Fixed corruption case when two or more machines,
     sharing an index over NFS, can be writers in quick succession.
-    (Patrick Kimber vis Mike McCandless)
+    (Patrick Kimber via Mike McCandless)
 
 21. LUCENE-1028: Fixed Weight serialization for few queries:
     DisjunctionMaxQuery, ValueSourceQuery, CustomScoreQuery.
@@ -153,7 +153,7 @@ New features
     VerifyingLockFactory is a LockFactory that wraps any other
     LockFactory and consults the LockVerifyServer whenever a lock is
     obtained or released, throwing an exception if an illegal lock
-    obtain occurred.  (Patrick Kimber vis Mike McCandless)
+    obtain occurred.  (Patrick Kimber via Mike McCandless)
 
   6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to support doubles and longs.  
   Added support into SortField for sorting on doubles and longs as well.  (Grant Ingersoll)
