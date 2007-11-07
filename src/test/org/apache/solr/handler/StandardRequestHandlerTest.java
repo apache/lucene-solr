@@ -73,6 +73,10 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[3]/int[@name='id'][.='10']"
             );
     
+    // Make sure score parsing works
+    args.put( CommonParams.SORT, "score desc" );
+    assertQ("with sort param [desc]", req,"//*[@numFound='3']" );
+    
     // Using legacy ';' param
     args.remove( CommonParams.SORT );
     args.put( CommonParams.Q, "title:test; val_s desc" );
