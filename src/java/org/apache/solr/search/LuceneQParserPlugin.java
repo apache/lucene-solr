@@ -124,7 +124,9 @@ class OldLuceneQParser extends LuceneQParser {
     QueryParsing.SortSpec sort = super.getSort(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
       QueryParsing.SortSpec oldSort = QueryParsing.parseSort(sortStr, getReq().getSchema());
-      sort.sort = oldSort.sort;
+      if( oldSort != null ) {
+        sort.sort = oldSort.sort;
+      }
     }
     return sort;
   }

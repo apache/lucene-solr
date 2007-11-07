@@ -152,15 +152,19 @@ public abstract class QParser {
     int start = startS != null ? Integer.parseInt(startS) : 0;
     int rows = rowsS != null ? Integer.parseInt(rowsS) : 10;
 
-    QueryParsing.SortSpec sort;
+    QueryParsing.SortSpec sort = null;
     if (sortStr != null) {
+      // may return null if 'score desc'
       sort = QueryParsing.parseSort(sortStr, req.getSchema());
-      sort.offset = start;
-      sort.num =  rows;
-    } else {
+    }
+    
+    if( sort == null ) {
       sort = new QueryParsing.SortSpec(null, start, rows);
     }
-
+    else {
+      sort.offset = start;
+      sort.num =  rows;
+    }
     return sort;
   }
 
