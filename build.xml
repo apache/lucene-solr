@@ -258,6 +258,79 @@
     </javadoc>
   </target>
 
+  <target name="stub-factories" depends="dist-jar"
+          description="Generates stub factories as needed">
+
+    <path id="stub.jars">
+      <!-- this needs to be a list of all jars that might contain
+           classes we want to build factories for
+        -->
+      <fileset dir="${lib}">
+        <include name="lucene-*.jar"/>
+      </fileset>
+      <fileset dir="${dist}">
+        <include name="*.jar"/>
+        <exclude name="*solrj*.jar"/>
+      </fileset>
+    </path>
+    <pathconvert property="jar.list" pathsep=" " refid="stub.jars" />
+    <property name="stub.list" value="${dest}/need-stub-factories.txt" />
+    <java fork="false" 
+          classname="org.apache.solr.util.SuggestMissingFactories"
+          logError="true"
+          failonerror="true"
+          classpathref="test.run.classpath"
+          output="${stub.list}">
+      <arg line="${jar.list}" />
+    </java>
+    <fail unless="stub.src.path">...
+    
+  This task requires that the property 'stub.src.path' be set.
+      
+  It must contain a "path" listing directories containing source
+  files that this task should use when looking for classes that
+  need factories created, the format is platform specific --
+  typically it is  colon seperated in Unix, semi-colon seperated
+  on windows, ie:
+
+  ant stub-factories -Dstub.src.path="./src:../lucene/contrib:../lucene/src/java"
+      
+  FYI: The file ${stub.list} contains a list of classes
+  that seem to need stub factories. (if java files can be found to
+  use as guides for creating them).
+    </fail>              
+
+    <pathconvert pathsep=" " property="stub.src.dirs">
+      <path>
+        <pathelement path="${stub.src.path}"/>
+      </path>
+    </pathconvert>
+    <exec executable="${basedir}/src/dev-tools/stub-analysis-factory-maker.pl" 
+          dir="src/java/org/apache/solr/analysis/"
+          failonerror="true">
+        <redirector input="${stub.list}">
+           <!-- place to put special case classes we want to ignore -->
+           <inputfilterchain>
+              <linecontainsregexp negate="true">
+                 <!-- only for internal Solr highlighting purposes -->
+                 <regexp pattern="TokenOrderingFilter"/>
+              </linecontainsregexp>
+              <linecontainsregexp negate="true">
+                 <!-- no way to leverage this in Solr -->
+                 <regexp pattern="CachingTokenFilter"/>
+              </linecontainsregexp>
+              <linecontainsregexp negate="true">
+                 <!-- solr and lucene both have one? ? ? ? -->
+                 <regexp pattern="LengthFilter"/> 
+              </linecontainsregexp>
+           </inputfilterchain>
+        </redirector>
+      <arg line="${stub.src.dirs}"/>
+    </exec>
+  </target>
+
+  
+
   <!-- ========================================================================= -->
   <!-- ===================== CLIENT: solrj         ============================= -->
   <!-- ========================================================================= -->

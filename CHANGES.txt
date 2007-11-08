@@ -226,6 +226,12 @@ Other Changes
  5. SOLR-367: The create method in all TokenFilter and Tokenizer Factories
     provided by Solr now declare their specific return types instead of just
     using "TokenStream" (hossman)
+
+ 6. SOLR-396: Hooks add to build system for automatic generation of (stub)
+    Tokenizer and TokenFilter Factories.
+    Also: new Factories for all Tokenizers and TokenFilters provided by the
+    lucene-analyzers-2.2.0.jar -- includes support for German, Chinese,
+    Russan, Dutch, Greek, Brazilian, Thai, and French.   (hossman)
      
 
 ================== Release 1.2, 20070602 ==================
