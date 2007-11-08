@@ -134,7 +134,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
+  static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
     return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
   }
 
@@ -150,7 +150,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
+  static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
     return get(si.dir, si, null, false, false, readBufferSize, doOpenStores);
   }
 
