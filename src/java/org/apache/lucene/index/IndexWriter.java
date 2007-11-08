@@ -2135,11 +2135,6 @@ public class IndexWriter {
       message("flush at addIndexesNoOptimize");
     flush();
 
-    /* new merge policy
-    if (startUpperBound == 0)
-      startUpperBound = 10;
-    */
-
     boolean success = false;
 
     startTransaction();

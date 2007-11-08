@@ -26,6 +26,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -57,6 +58,10 @@ final class SegmentMerger {
   // already share the same doc store files, we don't need
   // to merge the doc stores.
   private boolean mergeDocStores;
+
+  /** Maximum number of contiguous documents to bulk-copy
+      when merging stored fields */
+  private final static int MAX_RAW_MERGE_DOCS = 16384;
 
   /** This ctor used only by test code.
    * 
@@ -210,24 +215,53 @@ final class SegmentMerger {
       fieldInfos = new FieldInfos();		  // merge field names
     }
 
-    int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), false, false, false, true);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false, false);
-      fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
+      if (reader instanceof SegmentReader) {
+        SegmentReader segmentReader = (SegmentReader) reader;
+        for (int j = 0; j < segmentReader.getFieldInfos().size(); j++) {
+          FieldInfo fi = segmentReader.getFieldInfos().fieldInfo(j);
+          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name));
+        }
+      } else {
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), false, false, false, true);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false, false);
+        fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
+      }
     }
     fieldInfos.write(directory, segment + ".fnm");
 
+    int docCount = 0;
+
     if (mergeDocStores) {
 
-      FieldsWriter fieldsWriter = // merge field values
-        new FieldsWriter(directory, segment, fieldInfos);
-    
+      // If the i'th reader is a SegmentReader and has
+      // identical fieldName -> number mapping, then this
+      // array will be non-null at position i:
+      SegmentReader[] matchingSegmentReaders = new SegmentReader[readers.size()];
+
+      for (int i = 0; i < readers.size(); i++) {
+        IndexReader reader = (IndexReader) readers.elementAt(i);
+        boolean same = reader.getFieldNames(IndexReader.FieldOption.ALL).size() == fieldInfos.size() && reader instanceof SegmentReader;
+        if (same) {
+          SegmentReader segmentReader = (SegmentReader) reader;
+          for (int j = 0; same && j < fieldInfos.size(); j++)
+            same = fieldInfos.fieldName(j).equals(segmentReader.getFieldInfos().fieldName(j));
+          if (same)
+            matchingSegmentReaders[i] = segmentReader;
+        }
+      }
+	
+      // Used for bulk-reading raw bytes for stored fields
+      final int[] rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
+
+      // merge field values
+      final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, fieldInfos);
+
       // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
       // in  merge mode, we use this FieldSelector
       FieldSelector fieldSelectorMerge = new FieldSelector() {
@@ -238,13 +272,38 @@ final class SegmentMerger {
 
       try {
         for (int i = 0; i < readers.size(); i++) {
-          IndexReader reader = (IndexReader) readers.elementAt(i);
-          int maxDoc = reader.maxDoc();
-          for (int j = 0; j < maxDoc; j++)
-            if (!reader.isDeleted(j)) {               // skip deleted docs
-              fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
-              docCount++;
-            }
+          final IndexReader reader = (IndexReader) readers.elementAt(i);
+          final SegmentReader matchingSegmentReader = matchingSegmentReaders[i];
+          final FieldsReader matchingFieldsReader;
+          if (matchingSegmentReader != null)
+            matchingFieldsReader = matchingSegmentReader.getFieldsReader();
+          else
+            matchingFieldsReader = null;
+          final int maxDoc = reader.maxDoc();
+          for (int j = 0; j < maxDoc;) {
+            if (!reader.isDeleted(j)) { // skip deleted docs
+              if (matchingSegmentReader != null) {
+                // We can optimize this case (doing a bulk
+                // byte copy) since the field numbers are
+                // identical
+                int start = j;
+                int numDocs = 0;
+                do {
+                  j++;
+                  numDocs++;
+                } while(j < maxDoc && !matchingSegmentReader.isDeleted(j) && numDocs < MAX_RAW_MERGE_DOCS);
+
+                IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
+                fieldsWriter.addRawDocuments(stream, rawDocLengths, numDocs);
+                docCount += numDocs;
+              } else {
+                fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
+                j++;
+                docCount++;
+              }
+            } else
+              j++;
+          }
         }
       } finally {
         fieldsWriter.close();

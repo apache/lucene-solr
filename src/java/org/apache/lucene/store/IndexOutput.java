@@ -149,6 +149,25 @@ public abstract class IndexOutput {
     }
   }
 
+  private static int COPY_BUFFER_SIZE = 16384;
+  private byte[] copyBuffer;
+
+  /** Copy numBytes bytes from input to ourself. */
+  public void copyBytes(IndexInput input, long numBytes) throws IOException {
+    long left = numBytes;
+    if (copyBuffer == null)
+      copyBuffer = new byte[COPY_BUFFER_SIZE];
+    while(left > 0) {
+      final int toCopy;
+      if (left > COPY_BUFFER_SIZE)
+        toCopy = COPY_BUFFER_SIZE;
+      else
+        toCopy = (int) left;
+      input.readBytes(copyBuffer, 0, toCopy);
+      writeBytes(copyBuffer, 0, toCopy);
+      left -= toCopy;
+    }
+  }
 
   /** Forces any buffered output to be written. */
   public abstract void flush() throws IOException;

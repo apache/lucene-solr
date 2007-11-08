@@ -314,6 +314,10 @@ class SegmentReader extends DirectoryIndexReader {
     undeleteAll = false;
   }
 
+  FieldsReader getFieldsReader() {
+    return fieldsReader;
+  }
+
   protected void doClose() throws IOException {
     if (fieldsReader != null) {
       fieldsReader.close();
@@ -386,6 +390,10 @@ class SegmentReader extends DirectoryIndexReader {
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
     return tis.terms(t);
+  }
+
+  FieldInfos getFieldInfos() {
+    return fieldInfos;
   }
 
   /**

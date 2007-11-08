@@ -26,6 +26,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IndexInput;
 
 final class FieldsWriter
 {
@@ -125,6 +126,21 @@ final class FieldsWriter
           fieldsStream.writeString(field.stringValue());
         }
       }
+    }
+
+    /** Bulk write a contiguous series of documents.  The
+     *  lengths array is the length (in bytes) of each raw
+     *  document.  The stream IndexInput is the
+     *  fieldsStream from which we should bulk-copy all
+     *  bytes. */
+    final void addRawDocuments(IndexInput stream, int[] lengths, int numDocs) throws IOException {
+      long position = fieldsStream.getFilePointer();
+      long start = position;
+      for(int i=0;i<numDocs;i++) {
+        indexStream.writeLong(position);
+        position += lengths[i];
+      }
+      fieldsStream.copyBytes(stream, position-start);
     }
 
     final void addDocument(Document doc) throws IOException {

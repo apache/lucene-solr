@@ -48,6 +48,7 @@ final class FieldsReader {
   private final IndexInput fieldsStream;
 
   private final IndexInput indexStream;
+  private int numTotalDocs;
   private int size;
   private boolean closed;
 
@@ -88,6 +89,7 @@ final class FieldsReader {
         this.size = (int) (indexStream.length() >> 3);
       }
 
+      numTotalDocs = (int) (indexStream.length() >> 3);
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -184,6 +186,32 @@ final class FieldsReader {
     }
 
     return doc;
+  }
+
+  /** Returns the length in bytes of each raw document in a
+   *  contiguous range of length numDocs starting with
+   *  startDocID.  Returns the IndexInput (the fieldStream),
+   *  already seeked to the starting point for startDocID.*/
+  final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
+    indexStream.seek(startDocID * 8L);
+    long startOffset = indexStream.readLong();
+    long lastOffset = startOffset;
+    int count = 0;
+    while (count < numDocs) {
+      final long offset;
+      final int docID = startDocID + count + 1;
+      assert docID <= numTotalDocs;
+      if (docID < numTotalDocs) 
+        offset = indexStream.readLong();
+      else
+        offset = fieldsStream.length();
+      lengths[count++] = (int) (offset-lastOffset);
+      lastOffset = offset;
+    }
+
+    fieldsStream.seek(startOffset);
+
+    return fieldsStream;
   }
 
   /**
