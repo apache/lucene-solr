@@ -52,7 +52,7 @@ import java.util.Set;
  * LogByteSizeMergePolicy}.</p>
  */
 
-public interface MergePolicy {
+public abstract class MergePolicy {
 
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
@@ -152,7 +152,7 @@ public interface MergePolicy {
 
   /** Exception thrown if there are any problems while
    *  executing a merge. */
-  public class MergeException extends RuntimeException {
+  public static class MergeException extends RuntimeException {
     public MergeException(String message) {
       super(message);
     }
@@ -171,9 +171,9 @@ public interface MergePolicy {
    * @param segmentInfos the total set of segments in the index
    * @param writer IndexWriter instance
    */
-  MergeSpecification findMerges(SegmentInfos segmentInfos,
-                                IndexWriter writer)
-     throws CorruptIndexException, IOException;
+  abstract MergeSpecification findMerges(SegmentInfos segmentInfos,
+                                         IndexWriter writer)
+    throws CorruptIndexException, IOException;
 
   /**
    * Determine what set of merge operations are necessary in
@@ -190,26 +190,26 @@ public interface MergePolicy {
    *   SegmentInfo instances that must be merged away.  This
    *   may be a subset of all SegmentInfos.
    */
-  MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
-                                           IndexWriter writer,
-                                           int maxSegmentCount,
-                                           Set segmentsToOptimize)
-     throws CorruptIndexException, IOException;
+  abstract MergeSpecification findMergesForOptimize(SegmentInfos segmentInfos,
+                                                    IndexWriter writer,
+                                                    int maxSegmentCount,
+                                                    Set segmentsToOptimize)
+    throws CorruptIndexException, IOException;
 
   /**
    * Release all resources for the policy.
    */
-  void close();
+  abstract void close();
 
   /**
    * Returns true if a newly flushed (not from merge)
    * segment should use the compound file format.
    */
-  boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment);
+  abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment);
 
   /**
    * Returns true if the doc store files should use the
    * compound file format.
    */
-  boolean useCompoundDocStore(SegmentInfos segments);
+  abstract boolean useCompoundDocStore(SegmentInfos segments);
 }

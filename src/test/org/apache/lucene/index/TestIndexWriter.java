@@ -1607,7 +1607,7 @@ public class TestIndexWriter extends LuceneTestCase
 
   // Just intercepts all merges & verifies that we are never
   // merging a segment with >= 20 (maxMergeDocs) docs
-  private class MyMergeScheduler implements MergeScheduler {
+  private class MyMergeScheduler extends MergeScheduler {
     synchronized public void merge(IndexWriter writer)
       throws CorruptIndexException, IOException {
 

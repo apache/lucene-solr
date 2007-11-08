@@ -24,13 +24,13 @@ import java.io.IOException;
  *  selected by a {@link MergePolicy}.  The default
  *  MergeScheduler is {@link ConcurrentMergeScheduler}. */
 
-public interface MergeScheduler {
+public abstract class MergeScheduler {
 
   /** Run the merges provided by {@link IndexWriter#getNextMerge()}. */
-  void merge(IndexWriter writer)
+  abstract void merge(IndexWriter writer)
     throws CorruptIndexException, IOException;
 
   /** Close this MergeScheduler. */
-  void close()
+  abstract void close()
     throws CorruptIndexException, IOException;
 }

@@ -37,7 +37,7 @@ import org.apache.lucene.store.Directory;
  * file(s) for the segment.</p>
  */
 
-public abstract class LogMergePolicy implements MergePolicy {
+public abstract class LogMergePolicy extends MergePolicy {
 
   /** Defines the allowed range of log(size) for each
    *  level.  A level is computed by taking the max segment

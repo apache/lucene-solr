@@ -31,7 +31,7 @@ import java.util.ArrayList;
  *  having to create and manage application level
  *  threads. */
 
-public class ConcurrentMergeScheduler implements MergeScheduler {
+public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private int mergeThreadPriority = -1;
 

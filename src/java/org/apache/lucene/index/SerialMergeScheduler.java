@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /** A {@link MergeScheduler} that simply does each merge
  *  sequentially, using the current thread. */
-public class SerialMergeScheduler implements MergeScheduler {
+public class SerialMergeScheduler extends MergeScheduler {
 
   /** Just do the merges in sequence. We do this
    * "synchronized" so that even if the application is using
