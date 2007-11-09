@@ -64,6 +64,7 @@
     <load-on-startup>2</load-on-startup>
   </servlet>
 
+  <!-- @Deprecated -->
   <servlet>
     <servlet-name>ping</servlet-name>
     <jsp-file>/admin/ping.jsp</jsp-file>
@@ -79,6 +80,7 @@
     <url-pattern>/update/*</url-pattern>
   </servlet-mapping>
 
+  <!-- @Deprecated -->
   <servlet-mapping>
     <servlet-name>ping</servlet-name>
     <url-pattern>/admin/ping</url-pattern>

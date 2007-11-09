@@ -42,6 +42,7 @@ import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
@@ -235,7 +236,7 @@ public final class SolrCore {
 
   
   /** 
-   * @return the last core initalized.  If you are using multiple cores, 
+   * @return the last core initialized.  If you are using multiple cores, 
    * this is not a function to use.
    */
   @Deprecated
@@ -389,7 +390,10 @@ public final class SolrCore {
   /**
    * Returns a Request object based on the admin/pingQuery section
    * of the Solr config file.
+   * 
+   * @use {@link PingRequestHandler} instead 
    */
+  @Deprecated
   public SolrQueryRequest getPingQueryRequest() {
     return solrConfig.getPingQueryRequest(this);
   }

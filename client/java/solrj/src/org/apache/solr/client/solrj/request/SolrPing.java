@@ -34,18 +34,19 @@ import org.apache.solr.common.util.ContentStream;
  */
 public class SolrPing extends RequestBase
 {
+  private ModifiableSolrParams params;
+  
   public SolrPing()
   {
     super( METHOD.GET, "/admin/ping" );
+    params = new ModifiableSolrParams();
   }
 
   public Collection<ContentStream> getContentStreams() {
     return null;
   }
 
-  public SolrParams getParams() {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set( "q", "solrpingquery" );
+  public ModifiableSolrParams getParams() {
     return params;
   }
 

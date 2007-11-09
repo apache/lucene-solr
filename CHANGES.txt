@@ -148,6 +148,11 @@ New Features
     and a bevy of new and renamed options (see the wiki).
     (Mike Krimerman, Scott Taber via klaas).
 
+29. SOLR-408: Added PingRequestHandler and deprecated SolrCore.getPingQueryRequest().
+    Ping requests should be configured using standard RequestHandler syntax in
+    solrconfig.xml rather then using the <pingQuery></pingQuery> syntax.
+    (Karsten Sperling via ryan)
+
 
 Changes in runtime behavior
 

@@ -29,6 +29,10 @@
 <solr>
   <ping>
 <%
+//
+//  Deprecated -- use PingRequestHandler
+// 
+
   Object ocore = request.getAttribute("org.apache.solr.SolrCore");
   SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
 

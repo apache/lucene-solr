@@ -28,6 +28,7 @@ import junit.framework.Assert;
 
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -255,7 +256,6 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertNumFound( "*:*", 0 ); // make sure it got out
   }
   
-  
   public void testLukeHandler() throws Exception
   {    
     SolrServer server = getSolrServer();
@@ -280,5 +280,29 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     luke.setShowSchema( true );
     rsp = luke.process( server );
     assertNotNull( rsp.getFieldTypeInfo() ); 
+  }
+  
+
+  public void testPingHandler() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    
+    // should be ok
+    server.ping();
+    
+    try {
+      SolrPing ping = new SolrPing();
+      ping.getParams().set( "qt", "unknown handler!" );
+      ping.process( server );
+      fail( "sent unknown query type!" );
+    }
+    catch( Exception ex ) {
+      // expected
+    }
   }
 }
