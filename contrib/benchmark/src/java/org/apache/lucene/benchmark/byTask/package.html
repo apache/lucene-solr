@@ -479,6 +479,12 @@ Some of the currently defined properties are:
     </li>
 
     <li>
+    <font color="#FF0066">fsdirectory.dosync</font> - true/false
+    If "true", the FSDirectory will call sync() before close() on each
+    file.
+    </li>
+
+    <li>
     <b>Index work parameters</b>:
     Multi int/boolean values would be iterated with calls to NewRound.
     There would be also added as columns in the reports, first string in the
@@ -543,6 +549,7 @@ Here is a list of currently defined properties:
     </li><li>merge.factor
     </li><li>max.buffered
     </li><li>directory
+    </li><li>fsdirectory.dosync
     </li><li>ram.flush.mb
     </li><li>autocommit
     </li></ul>

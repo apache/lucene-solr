@@ -168,8 +168,15 @@ New features
     obtained or released, throwing an exception if an illegal lock
     obtain occurred.  (Patrick Kimber via Mike McCandless)
 
-  6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to support doubles and longs.  
-  Added support into SortField for sorting on doubles and longs as well.  (Grant Ingersoll)
+ 6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to support doubles and longs.  
+    Added support into SortField for sorting on doubles and longs as well.  (Grant Ingersoll)
+
+ 7. LUCENE-1044: Added optional doSync boolean to
+    FSDirectory.getDirectory(...).  If true (the default) then we will
+    always sync() a file before closing it, which improves the
+    likelihood that the index will remain consistent when the OS or
+    machine crashes, or power to the machine is cut.  (Venkat Rangan
+    via Mike McCandless)
 
 Optimizations
 

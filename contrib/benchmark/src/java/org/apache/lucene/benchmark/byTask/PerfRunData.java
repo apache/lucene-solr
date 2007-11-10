@@ -126,7 +126,8 @@ public class PerfRunData {
         FileUtils.fullyDelete(indexDir);
       }
       indexDir.mkdirs();
-      directory = FSDirectory.getDirectory(indexDir);
+      final boolean doSync = config.get("fsdirectory.dosync", true);
+      directory = FSDirectory.getDirectory(indexDir, null, doSync);
     } else {
       directory = new RAMDirectory();
     }

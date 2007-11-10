@@ -320,7 +320,7 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory);
+        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory, false);
 
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true);
