@@ -139,6 +139,11 @@ Bug fixes
     DisjunctionMaxQuery, ValueSourceQuery, CustomScoreQuery.
     Serialization check added for all queries.
     (Kyle Maxwell via Doron Cohen)
+
+22. LUCENE-1048: Fixed incorrect behavior in Lock.obtain(...) when the
+    timeout argument is very large (eg Long.MAX_VALUE).  Also added
+    Lock.LOCK_OBTAIN_WAIT_FOREVER constant to never timeout.  (Nikolay
+    Diakov via Mike McCandless)
     
 New features
 

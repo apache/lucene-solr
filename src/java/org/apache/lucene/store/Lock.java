@@ -33,7 +33,14 @@ import java.io.IOException;
  * @see Directory#makeLock(String)
  */
 public abstract class Lock {
+
+  /** How long {@link #obtain(long)} waits, in milliseconds,
+   *  in between attempts to acquire the lock. */
   public static long LOCK_POLL_INTERVAL = 1000;
+
+  /** Pass this value to {@link #obtain(long)} to try
+   *  forever to obtain the lock. */
+  public static final long LOCK_OBTAIN_WAIT_FOREVER = -1;
 
   /** Attempts to obtain exclusive access and immediately return
    *  upon success or failure.
@@ -48,21 +55,29 @@ public abstract class Lock {
    */
   protected Throwable failureReason;
 
-  /** Attempts to obtain an exclusive lock within amount
-   *  of time given. Currently polls once per second until
-   *  lockWaitTimeout is passed.
-   * @param lockWaitTimeout length of time to wait in ms
+  /** Attempts to obtain an exclusive lock within amount of
+   *  time given. Polls once per {@link #LOCK_POLL_INTERVAL}
+   *  (currently 1000) milliseconds until lockWaitTimeout is
+   *  passed.
+   * @param lockWaitTimeout length of time to wait in
+   *        milliseconds or {@link
+   *        #LOCK_OBTAIN_WAIT_FOREVER} to retry forever
    * @return true if lock was obtained
    * @throws LockObtainFailedException if lock wait times out
+   * @throws IllegalArgumentException if lockWaitTimeout is
+   *         out of bounds
    * @throws IOException if obtain() throws IOException
    */
   public boolean obtain(long lockWaitTimeout) throws LockObtainFailedException, IOException {
     failureReason = null;
     boolean locked = obtain();
-    int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
-    int sleepCount = 0;
+    if (lockWaitTimeout < 0 && lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER)
+      throw new IllegalArgumentException("lockWaitTimeout should be LOCK_OBTAIN_WAIT_FOREVER or a non-negative number (got " + lockWaitTimeout + ")");
+
+    long maxSleepCount = lockWaitTimeout / LOCK_POLL_INTERVAL;
+    long sleepCount = 0;
     while (!locked) {
-      if (sleepCount++ == maxSleepCount) {
+      if (lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER && sleepCount++ >= maxSleepCount) {
         String reason = "Lock obtain timed out: " + this.toString();
         if (failureReason != null) {
           reason += ": " + failureReason;
