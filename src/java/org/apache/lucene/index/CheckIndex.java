@@ -141,6 +141,8 @@ public class CheckIndex {
       System.out.println("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
       int toLoseDocCount = info.docCount;
 
+      SegmentReader reader = null;
+
       try {
         System.out.println("    compound=" + info.getUseCompoundFile());
         System.out.println("    numFiles=" + info.files().size());
@@ -157,7 +159,7 @@ public class CheckIndex {
         else
           System.out.println("    has deletions [delFileName=" + delFileName + "]");
         System.out.print("    test: open reader.........");
-        SegmentReader reader = SegmentReader.get(info);
+        reader = SegmentReader.get(info);
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions())
@@ -258,6 +260,9 @@ public class CheckIndex {
         numBadSegments++;
         changed = true;
         continue;
+      } finally {
+        if (reader != null)
+          reader.close();
       }
 
       // Keeper
