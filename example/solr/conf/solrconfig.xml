@@ -287,6 +287,20 @@
      </lst>
   </requestHandler>
 
+
+  <requestHandler name="/search" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="components">
+      <str>org.apache.solr.handler.component.QueryComponent</str>
+      <str>org.apache.solr.handler.component.FacetComponent</str>
+      <str>org.apache.solr.handler.component.MoreLikeThisComponent</str>
+      <str>org.apache.solr.handler.component.HighlightComponent</str>
+      <str>org.apache.solr.handler.component.DebugComponent</str>
+    </arr>
+  </requestHandler>
+
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
        for simple user-entered phrases. 
        see http://wiki.apache.org/solr/DisMaxRequestHandler

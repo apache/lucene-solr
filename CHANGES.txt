@@ -153,6 +153,13 @@ New Features
     solrconfig.xml rather then using the <pingQuery></pingQuery> syntax.
     (Karsten Sperling via ryan)
 
+30. SOLR-281: Added a 'Search Component' interface and converted StandardRequestHandler
+    and DisMaxRequestHandler to use this framework.  
+    (Sharad Agarwal, Henri Biestro, yonik, ryan) 
+    
+31. SOLR-176: Add detailed timing data to query response output.  The SearchHandler
+    interface now returns how long each section takes.  (klaas)
+    
 
 Changes in runtime behavior
 

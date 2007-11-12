@@ -183,7 +183,7 @@ public class QueryParsing {
    *  "<!prefix f=myfield v=$p>" returns type="prefix",f="myfield",v=params.get("p")
    */
   public static SolrParams getLocalParams(String txt, SolrParams params) throws ParseException {
-    if (!txt.startsWith("<!")) {
+    if (txt==null || !txt.startsWith("<!")) {
       return null;      
     }
     Map<String,String> localParams = new HashMap<String,String>();

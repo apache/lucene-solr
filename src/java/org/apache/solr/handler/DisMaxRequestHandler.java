@@ -17,34 +17,15 @@
 
 package org.apache.solr.handler;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.DisMaxParams;
-import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DisMaxQParserPlugin;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
-    
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
 /**
  * <p>
  * A Generic query plugin designed to be given a simple query expression
@@ -133,259 +114,32 @@ import org.apache.solr.util.SolrPluginUtils;
  *
  * </pre>
  */
-public class DisMaxRequestHandler extends RequestHandlerBase  {
+@Deprecated
+public class DisMaxRequestHandler extends StandardRequestHandler  
+{
 
-  /**
-   * A field we can't ever find in any schema, so we can safely tell
-   * DisjunctionMaxQueryParser to use it as our defaultField, and
-   * map aliases from it to any field in our schema.
-   */
-  private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
-    
-    
-  /** shorten the class references for utilities */
-  private static class U extends SolrPluginUtils {
-    /* :NOOP */
-  }
-  /** shorten the class references for utilities */
-  private static interface DMP extends DisMaxParams {
-    /* :NOOP */
-  }
-
-  public DisMaxRequestHandler() {
-    super();
-  }
-  
-  /** Sets the default variables for any useful info it finds in the config.
-   * If a config option is not in the format expected, logs a warning
-   * and ignores it.
-   */
+  @Override
   public void init(NamedList args) {
-	// Handle an old format
-    if (-1 == args.indexOf("defaults",0)) {
+    super.init( args );
+    NamedList def = null;
+    
+    // redo "defaults"
+    Object o = args.get("defaults");
+    if (o != null && o instanceof NamedList) {
+      def = (NamedList)o;
+    } else {
       // no explict defaults list, use all args implicitly
       // indexOf so "<null name="defaults"/> is valid indicator of no defaults
-      defaults = SolrParams.toSolrParams(args);
-    } else {
-      // otherwise use the new one.
-      super.init( args );
+      def = args;
+    }
+    
+    //  Make the default query type "dismax" if not specified
+    if (def.get(QueryParsing.DEFTYPE) == null) {
+      def = def.clone();
+      def.add(QueryParsing.DEFTYPE, DisMaxQParserPlugin.NAME);
+      defaults = SolrParams.toSolrParams( def );
     }
   }
-
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
-  {
-      SolrParams params = req.getParams();
-      
-      int flags = 0;
-      
-      SolrIndexSearcher s = req.getSearcher();
-      IndexSchema schema = req.getSchema();
-            
-      Map<String,Float> queryFields = U.parseFieldBoosts(params.getParams(DMP.QF));
-      Map<String,Float> phraseFields = U.parseFieldBoosts(params.getParams(DMP.PF));
-
-      float tiebreaker = params.getFloat(DMP.TIE, 0.0f);
-            
-      int pslop = params.getInt(DMP.PS, 0);
-      int qslop = params.getInt(DMP.QS, 0);
-
-      /* a generic parser for parsing regular lucene queries */
-      QueryParser p = schema.getSolrQueryParser(null);
-
-      /* a parser for dealing with user input, which will convert
-       * things to DisjunctionMaxQueries
-       */
-      U.DisjunctionMaxQueryParser up =
-        new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
-      up.addAlias(IMPOSSIBLE_FIELD_NAME,
-                  tiebreaker, queryFields);
-      up.setPhraseSlop(qslop);
-      
-      /* for parsing sloppy phrases using DisjunctionMaxQueries */
-      U.DisjunctionMaxQueryParser pp =
-        new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
-      pp.addAlias(IMPOSSIBLE_FIELD_NAME,
-                  tiebreaker, phraseFields);
-      pp.setPhraseSlop(pslop);
-            
-            
-      /* the main query we will execute.  we disable the coord because
-       * this query is an artificial construct
-       */
-      BooleanQuery query = new BooleanQuery(true);
-
-      /* * * Main User Query * * */
-      Query parsedUserQuery = null;
-      String userQuery = params.get( CommonParams.Q );
-      Query altUserQuery = null;
-      if( userQuery == null || userQuery.trim().length() < 1 ) {
-        // If no query is specified, we may have an alternate
-        String altQ = params.get( DMP.ALTQ );
-        if (altQ != null) {
-          altUserQuery = p.parse(altQ);
-          query.add( altUserQuery , Occur.MUST );
-        } else {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
-        }
-      }
-      else {
-        // There is a valid query string
-        userQuery = U.partialEscape(U.stripUnbalancedQuotes(userQuery)).toString();
-            
-        String minShouldMatch = params.get(DMP.MM, "100%");
-        Query dis = up.parse(userQuery);
-        parsedUserQuery = dis;
-  
-        if (dis instanceof BooleanQuery) {
-          BooleanQuery t = new BooleanQuery();
-          U.flattenBooleanQuery(t, (BooleanQuery)dis);
-          U.setMinShouldMatch(t, minShouldMatch);                
-          parsedUserQuery = t;
-        } 
-        query.add(parsedUserQuery, Occur.MUST);
-        
-
-        /* * * Add on Phrases for the Query * * */
-              
-        /* build up phrase boosting queries */
-
-        /* if the userQuery already has some quotes, stip them out.
-         * we've already done the phrases they asked for in the main
-         * part of the query, this is to boost docs that may not have
-         * matched those phrases but do match looser phrases.
-         */
-        String userPhraseQuery = userQuery.replace("\"","");
-        Query phrase = pp.parse("\"" + userPhraseQuery + "\"");
-        if (null != phrase) {
-          query.add(phrase, Occur.SHOULD);
-        }
-      }
-
-            
-      /* * * Boosting Query * * */
-      String[] boostParams = params.getParams(DMP.BQ);
-      List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
-      if (null != boostQueries) {
-        if(1 == boostQueries.size() && 1 == boostParams.length) {
-          /* legacy logic */
-          Query f = boostQueries.get(0);
-          if (1.0f == f.getBoost() && f instanceof BooleanQuery) {
-            /* if the default boost was used, and we've got a BooleanQuery
-             * extract the subqueries out and use them directly
-             */
-            for (Object c : ((BooleanQuery)f).clauses()) {
-              query.add((BooleanClause)c);
-            }
-          } else {
-            query.add(f, BooleanClause.Occur.SHOULD);
-          }
-        } else {
-          for(Query f : boostQueries) {
-            query.add(f, BooleanClause.Occur.SHOULD);
-          }
-        }
-      }
-
-      /* * * Boosting Functions * * */
-
-      String[] boostFuncs = params.getParams(DMP.BF);
-      if (null != boostFuncs && 0 != boostFuncs.length) {
-        for (String boostFunc : boostFuncs) {
-          if(null == boostFunc || "".equals(boostFunc)) continue;
-          List<Query> funcs = U.parseFuncs(schema, boostFunc);
-          for (Query f : funcs) {
-            query.add(f, Occur.SHOULD);          
-          }
-        }
-      }
-            
-      /* * * Restrict Results * * */
-
-      List<Query> restrictions = U.parseFilterQueries(req);
-            
-      /* * * Generate Main Results * * */
-
-      flags |= U.setReturnFields(req,rsp);
-      
-      DocListAndSet results = new DocListAndSet();
-      NamedList facetInfo = null;
-      if (params.getBool(FacetParams.FACET,false)) {
-        results = s.getDocListAndSet(query, restrictions,
-                                     SolrPluginUtils.getSort(req),
-                                     req.getStart(), req.getLimit(),
-                                     flags);
-        facetInfo = getFacetInfo(req, rsp, results.docSet);
-      } else {
-        results.docList = s.getDocList(query, restrictions,
-                                       SolrPluginUtils.getSort(req),
-                                       req.getStart(), req.getLimit(),
-                                       flags);
-      }
-      rsp.add("response",results.docList);
-      // pre-fetch returned documents
-      U.optimizePreFetchDocs(results.docList, query, req, rsp);
-
-      
-      if (null != facetInfo) rsp.add("facet_counts", facetInfo);
-
-
-            
-      /* * * Debugging Info * * */
-
-      try {
-        NamedList debug = U.doStandardDebug(req, userQuery, query, results.docList);
-        if (null != debug) {
-          debug.add("altquerystring", altUserQuery);
-          if (null != boostQueries) {
-            debug.add("boost_queries", boostParams);
-            debug.add("parsed_boost_queries", 
-                      QueryParsing.toString(boostQueries, req.getSchema()));
-          }
-          debug.add("boostfuncs", params.getParams(DMP.BF));
-          if (null != restrictions) {
-            debug.add("filter_queries", params.getParams(CommonParams.FQ));
-            debug.add("parsed_filter_queries", 
-                      QueryParsing.toString(restrictions, req.getSchema()));
-          }
-          rsp.add("debug", debug);
-        }
-
-      } catch (Exception e) {
-        SolrException.logOnce(SolrCore.log, "Exception during debug", e);
-        rsp.add("exception_during_debug", SolrException.toStr(e));
-      }
-
-      /* * * Highlighting/Summarizing  * * */
-      SolrHighlighter highlighter = req.getCore().getHighlighter();
-      if(highlighter.isHighlightingEnabled( params ) && parsedUserQuery != null) {
-        String[] highFields = queryFields.keySet().toArray(new String[0]);
-        NamedList sumData = highlighter.doHighlighting(
-  	       results.docList, 
-  	       parsedUserQuery.rewrite(req.getSearcher().getReader()), 
-  	       req, 
-  	       highFields);
-        if(sumData != null)
-          rsp.add("highlighting", sumData);
-      }
-  }
-
-  /**
-   * Fetches information about Facets for this request.
-   *
-   * Subclasses may with to override this method to provide more 
-   * advanced faceting behavior.
-   * @see SimpleFacets#getFacetCounts
-   */
-  protected NamedList getFacetInfo(SolrQueryRequest req, 
-                                   SolrQueryResponse rsp, 
-                                   DocSet mainSet) {
-
-    SimpleFacets f = new SimpleFacets(req.getSearcher(), 
-                                      mainSet, 
-                                      req.getParams());
-    return f.getFacetCounts();
-  }
-  
 
 	//////////////////////// SolrInfoMBeans methods //////////////////////
 

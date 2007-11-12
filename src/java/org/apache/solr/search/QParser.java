@@ -20,6 +20,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public abstract class QParser {
@@ -174,6 +175,10 @@ public abstract class QParser {
 
   public Query getHighlightQuery() throws ParseException {
     return getQuery();
+  }
+
+  public void addDebugInfo(NamedList<Object> debugInfo) {
+    debugInfo.add("QParser", this.getClass().getSimpleName());
   }
 
   /** Create a <code>QParser</code> to parse <code>qstr</code>,

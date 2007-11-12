@@ -79,6 +79,13 @@ class DismaxQParser extends QParser {
   Map<String,Float> queryFields;
   Query parsedUserQuery;
 
+
+  private String[] boostParams;
+  private List<Query> boostQueries;
+  private Query altUserQuery;
+  private QParser altQParser;
+  
+
   public Query parse() throws ParseException {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
 
@@ -120,12 +127,13 @@ class DismaxQParser extends QParser {
     /* * * Main User Query * * */
     parsedUserQuery = null;
     String userQuery = getString();
-    Query altUserQuery = null;
+    altUserQuery = null;
     if( userQuery == null || userQuery.trim().length() < 1 ) {
       // If no query is specified, we may have an alternate
       String altQ = solrParams.get( DMP.ALTQ );
       if (altQ != null) {
-        altUserQuery = p.parse(altQ);
+        altQParser = subQuery(altQ, null);
+        altUserQuery = altQParser.parse();
         query.add( altUserQuery , BooleanClause.Occur.MUST );
       } else {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
@@ -166,12 +174,13 @@ class DismaxQParser extends QParser {
 
 
     /* * * Boosting Query * * */
-    String[] boostParams = solrParams.getParams(DMP.BQ);
+    boostParams = solrParams.getParams(DMP.BQ);
     //List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
-    List<Query> boostQueries=null;
+    boostQueries=null;
     if (boostParams!=null && boostParams.length>0) {
       boostQueries = new ArrayList<Query>();
       for (String qs : boostParams) {
+        if (qs.trim().length()==0) continue;
         Query q = subQuery(qs, null).parse();
         boostQueries.add(q);
       }
@@ -227,5 +236,16 @@ class DismaxQParser extends QParser {
   @Override
   public Query getHighlightQuery() throws ParseException {
     return parsedUserQuery;
+  }
+
+  public void addDebugInfo(NamedList<Object> debugInfo) {
+    super.addDebugInfo(debugInfo);
+    debugInfo.add("altquerystring", altUserQuery);
+    if (null != boostQueries) {
+      debugInfo.add("boost_queries", boostParams);
+      debugInfo.add("parsed_boost_queries",
+                QueryParsing.toString(boostQueries, req.getSchema()));
+    }
+    debugInfo.add("boostfuncs", req.getParams().getParams(DisMaxParams.BF));   
   }
 }

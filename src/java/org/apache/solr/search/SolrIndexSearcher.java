@@ -29,7 +29,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.OpenBitSet;
 
@@ -38,6 +37,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.solr.core.SolrInfoMBean.Category;
 
 
 /**

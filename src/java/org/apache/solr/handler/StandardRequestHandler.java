@@ -17,26 +17,17 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.search.*;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.search.*;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.highlight.SolrHighlighter;
+import org.apache.solr.handler.component.DebugComponent;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.MoreLikeThisComponent;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.SearchComponent;
 
 /**
  * @version $Id$
@@ -57,111 +48,17 @@ import org.apache.solr.highlight.SolrHighlighter;
  * </ul>
  *
  */
+public class StandardRequestHandler extends SearchHandler {
 
-public class StandardRequestHandler extends RequestHandlerBase {
-
-  /** shorten the class references for utilities */
-  private static class U extends SolrPluginUtils {
-    /* :NOOP */
+  @Override
+  protected void initComponents(NamedList args) {
+    components = new ArrayList<SearchComponent>(5);
+    components.add( new QueryComponent() );
+    components.add( new FacetComponent() );
+    components.add( new MoreLikeThisComponent() );
+    components.add( new HighlightComponent() );
+    components.add( new DebugComponent() );
   }
-
-
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
-  {
-    
-      SolrParams p = req.getParams();
-      String qstr = p.required().get(CommonParams.Q);
-
-      // find fieldnames to return (fieldlist)
-      // TODO: make this per-query and add method to QParser to get?
-      String fl = p.get(CommonParams.FL);
-      int flags = 0; 
-      if (fl != null) {
-        flags |= U.setReturnFields(fl, rsp);
-      }
-
-      QParser parser = QParser.getParser(qstr, OldLuceneQParserPlugin.NAME, req);
-      Query query = parser.getQuery();
-      QueryParsing.SortSpec sortSpec = parser.getSort(true);
-
-      DocListAndSet results = new DocListAndSet();
-      NamedList facetInfo = null;
-      List<Query> filters = U.parseFilterQueries(req);
-      SolrIndexSearcher s = req.getSearcher();
-
-      if (p.getBool(FacetParams.FACET,false)) {
-        results = s.getDocListAndSet(query, filters, sortSpec.getSort(),
-                                     sortSpec.getOffset(), sortSpec.getCount(),
-                                     flags);
-        facetInfo = getFacetInfo(req, rsp, results.docSet);
-      } else {
-        results.docList = s.getDocList(query, filters, sortSpec.getSort(),
-                                       sortSpec.getOffset(), sortSpec.getCount(),
-                                       flags);
-      }
-
-      // pre-fetch returned documents
-      U.optimizePreFetchDocs(results.docList, query, req, rsp);
-      
-      rsp.add("response",results.docList);
-
-      if (null != facetInfo) rsp.add("facet_counts", facetInfo);
-
-      // Include "More Like This" results for *each* result
-      if( p.getBool( MoreLikeThisParams.MLT, false ) ) {
-        MoreLikeThisHandler.MoreLikeThisHelper mlt 
-          = new MoreLikeThisHandler.MoreLikeThisHelper( p, s );
-        int mltcount = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
-        rsp.add( "moreLikeThis", mlt.getMoreLikeThese(results.docList, mltcount, flags));
-      }
-      
-      try {
-        NamedList dbg = U.doStandardDebug(req, qstr, query, results.docList);
-        if (null != dbg) {
-          if (null != filters) {
-            dbg.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
-            List<String> fqs = new ArrayList<String>(filters.size());
-            for (Query fq : filters) {
-              fqs.add(QueryParsing.toString(fq, req.getSchema()));
-            }
-            dbg.add("parsed_filter_queries",fqs);
-          }
-          rsp.add("debug", dbg);
-        }
-      } catch (Exception e) {
-        SolrException.logOnce(SolrCore.log, "Exception during debug", e);
-        rsp.add("exception_during_debug", SolrException.toStr(e));
-      }
-      
-
-      SolrHighlighter highlighter = req.getCore().getHighlighter();
-      NamedList sumData = highlighter.doHighlighting(
-            results.docList,
-            parser.getHighlightQuery().rewrite(req.getSearcher().getReader()),
-            req,
-            parser.getDefaultHighlightFields());
-      if(sumData != null)
-        rsp.add("highlighting", sumData);
-  }
-
-  /**
-   * Fetches information about Facets for this request.
-   *
-   * Subclasses may with to override this method to provide more 
-   * advanced faceting behavior.
-   * @see SimpleFacets#getFacetCounts
-   */
-  protected NamedList getFacetInfo(SolrQueryRequest req, 
-                                   SolrQueryResponse rsp, 
-                                   DocSet mainSet) {
-
-    SimpleFacets f = new SimpleFacets(req.getSearcher(), 
-                                      mainSet, 
-                                      req.getParams());
-    return f.getFacetCounts();
-  }
-
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
