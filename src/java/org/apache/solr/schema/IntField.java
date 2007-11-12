@@ -47,7 +47,15 @@ public class IntField extends FieldType {
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    writer.writeInt(name, f.stringValue());
+    String s = f.stringValue();
+    int len = s.length();
+    if (len>=2) {
+      char ch = s.charAt(0);
+      if ((ch=='0') || (ch=='-' && s.charAt(1)=='0')) {
+        s = Integer.toString(Integer.parseInt(s));
+      }
+    }
+    writer.writeInt(name, s);
   }
 
   @Override
