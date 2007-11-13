@@ -78,9 +78,6 @@ extends SegmentTermDocs implements TermPositions {
       } 
       delta >>>= 1;
       needToLoadPayload = true;
-    } else {
-      payloadLength = 0;
-      needToLoadPayload = false;
     }
     return delta;
   }
