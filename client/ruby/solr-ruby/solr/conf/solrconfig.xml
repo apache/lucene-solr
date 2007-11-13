@@ -258,46 +258,15 @@
      </lst>
   </requestHandler>
 
-  <!-- DisMaxRequestHandler allows easy searching across multiple fields
-       for simple user-entered phrases. 
-       see http://wiki.apache.org/solr/DisMaxRequestHandler
-   -->
-  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
-    <lst name="defaults">
-     <str name="echoParams">explicit</str>
-     <float name="tie">0.01</float>
-     <str name="qf">
-        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-     </str>
-     <str name="pf">
-        text^0.2 features^1.1 name^1.5 manu^1.4 manu_exact^1.9
-     </str>
-     <str name="bf">
-        ord(poplarity)^0.5 recip(rord(price),1,1000,1000)^0.3
-     </str>
-     <str name="fl">
-        id,name,price,score
-     </str>
-     <str name="mm">
-        2&lt;-1 5&lt;-2 6&lt;90%
-     </str>
-     <int name="ps">100</int>
-     <str name="q.alt">*:*</str>
-    </lst>
-  </requestHandler>
 
-  <!-- Note how you can register the same handler multiple times with
-       different names (and different init parameters)
-    -->
-  <requestHandler name="partitioned" class="solr.DisMaxRequestHandler" >
+
+
+  <requestHandler name="browse" class="solr.DisMaxRequestHandler" >
     <lst name="defaults">
      <str name="echoParams">explicit</str>
-     <str name="qf">text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0</str>
+     <str name="qf">text^1.0 title_text^2.0 description_text^1.5 id^10.0</str>
      <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
-     <!-- This is an example of using Date Math to specify a constantly
-          moving date range in a config...
-       -->
-     <str name="bq">incubationdate_dt:[* TO NOW/DAY-1MONTH]^2.2</str>
+     <str name="q.alt">*:*</str>
     </lst>
     <!-- In addition to defaults, "appends" params can be specified
          to identify values which should be appended to the list of
@@ -313,7 +282,6 @@
          unless you are sure you always want it.
       -->
     <lst name="appends">
-      <str name="fq">inStock:true</str>
     </lst>
     <!-- "invariants" are a way of letting the Solr maintainer lock down
          the options available to Solr clients.  Any params values
@@ -332,26 +300,13 @@
          unless you are sure you always want it.
       -->
     <lst name="invariants">
-      <str name="facet.field">cat</str>
-      <str name="facet.field">manu_exact</str>
-      <str name="facet.query">price:[* TO 500]</str>
-      <str name="facet.query">price:[500 TO *]</str>
+	  <str name="facet">on</str>
+	  <str name="facet.mincount">1</str>
+      <str name="facet.field">genre_facet</str>
+      <str name="facet.field">medium_facet</str>
+      <str name="facet.field">rating_facet</str>
+      <str name="facet.field">publisher_facet</str>
     </lst>
-  </requestHandler>
-  
-  <requestHandler name="instock" class="solr.DisMaxRequestHandler" >
-    <!-- for legacy reasons, DisMaxRequestHandler will assume all init
-         params are "defaults" if you don't explicitly specify any defaults.
-      -->
-     <str name="fq">
-        inStock:true
-     </str>
-     <str name="qf">
-        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-     </str>
-     <str name="mm">
-        2&lt;-1 5&lt;-2 6&lt;90%
-     </str>
   </requestHandler>
 
 
