@@ -62,7 +62,7 @@ public class FSDirectory extends Directory {
 
   private static boolean disableLocks = false;
 
-  private static boolean DEFAULT_DO_SYNC = true;
+  private static boolean DEFAULT_DO_SYNC = false;
 
   // True if we should call sync() before closing a file.
   // This improves chances that index will still be
