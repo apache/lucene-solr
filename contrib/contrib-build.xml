@@ -77,14 +77,29 @@
 			
   <target name="dist-maven" if="pom.xml.present" depends="compile-core, jar-src">
     <sequential>
-      <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-sources.jar"/>
       <m2-deploy>
         <artifact-attachments>
           <attach file="${build.dir}/${final.name}-src.jar"
                   classifier="sources"/>
+          <attach file="${build.dir}/${final.name}-javadoc.jar"
+                  classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
     </sequential>
   </target>
 
+  <target name="javadocs">
+   	<sequential>
+       <mkdir dir="${javadoc.dir}/contrib-${name}"/>
+       <invoke-javadoc
+         destdir="${javadoc.dir}/contrib-${name}"
+       	title="${Name} ${version} contrib-${name} API">
+         <sources>
+           <link href="../"/>
+           <packageset dir="src/java"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+    </sequential>
+  </target>	
 </project>

@@ -58,5 +58,11 @@
     <ant dir="bdb" target="dist-maven" />
     <ant dir="bdb-je" target="dist-maven" />
   </target>  	
+
+  <target name="javadocs">
+    <ant dir="bdb" target="javadocs" />
+    <ant dir="bdb-je" target="javadocs" />
+  </target>  	
+
 	
 </project>

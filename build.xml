@@ -27,7 +27,6 @@
 
   <property name="demo.name" value="lucene-demos-${version}"/>
   <property name="demo.war.name" value="luceneweb"/>
-  <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
 
   <!-- Type of checksum to compute for distribution files -->
   <property name="checksum.algorithm" value="md5" />
@@ -35,17 +34,6 @@
   <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.dir}/classes/java"/>
-  </path>
-
-  <!-- Javadoc classpath -->
-  <path id="javadoc.classpath">
-    <path refid="classpath"/>
-    <pathelement location="${ant.home}/lib/ant.jar"/>
-
-    <!-- NOTE: gdata jars only used with jdk 5 but include them even for lower jdk -->
-    <fileset dir="contrib">
-        <include name="**/*.jar"/>
-    </fileset>
   </path>
 
   <path id="demo.classpath">
@@ -189,20 +177,129 @@
       <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
   </target>
 
-  <target name="javadocs" description="Generate javadoc" depends="build-contrib">
-    <mkdir dir="${build.dir}/docs/api"/>
-    <invoke-javadoc
-      access="protected"
-      destdir="${build.dir}/docs/api"
-    />
+  <target name="javadocs" description="Generate javadoc" 
+  	      depends="javadocs-all, javadocs-core, javadocs-demo, javadocs-contrib"/>
+	
+  <target name="javadocs-core" description="Generate javadoc for core classes">
+  	<sequential>
+      <mkdir dir="${javadoc.dir}/core"/>
+      <invoke-javadoc
+        destdir="${javadoc.dir}/core"
+      	title="${Name} ${version} core API">
+        <sources>
+          <packageset dir="src/java"/>
+          <link href="../"/>
+        </sources>
+      </invoke-javadoc>
+     <jarify basedir="${javadoc.dir}/core" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+    </sequential>
   </target>
 
-  <target name="javadocs-internal" depends="build-contrib">
-    <mkdir dir="${build.dir}/docs/api-internal"/>
-    <invoke-javadoc
-      access="package"
-      destdir="${build.dir}/docs/api-internal"
-    />
+  <target name="javadocs-demo" description="Generate javadoc for demo classes">
+  	<sequential>
+      <mkdir dir="${javadoc.dir}/demo"/>
+      <invoke-javadoc
+        destdir="${javadoc.dir}/demo"
+      	title="${Name} ${version} demo API">
+        <sources>
+          <packageset dir="src/demo"/>
+          <link href="../"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}/demo" destfile="${build.dir}/${demo.name}-javadoc.jar"/>
+    </sequential>
+  </target>
+	
+  <target name="javadocs-contrib" description="Generate javadoc for contrib classes">
+    <contrib-crawl target="javadocs"
+                   failonerror="false"/>
+  </target>
+  	
+  <target name="javadocs-all" description="Generate javadoc for core, demo and contrib classes" depends="build-contrib">
+  	<sequential>
+      <dirset dir="contrib/gdata-server/src/core/src/java" id="gdata-server-core">
+        <include name="**" if="build-1-5-contrib" />
+      </dirset>
+      <dirset dir="contrib/gdata-server/src/gom/src/java" id="gdata-server-gom">
+        <include name="**" if="build-1-5-contrib" />
+      </dirset>
+      <dirset dir="contrib/gdata-server/src/hivemind/src/java" id="gdata-server-hivemind">
+        <include name="**" if="build-1-5-contrib" />
+      </dirset>
+  		
+      <mkdir dir="${javadoc.dir}"/>
+      <invoke-javadoc
+        destdir="${javadoc.dir}">
+        <sources>
+          <!-- TODO: find a dynamic way to do include multiple source roots -->
+          <packageset dir="src/java"/>
+
+          <packageset dir="src/demo"/>
+
+          <!-- please keep this list up to date, and in alpha order...   -->
+          <!-- with the minor exception of gdata which is managed by ref -->
+        
+          <!-- ie: `find contrib/* -path \*src/java | grep -v gdata | sort` -->
+
+          <!-- if you make changes to the list of package sets, also -->
+          <!-- make sure the group list below is updated.            -->
+          <!-- Also remember to keep site.xml in sync.            -->		  
+
+          <packageset dir="contrib/analyzers/src/java"/>
+          <packageset dir="contrib/ant/src/java"/>
+          <packageset dir="contrib/benchmark/src/java"/>
+          <packageset dir="contrib/db/bdb-je/src/java"/>
+          <packageset dir="contrib/db/bdb/src/java"/>
+          <packageset dir="contrib/highlighter/src/java"/>
+          <packageset dir="contrib/lucli/src/java"/>
+          <packageset dir="contrib/memory/src/java"/>
+          <packageset dir="contrib/miscellaneous/src/java"/>
+          <packageset dir="contrib/queries/src/java"/>
+          <packageset dir="contrib/regex/src/java"/>
+          <packageset dir="contrib/similarity/src/java"/>
+          <packageset dir="contrib/snowball/src/java"/>
+          <packageset dir="contrib/spellchecker/src/java"/>
+          <packageset dir="contrib/surround/src/java"/>
+          <packageset dir="contrib/swing/src/java"/>
+          <packageset dir="contrib/wordnet/src/java"/>
+          <packageset dir="contrib/xml-query-parser/src/java"/>
+          <!-- end alpha sort -->
+          <packageset refid="gdata-server-core" />
+          <packageset refid="gdata-server-gom" />
+          <packageset refid="gdata-server-hivemind" />
+
+          <!-- If the main javadoc Group listing includes an "Other   -->
+          <!-- Packages" group after the ones listed here, then those -->
+          <!-- packages are not being matched by any of these rules   -->
+  
+          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
+  
+          <group title="Demo" packages="org.apache.lucene.demo*"/>
+  
+          <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
+          <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
+          <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
+          <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
+          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
+          <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
+          <group title="contrib: Lucli" packages="lucli*"/>
+          <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
+          <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
+          <group title="contrib: Queries" packages="org.apache.lucene.search.similar*"/>
+          <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
+          <!-- no group for similarity. -->
+          <!-- nothing in there at the moment, so no package structure -->
+          <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
+
+          <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
+          <group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
+          <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
+          <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
+          <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
+
+        </sources>
+      </invoke-javadoc>
+  	</sequential>
   </target>
 
 
@@ -211,7 +308,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist">
+  <target name="package" depends="jar-core, javadocs-all, war-demo, build-contrib, init-dist">
      <copy file="${build.demo.template}" tofile="${build.dir}/build-demo.xml">
         <filterset begintoken="@PLACEHOLDER_" endtoken="@"> 
 	  <filter token="version" value="${version}"/>
@@ -350,13 +447,15 @@
 
   <target name="dist-all" depends="dist, dist-src"/>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, jar-demo-src">
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package, jar-src, jar-demo-src, javadocs">
     <sequential>
       <m2-deploy pom.xml="lucene-parent-pom.xml.template"/>
       <m2-deploy pom.xml="lucene-core-pom.xml.template">
         <artifact-attachments>
           <attach file="${build.dir}/${final.name}-src.jar"
                   classifier="sources"/>
+          <attach file="${build.dir}/${final.name}-javadoc.jar"
+                  classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
       
@@ -364,6 +463,8 @@
         <artifact-attachments>
           <attach file="${build.dir}/${demo.name}-src.jar"
                   classifier="sources"/>
+          <attach file="${build.dir}/${demo.name}-javadoc.jar"
+                  classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
       
@@ -491,112 +592,6 @@
     <fail if="contribs.failed">Contrib tests failed!</fail>
   </target>
 
-  <macrodef name="invoke-javadoc">
-    <attribute name="access"/>
-    <attribute name="destdir"/>
-    <sequential>
-    
-      <dirset dir="contrib/gdata-server/src/core/src/java" id="gdata-server-core">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-      <dirset dir="contrib/gdata-server/src/gom/src/java" id="gdata-server-gom">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-      <dirset dir="contrib/gdata-server/src/hivemind/src/java" id="gdata-server-hivemind">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-
-      <javadoc
-          overview="src/java/overview.html"
-          packagenames="org.apache.lucene.*"
-          destdir="@{destdir}"
-          access="@{access}"
-          encoding="${build.encoding}"
-          author="true"
-          version="true"
-          use="true"
-          source="${ant.java.version}"
-          link="${javadoc.link}"
-          windowtitle="${Name} ${version} API"
-          doctitle="${Name} ${version} API"
-          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
-        <tag name="todo" description="To Do:"/>
-        <tag name="uml.property" description="UML Property:"/>
-
-        <!-- TODO: find a dynamic way to do include multiple source roots -->
-
-        <packageset dir="src/java"/>
-
-        <packageset dir="src/demo"/>
-
-        <!-- please keep this list up to date, and in alpha order...   -->
-        <!-- with the minor exception of gdata which is managed by ref -->
-        
-        <!-- ie: `find contrib/* -path \*src/java | grep -v gdata | sort` -->
-
-        <!-- if you make changes to the list of package sets, also -->
-        <!-- make sure the group list below is updated.            -->
-
-        <packageset dir="contrib/analyzers/src/java"/>
-        <packageset dir="contrib/ant/src/java"/>
-        <packageset dir="contrib/benchmark/src/java"/>
-        <packageset dir="contrib/db/bdb-je/src/java"/>
-        <packageset dir="contrib/db/bdb/src/java"/>
-        <packageset dir="contrib/highlighter/src/java"/>
-        <packageset dir="contrib/lucli/src/java"/>
-        <packageset dir="contrib/memory/src/java"/>
-        <packageset dir="contrib/miscellaneous/src/java"/>
-        <packageset dir="contrib/queries/src/java"/>
-        <packageset dir="contrib/regex/src/java"/>
-        <packageset dir="contrib/similarity/src/java"/>
-        <packageset dir="contrib/snowball/src/java"/>
-        <packageset dir="contrib/spellchecker/src/java"/>
-        <packageset dir="contrib/surround/src/java"/>
-        <packageset dir="contrib/swing/src/java"/>
-        <packageset dir="contrib/wordnet/src/java"/>
-        <packageset dir="contrib/xml-query-parser/src/java"/>
-        <!-- end alpha sort -->
-        <packageset refid="gdata-server-core" />
-        <packageset refid="gdata-server-gom" />
-        <packageset refid="gdata-server-hivemind" />
-
-        <!-- If the main javadoc Group listing includes an "Other   -->
-        <!-- Packages" group after the ones listed here, then those -->
-        <!-- packages are not being matched by any of these rules   -->
-        
-        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
-
-        <group title="Demo" packages="org.apache.lucene.demo*"/>
-
-        <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
-        <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
-        <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
-        <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
-        <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
-        <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
-        <group title="contrib: Lucli" packages="lucli*"/>
-        <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
-        <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
-        <group title="contrib: Queries" packages="org.apache.lucene.search.similar*"/>
-        <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
-        <!-- no group for similarity. -->
-        <!-- nothing in there at the moment, so no package structure -->
-        <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
-
-        <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
-        <group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
-        <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
-        <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
-        <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
-
-
-        <classpath refid="javadoc.classpath"/>
-
-      </javadoc>
-
-   </sequential>
-  </macrodef>
-	
   <!-- Macro for building checksum files
        This is only needed until the "format" option is supported
        by ant's built in checksum task

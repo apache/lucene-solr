@@ -232,6 +232,10 @@ Optimizations
 
 Documentation
 
+ 1. LUCENE-1051: Generate separate javadocs for core, demo and contrib
+    classes, as well as an unified view. Also add an appropriate menu 
+    structure to the website. (Michael Busch)
+
 Build
 
  1. LUCENE-908: Improvements and simplifications for how the MANIFEST
@@ -248,6 +252,7 @@ Build
  4. LUCENE-935: Defined property "m2.repository.url" to allow setting
     the url to a maven remote repository to deploy to. (Michael Busch)
 
+ 5. LUCENE-1051: Include javadocs in the maven artifacts. (Michael Busch)
 
 Test Cases
 

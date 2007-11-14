@@ -48,8 +48,35 @@ See http://forrest.apache.org/docs/linking.html for more info
   </about>
     <!-- keep in submenu items alpha order -->
   <docs label="Documentation">
-
-      <apidocs label="API Docs" href="ext:javadocs"/>
+      <javadoc label="Javadocs">
+         <javadoc-all label="All (Core, Demo, Contrib)" href="ext:javadocs-all"/>
+		 <javadoc-core label="Core" href="ext:javadocs-core"/>
+		 <javadoc-demo label="Demo" href="ext:javadocs-demo"/>
+		 <javadoc-contrib label="Contrib">
+		    <javadoc-contrib-analyzers label="Analyzers" href="ext:javadocs-contrib-analyzers"/>
+		    <javadoc-contrib-ant label="Ant" href="ext:javadocs-contrib-ant"/>
+		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
+		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
+		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
+<!--
+		    <javadoc-contrib-gdata label="GData" href="ext:javadocs-contrib-gdata"/>
+-->
+		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
+		    <javadoc-contrib-lucli label="Lucli" href="ext:javadocs-contrib-lucli"/>
+		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
+		    <javadoc-contrib-misc label="Miscellaneous" href="ext:javadocs-contrib-misc"/>
+		    <javadoc-contrib-queries label="Queries" href="ext:javadocs-contrib-queries"/>
+		    <javadoc-contrib-regex label="Regex" href="ext:javadocs-contrib-regex"/>
+<!-- This package has currently no content			
+		    <javadoc-contrib-similarity label="Similarity" href="ext:javadocs-contrib-similarity"/>
+-->			
+            <javadoc-contrib-snowball label="Snowball" href="ext:javadocs-contrib-snowball"/>
+		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>
+		    <javadoc-contrib-surround label="Surround" href="ext:javadocs-contrib-surround"/>			
+		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>		    <javadoc-contrib-wordnet label="Wordnet" href="ext:javadocs-contrib-wordnet"/>			
+		    <javadoc-contrib-xml-query-parser label="XML Query Parser" href="ext:javadocs-contrib-xml-query-parser"/>			
+		 </javadoc-contrib>
+	  </javadoc>
       <benchmarks label="Benchmarks" href="benchmarks.html"/>
       <contributions label="Contributions" href="contributions.html"/>
       <faq         label="FAQ"              href="ext:faq" />
@@ -99,7 +126,29 @@ See http://forrest.apache.org/docs/linking.html for more info
   -->
 
   <external-refs>
-    <javadocs href="api/index.html"/>
+    <javadocs-all href="api/index.html"/>
+	<javadocs-core href="api/core/index.html"/>
+	<javadocs-demo href="api/demo/index.html"/>
+	<javadocs-contrib-analyzers href="api/contrib-analyzers/index.html"/>
+	<javadocs-contrib-ant href="api/contrib-ant/index.html"/>
+	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
+	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
+	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
+	<javadocs-contrib-gdata href="api/contrib-gdata/index.html"/>
+	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
+	<javadocs-contrib-lucli href="api/contrib-lucli/index.html"/>
+	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
+	<javadocs-contrib-misc href="api/contrib-misc/index.html"/>
+	<javadocs-contrib-queries href="api/contrib-queries/index.html"/>
+	<javadocs-contrib-regex href="api/contrib-regex/index.html"/>
+	<javadocs-contrib-similarity href="api/contrib-similarity/index.html"/>
+	<javadocs-contrib-snowball href="api/contrib-snowball/index.html"/>
+	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
+	<javadocs-contrib-surround href="api/contrib-surround/index.html"/>
+	<javadocs-contrib-swing href="api/contrib-swing/index.html"/>
+	<javadocs-contrib-wordnet href="api/contrib-wordnet/index.html"/>
+	<javadocs-contrib-xml-query-parser href="api/contrib-xml-query-parser/index.html"/>
+	
     <forrest href="http://forrest.apache.org/">
       <linking href="docs/linking.html"/>
       <validation href="docs/validation.html"/>

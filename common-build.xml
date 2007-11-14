@@ -49,6 +49,20 @@
   <property name="javac.source" value="1.4"/>
   <property name="javac.target" value="1.4"/>
 
+  <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
+  <property name="javadoc.access" value="protected"/>
+  <property name="javadoc.dir" value="${common.dir}/build/docs/api"/>
+  <!-- Javadoc classpath -->
+  <path id="javadoc.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${ant.home}/lib/ant.jar"/>
+
+  	<!-- NOTE: gdata jars only used with jdk 5 but include them even for lower jdk -->
+    <fileset dir="${common.dir}/contrib">
+        <include name="**/*.jar"/>
+    </fileset>
+  </path>
+	
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
   <property name="build.encoding" value="utf-8"/>
 
@@ -481,8 +495,40 @@
       </fixcrlf>
     </sequential>
   </macrodef>
+	
+  <macrodef name="invoke-javadoc">
+    <element name="sources" optional="yes"/>
+    <attribute name="destdir"/>
+  	<attribute name="title" default="${Name} ${version} API"/>
+    <sequential>
+      <javadoc
+          overview="src/java/overview.html"
+          packagenames="org.apache.lucene.*"
+          destdir="@{destdir}"
+          access="${javadoc.access}"
+          encoding="${build.encoding}"
+          author="true"
+          version="true"
+          use="true"
+          source="${ant.java.version}"
+          link="${javadoc.link}"
+          windowtitle="${Name} ${version} API"
+          doctitle="@{title}"
+          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
+        <tag name="todo" description="To Do:"/>
+        <tag name="uml.property" description="UML Property:"/>
+      	<link offline="true" packagelistLoc="${javadoc.dir}"/>
+      	
+      	<sources />
+      	      	
+        <classpath refid="javadoc.classpath"/>
+      </javadoc>
+   </sequential>
+  </macrodef>
+
 
 </project>
+
 
 
 

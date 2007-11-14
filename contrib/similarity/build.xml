@@ -24,4 +24,8 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+	
+<!-- Only needed as long as this contrib has no content -->	
+  <target name="javadocs" />
+  <target name="dist-maven" />
 </project>
