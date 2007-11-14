@@ -571,7 +571,7 @@
        </lib>
        <lib dir="${dist}">
          <include name="${fullnamever}.jar" />
-         <include name="${fullnamever}-common.jar" />
+         <include name="${fullname}-common-${version}.jar" />
        </lib>
        <fileset dir="${src}/webapp/resources" />
        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
@@ -589,7 +589,7 @@
 
     <!-- package the common classes together -->
     <solr-jar
-         destfile="${dist}/${fullnamever}-common.jar"
+         destfile="${dist}/${fullname}-common-${version}.jar"
          basedir="${dest}/common" />
     
   </target>
@@ -600,7 +600,7 @@
           depends="compile-solrj, dist-jar">
     <mkdir dir="${dist}" />
     <solr-jar
-         destfile="${dist}/${fullnamever}-solrj.jar"
+         destfile="${dist}/${fullname}-solrj-${version}.jar"
          basedir="${dest}/client/solrj" />
 
     <mkdir  dir="${dist}/solrj-lib" />
