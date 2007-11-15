@@ -178,6 +178,12 @@ New features
     machine crashes, or power to the machine is cut.  (Venkat Rangan
     via Mike McCandless)
 
+ 8. LUCENE-1020: Created basic index checking & repair tool
+    (o.a.l.index.CheckIndex).  When run without -fix it does a
+    detailed test of all segments in the index and reports summary
+    information and any errors it hit.  With -fix it will remove
+    segments that had errors.  (Mike McCandless)
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
