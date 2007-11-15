@@ -33,7 +33,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.HiFrequencyDictionary;
+import org.apache.solr.util.HighFrequencyDictionary;
 
 import java.io.File;
 import java.io.IOException;
@@ -305,7 +305,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
       throw new RuntimeException("'Extended results' must be a valid boolean", e);
     }
 
-   // when searching for more popular, a non null index-reader and
+    // when searching for more popular, a non null index-reader and
     // restricted-field are required
     if (onlyMorePopular || extendedResults) {
       indexReader = req.getSearcher().getReader();
@@ -313,6 +313,8 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     }
 
     if (extendedResults) {
+
+      rsp.add("numDocs", indexReader.numDocs());
 
       SimpleOrderedMap<Object> results = new SimpleOrderedMap<Object>();
       String[] wordz = words.split(" ");
@@ -371,7 +373,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     }
 
     IndexReader indexReader = req.getSearcher().getReader();
-    Dictionary dictionary = new HiFrequencyDictionary(indexReader, termSourceField, threshold);
+    Dictionary dictionary = new HighFrequencyDictionary(indexReader, termSourceField, threshold);
     spellChecker.clearIndex();
     spellChecker.indexDictionary(dictionary);
     reopen();

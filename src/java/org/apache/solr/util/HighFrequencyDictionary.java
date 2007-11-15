@@ -42,29 +42,29 @@ import org.apache.lucene.search.spell.Dictionary;
  * @author Nicolas Maisonneuve
  * @author Christian Mallwitz
  */
-public class HiFrequencyDictionary implements Dictionary {
+public class HighFrequencyDictionary implements Dictionary {
   private IndexReader reader;
   private String field;
   private float thresh;
 
-  public HiFrequencyDictionary(IndexReader reader, String field, float thresh) {
+  public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
     this.field = field.intern();
     this.thresh = thresh;
   }
 
   public final Iterator getWordsIterator() {
-    return new HiFrequencyIterator();
+    return new HighFrequencyIterator();
   }
 
 
-  final class HiFrequencyIterator implements Iterator {
+  final class HighFrequencyIterator implements Iterator {
     private TermEnum termEnum;
     private Term actualTerm;
     private boolean hasNextCalled;
     private int minNumDocs;
 
-    HiFrequencyIterator() {
+    HighFrequencyIterator() {
       try {
         termEnum = reader.terms(new Term(field, ""));
         minNumDocs = (int)(thresh * (float)reader.numDocs());

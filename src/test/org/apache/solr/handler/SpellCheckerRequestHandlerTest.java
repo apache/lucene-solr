@@ -228,6 +228,7 @@ public class SpellCheckerRequestHandlerTest
     
     assertQ("Failed to spell check",
             req("cat")
+            ,"//int[@name='numDocs'][.=10]"
             ,"//lst[@name='cat']"
             ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
             ,"//lst[@name='cat']/lst[@name='suggestions' and count(lst)=0]"
@@ -256,6 +257,7 @@ public class SpellCheckerRequestHandlerTest
     lrf.args.put("sp.query.accuracy",".2");
     assertQ("Failed to spell check",
             req("cat")
+            ,"//int[@name='numDocs'][.=10]"
             ,"//lst[@name='cat']"
             ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
             ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cart']/int[@name='frequency'][.>0]"
@@ -277,6 +279,7 @@ public class SpellCheckerRequestHandlerTest
     /* The following is the generated XML response for the next query with three words:
       <response>
         <responseHeader><status>0</status><QTime>0</QTime></responseHeader>
+        <int name="numDocs">10</int>
         <lst name="result">
           <lst name="cat">
             <int name="frequency">1</int>
@@ -351,6 +354,7 @@ public class SpellCheckerRequestHandlerTest
     
     assertQ("Failed to spell check",
             req("coat")
+            ,"//int[@name='numDocs'][.=10]"
             ,"//lst[@name='coat']"
             ,"//lst[@name='coat']/int[@name='frequency'][.=0]"
             ,"//lst[@name='coat']/lst[@name='suggestions' and count(lst)=0]"
@@ -383,6 +387,7 @@ public class SpellCheckerRequestHandlerTest
     lrf.args.put("sp.query.accuracy",".2");
     assertQ("Failed to spell check",
         req("cet cert corp")
+        ,"//int[@name='numDocs'][.=10]"
         ,"//lst[@name='cet']"
         ,"//lst[@name='cet']/int[@name='frequency'][.=0]"
         ,"//lst[@name='cet']/lst[@name='suggestions']/lst[1]"
