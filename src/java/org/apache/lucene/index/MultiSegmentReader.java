@@ -299,6 +299,17 @@ class MultiSegmentReader extends DirectoryIndexReader {
     return fieldSet;
   } 
 
+  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
+    for (int i = 0; i < subReaders.length; i++)
+      subReaders[i].setTermInfosIndexDivisor(indexDivisor);
+  }
+
+  public int getTermInfosIndexDivisor() throws IllegalStateException {
+    if (subReaders.length > 0)
+      return subReaders[0].getTermInfosIndexDivisor();
+    else
+      throw new IllegalStateException("no readers");
+  }
 
   static class MultiTermEnum extends TermEnum {
     private SegmentMergeQueue queue;

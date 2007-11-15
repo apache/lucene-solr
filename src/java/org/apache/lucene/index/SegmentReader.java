@@ -444,6 +444,14 @@ class SegmentReader extends DirectoryIndexReader {
     return si.docCount;
   }
 
+  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
+    tis.setIndexDivisor(indexDivisor);
+  }
+
+  public int getTermInfosIndexDivisor() {
+    return tis.getIndexDivisor();
+  }
+
   /**
    * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
    */

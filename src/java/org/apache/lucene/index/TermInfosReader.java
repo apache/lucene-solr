@@ -40,6 +40,9 @@ final class TermInfosReader {
   private long[] indexPointers;
   
   private SegmentTermEnum indexEnum;
+  
+  private int indexDivisor = 1;
+  private int totalIndexInterval;
 
   TermInfosReader(Directory dir, String seg, FieldInfos fis)
        throws CorruptIndexException, IOException {
@@ -58,6 +61,7 @@ final class TermInfosReader {
       origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis",
           readBufferSize), fieldInfos, false);
       size = origEnum.size;
+      totalIndexInterval = origEnum.indexInterval;
 
       indexEnum = new SegmentTermEnum(directory.openInput(segment + ".tii",
           readBufferSize), fieldInfos, true);
@@ -81,6 +85,43 @@ final class TermInfosReader {
   
   public int getMaxSkipLevels() {
     return origEnum.maxSkipLevels;
+  }
+
+  /**
+   * <p>Sets the indexDivisor, which subsamples the number
+   * of indexed terms loaded into memory.  This has a
+   * similar effect as {@link
+   * IndexWriter#setTermIndexInterval} except that setting
+   * must be done at indexing time while this setting can be
+   * set per reader.  When set to N, then one in every
+   * N*termIndexInterval terms in the index is loaded into
+   * memory.  By setting this to a value > 1 you can reduce
+   * memory usage, at the expense of higher latency when
+   * loading a TermInfo.  The default value is 1.</p>
+   *
+   * <b>NOTE:</b> you must call this before the term
+   * index is loaded.  If the index is already loaded,
+   * an IllegalStateException is thrown.
+   *
+   + @throws IllegalStateException if the term index has
+   * already been loaded into memory.
+   */
+  public void setIndexDivisor(int indexDivisor) throws IllegalStateException {
+    if (indexDivisor < 1)
+      throw new IllegalArgumentException("indexDivisor must be > 0: got " + indexDivisor);
+
+    if (indexTerms != null)
+      throw new IllegalStateException("index terms are already loaded");
+
+    this.indexDivisor = indexDivisor;
+    totalIndexInterval = origEnum.indexInterval * indexDivisor;
+  }
+
+  /** Returns the indexDivisor.
+   * @see #setIndexDivisor
+   */
+  public int getIndexDivisor() {
+    return indexDivisor;
   }
   
   final void close() throws IOException {
@@ -106,10 +147,10 @@ final class TermInfosReader {
   }
 
   private synchronized void ensureIndexIsRead() throws IOException {
-    if (indexTerms != null)                       // index already read
-      return;                                     // do nothing
+    if (indexTerms != null)                                    // index already read
+      return;                                                  // do nothing
     try {
-      int indexSize = (int)indexEnum.size;        // otherwise read index
+      int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
 
       indexTerms = new Term[indexSize];
       indexInfos = new TermInfo[indexSize];
@@ -119,6 +160,10 @@ final class TermInfosReader {
         indexTerms[i] = indexEnum.term();
         indexInfos[i] = indexEnum.termInfo();
         indexPointers[i] = indexEnum.indexPointer;
+        
+        for (int j = 1; j < indexDivisor; j++)
+            if (!indexEnum.next())
+                break;
       }
     } finally {
         indexEnum.close();
@@ -146,8 +191,8 @@ final class TermInfosReader {
 
   private final void seekEnum(int indexOffset) throws IOException {
     getEnum().seek(indexPointers[indexOffset],
-	      (indexOffset * getEnum().indexInterval) - 1,
-	      indexTerms[indexOffset], indexInfos[indexOffset]);
+                   (indexOffset * totalIndexInterval) - 1,
+                   indexTerms[indexOffset], indexInfos[indexOffset]);
   }
 
   /** Returns the TermInfo for a Term in the set, or null. */
@@ -161,7 +206,7 @@ final class TermInfosReader {
     if (enumerator.term() != null                 // term is at or past current
 	&& ((enumerator.prev() != null && term.compareTo(enumerator.prev())> 0)
 	    || term.compareTo(enumerator.term()) >= 0)) {
-      int enumOffset = (int)(enumerator.position/enumerator.indexInterval)+1;
+      int enumOffset = (int)(enumerator.position/totalIndexInterval)+1;
       if (indexTerms.length == enumOffset	  // but before end of block
 	  || term.compareTo(indexTerms[enumOffset]) < 0)
 	return scanEnum(term);			  // no need to seek
@@ -189,10 +234,10 @@ final class TermInfosReader {
     SegmentTermEnum enumerator = getEnum();
     if (enumerator != null && enumerator.term() != null &&
         position >= enumerator.position &&
-	position < (enumerator.position + enumerator.indexInterval))
+	position < (enumerator.position + totalIndexInterval))
       return scanEnum(position);		  // can avoid seek
 
-    seekEnum(position / enumerator.indexInterval); // must seek
+    seekEnum(position/totalIndexInterval); // must seek
     return scanEnum(position);
   }
 

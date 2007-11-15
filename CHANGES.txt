@@ -55,6 +55,12 @@ API Changes
     scheduler is now ConcurrentMergeScheduler (see
     LUCENE-870). (Steven Parkes via Mike McCandless)
 
+ 6. LUCENE-1052: Add IndexReader.setTermInfosIndexDivisor(int) method
+    that allows you to reduce memory usage of the termInfos by further
+    sub-sampling (over the termIndexInterval that was used during
+    indexing) which terms are loaded into memory.  (Chuck Williams,
+    Doug Cutting via Mike McCandless)
+
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
