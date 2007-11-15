@@ -287,33 +287,28 @@ class NativeFSLock extends Lock {
     return isLocked();
   }
 
-  public synchronized void release() {
-    try {
-      if (isLocked()) {
+  public synchronized void release() throws IOException {
+    if (isLocked()) {
+      try {
+        lock.release();
+      } finally {
+        lock = null;
         try {
-          lock.release();
+          channel.close();
         } finally {
-          lock = null;
+          channel = null;
           try {
-            channel.close();
+            f.close();
           } finally {
-            channel = null;
-            try {
-              f.close();
-            } finally {
-              f = null;
-              synchronized(LOCK_HELD) {
-                LOCK_HELD.remove(path.getCanonicalPath());
-              }
+            f = null;
+            synchronized(LOCK_HELD) {
+              LOCK_HELD.remove(path.getCanonicalPath());
             }
           }
         }
-        path.delete();
       }
-    } catch (IOException e) {
-      // Not sure how to better message/handle this without
-      // changing API?
-      throw new RuntimeException(e);
+      if (!path.delete())
+        throw new LockReleaseFailedException("failed to delete " + path);
     }
   }
 

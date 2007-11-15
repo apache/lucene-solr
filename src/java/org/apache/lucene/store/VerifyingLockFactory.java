@@ -85,7 +85,7 @@ public class VerifyingLockFactory extends LockFactory {
       return lock.isLocked();
     }
 
-    public synchronized void release() {
+    public synchronized void release() throws IOException {
       if (isLocked()) {
         verify((byte) 0);
         lock.release();

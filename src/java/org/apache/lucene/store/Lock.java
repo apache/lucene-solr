@@ -99,7 +99,7 @@ public abstract class Lock {
   }
 
   /** Releases exclusive access. */
-  public abstract void release();
+  public abstract void release() throws IOException;
 
   /** Returns true if the resource is currently locked.  Note that one must
    * still call {@link #obtain()} before using the resource. */

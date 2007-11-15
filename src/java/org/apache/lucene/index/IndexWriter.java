@@ -1220,11 +1220,6 @@ public class IndexWriter {
       if (infoStream != null)
         message("at close: " + segString());
 
-      if (writeLock != null) {
-        writeLock.release();                          // release write lock
-        writeLock = null;
-      }
-      closed = true;
       docWriter = null;
 
       synchronized(this) {
@@ -1233,6 +1228,13 @@ public class IndexWriter {
       
       if (closeDir)
         directory.close();
+
+      if (writeLock != null) {
+        writeLock.release();                          // release write lock
+        writeLock = null;
+      }
+      closed = true;
+
     } finally {
       synchronized(this) {
         if (!closed)

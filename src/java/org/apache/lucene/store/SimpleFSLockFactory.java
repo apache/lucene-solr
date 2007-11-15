@@ -144,8 +144,9 @@ class SimpleFSLock extends Lock {
     return lockFile.createNewFile();
   }
 
-  public void release() {
-    lockFile.delete();
+  public void release() throws LockReleaseFailedException {
+    if (!lockFile.delete())
+      throw new LockReleaseFailedException("failed to delete " + lockFile);
   }
 
   public boolean isLocked() {

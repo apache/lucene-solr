@@ -144,6 +144,10 @@ Bug fixes
     timeout argument is very large (eg Long.MAX_VALUE).  Also added
     Lock.LOCK_OBTAIN_WAIT_FOREVER constant to never timeout.  (Nikolay
     Diakov via Mike McCandless)
+
+23. LUCENE-1050: Throw LockReleaseFailedException in
+    Simple/NativeFSLockFactory if we fail to delete the lock file when
+    releasing the lock.  (Nikolay Diakov via Mike McCandless)
     
 New features
 
