@@ -202,6 +202,8 @@ public class MemoryIndexTest extends TestCase {
   private Analyzer analyzer;
   private boolean fastMode = false;
   
+  private final boolean verbose = false;
+  
   private static final String FIELD_NAME = "content";
 
   /** Runs the tests and/or benchmark */
@@ -295,7 +297,7 @@ public class MemoryIndexTest extends TestCase {
           bytes += file.length();
           String text = toString(new FileInputStream(file), null);
           Document doc = createDocument(text);
-          System.out.println("\n*********** FILE=" + file);
+          if (verbose) System.out.println("\n*********** FILE=" + file);
           
           for (int q=0; q < queries.length; q++) {
             try {
@@ -314,7 +316,7 @@ public class MemoryIndexTest extends TestCase {
                 if (useRAMIndex && measureIndexing) ramind = createRAMIndex(doc);
                 if (useRAMIndex) score2 = query(ramind, query);
                 if (useMemIndex && useRAMIndex) {
-                  System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
+                  if (verbose) System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
                   if (score1 != score2 || score1 < 0.0f || score2 < 0.0f || score1 > 1.0f || score2 > 1.0f) {
                     throw new IllegalStateException("BUG DETECTED:" + (i*(q+1)) + " at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
                   }
