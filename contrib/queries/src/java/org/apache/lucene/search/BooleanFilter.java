@@ -178,4 +178,43 @@ public class BooleanFilter extends Filter
 		return hash;
 	}
 	
+	
+		/** Prints a user-readable version of this query. */
+	public String toString()
+	{
+		StringBuffer buffer = new StringBuffer();
+
+		buffer.append("BooleanFilter(");
+
+		appendFilters(shouldFilters, null, buffer);
+		appendFilters(mustFilters, "+", buffer);
+		appendFilters(notFilters, "-", buffer);
+
+		buffer.append(")");
+
+		return buffer.toString();
+	}
+	
+	private void appendFilters(ArrayList filters, String occurString,
+			StringBuffer buffer)
+	{
+		if (filters == null)
+			return;
+
+		for (int i = 0; i < filters.size(); i++)
+		{
+			Filter filter = (Filter) filters.get(i);
+			if (occurString != null)
+			{
+				buffer.append(occurString);
+			}
+
+			buffer.append(filter);
+
+			if (i < filters.size() - 1)
+			{
+				buffer.append(' ');
+			}
+		}
+	}		
 }
