@@ -87,8 +87,40 @@ public abstract class IndexReader {
     public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
   }
 
-  protected boolean closed;
+  private boolean closed;
   protected boolean hasChanges;
+  
+  private volatile int refCount;
+  
+  // for testing
+  synchronized int getRefCount() {
+    return refCount;
+  }
+  
+  /**
+   * Increments the refCount of this IndexReader instance. RefCounts are used to determine
+   * when a reader can be closed safely, i. e. as soon as no other IndexReader is referencing
+   * it anymore.
+   */
+  protected synchronized void incRef() {
+    assert refCount > 0;
+    refCount++;
+  }
+
+  /**
+   * Decreases the refCount of this IndexReader instance. If the refCount drops
+   * to 0, then pending changes are committed to the index and this reader is closed.
+   * 
+   * @throws IOException in case an IOException occurs in commit() or doClose()
+   */
+  protected synchronized void decRef() throws IOException {
+    assert refCount > 0;
+    if (refCount == 1) {
+      commit();
+      doClose();
+    }
+    refCount--;
+  }
   
   /** 
    * @deprecated will be deleted when IndexReader(Directory) is deleted
@@ -111,16 +143,19 @@ public abstract class IndexReader {
    * @deprecated - use IndexReader()
    */
   protected IndexReader(Directory directory) {
+    this();
     this.directory = directory;
   }
   
-  protected IndexReader() { /* NOOP */ }
+  protected IndexReader() { 
+    refCount = 1;
+  }
   
   /**
    * @throws AlreadyClosedException if this IndexReader is closed
    */
   protected final void ensureOpen() throws AlreadyClosedException {
-    if (closed) {
+    if (refCount <= 0) {
       throw new AlreadyClosedException("this IndexReader is closed");
     }
   }
@@ -167,25 +202,46 @@ public abstract class IndexReader {
   }
 
   private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
+    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy);
+  }
 
-    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
-
-      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-
-        SegmentInfos infos = new SegmentInfos();
-        infos.read(directory, segmentFileName);
-
-        DirectoryIndexReader reader;
-
-        if (infos.size() == 1) {		  // index is optimized
-          reader = SegmentReader.get(infos, infos.info(0), closeDirectory);
-        } else {
-          reader = new MultiSegmentReader(directory, infos, closeDirectory);
-        }
-        reader.setDeletionPolicy(deletionPolicy);
-        return reader;
-      }
-    }.run();
+  /**
+   * Refreshes an IndexReader if the index has changed since this instance 
+   * was (re)opened. 
+   * <p>
+   * Opening an IndexReader is an expensive operation. This method can be used
+   * to refresh an existing IndexReader to reduce these costs. This method 
+   * tries to only load segments that have changed or were created after the 
+   * IndexReader was (re)opened.
+   * <p>
+   * If the index has not changed since this instance was (re)opened, then this
+   * call is a NOOP and returns this instance. Otherwise, a new instance is 
+   * returned. The old instance is <b>not</b> closed and remains usable.<br>
+   * <b>Note:</b> The re-opened reader instance and the old instance might share
+   * the same resources. For this reason no index modification operations 
+   * (e. g. {@link #deleteDocument(int)}, {@link #setNorm(int, String, byte)}) 
+   * should be performed using one of the readers until the old reader instance
+   * is closed. <b>Otherwise, the behavior of the readers is undefined.</b> 
+   * <p>   
+   * You can determine whether a reader was actually reopened by comparing the
+   * old instance with the instance returned by this method: 
+   * <pre>
+   * IndexReader reader = ... 
+   * ...
+   * IndexReader new = r.reopen();
+   * if (new != reader) {
+   *   ...     // reader was reopened
+   *   reader.close(); 
+   * }
+   * reader = new;
+   * ...
+   * </pre>
+   * 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */  
+  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen().");
   }
 
   /** 
@@ -732,6 +788,15 @@ public abstract class IndexReader {
   protected synchronized void acquireWriteLock() throws IOException {
     /* NOOP */
   }
+  
+  /**
+   * 
+   * @throws IOException
+   */
+  public final synchronized void flush() throws IOException {
+    ensureOpen();
+    commit();
+  }
 
   /**
    * Commit changes resulting from delete, undeleteAll, or
@@ -760,11 +825,11 @@ public abstract class IndexReader {
    */
   public final synchronized void close() throws IOException {
     if (!closed) {
-      commit();
-      doClose();
+      decRef();
+      closed = true;
     }
   }
-
+  
   /** Implements close. */
   protected abstract void doClose() throws IOException;
 

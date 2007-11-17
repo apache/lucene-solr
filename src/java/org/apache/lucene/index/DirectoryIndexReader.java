@@ -30,8 +30,8 @@ import org.apache.lucene.store.LockObtainFailedException;
  * whenever index modifications are performed.
  */
 abstract class DirectoryIndexReader extends IndexReader {
-  private Directory directory;
-  private boolean closeDirectory;
+  protected Directory directory;
+  protected boolean closeDirectory;
   private IndexDeletionPolicy deletionPolicy;
 
   private SegmentInfos segmentInfos;
@@ -57,6 +57,60 @@ abstract class DirectoryIndexReader extends IndexReader {
     super();
     init(directory, segmentInfos, closeDirectory);
   }
+  
+  static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
+
+    return (DirectoryIndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+
+        SegmentInfos infos = new SegmentInfos();
+        infos.read(directory, segmentFileName);
+
+        DirectoryIndexReader reader;
+
+        if (infos.size() == 1) {          // index is optimized
+          reader = SegmentReader.get(infos, infos.info(0), closeDirectory);
+        } else {
+          reader = new MultiSegmentReader(directory, infos, closeDirectory);
+        }
+        reader.setDeletionPolicy(deletionPolicy);
+        return reader;
+      }
+    }.run();
+  }
+
+  
+  public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    ensureOpen();
+
+    if (this.hasChanges || this.isCurrent()) {
+      // the index hasn't changed - nothing to do here
+      return this;
+    }
+
+    return (DirectoryIndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+        SegmentInfos infos = new SegmentInfos();
+        infos.read(directory, segmentFileName);
+
+        DirectoryIndexReader newReader = doReopen(infos);
+        
+        if (DirectoryIndexReader.this != newReader) {
+          newReader.init(directory, infos, closeDirectory);
+          newReader.deletionPolicy = deletionPolicy;
+        }
+
+        return newReader;
+      }
+    }.run();
+  }
+
+  /**
+   * Re-opens the index using the passed-in SegmentInfos 
+   */
+  protected abstract DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException;
   
   public void setDeletionPolicy(IndexDeletionPolicy deletionPolicy) {
     this.deletionPolicy = deletionPolicy;
@@ -106,8 +160,6 @@ abstract class DirectoryIndexReader extends IndexReader {
   }
 
   protected void doClose() throws IOException {
-    if (segmentInfos != null)
-      closed = true;
     if(closeDirectory)
       directory.close();
   }

@@ -23,8 +23,11 @@ import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 /** 
@@ -53,13 +56,128 @@ class MultiSegmentReader extends DirectoryIndexReader {
       } catch (IOException e) {
         // Close all readers we had opened:
         for(i++;i<sis.size();i++) {
-          readers[i].close();
+          try {
+            readers[i].close();
+          } catch (IOException ignore) {
+            // keep going - we want to clean up as much as possible
+          }
         }
         throw e;
       }
     }
 
     initialize(readers);
+  }
+
+  /** This contructor is only used for {@link #reopen()} */
+  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache) throws IOException {
+    super(directory, infos, closeDirectory);
+    
+    // we put the old SegmentReaders in a map, that allows us
+    // to lookup a reader using its segment name
+    Map segmentReaders = new HashMap();
+
+    if (oldReaders != null) {
+      // create a Map SegmentName->SegmentReader
+      for (int i = 0; i < oldReaders.length; i++) {
+        segmentReaders.put(oldReaders[i].getSegmentName(), new Integer(i));
+      }
+    }
+    
+    SegmentReader[] newReaders = new SegmentReader[infos.size()];
+    
+    // remember which readers are shared between the old and the re-opened
+    // MultiSegmentReader - we have to incRef those readers
+    boolean[] readerShared = new boolean[infos.size()];
+    
+    for (int i = infos.size() - 1; i>=0; i--) {
+      // find SegmentReader for this segment
+      Integer oldReaderIndex = (Integer) segmentReaders.get(infos.info(i).name);
+      if (oldReaderIndex == null) {
+        // this is a new segment, no old SegmentReader can be reused
+        newReaders[i] = null;
+      } else {
+        // there is an old reader for this segment - we'll try to reopen it
+        newReaders[i] = oldReaders[oldReaderIndex.intValue()];
+      }
+
+      boolean success = false;
+      try {
+        SegmentReader newReader;
+        if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
+          // this is a new reader; in case we hit an exception we can close it safely
+          newReader = SegmentReader.get(infos.info(i));
+        } else {
+          newReader = (SegmentReader) newReaders[i].reopenSegment(infos.info(i));
+        }
+        if (newReader == newReaders[i]) {
+          // this reader will be shared between the old and the new one,
+          // so we must incRef it
+          readerShared[i] = true;
+          newReader.incRef();
+        } else {
+          readerShared[i] = false;
+          newReaders[i] = newReader;
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          for (i++; i < infos.size(); i++) {
+            if (newReaders[i] != null) {
+              try {
+                if (!readerShared[i]) {
+                  // this is a new subReader that is not used by the old one,
+                  // we can close it
+                  newReaders[i].close();
+                } else {
+                  // this subReader is also used by the old reader, so instead
+                  // closing we must decRef it
+                  newReaders[i].decRef();
+                }
+              } catch (IOException ignore) {
+                // keep going - we want to clean up as much as possible
+              }
+            }
+          }
+        }
+      }
+    }    
+    
+    // initialize the readers to calculate maxDoc before we try to reuse the old normsCache
+    initialize(newReaders);
+    
+    // try to copy unchanged norms from the old normsCache to the new one
+    if (oldNormsCache != null) {
+      Iterator it = oldNormsCache.keySet().iterator();
+      while (it.hasNext()) {
+        String field = (String) it.next();
+        if (!hasNorms(field)) {
+          continue;
+        }
+        
+        byte[] oldBytes = (byte[]) oldNormsCache.get(field);
+  
+        byte[] bytes = new byte[maxDoc()];
+        
+        for (int i = 0; i < subReaders.length; i++) {
+          Integer oldReaderIndex = ((Integer) segmentReaders.get(subReaders[i].getSegmentName()));
+
+          // this SegmentReader was not re-opened, we can copy all of its norms 
+          if (oldReaderIndex != null &&
+               (oldReaders[oldReaderIndex.intValue()] == subReaders[i] 
+                 || oldReaders[oldReaderIndex.intValue()].norms.get(field) == subReaders[i].norms.get(field))) {
+            // we don't have to synchronize here: either this constructor is called from a SegmentReader,
+            // in which case no old norms cache is present, or it is called from MultiReader.reopen(),
+            // which is synchronized
+            System.arraycopy(oldBytes, oldStarts[oldReaderIndex.intValue()], bytes, starts[i], starts[i+1] - starts[i]);
+          } else {
+            subReaders[i].norms(field, bytes, starts[i]);
+          }
+        }
+        
+        normsCache.put(field, bytes);      // update cache
+      }
+    }
   }
 
   private void initialize(SegmentReader[] subReaders) {
@@ -75,6 +193,16 @@ class MultiSegmentReader extends DirectoryIndexReader {
     starts[subReaders.length] = maxDoc;
   }
 
+  protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException {
+    if (infos.size() == 1) {
+      // The index has only one segment now, so we can't refresh the MultiSegmentReader.
+      // Return a new SegmentReader instead
+      SegmentReader newReader = SegmentReader.get(infos, infos.info(0), false);
+      return newReader;
+    } else {
+      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache);
+    }            
+  }
 
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
     ensureOpen();
@@ -277,7 +405,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
 
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].close();
+      subReaders[i].decRef();
     
     // maybe close directory
     super.doClose();
@@ -298,6 +426,11 @@ class MultiSegmentReader extends DirectoryIndexReader {
     }
     return fieldSet;
   } 
+  
+  // for testing
+  SegmentReader[] getSubReaders() {
+    return subReaders;
+  }
 
   public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
     for (int i = 0; i < subReaders.length; i++)

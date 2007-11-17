@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -1171,5 +1172,77 @@ public class TestIndexReader extends LuceneTestCase
         dir.delete();
     }
 
-    
+    public static void assertIndexEquals(IndexReader index1, IndexReader index2) throws IOException {
+      assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
+      assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
+      assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
+      assertEquals("Only one index is optimized.", index1.isOptimized(), index2.isOptimized());
+      
+      // check field names
+      Collection fields1 = index1.getFieldNames(FieldOption.ALL);
+      Collection fields2 = index1.getFieldNames(FieldOption.ALL);
+      assertEquals("IndexReaders have different numbers of fields.", fields1.size(), fields2.size());
+      Iterator it1 = fields1.iterator();
+      Iterator it2 = fields1.iterator();
+      while (it1.hasNext()) {
+        assertEquals("Different field names.", (String) it1.next(), (String) it2.next());
+      }
+      
+      // check norms
+      it1 = fields1.iterator();
+      while (it1.hasNext()) {
+        String curField = (String) it1.next();
+        byte[] norms1 = index1.norms(curField);
+        byte[] norms2 = index2.norms(curField);
+        assertEquals(norms1.length, norms2.length);
+        for (int i = 0; i < norms1.length; i++) {
+          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1[i], norms2[i]);
+        }      
+      }
+      
+      // check deletions
+      for (int i = 0; i < index1.maxDoc(); i++) {
+        assertEquals("Doc " + i + " only deleted in one index.", index1.isDeleted(i), index2.isDeleted(i));
+      }
+      
+      // check stored fields
+      for (int i = 0; i < index1.maxDoc(); i++) {
+        if (!index1.isDeleted(i)) {
+          Document doc1 = index1.document(i);
+          Document doc2 = index2.document(i);
+          fields1 = doc1.getFields();
+          fields2 = doc2.getFields();
+          assertEquals("Different numbers of fields for doc " + i + ".", fields1.size(), fields2.size());
+          it1 = fields1.iterator();
+          it2 = fields2.iterator();
+          while (it1.hasNext()) {
+            Field curField1 = (Field) it1.next();
+            Field curField2 = (Field) it2.next();
+            assertEquals("Different fields names for doc " + i + ".", curField1.name(), curField2.name());
+            assertEquals("Different field values for doc " + i + ".", curField1.stringValue(), curField2.stringValue());
+          }          
+        }
+      }
+      
+      // check dictionary and posting lists
+      TermEnum enum1 = index1.terms();
+      TermEnum enum2 = index2.terms();
+      TermPositions tp1 = index1.termPositions();
+      TermPositions tp2 = index2.termPositions();
+      while(enum1.next()) {
+        assertTrue(enum2.next());
+        assertEquals("Different term in dictionary.", enum1.term(), enum2.term());
+        tp1.seek(enum1.term());
+        tp2.seek(enum1.term());
+        while(tp1.next()) {
+          assertTrue(tp2.next());
+          assertEquals("Different doc id in postinglist of term " + enum1.term() + ".", tp1.doc(), tp2.doc());
+          assertEquals("Different term frequence in postinglist of term " + enum1.term() + ".", tp1.freq(), tp2.freq());
+          for (int i = 0; i < tp1.freq(); i++) {
+            assertEquals("Different positions in postinglist of term " + enum1.term() + ".", tp1.nextPosition(), tp2.nextPosition());
+          }
+        }
+      }
+    }
+
 }

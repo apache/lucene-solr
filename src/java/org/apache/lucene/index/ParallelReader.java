@@ -45,6 +45,8 @@ import java.util.*;
  */
 public class ParallelReader extends IndexReader {
   private List readers = new ArrayList();
+  private List decrefOnClose = new ArrayList(); // remember which subreaders to decRef on close
+  boolean incRefReaders = false;
   private SortedMap fieldToReader = new TreeMap();
   private Map readerToFields = new HashMap();
   private List storedFieldReaders = new ArrayList();
@@ -53,8 +55,19 @@ public class ParallelReader extends IndexReader {
   private int numDocs;
   private boolean hasDeletions;
 
- /** Construct a ParallelReader. */
-  public ParallelReader() throws IOException { super(); }
+ /** Construct a ParallelReader. 
+  * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
+  */
+  public ParallelReader() throws IOException { this(true); }
+   
+ /** Construct a ParallelReader. 
+  * @param closeSubReaders indicates whether the subreaders should be closed
+  * when this ParallelReader is closed
+  */
+  public ParallelReader(boolean closeSubReaders) throws IOException {
+    super();
+    this.incRefReaders = !closeSubReaders;
+  }
 
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
@@ -103,7 +116,98 @@ public class ParallelReader extends IndexReader {
     if (!ignoreStoredFields)
       storedFieldReaders.add(reader);             // add to storedFieldReaders
     readers.add(reader);
+    
+    if (incRefReaders) {
+      reader.incRef();
+    }
+    decrefOnClose.add(new Boolean(incRefReaders));
   }
+
+  /**
+   * Tries to reopen the subreaders.
+   * <br>
+   * If one or more subreaders could be re-opened (i. e. subReader.reopen() 
+   * returned a new instance != subReader), then a new ParallelReader instance 
+   * is returned, otherwise this instance is returned.
+   * <p>
+   * A re-opened instance might share one or more subreaders with the old 
+   * instance. Index modification operations result in undefined behavior
+   * when performed before the old instance is closed.
+   * (see {@link IndexReader#reopen()}).
+   * <p>
+   * If subreaders are shared, then the reference count of those
+   * readers is increased to ensure that the subreaders remain open
+   * until the last referring reader is closed.
+   * 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error 
+   */
+  public IndexReader reopen() throws CorruptIndexException, IOException {
+    ensureOpen();
+    
+    boolean reopened = false;
+    List newReaders = new ArrayList();
+    List newDecrefOnClose = new ArrayList();
+    
+    boolean success = false;
+    
+    try {
+    
+      for (int i = 0; i < readers.size(); i++) {
+        IndexReader oldReader = (IndexReader) readers.get(i);
+        IndexReader newReader = oldReader.reopen();
+        newReaders.add(newReader);
+        // if at least one of the subreaders was updated we remember that
+        // and return a new MultiReader
+        if (newReader != oldReader) {
+          reopened = true;
+        }
+      }
+  
+      if (reopened) {
+        ParallelReader pr = new ParallelReader();
+        for (int i = 0; i < readers.size(); i++) {
+          IndexReader oldReader = (IndexReader) readers.get(i);
+          IndexReader newReader = (IndexReader) newReaders.get(i);
+          if (newReader == oldReader) {
+            newDecrefOnClose.add(new Boolean(true));
+            newReader.incRef();
+          } else {
+            // this is a new subreader instance, so on close() we don't
+            // decRef but close it 
+            newDecrefOnClose.add(new Boolean(false));
+          }
+          pr.add(newReader, !storedFieldReaders.contains(oldReader));
+        }
+        pr.decrefOnClose = newDecrefOnClose;
+        pr.incRefReaders = incRefReaders;
+        success = true;
+        return pr;
+      } else {
+        success = true; 
+       // No subreader was refreshed
+        return this;
+      }
+    } finally {
+      if (!success && reopened) {
+        for (int i = 0; i < newReaders.size(); i++) {
+          IndexReader r = (IndexReader) newReaders.get(i);
+          if (r != null) {
+            try {
+              if (((Boolean) newDecrefOnClose.get(i)).booleanValue()) {
+                r.decRef();
+              } else {
+                r.close();
+              }
+            } catch (IOException ignore) {
+              // keep going - we want to clean up as much as possible
+            }
+          }
+        }
+      }
+    }
+  }
+
 
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
@@ -316,6 +420,10 @@ public class ParallelReader extends IndexReader {
     throw new UnsupportedOperationException("ParallelReader does not support this method.");
   }
 
+  // for testing
+  IndexReader[] getSubReaders() {
+    return (IndexReader[]) readers.toArray(new IndexReader[readers.size()]);
+  }
 
   protected void doCommit() throws IOException {
     for (int i = 0; i < readers.size(); i++)
@@ -323,10 +431,14 @@ public class ParallelReader extends IndexReader {
   }
 
   protected synchronized void doClose() throws IOException {
-    for (int i = 0; i < readers.size(); i++)
-      ((IndexReader)readers.get(i)).close();
+    for (int i = 0; i < readers.size(); i++) {
+      if (((Boolean) decrefOnClose.get(i)).booleanValue()) {
+        ((IndexReader)readers.get(i)).decRef();
+      } else {
+        ((IndexReader)readers.get(i)).close();
+      }
+    }
   }
-
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
@@ -485,6 +597,7 @@ public class ParallelReader extends IndexReader {
   }
 
 }
+
 
 
 

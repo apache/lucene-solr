@@ -60,7 +60,10 @@ API Changes
     sub-sampling (over the termIndexInterval that was used during
     indexing) which terms are loaded into memory.  (Chuck Williams,
     Doug Cutting via Mike McCandless)
-
+    
+ 7. LUCENE-743: Add IndexReader.reopen() method that re-opens an
+    existing IndexReader (see New features -> 9.) (Michael Busch)
+    
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 
@@ -193,6 +196,13 @@ New features
     detailed test of all segments in the index and reports summary
     information and any errors it hit.  With -fix it will remove
     segments that had errors.  (Mike McCandless)
+
+ 9. LUCENE-743: Add IndexReader.reopen() method that re-opens an
+    existing IndexReader by only loading those portions of an index
+    that have changed since the reader was (re)opened. reopen() can
+    be significantly faster than open(), depending on the amount of
+    index changes. SegmentReader, MultiSegmentReader, MultiReader,
+    and ParallelReader implement reopen(). (Michael Busch) 
 
 Optimizations
 

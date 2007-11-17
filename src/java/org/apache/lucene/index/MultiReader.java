@@ -35,6 +35,7 @@ import org.apache.lucene.index.MultiSegmentReader.MultiTermPositions;
 public class MultiReader extends IndexReader {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
+  private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private Hashtable normsCache = new Hashtable();
   private int maxDoc = 0;
   private int numDocs = -1;
@@ -49,23 +50,117 @@ public class MultiReader extends IndexReader {
   * @throws IOException
   */
   public MultiReader(IndexReader[] subReaders) {
-    initialize(subReaders);
+    initialize(subReaders, true);
   }
 
+  /**
+   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
+   * Directory locking for delete, undeleteAll, and setNorm operations is
+   * left to the subreaders. </p>
+   * @param closeSubReaders indicates whether the subreaders should be closed
+   * when this MultiReader is closed
+   * @param subReaders set of (sub)readers
+   * @throws IOException
+   */
+  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
+    initialize(subReaders, closeSubReaders);
+  }
   
-  private void initialize(IndexReader[] subReaders) {
+  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
+    decrefOnClose = new boolean[subReaders.length];
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
 
+      if (!closeSubReaders) {
+        subReaders[i].incRef();
+        decrefOnClose[i] = true;
+      } else {
+        decrefOnClose[i] = false;
+      }
+      
       if (subReaders[i].hasDeletions())
         hasDeletions = true;
     }
     starts[subReaders.length] = maxDoc;
   }
 
+  /**
+   * Tries to reopen the subreaders.
+   * <br>
+   * If one or more subreaders could be re-opened (i. e. subReader.reopen() 
+   * returned a new instance != subReader), then a new MultiReader instance 
+   * is returned, otherwise this instance is returned.
+   * <p>
+   * A re-opened instance might share one or more subreaders with the old 
+   * instance. Index modification operations result in undefined behavior
+   * when performed before the old instance is closed.
+   * (see {@link IndexReader#reopen()}).
+   * <p>
+   * If subreaders are shared, then the reference count of those
+   * readers is increased to ensure that the subreaders remain open
+   * until the last referring reader is closed.
+   * 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error 
+   */
+  public IndexReader reopen() throws CorruptIndexException, IOException {
+    ensureOpen();
+    
+    boolean reopened = false;
+    IndexReader[] newSubReaders = new IndexReader[subReaders.length];
+    boolean[] newDecrefOnClose = new boolean[subReaders.length];
+    
+    boolean success = false;
+    try {
+      for (int i = 0; i < subReaders.length; i++) {
+        newSubReaders[i] = subReaders[i].reopen();
+        // if at least one of the subreaders was updated we remember that
+        // and return a new MultiReader
+        if (newSubReaders[i] != subReaders[i]) {
+          reopened = true;
+          // this is a new subreader instance, so on close() we don't
+          // decRef but close it 
+          newDecrefOnClose[i] = false;
+        }
+      }
+
+      if (reopened) {
+        for (int i = 0; i < subReaders.length; i++) {
+          if (newSubReaders[i] == subReaders[i]) {
+            newSubReaders[i].incRef();
+            newDecrefOnClose[i] = true;
+          }
+        }
+        
+        MultiReader mr = new MultiReader(newSubReaders);
+        mr.decrefOnClose = newDecrefOnClose;
+        success = true;
+        return mr;
+      } else {
+        success = true;
+        return this;
+      }
+    } finally {
+      if (!success && reopened) {
+        for (int i = 0; i < newSubReaders.length; i++) {
+          if (newSubReaders[i] != null) {
+            try {
+              if (newDecrefOnClose[i]) {
+                newSubReaders[i].decRef();
+              } else {
+                newSubReaders[i].close();
+              }
+            } catch (IOException ignore) {
+              // keep going - we want to clean up as much as possible
+            }
+          }
+        }
+      }
+    }
+  }
 
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
     ensureOpen();
@@ -232,10 +327,15 @@ public class MultiReader extends IndexReader {
   }
 
   protected synchronized void doClose() throws IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].close();
+    for (int i = 0; i < subReaders.length; i++) {
+      if (decrefOnClose[i]) {
+        subReaders[i].decRef();
+      } else {
+        subReaders[i].close();
+      }
+    }
   }
-
+  
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
     return MultiSegmentReader.getFieldNames(fieldNames, this.subReaders);
@@ -260,5 +360,10 @@ public class MultiReader extends IndexReader {
    */
   public long getVersion() {
     throw new UnsupportedOperationException("MultiReader does not support this method.");
+  }
+  
+  // for testing
+  IndexReader[] getSubReaders() {
+    return subReaders;
   }
 }
