@@ -24,8 +24,8 @@ package org.apache.lucene.search;
  * @version $Id$
  */
 public abstract class HitCollector {
-  /** Called once for every non-zero scoring document, with the document number
-   * and its score.
+  /** Called once for every document matching a query, with the document
+   * number and its raw score.
    *
    * <P>If, for example, an application wished to collect all of the hits for a
    * query in a BitSet, then it might:<pre>
