@@ -1,5 +1,4 @@
-﻿Lucene Change Log
-
+Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -203,6 +202,10 @@ New features
     be significantly faster than open(), depending on the amount of
     index changes. SegmentReader, MultiSegmentReader, MultiReader,
     and ParallelReader implement reopen(). (Michael Busch) 
+
+10. LUCENE-1040: CharArraySet useful for efficiently checking
+    set membership of text specified by char[]. (yonik)
+ 
 
 Optimizations
 

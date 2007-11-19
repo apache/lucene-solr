@@ -1,5 +1,9 @@
 package org.apache.lucene.analysis;
 
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Iterator;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,90 +23,138 @@ package org.apache.lucene.analysis;
 
 
 /**
- * A simple class that can store & retrieve char[]'s in a
+ * A simple class that stores Strings as char[]'s in a
  * hash table.  Note that this is not a general purpose
- * class.  For example, it cannot remove char[]'s from the
+ * class.  For example, it cannot remove items from the
  * set, nor does it resize its hash table to be smaller,
- * etc.  It is designed for use with StopFilter to enable
- * quick filtering based on the char[] termBuffer in a
- * Token.
+ * etc.  It is designed to be quick to test if a char[]
+ * is in the set without the necessity of converting it
+ * to a String first.
  */
 
-final class CharArraySet {
-
+public class CharArraySet extends AbstractSet {
   private final static int INIT_SIZE = 8;
-  private final static double MAX_LOAD_FACTOR = 0.75;
-  private int mask;
   private char[][] entries;
   private int count;
-  private boolean ignoreCase;
+  private final boolean ignoreCase;
 
   /** Create set with enough capacity to hold startSize
    *  terms */
   public CharArraySet(int startSize, boolean ignoreCase) {
     this.ignoreCase = ignoreCase;
     int size = INIT_SIZE;
-    while(((double) startSize)/size >= MAX_LOAD_FACTOR)
-      size *= 2;
-    mask = size-1;
+    while(startSize + (startSize>>2) > size)
+      size <<= 1;
     entries = new char[size][];
   }
 
-  /** Returns true if the characters in text up to length
-   *  len is present in the set. */
-  public boolean contains(char[] text, int len) {
+ /** Create set from a Collection of char[] or String */
+  public CharArraySet(Collection c, boolean ignoreCase) {
+    this(c.size(), ignoreCase);
+    addAll(c);
+  }
+
+  /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
+   * are in the set */
+  public boolean contains(char[] text, int off, int len) {
+    return entries[getSlot(text, off, len)] != null;
+  }
+
+  /** true if the <code>CharSequence</code> is in the set */
+  public boolean contains(CharSequence cs) {
+    return entries[getSlot(cs)] != null;
+  }
+
+  private int getSlot(char[] text, int off, int len) {
     int code = getHashCode(text, len);
-    int pos = code & mask;
+    int pos = code & (entries.length-1);
     char[] text2 = entries[pos];
-    if (text2 != null && !equals(text, len, text2)) {
+    if (text2 != null && !equals(text, off, len, text2)) {
       final int inc = ((code>>8)+code)|1;
       do {
         code += inc;
-        pos = code & mask;
+        pos = code & (entries.length-1);
         text2 = entries[pos];
-      } while (text2 != null && !equals(text, len, text2));
+      } while (text2 != null && !equals(text, off, len, text2));
     }
-    return text2 != null;
+    return pos;
+  }
+
+  /** Returns true if the String is in the set */  
+  private int getSlot(CharSequence text) {
+    int code = getHashCode(text);
+    int pos = code & (entries.length-1);
+    char[] text2 = entries[pos];
+    if (text2 != null && !equals(text, text2)) {
+      final int inc = ((code>>8)+code)|1;
+      do {
+        code += inc;
+        pos = code & (entries.length-1);
+        text2 = entries[pos];
+      } while (text2 != null && !equals(text, text2));
+    }
+    return pos;
+  }
+
+  /** Add this CharSequence into the set */
+  public boolean add(CharSequence text) {
+    return add(text.toString()); // could be more efficient
   }
 
   /** Add this String into the set */
-  public void add(String text) {
-    add(text.toCharArray());
+  public boolean add(String text) {
+    return add(text.toCharArray());
   }
 
-  /** Add this text into the set */
-  public void add(char[] text) {
+  /** Add this char[] directly to the set.
+   * If ignoreCase is true for this Set, the text array will be directly modified.
+   * The user should never modify this text array after calling this method.
+   */
+  public boolean add(char[] text) {
     if (ignoreCase)
       for(int i=0;i<text.length;i++)
         text[i] = Character.toLowerCase(text[i]);
-    int code = getHashCode(text, text.length);
-    int pos = code & mask;
-    char[] text2 = entries[pos];
-    if (text2 != null) {
-      final int inc = ((code>>8)+code)|1;
-      do {
-        code += inc;
-        pos = code & mask;
-        text2 = entries[pos];
-      } while (text2 != null);
-    }
-    entries[pos] = text;
+    int slot = getSlot(text, 0, text.length);
+    if (entries[slot] != null) return false;
+    entries[slot] = text;
     count++;
 
-    if (((double) count)/entries.length > MAX_LOAD_FACTOR) {
+    if (count > entries.length + (entries.length>>2) ) {
       rehash();
     }
+
+    return true;
   }
 
-  private boolean equals(char[] text1, int len, char[] text2) {
+  private boolean equals(char[] text1, int off, int len, char[] text2) {
     if (len != text2.length)
       return false;
-    for(int i=0;i<len;i++) {
-      if (ignoreCase) {
-        if (Character.toLowerCase(text1[i]) != text2[i])
+    if (ignoreCase) {
+      for(int i=0;i<len;i++) {
+        if (Character.toLowerCase(text1[off+i]) != text2[i])
           return false;
-      } else {
-        if (text1[i] != text2[i])
+      }
+    } else {
+      for(int i=0;i<len;i++) {
+        if (text1[off+i] != text2[i])
+          return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean equals(CharSequence text1, char[] text2) {
+    int len = text1.length();
+    if (len != text2.length)
+      return false;
+    if (ignoreCase) {
+      for(int i=0;i<len;i++) {
+        if (Character.toLowerCase(text1.charAt(i)) != text2[i])
+          return false;
+      }
+    } else {
+      for(int i=0;i<len;i++) {
+        if (text1.charAt(i) != text2[i])
           return false;
       }
     }
@@ -111,39 +163,125 @@ final class CharArraySet {
 
   private void rehash() {
     final int newSize = 2*count;
-    mask = newSize-1;
+    char[][] oldEntries = entries;
+    char[][] entries = new char[newSize][];
 
-    char[][] newEntries = new char[newSize][];
-    for(int i=0;i<entries.length;i++) {
-      char[] text = entries[i];
+    for(int i=0;i<oldEntries.length;i++) {
+      char[] text = oldEntries[i];
       if (text != null) {
-        int code = getHashCode(text, text.length);
-        int pos = code & mask;
-        if (newEntries[pos] != null) {
-          final int inc = ((code>>8)+code)|1;
-          do {
-            code += inc;
-            pos = code & mask;
-          } while (newEntries[pos] != null);
-        }
-        newEntries[pos] = text;
+        // todo: could be faster... no need to compare strings on collision
+        entries[ getSlot(text,0,text.length) ] = text;
       }
     }
-
-    entries = newEntries;
   }
   
   private int getHashCode(char[] text, int len) {
-    int downto = len;
     int code = 0;
-    while (downto > 0) {
-      final char c;
-      if (ignoreCase)
-        c = Character.toLowerCase(text[--downto]);
-      else
-        c = text[--downto];
-      code = (code*31) + c;
+    if (ignoreCase) {
+      for (int i=0; i<len; i++) {
+        code = code*31 + Character.toLowerCase(text[i]);
+      }
+    } else {
+      for (int i=0; i<len; i++) {
+        code = code*31 + text[i];
+      }
     }
     return code;
   }
+
+  private int getHashCode(CharSequence text) {
+    int code;
+    if (ignoreCase) {
+      code = 0;
+      int len = text.length();
+      for (int i=0; i<len; i++) {
+        code = code*31 + Character.toLowerCase(text.charAt(i));
+      }
+    } else {
+      if (false && text instanceof String) {
+        code = text.hashCode();
+      } else {
+        code = 0;
+        int len = text.length();
+        for (int i=0; i<len; i++) {
+          code = code*31 + text.charAt(i);
+        }
+      }
+    }
+    return code;
+  }
+
+
+  public int size() {
+    return count;
+  }
+
+  public boolean isEmpty() {
+    return count==0;
+  }
+
+  public boolean contains(Object o) {
+    if (o instanceof char[]) {
+      char[] text = (char[])o;
+      return contains(text, 0, text.length);
+    } else if (o instanceof CharSequence) {
+      return contains((CharSequence)o);
+    }
+    return false;
+  }
+
+  public boolean add(Object o) {
+    if (o instanceof char[]) {
+      return add((char[])o);
+    } else if (o instanceof String) {
+      return add((String)o);
+    } else if (o instanceof CharSequence) {
+      return add((CharSequence)o);
+    } else {
+      return add(o.toString());
+    }
+  }
+
+  /** The Iterator<String> for this set.  Strings are constructed on the fly, so
+   * use <code>nextCharArray</code> for more efficient access. */
+  public class CharArraySetIterator implements Iterator {
+    int pos=-1;
+    char[] next;
+    CharArraySetIterator() {
+      goNext();
+    }
+
+    private void goNext() {
+      next = null;
+      pos++;
+      while (pos < entries.length && (next=entries[pos]) == null) pos++;
+    }
+
+    public boolean hasNext() {
+      return next != null;
+    }
+
+    /** do not modify the returned char[] */
+    public char[] nextCharArray() {
+      char[] ret = next;
+      goNext();
+      return ret;
+    }
+
+    /** Returns the next String, as a Set<String> would...
+     * use nextCharArray() for better efficiency. */
+    public Object next() {
+      return new String(nextCharArray());
+    }
+
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+
+  public Iterator iterator() {
+    return new CharArraySetIterator();
+  }
+
 }

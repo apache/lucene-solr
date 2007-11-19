@@ -16,10 +16,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase;
+
 import java.io.IOException;
 import java.io.StringReader;
-
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.Set;
 
 /**
  * @author yonik
@@ -43,6 +44,16 @@ public class TestStopFilter extends LuceneTestCase {
     TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopWords, true);
     assertEquals("Now", stream.next().termText());
     assertEquals(null,stream.next());
+  }
+
+  public void testStopFilt() throws IOException {
+    StringReader reader = new StringReader("Now is The Time");
+    String[] stopWords = new String[] { "is", "the", "Time" };
+    Set stopSet = StopFilter.makeStopSet(stopWords);
+    TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    assertEquals("Now", stream.next().termText());
+    assertEquals("The", stream.next().termText());
+    assertEquals(null, stream.next());
   }
 
 }
