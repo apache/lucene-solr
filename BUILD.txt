@@ -43,7 +43,7 @@ releases are available for download at:
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
 
-Step 2) Connect to the top-level of your Lucene installation
+Step 2) From the command line, change (cd) into the top-level directory of your Lucene installation
 
 Lucene's top-level directory contains the build.xml file. By default,
 you do not need to change any of the settings in this file, but you do
