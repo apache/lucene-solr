@@ -17,22 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.document.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.Reader;
 import java.io.IOException;
-
-import java.util.Arrays;
+import java.io.Reader;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private RAMDirectory dir;
@@ -130,7 +125,71 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(0, termPositions.nextPosition());
     assertEquals(502, termPositions.nextPosition());
   }
-  
+
+  public void testTokenReuse() throws IOException {
+    Analyzer analyzer = new Analyzer() {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new TokenFilter(new WhitespaceTokenizer(reader)) {
+          boolean first=true;
+          Token buffered;
+
+          public Token next() throws IOException {
+            return input.next();
+          }
+
+          public Token next(Token result) throws IOException {
+            if (buffered != null) {
+              Token t = buffered;
+              buffered=null;
+              return t;
+            }
+            Token t = input.next(result);
+            if (t==null) return null;
+            if (Character.isDigit(t.termBuffer()[0])) {
+              t.setPositionIncrement(t.termBuffer()[0] - '0');
+            }
+            if (first) {
+              // set payload on first position only
+              t.setPayload(new Payload(new byte[]{100}));
+              first = false;
+            }
+
+            // index a "synonym" for every token
+            buffered = (Token)t.clone();
+            buffered.setPayload(null);
+            buffered.setPositionIncrement(0);
+            buffered.setTermBuffer(new char[]{'b'}, 0, 1);
+
+            return t;
+          }
+        };
+      }
+    };
+
+    IndexWriter writer = new IndexWriter(dir, analyzer, true);
+
+    Document doc = new Document();
+    doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.TOKENIZED));
+
+    writer.addDocument(doc);
+    writer.flush();
+    SegmentInfo info = writer.newestSegment();
+    writer.close();
+    SegmentReader reader = SegmentReader.get(info);
+
+    TermPositions termPositions = reader.termPositions(new Term("f1", "a"));
+    assertTrue(termPositions.next());
+    int freq = termPositions.freq();
+    assertEquals(3, freq);
+    assertEquals(0, termPositions.nextPosition());
+    assertEquals(true, termPositions.isPayloadAvailable());
+    assertEquals(6, termPositions.nextPosition());
+    assertEquals(false, termPositions.isPayloadAvailable());
+    assertEquals(7, termPositions.nextPosition());
+    assertEquals(false, termPositions.isPayloadAvailable());
+  }
+
+
   public void testPreAnalyzedField() throws IOException {
     Similarity similarity = Similarity.getDefault();
     IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true);

@@ -361,14 +361,29 @@ public class Token implements Cloneable {
     return sb.toString();
   }
 
-  /** Reset all state for this token back to defaults. */
+  /** Resets the term text, payload, and positionIncrement to default.
+   * Other fields such as startOffset, endOffset and the token type are
+   * not reset since they are normally overwritten by the tokenizer. */
   public void clear() {
     payload = null;
     // Leave termBuffer to allow re-use
     termLength = 0;
     termText = null;
     positionIncrement = 1;
-    startOffset = endOffset = 0;
-    type = DEFAULT_TYPE;
+    // startOffset = endOffset = 0;
+    // type = DEFAULT_TYPE;
+  }
+
+  public Object clone() {
+    try {
+      Token t = (Token)super.clone();
+      if (termBuffer != null) {
+        t.termBuffer = null;
+        t.setTermBuffer(termBuffer, 0, termLength);
+      }
+      return t;
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);  // shouldn't happen
+    }
   }
 }

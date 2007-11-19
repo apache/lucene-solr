@@ -1281,6 +1281,7 @@ final class DocumentsWriter {
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           Token token = localToken;
+          token.clear();
           token.setTermText(stringValue);
           token.setStartOffset(offset);
           token.setEndOffset(offset + stringValue.length());
@@ -1319,7 +1320,10 @@ final class DocumentsWriter {
           try {
             offsetEnd = offset-1;
             Token token;
-            while((token = stream.next(localToken)) != null) {
+            for(;;) {
+              localToken.clear();
+              token = stream.next(localToken);
+              if (token == null) break;
               position += (token.getPositionIncrement() - 1);
               addPosition(token);
               if (++length >= maxFieldLength) {
