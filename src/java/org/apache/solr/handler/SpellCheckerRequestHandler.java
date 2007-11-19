@@ -203,28 +203,28 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
    * 
    */
 
-  private Directory spellcheckerIndexDir = new RAMDirectory();
-  private String dirDescription = "(ramdir)";
-  private String termSourceField;
+  protected Directory spellcheckerIndexDir = new RAMDirectory();
+  protected String dirDescription = "(ramdir)";
+  protected String termSourceField;
 
-  private static final String PREFIX = "sp.";
-  private static final String QUERY_PREFIX = PREFIX + "query.";
-  private static final String DICTIONARY_PREFIX = PREFIX + "dictionary.";
+  protected static final String PREFIX = "sp.";
+  protected static final String QUERY_PREFIX = PREFIX + "query.";
+  protected static final String DICTIONARY_PREFIX = PREFIX + "dictionary.";
 
-  private static final String SOURCE_FIELD = DICTIONARY_PREFIX + "termSourceField";
-  private static final String INDEX_DIR = DICTIONARY_PREFIX + "indexDir";
-  private static final String THRESHOLD = DICTIONARY_PREFIX + "threshold";
+  protected static final String SOURCE_FIELD = DICTIONARY_PREFIX + "termSourceField";
+  protected static final String INDEX_DIR = DICTIONARY_PREFIX + "indexDir";
+  protected static final String THRESHOLD = DICTIONARY_PREFIX + "threshold";
 
-  private static final String ACCURACY = QUERY_PREFIX + "accuracy";
-  private static final String SUGGESTIONS = QUERY_PREFIX + "suggestionCount";
-  private static final String POPULAR = QUERY_PREFIX + "onlyMorePopular";
-  private static final String EXTENDED = QUERY_PREFIX + "extendedResults";
+  protected static final String ACCURACY = QUERY_PREFIX + "accuracy";
+  protected static final String SUGGESTIONS = QUERY_PREFIX + "suggestionCount";
+  protected static final String POPULAR = QUERY_PREFIX + "onlyMorePopular";
+  protected static final String EXTENDED = QUERY_PREFIX + "extendedResults";
 
-  private static final float DEFAULT_ACCURACY = 0.5f;
-  private static final int DEFAULT_SUGGESTION_COUNT = 1;
-  private static final boolean DEFAULT_MORE_POPULAR = false;
-  private static final boolean DEFAULT_EXTENDED_RESULTS = false;
-  private static final float DEFAULT_DICTIONARY_THRESHOLD = 0.0f;
+  protected static final float DEFAULT_ACCURACY = 0.5f;
+  protected static final int DEFAULT_SUGGESTION_COUNT = 1;
+  protected static final boolean DEFAULT_MORE_POPULAR = false;
+  protected static final boolean DEFAULT_EXTENDED_RESULTS = false;
+  protected static final float DEFAULT_DICTIONARY_THRESHOLD = 0.0f;
 
   public void init(NamedList args) {
     super.init(args);
@@ -355,6 +355,20 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     }
   }
 
+  /** Returns a dictionary to be used when building the spell-checker index.
+   * Override the method for custom dictionary
+   */
+  protected Dictionary getDictionary(SolrQueryRequest req) {
+    float threshold;
+    try {
+      threshold = req.getParams().getFloat(THRESHOLD, DEFAULT_DICTIONARY_THRESHOLD);
+    } catch (NumberFormatException e) {
+      throw new RuntimeException("Threshold must be a valid positive float", e);
+    }
+    IndexReader indexReader = req.getSearcher().getReader();
+    return new HighFrequencyDictionary(indexReader, termSourceField, threshold);
+  }
+
   /** Rebuilds the SpellChecker index using values from the <code>termSourceField</code> from the
    * index pointed to by the current {@link IndexSearcher}.
    * Any word appearing in less that thresh documents will not be added to the spellcheck index.
@@ -364,16 +378,8 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
       throw new SolrException
         (SolrException.ErrorCode.SERVER_ERROR, "can't rebuild spellchecker index without termSourceField configured");
     }
-      
-    Float threshold;
-    try {
-      threshold = req.getParams().getFloat("sp.dictionary.threshold", DEFAULT_DICTIONARY_THRESHOLD);
-    } catch (NumberFormatException e) {
-      throw new RuntimeException("Threshold must be a valid positive float", e);
-    }
 
-    IndexReader indexReader = req.getSearcher().getReader();
-    Dictionary dictionary = new HighFrequencyDictionary(indexReader, termSourceField, threshold);
+    Dictionary dictionary = getDictionary(req);
     spellChecker.clearIndex();
     spellChecker.indexDictionary(dictionary);
     reopen();
