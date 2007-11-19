@@ -18,7 +18,11 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.*;
+import java.util.List;
+import java.util.LinkedList;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.Payload;
 
 public class TestAnalyzers extends LuceneTestCase {
 
@@ -86,5 +90,69 @@ public class TestAnalyzers extends LuceneTestCase {
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
   }
+
+  void verifyPayload(TokenStream ts) throws IOException {
+    Token t = new Token();
+    for(byte b=1;;b++) {
+      t.clear();
+      t = ts.next(t);
+      if (t==null) break;
+      // System.out.println("id="+System.identityHashCode(t) + " " + t);
+      // System.out.println("payload=" + (int)t.getPayload().toByteArray()[0]);
+      assertEquals(b, t.getPayload().toByteArray()[0]);
+    }
+  }
+
+  // Make sure old style next() calls result in a new copy of payloads
+  public void testPayloadCopy() throws IOException {
+    String s = "how now brown cow";
+    TokenStream ts;
+    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new BuffTokenFilter(ts);
+    ts = new PayloadSetter(ts);
+    verifyPayload(ts);
+
+    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new PayloadSetter(ts);
+    ts = new BuffTokenFilter(ts);
+    verifyPayload(ts);
+  }
+
 }
 
+class BuffTokenFilter extends TokenFilter {
+  List lst;
+
+  public BuffTokenFilter(TokenStream input) {
+    super(input);
+  }
+
+  public Token next() throws IOException {
+    if (lst == null) {
+      lst = new LinkedList<Token>();
+      for(;;) {
+        Token t = input.next();
+        if (t==null) break;
+        lst.add(t);
+      }
+    }
+    return lst.size()==0 ? null : (Token)lst.remove(0);
+  }
+}
+
+class PayloadSetter extends TokenFilter {
+  public  PayloadSetter(TokenStream input) {
+    super(input);
+  }
+
+  byte[] data = new byte[1];
+  Payload p = new Payload(data,0,1);
+
+  public Token next(Token target) throws IOException {
+    target = input.next(target);
+    if (target==null) return null;
+    target.setPayload(p);  // reuse the payload / byte[]
+    data[0]++;
+    return target;
+  }
+}

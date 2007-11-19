@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Payload;
+
 import java.io.IOException;
 
 /** A TokenStream enumerates the sequence of tokens, either from
@@ -41,6 +43,13 @@ public abstract class TokenStream {
    *  than calling {@link #next(Token)} instead.. */
   public Token next() throws IOException {
     Token result = next(new Token());
+
+    if (result != null) {
+      Payload p = result.getPayload();
+      if (p != null)
+        result.setPayload(new Payload(p.toByteArray(), 0, p.length()));
+    }
+
     return result;
   }
 
