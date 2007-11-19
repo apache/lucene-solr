@@ -1,5 +1,3 @@
-package org.apache.solr.util;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +15,8 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+package org.apache.solr.util;
+
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -26,7 +26,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.spell.Dictionary;
 
 /**
- * Hi Frequency Dictionary: terms taken from the given field
+ * HighFrequencyDictionary: terms taken from the given field
  * of a Lucene index, which appear in a number of documents
  * above a given threshold.
  *
@@ -35,12 +35,8 @@ import org.apache.lucene.search.spell.Dictionary;
  *
  * Threshold is a value in [0..1] representing the minimum
  * number of documents (of the total) where a term should appear.
- *
- * @author Mike Krimerman
- *
- * Based on LuceneDictionary, by
- * @author Nicolas Maisonneuve
- * @author Christian Mallwitz
+ * 
+ * Based on LuceneDictionary.
  */
 public class HighFrequencyDictionary implements Dictionary {
   private IndexReader reader;
@@ -56,7 +52,6 @@ public class HighFrequencyDictionary implements Dictionary {
   public final Iterator getWordsIterator() {
     return new HighFrequencyIterator();
   }
-
 
   final class HighFrequencyIterator implements Iterator {
     private TermEnum termEnum;
