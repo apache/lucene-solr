@@ -129,7 +129,7 @@ class BuffTokenFilter extends TokenFilter {
 
   public Token next() throws IOException {
     if (lst == null) {
-      lst = new LinkedList<Token>();
+      lst = new LinkedList();
       for(;;) {
         Token t = input.next();
         if (t==null) break;
