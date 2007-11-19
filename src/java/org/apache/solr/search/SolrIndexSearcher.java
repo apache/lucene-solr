@@ -37,7 +37,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.solr.core.SolrInfoMBean.Category;
 
 
 /**
@@ -707,8 +706,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    */
   private void getDocListC(DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryResultKey key=null;
-    int maxDoc = offset + len;
-    int supersetMaxDoc=maxDoc;
+    int maxDocRequested = offset + len;
+    // check for overflow, and check for # docs in index
+    if (maxDocRequested < 0 || maxDocRequested > maxDoc()) maxDocRequested = maxDoc();
+    int supersetMaxDoc= maxDocRequested;
     DocList superset;
 
 
@@ -752,10 +753,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         // next resultWindowSize for better caching.
 
         // handle 0 special case as well as avoid idiv in the common case.
-        if (maxDoc < queryResultWindowSize) {
+        if (maxDocRequested < queryResultWindowSize) {
           supersetMaxDoc=queryResultWindowSize;
         } else {
-          supersetMaxDoc = ((maxDoc-1)/queryResultWindowSize + 1)*queryResultWindowSize;
+          supersetMaxDoc = ((maxDocRequested -1)/queryResultWindowSize + 1)*queryResultWindowSize;
+          if (supersetMaxDoc < 0) supersetMaxDoc=maxDocRequested;
         }
     }
 
@@ -819,7 +821,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
 
   private DocList getDocListNC(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    final int lastDocRequested = offset+len;
+    int last = offset+len;
+    if (last < 0 || last > maxDoc()) last=maxDoc();
+    final int lastDocRequested = last;
     int nDocsReturned;
     int totalHits;
     float maxScore;
@@ -977,7 +981,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   // the DocSet returned is for the query only, without any filtering... that way it may
   // be cached if desired.
   private DocSet getDocListAndSetNC(DocListAndSet out, Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    final int lastDocRequested = offset+len;
+    int last = offset+len;
+    if (last < 0 || last > maxDoc()) last=maxDoc();
+    final int lastDocRequested = last;
     int nDocsReturned;
     int totalHits;
     float maxScore;

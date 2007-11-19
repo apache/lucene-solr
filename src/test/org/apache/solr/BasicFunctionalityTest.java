@@ -145,6 +145,17 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
       assertU(a, a);
     }
     assertU(commit());
+
+    // test maxint
+    assertQ(req("q","id:[100 TO 110]", "rows","2147483647")
+            ,"//*[@numFound='4']"
+            );
+
+    // test big limit
+    assertQ(req("q","id:[100 TO 111]", "rows","1147483647")
+            ,"//*[@numFound='4']"
+            );
+
     assertQ(req("id:[100 TO 110]")
             ,"//*[@numFound='4']"
             );
