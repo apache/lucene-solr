@@ -56,11 +56,6 @@
   <path id="javadoc.classpath">
     <path refid="classpath"/>
     <pathelement location="${ant.home}/lib/ant.jar"/>
-
-  	<!-- NOTE: gdata jars only used with jdk 5 but include them even for lower jdk -->
-    <fileset dir="${common.dir}/contrib">
-        <include name="**/*.jar"/>
-    </fileset>
   </path>
 	
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
@@ -528,6 +523,7 @@
 
 
 </project>
+
 
 
 

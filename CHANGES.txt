@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -282,6 +282,9 @@ Build
     the url to a maven remote repository to deploy to. (Michael Busch)
 
  5. LUCENE-1051: Include javadocs in the maven artifacts. (Michael Busch)
+
+ 6. LUCENE-1055: Remove gdata-server from build files and its sources 
+    from trunk. (Michael Busch)
 
 Test Cases
 

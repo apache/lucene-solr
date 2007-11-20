@@ -217,16 +217,6 @@
   	
   <target name="javadocs-all" description="Generate javadoc for core, demo and contrib classes" depends="build-contrib">
   	<sequential>
-      <dirset dir="contrib/gdata-server/src/core/src/java" id="gdata-server-core">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-      <dirset dir="contrib/gdata-server/src/gom/src/java" id="gdata-server-gom">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-      <dirset dir="contrib/gdata-server/src/hivemind/src/java" id="gdata-server-hivemind">
-        <include name="**" if="build-1-5-contrib" />
-      </dirset>
-  		
       <mkdir dir="${javadoc.dir}"/>
       <invoke-javadoc
         destdir="${javadoc.dir}">
@@ -237,9 +227,8 @@
           <packageset dir="src/demo"/>
 
           <!-- please keep this list up to date, and in alpha order...   -->
-          <!-- with the minor exception of gdata which is managed by ref -->
         
-          <!-- ie: `find contrib/* -path \*src/java | grep -v gdata | sort` -->
+          <!-- ie: `find contrib/* -path \*src/java | sort` -->
 
           <!-- if you make changes to the list of package sets, also -->
           <!-- make sure the group list below is updated.            -->
@@ -264,9 +253,6 @@
           <packageset dir="contrib/wordnet/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
           <!-- end alpha sort -->
-          <packageset refid="gdata-server-core" />
-          <packageset refid="gdata-server-gom" />
-          <packageset refid="gdata-server-hivemind" />
 
           <!-- If the main javadoc Group listing includes an "Other   -->
           <!-- Packages" group after the ones listed here, then those -->
@@ -281,7 +267,6 @@
           <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
-          <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
           <group title="contrib: Lucli" packages="lucli*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
