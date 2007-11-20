@@ -119,7 +119,7 @@ public class CharArraySet extends AbstractSet {
     entries[slot] = text;
     count++;
 
-    if (count > entries.length + (entries.length>>2) ) {
+    if (count + (count>>2) > entries.length) {
       rehash();
     }
 
@@ -162,15 +162,15 @@ public class CharArraySet extends AbstractSet {
   }
 
   private void rehash() {
-    final int newSize = 2*count;
+    final int newSize = 2*entries.length;
     char[][] oldEntries = entries;
-    char[][] entries = new char[newSize][];
+    entries = new char[newSize][];
 
     for(int i=0;i<oldEntries.length;i++) {
       char[] text = oldEntries[i];
       if (text != null) {
         // todo: could be faster... no need to compare strings on collision
-        entries[ getSlot(text,0,text.length) ] = text;
+        entries[getSlot(text,0,text.length)] = text;
       }
     }
   }
