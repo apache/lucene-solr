@@ -77,7 +77,7 @@ public interface Fieldable extends Serializable {
    * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public byte[] binaryValue();
   
-  /** The value of the field as a TokesStream, or null.  If null, the Reader value,
+  /** The value of the field as a TokenStream, or null.  If null, the Reader value,
    * String value, or binary value is used. Exactly one of stringValue(), 
    * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public TokenStream tokenStreamValue();
