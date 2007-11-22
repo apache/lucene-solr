@@ -180,6 +180,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
             mergeThreads.add(merger);
             message("    launch new thread [" + merger.getName() + "]");
             merger.setThreadPriority(mergeThreadPriority);
+            merger.setDaemon(true);
             merger.start();
             continue;
           } else
