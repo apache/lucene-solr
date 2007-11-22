@@ -633,6 +633,10 @@ public class FSDirectory extends Directory {
     private boolean isOpen;
     private boolean doSync;
 
+    public FSIndexOutput(File path) throws IOException {
+      this(path, DEFAULT_DO_SYNC);
+    }
+
     public FSIndexOutput(File path, boolean doSync) throws IOException {
       file = new RandomAccessFile(path, "rw");
 
