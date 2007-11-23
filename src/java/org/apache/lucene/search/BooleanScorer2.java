@@ -139,7 +139,7 @@ class BooleanScorer2 extends Scorer {
    * When "sum" is used in a name it means score value summing
    * over the matching scorers
    */
-  private void initCountingSumScorer() {
+  private void initCountingSumScorer() throws IOException {
     coordinator.init();
     countingSumScorer = makeCountingSumScorer();
   }
@@ -192,10 +192,10 @@ class BooleanScorer2 extends Scorer {
 
   private static Similarity defaultSimilarity = new DefaultSimilarity();
 
-  private Scorer countingConjunctionSumScorer(List requiredScorers) {
+  private Scorer countingConjunctionSumScorer(List requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
-    ConjunctionScorer cs = new ConjunctionScorer(defaultSimilarity) {
+    return new ConjunctionScorer(defaultSimilarity, requiredScorers) {
       private int lastScoredDoc = -1;
 
       public float score() throws IOException {
@@ -210,34 +210,26 @@ class BooleanScorer2 extends Scorer {
         return super.score();
       }
     };
-    Iterator rsi = requiredScorers.iterator();
-    while (rsi.hasNext()) {
-      cs.add((Scorer) rsi.next());
-    }
-    return cs;
   }
 
-  private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) { // non counting. 
-    ConjunctionScorer cs = new ConjunctionScorer(defaultSimilarity);
+  private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) throws IOException { // non counting.
+    return new ConjunctionScorer(defaultSimilarity, new Scorer[]{req1, req2});
     // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
     // is used as score.
-    cs.add(req1);
-    cs.add(req2);
-    return cs;
   }
 
   /** Returns the scorer to be used for match counting and score summing.
    * Uses requiredScorers, optionalScorers and prohibitedScorers.
    */
-  private Scorer makeCountingSumScorer() { // each scorer counted as a single matcher
+  private Scorer makeCountingSumScorer() throws IOException { // each scorer counted as a single matcher
     return (requiredScorers.size() == 0)
           ? makeCountingSumScorerNoReq()
           : makeCountingSumScorerSomeReq();
   }
 
-  private Scorer makeCountingSumScorerNoReq() { // No required scorers
+  private Scorer makeCountingSumScorerNoReq() throws IOException { // No required scorers
     if (optionalScorers.size() == 0) {
       return new NonMatchingScorer(); // no clauses or only prohibited clauses
     } else { // No required scorers. At least one optional scorer.
@@ -258,7 +250,7 @@ class BooleanScorer2 extends Scorer {
     }
   }
 
-  private Scorer makeCountingSumScorerSomeReq() { // At least one required scorer.
+  private Scorer makeCountingSumScorerSomeReq() throws IOException { // At least one required scorer.
     if (optionalScorers.size() < minNrShouldMatch) {
       return new NonMatchingScorer(); // fewer optional clauses than minimum that should match
     } else if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.

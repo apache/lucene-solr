@@ -18,118 +18,105 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Arrays;
 import java.util.Comparator;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
-  private Scorer[] scorers = new Scorer[2];
-  private int length = 0;
-  private int first = 0;
-  private int last = -1;
-  private boolean firstTime = true;
-  private boolean more = true;
-  private float coord;
+  private final Scorer[] scorers;
 
-  public ConjunctionScorer(Similarity similarity) {
+  private boolean firstTime=true;
+  private boolean more;
+  private final float coord;
+  private int lastDoc=-1;
+
+  public ConjunctionScorer(Similarity similarity, Collection scorers) throws IOException {
+    this(similarity, (Scorer[])scorers.toArray(new Scorer[scorers.size()]));
+  }
+
+  public ConjunctionScorer(Similarity similarity, Scorer[] scorers) throws IOException {
     super(similarity);
+    this.scorers = scorers;
+    coord = getSimilarity().coord(this.scorers.length, this.scorers.length);
   }
 
-  final void add(Scorer scorer) {
-    if (length >= scorers.length) {
-      // grow the array
-      Scorer[] temps = new Scorer[scorers.length * 2];
-      System.arraycopy(scorers, 0, temps, 0, length);
-      scorers = temps;
-    }
-    last += 1;
-    length += 1;
-    scorers[last] = scorer;
-  }
-
-  public int doc() { return scorers[first].doc(); }
+  public int doc() { return lastDoc; }
 
   public boolean next() throws IOException {
-    if (firstTime) {
-      init(true);
-    } else if (more) {
-      more = scorers[last].next();                   // trigger further scanning
-    }
+    if (firstTime)
+      return init(0);
+    else if (more)
+      more = scorers[(scorers.length-1)].next();
     return doNext();
   }
-  
+
   private boolean doNext() throws IOException {
-    while (more && scorers[first].doc() < scorers[last].doc()) { // find doc w/ all clauses
-      more = scorers[first].skipTo(scorers[last].doc());      // skip first upto last
-      last = first; // move first to last
-      first = (first == length-1) ? 0 : first+1;
+    int first=0;
+    Scorer lastScorer = scorers[scorers.length-1];
+    Scorer firstScorer;
+    while (more && (firstScorer=scorers[first]).doc() < (lastDoc=lastScorer.doc())) {
+      more = firstScorer.skipTo(lastDoc);
+      lastScorer = firstScorer;
+      first = (first == (scorers.length-1)) ? 0 : first+1;
     }
-    return more;                                // found a doc with all clauses
+    return more;
   }
 
   public boolean skipTo(int target) throws IOException {
-    if(firstTime) {
-      init(false);
-    }
-    
-    for (int i = 0, pos = first; i < length; i++) {
-      if (!more) break; 
-      more = scorers[pos].skipTo(target);
-      pos = (pos == length-1) ? 0 : pos+1;
-    }
-    
-    if (more)
-      sortScorers();                              // re-sort scorers
-    
+    if (firstTime)
+      return init(target);
+    else if (more)
+      more = scorers[(scorers.length-1)].skipTo(target);
     return doNext();
   }
 
-  public float score() throws IOException {
-    float sum = 0.0f;
-    for (int i = 0; i < length; i++) {
-      sum += scorers[i].score();
-    }
-    return sum * coord;
-  }
-  
-  private void init(boolean initScorers) throws IOException {
-    //  compute coord factor
-    coord = getSimilarity().coord(length, length);
-   
-    more = length > 0;
-
-    if(initScorers){
-      // move each scorer to its first entry
-      for (int i = 0, pos = first; i < length; i++) {
-        if (!more) break; 
-        more = scorers[pos].next();
-        pos = (pos == length-1) ? 0 : pos+1;
-      }
-      // initial sort of simulated list
-      if (more) 
-        sortScorers();
+  // Note... most of this could be done in the constructor
+  // thus skipping a check for firstTime per call to next() and skipTo()
+  private boolean init(int target) throws IOException {
+    firstTime=false;
+    more = scorers.length>1;
+    for (int i=0; i<scorers.length; i++) {
+      more = target==0 ? scorers[i].next() : scorers[i].skipTo(target);
+      if (!more)
+        return false;
     }
 
-    firstTime = false;
-  }
+    // Sort the array the first time...
+    // We don't need to sort the array in any future calls because we know
+    // it will already start off sorted (all scorers on same doc).
 
-  private void sortScorers() {
-    // squeeze the array down for the sort
-    if (length != scorers.length) {
-      Scorer[] temps = new Scorer[length];
-      System.arraycopy(scorers, 0, temps, 0, length);
-      scorers = temps;
-    }
-    
     // note that this comparator is not consistent with equals!
     Arrays.sort(scorers, new Comparator() {         // sort the array
         public int compare(Object o1, Object o2) {
           return ((Scorer)o1).doc() - ((Scorer)o2).doc();
         }
       });
-   
-    first = 0;
-    last = length - 1;
+
+    doNext();
+
+    // If first-time skip distance is any predictor of
+    // scorer sparseness, then we should always try to skip first on
+    // those scorers.
+    // Keep last scorer in it's last place (it will be the first
+    // to be skipped on), but reverse all of the others so that
+    // they will be skipped on in order of original high skip.
+    int end=(scorers.length-1)-1;
+    for (int i=0; i<(end>>1); i++) {
+      Scorer tmp = scorers[i];
+      scorers[i] = scorers[end-i];
+      scorers[end-i] = tmp;
+    }
+
+    return more;
+  }
+
+  public float score() throws IOException {
+    float sum = 0.0f;
+    for (int i = 0; i < scorers.length; i++) {
+      sum += scorers[i].score();
+    }
+    return sum * coord;
   }
 
   public Explanation explain(int doc) {

@@ -259,6 +259,11 @@ Optimizations
     raw bytes for each contiguous range of non-deleted documents.
     (Robert Engels via Mike McCandless)
 
+13. LUCENE-693: Speed up nested conjunctions (~2x) that match many
+    documents, and a slight performance increase for top level
+    conjunctions.  (yonik)
+
+
 Documentation
 
  1. LUCENE-1051: Generate separate javadocs for core, demo and contrib

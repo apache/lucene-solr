@@ -42,6 +42,7 @@ public class TestScorerPerf extends LuceneTestCase {
   boolean validate = true;  // set to false when doing performance testing
 
   BitSet[] sets;
+  Term[] terms;
   IndexSearcher s;
 
   public void createDummySearcher() throws Exception {
@@ -55,22 +56,25 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
     int[] freq = new int[nTerms];
+    terms = new Term[nTerms];
     for (int i=0; i<nTerms; i++) {
       int f = (nTerms+1)-i;  // make first terms less frequent
       freq[i] = (int)Math.ceil(Math.pow(f,power));
+      terms[i] = new Term("f",Character.toString((char)('A'+i)));
     }
 
     IndexWriter iw = new IndexWriter(dir,new WhitespaceAnalyzer(), true);
-    iw.setMaxBufferedDocs(123);
     for (int i=0; i<nDocs; i++) {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
         if (r.nextInt(freq[j]) == 0) {
-          d.add(new Field("f", Character.toString((char)j), Field.Store.NO, Field.Index.UN_TOKENIZED));
+          d.add(new Field("f", terms[j].text(), Field.Store.NO, Field.Index.UN_TOKENIZED));
+          //System.out.println(d);
         }
       }
       iw.addDocument(d);
     }
+    iw.optimize();
     iw.close();
   }
 
@@ -168,6 +172,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public int doNestedConjunctions(int iter, int maxOuterClauses, int maxClauses) throws IOException {
     int ret=0;
+    long nMatches=0;
 
     for (int i=0; i<iter; i++) {
       int oClauses = r.nextInt(maxOuterClauses-1)+2;
@@ -185,15 +190,15 @@ public class TestScorerPerf extends LuceneTestCase {
       oq.add(bq, BooleanClause.Occur.MUST);
       } // outer
 
-
       CountingHitCollector hc = validate ? new MatchingHitCollector(result)
                                          : new CountingHitCollector();
       s.search(oq, hc);
+      nMatches += hc.getCount();
       ret += hc.getSum();
       if (validate) assertEquals(result.cardinality(), hc.getCount());
       // System.out.println(hc.getCount());
     }
-
+    System.out.println("Average number of matches="+(nMatches/iter));
     return ret;
   }
 
@@ -205,22 +210,28 @@ public class TestScorerPerf extends LuceneTestCase {
   ) throws IOException {
     int ret=0;
 
+    long nMatches=0;
     for (int i=0; i<iter; i++) {
       int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
-      BitSet terms = new BitSet(termsInIndex);
+      BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
         // don't pick same clause twice
-        do {tnum = r.nextInt(termsInIndex);} while (terms.get(tnum));
-        Query tq = new TermQuery(new Term("f",Character.toString((char)tnum)));
+        tnum = r.nextInt(termsInIndex);
+        if (termflag.get(tnum)) tnum=termflag.nextClearBit(tnum);
+        if (tnum<0 || tnum>=termsInIndex) tnum=termflag.nextClearBit(0);
+        termflag.set(tnum);
+        Query tq = new TermQuery(terms[tnum]);
         bq.add(tq, BooleanClause.Occur.MUST);
       }
 
       CountingHitCollector hc = new CountingHitCollector();
       s.search(bq, hc);
+      nMatches += hc.getCount();
       ret += hc.getSum();
     }
+    System.out.println("Average number of matches="+(nMatches/iter));
 
     return ret;
   }
@@ -233,7 +244,7 @@ public class TestScorerPerf extends LuceneTestCase {
                                 int iter
   ) throws IOException {
     int ret=0;
-
+    long nMatches=0;
     for (int i=0; i<iter; i++) {
       int oClauses = r.nextInt(maxOuterClauses-1)+2;
       BooleanQuery oq = new BooleanQuery();
@@ -241,12 +252,15 @@ public class TestScorerPerf extends LuceneTestCase {
 
       int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
       BooleanQuery bq = new BooleanQuery();
-      BitSet terms = new BitSet(termsInIndex);
+      BitSet termflag = new BitSet(termsInIndex);
       for (int j=0; j<nClauses; j++) {
         int tnum;
         // don't pick same clause twice
-        do {tnum = r.nextInt(termsInIndex);} while (terms.get(tnum));
-        Query tq = new TermQuery(new Term("f",Character.toString((char)tnum)));
+        tnum = r.nextInt(termsInIndex);
+        if (termflag.get(tnum)) tnum=termflag.nextClearBit(tnum);
+        if (tnum<0 || tnum>=25) tnum=termflag.nextClearBit(0);
+        termflag.set(tnum);
+        Query tq = new TermQuery(terms[tnum]);
         bq.add(tq, BooleanClause.Occur.MUST);
       } // inner
 
@@ -256,9 +270,10 @@ public class TestScorerPerf extends LuceneTestCase {
 
       CountingHitCollector hc = new CountingHitCollector();
       s.search(oq, hc);
+      nMatches += hc.getCount();     
       ret += hc.getSum();
     }
-
+    System.out.println("Average number of matches="+(nMatches/iter));
     return ret;
   }
 
@@ -275,7 +290,7 @@ public class TestScorerPerf extends LuceneTestCase {
       PhraseQuery q = new PhraseQuery();
       for (int j=0; j<nClauses; j++) {
         int tnum = r.nextInt(termsInIndex);
-        q.add(new Term("f",Character.toString((char)tnum)), j);
+        q.add(new Term("f",Character.toString((char)(tnum+'A'))), j);
       }
       q.setSlop(termsInIndex);  // this could be random too
 
@@ -299,7 +314,8 @@ public class TestScorerPerf extends LuceneTestCase {
   }
 
   /***
-  int bigIter=6;
+  int bigIter=10;
+
   public void testConjunctionPerf() throws Exception {
     createDummySearcher();
     validate=false;
@@ -326,16 +342,17 @@ public class TestScorerPerf extends LuceneTestCase {
     s.close();
   }
 
+
   public void testConjunctionTerms() throws Exception {
     validate=false;
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
-    createRandomTerms(100000,25,2, dir);
+    createRandomTerms(100000,25,.5, dir);
     s = new IndexSearcher(dir);
     System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
-      doTermConjunctions(s,25,5,10000);
+      doTermConjunctions(s,25,5,1000);
       long end = System.currentTimeMillis();
       System.out.println("milliseconds="+(end-start));
     }
@@ -346,12 +363,12 @@ public class TestScorerPerf extends LuceneTestCase {
     validate=false;    
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
-    createRandomTerms(100000,25,2, dir);
+    createRandomTerms(100000,25,.2, dir);
     s = new IndexSearcher(dir);
     System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
-      doNestedTermConjunctions(s,25,5,5,1000);
+      doNestedTermConjunctions(s,25,3,3,200);
       long end = System.currentTimeMillis();
       System.out.println("milliseconds="+(end-start));
     }
@@ -373,8 +390,8 @@ public class TestScorerPerf extends LuceneTestCase {
       System.out.println("milliseconds="+(end-start));
     }
     s.close();
-
   }
    ***/
+
 
 }
