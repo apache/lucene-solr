@@ -73,9 +73,6 @@ import org.apache.lucene.index.TermPositions;
 
   @see org.apache.lucene.index.Payload
 */
-
-// TODO: Remove warning after API has been finalized
-
 public class Token implements Cloneable {
 
   private static final String DEFAULT_TYPE = "word";
@@ -321,25 +318,15 @@ public class Token implements Cloneable {
   }
 
   /** 
-   * Returns this Token's payload. 
-   * <p><font color="#FF0000">
-   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
-   * The APIs introduced here might change in the future and will not be 
-   * supported anymore in such a case.</font>
-   */
-  // TODO: Remove warning after API has been finalized
+   * Returns this Token's payload.
+   */ 
   public Payload getPayload() {
     return this.payload;
   }
 
   /** 
    * Sets this Token's payload.
-   * <p><font color="#FF0000">
-   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
-   * The APIs introduced here might change in the future and will not be 
-   * supported anymore in such a case.</font>
    */
-  // TODO: Remove warning after API has been finalized
   public void setPayload(Payload payload) {
     this.payload = payload;
   }
@@ -380,6 +367,9 @@ public class Token implements Cloneable {
       if (termBuffer != null) {
         t.termBuffer = null;
         t.setTermBuffer(termBuffer, 0, termLength);
+      }
+      if (payload != null) {
+        t.setPayload((Payload) payload.clone());
       }
       return t;
     } catch (CloneNotSupportedException e) {

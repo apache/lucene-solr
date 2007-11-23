@@ -46,8 +46,9 @@ public abstract class TokenStream {
 
     if (result != null) {
       Payload p = result.getPayload();
-      if (p != null)
-        result.setPayload(new Payload(p.toByteArray(), 0, p.length()));
+      if (p != null) {
+        result.setPayload((Payload) p.clone());
+      }
     }
 
     return result;
@@ -74,7 +75,7 @@ public abstract class TokenStream {
    *  implement this method. Reset() is not needed for
    *  the standard indexing process. However, if the Tokens 
    *  of a TokenStream are intended to be consumed more than 
-   *  once, it is neccessary to implement reset(). 
+   *  once, it is necessary to implement reset(). 
    */
   public void reset() throws IOException {}
   

@@ -62,6 +62,11 @@ API Changes
     
  7. LUCENE-743: Add IndexReader.reopen() method that re-opens an
     existing IndexReader (see New features -> 9.) (Michael Busch)
+
+ 8. LUCENE-1062: Add setData(byte[] data), 
+    setData(byte[] data, int offset, int length), getData(), getOffset()
+    and clone() methods to o.a.l.index.Payload. Also add the field name 
+    as arg to Similarity.scorePayload(). (Michael Busch)
     
 Bug fixes
 

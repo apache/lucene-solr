@@ -32,15 +32,9 @@ import org.apache.lucene.analysis.TokenStream;
   *  <p>
   *  Use {@link TermPositions#getPayloadLength()} and {@link TermPositions#getPayload(byte[], int)}
   *  to retrieve the payloads from the index.<br>
-  *  <br>
-  *  
-  * <p><font color="#FF0000">
-  * WARNING: The status of the <b>Payloads</b> feature is experimental. 
-  * The APIs introduced here might change in the future and will not be 
-  * supported anymore in such a case.</font>
-  */    
-  // TODO: Remove warning after API has been finalized
-  public class Payload implements Serializable {
+  *
+  */
+  public class Payload implements Serializable, Cloneable {
     /** the byte array containing the payload data */
     protected byte[] data;
     
@@ -51,12 +45,14 @@ import org.apache.lucene.analysis.TokenStream;
     protected int length;
     
     /** Creates an empty payload and does not allocate a byte array. */
-    protected Payload() {
-      // no-arg constructor since this class implements Serializable
+    public Payload() {
+      // nothing to do
     }
     
     /**
      * Creates a new payload with the the given array as data.
+     * A reference to the passed-in array is held, i. e. no 
+     * copy is made.
      * 
      * @param data the data of this payload
      */
@@ -66,6 +62,8 @@ import org.apache.lucene.analysis.TokenStream;
 
     /**
      * Creates a new payload with the the given array as data. 
+     * A reference to the passed-in array is held, i. e. no 
+     * copy is made.
      * 
      * @param data the data of this payload
      * @param offset the offset in the data byte array
@@ -78,6 +76,41 @@ import org.apache.lucene.analysis.TokenStream;
       this.data = data;
       this.offset = offset;
       this.length = length;
+    }
+    
+    /**
+     * Sets this payloads data. 
+     * A reference to the passed-in array is held, i. e. no 
+     * copy is made.
+     */
+    public void setData(byte[] data) {
+      setData(data, 0, data.length);
+    }
+
+    /**
+     * Sets this payloads data. 
+     * A reference to the passed-in array is held, i. e. no 
+     * copy is made.
+     */
+    public void setData(byte[] data, int offset, int length) {
+      this.data = data;
+      this.offset = offset;
+      this.length = length;
+    }
+    
+    /**
+     * Returns a reference to the underlying byte array
+     * that holds this payloads data.
+     */
+    public byte[] getData() {
+      return this.data;
+    }
+    
+    /**
+     * Returns the offset in the underlying byte array 
+     */
+    public int getOffset() {
+      return this.offset;
     }
     
     /**
@@ -117,5 +150,14 @@ import org.apache.lucene.analysis.TokenStream;
         throw new ArrayIndexOutOfBoundsException();
       }
       System.arraycopy(this.data, this.offset, target, targetOffset, this.length);
+    }
+
+    /**
+     * Clones this payload by creating a copy of the underlying
+     * byte array.
+     */
+    public Object clone() {
+      Payload clone = new Payload(this.toByteArray());
+      return clone;
     }
 }

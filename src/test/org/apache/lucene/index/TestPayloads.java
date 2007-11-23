@@ -81,6 +81,13 @@ public class TestPayloads extends LuceneTestCase {
         } catch (Exception expected) {
             // expected exception
         }
+        
+        Payload clone = (Payload) payload.clone();
+        assertEquals(payload.length(), clone.length());
+        for (int i = 0; i < payload.length(); i++) {
+          assertEquals(payload.byteAt(i), clone.byteAt(i));
+        }
+        
     }
 
     // Tests whether the DocumentWriter and SegmentMerger correctly enable the
@@ -429,6 +436,7 @@ public class TestPayloads extends LuceneTestCase {
         private byte[] data;
         private int length;
         private int offset;
+        Payload payload = new Payload();
         
         public PayloadFilter(TokenStream in, byte[] data, int offset, int length) {
             super(in);
@@ -437,14 +445,23 @@ public class TestPayloads extends LuceneTestCase {
             this.offset = offset;
         }
         
-        public Token next() throws IOException {
-            Token nextToken = input.next();
-            if (nextToken != null && offset + length <= data.length) {
-              nextToken.setPayload(new Payload(data, offset, length));
-              offset += length;
-            }            
+        public Token next(Token token) throws IOException {
+            token = input.next(token);
+            if (token != null) {
+                if (offset + length <= data.length) {
+                    Payload p = null;
+                    if (p == null) {
+                        p = new Payload();
+                        token.setPayload(p);
+                    }
+                    p.setData(data, offset, length);
+                    offset += length;                
+                } else {
+                    token.setPayload(null);
+                }
+            }
             
-            return nextToken;
+            return token;
         }
     }
     

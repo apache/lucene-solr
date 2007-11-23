@@ -37,11 +37,6 @@ import java.io.IOException;
  * <p>
  * Payload scores are averaged across term occurrences in the document.  
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>Payloads</b> feature is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
- *
  * @see org.apache.lucene.search.Similarity#scorePayload(byte[], int, int)
  */
 public class BoostingTermQuery extends SpanTermQuery{
@@ -136,7 +131,7 @@ public class BoostingTermQuery extends SpanTermQuery{
       protected void processPayload(Similarity similarity) throws IOException {
         if (positions.isPayloadAvailable()) {
           payload = positions.getPayload(payload, 0);
-          payloadScore += similarity.scorePayload(payload, 0, positions.getPayloadLength());
+          payloadScore += similarity.scorePayload(term.field(), payload, 0, positions.getPayloadLength());
           payloadsSeen++;
 
         } else {

@@ -196,7 +196,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   static class BoostingSimilarity extends DefaultSimilarity {
 
     // TODO: Remove warning after API has been finalized
-    public float scorePayload(byte[] payload, int offset, int length) {
+    public float scorePayload(String fieldName, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
     }
