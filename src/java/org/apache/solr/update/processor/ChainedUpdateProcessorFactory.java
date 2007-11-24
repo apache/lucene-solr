@@ -75,7 +75,7 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
       
       XPath xpath = XPathFactory.newInstance().newXPath();
       try {
-        loader.load( core.getSolrConfig(), (NodeList) xpath.evaluate( "chain", node, XPathConstants.NODESET ) );
+        loader.load( core.getResourceLoader(), (NodeList) xpath.evaluate( "chain", node, XPathConstants.NODESET ) );
       } 
       catch (XPathExpressionException e) {
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,

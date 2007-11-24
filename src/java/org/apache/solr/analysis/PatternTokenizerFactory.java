@@ -70,7 +70,8 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
   /**
    * Require a configured pattern
    */
-  public void init(SolrConfig solrConfig, Map<String,String> args) 
+  @Override
+  public void init(Map<String,String> args) 
   {
     this.args = args;
     String regex = args.get( PATTERN );
@@ -90,13 +91,6 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "invalid group argument: "+g );
       }
     }
-  }
-
-  /**
-   * The arguments passed to init()
-   */
-  public Map<String, String> getArgs() {
-    return this.args;
   }
   
   /**

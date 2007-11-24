@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.solr.common;
 
-import java.io.Reader;
-import java.util.Map;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
-import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
-
-public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
+/**
+ * @since solr 1.3
+ */ 
+public interface ResourceLoader
+{
+  public InputStream openResource(String resource) throws IOException;
   
-  private char[] charset;
+  /**
+   * Accesses a resource by name and returns the (non comment) lines
+   * containing data.
+   *
+   * <p>
+   * A comment line is any line that starts with the character "#"
+   * </p>
+   *
+   * @param resource
+   * @return a list of non-blank non-comment lines with whitespace trimmed
+   * from front and back.
+   * @throws IOException
+   */
+  public List<String> getLines(String resource) throws IOException;
   
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    charset = RussianCommon.getCharset(args.get("charset"));
-  }
-
-  public RussianLetterTokenizer create(Reader in) {
-    return new RussianLetterTokenizer(in,charset);
-  }
+  public Object newInstance(String cname, String ... subpackages);
 }
-

@@ -18,21 +18,21 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
 /**
  * @version $Id$
  */
-public class SynonymFilterFactory extends BaseTokenFilterFactory {
-  @Override
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+public class SynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+  
+  public void inform(ResourceLoader loader) {
     String synonyms = args.get("synonyms");
 
     ignoreCase = getBoolean("ignoreCase",false);
@@ -41,7 +41,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory {
     if (synonyms != null) {
       List<String> wlist=null;
       try {
-        wlist = solrConfig.getLines(synonyms);
+        wlist = loader.getLines(synonyms);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

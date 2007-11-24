@@ -23,11 +23,12 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
@@ -53,7 +54,6 @@ import java.util.logging.Logger;
  *
  * @version $Id$
  */
-
 public final class IndexSchema {
   final static Logger log = Logger.getLogger(IndexSchema.class.getName());
   private final SolrConfig solrConfig;
@@ -71,6 +71,9 @@ public final class IndexSchema {
     this.solrConfig = solrConfig;
     this.schemaFile=schemaFile;
     readSchema(solrConfig);
+    
+    SolrResourceLoader loader = solrConfig.getResourceLoader();
+    loader.inform( loader );
   }
 
   public SolrConfig getSolrConfig() {
@@ -82,7 +85,7 @@ public final class IndexSchema {
    * @see Config#openResource
    */
   public InputStream getInputStream() {
-    return solrConfig.openResource(schemaFile);
+    return solrConfig.getResourceLoader().openResource(schemaFile);
   }
 
   /** Gets the name of the schema file. */
@@ -320,9 +323,9 @@ public final class IndexSchema {
       AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType", true, true) {
 
         @Override
-        protected FieldType create( Config config, String name, String className, Node node ) throws Exception
+        protected FieldType create( ResourceLoader loader, String name, String className, Node node ) throws Exception
         {
-          FieldType ft = (FieldType)solrConfig.newInstance(className);
+          FieldType ft = (FieldType)loader.newInstance(className);
           ft.setTypeName(name);
 
           String expression = "./analyzer[@type='query']";
@@ -359,7 +362,7 @@ public final class IndexSchema {
 
       String expression = "/schema/types/fieldtype | /schema/types/fieldType";
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      loader.load( solrConfig, nodes );
+      loader.load( solrConfig.getResourceLoader(), nodes );
 
       
 
@@ -377,7 +380,6 @@ public final class IndexSchema {
         String name = DOMUtil.getAttr(attrs,"name","field definition");
         log.finest("reading field def "+name);
         String type = DOMUtil.getAttr(attrs,"type","field " + name);
-        String val;
 
         FieldType ft = fieldTypes.get(type);
         if (ft==null) {
@@ -457,7 +459,7 @@ public final class IndexSchema {
       similarity = new DefaultSimilarity();
       log.fine("using default similarity");
     } else {
-      similarity = (Similarity)solrConfig.newInstance(node.getNodeValue().trim());
+      similarity = (Similarity)solrConfig.getResourceLoader().newInstance(node.getNodeValue().trim());
       log.fine("using similarity " + similarity.getClass().getName());
     }
 
@@ -592,69 +594,65 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      return (Analyzer)solrConfig.newInstance(analyzerName);
+      return (Analyzer)solrConfig.getResourceLoader().newInstance(analyzerName);
     }
 
     XPath xpath = XPathFactory.newInstance().newXPath();
-    Node tokNode = (Node)xpath.evaluate("./tokenizer", node, XPathConstants.NODE);
-    NodeList nList = (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET);
 
-    if (tokNode==null){
+    // Load the Tokenizer
+    // Although an analyzer only allows a single Tokenizer, we load a list to make sure 
+    // the configuration is ok
+    // --------------------------------------------------------------------------------
+    final ArrayList<TokenizerFactory> tokenizers = new ArrayList<TokenizerFactory>(1);
+    AbstractPluginLoader<TokenizerFactory> tokenizerLoader = 
+      new AbstractPluginLoader<TokenizerFactory>( "[schema.xml] analyzer/tokenizer", false, false )
+    {
+      @Override
+      protected void init(TokenizerFactory plugin, Node node) throws Exception {
+        if( !tokenizers.isEmpty() ) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+              "The schema defines multiple tokenizers for: "+node );
+        }
+        plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+        tokenizers.add( plugin );
+      }
+
+      @Override
+      protected TokenizerFactory register(String name, TokenizerFactory plugin) throws Exception {
+        return plugin; // does not need to do anything
+      }
+    };
+    tokenizerLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
+    
+    // Make sure somethign was loaded
+    if( tokenizers.isEmpty() ) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
     }
-    TokenizerFactory tfac = readTokenizerFactory(solrConfig, tokNode);
-
-    /******
-    // oops, getChildNodes() includes text (newlines, etc) in addition
-    // to the actual child elements
-    NodeList nList = node.getChildNodes();
-    TokenizerFactory tfac = readTokenizerFactory(nList.item(0));
-     if (tfac==null) {
-       throw new SolrException( SolrException.StatusCode.SERVER_ERROR,"TokenizerFactory must be specified first in analyzer");
-     }
-    ******/
-
-    ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>();
-    for (int i=0; i<nList.getLength(); i++) {
-      TokenFilterFactory filt = readTokenFilterFactory(solrConfig, nList.item(i));
-      if (filt != null) filters.add(filt);
-    }
-
-    return new TokenizerChain(tfac, filters.toArray(new TokenFilterFactory[filters.size()]));
-  };
-
-  // <tokenizer class="solr.StandardFilterFactory"/>
-  private TokenizerFactory readTokenizerFactory(SolrConfig solrConfig, Node node) {
-    // if (node.getNodeName() != "tokenizer") return null;
-    NamedNodeMap attrs = node.getAttributes();
-    String className = DOMUtil.getAttr(attrs,"class","tokenizer");
-    TokenizerFactory tfac = (TokenizerFactory)solrConfig.newInstance(className);
-    if (tfac instanceof SolrConfig.Initializable) {
-      ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
-    }
-    else {
-      log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args) " + className );
-      tfac.init(DOMUtil.toMapExcept(attrs,"class"));
-    }
     
-    return tfac;
-  }
 
-  // <tokenizer class="solr.StandardFilterFactory"/>
-  private TokenFilterFactory readTokenFilterFactory(SolrConfig solrConfig, Node node) {
-    // if (node.getNodeName() != "filter") return null;
-    NamedNodeMap attrs = node.getAttributes();
-    String className = DOMUtil.getAttr(attrs,"class","token filter");
-    TokenFilterFactory tfac = (TokenFilterFactory)solrConfig.newInstance(className);
-    if (tfac instanceof SolrConfig.Initializable) {
-      ((SolrConfig.Initializable)tfac).init(solrConfig, DOMUtil.toMapExcept(attrs,"class"));
-    }
-    else {
-      log.warning("calling the deprecated form of init; should be calling init(SolrConfig solrConfig, Map<String,String> args) " + className );
-      tfac.init(DOMUtil.toMapExcept(attrs,"class"));
-    }
-    return tfac;
-  }
+    // Load the Filters
+    // --------------------------------------------------------------------------------
+    final ArrayList<TokenFilterFactory> filters = new ArrayList<TokenFilterFactory>();
+    AbstractPluginLoader<TokenFilterFactory> filterLoader = 
+      new AbstractPluginLoader<TokenFilterFactory>( "[schema.xml] analyzer/filter", false, false )
+    {
+      @Override
+      protected void init(TokenFilterFactory plugin, Node node) throws Exception {
+        if( plugin != null ) {
+          plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+          filters.add( plugin );
+        }
+      }
+
+      @Override
+      protected TokenFilterFactory register(String name, TokenFilterFactory plugin) throws Exception {
+        return plugin; // does not need to do anything
+      }
+    };
+    filterLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
+    
+    return new TokenizerChain(tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
+  };
 
 
   static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {

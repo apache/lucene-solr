@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
-import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.SolrException;
 
@@ -32,8 +31,8 @@ public class TrimFilterFactory extends BaseTokenFilterFactory {
   protected boolean updateOffsets = false;
   
   @Override
-  public void init(SolrConfig solrConfig, Map<String,String> args) {
-    super.init(solrConfig, args );
+  public void init(Map<String,String> args) {
+    super.init( args );
     
     String v = args.get( "updateOffsets" );
     if( v != null ) {

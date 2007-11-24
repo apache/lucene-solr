@@ -72,8 +72,8 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory
   boolean forceFirstLetter = true; // make sure the first letter is capitol even if it is in the keep list
   
   @Override
-  public void init(SolrConfig solrConfig, Map<String,String> args) {
-    super.init( solrConfig, args );
+  public void init(Map<String,String> args) {
+    super.init( args );
     
     String k = args.get( KEEP );
     if( k != null ) {

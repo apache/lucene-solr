@@ -103,7 +103,7 @@ public class DirectSolrConnection
     SolrConfig config = null;
     try {
       config = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
-      instanceDir = config.getInstanceDir();
+      instanceDir = config.getResourceLoader().getInstanceDir();
 
       // If the Data directory is specified, initialize SolrCore directly
       IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml");

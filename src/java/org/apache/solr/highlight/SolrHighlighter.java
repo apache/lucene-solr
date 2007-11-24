@@ -82,7 +82,7 @@ public class SolrHighlighter
     // Load the fragmenters
     String xpath = "highlighting/fragmenter";
     NamedListPluginLoader<SolrFragmenter> fragloader = new NamedListPluginLoader<SolrFragmenter>( xpath, fragmenters );
-    SolrFragmenter frag = fragloader.load( config, (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+    SolrFragmenter frag = fragloader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
     if( frag == null ) {
       frag = new GapFragmenter();
     }
@@ -92,7 +92,7 @@ public class SolrHighlighter
     // Load the formatters
     xpath = "highlighting/formatter";
     NamedListPluginLoader<SolrFormatter> fmtloader = new NamedListPluginLoader<SolrFormatter>( xpath, formatters );
-    SolrFormatter fmt = fmtloader.load( config, (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+    SolrFormatter fmt = fmtloader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
     if( fmt == null ) {
       fmt = new HtmlFormatter();
     }

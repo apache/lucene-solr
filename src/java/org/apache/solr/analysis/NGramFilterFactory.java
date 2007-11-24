@@ -18,7 +18,6 @@ package org.apache.solr.analysis;
  */
 
 import java.util.Map;
-import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 
@@ -30,10 +29,10 @@ public class NGramFilterFactory extends BaseTokenFilterFactory {
 
   private int minGramSize = 0;
 
-  /** Initializes the n-gram min and max sizes and the side from which one should start tokenizing. */
+  /** Initialize the n-gram min and max sizes and the side from which one should start tokenizing. */
   @Override
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  public void init(Map<String, String> args) {
+    super.init(args);
     String maxArg = args.get("maxGramSize");
     maxGramSize = (maxArg != null ? Integer.parseInt(maxArg)
         : NGramTokenFilter.DEFAULT_MAX_NGRAM_SIZE);

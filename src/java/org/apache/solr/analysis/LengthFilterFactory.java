@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.LengthFilter;
 
@@ -28,8 +27,10 @@ import java.util.Map;
  */
 public class LengthFilterFactory extends BaseTokenFilterFactory {
   int min,max;
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
     min=Integer.parseInt(args.get("min"));
     max=Integer.parseInt(args.get("max"));
   }

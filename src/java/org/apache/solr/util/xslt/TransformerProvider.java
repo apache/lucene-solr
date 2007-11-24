@@ -28,6 +28,7 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrConfig;
 
 /** Singleton that creates a Transformer for the XSLTServletFilter.
@@ -72,7 +73,7 @@ public class TransformerProvider {
         log.fine("Using cached Templates:" + filename);
       }
     } else {
-      lastTemplates = getTemplates(solrConfig, filename,cacheLifetimeSeconds);
+      lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename,cacheLifetimeSeconds);
     }
     
     Transformer result = null;
@@ -90,7 +91,7 @@ public class TransformerProvider {
   }
   
   /** Return a Templates object for the given filename */
-  private Templates getTemplates(SolrConfig solrConfig, String filename,int cacheLifetimeSeconds) throws IOException {
+  private Templates getTemplates(ResourceLoader loader, String filename,int cacheLifetimeSeconds) throws IOException {
     
     Templates result = null;
     lastFilename = null;
@@ -98,7 +99,7 @@ public class TransformerProvider {
       if(log.isLoggable(Level.FINE)) {
         log.fine("compiling XSLT templates:" + filename);
       }
-      final InputStream xsltStream = solrConfig.openResource("xslt/" + filename);
+      final InputStream xsltStream = loader.openResource("xslt/" + filename);
       result = tFactory.newTemplates(new StreamSource(xsltStream));
     } catch (Exception e) {
       log.throwing(getClass().getName(), "newTemplates", e);

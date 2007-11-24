@@ -40,24 +40,24 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
     
     PhoneticFilterFactory ff = new PhoneticFilterFactory();
     try {
-      ff.init( solrConfig, args );
+      ff.init( args );
       fail( "missing encoder parameter" );
     }
     catch( Exception ex ) {}
     args.put( PhoneticFilterFactory.ENCODER, "XXX" );
     try {
-      ff.init( solrConfig, args );
+      ff.init( args );
       fail( "unknown encoder parameter" );
     }
     catch( Exception ex ) {}
     
     args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
-    ff.init( solrConfig, args );
+    ff.init( args );
     assertTrue( ff.encoder instanceof Metaphone );
     assertTrue( ff.inject ); // default
 
     args.put( PhoneticFilterFactory.INJECT, "false" );
-    ff.init( solrConfig, args );
+    ff.init( args );
     assertFalse( ff.inject );
   }
   

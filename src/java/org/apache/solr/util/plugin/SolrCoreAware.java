@@ -15,25 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.solr.util.plugin;
 
-import java.io.Reader;
-import java.util.Map;
+import org.apache.solr.core.SolrCore;
 
-import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
-
-public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
-  
-  private char[] charset;
-  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    charset = RussianCommon.getCharset(args.get("charset"));
-  }
-
-  public RussianLetterTokenizer create(Reader in) {
-    return new RussianLetterTokenizer(in,charset);
-  }
+/**
+ * @since solr 1.3
+ */
+public interface SolrCoreAware 
+{
+  void inform( SolrCore core );
 }
-

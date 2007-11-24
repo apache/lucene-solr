@@ -61,8 +61,8 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   protected Encoder encoder = null;
 
   @Override
-  public void init(SolrConfig solrConfig, Map<String,String> args) {
-    super.init( solrConfig, args );
+  public void init(Map<String,String> args) {
+    super.init( args );
     
     if( args.get( "inject" ) != null ) {
       inject = Boolean.getBoolean( args.get( INJECT ) );

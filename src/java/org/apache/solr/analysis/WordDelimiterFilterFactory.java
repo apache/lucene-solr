@@ -16,7 +16,6 @@
  */
 
 package org.apache.solr.analysis;
-import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.util.Map;
@@ -32,8 +31,9 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {
   int catenateAll=0;
   int splitOnCaseChange=0;
 
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
     generateWordParts = getInt("generateWordParts", 1);
     generateNumberParts = getInt("generateNumberParts", 1);
     catenateWords = getInt("catenateWords", 0);

@@ -30,7 +30,6 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import java.util.Map;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.StringTokenizer;
@@ -59,15 +58,6 @@ public class SolrConfig extends Config {
    */
   @Deprecated
   public static SolrConfig config = null; 
-
-  /** An interface to denote objects that need a SolrConfig to be initialized.
-   *  These are mainly TokenFilterFactory and TokenizerFactory subclasses.
-   */
-  public interface Initializable {
-    /** <code>init</code> will be called just once, immediately after creation.
-     */
-    void init(SolrConfig solrConfig, Map<String,String> args);
-  }
 
   public final String configFile;
 

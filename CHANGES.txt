@@ -160,6 +160,9 @@ New Features
 31. SOLR-176: Add detailed timing data to query response output.  The SearchHandler
     interface now returns how long each section takes.  (klaas)
     
+32. SOLR-414: Plugin initialization now supports SolrCore and ResourceLoader "Aware" 
+    plugins.  Plugins that implement SolrCoreAware or ResourceLoaderAware are 
+    informed about the SolrCore/ResourceLoader. (Henri Biestro, ryan)
 
 Changes in runtime behavior
 
@@ -229,14 +232,9 @@ Other Changes
 
  3. Upgraded to Lucene 2.2.0; June 18, 2007.
 
- 4. SOLR-215: In an push to support multiple SolrCores, the TokenizerFactory
-    and TokenFilterFactory initalization interface has changed to accept the 
-    solrConfig.  Initialization should happen in:
-      init(SolrConfig solrConfig, Map<String,String> args)
-    rather then:
-      init(Map<String,String> args)
-    Existing classes should continue to work, but it is encouraged to update
-    the initialization code.  (Henri Biestro via ryan)
+ 4. SOLR-215: Static access to SolrCore.getSolrCore() and SolrConfig.config
+    have been deprecated in order to support multiple loaded cores.
+    (Henri Biestro via ryan)
 
  5. SOLR-367: The create method in all TokenFilter and Tokenizer Factories
     provided by Solr now declare their specific return types instead of just
@@ -250,10 +248,10 @@ Other Changes
 
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on
- project-name-version.jar.  This yields, for example:
-  apache-solr-common-1.3-dev.jar
-  apache-solr-solrj-1.3-dev.jar
-  apache-solr-1.3-dev.jar
+    project-name-version.jar.  This yields, for example:
+      apache-solr-common-1.3-dev.jar
+      apache-solr-solrj-1.3-dev.jar
+      apache-solr-1.3-dev.jar
 
 ================== Release 1.2, 20070602 ==================
 

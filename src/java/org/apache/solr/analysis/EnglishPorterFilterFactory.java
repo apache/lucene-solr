@@ -17,13 +17,13 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Token;
 
-import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.io.IOException;
@@ -31,14 +31,13 @@ import java.io.IOException;
 /**
  * @version $Id$
  */
-public class EnglishPorterFilterFactory extends BaseTokenFilterFactory {
-  @Override
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+  
+  public void inform(ResourceLoader loader) {
     String wordFile = args.get("protected");
     if (wordFile != null) {
       try {
-        List<String> wlist = solrConfig.getLines(wordFile);
+        List<String> wlist = loader.getLines(wordFile);
          protectedWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]));
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -51,6 +50,7 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory {
   public EnglishPorterFilter create(TokenStream input) {
     return new EnglishPorterFilter(input,protectedWords);
   }
+
 }
 
 
@@ -84,6 +84,7 @@ class EnglishPorterFilter extends TokenFilter {
   }
   **/
 
+  @Override
   public Token next() throws IOException {
     Token tok = input.next();
     if (tok==null) return null;

@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 import javax.xml.xpath.XPathConstants;
 
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
@@ -34,6 +35,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 
@@ -133,7 +136,7 @@ final class RequestHandlers {
       new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true, true )
     {
       @Override
-      protected SolrRequestHandler create( Config config, String name, String className, Node node ) throws Exception
+      protected SolrRequestHandler create( ResourceLoader config, String name, String className, Node node ) throws Exception
       {    
         String startup = DOMUtil.getAttr( node, "startup" );
         if( startup != null ) {
@@ -163,7 +166,7 @@ final class RequestHandlers {
     NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
     
     // Load the handlers and get the default one
-    SolrRequestHandler defaultHandler = loader.load( config, nodes );
+    SolrRequestHandler defaultHandler = loader.load( config.getResourceLoader(), nodes );
     if( defaultHandler == null ) {
       defaultHandler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
       if( defaultHandler == null ) {
@@ -231,6 +234,14 @@ final class RequestHandlers {
         try {
           _handler = (SolrRequestHandler)core.createRequestHandler(_className);
           _handler.init( _args );
+          
+          if( _handler instanceof ResourceLoaderAware ) {
+            ((ResourceLoaderAware)_handler).inform( core.getSolrConfig().getResourceLoader() );
+          }
+          
+          if( _handler instanceof SolrCoreAware ) {
+            ((SolrCoreAware)_handler).inform( core );
+          }
         }
         catch( Exception ex ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "lazy loading error", ex );

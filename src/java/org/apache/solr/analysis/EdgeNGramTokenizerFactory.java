@@ -17,8 +17,6 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.solr.core.SolrConfig;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 
 import java.io.Reader;
@@ -34,8 +32,9 @@ public class EdgeNGramTokenizerFactory extends BaseTokenizerFactory {
 
     private String side;
 
-    public void init(SolrConfig solrConfig, Map<String, String> args) {
-        super.init(solrConfig, args);
+    @Override
+    public void init(Map<String, String> args) {
+        super.init(args);
         String maxArg = args.get("maxGramSize");
         maxGramSize = (maxArg != null ? Integer.parseInt(maxArg) : EdgeNGramTokenizer.DEFAULT_MAX_GRAM_SIZE);
 

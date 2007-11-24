@@ -20,9 +20,11 @@ package org.apache.solr.core;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -38,27 +40,24 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.net.URLClassLoader;
-import java.net.URL;
-import java.net.MalformedURLException;
 
 /**
  * @version $Id$
  */
 public class Config {
-  public static final Logger log = Logger.getLogger(SolrCore.class.getName());
+  public static final Logger log = Logger.getLogger(Config.class.getName());
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
-  private final String instanceDir; // solr home directory
   private final Document doc;
   private final String prefix;
   private final String name;
+  private final SolrResourceLoader loader;
 
   @Deprecated
   public Config(String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
-    this( Config.locateInstanceDir(), name, is, prefix );
+    this( null, name, is, prefix );
   }
 
   public Config(String instanceDir, String name) throws ParserConfigurationException, IOException, SAXException 
@@ -68,21 +67,15 @@ public class Config {
   
   public Config(String instanceDir, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
-    if( instanceDir == null ) {
-      instanceDir = Config.locateInstanceDir();
-    }
-    
-    this.instanceDir = normalizeDir(instanceDir);
-    log.info("Solr home set to '" + instanceDir + "'");
-    classLoader = null;
-    
+    this.loader = new SolrResourceLoader( instanceDir );
     this.name = name;
     this.prefix = prefix;
+    
     if (prefix!=null && !prefix.endsWith("/")) prefix += '/';
     InputStream lis = is;
     try {
       if (lis == null)
-        lis = openResource(name);
+        lis = loader.openResource(name);
       
       javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       doc = builder.parse(lis);
@@ -96,6 +89,14 @@ public class Config {
       if (lis != is)
         lis.close();
     }
+  }
+  
+  /**
+   * @since solr 1.3
+   */
+  public SolrResourceLoader getResourceLoader()
+  {
+    return loader;
   }
 
   public Document getDocument() {
@@ -211,215 +212,43 @@ public class Config {
     return val!=null ? Float.parseFloat(val) : def;
   }
 
-
-  // The directory where solr will look for config files by default.
-  // defaults to "./solr/conf/"
-  public String getConfigDir() {
-    return instanceDir + "conf/";
-  }
-  
-  public InputStream openResource(String resource) {
-    InputStream is=null;
-    
-    try {
-      File f = new File(resource);
-      if (!f.isAbsolute()) {
-        // try $CWD/solrconf/
-        f = new File(getConfigDir() + resource);
-      }
-      if (f.isFile() && f.canRead()) {
-        return new FileInputStream(f);
-      } else {
-        // try $CWD
-        f = new File(resource);
-        if (f.isFile() && f.canRead()) {
-          return new FileInputStream(f);
-        }
-      }
-      
-      ClassLoader loader = getClassLoader();
-      is = loader.getResourceAsStream(resource);
-    } catch (Exception e) {
-      throw new RuntimeException("Error opening " + resource, e);
-    }
-    if (is==null) {
-      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
-    }
-    return is;
-  }
-  
-  /**
-   * Accesses a resource by name and returns the (non comment) lines
-   * containing data.
-   *
-   * <p>
-   * A comment line is any line that starts with the character "#"
-   * </p>
-   *
-   * @param resource
-   * @return a list of non-blank non-comment lines with whitespace trimmed
-   * from front and back.
-   * @throws IOException
-   */
-  public List<String> getLines(String resource) throws IOException {
-    BufferedReader input = null;
-    try {
-      // todo - allow configurable charset?
-      input = new BufferedReader(new InputStreamReader(openResource(resource), "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
-    ArrayList<String> lines = new ArrayList<String>();
-    for (String word=null; (word=input.readLine())!=null;) {
-      // skip comments
-      if (word.startsWith("#")) continue;
-      word=word.trim();
-      // skip blank lines
-      if (word.length()==0) continue;
-      lines.add(word);
-    }
-    return lines;
-  }
-  
-  //
-  // classloader related functions
-  //
-
-  private static final String project = "solr";
-  private static final String base = "org.apache" + "." + project;
-  private static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util."};
-
-  public Class findClass(String cname, String... subpackages) {
-    ClassLoader loader = getClassLoader();
-    if (subpackages.length==0) subpackages = packages;
-
-    // first try cname == full name
-    try {
-      return Class.forName(cname, true, loader);
-    } catch (ClassNotFoundException e) {
-      String newName=cname;
-      if (newName.startsWith(project)) {
-        newName = cname.substring(project.length()+1);
-      }
-      for (String subpackage : subpackages) {
-        try {
-          String name = base + '.' + subpackage + newName;
-          log.finest("Trying class name " + name);
-          return Class.forName(name, true, loader);
-        } catch (ClassNotFoundException e1) {
-          // ignore... assume first exception is best.
-        }
-      }
-
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e, false);
-    }
-  }
-
-  public Object newInstance(String cname, String... subpackages) {
-    Class clazz = findClass(cname,subpackages);
-    if( clazz == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: "+cname + " in " + getClassLoader(), false);
-    }
-    try {
-      return clazz.newInstance();
-    } 
-    catch (Exception e) {
-      e.printStackTrace();
-      
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName()+"'", e, false );
-    }
-  }
-
-  private static String normalizeDir(String path) {
-    if (path==null) return null;
-    if ( !(path.endsWith("/") || path.endsWith("\\")) ) {
-      path+='/';
-    }
-    return path;
-  }
-
-  public String getInstanceDir() {
-    return instanceDir;
-  }
-
-  public static String locateInstanceDir() {
-    String home = null;
-    // Try JNDI
-    try {
-      Context c = new InitialContext();
-      home = (String)c.lookup("java:comp/env/solr/home");
-      log.info("Using JNDI solr.home: "+home );
-    } catch (NoInitialContextException e) {
-      log.info("JNDI not configured for Solr (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.info("No /solr/home in JNDI");
-    } catch( RuntimeException ex ) {
-      log.warning("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
-    } 
-    
-    // Now try system property
-    if( home == null ) {
-      String prop = project + ".solr.home";
-      home = normalizeDir(System.getProperty(prop));
-      if( home != null ) {
-        log.info("using system property solr.home: " + home );
-      }
-    }
-    
-    // if all else fails, try 
-    if( home == null ) {
-      home = project + '/';
-      log.info("Solr home defaulted to '" + home + "' (could not find system property or JNDI)");
-    }
-    return normalizeDir( home );
-  }
-
-  /** 
-   * Classloader loading resources specified in any configs 
-   * @see #getClassLoader()
-   */
-  private ClassLoader classLoader = null;
-
-  /**
-   * Returns the classloader to be use when loading resources
-   * specified in this config
-   *
-   * <p>
-   * This loader will delegate to the context classloader when possible,
-   * otherwise it will attempt to resolve resources useing any jar files
-   * found in the "lib/" directory in the "Solr Home" directory.
-   * <p>
-   */
-  private ClassLoader getClassLoader() {
-    if (null == classLoader) {
-      // NB5.5/win32/1.5_10: need to go thru local var or classLoader is not set!
-      ClassLoader loader = Thread.currentThread().getContextClassLoader();
-
-      File f = new File(instanceDir + "lib/");
-      if (f.canRead() && f.isDirectory()) {
-        File[] jarFiles = f.listFiles();
-        URL[] jars = new URL[jarFiles.length];
-        try {
-          for (int j = 0; j < jarFiles.length; j++) {
-            jars[j] = jarFiles[j].toURI().toURL();
-            log.info("Adding '" + jars[j].toString() + "' to Solr classloader");
-          }
-          loader = URLClassLoader.newInstance(jars, loader);
-        } catch (MalformedURLException e) {
-          SolrException.log(log,"Can't construct solr lib class loader", e);
-        }
-      }
-      classLoader = loader;
-    }
-    return classLoader;
-  }
-
   /**
    * @return the XML filename
    */
   public String getName() {
     return name;
+  }
+  
+  // The following functions were moved to ResourceLoader
+  //-----------------------------------------------------------------------------
+  
+  @Deprecated
+  public String getConfigDir() {
+    return loader.getConfigDir();
+  }
+
+  @Deprecated
+  public InputStream openResource(String resource) {
+    return loader.openResource(resource);
+  }
+
+  @Deprecated
+  public List<String> getLines(String resource) throws IOException {
+    return loader.getLines(resource);
+  }
+
+  @Deprecated
+  public Class findClass(String cname, String... subpackages) {
+    return loader.findClass(cname, subpackages);
+  }
+
+  @Deprecated
+  public Object newInstance(String cname, String ... subpackages) {
+    return loader.newInstance(cname, subpackages);
+  }
+  
+  @Deprecated
+  public String getInstanceDir() {
+    return loader.getInstanceDir();
   }
 }

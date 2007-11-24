@@ -52,11 +52,9 @@ public interface TokenizerFactory {
    * <p>The args are user-level initialization parameters that
    * may be specified when declaring a the factory in the
    * schema.xml
-   * This method is deprecated; the replacement is to have your class implement SolrConfig.Initializable
-   * and implement 'void init(SolrConfig solrConfig, Map<String,String> args);'
    */
-  @Deprecated
   public void init(Map<String,String> args);
+  
   /**
    * Accessor method for reporting the args used to initialize this factory.
    * <p>
@@ -65,6 +63,7 @@ public interface TokenizerFactory {
    * </p>
    */
   public Map<String,String> getArgs();
+  
   /** Creates a TokenStream of the specified input */
   public TokenStream create(Reader input);
 }

@@ -18,19 +18,18 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.ru.*;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import java.io.IOException;
+
 import java.util.Map;
-import org.apache.solr.core.SolrConfig;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ru.RussianStemFilter;
+
 public class RussianStemFilterFactory extends BaseTokenFilterFactory {
   
   private char[] charset;
   
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  public void init(Map<String, String> args) {
+    super.init(args);
     charset = RussianCommon.getCharset(args.get("charset"));
   }
 

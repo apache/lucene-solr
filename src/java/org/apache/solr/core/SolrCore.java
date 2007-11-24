@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -55,8 +56,6 @@ import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.LuceneQParserPlugin;
-import org.apache.solr.search.OldLuceneQParserPlugin;
 import org.apache.solr.update.DirectUpdateHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
@@ -108,6 +107,13 @@ public final class SolrCore {
 
   public SolrConfig getSolrConfig() {
     return solrConfig;
+  }
+  
+  /**
+   * @since solr 1.3
+   */
+  public SolrResourceLoader getResourceLoader() {
+    return solrConfig.getResourceLoader();
   }
 
   public String getConfigFile() {
@@ -206,7 +212,7 @@ public final class SolrCore {
     if (msg == null) msg = "SolrCore Object";
     try {
       try {
-        clazz = solrConfig.findClass(className);
+        clazz = solrConfig.getResourceLoader().findClass(className);
         if (cast != null && !cast.isAssignableFrom(clazz))
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
         
@@ -269,11 +275,12 @@ public final class SolrCore {
       // the sync block is needed)
       instance = this;   // set singleton
     
+      SolrResourceLoader loader = config.getResourceLoader();
       if (dataDir ==null) {
-        dataDir = config.get("dataDir",config.getInstanceDir()+"data");
+        dataDir = config.get("dataDir",loader.getInstanceDir()+"data");
       }
 
-      log.info("Opening new SolrCore at " + config.getInstanceDir() + ", dataDir="+dataDir);
+      log.info("Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
       if (schema==null) {
         schema = new IndexSchema(config, "schema.xml");
@@ -316,6 +323,10 @@ public final class SolrCore {
       catch (IOException e) {
         throw new RuntimeException(e);
       }
+      
+      // Finally tell anyone who wants to know
+      loader.inform( loader );
+      loader.inform( this );
     }
   }
 
@@ -342,7 +353,7 @@ public final class SolrCore {
     };
 
     NodeList nodes = (NodeList)solrConfig.evaluate("updateRequestProcessor/factory", XPathConstants.NODESET);
-    UpdateRequestProcessorFactory def = loader.load( solrConfig, nodes ); 
+    UpdateRequestProcessorFactory def = loader.load( solrConfig.getResourceLoader(), nodes ); 
     if( def == null ) {
       def = new ChainedUpdateProcessorFactory(); // the default
       def.init( thiscore, null );
@@ -877,7 +888,7 @@ public final class SolrCore {
     NamedListPluginLoader<QueryResponseWriter> loader = 
       new NamedListPluginLoader<QueryResponseWriter>( "[solrconfig.xml] "+xpath, responseWriters );
     
-    defaultResponseWriter = loader.load( solrConfig, nodes );
+    defaultResponseWriter = loader.load( solrConfig.getResourceLoader(), nodes );
     
     // configure the default response writer; this one should never be null
     if (defaultResponseWriter == null) {
@@ -928,7 +939,7 @@ public final class SolrCore {
     NamedListPluginLoader<QParserPlugin> loader =
       new NamedListPluginLoader<QParserPlugin>( "[solrconfig.xml] "+xpath, qParserPlugins);
 
-    loader.load( solrConfig, nodes );
+    loader.load( solrConfig.getResourceLoader(), nodes );
 
     // default parsers
     for (int i=0; i<QParserPlugin.standardPlugins.length; i+=2) {

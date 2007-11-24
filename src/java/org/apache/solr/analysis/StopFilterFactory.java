@@ -17,12 +17,12 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 
-import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.io.IOException;
@@ -30,17 +30,15 @@ import java.io.IOException;
 /**
  * @version $Id$
  */
-public class StopFilterFactory extends BaseTokenFilterFactory {
-  
-  @Override
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+public class StopFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+
+  public void inform(ResourceLoader loader) {
     String stopWordFile = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
 
     if (stopWordFile != null) {
       try {
-        List<String> wlist = solrConfig.getLines(stopWordFile);
+        List<String> wlist = loader.getLines(stopWordFile);
         stopWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase);
       } catch (IOException e) {
         throw new RuntimeException(e);

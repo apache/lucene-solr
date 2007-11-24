@@ -21,30 +21,19 @@ package org.apache.solr.analysis;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.apache.solr.core.SolrConfig;
 
 /**
  * Simple abstract implementation that handles init arg processing.
  * 
  * @version $Id$
  */
-public abstract class BaseTokenFilterFactory implements TokenFilterFactory, SolrConfig.Initializable {
+public abstract class BaseTokenFilterFactory implements TokenFilterFactory {
   final static Logger log = Logger.getLogger(BaseTokenFilterFactory.class.getName());
   
   /** The init args */
   protected Map<String,String> args;
   
-  
-  @Deprecated
   public void init(Map<String,String> args) {
-    this.args=args;
-  }
-  
-  /**
-   * @since solr 1.3
-   */
-  public void init(SolrConfig solrConfig, Map<String,String> args) {
-    this.init( args );  // maintain backwards compatibility
     this.args=args;
   }
 

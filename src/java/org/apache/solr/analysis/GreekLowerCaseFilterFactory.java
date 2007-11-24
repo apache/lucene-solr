@@ -18,17 +18,18 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.el.*;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import java.util.Map;
+
 import java.util.HashMap;
-import org.apache.solr.core.SolrConfig;
+import java.util.Map;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.el.GreekCharsets;
+import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory {
 
+public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory 
+{
   private static Map<String,char[]> CHARSETS = new HashMap<String,char[]>();
   static {
     CHARSETS.put("UnicodeGreek",GreekCharsets.UnicodeGreek);
@@ -39,8 +40,9 @@ public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory {
   private char[] charset = GreekCharsets.UnicodeGreek;
 
   
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
     String charsetName = args.get("charset");
     if (null != charsetName) charset = CHARSETS.get(charsetName);
     if (null == charset) {

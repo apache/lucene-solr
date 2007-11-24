@@ -50,7 +50,7 @@ public class TestPatternTokenizerFactory extends AnalysisTestCase
       args.put( PatternTokenizerFactory.PATTERN, test[1] );
 
       PatternTokenizerFactory tokenizer = new PatternTokenizerFactory();
-      tokenizer.init(solrConfig, args );
+      tokenizer.init( args );
       
       TokenStream stream = tokenizer.create( new StringReader( test[2] ) );
       String out = TestHyphenatedWordsFilter.tsToString( stream );

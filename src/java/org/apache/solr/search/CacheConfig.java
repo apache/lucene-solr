@@ -22,9 +22,11 @@ import org.w3c.dom.NodeList;
 
 import java.util.Map;
 
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 
 import javax.xml.xpath.XPathConstants;
 
@@ -82,14 +84,14 @@ public class CacheConfig {
       config.args.put("name",config.nodeName);
     }
 
+    SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = (String)config.args.get("class");
     config.regenImpl = (String)config.args.get("regenerator");
-    config.clazz = solrConfig.findClass(config.cacheImpl);
+    config.clazz = loader.findClass(config.cacheImpl);
     if (config.regenImpl != null) {
-      config.regenerator = (CacheRegenerator) solrConfig.newInstance(config.regenImpl);
+      config.regenerator = (CacheRegenerator) loader.newInstance(config.regenImpl);
     }
-
-
+    
     return config;
   }
 

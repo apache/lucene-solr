@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +15,20 @@
  * limitations under the License.
  */
 
-
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.ru.*;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
+
 import java.util.Map;
-import org.apache.solr.core.SolrConfig;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ru.RussianLowerCaseFilter;
+
 public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
   
   private char[] charset;
   
-  public void init(SolrConfig solrConfig, Map<String, String> args) {
-    super.init(solrConfig, args);
+  @Override
+  public void init(Map<String, String> args) {
+    super.init(args);
     charset = RussianCommon.getCharset(args.get("charset"));
   }
 
