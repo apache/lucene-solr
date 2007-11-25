@@ -77,7 +77,8 @@ public class TermQuery extends Query {
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
       Explanation idfExpl =
-        new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) + ")");
+        new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) +
+            ", numDocs=" + reader.numDocs() + ")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();
