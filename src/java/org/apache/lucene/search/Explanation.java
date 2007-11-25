@@ -33,7 +33,7 @@ public class Explanation implements java.io.Serializable {
   }
 
   /**
-   * Indicates wether or not this Explanation models a good match.
+   * Indicates whether or not this Explanation models a good match.
    *
    * <p>
    * By default, an Explanation represents a "match" if the value is positive.
