@@ -172,7 +172,7 @@ New features
  3. LUCENE-868: Added new Term Vector access features.  New callback mechanism allows application to define how and where to read Term Vectors from disk.
     This implementation contains several extensions of the new abstract TermVectorMapper class.  The new API should be back-compatible.  No changes in the
      actual storage of Term Vectors has taken place.
- 3.1 LUCENE-1038: Added setDocumentNumber() method to TermVectorMapper to provide information about what document is being accessed. (Karl Wetting via Grant Ingersoll)
+ 3.1 LUCENE-1038: Added setDocumentNumber() method to TermVectorMapper to provide information about what document is being accessed. (Karl Wettin via Grant Ingersoll)
 
  4. LUCENE-975: Added PositionBasedTermVectorMapper that allows for position based lookup of term vector information.  See item #3 above (LUCENE-868).
 
