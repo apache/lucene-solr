@@ -380,8 +380,8 @@ public class TestIndexReader extends LuceneTestCase
 
         File indexDir = new File(tempDir, "lucenetestnormwriter");
         Directory dir = FSDirectory.getDirectory(indexDir);
-        IndexWriter writer = null;
-        IndexReader reader = null;
+        IndexWriter writer;
+        IndexReader reader;
         Term searchTerm = new Term("content", "aaa");
 
         //  add 1 documents with term : aaa

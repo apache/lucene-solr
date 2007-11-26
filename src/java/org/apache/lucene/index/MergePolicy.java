@@ -115,7 +115,7 @@ public abstract class MergePolicy {
         b.append(segments.info(i).segString(dir));
       }
       if (info != null)
-        b.append(" into " + info.name);
+        b.append(" into ").append(info.name);
       if (optimize)
         b.append(" [optimize]");
       return b.toString();
@@ -145,7 +145,7 @@ public abstract class MergePolicy {
       b.append("MergeSpec:\n");
       final int count = merges.size();
       for(int i=0;i<count;i++)
-        b.append("  " + (1+i) + ": " + ((OneMerge) merges.get(i)).segString(dir));
+        b.append("  ").append(1 + i).append(": ").append(((OneMerge) merges.get(i)).segString(dir));
       return b.toString();
     }
   }

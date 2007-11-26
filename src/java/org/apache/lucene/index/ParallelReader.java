@@ -120,7 +120,7 @@ public class ParallelReader extends IndexReader {
     if (incRefReaders) {
       reader.incRef();
     }
-    decrefOnClose.add(new Boolean(incRefReaders));
+    decrefOnClose.add(Boolean.valueOf(incRefReaders));
   }
 
   /**
@@ -170,12 +170,12 @@ public class ParallelReader extends IndexReader {
           IndexReader oldReader = (IndexReader) readers.get(i);
           IndexReader newReader = (IndexReader) newReaders.get(i);
           if (newReader == oldReader) {
-            newDecrefOnClose.add(new Boolean(true));
+            newDecrefOnClose.add(Boolean.TRUE);
             newReader.incRef();
           } else {
             // this is a new subreader instance, so on close() we don't
             // decRef but close it 
-            newDecrefOnClose.add(new Boolean(false));
+            newDecrefOnClose.add(Boolean.FALSE);
           }
           pr.add(newReader, !storedFieldReaders.contains(oldReader));
         }

@@ -127,7 +127,7 @@ public class TestIndexModifier extends LuceneTestCase {
   
   private Document getDoc() {
     Document doc = new Document();
-    doc.add(new Field("body", new Integer(docCount).toString(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("body", Integer.toString(docCount), Field.Store.YES, Field.Index.UN_TOKENIZED));
     doc.add(new Field("all", "x", Field.Store.YES, Field.Index.UN_TOKENIZED));
     docCount++;
     return doc;
@@ -269,14 +269,14 @@ class IndexThread extends Thread {
   private Document getDocument() {
     Document doc = new Document();
     synchronized (getClass()) {
-      doc.add(new Field("id", new Integer(id).toString(), Field.Store.YES,
+      doc.add(new Field("id", Integer.toString(id), Field.Store.YES,
           Field.Index.UN_TOKENIZED));
       id++;
     }
     // add random stuff:
-    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES,
+    doc.add(new Field("content", Integer.toString(random.nextInt(1000)), Field.Store.YES,
         Field.Index.TOKENIZED));
-    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES,
+    doc.add(new Field("content", Integer.toString(random.nextInt(1000)), Field.Store.YES,
         Field.Index.TOKENIZED));
     doc.add(new Field("all", "x", Field.Store.YES, Field.Index.TOKENIZED));
     return doc;

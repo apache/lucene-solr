@@ -83,8 +83,7 @@ class PorterStemmer
   public void add(char ch) {
     if (b.length <= i + EXTRA) {
       char[] new_b = new char[b.length+INC];
-      for (int c = 0; c < b.length; c++)
-        new_b[c] = b[c];
+      System.arraycopy(b, 0, new_b, 0, b.length);
       b = new_b;
     }
     b[i++] = ch;
@@ -454,8 +453,7 @@ class PorterStemmer
       char[] new_b = new char[wordLen + EXTRA];
       b = new_b;
     }
-    for (int j=0; j<wordLen; j++)
-      b[j] = wordBuffer[offset+j];
+    System.arraycopy(wordBuffer, offset, b, 0, wordLen);
     i = wordLen;
     return stem(0);
   }

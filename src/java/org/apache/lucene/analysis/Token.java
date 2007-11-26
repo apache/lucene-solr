@@ -333,18 +333,18 @@ public class Token implements Cloneable {
   
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    sb.append("(");
+    sb.append('(');
     initTermBuffer();
     if (termBuffer == null)
       sb.append("null");
     else
       sb.append(termBuffer, 0, termLength);
-    sb.append("," + startOffset + "," + endOffset);
+      sb.append(',').append(startOffset).append(',').append(endOffset);
     if (!type.equals("word"))
-      sb.append(",type="+type);
+      sb.append(",type=").append(type);
     if (positionIncrement != 1)
-      sb.append(",posIncr="+positionIncrement);
-    sb.append(")");
+      sb.append(",posIncr=").append(positionIncrement);
+    sb.append(')');
     return sb.toString();
   }
 

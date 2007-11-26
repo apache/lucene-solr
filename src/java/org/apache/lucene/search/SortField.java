@@ -220,15 +220,16 @@ implements Serializable {
       case DOC: buffer.append("<doc>");
                 break;
 
-      case CUSTOM: buffer.append ("<custom:\"" + field + "\": "
-                                               + factory + ">");
+      case CUSTOM:
+                buffer.append("<custom:\"").append(field).append("\": ").append(factory).append('>');
                 break;
 
-      default: buffer.append("\"" + field + "\"");
+      default:
+               buffer.append('\"').append(field).append('\"');
                break;
     }
 
-    if (locale != null) buffer.append ("("+locale+")");
+    if (locale != null) buffer.append('(').append(locale).append(')');
     if (reverse) buffer.append('!');
 
     return buffer.toString();

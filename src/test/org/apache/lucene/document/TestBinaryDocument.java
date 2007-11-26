@@ -84,11 +84,11 @@ public class TestBinaryDocument extends LuceneTestCase
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
     
     /** fetch the string field and compare it's content with the original one */
-    String stringFldStoredTest = new String(docFromReader.get("stringStored"));
+    String stringFldStoredTest = docFromReader.get("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
     /** fetch the compressed string field and compare it's content with the original one */
-    String stringFldCompressedTest = new String(docFromReader.get("stringCompressed"));
+    String stringFldCompressedTest = docFromReader.get("stringCompressed");
     assertTrue(stringFldCompressedTest.equals(binaryValCompressed));
     
     /** delete the document from index */

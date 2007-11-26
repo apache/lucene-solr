@@ -195,21 +195,21 @@ public class CheckHits {
       end = Math.max(len1,len2);
     }
 
-    sb.append("Hits length1=" + len1 + "\tlength2="+len2);
+      sb.append("Hits length1=").append(len1).append("\tlength2=").append(len2);
 
-    sb.append("\n");
+    sb.append('\n');
     for (int i=start; i<end; i++) {
-      sb.append("hit=" + i + ":");
+        sb.append("hit=").append(i).append(':');
       if (i<len1) {
-        sb.append(" doc"+hits1.id(i) + "=" + hits1.score(i));
+          sb.append(" doc").append(hits1.id(i)).append('=').append(hits1.score(i));
       } else {
         sb.append("               ");
       }
       sb.append(",\t");
       if (i<len2) {
-        sb.append(" doc"+hits2.id(i) + "=" + hits2.score(i));
+        sb.append(" doc").append(hits2.id(i)).append('=').append(hits2.score(i));
       }
-      sb.append("\n");
+      sb.append('\n');
     }
     return sb.toString();
   }
@@ -217,17 +217,17 @@ public class CheckHits {
 
   public static String topdocsString(TopDocs docs, int start, int end) {
     StringBuffer sb = new StringBuffer();
-    sb.append("TopDocs totalHits="+docs.totalHits + " top="+docs.scoreDocs.length+"\n");
+      sb.append("TopDocs totalHits=").append(docs.totalHits).append(" top=").append(docs.scoreDocs.length).append('\n');
     if (end<=0) end=docs.scoreDocs.length;
     else end=Math.min(end,docs.scoreDocs.length);
     for (int i=start; i<end; i++) {
-      sb.append("\t");
+      sb.append('\t');
       sb.append(i);
       sb.append(") doc=");
       sb.append(docs.scoreDocs[i].doc);
       sb.append("\tscore=");
       sb.append(docs.scoreDocs[i].score);
-      sb.append("\n");
+      sb.append('\n');
     }
     return sb.toString();
   }

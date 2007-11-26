@@ -117,7 +117,7 @@ public class TestThreadSafe extends LuceneTestCase {
       for (int i=0; i<nFields; i++) {
         int flen = r.nextInt(maxFieldLen);
         StringBuffer sb = new StringBuffer("^ ");
-        while (sb.length() < flen) sb.append(" " + words[r.nextInt(words.length)]);
+        while (sb.length() < flen) sb.append(' ').append(words[r.nextInt(words.length)]);
         sb.append(" $");
         Field.Store store = Field.Store.YES;  // make random later
         Field.Index index = Field.Index.TOKENIZED;  // make random later

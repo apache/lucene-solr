@@ -108,7 +108,7 @@ public class QueryUtils {
       oos.writeObject(w);
       oos.close();
       ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
-      Weight w2 = (Weight) ois.readObject();
+      ois.readObject();
       ois.close();
       
       //skip rquals() test for now - most weights don't overide equals() and we won't add this just for the tests.
