@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.search.ExtendedFieldCache.LongParser;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -149,6 +150,12 @@ implements FieldCache {
       }
   };
 
+  private static final LongParser LONG_PARSER = new LongParser() {
+    public long parseLong(String value) {
+      return Long.parseLong(value);
+    }
+  };
+
   private static final FloatParser FLOAT_PARSER = new FloatParser() {
       public float parseFloat(String value) {
         return Float.parseFloat(value);
@@ -259,6 +266,45 @@ implements FieldCache {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           int termval = parser.parseInt(term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
+          }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      return retArray;
+    }
+  };
+
+  // inherit javadocs
+  public long[] getLongs (IndexReader reader, String field) throws IOException {
+    return getLongs(reader, field, LONG_PARSER);
+  }
+
+  // inherit javadocs
+  public long[] getLongs(IndexReader reader, String field, LongParser parser)
+      throws IOException {
+    return (long[]) longsCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache longsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      LongParser parser = (LongParser) entry.custom;
+      final long[] retArray = new long[reader.maxDoc()];
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          long termval = parser.parseLong(term.text());
           termDocs.seek (termEnum);
           while (termDocs.next()) {
             retArray[termDocs.doc()] = termval;
@@ -455,10 +501,15 @@ implements FieldCache {
             ret = getInts (reader, field);
           } catch (NumberFormatException nfe1) {
             try {
-              Float.parseFloat (termtext);
-              ret = getFloats (reader, field);
+              Long.parseLong(termtext);
+              ret = getLongs (reader, field);
             } catch (NumberFormatException nfe2) {
-              ret = getStringIndex (reader, field);
+              try {
+                Float.parseFloat (termtext);
+                ret = getFloats (reader, field);
+              } catch (NumberFormatException nfe3) {
+                ret = getStringIndex (reader, field);
+              }
             }
           }          
         } else {

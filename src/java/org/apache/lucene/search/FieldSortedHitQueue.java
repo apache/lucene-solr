@@ -409,6 +409,8 @@ extends PriorityQueue {
       return comparatorString (reader, field);
     } else if (lookupArray instanceof int[]) {
       return comparatorInt (reader, field);
+    } else if (lookupArray instanceof long[]) {
+      return comparatorLong (reader, field);
     } else if (lookupArray instanceof float[]) {
       return comparatorFloat (reader, field);
     } else if (lookupArray instanceof String[]) {

@@ -23,6 +23,11 @@ Changes in runtime behavior
 
     (Mike McCandless)
 
+ 2. LUCENE-1045: SortField.AUTO didn't work with long. When detecting
+    the field type for sorting automatically, numbers used to be
+    interpreted as int, then as float, if parsing the number as an int
+    failed. Now the detection checks for int, then for long,
+    then for float. (Daniel Naber)
 
 API Changes
 
