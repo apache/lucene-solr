@@ -55,8 +55,6 @@ public class LockVerifyServer {
     int lockedID = 0;
     long startTime = System.currentTimeMillis();
 
-    char[] message = new char[3];
-
     while(true) {
       Socket cs = s.accept();
       OutputStream out = cs.getOutputStream();

@@ -114,21 +114,21 @@ public class BooleanQuery extends Query {
 
   /**
    * Specifies a minimum number of the optional BooleanClauses
-   * which must be satisifed.
+   * which must be satisfied.
    *
    * <p>
-   * By default no optional clauses are neccessary for a match
+   * By default no optional clauses are necessary for a match
    * (unless there are no required clauses).  If this method is used,
    * then the specified number of clauses is required.
    * </p>
    * <p>
-   * Use of this method is totally independant of specifying that
+   * Use of this method is totally independent of specifying that
    * any specific clauses are required (or prohibited).  This number will
    * only be compared against the number of matching optional clauses.
    * </p>
    * <p>
    * EXPERT NOTE: Using this method may force collecting docs in order,
-   * regardless of wether setAllowDocsOutOfOrder(true) has been called.
+   * regardless of whether setAllowDocsOutOfOrder(true) has been called.
    * </p>
    *
    * @param min the number of optional clauses that must match
@@ -212,7 +212,6 @@ public class BooleanQuery extends Query {
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
