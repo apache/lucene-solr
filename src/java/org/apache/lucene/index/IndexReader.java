@@ -56,6 +56,10 @@ import java.util.Collection;
 */
 public abstract class IndexReader {
 
+  /**
+   * Constants describing field properties, for example used for
+   * {@link IndexReader#getFieldNames(FieldOption)}.
+   */
   public static final class FieldOption {
     private String option;
     private FieldOption() { }
@@ -65,25 +69,25 @@ public abstract class IndexReader {
     public String toString() {
       return this.option;
     }
-    // all fields
+    /** All fields */
     public static final FieldOption ALL = new FieldOption ("ALL");
-    // all indexed fields
+    /** All indexed fields */
     public static final FieldOption INDEXED = new FieldOption ("INDEXED");
-    // all fields that store payloads
+    /** All fields that store payloads */
     public static final FieldOption STORES_PAYLOADS = new FieldOption ("STORES_PAYLOADS");
-    // all fields which are not indexed
+    /** All fields which are not indexed */
     public static final FieldOption UNINDEXED = new FieldOption ("UNINDEXED");
-    // all fields which are indexed with termvectors enables
+    /** All fields which are indexed with termvectors enabled */
     public static final FieldOption INDEXED_WITH_TERMVECTOR = new FieldOption ("INDEXED_WITH_TERMVECTOR");
-    // all fields which are indexed but don't have termvectors enabled
+    /** All fields which are indexed but don't have termvectors enabled */
     public static final FieldOption INDEXED_NO_TERMVECTOR = new FieldOption ("INDEXED_NO_TERMVECTOR");
-    // all fields where termvectors are enabled. Please note that only standard termvector fields are returned
+    /** All fields with termvectors enabled. Please note that only standard termvector fields are returned */
     public static final FieldOption TERMVECTOR = new FieldOption ("TERMVECTOR");
-    // all field with termvectors wiht positions enabled
+    /** All fields with termvectors with position values enabled */
     public static final FieldOption TERMVECTOR_WITH_POSITION = new FieldOption ("TERMVECTOR_WITH_POSITION");
-    // all fields where termvectors with offset position are set
+    /** All fields with termvectors with offset values enabled */
     public static final FieldOption TERMVECTOR_WITH_OFFSET = new FieldOption ("TERMVECTOR_WITH_OFFSET");
-    // all fields where termvectors with offset and position values set
+    /** All fields with termvectors with offset values and position values enabled */
     public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
   }
 
@@ -682,7 +686,7 @@ public abstract class IndexReader {
    * pos<sub>freq-1</sub>&gt;
    * &gt;<sup>*</sup>
    * </ul>
-   * <p> This positional information faciliates phrase and proximity searching.
+   * <p> This positional information facilitates phrase and proximity searching.
    * <p>The enumeration is ordered by document number.  Each document number is
    * greater than all that precede it in the enumeration.
    * @throws IOException if there is a low-level IO error
