@@ -126,7 +126,9 @@ Bug fixes
     long, instead of cryptic ArrayIndexOutOfBoundsException.  (Karl
     Wettin via Mike McCandless)
 
-13. LUCENE-991: The explain() method of BoostingTermQuery had errors when no payloads were present on a document.  (Peter Keegan via Grant Ingersoll)
+13. LUCENE-991: The explain() method of BoostingTermQuery had errors
+    when no payloads were present on a document.  (Peter Keegan via
+    Grant Ingersoll)
 
 14. LUCENE-992: Fixed IndexWriter.updateDocument to be atomic again
     (this was broken by LUCENE-843).  (Ning Li via Mike McCandless)
@@ -172,14 +174,23 @@ New features
  1. LUCENE-906: Elision filter for French.
     (Mathieu Lecarme via Otis Gospodnetic)
 
- 2. LUCENE-960: Added a SpanQueryFilter and related classes to allow for not only filtering, but knowing where in a Document a Filter matches (Grant Ingersoll)
+ 2. LUCENE-960: Added a SpanQueryFilter and related classes to allow for
+    not only filtering, but knowing where in a Document a Filter matches
+    (Grant Ingersoll)
 
- 3. LUCENE-868: Added new Term Vector access features.  New callback mechanism allows application to define how and where to read Term Vectors from disk.
-    This implementation contains several extensions of the new abstract TermVectorMapper class.  The new API should be back-compatible.  No changes in the
-     actual storage of Term Vectors has taken place.
- 3.1 LUCENE-1038: Added setDocumentNumber() method to TermVectorMapper to provide information about what document is being accessed. (Karl Wettin via Grant Ingersoll)
+ 3. LUCENE-868: Added new Term Vector access features.  New callback
+    mechanism allows application to define how and where to read Term
+    Vectors from disk. This implementation contains several extensions
+    of the new abstract TermVectorMapper class.  The new API should be
+    back-compatible.  No changes in the actual storage of Term Vectors
+    has taken place.
+ 3.1 LUCENE-1038: Added setDocumentNumber() method to TermVectorMapper
+     to provide information about what document is being accessed.
+     (Karl Wettin via Grant Ingersoll)
 
- 4. LUCENE-975: Added PositionBasedTermVectorMapper that allows for position based lookup of term vector information.  See item #3 above (LUCENE-868).
+ 4. LUCENE-975: Added PositionBasedTermVectorMapper that allows for
+    position based lookup of term vector information.
+    See item #3 above (LUCENE-868).
 
  5. LUCENE-1011: Added simple tools (all in org.apache.lucene.store)
     to verify that locking is working properly.  LockVerifyServer runs
@@ -190,8 +201,9 @@ New features
     obtained or released, throwing an exception if an illegal lock
     obtain occurred.  (Patrick Kimber via Mike McCandless)
 
- 6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to support doubles and longs.  
-    Added support into SortField for sorting on doubles and longs as well.  (Grant Ingersoll)
+ 6. LUCENE-1015: Added FieldCache extension (ExtendedFieldCache) to
+    support doubles and longs.  Added support into SortField for sorting
+    on doubles and longs as well.  (Grant Ingersoll)
 
  7. LUCENE-1044: Added optional doSync boolean to
     FSDirectory.getDirectory(...).  If true (the default) then we will
@@ -288,10 +300,12 @@ Build
  2. LUCENE-935: Various improvements for the maven artifacts. Now the
     artifacts also include the sources as .jar files. (Michael Busch)
 
- 3. Added apply-patch target to top-level build.  Defaults to looking for a patch in ${basedir}/../patches with name
- specified by -Dpatch.name.  Can also specify any location by -Dpatch.file property on the command line.  This 
- should be helpful for easy application of patches, but it is also a step towards integrating automatic patch
- application with JIRA and Hudson, and is thus subject to change.  (Grant Ingersoll)
+ 3. Added apply-patch target to top-level build.  Defaults to looking for
+    a patch in ${basedir}/../patches with name specified by -Dpatch.name.
+    Can also specify any location by -Dpatch.file property on the command
+    line.  This should be helpful for easy application of patches, but it
+    is also a step towards integrating automatic patch application with
+    JIRA and Hudson, and is thus subject to change.  (Grant Ingersoll)
  
  4. LUCENE-935: Defined property "m2.repository.url" to allow setting
     the url to a maven remote repository to deploy to. (Michael Busch)
