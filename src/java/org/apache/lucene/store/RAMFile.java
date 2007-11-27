@@ -24,8 +24,7 @@ class RAMFile implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  // Direct read-only access to state supported for streams since a writing stream implies no other concurrent streams
-  ArrayList buffers = new ArrayList();
+  private ArrayList buffers = new ArrayList();
   long length;
   RAMDirectory directory;
   long sizeInBytes;                  // Only maintained if in a directory; updates synchronized on directory
@@ -58,8 +57,7 @@ class RAMFile implements Serializable {
     this.lastModified = lastModified;
   }
 
-  // Only one writing stream with no concurrent reading streams, so no file synchronization required
-  final byte[] addBuffer(int size) {
+  final synchronized byte[] addBuffer(int size) {
     byte[] buffer = newBuffer(size);
     if (directory!=null)
       synchronized (directory) {             // Ensure addition of buffer and adjustment to directory size are atomic wrt directory
@@ -70,6 +68,14 @@ class RAMFile implements Serializable {
     else
       buffers.add(buffer);
     return buffer;
+  }
+
+  final synchronized byte[] getBuffer(int index) {
+    return (byte[]) buffers.get(index);
+  }
+
+  final synchronized int numBuffers() {
+    return buffers.size();
   }
 
   /**

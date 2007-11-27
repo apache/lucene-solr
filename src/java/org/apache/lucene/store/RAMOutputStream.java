@@ -63,7 +63,7 @@ public class RAMOutputStream extends IndexOutput {
       if (nextPos > end) {                        // at the last buffer
         length = (int)(end - pos);
       }
-      out.writeBytes((byte[])file.buffers.get(buffer++), length);
+      out.writeBytes((byte[])file.getBuffer(buffer++), length);
       pos = nextPos;
     }
   }
@@ -124,10 +124,10 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   private final void switchCurrentBuffer() throws IOException {
-    if (currentBufferIndex == file.buffers.size()) {
+    if (currentBufferIndex == file.numBuffers()) {
       currentBuffer = file.addBuffer(BUFFER_SIZE);
     } else {
-      currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
+      currentBuffer = (byte[]) file.getBuffer(currentBufferIndex);
     }
     bufferPosition = 0;
     bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;

@@ -84,11 +84,11 @@ class RAMInputStream extends IndexInput implements Cloneable {
   }
 
   private final void switchCurrentBuffer() throws IOException {
-    if (currentBufferIndex >= file.buffers.size()) {
+    if (currentBufferIndex >= file.numBuffers()) {
       // end of file reached, no more buffers left
       throw new IOException("Read past EOF");
     } else {
-      currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
+      currentBuffer = (byte[]) file.getBuffer(currentBufferIndex);
       bufferPosition = 0;
       bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;
       long buflen = length - bufferStart;
