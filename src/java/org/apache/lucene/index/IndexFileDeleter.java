@@ -17,9 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
@@ -562,11 +559,11 @@ final class IndexFileDeleter {
 
     int count;
 
-    final public int IncRef() {
+    public int IncRef() {
       return ++count;
     }
 
-    final public int DecRef() {
+    public int DecRef() {
       assert count > 0;
       return --count;
     }

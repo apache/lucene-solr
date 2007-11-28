@@ -168,7 +168,6 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
   public MergeSpecification findMergesForOptimize(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set segmentsToOptimize) throws IOException {
-    final Directory dir = writer.getDirectory();
     MergeSpecification spec;
     
     if (!isOptimized(infos, writer, maxNumSegments, segmentsToOptimize)) {

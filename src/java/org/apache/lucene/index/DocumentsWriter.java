@@ -726,8 +726,6 @@ final class DocumentsWriter {
         fp.docFields[fp.fieldCount++] = field;
       }
 
-      final int numFields = fieldInfos.size();
-
       // Maybe init the local & global fieldsWriter
       if (localFieldsWriter == null) {
         if (fieldsWriter == null) {
@@ -764,11 +762,11 @@ final class DocumentsWriter {
     }
 
     /** Do in-place sort of Posting array */
-    final void doPostingSort(Posting[] postings, int numPosting) {
+    void doPostingSort(Posting[] postings, int numPosting) {
       quickSort(postings, 0, numPosting-1);
     }
 
-    final void quickSort(Posting[] postings, int lo, int hi) {
+    void quickSort(Posting[] postings, int lo, int hi) {
       if (lo >= hi)
         return;
 
@@ -822,11 +820,11 @@ final class DocumentsWriter {
     }
 
     /** Do in-place sort of PostingVector array */
-    final void doVectorSort(PostingVector[] postings, int numPosting) {
+    void doVectorSort(PostingVector[] postings, int numPosting) {
       quickSort(postings, 0, numPosting-1);
     }
 
-    final void quickSort(PostingVector[] postings, int lo, int hi) {
+    void quickSort(PostingVector[] postings, int lo, int hi) {
       if (lo >= hi)
         return;
 
@@ -1040,7 +1038,6 @@ final class DocumentsWriter {
 
     /** Write vInt into freq stream of current Posting */
     public void writeFreqVInt(int i) {
-      int upto = 0;
       while ((i & ~0x7F) != 0) {
         writeFreqByte((byte)((i & 0x7f) | 0x80));
         i >>>= 7;
@@ -1050,7 +1047,6 @@ final class DocumentsWriter {
 
     /** Write vInt into prox stream of current Posting */
     public void writeProxVInt(int i) {
-      int upto = 0;
       while ((i & ~0x7F) != 0) {
         writeProxByte((byte)((i & 0x7f) | 0x80));
         i >>>= 7;
@@ -1106,7 +1102,6 @@ final class DocumentsWriter {
     /** Write vInt into offsets stream of current
      *  PostingVector */
     public void writeOffsetVInt(int i) {
-      int upto = 0;
       while ((i & ~0x7F) != 0) {
         writeOffsetByte((byte)((i & 0x7f) | 0x80));
         i >>>= 7;
@@ -1132,7 +1127,6 @@ final class DocumentsWriter {
     /** Write vInt into pos stream of current
      *  PostingVector */
     public void writePosVInt(int i) {
-      int upto = 0;
       while ((i & ~0x7F) != 0) {
         writePosByte((byte)((i & 0x7f) | 0x80));
         i >>>= 7;
@@ -1240,7 +1234,6 @@ final class DocumentsWriter {
         offset = 0;
         boost = docBoost;
 
-        final int startNumPostings = numPostings;
         final int maxFieldLength = writer.getMaxFieldLength();
 
         final int limit = fieldCount;
@@ -1401,7 +1394,6 @@ final class DocumentsWriter {
         final int tokenTextLen = token.termLength();
 
         int code = 0;
-        int code2 = 0;
 
         // Compute hashcode
         int downto = tokenTextLen;
@@ -1965,7 +1957,6 @@ final class DocumentsWriter {
       assert result;
     }
 
-    Posting lastPosting = null;
     final int skipInterval = termsOut.skipInterval;
     currentFieldStorePayloads = fields[0].fieldInfo.storePayloads;
 

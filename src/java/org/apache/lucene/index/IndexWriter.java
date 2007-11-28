@@ -2073,8 +2073,6 @@ public class IndexWriter {
       message("flush at addIndexes");
     flush();
 
-    int start = segmentInfos.size();
-
     boolean success = false;
 
     startTransaction();
@@ -2580,7 +2578,6 @@ public class IndexWriter {
     try {
       SegmentInfos sourceSegmentsClone = merge.segmentsClone;
       SegmentInfos sourceSegments = merge.segments;
-      final int numSegments = segmentInfos.size();
 
       start = ensureContiguousMerge(merge);
       if (infoStream != null)
@@ -2741,7 +2738,6 @@ public class IndexWriter {
 
     assert merge.registerDone;
 
-    int mergedDocCount;
     boolean success = false;
 
     try {
@@ -2752,7 +2748,7 @@ public class IndexWriter {
       if (infoStream != null)
         message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
 
-      mergedDocCount = mergeMiddle(merge);
+      mergeMiddle(merge);
 
       success = true;
     } finally {
@@ -2833,9 +2829,8 @@ public class IndexWriter {
 
     final SegmentInfos sourceSegments = merge.segments;
     final int end = sourceSegments.size();
-    final int numSegments = segmentInfos.size();
 
-    final int start = ensureContiguousMerge(merge);
+    ensureContiguousMerge(merge);
 
     // Check whether this merge will allow us to skip
     // merging the doc stores (stored field & vectors).
@@ -2959,7 +2954,6 @@ public class IndexWriter {
     assert merge.registerDone;
 
     final SegmentInfos sourceSegments = merge.segments;
-    final SegmentInfos sourceSegmentsClone = merge.segmentsClone;
     final int end = sourceSegments.size();
     for(int i=0;i<end;i++)
       mergingSegments.remove(sourceSegments.info(i));
