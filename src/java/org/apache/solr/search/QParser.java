@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -120,7 +121,7 @@ public abstract class QParser {
    * @param useGlobalParams look up sort, start, rows in global params if not in local params
    * @return the sort specification
    */
-  public QueryParsing.SortSpec getSort(boolean useGlobalParams) throws ParseException {
+  public SortSpec getSort(boolean useGlobalParams) throws ParseException {
     getQuery(); // ensure query is parsed first
 
     String sortStr = null;
@@ -153,20 +154,11 @@ public abstract class QParser {
     int start = startS != null ? Integer.parseInt(startS) : 0;
     int rows = rowsS != null ? Integer.parseInt(rowsS) : 10;
 
-    QueryParsing.SortSpec sort = null;
-    if (sortStr != null) {
-      // may return null if 'score desc'
+    Sort sort = null;
+    if( sortStr != null ) {
       sort = QueryParsing.parseSort(sortStr, req.getSchema());
     }
-    
-    if( sort == null ) {
-      sort = new QueryParsing.SortSpec(null, start, rows);
-    }
-    else {
-      sort.offset = start;
-      sort.num =  rows;
-    }
-    return sort;
+    return new SortSpec( sort, start, rows );
   }
 
   public String[] getDefaultHighlightFields() {

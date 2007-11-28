@@ -458,13 +458,7 @@ public class SolrPluginUtils {
     // we can use the Lucene sort ability.
     Sort sort = null;
     if (commands.size() >= 2) {
-      QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(commands.get(1), schema);
-      if (sortSpec != null) {
-        sort = sortSpec.getSort();
-        if (sortSpec.getCount() >= 0) {
-          limit = sortSpec.getCount();
-        }
-      }
+      sort = QueryParsing.parseSort(commands.get(1), schema);
     }
 
     DocList results = searcher.getDocList(query,(DocSet)null, sort, start, limit);
@@ -793,7 +787,7 @@ public class SolrPluginUtils {
     }
 
     SolrException sortE = null;
-    QueryParsing.SortSpec ss = null;
+    Sort ss = null;
     try {
       ss = QueryParsing.parseSort(sort, req.getSchema());
     } catch (SolrException e) {
@@ -808,7 +802,7 @@ public class SolrPluginUtils {
       return null;
     }
         
-    return ss.getSort();
+    return ss;
   }
 
   /**

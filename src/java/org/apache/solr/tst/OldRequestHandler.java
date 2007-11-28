@@ -62,12 +62,7 @@ public class OldRequestHandler implements SolrRequestHandler {
     // we can use the Lucene sort ability.
     Sort sort = null;
     if (commands.size() >= 2) {
-      QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(commands.get(1), req.getSchema());
-      if (sortSpec != null) {
-        sort = sortSpec.getSort();
-        // ignore the count for now... it's currently only controlled by start & limit on req
-        // count = sortSpec.getCount();
-      }
+      sort = QueryParsing.parseSort(commands.get(1), req.getSchema());
     }
 
     Hits hits=null;

@@ -202,52 +202,6 @@ public class QueryParsing {
   }
 
 
-
-
-  /***
-   * SortSpec encapsulates a Lucene Sort and a count of the number of documents
-   * to return.
-   */
-  public static class SortSpec {
-     Sort sort;
-     int num;
-     int offset;
-
-    SortSpec(Sort sort, int num) {
-      this(sort,0,num);
-    }
-
-    SortSpec(Sort sort, int offset, int num) {
-      this.sort=sort;
-      this.offset=offset;
-      this.num=num;
-    }
-
-    /**
-     * Gets the Lucene Sort object, or null for the default sort
-     * by score descending.
-     */
-    public Sort getSort() { return sort; }
-
-    /**
-     * Offset into the list of results.
-     */
-    public int getOffset() { return offset; }
-
-    /**
-     * Gets the number of documens to return after sorting.
-     *
-     * @return number of docs to return, or -1 for no cut off (just sort)
-     */
-    public int getCount() { return num; }
-
-    public String toString() {
-      return "start="+offset+"&rows="+num
-              + (sort==null ? "" : "sort="+sort); 
-    }
-  }
-
-
   private static Pattern sortSep = Pattern.compile(",");
 
   /**
@@ -271,7 +225,7 @@ public class QueryParsing {
    * </pre>
    *
    */
-  public static SortSpec parseSort(String sortSpec, IndexSchema schema) {
+  public static Sort parseSort(String sortSpec, IndexSchema schema) {
     if (sortSpec==null || sortSpec.length()==0) return null;
 
     String[] parts = sortSep.split(sortSpec.trim());
@@ -285,24 +239,24 @@ public class QueryParsing {
       int idx = part.indexOf( ' ' );
       if( idx > 0 ) {
         String order = part.substring( idx+1 ).trim();
-    	if( "desc".equals( order ) || "top".equals(order) ) {
-    	  top = true;
-    	}
-    	else if ("asc".equals(order) || "bottom".equals(order)) {
-    	  top = false;
-    	}
-    	else {
-    	  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: "+order);
-    	}
-    	part = part.substring( 0, idx ).trim();
+      	if( "desc".equals( order ) || "top".equals(order) ) {
+      	  top = true;
+      	}
+      	else if ("asc".equals(order) || "bottom".equals(order)) {
+      	  top = false;
+      	}
+      	else {
+      	  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: "+order);
+      	}
+      	part = part.substring( 0, idx ).trim();
       }
       else {
-		throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing sort order." );
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing sort order." );
       }
     	
       if( "score".equals(part) ) {
         if (top) {
-          // If thre is only one thing in the list, just do the regular thing...
+          // If there is only one thing in the list, just do the regular thing...
           if( parts.length == 1 ) {
             return null; // do normal scoring...
           }
@@ -327,9 +281,7 @@ public class QueryParsing {
         lst[i] = f.getType().getSortField(f,top);
       }
     }
-    // For more info on the 'num' field, -1, 
-    // see: https://issues.apache.org/jira/browse/SOLR-99
-    return new SortSpec( new Sort(lst),-1);
+    return new Sort(lst);
   }
 
 

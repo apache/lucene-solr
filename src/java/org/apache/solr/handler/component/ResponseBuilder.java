@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SortSpec;
 
 import java.util.List;
 
@@ -43,7 +43,7 @@ public class ResponseBuilder
   private String queryString = null;
   private Query query = null;
   private List<Query> filters = null;
-  private QueryParsing.SortSpec sortSpec = null;
+  private SortSpec sortSpec = null;
   
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
@@ -141,11 +141,11 @@ public class ResponseBuilder
     this.results = results;
   }
 
-  public QueryParsing.SortSpec getSortSpec() {
+  public SortSpec getSortSpec() {
     return sortSpec;
   }
 
-  public void setSortSpec(QueryParsing.SortSpec sort) {
+  public void setSortSpec(SortSpec sort) {
     this.sortSpec = sort;
   }
 

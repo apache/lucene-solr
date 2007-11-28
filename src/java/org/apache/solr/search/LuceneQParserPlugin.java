@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -119,12 +120,12 @@ class OldLuceneQParser extends LuceneQParser {
   }
 
   @Override
-  public QueryParsing.SortSpec getSort(boolean useGlobal) throws ParseException {
-    QueryParsing.SortSpec sort = super.getSort(useGlobal);
+  public SortSpec getSort(boolean useGlobal) throws ParseException {
+    SortSpec sort = super.getSort(useGlobal);
     if (sortStr != null && sortStr.length()>0 && sort.getSort()==null) {
-      QueryParsing.SortSpec oldSort = QueryParsing.parseSort(sortStr, getReq().getSchema());
+      Sort oldSort = QueryParsing.parseSort(sortStr, getReq().getSchema());
       if( oldSort != null ) {
-        sort.sort = oldSort.sort;
+        sort.sort = oldSort;
       }
     }
     return sort;
