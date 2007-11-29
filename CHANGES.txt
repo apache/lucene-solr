@@ -524,6 +524,12 @@ New features
  8. LUCENE-446: Added Solr's search.function for scores based on field 
     values, plus CustomScoreQuery for simple score (post) customization.
     (Yonik Seeley, Doron Cohen)
+
+ 9. LUCENE-1058: Added new TeeTokenFilter (like the UNIX 'tee' command) and SinkTokenizer which can be used to share tokens between two or more
+    Fields such that the other Fields do not have to go through the whole Analysis process over again.  For instance, if you have two
+    Fields that share all the same analysis steps except one lowercases tokens and the other does not, you can coordinate the operations
+    between the two using the TeeTokenFilter and the SinkTokenizer.  See TeeSinkTokenTest.java for examples.
+    (Grant Ingersoll, Michael Busch, Yonik Seeley)
  
 Optimizations
 
