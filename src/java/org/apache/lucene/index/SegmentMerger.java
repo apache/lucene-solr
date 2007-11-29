@@ -221,7 +221,7 @@ final class SegmentMerger {
         SegmentReader segmentReader = (SegmentReader) reader;
         for (int j = 0; j < segmentReader.getFieldInfos().size(); j++) {
           FieldInfo fi = segmentReader.getFieldInfos().fieldInfo(j);
-          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name));
+          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name), fi.storePayloads);
         }
       } else {
         addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false);

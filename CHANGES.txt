@@ -168,6 +168,9 @@ Bug fixes
 23. LUCENE-1050: Throw LockReleaseFailedException in
     Simple/NativeFSLockFactory if we fail to delete the lock file when
     releasing the lock.  (Nikolay Diakov via Mike McCandless)
+
+24. LUCENE-1071: Fixed SegmentMerger to correctly set payload bit in 
+    the merged segment. (Michael Busch)
     
 New features
 

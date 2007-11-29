@@ -197,6 +197,9 @@ public class TestPayloads extends LuceneTestCase {
             writer.addDocument(d);
         }
         
+        // make sure we create more than one segment to test merging
+        writer.flush();
+        
         // now we make sure to have different payload lengths next at the next skip point        
         for (int i = 0; i < numDocs; i++) {
             analyzer.setPayloadData(fieldName, payloadData, offset, i);
