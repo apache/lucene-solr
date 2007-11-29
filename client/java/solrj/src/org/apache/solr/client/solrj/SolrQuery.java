@@ -56,10 +56,11 @@ public class SolrQuery extends ModifiableSolrParams
    * 
    * @param f the field name from the IndexSchema
    */
-  public void addFacetField(String f) {
-    this.add(FacetParams.FACET_FIELD, f);
+  public void addFacetField(String ... fields) {
+    for( String f : fields ) {
+      this.add(FacetParams.FACET_FIELD, f);
+    }
     this.set(FacetParams.FACET, true);
-    this.setFacetMinCount(1);
   }
 
   /** get the facet fields
@@ -325,7 +326,16 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public void setFields(String ... fields) {
-    this.set(CommonParams.FL, fields);
+    if( fields == null || fields.length == 0 ) {
+      this.remove( CommonParams.FL );
+    }
+    StringBuilder sb = new StringBuilder();
+    sb.append( fields[0] );
+    for( int i=1; i<fields.length; i++ ) {
+      sb.append( ',' );
+      sb.append( fields[i] );
+    }
+    this.set(CommonParams.FL, sb.toString() );
   }
     
   public void addField(String field) {
