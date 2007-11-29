@@ -186,7 +186,6 @@ extends SegmentTermDocs implements TermPositions {
     return retArray;
   }
 
-  // TODO: Remove warning after API has been finalized
   public boolean isPayloadAvailable() {
     return needToLoadPayload && payloadLength > 0;
   }
