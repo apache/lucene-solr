@@ -193,6 +193,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public void close() {
     if (searcherHolder!=null) {
       searcherHolder.decref();
+      searcherHolder = null;
     }
   }
 
