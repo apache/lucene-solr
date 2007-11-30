@@ -22,8 +22,11 @@ public class SinkTokenizer extends Tokenizer {
   }
 
   /**
-   * only valid if tokens have not been consumed,
-   * i.e. if this tokenizer is not part of another tokenstream
+   * Get the tokens in the internal List.
+   * <p/>
+   * WARNING: Adding tokens to this list requires the {@link #reset()} method to be called in order for them
+   * to be made available.  Also, this Tokenizer does nothing to protect against {@link java.util.ConcurrentModificationException}s
+   * in the case of adds happening while {@link #next(org.apache.lucene.analysis.Token)} is being called.
    *
    * @return A List of {@link org.apache.lucene.analysis.Token}s
    */
@@ -32,8 +35,8 @@ public class SinkTokenizer extends Tokenizer {
   }
 
   /**
-   * Ignores the input result Token
-   * @param result
+   * Ignores the input result Token and returns the next token out of the list of cached tokens
+   * @param result The input token
    * @return The next {@link org.apache.lucene.analysis.Token} in the Sink.
    * @throws IOException
    */
@@ -53,6 +56,11 @@ public class SinkTokenizer extends Tokenizer {
     lst.add((Token) t.clone());
   }
 
+  /**
+   * Reset the internal data structures to the start at the front of the list of tokens.  Should be called
+   * if tokens were added to the list after an invocation of {@link #next(Token)}
+   * @throws IOException
+   */
   public void reset() throws IOException {
     iter = lst.iterator();
   }
