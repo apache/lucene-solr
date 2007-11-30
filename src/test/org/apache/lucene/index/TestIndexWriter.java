@@ -557,6 +557,85 @@ public class TestIndexWriter extends LuceneTestCase
       dir.close();
     }
 
+    public void testOptimizeMaxNumSegments() throws IOException {
+
+      MockRAMDirectory dir = new MockRAMDirectory();
+
+      final Document doc = new Document();
+      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+
+      for(int numDocs=38;numDocs<500;numDocs += 38) {
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        LogDocMergePolicy ldmp = new LogDocMergePolicy();
+        ldmp.setMinMergeDocs(1);
+        writer.setMergePolicy(ldmp);
+        writer.setMergeFactor(5);
+        writer.setMaxBufferedDocs(2);
+        for(int j=0;j<numDocs;j++)
+          writer.addDocument(doc);
+        writer.close();
+
+        SegmentInfos sis = new SegmentInfos();
+        sis.read(dir);
+        final int segCount = sis.size();
+
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer());
+        writer.setMergePolicy(ldmp);
+        writer.setMergeFactor(5);
+        writer.optimize(3);
+        writer.close();
+
+        sis = new SegmentInfos();
+        sis.read(dir);
+        final int optSegCount = sis.size();
+
+        if (segCount < 3)
+          assertEquals(segCount, optSegCount);
+        else
+          assertEquals(3, optSegCount);
+      }
+    }
+
+    public void testOptimizeMaxNumSegments2() throws IOException {
+      MockRAMDirectory dir = new MockRAMDirectory();
+
+      final Document doc = new Document();
+      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      LogDocMergePolicy ldmp = new LogDocMergePolicy();
+      ldmp.setMinMergeDocs(1);
+      writer.setMergePolicy(ldmp);
+      writer.setMergeFactor(4);
+      writer.setMaxBufferedDocs(2);
+
+      for(int iter=0;iter<10;iter++) {
+
+        for(int i=0;i<19;i++)
+          writer.addDocument(doc);
+
+        writer.flush();
+
+        SegmentInfos sis = new SegmentInfos();
+        ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
+        sis.read(dir);
+
+        final int segCount = sis.size();
+
+        writer.optimize(7);
+
+        sis = new SegmentInfos();
+        ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
+        sis.read(dir);
+        final int optSegCount = sis.size();
+
+        if (segCount < 7)
+          assertEquals(segCount, optSegCount);
+        else
+          assertEquals(7, optSegCount);
+      }
+    }
+
     /**
      * Make sure optimize doesn't use any more than 1X
      * starting index size as its temporary free space

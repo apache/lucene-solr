@@ -1654,13 +1654,36 @@ public class IndexWriter {
     optimize(true);
   }
 
+  /**
+   * Optimize the index down to <= maxNumSegments.  If
+   * maxNumSegments==1 then this is the same as {@link
+   * #optimize()}.
+   * @param maxNumSegments maximum number of segments left
+   * in the index after optimization finishes
+   */
+  public void optimize(int maxNumSegments) throws CorruptIndexException, IOException {
+    optimize(maxNumSegments, true);
+  }
+
   /** Just like {@link #optimize()}, except you can specify
    *  whether the call should block until the optimize
    *  completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
    *  background threads. */
   public void optimize(boolean doWait) throws CorruptIndexException, IOException {
+    optimize(1, true);
+  }
+
+  /** Just like {@link #optimize(int)}, except you can
+   *  specify whether the call should block until the
+   *  optimize completes.  This is only meaningful with a
+   *  {@link MergeScheduler} that is able to run merges in
+   *  background threads. */
+  public void optimize(int maxNumSegments, boolean doWait) throws CorruptIndexException, IOException {
     ensureOpen();
+
+    if (maxNumSegments < 1)
+      throw new IllegalArgumentException("maxNumSegments must be >= 1; got " + maxNumSegments);
 
     if (infoStream != null)
       message("optimize: index now " + segString());
@@ -1677,15 +1700,21 @@ public class IndexWriter {
       // Now mark all pending & running merges as optimize
       // merge:
       Iterator it = pendingMerges.iterator();
-      while(it.hasNext())
-        ((MergePolicy.OneMerge) it.next()).optimize = true;
+      while(it.hasNext()) {
+        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+        merge.optimize = true;
+        merge.maxNumSegmentsOptimize = maxNumSegments;
+      }
 
       it = runningMerges.iterator();
-      while(it.hasNext())
-        ((MergePolicy.OneMerge) it.next()).optimize = true;
+      while(it.hasNext()) {
+        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+        merge.optimize = true;
+        merge.maxNumSegmentsOptimize = maxNumSegments;
+      }
     }
 
-    maybeMerge(true);
+    maybeMerge(maxNumSegments, true);
 
     if (doWait) {
       synchronized(this) {
@@ -1748,25 +1777,29 @@ public class IndexWriter {
   }
 
   private final void maybeMerge(boolean optimize) throws CorruptIndexException, IOException {
-    updatePendingMerges(optimize);
+    maybeMerge(1, optimize);
+  }
+
+  private final void maybeMerge(int maxNumSegmentsOptimize, boolean optimize) throws CorruptIndexException, IOException {
+    updatePendingMerges(maxNumSegmentsOptimize, optimize);
     mergeScheduler.merge(this);
   }
 
-  private synchronized void updatePendingMerges(boolean optimize)
+  private synchronized void updatePendingMerges(int maxNumSegmentsOptimize, boolean optimize)
     throws CorruptIndexException, IOException {
+    assert !optimize || maxNumSegmentsOptimize > 0;
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      // Currently hardwired to 1, but once we add method to
-      // IndexWriter to allow "optimizing to <= N segments"
-      // then we will change this.
-      final int maxSegmentCount = 1;
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, this, maxSegmentCount, segmentsToOptimize);
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, this, maxNumSegmentsOptimize, segmentsToOptimize);
 
       if (spec != null) {
         final int numMerges = spec.merges.size();
-        for(int i=0;i<numMerges;i++)
-          ((MergePolicy.OneMerge) spec.merges.get(i)).optimize = true;
+        for(int i=0;i<numMerges;i++) {
+          final MergePolicy.OneMerge merge = ((MergePolicy.OneMerge) spec.merges.get(i));
+          merge.optimize = true;
+          merge.maxNumSegmentsOptimize = maxNumSegmentsOptimize;
+        }
       }
 
     } else
@@ -2737,6 +2770,7 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     assert merge.registerDone;
+    assert !merge.optimize || merge.maxNumSegmentsOptimize > 0;
 
     boolean success = false;
 
@@ -2753,23 +2787,24 @@ public class IndexWriter {
       success = true;
     } finally {
       synchronized(this) {
-        if (!success && infoStream != null)
-          message("hit exception during merge");
+        try {
+          if (!success && infoStream != null)
+            message("hit exception during merge");
 
-        mergeFinish(merge);
+          mergeFinish(merge);
 
-        // This merge (and, generally, any change to the
-        // segments) may now enable new merges, so we call
-        // merge policy & update pending merges.
-        if (success && !merge.isAborted() && !closed && !closing)
-          updatePendingMerges(merge.optimize);
-
-        runningMerges.remove(merge);
-
-        // Optimize may be waiting on the final optimize
-        // merge to finish; and finishMerges() may be
-        // waiting for all merges to finish:
-        notifyAll();
+          // This merge (and, generally, any change to the
+          // segments) may now enable new merges, so we call
+          // merge policy & update pending merges.
+          if (success && !merge.isAborted() && !closed && !closing)
+            updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
+        } finally {
+          runningMerges.remove(merge);
+          // Optimize may be waiting on the final optimize
+          // merge to finish; and finishMerges() may be
+          // waiting for all merges to finish:
+          notifyAll();
+        }
       }
     }
   }
@@ -2992,8 +3027,7 @@ public class IndexWriter {
         SegmentInfo si = sourceSegmentsClone.info(i);
         IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, merge.mergeDocStores); // no need to set deleter (yet)
         merger.add(reader);
-        if (infoStream != null)
-          totDocCount += reader.numDocs();
+        totDocCount += reader.numDocs();
       }
       if (infoStream != null) {
         message("merge: total "+totDocCount+" docs");
@@ -3001,8 +3035,7 @@ public class IndexWriter {
 
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 
-      if (infoStream != null)
-        assert mergedDocCount == totDocCount;
+      assert mergedDocCount == totDocCount;
 
       success = true;
 

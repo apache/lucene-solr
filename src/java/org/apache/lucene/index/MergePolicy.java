@@ -70,6 +70,7 @@ public abstract class MergePolicy {
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
+    int maxNumSegmentsOptimize;     // used by IndexWriter
 
     final SegmentInfos segments;
     final boolean useCompoundFile;

@@ -72,6 +72,11 @@ API Changes
     setData(byte[] data, int offset, int length), getData(), getOffset()
     and clone() methods to o.a.l.index.Payload. Also add the field name 
     as arg to Similarity.scorePayload(). (Michael Busch)
+
+ 9. LUCENE-982: Add IndexWriter.optimize(int maxNumSegments) method to
+    "partially optimize" an index down to maxNumSegments segments.
+    (Mike McCandless)
+
     
 Bug fixes
 
