@@ -22,7 +22,8 @@
 
         <section id="Lucene News">
           <title>Lucene News</title>
-          <section>
+          <!-- Uncomment when we know the date. -->
+          <!--<section>
             <title>2 October 2007 - Lucene at OSSummit Asia</title>
             <p><a href="http://www.ossummit.com"><img src="http://www.ossummit.com/2007/images/logo.png" class="float-right" alt="OSSummit Asia logo" /></a>
               Lucene and Solr tutorials!
@@ -35,7 +36,7 @@
                 <li><a href="http://www.ossummit.com/2007/program/talk/67">Lucene Case Studies</a> by Erik Hatcher.  A rapid series of examples of many Lucene-using applications.</li>
               </ul>
             </p>
-          </section>
+          </section>-->
 
           <section>
             <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
