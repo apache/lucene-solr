@@ -619,12 +619,12 @@ public final class IndexSchema {
 
       @Override
       protected TokenizerFactory register(String name, TokenizerFactory plugin) throws Exception {
-        return plugin; // does not need to do anything
+        return null; // used for map registration
       }
     };
     tokenizerLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
     
-    // Make sure somethign was loaded
+    // Make sure something was loaded
     if( tokenizers.isEmpty() ) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
     }
@@ -646,7 +646,7 @@ public final class IndexSchema {
 
       @Override
       protected TokenFilterFactory register(String name, TokenFilterFactory plugin) throws Exception {
-        return plugin; // does not need to do anything
+        return null; // used for map registration
       }
     };
     filterLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
