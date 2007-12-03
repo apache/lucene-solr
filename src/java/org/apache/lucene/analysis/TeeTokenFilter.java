@@ -40,7 +40,7 @@ d.add(new Field("f4", final4));
 public class TeeTokenFilter extends TokenFilter {
   SinkTokenizer sink;
 
-  protected TeeTokenFilter(TokenStream input, SinkTokenizer sink) {
+  public TeeTokenFilter(TokenStream input, SinkTokenizer sink) {
     super(input);
     this.sink = sink;
   }
