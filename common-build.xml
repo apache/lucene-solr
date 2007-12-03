@@ -66,6 +66,7 @@
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
+  <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
   <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
@@ -248,11 +249,14 @@
           <filter token="version" value="${version}"/>
         </filterset>
       </copy>
+	  <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
     	
       <artifact:pom id="maven.project" file="${build.dir}/@{pom.xml}" />
       <artifact:deploy file="${build.dir}/${maven.project.build.finalName}.jar">
         <artifact-attachments/>
-      	<remoteRepository url="${m2.repository.url}"/>
+      	<remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+		</remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
@@ -523,6 +527,7 @@
 
 
 </project>
+
 
 
 

@@ -323,6 +323,9 @@ Build
  6. LUCENE-1055: Remove gdata-server from build files and its sources 
     from trunk. (Michael Busch)
 
+ 7. LUCENE-935: Allow to deploy maven artifacts to a remote m2 repository
+    via scp and ssh authentication. (Michael Busch)
+
 Test Cases
 
 ======================= Release 2.2.0 2007-06-19 =======================
