@@ -455,15 +455,6 @@
       
       <m2-deploy pom.xml="lucene-contrib-pom.xml.template"/>
       <contrib-crawl target="dist-maven"/>
-      <!-- do md5 checksums -->
-      <checksum forceOverwrite="yes" fileext=".md5">
-        <fileset dir="${maven.dist.dir}" excludes="**/*.md5"/>
-      </checksum>
-	
-      <!-- do sha1 checksums -->
-      <checksum forceOverwrite="yes" algorithm="SHA" fileext=".sha1">
-        <fileset dir="${maven.dist.dir}" excludes="**/*.sha1, **/*.md5"/>
-      </checksum>
     </sequential>
   </target>
 	
