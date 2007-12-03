@@ -1426,10 +1426,10 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = false;
+    int status = 0;
     boolean success = false;
     try {
-      doFlush = docWriter.addDocument(doc, analyzer);
+      status = docWriter.addDocument(doc, analyzer);
       success = true;
     } finally {
       if (!success) {
@@ -1446,8 +1446,9 @@ public class IndexWriter {
         }
       }
     }
-    if (doFlush)
+    if ((status & 1) != 0)
       flush(true, false);
+    checkMaxTermLength(status);
   }
 
   /**
@@ -1511,10 +1512,10 @@ public class IndexWriter {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = false;
+    int status = 0;
     boolean success = false;
     try {
-      doFlush = docWriter.updateDocument(term, doc, analyzer);
+      status = docWriter.updateDocument(term, doc, analyzer);
       success = true;
     } finally {
       if (!success) {
@@ -1531,8 +1532,17 @@ public class IndexWriter {
         }
       }
     }
-    if (doFlush)
+    if ((status & 1) != 0)
       flush(true, false);
+    checkMaxTermLength(status);
+  }
+
+  /** Throws IllegalArgumentException if the return status
+   *  from DocumentsWriter.{add,update}Document indicates
+   *  that a too-long term was encountered */
+  final private void checkMaxTermLength(int status) {
+    if (status > 1)
+      throw new IllegalArgumentException("at least one term (length " + (status>>1) + ") exceeds max term length " + (DocumentsWriter.CHAR_BLOCK_SIZE-1) + "; these terms were skipped");
   }
 
   // for test purpose

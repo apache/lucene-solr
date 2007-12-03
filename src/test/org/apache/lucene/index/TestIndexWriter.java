@@ -28,8 +28,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.TermQuery;
@@ -221,11 +219,7 @@ public class TestIndexWriter extends LuceneTestCase
           methodName = "addIndexesNoOptimize(Directory[])";
         }
 
-        int cycleCount = 0;
-
         while(!done) {
-
-          cycleCount++;
 
           // Make a new dir that will enforce disk usage:
           MockRAMDirectory dir = new MockRAMDirectory(startDir);
@@ -524,7 +518,7 @@ public class TestIndexWriter extends LuceneTestCase
       String[] startFiles = dir.list();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
-      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
       String[] endFiles = dir.list();
 
       Arrays.sort(startFiles);
@@ -543,17 +537,44 @@ public class TestIndexWriter extends LuceneTestCase
       RAMDirectory dir = new RAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new StandardAnalyzer(), true);
 
-      char[] chars = new char[16384];
+      char[] chars = new char[16383];
       Arrays.fill(chars, 'x');
       Document doc = new Document();
-      String contents = "a b c " + new String(chars);
+      final String bigTerm = new String(chars);
+
+      // Max length term is 16383, so this contents produces
+      // a too-long term:
+      String contents = "abc xyz x" + bigTerm;
       doc.add(new Field("content", contents, Field.Store.NO, Field.Index.TOKENIZED));
       try {
         writer.addDocument(doc);
         fail("did not hit expected exception");
       } catch (IllegalArgumentException e) {
       }
+
+      // Make sure we can add another normal document
+      doc = new Document();
+      doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.TOKENIZED));
+      writer.addDocument(doc);
       writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      // Make sure all terms < max size were indexed
+      assertEquals(2, reader.docFreq(new Term("content", "abc")));
+      assertEquals(1, reader.docFreq(new Term("content", "bbb")));
+      reader.close();
+
+      // Make sure we can add a document with exactly the
+      // maximum length term, and search on that term:
+      doc = new Document();
+      doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.TOKENIZED));
+      writer  = new IndexWriter(dir, new StandardAnalyzer());
+      writer.addDocument(doc);
+      writer.close();
+      reader = IndexReader.open(dir);
+      assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
+      reader.close();
+
       dir.close();
     }
 
@@ -1342,7 +1363,6 @@ public class TestIndexWriter extends LuceneTestCase
     public void testDiverseDocs() throws IOException {
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-      long t0 = System.currentTimeMillis();
       writer.setRAMBufferSizeMB(0.5);
       Random rand = new Random(31415);
       for(int i=0;i<3;i++) {
@@ -1381,7 +1401,6 @@ public class TestIndexWriter extends LuceneTestCase
       }
       writer.close();
 
-      long t1 = System.currentTimeMillis();
       IndexSearcher searcher = new IndexSearcher(dir);
       Hits hits = searcher.search(new TermQuery(new Term("field", "aaa")));
       assertEquals(300, hits.length());
@@ -1491,7 +1510,6 @@ public class TestIndexWriter extends LuceneTestCase
         addDoc(writer);
       }
       writer.close();
-      IndexReader reader = IndexReader.open(dir);
       Term searchTerm = new Term("content", "aaa");        
       IndexSearcher searcher = new IndexSearcher(dir);
       Hits hits = searcher.search(new TermQuery(searchTerm));

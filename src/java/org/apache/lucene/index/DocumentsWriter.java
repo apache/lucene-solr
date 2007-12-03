@@ -354,7 +354,7 @@ final class DocumentsWriter {
         state.tvfLocal.reset();
         state.fdtLocal.reset();
       }
-
+      docStoreSegment = null;
       files = null;
 
     } finally {
@@ -518,6 +518,7 @@ final class DocumentsWriter {
     int numAllFieldData;
     FieldData[] fieldDataHash;            // Hash FieldData instances by field name
     int fieldDataHashMask;
+    int maxTermHit;                       // Set to > 0 if this doc has a too-large term
 
     boolean doFlushAfter;
 
@@ -608,6 +609,7 @@ final class DocumentsWriter {
       numStoredFields = 0;
       numFieldData = 0;
       numVectorFields = 0;
+      maxTermHit = 0;
 
       List docFields = doc.getFields();
       final int numDocFields = docFields.size();
@@ -1483,17 +1485,23 @@ final class DocumentsWriter {
             getPostings(postingsFreeList);
           }
 
-          // Pull next free Posting from free list
-          p = postingsFreeList[--postingsFreeCount];
-
           final int textLen1 = 1+tokenTextLen;
           if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
-            if (textLen1 > CHAR_BLOCK_SIZE)
-              throw new IllegalArgumentException("term length " + tokenTextLen + " exceeds max term length " + (CHAR_BLOCK_SIZE-1));
+            if (textLen1 > CHAR_BLOCK_SIZE) {
+              maxTermHit = tokenTextLen;
+              // Just skip this term; we will throw an
+              // exception after processing all accepted
+              // terms in the doc
+              return;
+            }
             charPool.nextBuffer();
           }
           final char[] text = charPool.buffer;
           final int textUpto = charPool.byteUpto;
+
+          // Pull next free Posting from free list
+          p = postingsFreeList[--postingsFreeCount];
+
           p.textStart = textUpto + charPool.byteOffset;
           charPool.byteUpto += textLen1;
 
@@ -2181,26 +2189,28 @@ final class DocumentsWriter {
 
   /** Returns true if the caller (IndexWriter) should now
    * flush. */
-  boolean addDocument(Document doc, Analyzer analyzer)
+  int addDocument(Document doc, Analyzer analyzer)
     throws CorruptIndexException, IOException {
     return updateDocument(doc, analyzer, null);
   }
 
-  boolean updateDocument(Term t, Document doc, Analyzer analyzer)
+  int updateDocument(Term t, Document doc, Analyzer analyzer)
     throws CorruptIndexException, IOException {
     return updateDocument(doc, analyzer, t);
   }
 
-  boolean updateDocument(Document doc, Analyzer analyzer, Term delTerm)
+  int updateDocument(Document doc, Analyzer analyzer, Term delTerm)
     throws CorruptIndexException, IOException {
 
     // This call is synchronized but fast
     final ThreadState state = getThreadState(doc, delTerm);
     boolean success = false;
+    int maxTermHit;
     try {
       // This call is not synchronized and does all the work
       state.processDocument(analyzer);
       // This call synchronized but fast
+      maxTermHit = state.maxTermHit;
       finishDocument(state);
       success = true;
     } finally {
@@ -2209,7 +2219,11 @@ final class DocumentsWriter {
         abort();
       }
     }
-    return state.doFlushAfter || timeToFlushDeletes();
+
+    int status = maxTermHit<<1;
+    if (state.doFlushAfter || timeToFlushDeletes())
+      status += 1;
+    return status;
   }
 
   synchronized int getNumBufferedDeleteTerms() {
