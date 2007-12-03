@@ -240,7 +240,7 @@ abstract class CSVLoader {
       if (null == hasHeader) {
         // assume the file has the headers if they aren't supplied in the args
         hasHeader=true;
-      } else if (hasHeader) {
+      } else if (!hasHeader) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"CSVLoader: must specify fieldnames=<fields>* or header=true");
       }
     } else {

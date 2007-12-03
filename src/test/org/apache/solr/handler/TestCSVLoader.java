@@ -123,6 +123,10 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     loadLocal("stream.file",filename, "commit","true");
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='4']");
 
+    // test explicitly adding header=true (the default)
+    loadLocal("stream.file",filename, "commit","true","header","true");
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='4']");
+
     // test no overwrites
     loadLocal("stream.file",filename, "commit","true", "overwrite","false");
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='8']");
