@@ -254,8 +254,8 @@ public final class SolrCore {
           instance = new SolrCore(null, new SolrConfig(), null);  
         }
         catch(Exception xany) {
-          log.throwing("SolrCore", "getSolrCore", xany);
-          return null;
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+              "error creating core", xany );
         }
       }
     }
