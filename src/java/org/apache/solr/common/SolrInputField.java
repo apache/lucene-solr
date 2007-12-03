@@ -17,6 +17,7 @@
 
 package org.apache.solr.common;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -25,7 +26,7 @@ import java.util.Iterator;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrInputField implements Iterable<Object>
+public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
   Object value = null; 

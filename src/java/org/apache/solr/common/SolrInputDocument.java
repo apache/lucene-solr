@@ -17,6 +17,7 @@
 
 package org.apache.solr.common;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,7 +31,7 @@ import java.util.Collection;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrInputDocument implements Iterable<SolrInputField>
+public class SolrInputDocument implements Iterable<SolrInputField>, Serializable
 {
   private final Map<String,SolrInputField> _fields;
   private float _documentBoost = 1.0f;

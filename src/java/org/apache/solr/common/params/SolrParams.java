@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.params;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,7 +30,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  *
  * @version $Id$
  */
-public abstract class SolrParams {
+public abstract class SolrParams implements Serializable {
   
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);

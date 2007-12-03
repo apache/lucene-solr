@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 
 import org.apache.solr.common.params.SolrParams;
@@ -28,7 +29,7 @@ import org.apache.solr.common.util.ContentStream;
  * @version $Id$
  * @since solr 1.3
  */
-public interface SolrRequest 
+public interface SolrRequest extends Serializable
 {
   public enum METHOD {
     GET,
