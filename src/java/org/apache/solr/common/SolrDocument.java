@@ -17,6 +17,7 @@
 
 package org.apache.solr.common;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ import java.util.Set;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrDocument 
+public class SolrDocument implements Serializable
 {
   private Map<String,Object> _fields = null;
   
