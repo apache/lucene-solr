@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spell.Dictionary;
-import org.apache.lucene.search.spell.LuceneDictionary;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -34,6 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.HighFrequencyDictionary;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
 import java.io.IOException;
@@ -183,7 +183,7 @@ pre.code
  * @see <a href="http://wiki.apache.org/jakarta-lucene/SpellChecker">The Lucene Spellchecker documentation</a>
  *
  */
-public class SpellCheckerRequestHandler extends RequestHandlerBase {
+public class SpellCheckerRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static Logger log = Logger.getLogger(SpellCheckerRequestHandler.class.getName());
   
@@ -226,17 +226,23 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
   protected static final boolean DEFAULT_EXTENDED_RESULTS = false;
   protected static final float DEFAULT_DICTIONARY_THRESHOLD = 0.0f;
 
+  protected SolrParams args = null;
+  
+  @Override
   public void init(NamedList args) {
     super.init(args);
-    SolrParams p = SolrParams.toSolrParams(args);
-    termSourceField = p.get(SOURCE_FIELD, p.get("termSourceField"));
+    this.args = SolrParams.toSolrParams(args);
+  }
 
+  public void inform(SolrCore core) 
+  {
+    termSourceField = args.get(SOURCE_FIELD, args.get("termSourceField"));
     try {
-      String dir = p.get(INDEX_DIR, p.get("spellcheckerIndexDir"));
+      String dir = args.get(INDEX_DIR, args.get("spellcheckerIndexDir"));
       if (null != dir) {
         File f = new File(dir);
         if ( ! f.isAbsolute() ) {
-          f = new File(SolrCore.getSolrCore().getDataDir(), dir);
+          f = new File(core.getDataDir(), dir);
         }
         dirDescription = f.getAbsolutePath();
         log.info("using spell directory: " + dirDescription);
@@ -254,6 +260,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
    * Processes the following query string parameters: q, multiWords, cmd rebuild,
    * cmd reopen, accuracy, suggestionCount, restrictToField, and onlyMorePopular.
    */
+  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
     throws Exception {
     SolrParams p = req.getParams();
