@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<document>
+<header><title>Apache Lucene - Javadocs</title></header>
+<properties>
+<author email="gsingers@apache.org">Grant Ingersoll</author>
+</properties>
+<body>
+
+<section id="Javadocs"><title>Javadocs</title>
+  <p>
+    <ul><li><a href="http://lucene.apache.org/java/2_2_0/api/index.html">2.2.0</a></li>
+    <li><a href="http://lucene.apache.org/java/2_1_0/api/index.html">2.1.0</a></li>
+    <li><a href="http://lucene.apache.org/java/2_0_0/api/index.html">2.0.0</a></li></ul>
+  </p>
+<p>Javadocs from older (pre 2.x) Lucene releases can be found under the Site Versions
+  section on the left-hand menu</p>
+</section>
+</body>
+</document>

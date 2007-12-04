@@ -13,6 +13,33 @@
        <p>Code Coverage reports are available <a
        href="">here</a></p>
    </section> -->
+  <section id="Javadocs"><title>Nightly Build Javadocs</title>
+    <p>Unofficial Javadocs from the nightly build are available at:
+      <ul>
+        <li><a href="api/index.html">All</a></li>
+        <li><a href="api/core/index.html">Core</a></li>
+        <li><a href="api/demo/index.html">Demo</a></li>
+        <li><ul><li><a href="api/contrib-analyzers/index.html">Analyzers</a></li>
+        <li><a href="api/contrib-ant/index.html">ANT</a></li>
+        <li><a href="api/contrib-bdb/index.html">BDB</a></li>
+        <li><a href="api/contrib-bdb-je/index.html">BDB-JE</a></li>
+        <li><a href="api/contrib-benchmark/index.html">Benchmark</a></li>
+        <li><a href="api/contrib-highlighter/index.html">Highlighter</a></li>
+        <li><a href="api/contrib-lucli/index.html">Lucli</a></li>
+        <li><a href="api/contrib-memory/index.html">Memory</a></li>
+        <li><a href="api/contrib-misc/index.html">Misc.</a></li>
+        <li><a href="api/contrib-queries/index.html">Queries</a></li>
+        <li><a href="api/contrib-regex/index.html">Regex</a></li>
+        <li><a href="api/contrib-similarity/index.html">Similarity</a></li>
+        <li><a href="api/contrib-snowball/index.html">Snowball</a></li>
+        <li><a href="api/contrib-spellchecker/index.html">Spellchecker</a></li>
+        <li><a href="api/contrib-surround/index.html">Surround</a></li>
+        <li><a href="api/contrib-swing/index.html">Swing</a></li>
+        <li><a href="api/contrib-wordnet/index.html">Wordnet</a></li>
+        <li><a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a></li></ul></li>
+      </ul>
+    </p>
+  </section>
 <section id="Downloads"><title>Downloads</title>
     <p>System Requirements are detailed <a href="systemrequirements.html">here</a>.</p>
     <section id="Clover"><title>Clover Test Coverage Reports</title>
