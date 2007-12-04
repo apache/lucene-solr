@@ -5,9 +5,7 @@
 <meta content="Apache Forrest" name="Generator">
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
-<title>
-	Apache Lucene - Building and Installing the Basic Demo
-		</title>
+<title>Apache Lucene - Javadocs</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -117,10 +115,10 @@ document.write("Last Published: " + document.lastModified);
 <a href="whoweare.html">Who We Are</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.2', 'skin/')" id="menu_1.2Title" class="menutitle">Documentation</div>
-<div id="menu_1.2" class="menuitemgroup">
-<div class="menuitem">
-<a href="javadocs.html">Javadocs</a>
+<div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
+<div id="menu_selected_1.2" class="selectedmenuitemgroup" style="display: block;">
+<div class="menupage">
+<div class="menupagetitle">Javadocs</div>
 </div>
 <div class="menuitem">
 <a href="benchmarks.html">Benchmarks</a>
@@ -244,134 +242,42 @@ document.write("Last Published: " + document.lastModified);
     +-->
 <div id="content">
 <div title="Portable Document Format" class="pdflink">
-<a class="dida" href="demo3.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
+<a class="dida" href="javadocs.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
         PDF</a>
 </div>
-<h1>
-	Apache Lucene - Building and Installing the Basic Demo
-		</h1>
+<h1>Apache Lucene - Javadocs</h1>
 <div id="minitoc-area">
 <ul class="minitoc">
 <li>
-<a href="#About this Document">About this Document</a>
-</li>
-<li>
-<a href="#About the Demos">About the Demos</a>
-</li>
-<li>
-<a href="#Indexing Files">Indexing Files</a>
-</li>
-<li>
-<a href="#Deploying the Demos">Deploying the Demos</a>
-</li>
-<li>
-<a href="#Configuration">Configuration</a>
-</li>
-<li>
-<a href="#Running the Demos">Running the Demos</a>
-</li>
-<li>
-<a href="#About the code...">About the code...</a>
+<a href="#Javadocs">Javadocs</a>
 </li>
 </ul>
 </div>
 
 
-<a name="N10013"></a><a name="About this Document"></a>
-<h2 class="boxed">About this Document</h2>
+<a name="N10011"></a><a name="Javadocs"></a>
+<h2 class="boxed">Javadocs</h2>
 <div class="section">
 <p>
-This document is intended as a "getting started" guide to installing and running the Lucene
-web application demo.  This guide assumes that you have read the information in the previous two
-examples.  We'll use Tomcat as our reference web container.  These demos should work with nearly any
-container, but you may have to adapt them appropriately.
+    
+<ul>
+<li>
+<a href="http://lucene.apache.org/java/2_2_0/api/index.html">2.2.0</a>
+</li>
+    
+<li>
+<a href="http://lucene.apache.org/java/2_1_0/api/index.html">2.1.0</a>
+</li>
+    
+<li>
+<a href="http://lucene.apache.org/java/2_0_0/api/index.html">2.0.0</a>
+</li>
+</ul>
+  
 </p>
+<p>Javadocs from older (pre 2.x) Lucene releases can be found under the Site Versions
+  section on the left-hand menu</p>
 </div>
-
-
-
-<a name="N1001C"></a><a name="About the Demos"></a>
-<h2 class="boxed">About the Demos</h2>
-<div class="section">
-<p>
-The Lucene Web Application demo is a template web application intended for deployment on Tomcat or a
-similar web container.  It's NOT designed as a "best practices" implementation by ANY means.  It's
-more of a "hello world" type Lucene Web App.  The purpose of this application is to demonstrate
-Lucene.  With that being said, it should be relatively simple to create a small searchable website
-in Tomcat or a similar application server.
-</p>
-</div>
-
-
-<a name="N10025"></a><a name="Indexing Files"></a>
-<h2 class="boxed">Indexing Files</h2>
-<div class="section">
-<p> Once you've gotten this far you're probably itching to go.  Let's start by creating the index
-you'll need for the web examples.  Since you've already set your CLASSPATH in the previous examples,
-all you need to do is type:
-
-<pre>
-    java org.apache.lucene.demo.IndexHTML -create -index {index-dir} ..
-</pre>
-
-You'll need to do this from a (any) subdirectory of your <span class="codefrag">{tomcat}/webapps</span> directory
-(make sure you didn't leave off the <span class="codefrag">..</span> or you'll get a null pointer exception).
-<span class="codefrag">{index-dir}</span> should be a directory that Tomcat has permission to read and write, but is
-outside of a web accessible context.  By default the webapp is configured to look in
-<span class="codefrag">/opt/lucene/index</span> for this index.
-</p>
-</div>
-
-
-<a name="N1003D"></a><a name="Deploying the Demos"></a>
-<h2 class="boxed">Deploying the Demos</h2>
-<div class="section">
-<p>Located in your distribution directory you should see a war file called
-<span class="codefrag">luceneweb.war</span>.  If you're working with a Subversion checkout, this will be under the
-<span class="codefrag">build</span> subdirectory.  Copy this to your <span class="codefrag">{tomcat-home}/webapps</span> directory.
-You may need to restart Tomcat.  </p>
-</div>
-
-
-<a name="N1004F"></a><a name="Configuration"></a>
-<h2 class="boxed">Configuration</h2>
-<div class="section">
-<p> From your Tomcat directory look in the <span class="codefrag">webapps/luceneweb</span> subdirectory.  If it's not
-present, try browsing to <span class="codefrag">http://localhost:8080/luceneweb</span> (which causes Tomcat to deploy
-the webapp), then look again.  Edit a file called <span class="codefrag">configuration.jsp</span>.  Ensure that the
-<span class="codefrag">indexLocation</span> is equal to the location you used for your index.  You may also customize
-the <span class="codefrag">appTitle</span> and <span class="codefrag">appFooter</span> strings as you see fit.  Once you have finished
-altering the configuration you may need to restart Tomcat.  You may also wish to update the war file
-by typing <span class="codefrag">jar -uf luceneweb.war configuration.jsp</span> from the <span class="codefrag">luceneweb</span>
-subdirectory.  (The -u option is not available in all versions of jar.  In this case recreate the
-war file).
-</p>
-</div>
-
-
-<a name="N10070"></a><a name="Running the Demos"></a>
-<h2 class="boxed">Running the Demos</h2>
-<div class="section">
-<p>Now you're ready to roll.  In your browser set the url to
-<span class="codefrag">http://localhost:8080/luceneweb</span> enter <span class="codefrag">test</span> and the number of items per
-page and press search.</p>
-<p>You should now be looking either at a number of results (provided you didn't erase the Tomcat
-examples) or nothing.  If you get an error regarding opening the index, then you probably set the
-path in <span class="codefrag">configuration.jsp</span> incorrectly or Tomcat doesn't have permissions to the index
-(or you skipped the step of creating it).  Try other search terms.  Depending on the number of items
-per page you set and results returned, there may be a link at the bottom that says <b>More
-Results&gt;&gt;</b>; clicking it takes you to subsequent pages.  </p>
-</div>
-
-
-<a name="N10088"></a><a name="About the code..."></a>
-<h2 class="boxed">About the code...</h2>
-<div class="section">
-<p>
-If you want to know more about how this web app works or how to customize it then <a href="demo4.html">read on&gt;&gt;&gt;</a>.
-</p>
-</div>
-
 
 </div>
 <!--+
