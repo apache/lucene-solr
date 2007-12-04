@@ -235,6 +235,10 @@ New features
 
 10. LUCENE-1040: CharArraySet useful for efficiently checking
     set membership of text specified by char[]. (yonik)
+
+11. LUCENE-1073: Created SnapshotDeletionPolicy to facilitate taking a
+    live backup of an index without pausing indexing.  (Mike
+    McCandless)
  
 
 Optimizations

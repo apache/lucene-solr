@@ -267,7 +267,7 @@ final class DocumentsWriter {
 
   /* Returns list of files in use by this instance,
    * including any flushed segments. */
-  List files() {
+  synchronized List files() {
 
     if (files != null)
       return files;

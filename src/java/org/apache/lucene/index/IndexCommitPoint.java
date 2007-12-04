@@ -32,6 +32,9 @@ package org.apache.lucene.index;
  * index commit point would have a larger N.
  */
 
+import java.util.Collection;
+import java.io.IOException;
+
 public interface IndexCommitPoint {
 
   /**
@@ -39,6 +42,11 @@ public interface IndexCommitPoint {
    * with this commit point.
    */
   public String getSegmentsFileName();
+
+  /**
+   * Returns all index files referenced by this commit point.
+   */
+  public Collection getFileNames() throws IOException;
   
   /**
    * Delete this commit point.

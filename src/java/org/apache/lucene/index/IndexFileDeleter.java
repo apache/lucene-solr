@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Collection;
 
 /*
  * This class keeps track of each SegmentInfos instance that
@@ -263,9 +264,8 @@ final class IndexFileDeleter {
         }
         int size2 = commit.files.size();
         for(int j=0;j<size2;j++) {
-          decRef((List) commit.files.get(j));
+          decRef((String) commit.files.get(j));
         }
-        decRef(commit.getSegmentsFileName());
       }
       commitsToDelete.clear();
 
@@ -536,23 +536,6 @@ final class IndexFileDeleter {
   }
 
   /**
-   * Blindly delete the files used by the specific segments,
-   * with no reference counting and no retry.  This is only
-   * currently used by writer to delete its RAM segments
-   * from a RAMDirectory.
-   */
-  public void deleteDirect(Directory otherDir, List segments) throws IOException {
-    int size = segments.size();
-    for(int i=0;i<size;i++) {
-      List filestoDelete = ((SegmentInfo) segments.get(i)).files();
-      int size2 = filestoDelete.size();
-      for(int j=0;j<size2;j++) {
-        otherDir.deleteFile((String) filestoDelete.get(j));
-      }
-    }
-  }
-
-  /**
    * Tracks the reference count for a single index file:
    */
   final private static class RefCount {
@@ -587,11 +570,12 @@ final class IndexFileDeleter {
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
       int size = segmentInfos.size();
       files = new ArrayList(size);
+      files.add(segmentsFileName);
       gen = segmentInfos.getGeneration();
       for(int i=0;i<size;i++) {
         SegmentInfo segmentInfo = segmentInfos.info(i);
         if (segmentInfo.dir == directory) {
-          files.add(segmentInfo.files());
+          files.addAll(segmentInfo.files());
         }
       }
     }
@@ -601,6 +585,10 @@ final class IndexFileDeleter {
      */
     public String getSegmentsFileName() {
       return segmentsFileName;
+    }
+
+    public Collection getFileNames() throws IOException {
+      return Collections.unmodifiableCollection(files);
     }
 
     /**
