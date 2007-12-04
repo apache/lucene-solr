@@ -146,11 +146,17 @@ public class MockRAMDirectory extends RAMDirectory {
     RAMFile file = new RAMFile(this);
     synchronized (this) {
       RAMFile existing = (RAMFile)fileMap.get(name);
-      if (existing!=null) {
-        sizeInBytes -= existing.sizeInBytes;
-        existing.directory = null;
+      // Enforce write once:
+      if (existing!=null && !name.equals("segments.gen"))
+        throw new IOException("file " + name + " already exists");
+      else {
+        if (existing!=null) {
+          sizeInBytes -= existing.sizeInBytes;
+          existing.directory = null;
+        }
+
+        fileMap.put(name, file);
       }
-      fileMap.put(name, file);
     }
 
     return new MockRAMOutputStream(this, file);

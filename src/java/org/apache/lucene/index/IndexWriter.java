@@ -2602,11 +2602,8 @@ public class IndexWriter {
     // file that current segments does not reference), we
     // abort this merge
     if (merge.isAborted()) {
-
-      if (infoStream != null) {
-        if (merge.isAborted())
-          message("commitMerge: skipping merge " + merge.segString(directory) + ": it was aborted");
-      }
+      if (infoStream != null)
+        message("commitMerge: skipping merge " + merge.segString(directory) + ": it was aborted");
 
       assert merge.increfDone;
       decrefMergeSegments(merge);
@@ -2866,9 +2863,8 @@ public class IndexWriter {
    *  the synchronized lock on IndexWriter instance. */
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
 
-    // Bind a new segment name here so even with
-    // ConcurrentMergePolicy we keep deterministic segment
-    // names.
+    if (merge.isAborted())
+      throw new IOException("merge is aborted");
 
     assert merge.registerDone;
 
@@ -2982,6 +2978,10 @@ public class IndexWriter {
     merge.increfDone = true;
 
     merge.mergeDocStores = mergeDocStores;
+
+    // Bind a new segment name here so even with
+    // ConcurrentMergePolicy we keep deterministic segment
+    // names.
     merge.info = new SegmentInfo(newSegmentName(), 0,
                                  directory, false, true,
                                  docStoreOffset,
@@ -3033,6 +3033,7 @@ public class IndexWriter {
 
     try {
       int totDocCount = 0;
+
       for (int i = 0; i < numSegments; i++) {
         SegmentInfo si = sourceSegmentsClone.info(i);
         IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, merge.mergeDocStores); // no need to set deleter (yet)
@@ -3042,6 +3043,9 @@ public class IndexWriter {
       if (infoStream != null) {
         message("merge: total "+totDocCount+" docs");
       }
+
+      if (merge.isAborted())
+        throw new IOException("merge is aborted");
 
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 

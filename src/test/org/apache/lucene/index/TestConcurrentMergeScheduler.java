@@ -19,19 +19,14 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.English;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
-import java.io.File;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -193,6 +188,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
         writer.setMergeScheduler(cms);
         writer.setMaxBufferedDocs(2);
+        writer.setMergeFactor(100);
 
         for(int j=0;j<201;j++) {
           idField.setValue(Integer.toString(iter*201+j));
@@ -205,10 +201,16 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           delID += 5;
         }
 
+        // Force a bunch of merge threads to kick off so we
+        // stress out aborting them on close:
+        writer.setMergeFactor(3);
+        writer.addDocument(doc);
+        writer.flush();
+
         writer.close(false);
 
         IndexReader reader = IndexReader.open(directory);
-        assertEquals((1+iter)*181, reader.numDocs());
+        assertEquals((1+iter)*182, reader.numDocs());
         reader.close();
 
         // Reopen
