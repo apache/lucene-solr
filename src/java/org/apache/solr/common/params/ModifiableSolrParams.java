@@ -73,7 +73,7 @@ public class ModifiableSolrParams extends SolrParams
    * Add the given values to any existing name
    */
   public void add( String name, String ... val ) {
-    String[] old = vals.get( name );
+    String[] old = vals.put(name, val);
     if( old != null ) {
       int i =0;
       if( val == null || val.length < 1 ) {
@@ -94,9 +94,6 @@ public class ModifiableSolrParams extends SolrParams
         }
         vals.put( name, both );
       }
-    }
-    else {
-      vals.put( name, val );
     }
   }
   
