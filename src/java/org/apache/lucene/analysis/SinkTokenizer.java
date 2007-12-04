@@ -21,6 +21,14 @@ public class SinkTokenizer extends Tokenizer {
     if (this.lst == null) this.lst = new ArrayList/*<Token>*/();
   }
 
+  public SinkTokenizer() {
+    this.lst = new ArrayList();
+  }
+
+  public SinkTokenizer(int initCap){
+    this.lst = new ArrayList(initCap);
+  }
+
   /**
    * Get the tokens in the internal List.
    * <p/>
