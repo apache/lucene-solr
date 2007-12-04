@@ -389,6 +389,7 @@ final class DocumentsWriter {
         try {
           wait();
         } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
         }
       }
     }
@@ -521,6 +522,7 @@ final class DocumentsWriter {
     int maxTermHit;                       // Set to > 0 if this doc has a too-large term
 
     boolean doFlushAfter;
+    boolean abortOnExc;
 
     public ThreadState() {
       fieldDataArray = new FieldData[8];
@@ -558,6 +560,12 @@ final class DocumentsWriter {
      *  the ThreadState into the "real" stores. */
     public void writeDocument() throws IOException {
 
+      // If we hit an exception while appending to the
+      // stored fields or term vectors files, we have to
+      // abort because it means those files are possibly
+      // inconsistent.
+      abortOnExc = true;
+
       // Append stored fields to the real FieldsWriter:
       fieldsWriter.flushDocument(fdtLocal);
       fdtLocal.reset();
@@ -581,6 +589,7 @@ final class DocumentsWriter {
           tvfLocal.reset();
         }
       }
+      abortOnExc = false;
 
       // Append norms for the fields we saw:
       for(int i=0;i<numFieldData;i++) {
@@ -604,6 +613,7 @@ final class DocumentsWriter {
     /** Initializes shared state for this new document */
     void init(Document doc, int docID) throws IOException {
 
+      abortOnExc = false;
       this.docID = docID;
       docBoost = doc.getBoost();
       numStoredFields = 0;
@@ -1177,6 +1187,7 @@ final class DocumentsWriter {
       boolean doVectors;
       boolean doVectorPositions;
       boolean doVectorOffsets;
+      boolean postingsCompacted;
 
       int numPostings;
       
@@ -1197,8 +1208,11 @@ final class DocumentsWriter {
       }
 
       void resetPostingArrays() {
+        if (!postingsCompacted)
+          compactPostings();
         recyclePostings(this.postingsHash, numPostings);
         Arrays.fill(postingsHash, 0, postingsHash.length, null);
+        postingsCompacted = false;
         numPostings = 0;
       }
 
@@ -1217,15 +1231,20 @@ final class DocumentsWriter {
         return fieldInfo.name.compareTo(((FieldData) o).fieldInfo.name);
       }
 
-      /** Collapse the hash table & sort in-place. */
-      public Posting[] sortPostings() {
+      private void compactPostings() {
         int upto = 0;
         for(int i=0;i<postingsHashSize;i++)
           if (postingsHash[i] != null)
             postingsHash[upto++] = postingsHash[i];
 
         assert upto == numPostings;
-        doPostingSort(postingsHash, upto);
+        postingsCompacted = true;
+      }
+
+      /** Collapse the hash table & sort in-place. */
+      public Posting[] sortPostings() {
+        compactPostings();
+        doPostingSort(postingsHash, numPostings);
         return postingsHash;
       }
 
@@ -1241,26 +1260,29 @@ final class DocumentsWriter {
         final int limit = fieldCount;
         final Fieldable[] docFieldsFinal = docFields;
 
-        // Walk through all occurrences in this doc for this field:
-        for(int j=0;j<limit;j++) {
-          Fieldable field = docFieldsFinal[j];
+        // Walk through all occurrences in this doc for this
+        // field:
+        try {
+          for(int j=0;j<limit;j++) {
+            Fieldable field = docFieldsFinal[j];
 
-          if (field.isIndexed())
-            invertField(field, analyzer, maxFieldLength);
+            if (field.isIndexed())
+              invertField(field, analyzer, maxFieldLength);
 
-          if (field.isStored())
-            localFieldsWriter.writeField(fieldInfo, field);
+            if (field.isStored())
+              localFieldsWriter.writeField(fieldInfo, field);
 
-          docFieldsFinal[j] = null;
-        }
-
-        if (postingsVectorsUpto > 0) {
-          // Add term vectors for this field
-          writeVectors(fieldInfo);
-          if (postingsVectorsUpto > maxPostingsVectors)
-            maxPostingsVectors = postingsVectorsUpto;
-          postingsVectorsUpto = 0;
-          vectorsPool.reset();
+            docFieldsFinal[j] = null;
+          }
+        } finally {
+          if (postingsVectorsUpto > 0) {
+            // Add term vectors for this field
+            writeVectors(fieldInfo);
+            if (postingsVectorsUpto > maxPostingsVectors)
+              maxPostingsVectors = postingsVectorsUpto;
+            postingsVectorsUpto = 0;
+            vectorsPool.reset();
+          }
         }
       }
 
@@ -1406,6 +1428,8 @@ final class DocumentsWriter {
 
         int hashPos = code & postingsHashMask;
 
+        assert !postingsCompacted;
+
         // Locate Posting in hash
         p = postingsHash[hashPos];
 
@@ -1421,6 +1445,12 @@ final class DocumentsWriter {
         }
         
         final int proxCode;
+
+        // If we hit an exception below, it's possible the
+        // posting list or term vectors data will be
+        // partially written and thus inconsistent if
+        // flushed, so we have to abort:
+        abortOnExc = true;
 
         if (p != null) {       // term seen since last flush
 
@@ -1492,6 +1522,7 @@ final class DocumentsWriter {
               // Just skip this term; we will throw an
               // exception after processing all accepted
               // terms in the doc
+              abortOnExc = false;
               return;
             }
             charPool.nextBuffer();
@@ -1572,6 +1603,8 @@ final class DocumentsWriter {
           vector.lastOffset = offsetEnd;
           vector.offsetUpto = offsetUpto + (vector.offsetUpto & BYTE_BLOCK_NOT_MASK);
         }
+
+        abortOnExc = false;
       }
 
       /** Called when postings hash is too small (> 50%
@@ -2142,7 +2175,9 @@ final class DocumentsWriter {
     while(!state.isIdle || pauseThreads != 0 || flushPending)
       try {
         wait();
-      } catch (InterruptedException e) {}
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
 
     if (segment == null)
       segment = writer.newSegmentName();
@@ -2165,22 +2200,24 @@ final class DocumentsWriter {
     boolean success = false;
     try {
       state.init(doc, nextDocID++);
+
+      if (delTerm != null) {
+        addDeleteTerm(delTerm, state.docID);
+        if (!state.doFlushAfter)
+          state.doFlushAfter = timeToFlushDeletes();
+      }
+
       success = true;
     } finally {
       if (!success) {
-        state.isIdle = true;
-        if (state.doFlushAfter) {
-          state.doFlushAfter = false;
-          flushPending = false;
+        synchronized(this) {
+          state.isIdle = true;
+          if (state.doFlushAfter) {
+            state.doFlushAfter = false;
+            flushPending = false;
+          }
+          notifyAll();
         }
-        abort();
-      }
-    }
-
-    if (delTerm != null) {
-      addDeleteTerm(delTerm, state.docID);
-      if (!state.doFlushAfter) {
-        state.doFlushAfter = timeToFlushDeletes();
       }
     }
 
@@ -2208,15 +2245,22 @@ final class DocumentsWriter {
     int maxTermHit;
     try {
       // This call is not synchronized and does all the work
-      state.processDocument(analyzer);
-      // This call synchronized but fast
-      maxTermHit = state.maxTermHit;
-      finishDocument(state);
+      try {
+        state.processDocument(analyzer);
+      } finally {
+        maxTermHit = state.maxTermHit;
+        // This call synchronized but fast
+        finishDocument(state);
+      }
       success = true;
     } finally {
       if (!success) {
-        state.isIdle = true;
-        abort();
+        synchronized(this) {
+          state.isIdle = true;
+          if (state.abortOnExc)
+            abort();
+          notifyAll();
+        }
       }
     }
 
@@ -2246,7 +2290,9 @@ final class DocumentsWriter {
     while(pauseThreads != 0 || flushPending)
       try {
         wait();
-      } catch (InterruptedException e) {}
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
       for (int i = 0; i < terms.length; i++)
         addDeleteTerm(terms[i], numDocsInRAM);
     return timeToFlushDeletes();
@@ -2256,7 +2302,9 @@ final class DocumentsWriter {
     while(pauseThreads != 0 || flushPending)
       try {
         wait();
-      } catch (InterruptedException e) {}
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     addDeleteTerm(term, numDocsInRAM);
     return timeToFlushDeletes();
   }

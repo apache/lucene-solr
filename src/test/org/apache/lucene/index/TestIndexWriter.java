@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
@@ -25,7 +26,12 @@ import java.util.Random;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -1735,5 +1741,109 @@ public class TestIndexWriter extends LuceneTestCase
     for(int i=0;i<177;i++)
       iw.addDocument(document);
     iw.close();
+  }
+
+  // LUCENE-1072
+  public void testExceptionFromTokenStream() throws IOException {
+    RAMDirectory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new Analyzer() {
+
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new TokenFilter(new StandardTokenizer(reader)) {
+          private int count = 0;
+
+          public Token next() throws IOException {
+            if (count++ == 5) {
+              throw new IOException();
+            }
+            return input.next();
+          }
+        };
+      }
+
+    }, true);
+
+    Document doc = new Document();
+    String contents = "aa bb cc dd ee ff gg hh ii jj kk";
+    doc.add(new Field("content", contents, Field.Store.NO,
+        Field.Index.TOKENIZED));
+    try {
+      writer.addDocument(doc);
+      fail("did not hit expected exception");
+    } catch (Exception e) {
+    }
+
+    // Make sure we can add another normal document
+    doc = new Document();
+    doc.add(new Field("content", "aa bb cc dd", Field.Store.NO,
+        Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+
+    // Make sure we can add another normal document
+    doc = new Document();
+    doc.add(new Field("content", "aa bb cc dd", Field.Store.NO,
+        Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+
+    writer.close();
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(reader.docFreq(new Term("content", "aa")), 3);
+    assertEquals(reader.docFreq(new Term("content", "gg")), 0);
+    reader.close();
+    dir.close();
+  }
+
+  private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
+    boolean doFail = false;
+    int count;
+
+    public void setDoFail() {
+      this.doFail = true;
+    }
+    public void clearDoFail() {
+      this.doFail = false;
+    }
+
+    public void eval(MockRAMDirectory dir)  throws IOException {
+      if (doFail) {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("appendPostings".equals(trace[i].getMethodName()) && count++ == 30) {
+            doFail = false;
+            throw new IOException("now failing during flush");
+          }
+        }
+      }
+    }
+  }
+
+  // LUCENE-1072: make sure an errant exception on flushing
+  // one segment only takes out those docs in that one flush
+  public void testDocumentsWriterAbort() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    FailOnlyOnFlush failure = new FailOnlyOnFlush();
+    failure.setDoFail();
+    dir.failOn(failure);
+
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer());
+    writer.setMaxBufferedDocs(2);
+    Document doc = new Document();
+    String contents = "aa bb cc dd ee ff gg hh ii jj kk";
+    doc.add(new Field("content", contents, Field.Store.NO,
+        Field.Index.TOKENIZED));
+    boolean hitError = false;
+    for(int i=0;i<200;i++) {
+      try {
+        writer.addDocument(doc);
+      } catch (IOException ioe) {
+        // only one flush should fail:
+        assertFalse(hitError);
+        hitError = true;
+      }
+    }
+    assertTrue(hitError);
+    writer.close();
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(198, reader.docFreq(new Term("content", "aa")));
   }
 }
