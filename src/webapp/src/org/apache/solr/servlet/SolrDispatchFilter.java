@@ -52,7 +52,7 @@ public class SolrDispatchFilter implements Filter
   protected SolrCore core;
   protected SolrRequestParsers parsers;
   protected boolean handleSelect = false;
-  protected String pathPrefix = null; // strip this from the begging of a path
+  protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   
   public void init(FilterConfig config) throws ServletException 

@@ -255,7 +255,7 @@ class FileItemContentStream extends ContentStreamBase
 }
 
 /**
- * The simple parser just uses the params directly
+ * The raw parser just uses the params directly
  */
 class RawRequestParser implements SolrRequestParser
 {
