@@ -30,7 +30,7 @@ import junit.framework.TestCase;
  *  <code>super.tearDown()</code>.
  */
 
-public class LuceneTestCase extends TestCase {
+public abstract class LuceneTestCase extends TestCase {
 
   public LuceneTestCase() {
     super();
