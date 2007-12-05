@@ -37,7 +37,8 @@
       <ul>
         <li><a href="mailto:solr-user-subscribe@lucene.apache.org">Subscribe to List</a></li>
         <li><a href="mailto:solr-user-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
-        <li><a href="http://www.mail-archive.com/solr-user@lucene.apache.org/">View List Archive</a></li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-user/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        </li>
       </ul>
       <note>In order to post to the list, it is necessary to first subscribe to it.</note>
     </section>
@@ -55,7 +56,8 @@
       <ul>
         <li><a href="mailto:solr-dev-subscribe@lucene.apache.org">Subscribe to List</a></li>
         <li><a href="mailto:solr-dev-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
-        <li><a href="http://www.mail-archive.com/solr-dev@lucene.apache.org/">View List Archive</a></li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-dev/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        </li>
       </ul>
       <note>In order to post to the list, it is necessary to first subscribe to it.</note>
     </section>
