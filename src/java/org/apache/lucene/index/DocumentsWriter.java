@@ -1900,7 +1900,6 @@ final class DocumentsWriter {
     private ByteSliceReader freq = new ByteSliceReader();
     private ByteSliceReader prox = new ByteSliceReader();
 
-    private int lastDocID;
     private int docID;
     private int termFreq;
 

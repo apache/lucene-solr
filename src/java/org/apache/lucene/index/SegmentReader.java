@@ -36,9 +36,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 
-import java.io.IOException;
-import java.util.*;
-
 /**
  * @version $Id$
  */
@@ -301,7 +298,6 @@ class SegmentReader extends DirectoryIndexReader {
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
 
       final String fieldsSegment;
-      final Directory dir;
 
       if (si.getDocStoreOffset() != -1)
         fieldsSegment = si.getDocStoreSegment();
@@ -424,7 +420,6 @@ class SegmentReader extends DirectoryIndexReader {
       // and can thus not be shared among multiple SegmentReaders
       // TODO: Change this in case FieldsReader becomes thread-safe in the future
       final String fieldsSegment;
-      final Directory dir;
   
       Directory storeDir = directory();
       

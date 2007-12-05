@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-
 /** Expert: Describes the score computation for document and query, andcan distinguish a match independent of a positive value. */
 public class ComplexExplanation extends Explanation {
   private Boolean match;

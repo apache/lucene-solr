@@ -429,18 +429,16 @@ class TermVectorsReader implements Cloneable {
 class ParallelArrayTermVectorMapper extends TermVectorMapper
 {
 
-  private int numTerms;
   private String[] terms;
   private int[] termFreqs;
-  private int positions[][] = null;
-  private TermVectorOffsetInfo offsets[][] = null;
+  private int positions[][];
+  private TermVectorOffsetInfo offsets[][];
   private int currentPosition;
   private boolean storingOffsets;
   private boolean storingPositions;
   private String field;
 
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-    this.numTerms = numTerms;
     this.field = field;
     terms = new String[numTerms];
     termFreqs = new int[numTerms];

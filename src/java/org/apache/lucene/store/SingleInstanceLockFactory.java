@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Enumeration;
 
 /**
  * Implements {@link LockFactory} for a single in-process instance,

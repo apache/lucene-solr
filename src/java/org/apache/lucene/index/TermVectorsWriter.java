@@ -72,7 +72,6 @@ final class TermVectorsWriter {
         tvf.writeVInt(numTerms);
 
         final TermPositionVector tpVector;
-        final TermFreqVector tfVector;
 
         final byte bits;
         final boolean storePositions;
@@ -81,14 +80,12 @@ final class TermVectorsWriter {
         if (vectors[i] instanceof TermPositionVector) {
           // May have positions & offsets
           tpVector = (TermPositionVector) vectors[i];
-          tfVector = null;
           storePositions = tpVector.size() > 0 && tpVector.getTermPositions(0) != null;
           storeOffsets = tpVector.size() > 0 && tpVector.getOffsets(0) != null;
           bits = (byte) ((storePositions ? TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR : 0) +
                          (storeOffsets ? TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR : 0));
         } else {
           tpVector = null;
-          tfVector = vectors[i];
           bits = 0;
           storePositions = false;
           storeOffsets = false;

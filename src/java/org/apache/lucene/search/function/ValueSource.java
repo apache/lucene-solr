@@ -19,7 +19,6 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.function.DocValues;
-import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
