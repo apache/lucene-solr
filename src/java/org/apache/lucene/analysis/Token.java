@@ -75,7 +75,7 @@ import org.apache.lucene.index.TermPositions;
 */
 public class Token implements Cloneable {
 
-  private static final String DEFAULT_TYPE = "word";
+  public static final String DEFAULT_TYPE = "word";
   private static int MIN_BUFFER_SIZE = 10;
 
   /** @deprecated: we will remove this when we remove the

@@ -77,6 +77,8 @@ API Changes
     "partially optimize" an index down to maxNumSegments segments.
     (Mike McCandless)
 
+ 10. LUCENE-1080: Changed Token.DEFAULT_TYPE to be public.
+
     
 Bug fixes
 
