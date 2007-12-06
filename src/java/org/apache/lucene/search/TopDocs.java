@@ -40,7 +40,7 @@ public class TopDocs implements java.io.Serializable {
   }
   
   /** Expert: Constructs a TopDocs.*/
-  TopDocs(int totalHits, ScoreDoc[] scoreDocs, float maxScore) {
+  public TopDocs(int totalHits, ScoreDoc[] scoreDocs, float maxScore) {
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;
     this.maxScore = maxScore;

@@ -79,6 +79,9 @@ API Changes
 
  10. LUCENE-1080: Changed Token.DEFAULT_TYPE to be public.
 
+ 11. LUCENE-1064: Changed TopDocs constructor to be public. 
+     (Shai Erera via Michael Busch)
+
     
 Bug fixes
 
