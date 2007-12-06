@@ -111,7 +111,7 @@ public class SolrConfig extends Config {
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
     hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor",0.75f);
-    hashDocSetMaxSize= getInt("//HashDocSet/@maxSize",-1);
+    hashDocSetMaxSize= getInt("//HashDocSet/@maxSize",3000);
     
     pingQueryParams = readPingQueryParams(this);
     Config.log.info("Loaded SolrConfig: " + file);
