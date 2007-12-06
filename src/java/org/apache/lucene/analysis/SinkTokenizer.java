@@ -64,6 +64,12 @@ public class SinkTokenizer extends Tokenizer {
     lst.add((Token) t.clone());
   }
 
+  public void close() throws IOException {
+    //nothing to close
+    input = null;
+    lst = null;
+  }
+
   /**
    * Reset the internal data structures to the start at the front of the list of tokens.  Should be called
    * if tokens were added to the list after an invocation of {@link #next(Token)}
