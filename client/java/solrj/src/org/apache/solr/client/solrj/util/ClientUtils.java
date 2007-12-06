@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
@@ -66,6 +67,20 @@ public class ClientUtils
     ccc.setContentType( contentType );
     streams.add( ccc );
     return streams;
+  }
+  
+  /**
+   * @param SolrDocument to convert
+   * @return a SolrInputDocument with the same fields and values as the 
+   *   SolrDocument.  All boosts are 1.0f
+   */
+  public static SolrInputDocument toSolrInputDocument( SolrDocument d )
+  {
+    SolrInputDocument doc = new SolrInputDocument();
+    for( String name : d.getFieldNames() ) {
+      doc.addField( name, d.getFieldValue(name), 1.0f );
+    }
+    return doc;
   }
   
   //------------------------------------------------------------------------
