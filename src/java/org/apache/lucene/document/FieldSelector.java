@@ -26,8 +26,9 @@ public interface FieldSelector extends Serializable {
 
   /**
    * 
-   * @param fieldName
-   * @return true if the {@link Field} with <code>fieldName</code> should be loaded or not
+   * @param fieldName the field to accept or reject
+   * @return an instance of {@link FieldSelectorResult}
+   * if the {@link Field} named <code>fieldName</code> should be loaded.
    */
   FieldSelectorResult accept(String fieldName);
 }
