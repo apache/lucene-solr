@@ -18,9 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiCoreParams;

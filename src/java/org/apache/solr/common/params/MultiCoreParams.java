@@ -34,8 +34,8 @@ public interface MultiCoreParams
   
   public enum MultiCoreAction {
     STATUS,  
-    STOP,
     LOAD,
+    UNLOAD,
     RELOAD,
     SETASDEFAULT;
     
