@@ -528,40 +528,42 @@ final class SegmentInfos extends Vector {
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
-          for(int i=0;i<defaultGenFileRetryCount;i++) {
-            IndexInput genInput = null;
-            try {
-              genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
-            } catch (FileNotFoundException e) {
-              message("segments.gen open: FileNotFoundException " + e);
-              break;
-            } catch (IOException e) {
-              message("segments.gen open: IOException " + e);
-            }
-
-            if (genInput != null) {
+          if (directory != null) {
+            for(int i=0;i<defaultGenFileRetryCount;i++) {
+              IndexInput genInput = null;
               try {
-                int version = genInput.readInt();
-                if (version == FORMAT_LOCKLESS) {
-                  long gen0 = genInput.readLong();
-                  long gen1 = genInput.readLong();
-                  message("fallback check: " + gen0 + "; " + gen1);
-                  if (gen0 == gen1) {
-                    // The file is consistent.
-                    genB = gen0;
-                    break;
-                  }
-                }
-              } catch (IOException err2) {
-                // will retry
-              } finally {
-                genInput.close();
+                genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
+              } catch (FileNotFoundException e) {
+                message("segments.gen open: FileNotFoundException " + e);
+                break;
+              } catch (IOException e) {
+                message("segments.gen open: IOException " + e);
               }
-            }
-            try {
-              Thread.sleep(defaultGenFileRetryPauseMsec);
-            } catch (InterruptedException e) {
-              // will retry
+
+              if (genInput != null) {
+                try {
+                  int version = genInput.readInt();
+                  if (version == FORMAT_LOCKLESS) {
+                    long gen0 = genInput.readLong();
+                    long gen1 = genInput.readLong();
+                    message("fallback check: " + gen0 + "; " + gen1);
+                    if (gen0 == gen1) {
+                      // The file is consistent.
+                      genB = gen0;
+                      break;
+                    }
+                  }
+                } catch (IOException err2) {
+                  // will retry
+                } finally {
+                  genInput.close();
+                }
+              }
+              try {
+                Thread.sleep(defaultGenFileRetryPauseMsec);
+              } catch (InterruptedException e) {
+                // will retry
+              }
             }
           }
 
@@ -655,8 +657,14 @@ final class SegmentInfos extends Vector {
             String prevSegmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                                "",
                                                                                gen-1);
-            
-            if (directory.fileExists(prevSegmentFileName)) {
+
+            final boolean prevExists;
+            if (directory != null)
+              prevExists = directory.fileExists(prevSegmentFileName);
+            else
+              prevExists = new File(fileDirectory, prevSegmentFileName).exists();
+
+            if (prevExists) {
               message("fallback to prior segment file '" + prevSegmentFileName + "'");
               try {
                 Object v = doBody(prevSegmentFileName);
