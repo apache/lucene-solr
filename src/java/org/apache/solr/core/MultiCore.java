@@ -99,6 +99,7 @@ public class MultiCore
       try {
         String name         = DOMUtil.getAttr(node,"name", "Core needs a name" );
         String instanceDir  = DOMUtil.getAttr(node,"instanceDir", "Missing required 'instanceDir'" );
+        String dataDir      = DOMUtil.getAttr(node,"dataDir", null );
         String defaultStr   = DOMUtil.getAttr(node,"default", null );
         
         // Make the instanceDir relative to the core config
@@ -109,7 +110,7 @@ public class MultiCore
         SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader);
         SolrConfig solrConfig = new SolrConfig( solrLoader, SolrConfig.DEFAULT_CONF_FILE, null );
         IndexSchema schema = new IndexSchema(solrConfig, instanceDir+"/conf/schema.xml");
-        SolrCore core = new SolrCore( name, null, solrConfig, schema );
+        SolrCore core = new SolrCore( name, dataDir, solrConfig, schema );
         
         // Register the new core
         SolrCore old = this.register( core );
