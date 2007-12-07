@@ -20,8 +20,14 @@
 <%@ page import="java.io.Reader"%>
 <%@ page contentType="text/plain;charset=UTF-8" language="java" %>
 <%
-  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
-  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
+  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
+  if (core == null) {
+    String coreParam = request.getParameter("core");
+    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+  }
+  if (core == null)
+    core = SolrCore.getSolrCore();
+    
   IndexSchema schema = core.getSchema();
   Reader input = new InputStreamReader(schema.getInputStream());
   char[] buf = new char[4096];

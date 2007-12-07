@@ -1,4 +1,5 @@
 /**
+/**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,31 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collection;
-
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
+package org.apache.solr.common.params;
 
 /**
- * 
- * @version $Id$
  * @since solr 1.3
  */
-public interface SolrRequest extends Serializable
+public interface MultiCoreParams 
 {
-  public enum METHOD {
-    GET,
-    POST
-  };
+  /** What Core are we talking about **/
+  public final static String CORE = "core";
+
+  /** Persistent -- should it save the multicore state? **/
+  public final static String PERSISTENT = "persistent";
   
-  public String getPath();
-  public String getCore();  // the name of requested core
-  public METHOD getMethod();
-  public SolrParams getParams();
-  public Collection<ContentStream> getContentStreams() throws IOException;
-  public SolrResponse process( SolrServer server ) throws SolrServerException, IOException;
+  /** What action **/
+  public final static String ACTION = "action";
+  
+  public enum MultiCoreAction {
+    STATUS,  
+    STOP,
+    LOAD,
+    RELOAD,
+    SETASDEFAULT;
+    
+    public static MultiCoreAction get( String p )
+    {
+      if( p != null ) {
+        try {
+          return MultiCoreAction.valueOf( p.toUpperCase() );
+        }
+        catch( Exception ex ) {}
+      }
+      return null; 
+    }
+  }
 }

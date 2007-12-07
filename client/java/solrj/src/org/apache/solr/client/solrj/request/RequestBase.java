@@ -28,6 +28,7 @@ public abstract class RequestBase implements SolrRequest
 {
   private METHOD method = METHOD.GET;
   private String path = null;
+  private String core = null;
 
   //---------------------------------------------------------
   //---------------------------------------------------------
@@ -53,5 +54,13 @@ public abstract class RequestBase implements SolrRequest
   }
   public void setPath(String path) {
     this.path = path;
+  }
+
+  public String getCore() {
+    return core;
+  }
+
+  public void setCore(String core) {
+    this.core = core;
   }
 }

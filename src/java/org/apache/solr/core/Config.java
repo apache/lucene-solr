@@ -53,12 +53,12 @@ public class Config {
 
   public Config(String instanceDir, String name) throws ParserConfigurationException, IOException, SAXException 
   {
-    this( instanceDir, name, null, null );
+    this( new SolrResourceLoader( instanceDir ), name, null, null );
   }
   
-  public Config(String instanceDir, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
+  public Config(SolrResourceLoader loader, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
-    this.loader = new SolrResourceLoader( instanceDir );
+    this.loader = loader;
     this.name = name;
     this.prefix = prefix;
     

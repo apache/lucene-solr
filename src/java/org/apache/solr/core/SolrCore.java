@@ -29,13 +29,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -66,6 +66,7 @@ import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 
 /**
@@ -76,12 +77,13 @@ public final class SolrCore {
 
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
 
+  private final String name;
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
   private final String index_path;
   private final UpdateHandler updateHandler;
-  private final long startTime = System.currentTimeMillis();
+  private final long startTime;
   private final RequestHandlers reqHandlers;
   private final SolrHighlighter highlighter;
   private final Map<String,UpdateRequestProcessorFactory> updateProcessors;
@@ -124,6 +126,9 @@ public final class SolrCore {
     return schema.getSchemaFile();
   }
   
+  public String getName() {
+    return name;
+  }
   
   /**
    * @since solr 1.3
@@ -135,7 +140,7 @@ public final class SolrCore {
   
   public List<SolrEventListener> parseListener(String path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
-    log.info("Searching for listeners: " +path);
+    log.info( "["+name+"] Searching for listeners: " +path);
     NodeList nodes = (NodeList)solrConfig.evaluate(path, XPathConstants.NODESET);
     if (nodes!=null) {
       for (int i=0; i<nodes.getLength(); i++) {
@@ -144,7 +149,7 @@ public final class SolrCore {
         SolrEventListener listener = createEventListener(className);
         listener.init(DOMUtil.childNodesToNamedList(node));
         lst.add(listener);
-        log.info("added SolrEventListener: " + listener);
+        log.info( "["+name+"] Added SolrEventListener: " + listener);
       }
     }
     return lst;
@@ -178,7 +183,7 @@ public final class SolrCore {
         // if it didn't exist already...
         Directory dir = FSDirectory.getDirectory(dirFile, !indexExists);
         if (IndexReader.isLocked(dir)) {
-          log.warning("WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+          log.warning("["+name+"] WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
           IndexReader.unlock(dir);
         }
       }
@@ -186,7 +191,7 @@ public final class SolrCore {
       // Create the index if it doesn't exist. Note that indexExists was tested *before*
       // lock removal, since that will result in the creation of the directory.
       if(!indexExists) {
-        log.warning("Solr index directory '" + dirFile + "' doesn't exist."
+        log.warning("["+name+"] Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
@@ -251,15 +256,18 @@ public final class SolrCore {
       if( instance == null ) {
         try {
           // sets 'instance' to the latest solr core
-          instance = new SolrCore(null, new SolrConfig(), null);  
-        }
-        catch(Exception xany) {
+          instance = new SolrCore("default", null, new SolrConfig(), null);
+        } catch(Exception xany) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "error creating core", xany );
         }
       }
     }
     return instance;
+  }
+  
+  public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
+    this( "core", dataDir, new SolrConfig(), schema );
   }
   
   /**
@@ -269,18 +277,18 @@ public final class SolrCore {
    *@param config a solr config instance
    *@param schema a solr schema instance
    */
-  public SolrCore(String dataDir, SolrConfig config, IndexSchema schema) {
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema) {
     synchronized (SolrCore.class) {
       // this is for backward compatibility (and also the reason
       // the sync block is needed)
       instance = this;   // set singleton
-    
+      this.name = name;
       SolrResourceLoader loader = config.getResourceLoader();
       if (dataDir ==null) {
         dataDir = config.get("dataDir",loader.getInstanceDir()+"data");
       }
 
-      log.info("Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
+      log.info("["+name+"] Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
       if (schema==null) {
         schema = new IndexSchema(config, "schema.xml");
@@ -290,7 +298,7 @@ public final class SolrCore {
       this.dataDir = dataDir;
       this.index_path = dataDir + "/" + "index";
       this.solrConfig = config;
-
+      this.startTime = System.currentTimeMillis();
       this.maxWarmingSearchers = config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
       booleanQueryMaxClauseCount();
@@ -377,7 +385,7 @@ public final class SolrCore {
   }
 
   public void close() {
-    log.info("CLOSING SolrCore!");
+    log.info("["+name+"] CLOSING SolrCore!");
     try {
       closeSearcher();
     } catch (Exception e) {
@@ -570,16 +578,16 @@ public final class SolrCore {
       onDeckSearchers++;
       if (onDeckSearchers < 1) {
         // should never happen... just a sanity check
-        log.severe("ERROR!!! onDeckSearchers is " + onDeckSearchers);
+        log.severe("["+name+"] ERROR!!! onDeckSearchers is " + onDeckSearchers);
         onDeckSearchers=1;  // reset
       } else if (onDeckSearchers > maxWarmingSearchers) {
         onDeckSearchers--;
         String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
-        log.warning(msg);
+        log.warning("["+name+"] "+ msg);
         // HTTP 503==service unavailable, or 409==Conflict
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg,true);
       } else if (onDeckSearchers > 1) {
-        log.info("PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+        log.info("["+name+"] PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
       }
     }
 
@@ -739,7 +747,7 @@ public final class SolrCore {
         }
         if (onDeckSearchers < 0) {
           // sanity check... should never happen
-          log.severe("ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
+          log.severe("["+name+"] ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
           onDeckSearchers=0; // try and recover
         }
         // if we failed, we need to wake up at least one waiter to continue the process
@@ -788,7 +796,7 @@ public final class SolrCore {
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
         newSearcher.register(); // register subitems (caches)
-        log.info("Registered new searcher " + newSearcher);
+        log.info("["+name+"] Registered new searcher " + newSearcher);
 
       } catch (Throwable e) {
         log(e);
@@ -804,7 +812,7 @@ public final class SolrCore {
 
 
   public void closeSearcher() {
-    log.info("Closing main searcher on request.");
+    log.info("["+name+"] Closing main searcher on request.");
     synchronized (searcherLock) {
       if (_searcher != null) {
         _searcher.decref();   // dec refcount for this._searcher
@@ -817,7 +825,7 @@ public final class SolrCore {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
-      log.warning("Null Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warning("["+name+"] Null Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getQueryType() + "'", true);
     }
     // setup response header and handle request
@@ -826,7 +834,7 @@ public final class SolrCore {
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,responseHeader,req,rsp);
 
-    log.info(req.getContext().get("path") + " "
+    log.info("["+name+"] " + req.getContext().get("path") + " "
             + req.getParamString()+ " 0 "+
        (int)(rsp.getEndTime() - req.getStartTime()));
   }
@@ -835,7 +843,7 @@ public final class SolrCore {
   public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrRequestHandler handler = getRequestHandler(req.getQueryType());
     if (handler==null) {
-      log.warning("Unknown Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warning("["+name+"] Unknown Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
     }
     execute(handler, req, rsp);

@@ -150,16 +150,18 @@ public class UpdateRequest extends RequestBase
     }
     
     // Add the delete commands
-    if( deleteById != null || deleteQuery != null ) {
+    boolean deleteI = deleteById != null && deleteById.size() > 0;
+    boolean deleteQ = deleteQuery != null && deleteQuery.size() > 0;
+    if( deleteI || deleteQ ) {
       writer.append( "<delete>" );
-      if( deleteById != null ) {
+      if( deleteI ) {
         for( String id : deleteById ) {
           writer.append( "<id>" );
           XML.escapeCharData( id, writer );
           writer.append( "</id>" );
         }
       }
-      if( deleteQuery != null ) {
+      if( deleteQ ) {
         for( String q : deleteQuery ) {
           writer.append( "<query>" );
           XML.escapeCharData( q, writer );
@@ -171,6 +173,7 @@ public class UpdateRequest extends RequestBase
     
     // If action is COMMIT or OPTIMIZE, it is sent with params
     String xml = writer.toString();
+    //System.out.println( "SEND:"+xml );
     return (xml.length() > 0) ? xml : null;
   }
 

@@ -1,5 +1,5 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
-<%--
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
@@ -14,24 +14,19 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
---%>
-<%@include file="_info.jsp" %>
-<script>
-var host_name="<%= hostname %>"
-</script>
+-->
 
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="solr-admin.css">
-<link rel="icon" href="favicon.ico" type="image/ico"></link>
-<link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
-<title>Solr admin page</title>
-</head>
-
-<body>
-<a href="?core=<%=core.getName()%>"><img border="0" align="right" height="61" width="142" src="solr-head.gif" alt="Solr"></a>
-<h1>Solr Admin (<%= collectionName %>)
-<%= enabledStatus==null ? "" : (isEnabled ? " - Enabled" : " - Disabled") %> </h1>
-
-<%= hostname %>:<%= port %><br/>
-cwd=<%= cwd %>  SolrHome=<%= solrHome %>
+<!--
+ All paths are relative to the instaliation path
+  
+  adminPath: RequestHandler path to manage multicores.  
+    If 'null', cores will not be managable via REST
+    
+  persistent: Save changes made via the REST API to this file?
+  
+  sharedLib: path to a lib files that will be shared across all cores
+-->
+<multicore adminPath="/admin/multicore" persistent="true" >
+ <core name="core0" instanceDir="core0" default="true"/>
+ <core name="core1" instanceDir="core1" />
+</multicore>

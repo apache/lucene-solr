@@ -46,7 +46,10 @@
           <xsl:apply-templates/>
         <div>
         </div>
-          <a href=".">Return to Admin Page</a>
+          <xsl:element name='a'>
+            <xsl:attribute name='href'>.?core=<xsl:value-of select="//solr/core"/></xsl:attribute>
+            <xsl:text>Return to Admin Page (ping)</xsl:text>
+          </xsl:element>
         </div>
       </body>
     </html>

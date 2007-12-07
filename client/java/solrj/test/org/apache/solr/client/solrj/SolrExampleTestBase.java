@@ -30,8 +30,19 @@ import org.apache.solr.util.AbstractSolrTestCase;
  */
 abstract public class SolrExampleTestBase extends AbstractSolrTestCase 
 {
-  @Override public String getSchemaFile()     { return "../../../example/solr/conf/schema.xml";     }
-  @Override public String getSolrConfigFile() { return "../../../example/solr/conf/solrconfig.xml"; }
+  public String getSolrHome() { return "../../../example/solr/"; }
+  
+  @Override public String getSchemaFile()     { return getSolrHome()+"conf/schema.xml";     }
+  @Override public String getSolrConfigFile() { return getSolrHome()+"conf/solrconfig.xml"; }
+ 
+  @Override
+  public void setUp() throws Exception
+  {
+    super.setUp();
+    
+    // this sets the property for jetty starting SolrDispatchFilter
+    System.setProperty( "solr.solr.home", this.getSolrHome() ); 
+  }
   
   /**
    * Subclasses need to initialize the server impl

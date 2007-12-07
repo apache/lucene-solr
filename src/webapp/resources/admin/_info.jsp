@@ -24,9 +24,17 @@
 <%@ page import="org.apache.solr.util.XML"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
 
+
 <%
-  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
-  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
+  // 
+  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
+  if (core == null) {
+    String coreParam = request.getParameter("core");
+    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+  }
+  if (core == null)
+    core = SolrCore.getSolrCore();
+    
   SolrConfig solrConfig = core.getSolrConfig();
   int port = request.getServerPort();
   IndexSchema schema = core.getSchema();

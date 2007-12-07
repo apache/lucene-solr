@@ -17,27 +17,28 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
 
 /**
+ * TODO? perhaps use:
+ *  http://docs.codehaus.org/display/JETTY/ServletTester
+ * rather then open a real connection?
+ * 
  * @version $Id$
  * @since solr 1.3
  */
-public class LargeVolumeJettyTest extends LargeVolumeTestBase {
+public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
 
   SolrServer server;
   JettySolrRunner jetty;
 
   static final int port = 8984; // not 8983
   static final String context = "/example";
-
   
   @Override public void setUp() throws Exception 
-  {
+  {    
     super.setUp();
     
     jetty = new JettySolrRunner( context, port );
@@ -52,7 +53,6 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
     jetty.stop();  // stop the server
   }
   
-
   @Override
   protected SolrServer getSolrServer()
   {

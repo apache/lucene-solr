@@ -176,7 +176,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // must only be called when iwCommit lock held
   private void deleteAll() throws IOException {
-    SolrCore.log.info("REMOVING ALL DOCUMENTS FROM INDEX");
+    core.log.info("["+core.getName()+"] REMOVING ALL DOCUMENTS FROM INDEX");
     closeWriter();
     closeSearcher();
     pset.clear(); // ignore docs marked for deletion since we are removing all
@@ -376,8 +376,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      }
 
       if (!delAll) {
-        if (SolrCore.log.isLoggable(Level.FINE)) {
-          SolrCore.log.fine("docs deleted by query:" + totDeleted);
+        if (core.log.isLoggable(Level.FINE)) {
+          core.log.fine("["+core.getName()+"] docs deleted by query:" + totDeleted);
         }
         numDocsDeleted.getAndAdd(totDeleted);
       }

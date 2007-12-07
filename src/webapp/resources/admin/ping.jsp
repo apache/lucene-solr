@@ -24,26 +24,22 @@
 <%@ page import="org.apache.solr.request.ServletSolrParams"%>
 <%@ page import="org.apache.solr.request.SolrQueryRequest"%>
 
+<%
+  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
+  if (core == null) {
+    String coreParam = request.getParameter("core");
+    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+  }
+  if (core == null)
+    core = SolrCore.getSolrCore();
+%>
 <?xml-stylesheet type="text/xsl" href="ping.xsl"?>
 
 <solr>
+  <core><%=core.getName()%></core>
   <ping>
 <%
-//
-//  Deprecated -- use PingRequestHandler
-// 
-
-  Object ocore = request.getAttribute("org.apache.solr.SolrCore");
-  SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
-
-  SolrQueryRequest req = null;
-
-  if (null == request.getQueryString()) {
-    req = core.getPingQueryRequest();
-  } else {
-    req = new LocalSolrQueryRequest(core, new ServletSolrParams(request));
-  }
-
+  SolrQueryRequest req = core.getPingQueryRequest();
   SolrQueryResponse resp = new SolrQueryResponse();
   try {
     core.execute(req,resp);

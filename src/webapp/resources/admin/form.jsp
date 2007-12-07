@@ -19,7 +19,7 @@
 
 <br clear="all">
 <form name="queryForm" method="GET" action="../select">
-
+<input name='core' type='hidden' value='<%=core.getName()%>'>
 <!-- these are good defaults to have if people bookmark the resulting
      URLs, but they should not show up in the form since they are very
      output type specific.

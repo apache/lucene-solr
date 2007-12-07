@@ -32,6 +32,7 @@ import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -55,18 +56,33 @@ public class EmbeddedSolrServer extends BaseSolrServer
   
   protected final SolrCore core;
   protected final SolrRequestParsers parser;
+  protected boolean useMultiCore;
   
   public EmbeddedSolrServer( SolrCore core )
   {
     this.core = core;
-    this.parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+    this.useMultiCore = false;
+    this.parser = init();
+  }
     
-    // by default use the XML one
+  public EmbeddedSolrServer()
+  {
+    this( null );
+    if( MultiCore.getRegistry().getDefaultCore() == null ) {
+      throw new RuntimeException( "Must initialize multicore if you want to use this" );
+    }
+    this.useMultiCore = true;
+  }
+  
+  private SolrRequestParsers init()
+  {
     _processor = new XMLResponseParser();
 
     _invariantParams = new ModifiableSolrParams();
     _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
     _invariantParams.set( CommonParams.VERSION, "2.2" );
+    
+    return new SolrRequestParsers( true, Long.MAX_VALUE );
   }
 
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException 
@@ -74,6 +90,26 @@ public class EmbeddedSolrServer extends BaseSolrServer
     String path = request.getPath();
     if( path == null || !path.startsWith( "/" ) ) {
       path = "/select";
+    }
+
+    // Check for multicore action
+    SolrCore core = this.core;
+    MultiCore multicore = MultiCore.getRegistry();
+    if( useMultiCore ) {
+      if( request.getCore() != null ) {
+        if( !multicore.isEnabled() ) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+              "multicore access is not enabled" );
+        }
+        core = multicore.getCore( request.getCore() );
+        if( core == null ) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
+              "Unknown core: "+request.getCore() );
+        }
+      }
+      else {
+        core = multicore.getDefaultCore();
+      }
     }
 
     SolrParams params = request.getParams();
@@ -93,6 +129,13 @@ public class EmbeddedSolrServer extends BaseSolrServer
         if( handler == null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
         }
+      }
+      // Perhaps the path is to manage the cores
+      if( handler == null &&
+          useMultiCore && 
+          path.equals( multicore.getAdminPath() ) && 
+          multicore.isEnabled() ) {
+        handler = multicore.getMultiCoreHandler();
       }
     }
     if( handler == null ) {

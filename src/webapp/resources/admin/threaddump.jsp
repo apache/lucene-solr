@@ -15,18 +15,28 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 --%>
-<%@ page import="java.lang.management.ManagementFactory,
+<%@ page import="org.apache.solr.core.SolrCore,
+                 java.lang.management.ManagementFactory,
                  java.lang.management.ThreadMXBean,
                  java.lang.management.ThreadInfo,
                  java.io.IOException,
                  org.apache.solr.util.XML"%>
 
 <?xml-stylesheet type="text/xsl" href="threaddump.xsl"?>
-
+<%
+  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
+  if (core == null) {
+    String coreParam = request.getParameter("core");
+    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+  }
+  if (core == null)
+    core = SolrCore.getSolrCore();
+%>
 <%!
   static ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
 %>
 <solr>
+  <core><%=core.getName()%></core>
   <system>
   <jvm>
     <version><%=System.getProperty("java.vm.version")%></version>

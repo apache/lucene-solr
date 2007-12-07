@@ -134,8 +134,8 @@ public class DirectUpdateHandler extends UpdateHandler {
     try {
       Term term = new Term(idField.getName(), indexedId);
       num = ir.deleteDocuments(term);
-      if (SolrCore.log.isLoggable(Level.FINEST)) {
-        SolrCore.log.finest("deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
+      if (core.log.isLoggable(Level.FINEST)) {
+        core.log.finest( "["+core.getName()+"] deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
       }
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -202,8 +202,8 @@ public class DirectUpdateHandler extends UpdateHandler {
       totDeleted = deleter.deleted;
     }
 
-    if (SolrCore.log.isLoggable(Level.FINE)) {
-      SolrCore.log.fine("docs deleted:" + totDeleted);
+    if (core.log.isLoggable(Level.FINE)) {
+      core.log.fine("["+core.getName()+"] docs deleted:" + totDeleted);
     }
 
   }

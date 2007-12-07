@@ -17,41 +17,33 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import java.io.File;
+
+import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.SchemaField;
+import org.apache.solr.core.MultiCore;
 
 /**
+ * This runs SolrServer test using 
+ * 
  * @version $Id$
  * @since solr 1.3
  */
-public class LargeVolumeJettyTest extends LargeVolumeTestBase {
+public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
 
   SolrServer server;
-  JettySolrRunner jetty;
-
-  static final int port = 8984; // not 8983
-  static final String context = "/example";
-
   
   @Override public void setUp() throws Exception 
   {
     super.setUp();
     
-    jetty = new JettySolrRunner( context, port );
-    jetty.start();
+    File home = new File( getSolrHome() );
+    File f = new File( home, "multicore.xml" );
+    MultiCore.getRegistry().load( getSolrHome(), f );
     
-    server = this.createNewSolrServer();
+    // setup the server...
+    server = createNewSolrServer();
   }
-
-  @Override public void tearDown() throws Exception 
-  {
-    super.tearDown();
-    jetty.stop();  // stop the server
-  }
-  
 
   @Override
   protected SolrServer getSolrServer()
@@ -62,17 +54,6 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @Override
   protected SolrServer createNewSolrServer()
   {
-    try {
-      // setup the server...
-      String url = "http://localhost:"+port+context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
+    return new EmbeddedSolrServer();
   }
 }

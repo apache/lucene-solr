@@ -232,7 +232,7 @@ final class RequestHandlers {
     {
       if( _handler == null ) {
         try {
-          _handler = (SolrRequestHandler)core.createRequestHandler(_className);
+          _handler = core.createRequestHandler(_className);
           _handler.init( _args );
           
           if( _handler instanceof ResourceLoaderAware ) {

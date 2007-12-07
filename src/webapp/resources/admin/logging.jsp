@@ -28,6 +28,14 @@
 <?xml-stylesheet type="text/xsl" href="logging.xsl"?>
 
 <%
+  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
+  if (core == null) {
+    String coreParam = request.getParameter("core");
+    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+  }
+  if (core == null)
+    core = SolrCore.getSolrCore();
+    
   Logger log = SolrCore.log;
   Logger parent = log.getParent();
   while(parent != null) {
@@ -38,6 +46,7 @@
       
 %>
 <solr>
+  <core><%=core.getName()%></core>
   <logging>
 <% if (lvl != null) {%>
       <logLevel><%= lvl.toString() %></logLevel>

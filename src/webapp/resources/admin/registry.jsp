@@ -25,6 +25,7 @@
 <%@include file="_info.jsp" %>
 
 <solr>
+  <core><%= core.getName()%></core>
   <schema><%= collectionName %></schema>
   <host><%= hostname %></host>
   <now><%= new Date().toString() %></now>

@@ -378,7 +378,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return finfo;
   }
   
-  private static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException
+  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException
   {
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();

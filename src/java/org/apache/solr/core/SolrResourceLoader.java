@@ -73,20 +73,19 @@ public class SolrResourceLoader implements ResourceLoader
    * found in the "lib/" directory in the "Solr Home" directory.
    * <p>
    */
-  public SolrResourceLoader( String instanceDir, ClassLoader loader )
+  public SolrResourceLoader( String instanceDir, ClassLoader parent )
   {
-    if( instanceDir == null ) {
+    if( instanceDir == null )
       instanceDir = SolrResourceLoader.locateInstanceDir();
-    }
     this.instanceDir = normalizeDir(instanceDir);
     log.info("Solr home set to '" + this.instanceDir + "'");
+    this.classLoader = createClassLoader(new File(this.instanceDir + "lib/"), parent);
+  }
     
+  static ClassLoader createClassLoader(File f, ClassLoader loader) {
     if( loader == null ) {
-      // NB5.5/win32/1.5_10: need to go thru local var or classLoader is not set!
       loader = Thread.currentThread().getContextClassLoader();
     }
-    
-    File f = new File(instanceDir + "lib/");
     if (f.canRead() && f.isDirectory()) {
       File[] jarFiles = f.listFiles();
       URL[] jars = new URL[jarFiles.length];
@@ -95,12 +94,13 @@ public class SolrResourceLoader implements ResourceLoader
           jars[j] = jarFiles[j].toURI().toURL();
           log.info("Adding '" + jars[j].toString() + "' to Solr classloader");
         }
-        loader = URLClassLoader.newInstance(jars, loader);
+        return URLClassLoader.newInstance(jars, loader);
       } catch (MalformedURLException e) {
         SolrException.log(log,"Can't construct solr lib class loader", e);
       }
     }
-    this.classLoader = loader;
+    log.info("Reusing parent classloader");
+    return loader;
   }
 
   public SolrResourceLoader( String instanceDir )
@@ -126,7 +126,7 @@ public class SolrResourceLoader implements ResourceLoader
     try {
       File f = new File(resource);
       if (!f.isAbsolute()) {
-        // try $CWD/solrconf/
+        // try $CWD/conf/
         f = new File(getConfigDir() + resource);
       }
       if (f.isFile() && f.canRead()) {
@@ -262,12 +262,12 @@ public class SolrResourceLoader implements ResourceLoader
     // Try JNDI
     try {
       Context c = new InitialContext();
-      home = (String)c.lookup("java:comp/env/solr/home");
+      home = (String)c.lookup("java:comp/env/"+project+"/home");
       log.info("Using JNDI solr.home: "+home );
     } catch (NoInitialContextException e) {
-      log.info("JNDI not configured for Solr (NoInitialContextEx)");
+      log.info("JNDI not configured for "+project+" (NoInitialContextEx)");
     } catch (NamingException e) {
-      log.info("No /solr/home in JNDI");
+      log.info("No /"+project+"/home in JNDI");
     } catch( RuntimeException ex ) {
       log.warning("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
     } 
@@ -277,14 +277,14 @@ public class SolrResourceLoader implements ResourceLoader
       String prop = project + ".solr.home";
       home = normalizeDir(System.getProperty(prop));
       if( home != null ) {
-        log.info("using system property solr.home: " + home );
+        log.info("using system property "+prop+": " + home );
       }
     }
     
     // if all else fails, try 
     if( home == null ) {
       home = project + '/';
-      log.info("Solr home defaulted to '" + home + "' (could not find system property or JNDI)");
+      log.info(project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
     return normalizeDir( home );
   }

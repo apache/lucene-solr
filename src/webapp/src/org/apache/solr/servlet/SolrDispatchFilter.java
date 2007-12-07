@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -35,8 +36,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.Config;
+import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -49,7 +52,8 @@ public class SolrDispatchFilter implements Filter
 {
   final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
     
-  protected SolrCore core;
+  protected SolrCore singlecore;
+  protected MultiCore multicore;
   protected SolrRequestParsers parsers;
   protected boolean handleSelect = false;
   protected String pathPrefix = null; // strip this from the beginning of a path
@@ -64,10 +68,32 @@ public class SolrDispatchFilter implements Filter
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       
-      log.info("user.dir=" + System.getProperty("user.dir"));
-      core = SolrCore.getSolrCore();
+      // Find a valid solr core
+      SolrCore core = null;
+      multicore = MultiCore.getRegistry();
+      String instanceDir = SolrResourceLoader.locateInstanceDir();
+      File multiconfig = new File( instanceDir, "multicore.xml" );
+      log.info( "looking for multicore.xml: "+multiconfig.getAbsolutePath() );
+      if( multiconfig.exists() ) {
+        multicore.load( instanceDir, multiconfig );
+      }
+      if( multicore.isEnabled() ) {
+        core = multicore.getDefaultCore();
+        if( core == null ) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+              "Multicore configuration does not include a default" );
+        }
+        singlecore = null;
+      }
+      else {
+        singlecore = new SolrCore( null, null, new SolrConfig(), null );
+        core = singlecore;
+      }
       
-      // Read the configuration
+      log.info("user.dir=" + System.getProperty("user.dir"));
+      
+      // Read global configuration
+      // Only the first registerd core configures the following attributes 
       Config solrConfig = core.getSolrConfig();
 
       long uploadLimitKB = solrConfig.getInt( 
@@ -120,7 +146,10 @@ public class SolrDispatchFilter implements Filter
   }
 
   public void destroy() {
-    core.close();
+    multicore.shutdown();
+    if( singlecore != null ) {
+      singlecore.close();
+    }
   }
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException 
@@ -149,6 +178,32 @@ public class SolrDispatchFilter implements Filter
           path = path.substring( 0, idx );
         }
         
+        // By default use the single core.  If multicore is enabled, look for one.
+        SolrCore core = singlecore;
+        if( core == null ) {
+          // try to get the corename as a request parameter first
+          String corename = request.getParameter("core");
+          if( corename == null && path.startsWith( "/@" ) ) { // multicore
+            idx = path.indexOf( '/', 2 );
+            if( idx < 1 ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
+                  "MultiCore path must contain a '/'.  For example: /@corename/handlerpath" );
+            }
+            corename = path.substring( 2, idx );
+            path = path.substring( idx );
+          }
+          if (corename != null) {
+            core = multicore.getCore( corename );
+            if( core == null ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
+                "Can not find core: '"+corename+"'" );
+            }
+          }
+          else {
+            core = multicore.getDefaultCore();
+          }
+        }
+        
         SolrRequestHandler handler = null;
         if( path.length() > 1 ) { // don't match "" or "/" as valid path
           handler = core.getRequestHandler( path );
@@ -166,6 +221,12 @@ public class SolrDispatchFilter implements Filter
             }
           }
         }
+
+        // Perhaps this is a muli-core admin page?
+        if( handler == null && path.equals( multicore.getAdminPath() ) ) {
+          handler = multicore.getMultiCoreHandler();
+        } 
+        
         if( handler != null ) {
           if( solrReq == null ) {
             solrReq = parsers.parse( core, path, req );
@@ -183,6 +244,11 @@ public class SolrDispatchFilter implements Filter
           PrintWriter out = response.getWriter();
           responseWriter.write(out, solrReq, solrRsp);
           return;
+        }
+        // otherwise, let's ensure the core is in the SolrCore request attribute so
+        // the servlet can retrieve it
+        else {
+          req.setAttribute("org.apache.solr.SolrCore", core);
         }
       }
       catch( Throwable ex ) {
@@ -203,7 +269,7 @@ public class SolrDispatchFilter implements Filter
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
     // a custom filter could add more stuff to the request before passing it on.
     // for example: sreq.getContext().put( "HttpServletRequest", req );
-    core.execute( handler, sreq, rsp );
+    sreq.getCore().execute( handler, sreq, rsp );
   }
   
   protected void sendError(HttpServletResponse res, Throwable ex) throws IOException 

@@ -69,26 +69,29 @@ public class SolrConfig extends Config {
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {
-    this( null, DEFAULT_CONF_FILE, null );
+    this( new SolrResourceLoader(null), DEFAULT_CONF_FILE, null );
   }
   /** Creates a configuration instance from a file. */
   public SolrConfig(String file)
   throws ParserConfigurationException, IOException, SAXException {
-     this( null, file, null);
+    this( new SolrResourceLoader(null), file, null);
   }
 
   @Deprecated
   public SolrConfig(String file, InputStream is)
-  throws ParserConfigurationException, IOException, SAXException 
-  {
-    this( null, file, is );
+  throws ParserConfigurationException, IOException, SAXException {
+    this( new SolrResourceLoader(null), file, is );
   }
   
   /** Creates a configuration instance from an input stream. */
   public SolrConfig(String instanceDir, String file, InputStream is)
-  throws ParserConfigurationException, IOException, SAXException 
-  {
-    super(instanceDir, file, is, "/config/");
+  throws ParserConfigurationException, IOException, SAXException {
+    this(new SolrResourceLoader(instanceDir), file, is);
+  }
+  
+  SolrConfig(SolrResourceLoader loader, String file, InputStream is)
+  throws ParserConfigurationException, IOException, SAXException {
+    super(loader, file, is, "/config/");
     this.configFile = file;
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
