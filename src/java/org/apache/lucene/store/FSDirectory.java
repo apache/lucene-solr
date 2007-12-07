@@ -62,14 +62,6 @@ public class FSDirectory extends Directory {
 
   private static boolean disableLocks = false;
 
-  private static boolean DEFAULT_DO_SYNC = false;
-
-  // True if we should call sync() before closing a file.
-  // This improves chances that index will still be
-  // consistent if the machine or OS abruptly crashes.  See
-  // LUCENE-1044.
-  private boolean doSync = DEFAULT_DO_SYNC;
-
   // TODO: should this move up to the Directory base class?  Also: should we
   // make a per-instance (in addition to the static "default") version?
 
@@ -144,34 +136,17 @@ public class FSDirectory extends Directory {
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path)
       throws IOException {
-    return getDirectory(new File(path), null, DEFAULT_DO_SYNC);
+    return getDirectory(new File(path), null);
   }
 
   /** Returns the directory instance for the named location.
    * @param path the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.  If null, the default
-   *        {@link SimpleFSLockFactory} is used.
+   *        locking implementation.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path, LockFactory lockFactory)
       throws IOException {
-    return getDirectory(new File(path), lockFactory, DEFAULT_DO_SYNC);
-  }
-
-  /** Returns the directory instance for the named location.
-   * @param path the path to the directory.
-   * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.  If null, the default
-   *        {@link SimpleFSLockFactory} is used.
-   * @param doSync if true (the default), sync() is called
-   *        on all file descriptors before close().  This
-   *        improves the likelihood that the index will
-   *        remain consistent when the OS or machine crashes
-   *        or the power cord is pulled.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path, LockFactory lockFactory, boolean doSync)
-      throws IOException {
-    return getDirectory(new File(path), lockFactory, doSync);
+    return getDirectory(new File(path), lockFactory);
   }
 
   /** Returns the directory instance for the named location.
@@ -179,32 +154,15 @@ public class FSDirectory extends Directory {
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file)
     throws IOException {
-    return getDirectory(file, null, DEFAULT_DO_SYNC);
+    return getDirectory(file, null);
   }
 
   /** Returns the directory instance for the named location.
    * @param file the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.  If null, the default
-   *        {@link SimpleFSLockFactory} is used.
+   *        locking implementation.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file, LockFactory lockFactory)
-      throws IOException {
-    return getDirectory(file, lockFactory, DEFAULT_DO_SYNC);
-  }
-
-  /** Returns the directory instance for the named location.
-   * @param file the path to the directory.
-   * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.  If null, the default
-   *        {@link SimpleFSLockFactory} is used.
-   * @param doSync if true (the default), sync() is called
-   *        on all file descriptors before close().  This
-   *        improves the likelihood that the index will
-   *        remain consistent when the OS or machine crashes
-   *        or the power cord is pulled.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, LockFactory lockFactory, boolean doSync)
     throws IOException
   {
     file = new File(file.getCanonicalPath());
@@ -225,7 +183,7 @@ public class FSDirectory extends Directory {
         } catch (Exception e) {
           throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
         }
-        dir.init(file, lockFactory, doSync);
+        dir.init(file, lockFactory);
         DIRECTORIES.put(file, dir);
       } else {
         // Catch the case where a Directory is pulled from the cache, but has a
@@ -296,7 +254,7 @@ public class FSDirectory extends Directory {
 
   protected FSDirectory() {};                     // permit subclassing
 
-  private void init(File path, LockFactory lockFactory, boolean doSync) throws IOException {
+  private void init(File path, LockFactory lockFactory) throws IOException {
 
     // Set up lockFactory with cascaded defaults: if an instance was passed in,
     // use that; else if locks are disabled, use NoLockFactory; else if the
@@ -304,7 +262,6 @@ public class FSDirectory extends Directory {
     // instantiate that; else, use SimpleFSLockFactory:
 
     directory = path;
-    this.doSync = doSync;
 
     boolean doClearLockID = false;
 
@@ -475,7 +432,7 @@ public class FSDirectory extends Directory {
     if (file.exists() && !file.delete())          // delete existing, if any
       throw new IOException("Cannot overwrite: " + file);
 
-    return new FSIndexOutput(file, doSync);
+    return new FSIndexOutput(file);
   }
 
   // Inherit javadoc
@@ -631,17 +588,10 @@ public class FSDirectory extends Directory {
     // remember if the file is open, so that we don't try to close it
     // more than once
     private boolean isOpen;
-    private boolean doSync;
 
     public FSIndexOutput(File path) throws IOException {
-      this(path, DEFAULT_DO_SYNC);
-    }
-
-    public FSIndexOutput(File path, boolean doSync) throws IOException {
       file = new RandomAccessFile(path, "rw");
-
       isOpen = true;
-      this.doSync = doSync;
     }
   
     /** output methods: */
@@ -651,14 +601,9 @@ public class FSDirectory extends Directory {
     public void close() throws IOException {
       // only close the file if it has not been closed yet
       if (isOpen) {
-        try {
-          super.close();
-          if (doSync)
-            file.getFD().sync();
-        } finally {
-          file.close();
-          isOpen = false;
-        }
+        super.close();
+        file.close();
+        isOpen = false;
       }
     }
   

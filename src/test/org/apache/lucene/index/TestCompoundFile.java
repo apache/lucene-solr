@@ -62,7 +62,7 @@ public class TestCompoundFile extends LuceneTestCase
        super.setUp();
        File file = new File(System.getProperty("tempDir"), "testIndex");
        _TestUtil.rmDir(file);
-       dir = FSDirectory.getDirectory(file, null, false);
+       dir = FSDirectory.getDirectory(file);
     }
 
 

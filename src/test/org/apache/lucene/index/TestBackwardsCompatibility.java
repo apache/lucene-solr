@@ -152,7 +152,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName, null, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
     IndexSearcher searcher = new IndexSearcher(dir);
     
     Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
@@ -172,7 +172,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName, null, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
 
     // open writer
     IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
@@ -232,7 +232,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName, null, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -280,7 +280,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName, null, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setUseCompoundFile(doCFS);
     
@@ -311,7 +311,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       rmDir(outputDir);
 
       try {
-        Directory dir = FSDirectory.getDirectory(fullDir(outputDir), null, false);
+        Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
 
         boolean autoCommit = 0 == pass;
  
