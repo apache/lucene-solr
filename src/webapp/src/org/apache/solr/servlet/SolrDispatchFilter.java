@@ -182,8 +182,8 @@ public class SolrDispatchFilter implements Filter
         SolrCore core = singlecore;
         if( core == null ) {
           // try to get the corename as a request parameter first
-          String corename = request.getParameter("core");
-          if( corename == null && path.startsWith( "/@" ) ) { // multicore
+          String corename = null;
+          if( path.startsWith( "/@" ) ) { // multicore
             idx = path.indexOf( '/', 2 );
             if( idx < 1 ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
@@ -191,8 +191,7 @@ public class SolrDispatchFilter implements Filter
             }
             corename = path.substring( 2, idx );
             path = path.substring( idx );
-          }
-          if (corename != null) {
+            
             core = multicore.getCore( corename );
             if( core == null ) {
               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
