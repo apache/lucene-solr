@@ -44,6 +44,12 @@ import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.PingRequestHandler;
+import org.apache.solr.handler.component.DebugComponent;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.MoreLikeThisComponent;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
@@ -86,6 +92,7 @@ public final class SolrCore {
   private final long startTime;
   private final RequestHandlers reqHandlers;
   private final SolrHighlighter highlighter;
+  private final Map<String,SearchComponent> searchComponents;
   private final Map<String,UpdateRequestProcessorFactory> updateProcessors;
   private final Map<String,SolrInfoMBean> infoRegistry = new java.util.HashMap<String,SolrInfoMBean>();
   
@@ -309,6 +316,8 @@ public final class SolrCore {
       
       initWriters();
       initQParsers();
+      
+      this.searchComponents = loadSearchComponents( config );
 
       // Processors initialized before the handlers
       updateProcessors = loadUpdateProcessors();
@@ -465,6 +474,37 @@ public final class SolrCore {
     return reqHandlers.register(handlerName,handler);
   }
   
+  /**
+   * Register the default search components
+   */
+  private static Map<String, SearchComponent> loadSearchComponents( SolrConfig config )
+  {
+    Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
+    components.put( QueryComponent.COMPONENT_NAME,        new QueryComponent()        );
+    components.put( FacetComponent.COMPONENT_NAME,        new FacetComponent()        );
+    components.put( MoreLikeThisComponent.COMPONENT_NAME, new MoreLikeThisComponent() );
+    components.put( HighlightComponent.COMPONENT_NAME,    new HighlightComponent()    );
+    components.put( DebugComponent.COMPONENT_NAME,        new DebugComponent()        );
+  
+    String xpath = "searchComponent";
+    NamedListPluginLoader<SearchComponent> loader = new NamedListPluginLoader<SearchComponent>( xpath, components );
+    loader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+  
+    return components;
+  }
+  
+  /**
+   * @return a Search Component registered to a given name.  Throw an exception if the component is undefined
+   */
+  public SearchComponent getSearchComponent( String name )
+  {
+    SearchComponent component = searchComponents.get( name );
+    if( component == null ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Unknown Search Component: "+name );
+    }
+    return component;
+  }
   
   ////////////////////////////////////////////////////////////////////////////////
   // Update Handler

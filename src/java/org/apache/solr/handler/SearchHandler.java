@@ -18,18 +18,25 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.DebugComponent;
+import org.apache.solr.handler.component.FacetComponent;
+import org.apache.solr.handler.component.HighlightComponent;
+import org.apache.solr.handler.component.MoreLikeThisComponent;
+import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -37,47 +44,92 @@ import java.util.logging.Logger;
  *
  * Refer SOLR-281
  *
+ * @since solr 1.3
  */
-public class SearchHandler extends RequestHandlerBase
+public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 {
-  private static final String RESPONSE_BUILDER_CONTEXT_KEY = "ResponseBuilder";
+  static final String RESPONSE_BUILDER_CONTEXT_KEY = "ResponseBuilder";
+  
+  static final String INIT_COMPONENTS = "components";
+  static final String INIT_FISRT_COMPONENTS = "first-components";
+  static final String INIT_LAST_COMPONENTS = "last-components";
   
   protected static Logger log = Logger.getLogger(SearchHandler.class.getName());
   
-  protected Collection<SearchComponent> components;
+  protected List<SearchComponent> components = null;
+  protected NamedList initArgs = null;
   
   @Override
   public void init(NamedList args) {
     super.init( args );
-    initComponents(args);
+    initArgs = args;
   }
-  
-  // TODO: should there be a way to append components from solrconfig w/o having to
-  // know the complete standard list (which may expand over time?)
-  protected void initComponents(NamedList args){
-    if( args != null ) {
-      try {
-        Object declaredComponents = args.get("components");
-        if (declaredComponents != null && declaredComponents instanceof List) {
-          List list = (List) declaredComponents;
-          components = new ArrayList<SearchComponent>(list.size());
-          for(Object c : list){
-            // TODO: an init() with args for components?
-            SearchComponent comp = (SearchComponent) Class.forName((String) c).newInstance();
-            components.add(comp);
-            log.info("Adding  component:"+comp);
-          }
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      } 
+
+  protected List<String> getDefaultComponets()
+  {
+    ArrayList<String> names = new ArrayList<String>(5);
+    names.add( QueryComponent.COMPONENT_NAME );
+    names.add( FacetComponent.COMPONENT_NAME );
+    names.add( MoreLikeThisComponent.COMPONENT_NAME );
+    names.add( HighlightComponent.COMPONENT_NAME );
+    names.add( DebugComponent.COMPONENT_NAME );
+    return names;
+  }
+
+  /**
+   * Initialize the components based on name
+   */
+  @SuppressWarnings("unchecked")
+  public void inform(SolrCore core) 
+  {
+    Object declaredComponents = initArgs.get(INIT_COMPONENTS);
+    List<String> first = (List<String>) initArgs.get(INIT_FISRT_COMPONENTS);
+    List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
+
+    List<String> list = null;
+    if( declaredComponents == null ) {
+      // Use the default component list
+      list = getDefaultComponets();
+      
+      if( first != null ) {
+        List<String> clist = first;
+        clist.addAll( list );
+        list = clist;
+      }
+      
+      if( last != null ) {
+        list.addAll( last );
+      }
+    }
+    else {
+      list = (List<String>)declaredComponents;
+      if( first != null || last != null ) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+            "First/Last components only valid if you do not declare 'components'");
+      }
+    }
+    
+    // Build the component list
+    components = new ArrayList<SearchComponent>( list.size() );
+    for(String c : list){
+      SearchComponent comp = core.getSearchComponent( c );
+      components.add(comp);
+      log.info("Adding  component:"+comp);
     }
   }
 
+  public List<SearchComponent> getComponents() {
+    return components;
+  }
+  
   public static ResponseBuilder getResponseBuilder(SolrQueryRequest req) 
   {
     return (ResponseBuilder) req.getContext().get( RESPONSE_BUILDER_CONTEXT_KEY );
   }
+  
+  //---------------------------------------------------------------------------------------
+  // SolrRequestHandler
+  //---------------------------------------------------------------------------------------
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException, InstantiationException, IllegalAccessException 
@@ -85,8 +137,13 @@ public class SearchHandler extends RequestHandlerBase
     ResponseBuilder builder = new ResponseBuilder();
     req.getContext().put( RESPONSE_BUILDER_CONTEXT_KEY, builder );
     
-    // The semantics of debugging vs not debugging are different enough that 
-    // it makes sense to have two control loops
+    if( components == null ) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "SearchHandler not initialized properly.  No components registered." );
+    }
+    
+    // The semantics of debugging vs not debugging are distinct enough 
+    // to justify two control loops
     if( !req.getParams().getBool( CommonParams.DEBUG_QUERY, false ) ) {
       // Prepare
       for( SearchComponent c : components ) {
@@ -122,15 +179,14 @@ public class SearchHandler extends RequestHandlerBase
       timer.stop();
       
       // add the timing info
-      if( builder.getDebugInfo() == null ) {
-        builder.setDebugInfo( new SimpleOrderedMap<Object>() );
-      }
-      builder.getDebugInfo().add( "timing", timer.asNamedList() );
+      builder.addDebugInfo( "timing", timer.asNamedList() );
     }
   }
 
-  //////////////////////// SolrInfoMBeans methods //////////////////////
-
+  //---------------------------------------------------------------------------------------
+  // SolrInfoMBeans
+  //---------------------------------------------------------------------------------------
+  
   @Override
   public String getDescription() {
     StringBuilder sb = new StringBuilder();

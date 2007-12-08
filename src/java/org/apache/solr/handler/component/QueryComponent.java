@@ -40,6 +40,8 @@ import java.util.List;
  */
 public class QueryComponent extends SearchComponent
 {
+  public static final String COMPONENT_NAME = "query";
+  
   @Override
   public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException 
   {

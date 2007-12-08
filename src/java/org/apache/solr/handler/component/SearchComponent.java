@@ -26,6 +26,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
  * TODO!
@@ -33,10 +34,17 @@ import org.apache.solr.request.SolrQueryResponse;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class SearchComponent implements SolrInfoMBean
+public abstract class SearchComponent implements SolrInfoMBean, NamedListInitializedPlugin
 {
   public abstract void prepare( SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException, ParseException;
   public abstract void process( SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException;
+
+  //////////////////////// NamedListInitializedPlugin methods //////////////////////
+  
+  public void init( NamedList args )
+  {
+    // By default do nothing
+  }
   
   //////////////////////// SolrInfoMBeans methods //////////////////////
 

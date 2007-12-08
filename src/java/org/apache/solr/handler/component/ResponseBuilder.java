@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SortSpec;
@@ -50,7 +51,24 @@ public class ResponseBuilder
   private RTimer timer = null;
   
   private Query highlightQuery = null;
+  
 
+  //-------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
+  
+  /**
+   * Utility function to add debugging info.  This will make sure a valid 
+   * debugInfo exists before adding to it.
+   */
+  public void addDebugInfo( String name, Object val )
+  {
+    if( debugInfo == null ) {
+      debugInfo = new SimpleOrderedMap<Object>();
+    }
+    debugInfo.add( name, val );
+  }
+
+  //-------------------------------------------------------------------------
   //-------------------------------------------------------------------------
   
   public boolean isDebug() {

@@ -24,8 +24,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -40,32 +40,44 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class DebugComponent extends SearchComponent
 {
+  public static final String COMPONENT_NAME = "debug";
+  
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException 
+  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void process(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     ResponseBuilder builder = SearchHandler.getResponseBuilder( req );
     if( builder.isDebug() ) {
-      builder.setDebugInfo( SolrPluginUtils.doStandardDebug( req, 
-          builder.getQueryString(), builder.getQuery(), builder.getResults().docList) );
-
+      NamedList stdinfo = SolrPluginUtils.doStandardDebug( req, 
+          builder.getQueryString(), builder.getQuery(), builder.getResults().docList);
+      
+      NamedList info = builder.getDebugInfo();
+      if( info == null ) {
+        builder.setDebugInfo( stdinfo );
+        info = stdinfo;
+      }
+      else {
+        info.addAll( stdinfo );
+      }
+      
       if (builder.getQparser() != null) {
         builder.getQparser().addDebugInfo(builder.getDebugInfo());
       }
 
       if (null != builder.getDebugInfo() ) {
         if (null != builder.getFilters() ) {
-          builder.getDebugInfo().add("filter_queries",req.getParams().getParams(FQ));
+          info.add("filter_queries",req.getParams().getParams(FQ));
           List<String> fqs = new ArrayList<String>(builder.getFilters().size());
           for (Query fq : builder.getFilters()) {
             fqs.add(QueryParsing.toString(fq, req.getSchema()));
           }
-          builder.getDebugInfo().add("parsed_filter_queries",fqs);
+          info.add("parsed_filter_queries",fqs);
         }
         
         // Add this directly here?

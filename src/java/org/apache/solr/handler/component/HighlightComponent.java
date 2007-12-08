@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -36,9 +35,13 @@ import java.net.URL;
  * @version $Id$
  * @since solr 1.3
  */
-public class HighlightComponent extends SearchComponent {
+public class HighlightComponent extends SearchComponent 
+{
+  public static final String COMPONENT_NAME = "highlight";
+  
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException {
+  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) 
+  {
     
   }
   

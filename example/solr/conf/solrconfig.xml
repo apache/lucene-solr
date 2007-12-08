@@ -288,19 +288,6 @@
   </requestHandler>
 
 
-  <requestHandler name="/search" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="components">
-      <str>org.apache.solr.handler.component.QueryComponent</str>
-      <str>org.apache.solr.handler.component.FacetComponent</str>
-      <str>org.apache.solr.handler.component.MoreLikeThisComponent</str>
-      <str>org.apache.solr.handler.component.HighlightComponent</str>
-      <str>org.apache.solr.handler.component.DebugComponent</str>
-    </arr>
-  </requestHandler>
-
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
        for simple user-entered phrases. 
        see http://wiki.apache.org/solr/DisMaxRequestHandler
@@ -438,6 +425,52 @@
        <int name="mlt.mindf">1</int>
      </lst>
    </requestHandler>
+  
+  
+  <!--
+   
+   Search components are registered to SolrCore and used by Search Handlers
+   
+   By default, the following components are avaliable:
+    
+   <searchComponent name="query"     class="org.apache.solr.handler.component.QueryComponent" />
+   <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
+   <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
+   <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
+   <searchComponent name="debug"     class="org.apache.solr.handler.component.DebugComponent" />
+  
+   If you register a searchComponent to one of the standard names, that will be used instead.
+  
+   -->
+ 
+  <requestHandler name="/search" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <!--
+    By default, this will register the following components:
+    
+    <arr name="components">
+      <str>query</str>
+      <str>facet</str>
+      <str>mlt</str>
+      <str>highlight</str>
+      <str>debug</str>
+    </arr>
+    
+    To insert handlers before or after the 'standard' components, use:
+    
+    <arr name="first-components">
+      <str>first</str>
+    </arr>
+    
+    <arr name="last-components">
+      <str>last</str>
+    </arr>
+    
+    -->
+  </requestHandler>
+  
   
   <!-- Update request handler.  
   

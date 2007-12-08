@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -39,8 +38,10 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class MoreLikeThisComponent extends SearchComponent
 {
+  public static final String COMPONENT_NAME = "mlt";
+  
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException 
+  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     
   }

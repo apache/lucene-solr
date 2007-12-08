@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.SearchHandler;
@@ -36,8 +35,10 @@ import org.apache.solr.request.SolrQueryResponse;
  */
 public class FacetComponent extends SearchComponent
 {
+  public static final String COMPONENT_NAME = "facet";
+  
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, ParseException 
+  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     SolrParams params = req.getParams();
     if (params.getBool(FacetParams.FACET,false)) {

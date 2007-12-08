@@ -38,6 +38,11 @@ public class SortSpec
     this.offset=offset;
     this.num=num;
   }
+  
+  public void setSort( Sort s )
+  {
+    sort = s;
+  }
 
   /**
    * Gets the Lucene Sort object, or null for the default sort
