@@ -55,6 +55,8 @@ import java.util.logging.Logger;
  * @version $Id$
  */
 public final class IndexSchema {
+  public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
+
   final static Logger log = Logger.getLogger(IndexSchema.class.getName());
   private final SolrConfig solrConfig;
   private final String schemaFile;
@@ -67,10 +69,16 @@ public final class IndexSchema {
    *
    * @see Config#openResource
    */
+  @Deprecated
   public IndexSchema(SolrConfig solrConfig, String schemaFile) {
+    this(solrConfig, solrConfig.getResourceLoader().openResource(schemaFile));
+  }
+  
+  public IndexSchema(SolrConfig solrConfig, InputStream is) {
     this.solrConfig = solrConfig;
-    this.schemaFile=schemaFile;
-    readSchema(solrConfig);
+    this.schemaFile = DEFAULT_SCHEMA_FILE;
+    
+    readSchema(is);
     
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     loader.inform( loader );
@@ -79,11 +87,13 @@ public final class IndexSchema {
   public SolrConfig getSolrConfig() {
     return solrConfig;
   }
+  
   /**
    * Direct access to the InputStream for the schemaFile used by this instance.
    *
    * @see Config#openResource
    */
+  @Deprecated
   public InputStream getInputStream() {
     return solrConfig.getResourceLoader().openResource(schemaFile);
   }
@@ -295,8 +305,7 @@ public final class IndexSchema {
     }
   }
 
-
-  private void readSchema(final SolrConfig solrConfig) {
+  private void readSchema(InputStream is) {
     log.info("Reading Solr Schema");
 
     try {
@@ -305,7 +314,7 @@ public final class IndexSchema {
       Document document = builder.parse(getInputStream());
       ***/
 
-      Config schemaConf = new Config("schema", getInputStream(), "/schema/");
+      Config schemaConf = new Config("schema", is, "/schema/");
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
 
