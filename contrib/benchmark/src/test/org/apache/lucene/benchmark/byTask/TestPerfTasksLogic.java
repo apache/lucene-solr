@@ -347,7 +347,7 @@ public class TestPerfTasksLogic extends TestCase {
   /** use reuters and the exhaust mechanism, but to be faster, add 20 docs only... */
   public static class Reuters20DocMaker extends ReutersDocMaker {
     private int nDocs=0;
-    protected DocData getNextDocData() throws Exception {
+    protected synchronized DocData getNextDocData() throws Exception {
       if (nDocs>=20 && !forever) {
         throw new NoMoreDataException();
       }
