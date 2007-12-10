@@ -81,32 +81,6 @@ public class BoostingTermQuery extends SpanTermQuery{
 
       }
 
-      /**
-       * Go to the next document
-       * 
-       */
-      /*public boolean next() throws IOException {
-
-        boolean result = super.next();
-        //set the payload.  super.next() properly increments the term positions
-        if (result) {
-          //Load the payloads for all 
-          processPayload();
-        }
-
-        return result;
-      }
-
-      public boolean skipTo(int target) throws IOException {
-        boolean result = super.skipTo(target);
-
-        if (result) {
-          processPayload();
-        }
-
-        return result;
-      }*/
-
       protected boolean setFreqCurrentDoc() throws IOException {
         if (!more) {
           return false;
