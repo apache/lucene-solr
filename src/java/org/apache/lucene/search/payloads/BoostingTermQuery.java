@@ -32,12 +32,12 @@ import java.io.IOException;
  * that it factors in the value of the payload located at each of the positions where the
  * {@link org.apache.lucene.index.Term} occurs.
  * <p>
- * In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(byte[],int,int)}
+ * In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
  * which returns 1 by default.
  * <p>
  * Payload scores are averaged across term occurrences in the document.  
  * 
- * @see org.apache.lucene.search.Similarity#scorePayload(byte[], int, int)
+ * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
  */
 public class BoostingTermQuery extends SpanTermQuery{
 
