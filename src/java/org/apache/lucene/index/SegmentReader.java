@@ -937,12 +937,12 @@ class SegmentReader extends DirectoryIndexReader {
     ensureOpen();
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null)
-      throw new IOException("field does not contain term vectors");
+      return;
 
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null)
     {
-      throw new IOException("Cannot open a reader for the term vectors");
+      return;
     }
 
 
