@@ -343,6 +343,20 @@ public class BooleanQuery extends Query {
   public static boolean getAllowDocsOutOfOrder() {
     return allowDocsOutOfOrder;
   }  
+  
+  /**
+   * @deprecated Use {@link #setAllowDocsOutOfOrder(boolean)} instead. 
+   */
+  public static void setUseScorer14(boolean use14) {
+	setAllowDocsOutOfOrder(use14);
+  }
+  
+  /**
+   * @deprecated Use {@link #getAllowDocsOutOfOrder()} instead.
+   */
+  public static boolean getUseScorer14() {
+	return getAllowDocsOutOfOrder();
+  }
 
   protected Weight createWeight(Searcher searcher) throws IOException {
     return new BooleanWeight(searcher);
