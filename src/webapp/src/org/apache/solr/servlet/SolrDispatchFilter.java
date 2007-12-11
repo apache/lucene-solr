@@ -247,6 +247,18 @@ public class SolrDispatchFilter implements Filter
         // otherwise, let's ensure the core is in the SolrCore request attribute so
         // the servlet can retrieve it
         else {
+          // TEMP -- to support /admin multicore grab the core from the request
+          // TODO -- for muticore /admin support, strip the corename from the path
+          // and forward to the /admin jsp file
+          //  req.getRequestDispatcher( path ).forward( request, response );
+          String corename = request.getParameter("core");
+          if( corename != null ) {
+            core = multicore.getCore( corename );
+            if( core == null ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
+                "Can not find core: '"+corename+"'" );
+            }
+          }
           req.setAttribute("org.apache.solr.SolrCore", core);
         }
       }
