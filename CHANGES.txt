@@ -79,6 +79,9 @@ API Changes
 10. LUCENE-1064: Changed TopDocs constructor to be public. 
      (Shai Erera via Michael Busch)
 
+11. LUCENE-1079: DocValues cleanup: constructor now has no params,
+    and getInnerArray() now throws UnsupportedOperationException (Doron Cohen)
+
     
 Bug fixes
 
@@ -182,7 +185,6 @@ Bug fixes
 25. LUCENE-1042: Remove throwing of IOException in getTermFreqVector(int, String, TermVectorMapper) to be consistent
     with other getTermFreqVector calls.  Also removed the throwing of the other IOException in that method to be consistent.  (Karl Wettin via Grant Ingersoll)
     
-26. LUCENE-1079: DocValues cleanup: constructor & getInnerArray() (Doron Cohen)
     
 New features
 
