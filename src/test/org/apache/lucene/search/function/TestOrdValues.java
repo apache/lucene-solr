@@ -149,6 +149,8 @@ public class TestOrdValues extends FunctionTestSetup {
     IndexSearcher s = new IndexSearcher(dir);
     Object innerArray = null;
 
+    boolean warned = false; // print warning once
+    
     for (int i=0; i<10; i++) {
       ValueSource vs;
       if (inOrder) {
@@ -158,12 +160,19 @@ public class TestOrdValues extends FunctionTestSetup {
       }
       ValueSourceQuery q = new ValueSourceQuery(vs);
       Hits h = s.search(q);
-      assertEquals("All docs should be matched!",N_DOCS,h.length());
-      if (i==0) {
-        innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
-      } else {
-        log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-        assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+      try {
+        assertEquals("All docs should be matched!",N_DOCS,h.length());
+        if (i==0) {
+          innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
+        } else {
+          log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+          assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+        }
+      } catch (UnsupportedOperationException e) {
+        if (!warned) {
+          System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
+          warned = true;
+        }
       }
     }
     
@@ -182,8 +191,15 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q);
     assertEquals("All docs should be matched!",N_DOCS,h.length());
-    log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    assertNotSame("different values shuold be loaded for a different field!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    try {
+      log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+      assertNotSame("different values shuold be loaded for a different field!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    } catch (UnsupportedOperationException e) {
+      if (!warned) {
+        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
+        warned = true;
+      }
+    }
 
     // verify new values are reloaded (not reused) for a new reader
     s = new IndexSearcher(dir);
@@ -195,8 +211,19 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q);
     assertEquals("All docs should be matched!",N_DOCS,h.length());
-    log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    try {
+      log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+      assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    } catch (UnsupportedOperationException e) {
+      if (!warned) {
+        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
+        warned = true;
+      }
+    }
+  }
+
+  private String testName() {
+    return getClass().getName()+"."+getName();
   }
 
 }

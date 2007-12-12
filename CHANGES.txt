@@ -182,6 +182,8 @@ Bug fixes
 25. LUCENE-1042: Remove throwing of IOException in getTermFreqVector(int, String, TermVectorMapper) to be consistent
     with other getTermFreqVector calls.  Also removed the throwing of the other IOException in that method to be consistent.  (Karl Wettin via Grant Ingersoll)
     
+26. LUCENE-1079: DocValues cleanup: constructor & getInnerArray() (Doron Cohen)
+    
 New features
 
  1. LUCENE-906: Elision filter for French.

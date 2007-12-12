@@ -65,7 +65,7 @@ public class ByteFieldSource extends FieldCacheSource {
     final byte[] arr = (parser==null) ?  
       cache.getBytes(reader, field) : 
       cache.getBytes(reader, field, parser);
-    return new DocValues(reader.maxDoc()) {
+    return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) { 
         return (float) arr[doc]; 

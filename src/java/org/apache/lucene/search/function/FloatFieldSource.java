@@ -67,7 +67,7 @@ public class FloatFieldSource extends FieldCacheSource {
     final float[] arr = (parser==null) ?
       cache.getFloats(reader, field) :
       cache.getFloats(reader, field, parser);
-    return new DocValues(reader.maxDoc()) {
+    return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) {
         return arr[doc];      

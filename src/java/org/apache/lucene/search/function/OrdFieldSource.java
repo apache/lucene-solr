@@ -66,7 +66,7 @@ public class OrdFieldSource extends ValueSource {
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   public DocValues getValues(IndexReader reader) throws IOException {
     final int[] arr = FieldCache.DEFAULT.getStringIndex(reader, field).order;
-    return new DocValues(arr.length) {
+    return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) {
         return (float)arr[doc];

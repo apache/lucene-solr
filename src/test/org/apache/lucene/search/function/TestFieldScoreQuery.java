@@ -17,6 +17,7 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 
+import java.io.ObjectInputStream.GetField;
 import java.util.HashMap;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -177,17 +178,25 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     IndexSearcher s = new IndexSearcher(dir);
     Object innerArray = null;
 
+    boolean warned = false; // print warning once.
     for (int i=0; i<10; i++) {
       FieldScoreQuery q = new FieldScoreQuery(field,tp);
       Hits h = s.search(q);
       assertEquals("All docs should be matched!",N_DOCS,h.length());
-      if (i==0) {
-        innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
-        log(i+".  compare: "+innerArray.getClass()+" to "+expectedArrayTypes.get(tp).getClass());
-        assertEquals("field values should be cached in the correct array type!", innerArray.getClass(),expectedArrayTypes.get(tp).getClass());
-      } else {
-        log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-        assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+      try {
+        if (i==0) {
+          innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
+          log(i+".  compare: "+innerArray.getClass()+" to "+expectedArrayTypes.get(tp).getClass());
+          assertEquals("field values should be cached in the correct array type!", innerArray.getClass(),expectedArrayTypes.get(tp).getClass());
+        } else {
+          log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+          assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+        }
+      } catch (UnsupportedOperationException e) {
+        if (!warned) {
+          System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
+          warned = true;
+        }
       }
     }
     
@@ -196,8 +205,19 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
     Hits h = s.search(q);
     assertEquals("All docs should be matched!",N_DOCS,h.length());
-    log("compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    try {
+      log("compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+      assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+    } catch (UnsupportedOperationException e) {
+      if (!warned) {
+        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
+        warned = true;
+      }
+    }
+  }
+
+  private String testName() {
+    return getClass().getName()+"."+getName();
   }
 
 }

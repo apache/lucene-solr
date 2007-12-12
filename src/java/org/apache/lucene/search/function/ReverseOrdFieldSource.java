@@ -71,7 +71,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     final int arr[] = sindex.order;
     final int end = sindex.lookup.length;
 
-    return new DocValues(arr.length) {
+    return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) {
         return (float)(end - arr[doc]);

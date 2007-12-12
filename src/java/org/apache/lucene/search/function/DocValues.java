@@ -42,20 +42,6 @@ public abstract class DocValues {
    *   want the Query carrying around big objects
    */
 
-  private int nVals;
-  
-  /**
-   * Constructor with input number of values(docs).
-   * @param nVals
-   */
-  public DocValues (int nVals) {
-    this.nVals = nVals;
-  }
-  
-  // prevent using this constructor
-  private DocValues () {
-    
-  }
   /**
    * Return doc value as a float. 
    * <P>Mandatory: every DocValues implementation must implement at least this method. 
@@ -119,10 +105,12 @@ public abstract class DocValues {
    *   <li>indeed cached/reused.</li>
    *   <li>stored in the expected size/type (byte/short/int/float).</li>
    * </ol>
-   * Note: Tested implementations of DocValues must override this method for the test to pass!
+   * Note: implementations of DocValues must override this method for 
+   * these test elements to be tested, Otherwise the test would not fail, just 
+   * print a warning.
    */
   Object getInnerArray() {
-    return new Object[0];
+    throw new UnsupportedOperationException("this optional method is for test purposes only");
   }
 
   // --- some simple statistics on values
@@ -138,13 +126,19 @@ public abstract class DocValues {
     minVal = Float.MAX_VALUE;
     maxVal = 0;
     float sum = 0;
-    for (int i=0; i<nVals; i++) {
-      float val = floatVal(i); 
+    int n = 0;
+    while (true) {
+      float val;
+      try {
+        val = floatVal(n);
+      } catch (ArrayIndexOutOfBoundsException e) {
+        break;
+      }
       sum += val;
       minVal = Math.min(minVal,val);
       maxVal = Math.max(maxVal,val);
     }
-    avgVal = sum / nVals;
+    avgVal = sum / n;
     computed = true;
   }
   /**

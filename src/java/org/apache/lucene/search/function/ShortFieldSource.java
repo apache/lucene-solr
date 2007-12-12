@@ -65,10 +65,10 @@ public class ShortFieldSource extends FieldCacheSource {
     final short[] arr = (parser==null) ?  
       cache.getShorts(reader, field) : 
       cache.getShorts(reader, field, parser);
-    return new DocValues(reader.maxDoc()) {
+    return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) { 
-        return (float) arr[doc]; 
+        return (float) arr[doc];
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#intVal(int) */
       public  int intVal(int doc) { 
