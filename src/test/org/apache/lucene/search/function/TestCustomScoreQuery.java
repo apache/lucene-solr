@@ -80,13 +80,78 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     doTestCustomScore(FLOAT_FIELD,FieldScoreQuery.Type.FLOAT,6.0);
   }
 
+  // must have static class otherwise serialization tests fail
+  private static class CustomAddQuery extends CustomScoreQuery {
+    // constructor
+    CustomAddQuery (Query q, ValueSourceQuery qValSrc) {
+      super(q,qValSrc);
+    }
+    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
+    public String name() {
+      return "customAdd";
+    }
+    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
+    public float customScore(int doc, float subQueryScore, float valSrcScore) {
+      return subQueryScore + valSrcScore;
+    }
+    /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
+    public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
+      float valSrcScore = valSrcExpl==null ? 0 : valSrcExpl.getValue();
+      Explanation exp = new Explanation( valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
+      exp.addDetail(subQueryExpl);
+      if (valSrcExpl != null) {
+        exp.addDetail(valSrcExpl);
+      }
+      return exp;      
+    } 
+  }
+  
+  // must have static class otherwise serialization tests fail
+  private static class CustomMulAddQuery extends CustomScoreQuery {
+    // constructor
+    CustomMulAddQuery(Query q, ValueSourceQuery qValSrc1, ValueSourceQuery qValSrc2) {
+      super(q,new ValueSourceQuery[]{qValSrc1,qValSrc2});
+    }
+    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
+    public String name() {
+      return "customMulAdd";
+    }
+    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
+    public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
+      if (valSrcScores.length == 0) {
+        return subQueryScore;
+      }
+      if (valSrcScores.length == 1) {
+        return subQueryScore + valSrcScores[0];
+      }
+      return (subQueryScore + valSrcScores[0]) * valSrcScores[1]; // we know there are two
+    } 
+    /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
+    public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
+      if (valSrcExpls.length == 0) {
+        return subQueryExpl;
+      }
+      Explanation exp = new Explanation(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "sum of:");
+      exp.addDetail(subQueryExpl);
+      exp.addDetail(valSrcExpls[0]);
+      if (valSrcExpls.length == 1) {
+        exp.setDescription("CustomMulAdd, sum of:");
+        return exp;
+      }
+      Explanation exp2 = new Explanation(valSrcExpls[1].getValue() * exp.getValue(), "custom score: product of:");
+      exp2.addDetail(valSrcExpls[1]);
+      exp2.addDetail(exp);
+      return exp2;      
+    } 
+  }
+  
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestCustomScore (String field, FieldScoreQuery.Type tp, double dboost) throws CorruptIndexException, Exception {
     float boost = (float) dboost;
     IndexSearcher s = new IndexSearcher(dir);
     FieldScoreQuery qValSrc = new FieldScoreQuery(field,tp); // a query that would score by the field
     QueryParser qp = new QueryParser(TEXT_FIELD,anlzr); 
-    String qtxt = "bleeding person chain knowledge"; // from the doc texts in FunctionQuerySetup.
+    String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
     
     // regular (boolean) query.
     Query q1 = qp.parse(qtxt); 
@@ -104,55 +169,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     log(q3CustomMul);
     
     // custom query, that should add the scores of q1 to that of the field
-    CustomScoreQuery q4CustomAdd = new CustomScoreQuery(q1,qValSrc) {
-      /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
-      public String name() {
-        return "customAdd";
-      }
-      /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
-      public float customScore(int doc, float subQueryScore, float valSrcScore) {
-        return subQueryScore + valSrcScore;
-      }
-      /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
-      public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
-        float valSrcScore = valSrcExpl==null ? 0 : valSrcExpl.getValue();
-        Explanation exp = new Explanation( valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
-        exp.addDetail(subQueryExpl);
-        if (valSrcExpl != null) {
-          exp.addDetail(valSrcExpl);
-        }
-        return exp;      
-      } 
-    };
+    CustomScoreQuery q4CustomAdd = new CustomAddQuery(q1,qValSrc); 
     q4CustomAdd.setStrict(true);
     q4CustomAdd.setBoost(boost);
     log(q4CustomAdd);
 
     // custom query, that multiplies and adds the field score to that of q1
-    CustomScoreQuery q5CustomMulAdd = new CustomScoreQuery(q1,qValSrc) {
-      /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
-      public String name() {
-        return "customMulAdd";
-      }
-      /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
-      public float customScore(int doc, float subQueryScore, float valSrcScore) {
-        return (1 + subQueryScore) * valSrcScore;
-      } 
-      /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
-      public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
-        Explanation exp = new Explanation(1 + subQueryExpl.getValue(), "sum of:");
-        exp.addDetail(subQueryExpl);
-        exp.addDetail(new Explanation(1,"const 1"));
-        if (valSrcExpl == null) {
-          exp.setDescription("CustomMulAdd, sum of:");
-          return exp;
-        }
-        Explanation exp2 = new Explanation(valSrcExpl.getValue() * exp.getValue(), "custom score: product of:");
-        exp2.addDetail(valSrcExpl);
-        exp2.addDetail(exp);
-        return exp2;      
-      } 
-    };
+    CustomScoreQuery q5CustomMulAdd = new CustomMulAddQuery(q1,qValSrc,qValSrc);
     q5CustomMulAdd.setStrict(true);
     q5CustomMulAdd.setBoost(boost);
     log(q5CustomMulAdd);
@@ -216,7 +239,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       
       float score5 = ((Float)h5CustomMulAdd.get(x)).floatValue();
       logResult("score5=", s, q5, doc, score5);
-      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + 1), score5, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, TEST_SCORE_TOLERANCE_DELTA);
     }
   }
 

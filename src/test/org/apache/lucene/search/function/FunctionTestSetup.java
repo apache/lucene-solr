@@ -37,7 +37,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
    * Actual score computation order is slightly different than assumptios
    * this allows for a small amount of variation
    */
-  public static float TEST_SCORE_TOLERANCE_DELTA = 0.00005f;
+  public static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
   
   protected static final boolean DBG = false; // change to true for logging to print
 

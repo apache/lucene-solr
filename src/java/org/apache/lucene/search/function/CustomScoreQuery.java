@@ -31,10 +31,10 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
- * Query that sets document score as a programmatic function of (up to) two (sub) scores.
+ * Query that sets document score as a programmatic function of several (sub) scores.
  * <ol>
  *    <li>the score of its subQuery (any query)</li>
- *    <li>(optional) the score of its ValueSourtceQuery,
+ *    <li>(optional) the score of its ValueSourtceQuery (or queries),
  *        for most simple/convineient use case this query would be a 
  *        {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQuery}</li>
  * </ol>
@@ -48,7 +48,7 @@ import org.apache.lucene.util.ToStringUtils;
 public class CustomScoreQuery extends Query {
 
   private Query subQuery;
-  private ValueSourceQuery valSrcQuery; // optional, can be null
+  private ValueSourceQuery[] valSrcQueries; // never null (empty array if there are no valSrcQueries).
   private boolean strict = false; // if true, valueSource part of query does not take part in weights normalization.  
   
   /**
@@ -56,7 +56,7 @@ public class CustomScoreQuery extends Query {
    * @param subQuery the sub query whose scored is being customed. Must not be null. 
    */
   public CustomScoreQuery(Query subQuery) {
-    this(subQuery,null);
+    this(subQuery, new ValueSourceQuery[0]);
   }
 
   /**
@@ -68,17 +68,31 @@ public class CustomScoreQuery extends Query {
    * This parameter is optional - it can be null.
    */
   public CustomScoreQuery(Query subQuery, ValueSourceQuery valSrcQuery) {
+	  this(subQuery, valSrcQuery!=null ? // don't want an array that contains a single null.. 
+        new ValueSourceQuery[] {valSrcQuery} : new ValueSourceQuery[0]);
+  }
+
+  /**
+   * Create a CustomScoreQuery over input subQuery and a {@link ValueSourceQuery}.
+   * @param subQuery the sub query whose score is being customed. Must not be null.
+   * @param valSrcQueries value source queries whose scores are used in the custom score
+   * computation. For most simple/convineient use case these would be 
+   * {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQueries}.
+   * This parameter is optional - it can be null or even an empty array.
+   */
+  public CustomScoreQuery(Query subQuery, ValueSourceQuery valSrcQueries[]) {
     super();
     this.subQuery = subQuery;
-    this.valSrcQuery = valSrcQuery;
-    if (subQuery == null) throw new IllegalArgumentException("<subqyery> must not be null!");
+    this.valSrcQueries = valSrcQueries!=null?
+        valSrcQueries : new ValueSourceQuery[0];
+    if (subQuery == null) throw new IllegalArgumentException("<subquery> must not be null!");
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#rewrite(org.apache.lucene.index.IndexReader) */
   public Query rewrite(IndexReader reader) throws IOException {
     subQuery = subQuery.rewrite(reader);
-    if (valSrcQuery!=null) {
-      valSrcQuery = (ValueSourceQuery) valSrcQuery.rewrite(reader);
+    for(int i = 0; i < valSrcQueries.length; i++) {
+      valSrcQueries[i] = (ValueSourceQuery) valSrcQueries[i].rewrite(reader);
     }
     return this;
   }
@@ -86,8 +100,8 @@ public class CustomScoreQuery extends Query {
   /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
   public void extractTerms(Set terms) {
     subQuery.extractTerms(terms);
-    if (valSrcQuery!=null) {
-      valSrcQuery.extractTerms(terms);
+    for(int i = 0; i < valSrcQueries.length; i++) {
+      valSrcQueries[i].extractTerms(terms);
     }
   }
 
@@ -95,8 +109,9 @@ public class CustomScoreQuery extends Query {
   public Object clone() {
     CustomScoreQuery clone = (CustomScoreQuery)super.clone();
     clone.subQuery = (Query) subQuery.clone();
-    if (valSrcQuery!=null) {
-      clone.valSrcQuery = (ValueSourceQuery) valSrcQuery.clone();
+    clone.valSrcQueries = new ValueSourceQuery[valSrcQueries.length];
+    for(int i = 0; i < valSrcQueries.length; i++) {
+      clone.valSrcQueries[i] = (ValueSourceQuery) valSrcQueries[i].clone();
     }
     return clone;
   }
@@ -105,8 +120,8 @@ public class CustomScoreQuery extends Query {
   public String toString(String field) {
     StringBuffer sb = new StringBuffer(name()).append("(");
     sb.append(subQuery.toString(field));
-    if (valSrcQuery!=null) {
-      sb.append(", ").append(valSrcQuery.toString(field));
+    for(int i = 0; i < valSrcQueries.length; i++) {
+      sb.append(", ").append(valSrcQueries[i].toString(field));
     }
     sb.append(")");
     sb.append(strict?" STRICT" : "");
@@ -119,26 +134,78 @@ public class CustomScoreQuery extends Query {
       return false;
     }
     CustomScoreQuery other = (CustomScoreQuery)o;
-    return this.getBoost() == other.getBoost()
-           && this.subQuery.equals(other.subQuery)
-           && (this.valSrcQuery==null ? other.valSrcQuery==null 
-               : this.valSrcQuery.equals(other.valSrcQuery));
+    if (this.getBoost() != other.getBoost() ||
+        !this.subQuery.equals(other.subQuery)||
+        this.valSrcQueries.length != other.valSrcQueries.length) {
+      return false;
+    }
+    for (int i=0; i<valSrcQueries.length; i++) { //TODO simplify with Arrays.deepEquals() once moving to Java 1.5
+      if (!valSrcQueries[i].equals(other.valSrcQueries[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** Returns a hash code value for this object. */
   public int hashCode() {
-    int valSrcHash = valSrcQuery==null ? 0 : valSrcQuery.hashCode();
+    int valSrcHash = 0;
+    for (int i=0; i<valSrcQueries.length; i++) { //TODO simplify with Arrays.deepHashcode() once moving to Java 1.5
+      valSrcHash += valSrcQueries[i].hashCode();
+    }
     return (getClass().hashCode() + subQuery.hashCode() + valSrcHash) ^ Float.floatToIntBits(getBoost());
   }  
   
+  /**
+   * Compute a custom score by the subQuery score and a number of 
+   * ValueSourceQuery scores.
+   * <p> 
+   * Subclasses can override this method to modify the custom score.  
+   * <p>
+   * If your custom scoring is different than the default herein you 
+   * should override at least one of the two customScore() methods.
+   * If the number of ValueSourceQueries is always &lt; 2 it is 
+   * sufficient to override the other 
+   * {@link #customScore(int, float, float) costomScore()} 
+   * method, which is simpler. 
+   * <p>
+   * The default computation herein is:
+   * <pre>
+   *     ModifiedScore = valSrcScore * subQueryScore[0] * subQueryScore[1] * ...
+   * </pre>
+   * 
+   * @param doc id of scored doc. 
+   * @param subQueryScore score of that doc by the subQuery.
+   * @param valSrcScores score of that doc by the ValueSourceQuery.
+   * @return custom score.
+   */
+  public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
+	  if(valSrcScores.length == 1) {
+	    return customScore(doc, subQueryScore, valSrcScores[0]);
+	  }
+    if (valSrcScores.length == 0) {
+	    return customScore(doc, subQueryScore, 1);
+	  }
+    float score = subQueryScore;
+    for(int i = 0; i < valSrcScores.length; i++) {
+      score *= valSrcScores[i];
+    }
+    return score;
+  }
+
   /**
    * Compute a custom score by the subQuery score and the ValueSourceQuery score.
    * <p> 
    * Subclasses can override this method to modify the custom score.
    * <p>
+   * If your custom scoring is different than the default herein you 
+   * should override at least one of the two customScore() methods.
+   * If the number of ValueSourceQueries is always &lt; 2 it is 
+   * sufficient to override this costomScore() method, which is simpler. 
+   * <p>
    * The default computation herein is:
    * <pre>
-   *     ModifiedScore = valSrcScore * subQueryScore.
+   *     ModifiedScore = valSrcScore * subQueryScore
    * </pre>
    * 
    * @param doc id of scored doc. 
@@ -147,41 +214,76 @@ public class CustomScoreQuery extends Query {
    * @return custom score.
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) {
-    return valSrcScore * subQueryScore;
+		return subQueryScore * valSrcScore;
+	}
+
+  /**
+   * Explain the custom score.
+   * Whenever overriding {@link #customScore(int, float, float[])}, 
+   * this method should also be overridden to provide the correct explanation
+   * for the part of the custom scoring.
+   *  
+   * @param doc doc being explained.
+   * @param subQueryExpl explanation for the sub-query part.
+   * @param valSrcExpls explanation for the value source part.
+   * @return an explanation for the custom score
+   */
+  public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
+    if(valSrcExpls.length == 1) {
+      return customExplain(doc, subQueryExpl, valSrcExpls[0]);
+    }
+    if (valSrcExpls.length == 0) {
+      return subQueryExpl;
+    }
+    float valSrcScore = 1;
+    for(int i = 0; i < valSrcExpls.length; i++) {
+      valSrcScore *= valSrcExpls[i].getValue();
+    }
+    Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
+    exp.addDetail(subQueryExpl);
+    for(int i = 0; i < valSrcExpls.length; i++) {
+      exp.addDetail(valSrcExpls[i]);
+    }
+    return exp;
   }
 
   /**
    * Explain the custom score.
    * Whenever overriding {@link #customScore(int, float, float)}, 
-   * this method should also be overriden to provide the correct explanation
-   * for the part of the custom scoring. 
+   * this method should also be overridden to provide the correct explanation
+   * for the part of the custom scoring.
+   *  
    * @param doc doc being explained.
    * @param subQueryExpl explanation for the sub-query part.
    * @param valSrcExpl explanation for the value source part.
    * @return an explanation for the custom score
    */
   public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
-    float valSrcScore = valSrcExpl==null ? 1 : valSrcExpl.getValue();
+    float valSrcScore = 1;
+    if (valSrcExpl != null) {
+      valSrcScore *= valSrcExpl.getValue();
+    }
     Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
     exp.addDetail(subQueryExpl);
-    if (valSrcExpl != null) {
-      exp.addDetail(valSrcExpl);
-    }
+    exp.addDetail(valSrcExpl);
     return exp;
   }
+
   //=========================== W E I G H T ============================
   
   private class CustomWeight implements Weight {
     Similarity similarity;
     Weight subQueryWeight;
-    Weight valSrcWeight; // optional
+    Weight[] valSrcWeights;
     boolean qStrict;
 
     public CustomWeight(Searcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
       this.subQueryWeight = subQuery.weight(searcher); 
-      if (valSrcQuery!=null) {
-        this.valSrcWeight = valSrcQuery.createWeight(searcher);
+      this.subQueryWeight = subQuery.weight(searcher);
+      this.valSrcWeights = new Weight[valSrcQueries.length];
+      for(int i = 0; i < valSrcQueries.length; i++) {
+        this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);
       }
       this.qStrict = strict;
     }
@@ -199,11 +301,11 @@ public class CustomScoreQuery extends Query {
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#sumOfSquaredWeights() */
     public float sumOfSquaredWeights() throws IOException {
       float sum = subQueryWeight.sumOfSquaredWeights();
-      if (valSrcWeight!=null) {
+      for(int i = 0; i < valSrcWeights.length; i++) {
         if (qStrict) {
-          valSrcWeight.sumOfSquaredWeights(); // do not include ValueSource part in the query normalization
+          valSrcWeights[i].sumOfSquaredWeights(); // do not include ValueSource part in the query normalization
         } else {
-          sum += valSrcWeight.sumOfSquaredWeights();
+          sum += valSrcWeights[i].sumOfSquaredWeights();
         }
       }
       sum *= getBoost() * getBoost(); // boost each sub-weight
@@ -214,11 +316,11 @@ public class CustomScoreQuery extends Query {
     public void normalize(float norm) {
       norm *= getBoost(); // incorporate boost
       subQueryWeight.normalize(norm);
-      if (valSrcWeight!=null) {
+      for(int i = 0; i < valSrcWeights.length; i++) {
         if (qStrict) {
-          valSrcWeight.normalize(1); // do not normalize the ValueSource part
+          valSrcWeights[i].normalize(1); // do not normalize the ValueSource part
         } else {
-          valSrcWeight.normalize(norm);
+          valSrcWeights[i].normalize(norm);
         }
       }
     }
@@ -226,8 +328,11 @@ public class CustomScoreQuery extends Query {
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.IndexReader) */
     public Scorer scorer(IndexReader reader) throws IOException {
       Scorer subQueryScorer = subQueryWeight.scorer(reader);
-      Scorer valSrcScorer = (valSrcWeight==null ? null : valSrcWeight.scorer(reader));
-      return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorer);
+      Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
+      for(int i = 0; i < valSrcScorers.length; i++) {
+         valSrcScorers[i] = valSrcWeights[i].scorer(reader);
+      }
+      return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorers);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
@@ -246,25 +351,29 @@ public class CustomScoreQuery extends Query {
     private final CustomWeight weight;
     private final float qWeight;
     private Scorer subQueryScorer;
-    private Scorer valSrcScorer; // optional
+    private Scorer[] valSrcScorers;
     private IndexReader reader;
+    private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
     private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
-        Scorer subQueryScorer, Scorer valSrcScorer) throws IOException {
+        Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
-      this.valSrcScorer = valSrcScorer;
+      this.valSrcScorers = valSrcScorers;
       this.reader = reader;
+      this.vScores = new float[valSrcScorers.length];
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#next() */
     public boolean next() throws IOException {
       boolean hasNext = subQueryScorer.next();
-      if (valSrcScorer!=null && hasNext) {
-        valSrcScorer.skipTo(subQueryScorer.doc());
+      if(hasNext) {
+    	  for(int i = 0; i < valSrcScorers.length; i++) {
+    	    valSrcScorers[i].skipTo(subQueryScorer.doc());  
+    	  }
       }
       return hasNext;
     }
@@ -276,15 +385,19 @@ public class CustomScoreQuery extends Query {
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     public float score() throws IOException {
-      float valSrcScore = (valSrcScorer==null ? 1 : valSrcScorer.score());
-      return qWeight * customScore(subQueryScorer.doc(), subQueryScorer.score(), valSrcScore);
+      for(int i = 0; i < valSrcScorers.length; i++) {
+    	  vScores[i] = valSrcScorers[i].score();
+      }
+      return qWeight * customScore(subQueryScorer.doc(), subQueryScorer.score(), vScores);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#skipTo(int) */
     public boolean skipTo(int target) throws IOException {
       boolean hasNext = subQueryScorer.skipTo(target);
-      if (valSrcScorer!=null && hasNext) {
-        valSrcScorer.skipTo(subQueryScorer.doc());
+      if(hasNext) {
+      	for(int i = 0; i < valSrcScorers.length; i++) {
+      	  valSrcScorers[i].skipTo(subQueryScorer.doc());
+      	}
       }
       return hasNext;
     }
@@ -296,8 +409,11 @@ public class CustomScoreQuery extends Query {
         return subQueryExpl;
       }
       // match
-      Explanation valSrcExpl = valSrcScorer==null ? null : valSrcScorer.explain(doc);
-      Explanation customExp = customExplain(doc,subQueryExpl,valSrcExpl);
+      Explanation[] valSrcExpls = new Explanation[valSrcScorers.length];
+      for(int i = 0; i < valSrcScorers.length; i++) {
+        valSrcExpls[i] = valSrcScorers[i].explain(doc);
+      }
+      Explanation customExp = customExplain(doc,subQueryExpl,valSrcExpls);
       float sc = qWeight * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");

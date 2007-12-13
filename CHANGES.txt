@@ -241,6 +241,9 @@ New features
 10. LUCENE-1073: Created SnapshotDeletionPolicy to facilitate taking a
     live backup of an index without pausing indexing.  (Mike
     McCandless)
+    
+11. LUCENE-1019: CustomScoreQuery enhanced to support multiple 
+    ValueSource queries. (Kyle Maxwell via Doron Cohen)
  
 
 Optimizations
