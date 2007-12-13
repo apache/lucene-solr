@@ -155,7 +155,7 @@ public class TrecDocMaker extends BasicDocMaker {
     return sb;
   }
   
-  protected DocData getNextDocData() throws NoMoreDataException, Exception {
+  protected synchronized DocData getNextDocData() throws NoMoreDataException, Exception {
     if (reader==null) {
       openNextFile();
     }
