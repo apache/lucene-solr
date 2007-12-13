@@ -99,6 +99,11 @@ class Solr::Request::Standard < Solr::Request::Select
       hash["hl.simple.pre"] = @params[:highlighting][:prefix]
       hash["hl.simple.post"] = @params[:highlighting][:suffix]
       hash["hl.fragsize"] = @params[:highlighting][:fragment_size]
+      if @params[:highlighting][:alternate_fields]
+        @params[:highlighting][:alternate_fields].each do |k,v|
+          hash["f.#{k}.hl.alternateField"] = v
+        end
+      end
     end
     
     if @params[:mlt]
