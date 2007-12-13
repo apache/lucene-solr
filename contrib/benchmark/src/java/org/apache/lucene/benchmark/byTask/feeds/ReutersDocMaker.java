@@ -52,7 +52,10 @@ public class ReutersDocMaker extends BasicDocMaker {
     super.setConfig(config);
     File workDir = new File(config.get("work.dir","work"));
     String d = config.get("docs.dir","reuters-out");
-    dataDir = new File(workDir,d);
+    dataDir = new File(d);
+    if (!dataDir.isAbsolute()) {
+      dataDir = new File(workDir, d);
+    }
 
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {

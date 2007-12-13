@@ -141,7 +141,10 @@ public class DirDocMaker extends BasicDocMaker {
   public void setConfig(Config config) {
     super.setConfig(config);
     String d = config.get("docs.dir", "dir-out");
-    dataDir = new File(new File("work"), d);
+    dataDir = new File(d);
+    if (!dataDir.isAbsolute()) {
+      dataDir = new File(new File("work"), d);
+    }
 
     inputFiles = new Iterator(dataDir);
 

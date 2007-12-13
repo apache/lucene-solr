@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/13/07
+  LUCENE-1086: DocMakers setup for the "docs.dir" property
+  fixed to properly handle absolute paths. (Shai Erera via Doron Cohen)
+  
 9/18/07
   LUCENE-941: infinite loop for alg: {[AddDoc(4000)]: 4} : *
   ResetInputsTask fixed to work also after exhaustion.
