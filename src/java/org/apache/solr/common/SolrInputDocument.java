@@ -20,6 +20,7 @@ package org.apache.solr.common;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Collection;
 
@@ -38,7 +39,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>, Serializable
 
   public SolrInputDocument()
   {
-    _fields = new HashMap<String,SolrInputField>();
+    _fields = new LinkedHashMap<String,SolrInputField>();
   }
   
   /**
