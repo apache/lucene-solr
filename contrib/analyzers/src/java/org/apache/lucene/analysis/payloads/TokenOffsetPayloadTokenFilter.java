@@ -26,25 +26,26 @@ import java.io.IOException;
 
 
 /**
- * Assigns a payload to a token based on the {@link org.apache.lucene.analysis.Token#type()}
+ * Adds the {@link org.apache.lucene.analysis.Token#setStartOffset(int)}
+ * and {@link org.apache.lucene.analysis.Token#setEndOffset(int)}
+ * First 4 bytes are the start
  *
  **/
-public class NumericPayloadTokenFilter extends TokenFilter {
+public class TokenOffsetPayloadTokenFilter extends TokenFilter {
 
-  private String typeMatch;
-  private Payload thePayload;
 
-  public NumericPayloadTokenFilter(TokenStream input, float payload, String typeMatch) {
+  public TokenOffsetPayloadTokenFilter(TokenStream input) {
     super(input);
-    //Need to encode the payload
-    thePayload = new Payload(PayloadHelper.encodeFloat(payload));
-    this.typeMatch = typeMatch;
   }
 
   public Token next(Token result) throws IOException {
     result = input.next(result);
-    if (result != null && result.type().equals(typeMatch)){
-      result.setPayload(thePayload);
+    if (result != null){
+      byte[] data = new byte[8];
+      PayloadHelper.encodeInt(result.startOffset(), data, 0);
+      PayloadHelper.encodeInt(result.endOffset(), data, 4);
+      Payload payload = new Payload(data);
+      result.setPayload(payload);
     }
     return result;
   }

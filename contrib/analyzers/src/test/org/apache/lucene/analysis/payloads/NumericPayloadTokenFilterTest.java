@@ -17,9 +17,9 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import junit.framework.TestCase;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class NumericPayloadTokenFilterTest extends TestCase {
         byte [] bytes = tok.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
         assertTrue(bytes.length + " does not equal: " + tok.getPayload().length(), bytes.length == tok.getPayload().length());
         assertTrue(tok.getPayload().getOffset() + " does not equal: " + 0, tok.getPayload().getOffset() == 0);
-        float pay = NumericPayloadTokenFilter.decodePayload(bytes);
+        float pay = PayloadHelper.decodeFloat(bytes);
         assertTrue(pay + " does not equal: " + 3, pay == 3);
       } else {
         assertTrue(tok.type() + " is not null and it should be", tok.type().equals("word"));
