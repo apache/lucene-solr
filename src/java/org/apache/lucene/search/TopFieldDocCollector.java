@@ -31,6 +31,8 @@ import org.apache.lucene.index.IndexReader;
  **/
 public class TopFieldDocCollector extends TopDocCollector {
 
+  private FieldDoc reusableFD;
+
   /** Construct to collect a given number of hits.
    * @param reader the index to be searched
    * @param sort the sort criteria
@@ -45,7 +47,18 @@ public class TopFieldDocCollector extends TopDocCollector {
   public void collect(int doc, float score) {
     if (score > 0.0f) {
       totalHits++;
-      hq.insert(new FieldDoc(doc, score));
+      if (reusableFD == null)
+        reusableFD = new FieldDoc(doc, score);
+      else {
+        // Whereas TopDocCollector can skip this if the
+        // score is not competitive, we cannot because the
+        // comparators in the FieldSortedHitQueue.lessThan
+        // aren't in general congruent with "higher score
+        // wins"
+        reusableFD.score = score;
+        reusableFD.doc = doc;
+      }
+      reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
     }
   }
 

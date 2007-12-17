@@ -82,7 +82,11 @@ API Changes
 11. LUCENE-1079: DocValues cleanup: constructor now has no params,
     and getInnerArray() now throws UnsupportedOperationException (Doron Cohen)
 
-    
+12. LUCENE-1089: Added PriorityQueue.insertWithOverflow, which returns
+    the Object (if any) that was bumped from the queue to allow
+    re-use.  (Shai Erera via Mike McCandless)
+
+
 Bug fixes
 
  1. LUCENE-933: QueryParser fixed to not produce empty sub 

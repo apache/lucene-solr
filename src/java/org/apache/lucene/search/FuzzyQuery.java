@@ -104,20 +104,27 @@ public class FuzzyQuery extends MultiTermQuery {
     FilteredTermEnum enumerator = getEnum(reader);
     int maxClauseCount = BooleanQuery.getMaxClauseCount();
     ScoreTermQueue stQueue = new ScoreTermQueue(maxClauseCount);
-    
+    ScoreTerm reusableST = null;
+
     try {
       do {
-        float minScore = 0.0f;
         float score = 0.0f;
         Term t = enumerator.term();
         if (t != null) {
           score = enumerator.difference();
-          // terms come in alphabetical order, therefore if queue is full and score
-          // not bigger than minScore, we can skip
-          if(stQueue.size() < maxClauseCount || score > minScore){
-            stQueue.insert(new ScoreTerm(t, score));
-            minScore = ((ScoreTerm)stQueue.top()).score; // maintain minScore
+          if (reusableST == null) {
+            reusableST = new ScoreTerm(t, score);
+          } else if (score >= reusableST.score) {
+            // reusableST holds the last "rejected" entry, so, if
+            // this new score is not better than that, there's no
+            // need to try inserting it
+            reusableST.score = score;
+            reusableST.term = t;
+          } else {
+            continue;
           }
+
+          reusableST = (ScoreTerm) stQueue.insertWithOverflow(reusableST);
         }
       } while (enumerator.next());
     } finally {

@@ -18,7 +18,6 @@ package org.apache.lucene.util;
  */
 
 import java.util.Random;
-import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPriorityQueue
     extends LuceneTestCase
@@ -107,4 +106,25 @@ public class TestPriorityQueue
         assertEquals(3, pq.size());
         assertEquals(3, ((Integer) pq.top()).intValue());
     }
+    
+  public void testInsertWithOverflow() {
+    int size = 4;
+    PriorityQueue pq = new IntegerQueue(size);
+    Integer i1 = new Integer(2);
+    Integer i2 = new Integer(3);
+    Integer i3 = new Integer(1);
+    Integer i4 = new Integer(5);
+    Integer i5 = new Integer(7);
+    Integer i6 = new Integer(1);
+    
+    assertNull(pq.insertWithOverflow(i1));
+    assertNull(pq.insertWithOverflow(i2));
+    assertNull(pq.insertWithOverflow(i3));
+    assertNull(pq.insertWithOverflow(i4));
+    assertTrue(pq.insertWithOverflow(i5) == i3); // i3 should have been dropped
+    assertTrue(pq.insertWithOverflow(i6) == i6); // i6 should not have been inserted
+    assertEquals(size, pq.size());
+    assertEquals(2, ((Integer) pq.top()).intValue());
+  }
+  
 }

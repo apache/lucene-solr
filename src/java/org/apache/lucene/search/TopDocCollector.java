@@ -28,8 +28,8 @@ import org.apache.lucene.util.PriorityQueue;
  * documents are collected.
  **/
 public class TopDocCollector extends HitCollector {
-  private int numHits;
-  private float minScore = 0.0f;
+
+  private ScoreDoc reusableSD;
 
   int totalHits;
   PriorityQueue hq;
@@ -42,7 +42,6 @@ public class TopDocCollector extends HitCollector {
   }
 
   TopDocCollector(int numHits, PriorityQueue hq) {
-    this.numHits = numHits;
     this.hq = hq;
   }
 
@@ -50,10 +49,18 @@ public class TopDocCollector extends HitCollector {
   public void collect(int doc, float score) {
     if (score > 0.0f) {
       totalHits++;
-      if (hq.size() < numHits || score >= minScore) {
-        hq.insert(new ScoreDoc(doc, score));
-        minScore = ((ScoreDoc)hq.top()).score; // maintain minScore
+      if (reusableSD == null) {
+        reusableSD = new ScoreDoc(doc, score);
+      } else if (score >= reusableSD.score) {
+        // reusableSD holds the last "rejected" entry, so, if
+        // this new score is not better than that, there's no
+        // need to try inserting it
+        reusableSD.doc = doc;
+        reusableSD.score = score;
+      } else {
+        return;
       }
+      reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
     }
   }
 

@@ -21,9 +21,9 @@ package org.apache.lucene.util;
   least element can always be found in constant time.  Put()'s and pop()'s
   require log(size) time. */
 public abstract class PriorityQueue {
-  private Object[] heap;
   private int size;
   private int maxSize;
+  protected Object[] heap;
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
     must define this one method. */
@@ -32,7 +32,12 @@ public abstract class PriorityQueue {
   /** Subclass constructors must call this. */
   protected final void initialize(int maxSize) {
     size = 0;
-    int heapSize = maxSize + 1;
+    int heapSize;
+    if (0 == maxSize)
+      // We allocate 1 extra to avoid if statement in top()
+      heapSize = 2;
+    else
+      heapSize = maxSize + 1;
     heap = new Object[heapSize];
     this.maxSize = maxSize;
   }
@@ -54,26 +59,40 @@ public abstract class PriorityQueue {
    * @param element
    * @return true if element is added, false otherwise.
    */
-  public boolean insert(Object element){
-    if(size < maxSize){
+  public boolean insert(Object element) {
+    return insertWithOverflow(element) != element;
+  }
+
+  /**
+   * insertWithOverflow() is the same as insert() except its
+   * return value: it returns the object (if any) that was
+   * dropped off the heap because it was full. This can be
+   * the given parameter (in case it is smaller than the
+   * full heap's minimum, and couldn't be added), or another
+   * object that was previously the smallest value in the
+   * heap and now has been replaced by a larger one, or null
+   * if the queue wasn't yet full with maxSize elements.
+   */
+  public Object insertWithOverflow(Object element) {
+    if (size < maxSize) {
       put(element);
-      return true;
-    }
-    else if(size > 0 && !lessThan(element, top())){
+      return null;
+    } else if (size > 0 && !lessThan(element, heap[1])) {
+      Object ret = heap[1];
       heap[1] = element;
       adjustTop();
-      return true;
+      return ret;
+    } else {
+      return element;
     }
-    else
-      return false;
-   }
+  }
 
   /** Returns the least element of the PriorityQueue in constant time. */
   public final Object top() {
-    if (size > 0)
-      return heap[1];
-    else
-      return null;
+    // We don't need to check size here: if maxSize is 0,
+    // then heap is length 2 array with both entries null.
+    // If size is 0 then heap[1] is already null.
+    return heap[1];
   }
 
   /** Removes and returns the least element of the PriorityQueue in log(size)
@@ -100,7 +119,6 @@ public abstract class PriorityQueue {
   public final void adjustTop() {
     downHeap();
   }
-
 
   /** Returns the number of elements currently stored in the PriorityQueue. */
   public final int size() {
@@ -140,7 +158,7 @@ public abstract class PriorityQueue {
       j = i << 1;
       k = j + 1;
       if (k <= size && lessThan(heap[k], heap[j])) {
-	j = k;
+        j = k;
       }
     }
     heap[i] = node;				  // install saved node
