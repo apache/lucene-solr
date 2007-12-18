@@ -18,7 +18,10 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -60,5 +63,23 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
     assertEquals("Q36 kept as-is",
               "+partnum:Q36 +space", query.toString("description"));
     assertEquals("doc found!", 1, hits.length());
+  }
+
+  public void testMutipleDocument() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,new KeywordAnalyzer(), true);
+    Document doc = new Document();
+    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new Field("partnum", "Q37", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    TermDocs td = reader.termDocs(new Term("partnum", "Q36"));
+    assertTrue(td.next());
+    td = reader.termDocs(new Term("partnum", "Q37"));
+    assertTrue(td.next());
   }
 }

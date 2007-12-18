@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 /**
@@ -29,12 +30,13 @@ public class KeywordAnalyzer extends Analyzer {
     return new KeywordTokenizer(reader);
   }
   public TokenStream reusableTokenStream(String fieldName,
-                                         final Reader reader) {
+                                         final Reader reader) throws IOException {
     Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
     if (tokenizer == null) {
       tokenizer = new KeywordTokenizer(reader);
       setPreviousTokenStream(tokenizer);
-    }
+    } else
+      	tokenizer.reset(reader);
     return tokenizer;
   }
 }

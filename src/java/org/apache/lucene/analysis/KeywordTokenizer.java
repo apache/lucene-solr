@@ -55,4 +55,9 @@ public class KeywordTokenizer extends Tokenizer {
     }
     return null;
   }
+
+  public void reset(Reader input) throws IOException {
+    super.reset(input);
+    this.done = false;
+  }
 }
