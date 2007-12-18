@@ -417,7 +417,7 @@ extends PriorityQueue {
   static ScoreDocComparator comparatorAuto (final IndexReader reader, final String fieldname)
   throws IOException {
     final String field = fieldname.intern();
-    Object lookupArray = FieldCache.DEFAULT.getAuto (reader, field);
+    Object lookupArray = ExtendedFieldCache.EXT_DEFAULT.getAuto (reader, field);
     if (lookupArray instanceof FieldCache.StringIndex) {
       return comparatorString (reader, field);
     } else if (lookupArray instanceof int[]) {

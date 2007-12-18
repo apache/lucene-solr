@@ -25,17 +25,6 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
       }
   };
 
-  private static final ByteParser BYTE_PARSER = new ByteParser() {
-    public byte parseByte(String string) {
-      return Byte.parseByte(string);
-    }
-  };
-
-  private static final ShortParser SHORT_PARSER = new ShortParser() {
-    public short parseShort(String string) {
-      return Short.parseShort(string);
-    }
-  };
 
   public long[] getLongs(IndexReader reader, String field) throws IOException {
     return getLongs(reader, field, LONG_PARSER);
@@ -114,4 +103,63 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
       return retArray;
     }
   };
+
+
+  // inherit javadocs
+  public Object getAuto(IndexReader reader, String field) throws IOException {
+    return autoCache.get(reader, field);
+  }
+
+  Cache autoCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object fieldKey)
+        throws IOException {
+      String field = ((String)fieldKey).intern();
+      TermEnum enumerator = reader.terms (new Term (field, ""));
+      try {
+        Term term = enumerator.term();
+        if (term == null) {
+          throw new RuntimeException ("no terms in field " + field + " - cannot determine sort type");
+        }
+        Object ret = null;
+        if (term.field() == field) {
+          String termtext = term.text().trim();
+
+          /**
+           * Java 1.4 level code:
+
+           if (pIntegers.matcher(termtext).matches())
+           return IntegerSortedHitQueue.comparator (reader, enumerator, field);
+
+           else if (pFloats.matcher(termtext).matches())
+           return FloatSortedHitQueue.comparator (reader, enumerator, field);
+           */
+
+          // Java 1.3 level code:
+          try {
+            Integer.parseInt (termtext);
+            ret = getInts (reader, field);
+          } catch (NumberFormatException nfe1) {
+            try {
+              Long.parseLong(termtext);
+              ret = getLongs (reader, field);
+            } catch (NumberFormatException nfe2) {
+              try {
+                Float.parseFloat (termtext);
+                ret = getFloats (reader, field);
+              } catch (NumberFormatException nfe3) {
+                ret = getStringIndex (reader, field);
+              }
+            }
+          }
+        } else {
+          throw new RuntimeException ("field \"" + field + "\" does not appear to be indexed");
+        }
+        return ret;
+      } finally {
+        enumerator.close();
+      }
+    }
+  };
+
 }
