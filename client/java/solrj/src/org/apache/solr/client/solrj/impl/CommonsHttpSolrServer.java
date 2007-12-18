@@ -91,6 +91,10 @@ public class CommonsHttpSolrServer extends BaseSolrServer
       this._baseURL = this._baseURL.substring( 0, this._baseURL.length()-1 );
     }
     
+    // increase the default connections
+    this.setDefaultMaxConnectionsPerHost( 32 );  // 2
+    this.setMaxTotalConnections( 128 ); // 20
+    
     // by default use the XML one
     _processor = new XMLResponseParser();
 
