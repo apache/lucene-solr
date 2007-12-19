@@ -835,6 +835,22 @@ public class TestQueryParser extends LuceneTestCase {
 
   }
 
+  public void testStopwords() throws Exception {
+    QueryParser qp = new QueryParser("a", new StopAnalyzer(new String[]{"the", "foo"}));
+    Query result = qp.parse("a:the OR a:foo");
+    assertTrue("result is null and it shouldn't be", result != null);
+    assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
+    assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: " + 0, ((BooleanQuery) result).clauses().size() == 0);
+    result = qp.parse("a:woo OR a:the");
+    assertTrue("result is null and it shouldn't be", result != null);
+    assertTrue("result is not a TermQuery", result instanceof TermQuery);
+    result = qp.parse("(fieldX:xxxxx OR fieldy:xxxxxxxx)^2 AND (fieldx:the OR fieldy:foo)");
+    assertTrue("result is null and it shouldn't be", result != null);
+    assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
+    System.out.println("Result: " + result);
+    assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: " + 2, ((BooleanQuery) result).clauses().size() == 2);
+  }
+
   public void testMatchAllDocs() throws Exception {
     QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer());
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*"));
