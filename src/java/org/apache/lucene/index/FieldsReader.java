@@ -155,6 +155,8 @@ final class FieldsReader {
       FieldSelectorResult acceptField = fieldSelector == null ? FieldSelectorResult.LOAD : fieldSelector.accept(fi.name);
       
       byte bits = fieldsStream.readByte();
+      assert bits <= FieldsWriter.FIELD_IS_COMPRESSED + FieldsWriter.FIELD_IS_TOKENIZED + FieldsWriter.FIELD_IS_BINARY;
+
       boolean compressed = (bits & FieldsWriter.FIELD_IS_COMPRESSED) != 0;
       boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
       boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;

@@ -244,15 +244,21 @@ final class SegmentMerger {
       // array will be non-null at position i:
       SegmentReader[] matchingSegmentReaders = new SegmentReader[readers.size()];
 
+      // If this reader is a SegmentReader, and all of its
+      // field name -> number mappings match the "merged"
+      // FieldInfos, then we can do a bulk copy of the
+      // stored fields:
       for (int i = 0; i < readers.size(); i++) {
         IndexReader reader = (IndexReader) readers.elementAt(i);
-        boolean same = reader.getFieldNames(IndexReader.FieldOption.ALL).size() == fieldInfos.size() && reader instanceof SegmentReader;
-        if (same) {
+        if (reader instanceof SegmentReader) {
           SegmentReader segmentReader = (SegmentReader) reader;
-          for (int j = 0; same && j < fieldInfos.size(); j++)
-            same = fieldInfos.fieldName(j).equals(segmentReader.getFieldInfos().fieldName(j));
-          if (same)
+          boolean same = true;
+          FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
+          for (int j = 0; same && j < segmentFieldInfos.size(); j++)
+            same = fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j));
+          if (same) {
             matchingSegmentReaders[i] = segmentReader;
+          }
         }
       }
 	

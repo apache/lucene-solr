@@ -26,6 +26,7 @@ import java.util.Random;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -1808,7 +1809,7 @@ public class TestIndexWriter extends LuceneTestCase
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("appendPostings".equals(trace[i].getMethodName()) && count++ == 30) {
+          if ("org.apache.lucene.index.DocumentsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()) && count++ == 30) {
             doFail = false;
             throw new IOException("now failing during flush");
           }
@@ -1845,5 +1846,139 @@ public class TestIndexWriter extends LuceneTestCase
     writer.close();
     IndexReader reader = IndexReader.open(dir);
     assertEquals(198, reader.docFreq(new Term("content", "aa")));
+    reader.close();
+  }
+
+  private class CrashingFilter extends TokenFilter {
+    String fieldName;
+    int count;
+
+    public CrashingFilter(String fieldName, TokenStream input) {
+      super(input);
+      this.fieldName = fieldName;
+    }
+
+    public Token next(Token result) throws IOException {
+      if (this.fieldName.equals("crash") && count++ >= 4)
+        throw new IOException("I'm experiencing problems");
+      return input.next(result);
+    }
+  }
+
+  public void testDocumentsWriterExceptions() throws IOException {
+    Analyzer analyzer = new Analyzer() {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
+      }
+    };
+
+    for(int i=0;i<2;i++) {
+      MockRAMDirectory dir = new MockRAMDirectory();
+      IndexWriter writer = new IndexWriter(dir, analyzer);
+      //writer.setInfoStream(System.out);
+      Document doc = new Document();
+      doc.add(new Field("contents", "here are some contents", Field.Store.YES,
+                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      writer.addDocument(doc);
+      writer.addDocument(doc);
+      doc.add(new Field("crash", "this should crash after 4 terms", Field.Store.YES,
+                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(new Field("other", "this will not get indexed", Field.Store.YES,
+                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      try {
+        writer.addDocument(doc);
+        fail("did not hit expected exception");
+      } catch (IOException ioe) {
+      }
+
+      if (0 == i) {
+        doc = new Document();
+        doc.add(new Field("contents", "here are some contents", Field.Store.YES,
+                          Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        writer.addDocument(doc);
+        writer.addDocument(doc);
+      }
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      int expected = 3+(1-i)*2;
+      assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+      assertEquals(expected, reader.maxDoc());
+      for(int j=0;j<reader.maxDoc();j++) {
+        reader.document(j);
+        reader.getTermFreqVectors(j);
+      }
+      reader.close();
+
+      writer = new IndexWriter(dir, analyzer);
+      writer.setMaxBufferedDocs(10);
+      doc = new Document();
+      doc.add(new Field("contents", "here are some contents", Field.Store.YES,
+                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      for(int j=0;j<17;j++)
+        writer.addDocument(doc);
+      writer.optimize();
+      writer.close();
+
+      reader = IndexReader.open(dir);
+      expected = 20+(1-i)*2;
+      assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+      assertEquals(expected, reader.maxDoc());
+      for(int j=0;j<reader.maxDoc();j++) {
+        reader.document(j);
+        reader.getTermFreqVectors(j);
+      }
+      reader.close();
+
+      dir.close();
+    }
+  }
+
+  public void testVariableSchema() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    int delID = 0;
+    for(int i=0;i<20;i++) {
+      IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer());
+      writer.setMaxBufferedDocs(2);
+      writer.setMergeFactor(2);
+      writer.setUseCompoundFile(false);
+      Document doc = new Document();
+      String contents = "aa bb cc dd ee ff gg hh ii jj kk";
+
+      if (i == 7) {
+        // Add empty docs here
+        doc.add(new Field("content3", "", Field.Store.NO,
+                          Field.Index.TOKENIZED));
+      } else {
+        Field.Store storeVal;
+        if (i%2 == 0) {
+          doc.add(new Field("content4", contents, Field.Store.YES,
+                            Field.Index.TOKENIZED));
+          storeVal = Field.Store.YES;
+        } else
+          storeVal = Field.Store.NO;
+        doc.add(new Field("content1", contents, storeVal,
+                          Field.Index.TOKENIZED));
+        doc.add(new Field("content3", "", Field.Store.YES,
+                          Field.Index.TOKENIZED));
+        doc.add(new Field("content5", "", storeVal,
+                          Field.Index.TOKENIZED));
+      }
+
+      for(int j=0;j<4;j++)
+        writer.addDocument(doc);
+
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      reader.deleteDocument(delID++);
+      reader.close();
+
+      if (0 == i % 4) {
+        writer = new IndexWriter(dir, false, new WhitespaceAnalyzer());
+        writer.setUseCompoundFile(false);
+        writer.optimize();
+        writer.close();
+      }
+    }
   }
 }

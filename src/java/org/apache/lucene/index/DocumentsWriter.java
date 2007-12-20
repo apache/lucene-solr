@@ -562,13 +562,14 @@ final class DocumentsWriter {
 
       // If we hit an exception while appending to the
       // stored fields or term vectors files, we have to
-      // abort because it means those files are possibly
-      // inconsistent.
+      // abort all documents since we last flushed because
+      // it means those files are possibly inconsistent.
       abortOnExc = true;
 
       // Append stored fields to the real FieldsWriter:
-      fieldsWriter.flushDocument(fdtLocal);
+      fieldsWriter.flushDocument(numStoredFields, fdtLocal);
       fdtLocal.reset();
+      numStoredFields = 0;
 
       // Append term vectors to the real outputs:
       if (tvx != null) {
@@ -589,7 +590,6 @@ final class DocumentsWriter {
           tvfLocal.reset();
         }
       }
-      abortOnExc = false;
 
       // Append norms for the fields we saw:
       for(int i=0;i<numFieldData;i++) {
@@ -603,6 +603,7 @@ final class DocumentsWriter {
           bn.add(norm);
         }
       }
+      abortOnExc = false;
 
       if (bufferIsFull && !flushPending) {
         flushPending = true;
@@ -621,6 +622,9 @@ final class DocumentsWriter {
       numVectorFields = 0;
       maxTermHit = 0;
 
+      assert 0 == fdtLocal.length();
+      assert 0 == tvfLocal.length();
+
       List docFields = doc.getFields();
       final int numDocFields = docFields.size();
       boolean docHasVectors = false;
@@ -636,7 +640,6 @@ final class DocumentsWriter {
         FieldInfo fi = fieldInfos.add(field.name(), field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
                                       field.getOmitNorms(), false);
-        numStoredFields += field.isStored() ? 1:0;
         if (fi.isIndexed && !fi.omitNorms) {
           // Maybe grow our buffered norms
           if (norms.length <= fi.number) {
@@ -968,7 +971,7 @@ final class DocumentsWriter {
 
       final int numFields = numFieldData;
 
-      fdtLocal.writeVInt(numStoredFields);
+      assert 0 == fdtLocal.length();
 
       if (tvx != null)
         // If we are writing vectors then we must visit
@@ -1269,19 +1272,48 @@ final class DocumentsWriter {
             if (field.isIndexed())
               invertField(field, analyzer, maxFieldLength);
 
-            if (field.isStored())
-              localFieldsWriter.writeField(fieldInfo, field);
+            if (field.isStored()) {
+              numStoredFields++;
+              boolean success = false;
+              try {
+                localFieldsWriter.writeField(fieldInfo, field);
+                success = true;
+              } finally {
+                // If we hit an exception inside
+                // localFieldsWriter.writeField, the
+                // contents of fdtLocal can be corrupt, so
+                // we must discard all stored fields for
+                // this document:
+                if (!success) {
+                  numStoredFields = 0;
+                  fdtLocal.reset();
+                }
+              }
+            }
 
             docFieldsFinal[j] = null;
           }
         } finally {
           if (postingsVectorsUpto > 0) {
             // Add term vectors for this field
-            writeVectors(fieldInfo);
-            if (postingsVectorsUpto > maxPostingsVectors)
-              maxPostingsVectors = postingsVectorsUpto;
-            postingsVectorsUpto = 0;
-            vectorsPool.reset();
+            boolean success = false;
+            try {
+              writeVectors(fieldInfo);
+              success = true;
+            } finally {
+              if (!success) {
+                // If we hit an exception inside
+                // writeVectors, the contents of tvfLocal
+                // can be corrupt, so we must discard all
+                // term vectors for this document:
+                numVectorFields = 0;
+                tvfLocal.reset();
+              }
+              if (postingsVectorsUpto > maxPostingsVectors)
+                maxPostingsVectors = postingsVectorsUpto;
+              postingsVectorsUpto = 0;
+              vectorsPool.reset();
+            }
           }
         }
       }
@@ -1449,7 +1481,8 @@ final class DocumentsWriter {
         // If we hit an exception below, it's possible the
         // posting list or term vectors data will be
         // partially written and thus inconsistent if
-        // flushed, so we have to abort:
+        // flushed, so we have to abort all documents
+        // since the last flush:
         abortOnExc = true;
 
         if (p != null) {       // term seen since last flush
@@ -2243,12 +2276,12 @@ final class DocumentsWriter {
     boolean success = false;
     int maxTermHit;
     try {
-      // This call is not synchronized and does all the work
       try {
+        // This call is not synchronized and does all the work
         state.processDocument(analyzer);
       } finally {
         maxTermHit = state.maxTermHit;
-        // This call synchronized but fast
+        // This call is synchronized but fast
         finishDocument(state);
       }
       success = true;

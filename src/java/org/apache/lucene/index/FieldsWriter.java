@@ -60,8 +60,9 @@ final class FieldsWriter
     // and adds a new entry for this document into the index
     // stream.  This assumes the buffer was already written
     // in the correct fields format.
-    void flushDocument(RAMOutputStream buffer) throws IOException {
+    void flushDocument(int numStoredFields, RAMOutputStream buffer) throws IOException {
       indexStream.writeLong(fieldsStream.getFilePointer());
+      fieldsStream.writeVInt(numStoredFields);
       buffer.writeTo(fieldsStream);
     }
 
@@ -141,6 +142,7 @@ final class FieldsWriter
         position += lengths[i];
       }
       fieldsStream.copyBytes(stream, position-start);
+      assert fieldsStream.getFilePointer() == position;
     }
 
     final void addDocument(Document doc) throws IOException {
