@@ -104,7 +104,7 @@ public class TestStandardAnalyzer extends LuceneTestCase {
   public void testNumeric() throws Exception {
     // floating point, serial, model numbers, ip addresses, etc.
     // every other segment must have at least one digit
-    assertAnalyzesTo(a, "21.35", new String[]{"21.35"}, new String[]{"<NUM>"});
+    assertAnalyzesTo(a, "21.35", new String[]{"21.35"});
     assertAnalyzesTo(a, "R2D2 C3PO", new String[]{"r2d2", "c3po"});
     assertAnalyzesTo(a, "216.239.63.104", new String[]{"216.239.63.104"});
     assertAnalyzesTo(a, "1-2-3", new String[]{"1-2-3"});
