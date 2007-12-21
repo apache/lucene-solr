@@ -90,6 +90,9 @@ public class CheckIndex {
       out.println("ERROR: could not read segment file version in directory");
       t.printStackTrace(out);
       return false;
+    } finally {
+      if (input != null)
+        input.close();
     }
 
     String sFormat = "";
