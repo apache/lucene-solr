@@ -38,13 +38,13 @@ public class FileFloatSource extends ValueSource {
   private final SchemaField keyField;
   private final float defVal;
 
-  private final String indexDir;
+  private final String dataDir;
 
   public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, QParser parser) {
     this.field = field;
     this.keyField = keyField;
     this.defVal = defVal;
-    this.indexDir = parser.getReq().getCore().getIndexDir();
+    this.dataDir = parser.getReq().getCore().getDataDir();
   }
 
   public String description() {
@@ -86,7 +86,7 @@ public class FileFloatSource extends ValueSource {
     return this.field.getName().equals(other.field.getName())
             && this.keyField.getName().equals(other.keyField.getName())
             && this.defVal == other.defVal
-            && this.indexDir.equals(other.indexDir);
+            && this.dataDir.equals(other.dataDir);
   }
 
   public int hashCode() {
@@ -95,7 +95,7 @@ public class FileFloatSource extends ValueSource {
 
   public String toString() {
     return "FileFloatSource(field="+field.getName()+",keyField="+keyField.getName()
-            + ",defVal="+defVal+",indexDir="+indexDir+")";
+            + ",defVal="+defVal+",dataDir="+dataDir+")";
 
   }
 
@@ -184,7 +184,7 @@ public class FileFloatSource extends ValueSource {
     InputStream is;
     String fname = "external_" + ffs.field.getName();
     try {
-      is = getLatestFile(ffs.indexDir, fname);
+      is = getLatestFile(ffs.dataDir, fname);
     } catch (IOException e) {
       // log, use defaults
       SolrCore.log.severe("Error opening external value source file: " +e);

@@ -52,7 +52,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
 
   String base = "external_foo_extf";
   void makeExternalFile(String field, String contents, String charset) {
-    String dir = h.getCore().getIndexDir();
+    String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + System.currentTimeMillis();
     try {
       Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
