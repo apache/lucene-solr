@@ -121,8 +121,12 @@ public class CommonsHttpSolrServer extends BaseSolrServer
     }
     
     // modify the path for multicore access
+    String core = getDefaultCore();
     if( request.getCore() != null ) {
-      path = "/@"+request.getCore()+path;
+      core= request.getCore();
+    }
+    if( core != null && core.length() > 0 ) {
+      path = "/"+core+path;
     }
     
     if( params == null ) {

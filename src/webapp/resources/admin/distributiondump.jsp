@@ -153,6 +153,6 @@
 <%= buffer %>
 </table>
 <br><br>
-    <a href=".?<%=core.getName()%>">Return to Admin Page</a>
+    <a href=".">Return to Admin Page</a>
 </body>
 </html>

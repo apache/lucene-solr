@@ -49,11 +49,21 @@ public class MultiCoreRequest extends RequestBase
     super( METHOD.GET, path );
   }
 
+  public final void setCoreParam( String v )
+  {
+    this.core = v;
+  }
+
   @Override
   public final void setCore( String v )
   {
-    this.core = v;
-    // this does not change the path!
+    throw new UnsupportedOperationException( "MultiCoreRequest does not use a core.");
+  }
+  
+  @Override
+  public final String getCore()
+  {
+    return ""; // force it to invalid core
   }
   
   //---------------------------------------------------------------------------------------
@@ -100,18 +110,10 @@ public class MultiCoreRequest extends RequestBase
   //
   //---------------------------------------------------------------------------------------
 
-  public static MultiCoreResponse setDefault( String name, SolrServer server ) throws SolrServerException, IOException
-  {
-    MultiCoreRequest req = new MultiCoreRequest();
-    req.setCore( name );
-    req.setAction( MultiCoreAction.SETASDEFAULT );
-    return req.process( server );
-  }
-
   public static MultiCoreResponse reloadCore( String name, SolrServer server ) throws SolrServerException, IOException
   {
     MultiCoreRequest req = new MultiCoreRequest();
-    req.setCore( name );
+    req.setCoreParam( name );
     req.setAction( MultiCoreAction.RELOAD );
     return req.process( server );
   }
@@ -119,8 +121,8 @@ public class MultiCoreRequest extends RequestBase
   public static MultiCoreResponse getStatus( String name, SolrServer server ) throws SolrServerException, IOException
   {
     MultiCoreRequest req = new MultiCoreRequest();
+    req.setCoreParam( name );
     req.setAction( MultiCoreAction.STATUS );
-    req.setCore( name );
     return req.process( server );
   }
 }

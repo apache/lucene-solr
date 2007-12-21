@@ -27,6 +27,6 @@
   sharedLib: path to a lib files that will be shared across all cores
 -->
 <multicore adminPath="/admin/multicore" persistent="true" >
- <core name="core0" instanceDir="core0" default="true"/>
- <core name="core1" instanceDir="core1" />
+  <core name="core0" instanceDir="core0" default="true"/>
+  <core name="core1" instanceDir="core1" />
 </multicore>

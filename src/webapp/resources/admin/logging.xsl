@@ -46,10 +46,7 @@
           <xsl:apply-templates/>
         <div>
         </div>
-          <xsl:element name='a'>
-            <xsl:attribute name='href'>.?core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-            <xsl:text>Return to Admin Page</xsl:text>
-          </xsl:element>
+          <a href=".">Return to Admin Page</a>
         </div>
       </body>
     </html>
@@ -75,42 +72,15 @@
     Set Level
     </td>
     <td>
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=ALL&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>ALL</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=CONFIG&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>CONFIG</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=FINE&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>FINE</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=FINER&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>FINER</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=FINEST&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>FINEST</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=INFO&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>INFO</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=OFF&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>OFF</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=SEVERE&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>SEVERE</xsl:text>
-    </xsl:element>]
-    [<xsl:element name='a'>
-    <xsl:attribute name='href'>action.jsp?log=WARNING&amp;core=<xsl:value-of select="//solr/core"/></xsl:attribute>
-      <xsl:text>WARNING</xsl:text>
-    </xsl:element>]
+    [<a href="action.jsp?log=ALL">ALL</a>]
+    [<a href="action.jsp?log=CONFIG">CONFIG</a>]
+    [<a href="action.jsp?log=FINE">FINE</a>]
+    [<a href="action.jsp?log=FINER">FINER</a>]
+    [<a href="action.jsp?log=FINEST">FINEST</a>]
+    [<a href="action.jsp?log=INFO">INFO</a>]
+    [<a href="action.jsp?log=OFF">OFF</a>]
+    [<a href="action.jsp?log=SEVERE">SEVERE</a>]
+    [<a href="action.jsp?log=WARNING">WARNING</a>]
     </td>
   </tr>
 </table>

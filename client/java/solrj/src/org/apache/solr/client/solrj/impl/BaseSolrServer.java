@@ -37,7 +37,9 @@ import org.apache.solr.common.params.SolrParams;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class BaseSolrServer implements SolrServer {
+public abstract class BaseSolrServer implements SolrServer 
+{
+  protected String defaultCore = null;
   
   public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
@@ -97,5 +99,13 @@ public abstract class BaseSolrServer implements SolrServer {
 
   public QueryResponse query(SolrParams params) throws SolrServerException {
     return new QueryRequest( params ).process( this );
+  }
+
+  public String getDefaultCore() {
+    return defaultCore;
+  }
+
+  public void setDefaultCore(String defaultCore) {
+    this.defaultCore = defaultCore;
   }
 }

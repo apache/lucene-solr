@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,7 +124,7 @@ public class MultiCore
                 "multicore.xml defines multiple default cores. "+
                 getDefaultCore().getName() + " and " + core.getName() );
           }
-          this.setDefaultCore( core );
+          defaultCore = core;
           hasDefault = true;
         }
       } 
@@ -171,9 +170,13 @@ public class MultiCore
       throw new RuntimeException( "Can not register a null core." );
     }
     String name = core.getName();
-    if( name == null || name.length() == 0 ) {
-      throw new RuntimeException( "Invalid core name." );
+    if( name == null || 
+        name.length() < 1 ||
+        name.indexOf( '/'  ) >= 0 ||
+        name.indexOf( '\\' ) >= 0 ){
+      throw new RuntimeException( "Invalid core name: "+name );
     }
+    
     SolrCore old = cores.put(name, core);
     if( old == null ) {
       log.info( "registering core: "+name );
@@ -181,6 +184,21 @@ public class MultiCore
       log.info( "replacing core: "+name );
     }
     return old;
+  }
+
+  public void swap(SolrCore c0, SolrCore c1) {
+    if( c0 == null || c1 == null ) {
+      throw new RuntimeException( "Can not swap a null core." );
+    }
+    synchronized( cores ) {
+      String n0 = c0.getName();
+      String n1 = c1.getName();
+      cores.put(n0, c1);
+      cores.put(n1, c0);
+      c0.setName( n1 );
+      c1.setName( n0 );
+    }
+    log.info( "swaped: "+c0.getName() + " with " + c1.getName() );
   }
 
   /**
@@ -194,28 +212,21 @@ public class MultiCore
    */
   public void reload(SolrCore core) throws ParserConfigurationException, IOException, SAXException 
   {
-    boolean wasDefault = (core==defaultCore);
-    
     SolrResourceLoader loader = new SolrResourceLoader( core.getResourceLoader().getInstanceDir() );
     SolrConfig config = new SolrConfig( loader, core.getConfigFile(), null );
     IndexSchema schema = new IndexSchema( config, core.getSchemaFile() );
     SolrCore loaded = new SolrCore( core.getName(), core.getDataDir(), config, schema );
     this.register( loaded );
-    if( wasDefault ) {
-      this.setDefaultCore( loaded );
-    }
     
     // TODO? -- add some kind of hook to close the core after all references are 
     // gone...  is finalize() enough?
   }
-  
-  public void setDefaultCore( SolrCore core )
+
+  public void remove( String name ) 
   {
-    defaultCore = core;
-    cores.put( null, core );
-    cores.put( "", core );
+    cores.remove( name );
   }
-  
+    
   public SolrCore getDefaultCore() {
     return defaultCore;
   }
@@ -224,13 +235,7 @@ public class MultiCore
    * @return a Collection of registered SolrCores
    */
   public Collection<SolrCore> getCores() {
-    ArrayList<SolrCore> c = new ArrayList<SolrCore>(cores.size());
-    for( Map.Entry<String, SolrCore> entry : cores.entrySet() ) {
-      if( entry.getKey() != null && entry.getKey().length() > 0 ) {
-        c.add( entry.getValue() );
-      }
-    }
-    return c;
+    return cores.values();
   }
   
   public SolrCore getCore(String name) {
@@ -268,5 +273,4 @@ public class MultiCore
   public File getConfigFile() {
     return configFile;
   }
-
 }

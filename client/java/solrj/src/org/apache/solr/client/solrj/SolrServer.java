@@ -37,6 +37,9 @@ public interface SolrServer
   // A general method to allow various methods 
   NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException;
   
+  void setDefaultCore( String core );
+  String getDefaultCore();
+  
   // Standard methods
   UpdateResponse add( SolrInputDocument doc ) throws SolrServerException, IOException;
   UpdateResponse add( Collection<SolrInputDocument> docs ) throws SolrServerException, IOException;

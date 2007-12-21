@@ -17,16 +17,12 @@
 
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiCoreRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
-import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.MultiCoreResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 
 
 /**
@@ -44,9 +40,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   public void testMultiCore() throws Exception
   {
     SolrServer solr = getSolrServer();
-
-    MultiCoreRequest.setDefault( "core1", solr );
-    MultiCoreRequest.setDefault( "core0", solr );
     
     UpdateRequest up = new UpdateRequest();
     up.setAction( ACTION.COMMIT, true, true );
@@ -101,9 +94,11 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     assertEquals( 0, r.process( solr ).getResults().size() );
     
     // Now test Changing the default core
+    solr.setDefaultCore( "core0" );
     assertEquals( 1, solr.query( new SolrQuery( "id:AAA" ) ).getResults().size() );
     assertEquals( 0, solr.query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-    MultiCoreRequest.setDefault( "core1", solr );
+
+    solr.setDefaultCore( "core1" );
     assertEquals( 0, solr.query( new SolrQuery( "id:AAA" ) ).getResults().size() );
     assertEquals( 1, solr.query( new SolrQuery( "id:BBB" ) ).getResults().size() );
   

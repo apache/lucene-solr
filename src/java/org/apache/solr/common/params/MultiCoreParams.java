@@ -28,6 +28,9 @@ public interface MultiCoreParams
 
   /** Persistent -- should it save the multicore state? **/
   public final static String PERSISTENT = "persistent";
+
+  /** The name of the the core to swap names with **/
+  public final static String WITH = "with";
   
   /** What action **/
   public final static String ACTION = "action";
@@ -37,7 +40,7 @@ public interface MultiCoreParams
     LOAD,
     UNLOAD,
     RELOAD,
-    SETASDEFAULT;
+    SWAP;
     
     public static MultiCoreAction get( String p )
     {

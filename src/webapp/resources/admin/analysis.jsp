@@ -60,7 +60,6 @@
 <h2>Field Analysis</h2>
 
 <form method="GET" action="analysis.jsp">
-<input type='hidden' name='core' value='<%=core.getName()%>'>
 <table>
 <tr>
   <td>

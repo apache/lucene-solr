@@ -96,19 +96,29 @@ public class EmbeddedSolrServer extends BaseSolrServer
     SolrCore core = this.core;
     MultiCore multicore = MultiCore.getRegistry();
     if( useMultiCore ) {
+      String c = getDefaultCore();
       if( request.getCore() != null ) {
+        c = request.getCore();
+      }
+      if( c != null ) {
         if( !multicore.isEnabled() ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
               "multicore access is not enabled" );
         }
-        core = multicore.getCore( request.getCore() );
+        if( c.length() > 0 ) {
+          core = multicore.getCore( c );
+        }
+        else {
+          core = multicore.getDefaultCore();
+        }
         if( core == null ) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
-              "Unknown core: "+request.getCore() );
+              "Unknown core: "+c );
         }
       }
       else {
-        core = multicore.getDefaultCore();
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
+            "missing core" );
       }
     }
 

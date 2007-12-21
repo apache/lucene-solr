@@ -67,6 +67,7 @@ public class MultiCoreHandler extends RequestHandlerBase
     
     // Pick the action
     SolrParams params = req.getParams();
+    SolrParams required = params.required();
     MultiCoreAction action = MultiCoreAction.STATUS;
     String a = params.get( MultiCoreParams.ACTION );
     if( a != null ) {
@@ -109,13 +110,20 @@ public class MultiCoreHandler extends RequestHandlerBase
     }
     else {
       switch( action ) {
-      case SETASDEFAULT:
-        manager.setDefaultCore( core );
-        rsp.add( "default", core.getName() );
-        break;
-        
+      
       case RELOAD: {
         manager.reload( core );
+        break;
+      } 
+
+      case SWAP: {
+        String name = required.get( MultiCoreParams.WITH );
+        SolrCore swap = manager.getCore( name );
+        if( swap == null ) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+              "Unknown core: "+name );
+        }
+        manager.swap( core, swap );
         break;
       } 
         

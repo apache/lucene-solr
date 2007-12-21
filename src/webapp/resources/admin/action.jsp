@@ -111,6 +111,6 @@
   </tr>
 </table>
 <br><br>
-    <a href=".?core=<%=core.getName()%>">Return to Admin Page</a>
+    <a href=".">Return to Admin Page</a>
 </body>
 </html>

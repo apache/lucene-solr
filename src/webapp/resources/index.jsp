@@ -1,4 +1,4 @@
-<!--
+<%--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
@@ -13,7 +13,8 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
+--%>
+
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="solr-admin.css">
@@ -25,6 +26,15 @@
 <body>
 <h1>Welcome to Solr!</h1>
 <a href="."><img border="0" align="right" height="61" width="142" src="admin/solr-head.gif" alt="Solr"/></a>
+
+<% 
+  org.apache.solr.core.MultiCore multicore = org.apache.solr.core.MultiCore.getRegistry();
+  if( multicore.isEnabled() ) { 
+    for( org.apache.solr.core.SolrCore core : multicore.getCores() ) {%>
+<a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %> </a><br/>
+<% }} else { %>
 <a href="admin/">Solr Admin</a>
+<% } %>
+
 </body>
 </html>

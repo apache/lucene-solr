@@ -83,7 +83,7 @@ public final class SolrCore {
 
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
 
-  private final String name;
+  private String name;
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
@@ -135,6 +135,10 @@ public final class SolrCore {
   
   public String getName() {
     return name;
+  }
+
+  public void setName(String v) {
+    this.name = v;
   }
   
   /**
