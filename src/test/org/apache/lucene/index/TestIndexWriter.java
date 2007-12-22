@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.File;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -1981,4 +1982,100 @@ public class TestIndexWriter extends LuceneTestCase
       }
     }
   }
+
+  public void testNoWaitClose() throws Throwable {
+    RAMDirectory directory = new MockRAMDirectory();
+
+    final Document doc = new Document();
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    doc.add(idField);
+
+    for(int pass=0;pass<3;pass++) {
+      boolean autoCommit = pass%2 == 0;
+      IndexWriter writer = new IndexWriter(directory, autoCommit, new WhitespaceAnalyzer(), true);
+
+      //System.out.println("TEST: pass=" + pass + " ac=" + autoCommit + " cms=" + (pass >= 2));
+      for(int iter=0;iter<10;iter++) {
+        //System.out.println("TEST: iter=" + iter);
+        MergeScheduler ms;
+        if (pass >= 2)
+          ms = new ConcurrentMergeScheduler();
+        else
+          ms = new SerialMergeScheduler();
+        
+        writer.setMergeScheduler(ms);
+        writer.setMaxBufferedDocs(2);
+        writer.setMergeFactor(100);
+
+        for(int j=0;j<199;j++) {
+          idField.setValue(Integer.toString(iter*201+j));
+          writer.addDocument(doc);
+        }
+
+        int delID = iter*199;
+        for(int j=0;j<20;j++) {
+          writer.deleteDocuments(new Term("id", Integer.toString(delID)));
+          delID += 5;
+        }
+
+        // Force a bunch of merge threads to kick off so we
+        // stress out aborting them on close:
+        writer.setMergeFactor(2);
+
+        final IndexWriter finalWriter = writer;
+        final ArrayList failure = new ArrayList();
+        Thread t1 = new Thread() {
+            public void run() {
+              boolean done = false;
+              while(!done) {
+                for(int i=0;i<100;i++) {
+                  try {
+                    finalWriter.addDocument(doc);
+                  } catch (AlreadyClosedException e) {
+                    done = true;
+                    break;
+                  } catch (NullPointerException e) {
+                    done = true;
+                    break;
+                  } catch (Throwable e) {
+                    e.printStackTrace(System.out);
+                    failure.add(e);
+                    done = true;
+                    break;
+                  }
+                }
+                Thread.yield();
+              }
+
+            }
+          };
+
+        if (failure.size() > 0)
+          throw (Throwable) failure.get(0);
+
+        t1.start();
+
+        writer.close(false);
+        while(true) {
+          try {
+            t1.join();
+            break;
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
+        }
+
+        // Make sure reader can read
+        IndexReader reader = IndexReader.open(directory);
+        reader.close();
+
+        // Reopen
+        writer = new IndexWriter(directory, autoCommit, new WhitespaceAnalyzer(), false);
+      }
+      writer.close();
+    }
+
+    directory.close();
+  }
+
 }

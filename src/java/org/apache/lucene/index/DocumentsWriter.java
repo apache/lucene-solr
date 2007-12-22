@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.store.AlreadyClosedException;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -147,6 +148,8 @@ final class DocumentsWriter {
   // Flush @ this number of docs.  If rarmBufferSize is
   // non-zero we will flush by RAM usage instead.
   private int maxBufferedDocs = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
+
+  private boolean closed;
 
   // Coarse estimates used to measure RAM usage of buffered deletes
   private static int OBJECT_HEADER_BYTES = 12;
@@ -2168,6 +2171,10 @@ final class DocumentsWriter {
     }
   }
 
+  synchronized void close() {
+    closed = true;
+  }
+
   /** Returns a free (idle) ThreadState that may be used for
    * indexing this one document.  This call also pauses if a
    * flush is pending.  If delTerm is non-null then we
@@ -2210,6 +2217,9 @@ final class DocumentsWriter {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
+
+    if (closed)
+      throw new AlreadyClosedException("this IndexWriter is closed");
 
     if (segment == null)
       segment = writer.newSegmentName();

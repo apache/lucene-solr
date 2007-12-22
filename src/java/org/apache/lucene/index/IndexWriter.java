@@ -291,6 +291,7 @@ public class IndexWriter {
   private Set runningMerges = new HashSet();
   private List mergeExceptions = new ArrayList();
   private long mergeGen;
+  private boolean stopMerges;
 
   /**
    * Used internally to throw an {@link
@@ -1150,8 +1151,10 @@ public class IndexWriter {
    * using a MergeScheduler that runs merges in background
    * threads.
    * @param waitForMerges if true, this call will block
-   * until all merges complete; else, it will abort all
-   * running merges and return right away
+   * until all merges complete; else, it will ask all
+   * running merges to abort, wait until those merges have
+   * finished (which should be at most a few seconds), and
+   * then return.
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
     boolean doClose;
@@ -1186,6 +1189,8 @@ public class IndexWriter {
       if (infoStream != null)
         message("now flush at close");
 
+      docWriter.close();
+
       // Only allow a new merge to be triggered if we are
       // going to wait for merges:
       flush(waitForMerges, true);
@@ -1196,33 +1201,33 @@ public class IndexWriter {
 
       mergeScheduler.close();
 
-      if (commitPending) {
-        boolean success = false;
-        try {
-          segmentInfos.write(directory);         // now commit changes
-          success = true;
-        } finally {
-          if (!success) {
-            if (infoStream != null)
-              message("hit exception committing segments file during close");
-            deletePartialSegmentsFile();
-          }
-        }
-        if (infoStream != null)
-          message("close: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
-        synchronized(this) {
-          deleter.checkpoint(segmentInfos, true);
-        }
-        commitPending = false;
-        rollbackSegmentInfos = null;
-      }
-
-      if (infoStream != null)
-        message("at close: " + segString());
-
-      docWriter = null;
-
       synchronized(this) {
+        if (commitPending) {
+          boolean success = false;
+          try {
+            segmentInfos.write(directory);         // now commit changes
+            success = true;
+          } finally {
+            if (!success) {
+              if (infoStream != null)
+                message("hit exception committing segments file during close");
+              deletePartialSegmentsFile();
+            }
+          }
+          if (infoStream != null)
+            message("close: wrote segments file \"" + segmentInfos.getCurrentSegmentFileName() + "\"");
+
+          deleter.checkpoint(segmentInfos, true);
+
+          commitPending = false;
+          rollbackSegmentInfos = null;
+        }
+
+        if (infoStream != null)
+          message("at close: " + segString());
+
+        docWriter = null;
+
         deleter.close();
       }
       
@@ -1440,9 +1445,11 @@ public class IndexWriter {
         synchronized (this) {
           // If docWriter has some aborted files that were
           // never incref'd, then we clean them up here
-          final List files = docWriter.abortedFiles();
-          if (files != null)
-            deleter.deleteNewFiles(files);
+          if (docWriter != null) {
+            final List files = docWriter.abortedFiles();
+            if (files != null)
+              deleter.deleteNewFiles(files);
+          }
         }
       }
     }
@@ -1799,6 +1806,9 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
     assert !optimize || maxNumSegmentsOptimize > 0;
 
+    if (stopMerges)
+      return;
+
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
       spec = mergePolicy.findMergesForOptimize(segmentInfos, this, maxNumSegmentsOptimize, segmentsToOptimize);
@@ -1861,6 +1871,7 @@ public class IndexWriter {
 
     localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     localAutoCommit = autoCommit;
+
     if (localAutoCommit) {
 
       if (infoStream != null)
@@ -1905,6 +1916,7 @@ public class IndexWriter {
 
     deleter.refresh();
     finishMerges(false);
+    stopMerges = false;
   }
 
   /*
@@ -1995,7 +2007,6 @@ public class IndexWriter {
         // them:
         deleter.checkpoint(segmentInfos, false);
         deleter.refresh();
-        finishMerges(false);
       }
 
       commitPending = false;
@@ -2004,8 +2015,11 @@ public class IndexWriter {
       waitForClose();
   }
 
-  private synchronized void finishMerges(boolean waitForMerges) {
+  private synchronized void finishMerges(boolean waitForMerges) throws IOException {
     if (!waitForMerges) {
+
+      stopMerges = true;
+
       // Abort all pending & running merges:
       Iterator it = pendingMerges.iterator();
       while(it.hasNext()) {
@@ -2013,9 +2027,10 @@ public class IndexWriter {
         if (infoStream != null)
           message("now abort pending merge " + merge.segString(directory));
         merge.abort();
+        mergeFinish(merge);
       }
       pendingMerges.clear();
-
+      
       it = runningMerges.iterator();
       while(it.hasNext()) {
         final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
@@ -2023,10 +2038,27 @@ public class IndexWriter {
           message("now abort running merge " + merge.segString(directory));
         merge.abort();
       }
-      runningMerges.clear();
 
-      mergingSegments.clear();
-      notifyAll();
+      // These merges periodically check whether they have
+      // been aborted, and stop if so.  We wait here to make
+      // sure they all stop.  It should not take very long
+      // because the merge threads periodically check if
+      // they are aborted.
+      while(runningMerges.size() > 0) {
+        if (infoStream != null)
+          message("now wait for " + runningMerges.size() + " running merge to abort");
+        try {
+          wait();
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+      }
+
+      assert 0 == mergingSegments.size();
+
+      if (infoStream != null)
+        message("all running merges have aborted");
+
     } else {
       while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
         try {
@@ -2263,7 +2295,7 @@ public class IndexWriter {
     optimize();					  // start with zero or 1 seg
 
     final String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(this, mergedName);
+    SegmentMerger merger = new SegmentMerger(this, mergedName, null);
 
     SegmentInfo info;
 
@@ -2684,10 +2716,12 @@ public class IndexWriter {
               deletes.set(docUpto);
             docUpto++;
           }
-            
+
         } else
           // No deletes before or after
           docUpto += currentInfo.docCount;
+
+        merge.checkAborted(directory);
       }
 
       if (deletes != null) {
@@ -2783,15 +2817,26 @@ public class IndexWriter {
 
     try {
 
-      if (merge.info == null)
-        mergeInit(merge);
+      try {
+        if (merge.info == null)
+          mergeInit(merge);
 
-      if (infoStream != null)
-        message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
+        if (infoStream != null)
+          message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
 
-      mergeMiddle(merge);
-
-      success = true;
+        mergeMiddle(merge);
+        success = true;
+      } catch (MergePolicy.MergeAbortedException e) {
+        merge.setException(e);
+        addMergeException(merge);
+        // We can ignore this exception, unless the merge
+        // involves segments from external directories, in
+        // which case we must throw it so, for example, the
+        // rollbackTransaction code in addIndexes* is
+        // executed.
+        if (merge.isExternal)
+          throw e;
+      }
     } finally {
       synchronized(this) {
         try {
@@ -2863,10 +2908,10 @@ public class IndexWriter {
    *  the synchronized lock on IndexWriter instance. */
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
 
-    if (merge.isAborted())
-      throw new IOException("merge is aborted");
-
     assert merge.registerDone;
+
+    if (merge.isAborted())
+      return;
 
     final SegmentInfos sourceSegments = merge.segments;
     final int end = sourceSegments.size();
@@ -3010,6 +3055,8 @@ public class IndexWriter {
    *  instance */
   final private int mergeMiddle(MergePolicy.OneMerge merge) 
     throws CorruptIndexException, IOException {
+    
+    merge.checkAborted(directory);
 
     final String mergedName = merge.info.name;
     
@@ -3024,8 +3071,8 @@ public class IndexWriter {
     if (infoStream != null)
       message("merging " + merge.segString(directory));
 
-    merger = new SegmentMerger(this, mergedName);
-
+    merger = new SegmentMerger(this, mergedName, merge);
+    
     // This is try/finally to make sure merger's readers are
     // closed:
 
@@ -3044,8 +3091,7 @@ public class IndexWriter {
         message("merge: total "+totDocCount+" docs");
       }
 
-      if (merge.isAborted())
-        throw new IOException("merge is aborted");
+      merge.checkAborted(directory);
 
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 

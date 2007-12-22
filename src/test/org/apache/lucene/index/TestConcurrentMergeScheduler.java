@@ -219,12 +219,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer.close();
     }
 
-    try {
-      directory.close();
-    } catch (RuntimeException re) {
-      // MockRAMDirectory will throw RuntimeExceptions when there
-      // are still open files, which is OK since some merge
-      // threads may still be running at this point.
-    }
+    directory.close();
   }
 }

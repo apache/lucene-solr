@@ -53,6 +53,8 @@ final class SegmentMerger {
   
   private int mergedDocs;
 
+  private CheckAbort checkAbort;
+
   // Whether we should merge doc stores (stored fields and
   // vectors files).  When all segments we are merging
   // already share the same doc store files, we don't need
@@ -61,7 +63,7 @@ final class SegmentMerger {
 
   /** Maximum number of contiguous documents to bulk-copy
       when merging stored fields */
-  private final static int MAX_RAW_MERGE_DOCS = 16384;
+  private final static int MAX_RAW_MERGE_DOCS = 4192;
 
   /** This ctor used only by test code.
    * 
@@ -73,9 +75,11 @@ final class SegmentMerger {
     segment = name;
   }
 
-  SegmentMerger(IndexWriter writer, String name) {
+  SegmentMerger(IndexWriter writer, String name, MergePolicy.OneMerge merge) {
     directory = writer.getDirectory();
     segment = name;
+    if (merge != null)
+      checkAbort = new CheckAbort(merge, directory);
     termIndexInterval = writer.getTermIndexInterval();
   }
 
@@ -118,6 +122,13 @@ final class SegmentMerger {
   final int merge(boolean mergeDocStores) throws CorruptIndexException, IOException {
 
     this.mergeDocStores = mergeDocStores;
+    
+    // NOTE: it's important to add calls to
+    // checkAbort.work(...) if you make any changes to this
+    // method that will spend alot of time.  The frequency
+    // of this check impacts how long
+    // IndexWriter.close(false) takes to actually stop the
+    // threads.
 
     mergedDocs = mergeFields();
     mergeTerms();
@@ -144,7 +155,7 @@ final class SegmentMerger {
   final Vector createCompoundFile(String fileName)
           throws IOException {
     CompoundFileWriter cfsWriter =
-            new CompoundFileWriter(directory, fileName);
+      new CompoundFileWriter(directory, fileName, checkAbort);
 
     Vector files =
       new Vector(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
@@ -265,9 +276,6 @@ final class SegmentMerger {
       // Used for bulk-reading raw bytes for stored fields
       final int[] rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
 
-      // merge field values
-      final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, fieldInfos);
-
       // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
       // in  merge mode, we use this FieldSelector
       FieldSelector fieldSelectorMerge = new FieldSelector() {
@@ -275,6 +283,9 @@ final class SegmentMerger {
             return FieldSelectorResult.LOAD_FOR_MERGE;
           }        
         };
+
+      // merge field values
+      final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, fieldInfos);
 
       try {
         for (int i = 0; i < readers.size(); i++) {
@@ -302,10 +313,14 @@ final class SegmentMerger {
                 IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
                 fieldsWriter.addRawDocuments(stream, rawDocLengths, numDocs);
                 docCount += numDocs;
+                if (checkAbort != null)
+                  checkAbort.work(300*numDocs);
               } else {
                 fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
                 j++;
                 docCount++;
+                if (checkAbort != null)
+                  checkAbort.work(300);
               }
             } else
               j++;
@@ -342,6 +357,8 @@ final class SegmentMerger {
           if (reader.isDeleted(docNum)) 
             continue;
           termVectorsWriter.addAllDocVectors(reader.getTermFreqVectors(docNum));
+          if (checkAbort != null)
+            checkAbort.work(300);
         }
       }
     } finally {
@@ -405,7 +422,10 @@ final class SegmentMerger {
         top = (SegmentMergeInfo) queue.top();
       }
 
-      mergeTermInfo(match, matchSize);		  // add new TermInfo
+      final int df = mergeTermInfo(match, matchSize);		  // add new TermInfo
+
+      if (checkAbort != null)
+        checkAbort.work(df/3.0);
 
       while (matchSize > 0) {
         SegmentMergeInfo smi = match[--matchSize];
@@ -428,7 +448,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  private final void mergeTermInfo(SegmentMergeInfo[] smis, int n)
+  private final int mergeTermInfo(SegmentMergeInfo[] smis, int n)
           throws CorruptIndexException, IOException {
     long freqPointer = freqOutput.getFilePointer();
     long proxPointer = proxOutput.getFilePointer();
@@ -442,6 +462,8 @@ final class SegmentMerger {
       termInfo.set(df, freqPointer, proxPointer, (int) (skipPointer - freqPointer));
       termInfosWriter.add(smis[0].term, termInfo);
     }
+
+    return df;
   }
   
   private byte[] payloadBuffer = null;
@@ -562,6 +584,8 @@ final class SegmentMerger {
                 }
               }
             }
+            if (checkAbort != null)
+              checkAbort.work(maxDoc);
           }
         }
       }
@@ -572,4 +596,29 @@ final class SegmentMerger {
     }
   }
 
+  final static class CheckAbort {
+    private double workCount;
+    private MergePolicy.OneMerge merge;
+    private Directory dir;
+    public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
+      this.merge = merge;
+      this.dir = dir;
+    }
+
+    /**
+     * Records the fact that roughly units amount of work
+     * have been done since this method was last called.
+     * When adding time-consuming code into SegmentMerger,
+     * you should test different values for units to ensure
+     * that the time in between calls to merge.checkAborted
+     * is up to ~ 1 second.
+     */
+    public void work(double units) throws MergePolicy.MergeAbortedException {
+      workCount += units;
+      if (workCount >= 10000.0) {
+        merge.checkAborted(dir);
+        workCount = 0;
+      }
+    }
+  }
 }

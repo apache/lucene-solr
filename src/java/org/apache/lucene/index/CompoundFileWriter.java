@@ -68,18 +68,22 @@ final class CompoundFileWriter {
     private HashSet ids;
     private LinkedList entries;
     private boolean merged = false;
-
+    private SegmentMerger.CheckAbort checkAbort;
 
     /** Create the compound stream in the specified file. The file name is the
      *  entire name (no extensions are added).
      *  @throws NullPointerException if <code>dir</code> or <code>name</code> is null
      */
     public CompoundFileWriter(Directory dir, String name) {
+      this(dir, name, null);
+    }
+
+    CompoundFileWriter(Directory dir, String name, SegmentMerger.CheckAbort checkAbort) {
         if (dir == null)
             throw new NullPointerException("directory cannot be null");
         if (name == null)
             throw new NullPointerException("name cannot be null");
-
+        this.checkAbort = checkAbort;
         directory = dir;
         fileName = name;
         ids = new HashSet();
@@ -211,6 +215,10 @@ final class CompoundFileWriter {
                 is.readBytes(buffer, 0, len);
                 os.writeBytes(buffer, len);
                 remainder -= len;
+                if (checkAbort != null)
+                  // Roughly every 2 MB we will check if
+                  // it's time to abort
+                  checkAbort.work(80);
             }
 
             // Verify that remainder is 0

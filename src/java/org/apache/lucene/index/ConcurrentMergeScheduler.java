@@ -251,18 +251,15 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         message("  merge thread: done");
 
-      } catch (Throwable exc) {
-        // When a merge was aborted & IndexWriter closed,
-        // it's possible to get various IOExceptions,
-        // NullPointerExceptions, AlreadyClosedExceptions:
+      } catch (IOException exc) {
+
         if (merge != null) {
           merge.setException(exc);
           writer.addMergeException(merge);
         }
 
-        if (merge == null || !merge.isAborted()) {
-          // If the merge was not aborted then the exception
-          // is real
+        // Ignore the exception if it was due to abort:
+        if (!(exc instanceof MergePolicy.MergeAbortedException)) {
           synchronized(ConcurrentMergeScheduler.this) {
             exceptions.add(exc);
           }

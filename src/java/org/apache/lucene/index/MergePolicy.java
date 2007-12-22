@@ -86,29 +86,34 @@ public abstract class MergePolicy {
 
     /** Record that an exception occurred while executing
      *  this merge */
-    public synchronized void setException(Throwable error) {
+    synchronized void setException(Throwable error) {
       this.error = error;
     }
 
     /** Retrieve previous exception set by {@link
      *  #setException}. */
-    public synchronized Throwable getException() {
+    synchronized Throwable getException() {
       return error;
     }
 
     /** Mark this merge as aborted.  If this is called
      *  before the merge is committed then the merge will
      *  not be committed. */
-    public synchronized void abort() {
+    synchronized void abort() {
       aborted = true;
     }
 
     /** Returns true if this merge was aborted. */
-    public synchronized boolean isAborted() {
+    synchronized boolean isAborted() {
       return aborted;
     }
 
-    public String segString(Directory dir) {
+    synchronized void checkAborted(Directory dir) throws MergeAbortedException {
+      if (aborted)
+        throw new MergeAbortedException("merge is aborted: " + segString(dir));
+    }
+
+    String segString(Directory dir) {
       StringBuffer b = new StringBuffer();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
@@ -159,6 +164,15 @@ public abstract class MergePolicy {
     }
     public MergeException(Throwable exc) {
       super(exc);
+    }
+  }
+
+  public static class MergeAbortedException extends IOException {
+    public MergeAbortedException() {
+      super("merge is aborted");
+    }
+    public MergeAbortedException(String message) {
+      super(message);
     }
   }
 
