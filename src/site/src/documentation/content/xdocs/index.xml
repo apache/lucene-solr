@@ -39,6 +39,24 @@
           </section>-->
 
           <section>
+		    <title>24 December 2007 - Nightly Snapshots available in the Apache Maven Snapshot Repository</title>
+			<p>
+			  We are now publishing nightly artifacts to the <a href="http://people.apache.org/maven-snapshot-repository/org/apache/lucene/">Maven Snapshot Repository</a>. The current version is '2.3-SNAPSHOT'.
+			</p>
+			<p>
+			  The artifacts include:
+			  <ul>
+                <li>Binary jars</li>			  
+                <li>Sources</li>			  				
+                <li>Javadocs</li>			  				
+              </ul>
+              You can find separate artifacts for the core, demo, and the different contrib modules.
+			</p>
+			<p>
+			  Merry Christmas!
+			</p>
+          </section>
+          <section>		  
             <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
             <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png" class="float-right" alt="ApacheCon US logo" /></a>
               Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
