@@ -189,6 +189,14 @@ Bug fixes
 25. LUCENE-1042: Remove throwing of IOException in getTermFreqVector(int, String, TermVectorMapper) to be consistent
     with other getTermFreqVector calls.  Also removed the throwing of the other IOException in that method to be consistent.  (Karl Wettin via Grant Ingersoll)
     
+26. LUCENE-1096: Fixed Hits behavior when hits' docs are deleted 
+    along with iterating the hits. Deleting docs already retrieved 
+    now works seamlessly. If docs not yet retrieved are deleted 
+    (e.g. from another thread), and then, relying on the initial 
+    Hits.length(), an application attempts to retrieve more hits 
+    than actually exist , a ConcurrentMidificationException 
+    is thrown.  (Doron Cohen)
+    
     
 New features
 
