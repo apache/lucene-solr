@@ -134,7 +134,7 @@ public abstract class MergePolicy {
    * contains a list of {@link OneMerge} instances.
    */
 
-  public static class MergeSpecification implements Cloneable {
+  public static class MergeSpecification {
 
     /**
      * The subset of segments to be included in the primitive merge.
