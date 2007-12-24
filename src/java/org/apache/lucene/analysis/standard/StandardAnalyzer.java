@@ -76,10 +76,11 @@ public class StandardAnalyzer extends Analyzer {
     return result;
   }
 
-  private class SavedStreams {
+  private static final class SavedStreams {
     StandardTokenizer tokenStream;
     TokenStream filteredTokenStream;
-  };
+  }
+  
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {

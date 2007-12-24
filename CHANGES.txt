@@ -314,6 +314,8 @@ Optimizations
     documents, and a slight performance increase for top level
     conjunctions.  (yonik)
 
+14. LUCENE-1098: Make inner class StandardAnalyzer.SavedStreams static 
+    and final. (Nathan Beyer via Michael Busch)
 
 Documentation
 
