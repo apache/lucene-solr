@@ -362,6 +362,10 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.Q, query);
   }
 
+  public String getQuery() {
+    return this.get(CommonParams.Q);
+  }
+
   public void setRows(Integer rows) {
     this.set(CommonParams.ROWS, rows);
   }
