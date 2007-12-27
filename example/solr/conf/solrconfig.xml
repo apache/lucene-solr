@@ -488,8 +488,6 @@
     <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
     -->
   </requestHandler>
-  <!-- this will be removed before solr 1.3 -->
-  <requestHandler name="/update/xpp" class="solr.XppUpdateRequestHandler" />
 
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
