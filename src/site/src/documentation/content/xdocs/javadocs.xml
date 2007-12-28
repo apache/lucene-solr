@@ -6,7 +6,7 @@
 </properties>
 <body>
 
-<section id="Javadocs"><title>Javadocs</title>
+<section id="Releases_Javadocs"><title>Javadocs for Official Releases</title>
   <p>
     <ul><li><a href="http://lucene.apache.org/java/2_2_0/api/index.html">2.2.0</a></li>
     <li><a href="http://lucene.apache.org/java/2_1_0/api/index.html">2.1.0</a></li>
