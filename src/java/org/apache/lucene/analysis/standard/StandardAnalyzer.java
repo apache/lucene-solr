@@ -33,6 +33,16 @@ import java.util.Set;
 public class StandardAnalyzer extends Analyzer {
   private Set stopSet;
 
+  /**
+   * Specifies whether deprecated acronyms should be replaced with HOST type.
+   * This is false by default to support backward compatibility.
+   * 
+   * @deprecated this should be removed in the next release (3.0).
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   */
+  private boolean replaceInvalidAcronym = false;
+  
   /** An array containing some common English words that are usually not
   useful for searching. */
   public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
@@ -66,10 +76,75 @@ public class StandardAnalyzer extends Analyzer {
     stopSet = WordlistLoader.getWordSet(stopwords);
   }
 
+  /**
+   *
+   * @param replaceInvalidAcronym Set to true if this analyzer should replace mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   *
+   * @deprecated Remove in 3.X and make true the only valid value
+   */
+  public StandardAnalyzer(boolean replaceInvalidAcronym) {
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
+  /**
+   *  @param stopwords The stopwords to use
+   * @param replaceInvalidAcronym Set to true if this analyzer should replace mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   *
+   * @deprecated Remove in 3.X and make true the only valid value
+   */
+  public StandardAnalyzer(Reader stopwords, boolean replaceInvalidAcronym) throws IOException{
+    this(stopwords);
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
+  /**
+   * @param stopwords The stopwords to use
+   * @param replaceInvalidAcronym Set to true if this analyzer should replace mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   *
+   * @deprecated Remove in 3.X and make true the only valid value
+   */
+  public StandardAnalyzer(File stopwords, boolean replaceInvalidAcronym) throws IOException{
+    this(stopwords);
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
+  /**
+   *
+   * @param stopwords The stopwords to use
+   * @param replaceInvalidAcronym Set to true if this analyzer should replace mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   *
+   * @deprecated Remove in 3.X and make true the only valid value
+   */
+  public StandardAnalyzer(String [] stopwords, boolean replaceInvalidAcronym) throws IOException{
+    this(stopwords);
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
+  /**
+   * @param stopwords The stopwords to use
+   * @param replaceInvalidAcronym Set to true if this analyzer should replace mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   *
+   * @deprecated Remove in 3.X and make true the only valid value
+   */
+  public StandardAnalyzer(Set stopwords, boolean replaceInvalidAcronym) throws IOException{
+    this(stopwords);
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
   StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
+    TokenStream result = new StandardTokenizer(reader, replaceInvalidAcronym);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopSet);
@@ -90,9 +165,32 @@ public class StandardAnalyzer extends Analyzer {
       streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
       streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
       streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopSet);
-    } else
+    } else {
       streams.tokenStream.reset(reader);
+    }
     
+    streams.tokenStream.setReplaceInvalidAcronym(replaceInvalidAcronym);
+
     return streams.filteredTokenStream;
+  }
+
+  /**
+   *
+   * @return true if this Analyzer is replacing mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   */
+  public boolean isReplaceInvalidAcronym() {
+    return replaceInvalidAcronym;
+  }
+
+  /**
+   *
+   * @param replaceInvalidAcronym Set to true if this Analyzer is replacing mischaracterized acronyms in the StandardTokenizer
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   */
+  public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
   }
 }

@@ -196,6 +196,12 @@ Bug fixes
     Hits.length(), an application attempts to retrieve more hits 
     than actually exist , a ConcurrentMidificationException 
     is thrown.  (Doron Cohen)
+
+27. LUCENE-1068: Changed StandardTokenizer to fix an issue with it marking
+  the type of some tokens incorrectly.  This is done by adding a new flag named
+  replaceInvalidAcronym which defaults to false, the current, incorrect behavior.  Setting
+  this flag to true fixes the problem.  This flag is a temporary fix and is already
+  marked as being deprecated.  3.x will implement the correct approach.  (Shai Erera via Grant Ingersoll)
     
     
 New features

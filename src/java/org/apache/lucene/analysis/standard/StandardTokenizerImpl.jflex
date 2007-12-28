@@ -38,6 +38,12 @@ public static final int EMAIL             = 4;
 public static final int HOST              = 5;
 public static final int NUM               = 6;
 public static final int CJ                = 7;
+/**
+ * @deprecated this solves a bug where HOSTs that end with '.' are identified
+ *             as ACRONYMs. It is deprecated and will be removed in the next
+ *             release.
+ */
+public static final int ACRONYM_DEP       = 8;
 
 public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",
@@ -47,7 +53,8 @@ public static final String [] TOKEN_TYPES = new String [] {
     "<EMAIL>",
     "<HOST>",
     "<NUM>",
-    "<CJ>"
+    "<CJ>",
+    "<ACRONYM_DEP>"
 };
 
 public final int yychar()
@@ -72,7 +79,9 @@ APOSTROPHE =  {ALPHA} ("'" {ALPHA})+
 
 // acronyms: U.S.A., I.B.M., etc.
 // use a post-filter to remove dots
-ACRONYM    =  {ALPHA} "." ({ALPHA} ".")+
+ACRONYM    =  {LETTER} "." ({LETTER} ".")+
+
+ACRONYM_DEP	= {ALPHANUM} "." ({ALPHANUM} ".")+
 
 // company names like AT&T and Excite@Home.
 COMPANY    =  {ALPHA} ("&"|"@") {ALPHA}
@@ -125,6 +134,7 @@ WHITESPACE = \r\n | [ \r\n\t\f]
 {HOST}                                                         { return HOST; }
 {NUM}                                                          { return NUM; }
 {CJ}                                                           { return CJ; }
+{ACRONYM_DEP}                                                  { return ACRONYM_DEP; }
 
 /** Ignore the rest */
 . | {WHITESPACE}                                               { /* ignore */ }
