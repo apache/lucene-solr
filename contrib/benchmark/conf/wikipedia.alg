@@ -35,9 +35,9 @@ doc.tokenized=true
 doc.term.vector=false
 doc.add.log.step=500
 
-docs.dir=enwiki
+docs.file=temp/enwiki-20070527-pages-articles.xml
 
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.DirDocMaker
+doc.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
 
