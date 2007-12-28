@@ -82,7 +82,7 @@ public class SolrDispatchFilter implements Filter
         singlecore = null;
       }
       else {
-        singlecore = new SolrCore( "core", null, new SolrConfig(), null );
+        singlecore = new SolrCore( null, null, new SolrConfig(), null );
         core = singlecore;
       }
       

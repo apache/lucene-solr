@@ -84,6 +84,8 @@ public final class SolrCore {
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
 
   private String name;
+  private String logid; // used to show what name is set
+  
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
@@ -139,6 +141,12 @@ public final class SolrCore {
 
   public void setName(String v) {
     this.name = v;
+    this.logid = (v==null)?"":("["+v+"] ");
+  }
+  
+  public String getLogId()
+  {
+    return this.logid;
   }
   
   /**
@@ -151,7 +159,7 @@ public final class SolrCore {
   
   public List<SolrEventListener> parseListener(String path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
-    log.info( "["+name+"] Searching for listeners: " +path);
+    log.info( logid+"Searching for listeners: " +path);
     NodeList nodes = (NodeList)solrConfig.evaluate(path, XPathConstants.NODESET);
     if (nodes!=null) {
       for (int i=0; i<nodes.getLength(); i++) {
@@ -160,7 +168,7 @@ public final class SolrCore {
         SolrEventListener listener = createEventListener(className);
         listener.init(DOMUtil.childNodesToNamedList(node));
         lst.add(listener);
-        log.info( "["+name+"] Added SolrEventListener: " + listener);
+        log.info( logid+"Added SolrEventListener: " + listener);
       }
     }
     return lst;
@@ -194,7 +202,7 @@ public final class SolrCore {
         // if it didn't exist already...
         Directory dir = FSDirectory.getDirectory(dirFile, !indexExists);
         if (IndexReader.isLocked(dir)) {
-          log.warning("["+name+"] WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+          log.warning(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
           IndexReader.unlock(dir);
         }
       }
@@ -202,7 +210,7 @@ public final class SolrCore {
       // Create the index if it doesn't exist. Note that indexExists was tested *before*
       // lock removal, since that will result in the creation of the directory.
       if(!indexExists) {
-        log.warning("["+name+"] Solr index directory '" + dirFile + "' doesn't exist."
+        log.warning(logid+"Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
@@ -267,7 +275,7 @@ public final class SolrCore {
       if( instance == null ) {
         try {
           // sets 'instance' to the latest solr core
-          instance = new SolrCore("default", null, new SolrConfig(), null);
+          instance = new SolrCore( null, null, new SolrConfig(), null);
         } catch(Exception xany) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "error creating core", xany );
@@ -278,7 +286,7 @@ public final class SolrCore {
   }
   
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
-    this( "core", dataDir, new SolrConfig(), schema );
+    this( null, dataDir, new SolrConfig(), schema );
   }
   
   /**
@@ -293,13 +301,13 @@ public final class SolrCore {
       // this is for backward compatibility (and also the reason
       // the sync block is needed)
       instance = this;   // set singleton
-      this.name = name;
+      this.setName( name );
       SolrResourceLoader loader = config.getResourceLoader();
       if (dataDir ==null) {
         dataDir = config.get("dataDir",loader.getInstanceDir()+"data");
       }
 
-      log.info("["+name+"] Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
+      log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
       if (schema==null) {
         schema = new IndexSchema(config, "schema.xml");
@@ -398,7 +406,7 @@ public final class SolrCore {
   }
 
   public void close() {
-    log.info("["+name+"] CLOSING SolrCore!");
+    log.info(logid+"CLOSING SolrCore!");
     try {
       closeSearcher();
     } catch (Exception e) {
@@ -622,16 +630,16 @@ public final class SolrCore {
       onDeckSearchers++;
       if (onDeckSearchers < 1) {
         // should never happen... just a sanity check
-        log.severe("["+name+"] ERROR!!! onDeckSearchers is " + onDeckSearchers);
+        log.severe(logid+"ERROR!!! onDeckSearchers is " + onDeckSearchers);
         onDeckSearchers=1;  // reset
       } else if (onDeckSearchers > maxWarmingSearchers) {
         onDeckSearchers--;
         String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
-        log.warning("["+name+"] "+ msg);
+        log.warning(logid+""+ msg);
         // HTTP 503==service unavailable, or 409==Conflict
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg,true);
       } else if (onDeckSearchers > 1) {
-        log.info("["+name+"] PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+        log.info(logid+"PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
       }
     }
 
@@ -791,7 +799,7 @@ public final class SolrCore {
         }
         if (onDeckSearchers < 0) {
           // sanity check... should never happen
-          log.severe("["+name+"] ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
+          log.severe(logid+"ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
           onDeckSearchers=0; // try and recover
         }
         // if we failed, we need to wake up at least one waiter to continue the process
@@ -840,7 +848,7 @@ public final class SolrCore {
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
         newSearcher.register(); // register subitems (caches)
-        log.info("["+name+"] Registered new searcher " + newSearcher);
+        log.info(logid+"Registered new searcher " + newSearcher);
 
       } catch (Throwable e) {
         log(e);
@@ -856,7 +864,7 @@ public final class SolrCore {
 
 
   public void closeSearcher() {
-    log.info("["+name+"] Closing main searcher on request.");
+    log.info(logid+"Closing main searcher on request.");
     synchronized (searcherLock) {
       if (_searcher != null) {
         _searcher.decref();   // dec refcount for this._searcher
@@ -869,7 +877,7 @@ public final class SolrCore {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
-      log.warning("["+name+"] Null Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warning(logid+"Null Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getQueryType() + "'", true);
     }
     // setup response header and handle request
@@ -878,7 +886,7 @@ public final class SolrCore {
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,responseHeader,req,rsp);
 
-    log.info("["+name+"] " + req.getContext().get("path") + " "
+    log.info(logid+"" + req.getContext().get("path") + " "
             + req.getParamString()+ " 0 "+
        (int)(rsp.getEndTime() - req.getStartTime()));
   }
@@ -887,7 +895,7 @@ public final class SolrCore {
   public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrRequestHandler handler = getRequestHandler(req.getQueryType());
     if (handler==null) {
-      log.warning("["+name+"] Unknown Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warning(logid+"Unknown Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
     }
     execute(handler, req, rsp);

@@ -176,7 +176,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // must only be called when iwCommit lock held
   private void deleteAll() throws IOException {
-    core.log.info("["+core.getName()+"] REMOVING ALL DOCUMENTS FROM INDEX");
+    core.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
     closeWriter();
     closeSearcher();
     pset.clear(); // ignore docs marked for deletion since we are removing all
@@ -377,7 +377,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
       if (!delAll) {
         if (core.log.isLoggable(Level.FINE)) {
-          core.log.fine("["+core.getName()+"] docs deleted by query:" + totDeleted);
+          core.log.fine(core.getLogId()+"docs deleted by query:" + totDeleted);
         }
         numDocsDeleted.getAndAdd(totDeleted);
       }

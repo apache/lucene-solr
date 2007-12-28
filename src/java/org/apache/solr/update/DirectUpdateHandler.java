@@ -135,7 +135,7 @@ public class DirectUpdateHandler extends UpdateHandler {
       Term term = new Term(idField.getName(), indexedId);
       num = ir.deleteDocuments(term);
       if (core.log.isLoggable(Level.FINEST)) {
-        core.log.finest( "["+core.getName()+"] deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
+        core.log.finest( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
       }
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -203,7 +203,7 @@ public class DirectUpdateHandler extends UpdateHandler {
     }
 
     if (core.log.isLoggable(Level.FINE)) {
-      core.log.fine("["+core.getName()+"] docs deleted:" + totDeleted);
+      core.log.fine(core.getLogId()+"docs deleted:" + totDeleted);
     }
 
   }
