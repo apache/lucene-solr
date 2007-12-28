@@ -43,15 +43,16 @@ public class SinkTokenizer extends Tokenizer {
   }
 
   /**
-   * Ignores the input result Token and returns the next token out of the list of cached tokens
-   * @param result The input token
+   * Returns the next token out of the list of cached tokens
    * @return The next {@link org.apache.lucene.analysis.Token} in the Sink.
    * @throws IOException
    */
-  public Token next(Token result) throws IOException {
+  public Token next() throws IOException {
     if (iter == null) iter = lst.iterator();
     return iter.hasNext() ? (Token) iter.next() : null;
   }
+
+
 
   /**
    * Override this method to cache only certain tokens, or new tokens based
