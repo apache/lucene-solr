@@ -41,10 +41,20 @@ public class ModifiableSolrParams extends SolrParams
     // LinkedHashMap so params show up in CGI in the same order as they are entered
     vals = new LinkedHashMap<String, String[]>();
   }
-  
+
+  /** Constructs a new ModifiableSolrParams directly using the provided Map<String,String[]> */
   public ModifiableSolrParams( Map<String,String[]> v )
   {
     vals = v;
+  }
+
+  /** Constructs a new ModifiableSolrParams, copying values from an existing SolrParams */
+  public ModifiableSolrParams(SolrParams params)
+  {
+    vals = new LinkedHashMap<String, String[]>();
+    if( params != null ) {
+      this.add( params );
+    }
   }
 
   //----------------------------------------------------------------
@@ -94,6 +104,15 @@ public class ModifiableSolrParams extends SolrParams
         }
         vals.put( name, both );
       }
+    }
+  }
+
+  public void add(SolrParams params)
+  {
+    Iterator<String> names = params.getParameterNamesIterator();
+    while (names.hasNext()) {
+      String name = names.next();
+      set(name, params.getParams(name));
     }
   }
   
