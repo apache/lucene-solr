@@ -169,6 +169,13 @@ New Features
     multiple cores and enables runtime core manipulation.  For more informaion see:
     http://wiki.apache.org/solr/MultiCore  (Henri Biestro, ryan)
 
+34. SOLR-447: Added an single request handler that will automatically register all
+    standard admin request handlers.  This replaces the need to register (and maintain)
+    the set of admin request handlers.  Assuming solrconfig.xml includes:
+     <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+    This will register: Luke/SystemInfo/PluginInfo/ThreadDump/PropertiesRequestHandler.
+    (ryan)
+
 Changes in runtime behavior
 
 Optimizations
