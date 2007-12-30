@@ -16,10 +16,12 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Set;
 
 /**
@@ -27,6 +29,8 @@ import java.util.Set;
  */
 public class TestStopFilter extends LuceneTestCase {
 
+  private final static boolean VERBOSE = false;
+  
   // other StopFilter functionality is already tested by TestStopAnalyzer
 
   public void testExactCase() throws IOException {
@@ -56,4 +60,69 @@ public class TestStopFilter extends LuceneTestCase {
     assertEquals(null, stream.next());
   }
 
+  /**
+   * Test Position increments applied by StopFilter with and without enabling this option.
+   */
+  public void testStopPositons() throws IOException {
+    StringBuffer sb = new StringBuffer();
+    ArrayList a = new ArrayList();
+    for (int i=0; i<20; i++) {
+      String w = English.intToEnglish(i).trim();
+      sb.append(w).append(" ");
+      if (i%3 != 0) a.add(w);
+    }
+    log(sb.toString());
+    String stopWords[] = (String[]) a.toArray(new String[0]);
+    for (int i=0; i<a.size(); i++) log("Stop: "+stopWords[i]);
+    Set stopSet = StopFilter.makeStopSet(stopWords);
+    // with increments
+    StringReader reader = new StringReader(sb.toString());
+    StopFilter stpf = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    doTestStopPositons(stpf,true);
+    // without increments
+    reader = new StringReader(sb.toString());
+    stpf = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    doTestStopPositons(stpf,false);
+    // with increments, concatenating two stop filters
+    ArrayList a0 = new ArrayList();
+    ArrayList a1 = new ArrayList();
+    for (int i=0; i<a.size(); i++) {
+      if (i%2==0) { 
+        a0.add(a.get(i));
+      } else {
+        a1.add(a.get(i));
+      }
+    }
+    String stopWords0[] = (String[]) a0.toArray(new String[0]);
+    for (int i=0; i<a0.size(); i++) log("Stop0: "+stopWords0[i]);
+    String stopWords1[] = (String[]) a1.toArray(new String[0]);
+    for (int i=0; i<a1.size(); i++) log("Stop1: "+stopWords1[i]);
+    Set stopSet0 = StopFilter.makeStopSet(stopWords0);
+    Set stopSet1 = StopFilter.makeStopSet(stopWords1);
+    reader = new StringReader(sb.toString());
+    StopFilter stpf0 = new StopFilter(new WhitespaceTokenizer(reader), stopSet0); // first part of the set
+    stpf0.setEnablePositionIncrements(true);
+    StopFilter stpf01 = new StopFilter(stpf0, stopSet1); // two stop filters concatenated!
+    doTestStopPositons(stpf01,true);
+  }
+  
+  private void doTestStopPositons(StopFilter stpf, boolean enableIcrements) throws IOException {
+    log("---> test with enable-increments-"+(enableIcrements?"enabled":"disabled"));
+    stpf.setEnablePositionIncrements(enableIcrements);
+    for (int i=0; i<20; i+=3) {
+      Token t = stpf.next();
+      log("Token "+i+": "+t);
+      String w = English.intToEnglish(i).trim();
+      assertEquals("expecting token "+i+" to be "+w,w,t.termText());
+      assertEquals("all but first token must have position increment of 3",enableIcrements?(i==0?1:3):1,t.getPositionIncrement());
+    }
+    assertNull(stpf.next());
+  }
+  
+  // print debug info depending on VERBOSE
+  private static void log(String s) {
+    if (VERBOSE) {
+      System.out.println(s);
+    }
+  }
 }

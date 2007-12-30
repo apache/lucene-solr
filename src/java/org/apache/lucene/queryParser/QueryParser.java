@@ -100,6 +100,7 @@ public class QueryParser implements QueryParserConstants {
   boolean lowercaseExpandedTerms = true;
   boolean useOldRangeQuery= false;
   boolean allowLeadingWildcard = false;
+  boolean enablePositionIncrements = false;
 
   Analyzer analyzer;
   String field;
@@ -234,10 +235,31 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * @see #setAllowLeadingWildcard
+   * @see #setAllowLeadingWildcard(boolean)
    */
   public boolean getAllowLeadingWildcard() {
     return allowLeadingWildcard;
+  }
+
+  /**
+   * Set to <code>true</code> to enable position increments in result query.
+   * <p>
+   * When set, result phrase and multi-phrase queries will
+   * be aware of position increments.
+   * Useful when e.g. a StopFilter increases the position increment of
+   * the token that follows an omitted token.
+   * <p>
+   * Default: false.
+   */
+  public void setEnablePositionIncrements(boolean enable) {
+    this.enablePositionIncrements = enable;
+  }
+
+  /**
+   * @see #setEnablePositionIncrements(boolean)
+   */
+  public boolean getEnablePositionIncrements() {
+    return enablePositionIncrements;
   }
 
   /**
@@ -478,27 +500,42 @@ public class QueryParser implements QueryParserConstants {
           MultiPhraseQuery mpq = new MultiPhraseQuery();
           mpq.setSlop(phraseSlop);
           List multiTerms = new ArrayList();
+          int position = -1;
           for (int i = 0; i < v.size(); i++) {
             t = (org.apache.lucene.analysis.Token) v.elementAt(i);
-            if (t.getPositionIncrement() == 1 && multiTerms.size() > 0) {
-              mpq.add((Term[])multiTerms.toArray(new Term[0]));
+            if (t.getPositionIncrement() > 0 && multiTerms.size() > 0) {
+              if (enablePositionIncrements) {
+                mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
+              } else {
+                mpq.add((Term[])multiTerms.toArray(new Term[0]));
+              }
               multiTerms.clear();
             }
+            position += t.getPositionIncrement();
             multiTerms.add(new Term(field, t.termText()));
           }
-          mpq.add((Term[])multiTerms.toArray(new Term[0]));
+          if (enablePositionIncrements) {
+            mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
+          } else {
+            mpq.add((Term[])multiTerms.toArray(new Term[0]));
+          }
           return mpq;
         }
       }
       else {
-        PhraseQuery q = new PhraseQuery();
-        q.setSlop(phraseSlop);
+        PhraseQuery pq = new PhraseQuery();
+        pq.setSlop(phraseSlop);
+        int position = -1;
         for (int i = 0; i < v.size(); i++) {
-          q.add(new Term(field, ((org.apache.lucene.analysis.Token)
-              v.elementAt(i)).termText()));
-
+          t = (org.apache.lucene.analysis.Token) v.elementAt(i);
+          if (enablePositionIncrements) {
+            position += t.getPositionIncrement();
+            pq.add(new Term(field, t.termText()),position);
+          } else {
+            pq.add(new Term(field, t.termText()));
+          }
         }
-        return q;
+        return pq;
       }
     }
   }
@@ -1262,12 +1299,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  final private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   final private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1281,6 +1312,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  final private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

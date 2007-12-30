@@ -27,7 +27,10 @@ import java.util.Set;
 
 public final class StopFilter extends TokenFilter {
 
+  private static boolean ENABLE_POSITION_INCREMENTS_DEFAULT = false;
+
   private final CharArraySet stopWords;
+  private boolean enablePositionIncrements = ENABLE_POSITION_INCREMENTS_DEFAULT;
 
   /**
    * Construct a token stream filtering the given input.
@@ -111,11 +114,58 @@ public final class StopFilter extends TokenFilter {
    */
   public final Token next(Token result) throws IOException {
     // return the first non-stop word found
+    int skippedPositions = 0;
     while((result = input.next(result)) != null) {
-      if (!stopWords.contains(result.termBuffer(), 0, result.termLength))
+      if (!stopWords.contains(result.termBuffer(), 0, result.termLength)) {
+        if (enablePositionIncrements) {
+          result.setPositionIncrement(result.getPositionIncrement() + skippedPositions);
+        }
         return result;
+      }
+      skippedPositions += result.getPositionIncrement();
     }
     // reached EOS -- return null
     return null;
+  }
+
+  /**
+   * @see #setEnablePositionIncrementsDefault(boolean). 
+   */
+  public static boolean getEnablePositionIncrementsDefault() {
+    return ENABLE_POSITION_INCREMENTS_DEFAULT;
+  }
+
+  /**
+   * Set the default position increments behavior of every StopFilter created from now on.
+   * <p>
+   * Note: behavior of a single StopFilter instance can be modified 
+   * with {@link #setEnablePositionIncrements(boolean)}.
+   * This static method allows control over behavior of classes using StopFilters internally, 
+   * for example {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer}. 
+   * <p>
+   * Default : false.
+   * @see #setEnablePositionIncrements(boolean).
+   */
+  public static void setEnablePositionIncrementsDefault(boolean defaultValue) {
+    ENABLE_POSITION_INCREMENTS_DEFAULT = defaultValue;
+  }
+
+  /**
+   * @see #setEnablePositionIncrements(boolean). 
+   */
+  public boolean getEnablePositionIncrements() {
+    return enablePositionIncrements;
+  }
+
+  /**
+   * Set to <code>true</code> to make <b>this</b> StopFilter enable position increments to result tokens.
+   * <p>
+   * When set, when a token is stopped (omitted), the position increment of 
+   * the following token is incremented.  
+   * <p>
+   * Default: see {@link #setEnablePositionIncrementsDefault(boolean)}.
+   */
+  public void setEnablePositionIncrements(boolean enable) {
+    this.enablePositionIncrements = enable;
   }
 }

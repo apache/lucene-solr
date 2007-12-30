@@ -838,17 +838,40 @@ public class TestQueryParser extends LuceneTestCase {
   public void testStopwords() throws Exception {
     QueryParser qp = new QueryParser("a", new StopAnalyzer(new String[]{"the", "foo"}));
     Query result = qp.parse("a:the OR a:foo");
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
     assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: " + 0, ((BooleanQuery) result).clauses().size() == 0);
     result = qp.parse("a:woo OR a:the");
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a TermQuery", result instanceof TermQuery);
     result = qp.parse("(fieldX:xxxxx OR fieldy:xxxxxxxx)^2 AND (fieldx:the OR fieldy:foo)");
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
     System.out.println("Result: " + result);
     assertTrue(((BooleanQuery) result).clauses().size() + " does not equal: " + 2, ((BooleanQuery) result).clauses().size() == 2);
+  }
+
+  public void testPositionIncrement() throws Exception {
+    boolean dflt = StopFilter.getEnablePositionIncrementsDefault();
+    StopFilter.setEnablePositionIncrementsDefault(true);
+    try {
+      QueryParser qp = new QueryParser("a", new StopAnalyzer(new String[]{"the", "in", "are", "this"}));
+      qp.setEnablePositionIncrements(true);
+      String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
+      //               0         2                      5           7  8
+      int expectedPositions[] = {1,3,4,6,9};
+      PhraseQuery pq = (PhraseQuery) qp.parse(qtxt);
+      //System.out.println("Query text: "+qtxt);
+      //System.out.println("Result: "+pq);
+      Term t[] = pq.getTerms();
+      int pos[] = pq.getPositions();
+      for (int i = 0; i < t.length; i++) {
+        //System.out.println(i+". "+t[i]+"  pos: "+pos[i]);
+        assertEquals("term "+i+" = "+t[i]+" has wrong term-position!",expectedPositions[i],pos[i]);
+      }
+    } finally {
+      StopFilter.setEnablePositionIncrementsDefault(dflt);
+    }
   }
 
   public void testMatchAllDocs() throws Exception {

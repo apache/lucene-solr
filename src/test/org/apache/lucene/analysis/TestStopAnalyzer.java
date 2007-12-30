@@ -64,7 +64,33 @@ public class TestStopAnalyzer extends LuceneTestCase {
     while ((token = stream.next()) != null) {
       String text = token.termText();
       assertFalse(stopWordsSet.contains(text));
+      assertEquals(1,token.getPositionIncrement()); // by default stop tokenizer does not apply increments.
     }
   }
-  
+
+  public void testStopListPositions() throws IOException {
+    boolean defaultEnable = StopFilter.getEnablePositionIncrementsDefault();
+    StopFilter.setEnablePositionIncrementsDefault(true);
+    try {
+      Set stopWordsSet = new HashSet();
+      stopWordsSet.add("good");
+      stopWordsSet.add("test");
+      stopWordsSet.add("analyzer");
+      StopAnalyzer newStop = new StopAnalyzer((String[])stopWordsSet.toArray(new String[3]));
+      StringReader reader = new StringReader("This is a good test of the english stop analyzer with positions");
+      int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
+      TokenStream stream = newStop.tokenStream("test", reader);
+      assertNotNull(stream);
+      Token token = null;
+      int i = 0;
+      while ((token = stream.next()) != null) {
+        String text = token.termText();
+        assertFalse(stopWordsSet.contains(text));
+        assertEquals(expectedIncr[i++],token.getPositionIncrement());
+      }
+    } finally {
+      StopFilter.setEnablePositionIncrementsDefault(defaultEnable);
+    }
+  }
+
 }

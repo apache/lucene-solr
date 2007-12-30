@@ -266,6 +266,14 @@ New features
     
 11. LUCENE-1019: CustomScoreQuery enhanced to support multiple 
     ValueSource queries. (Kyle Maxwell via Doron Cohen)
+    
+12. LUCENE-1095: Added an option to StopFilter to increase 
+    positionIncrement of the token succeeding a stopped token.
+    Disabled by default. Similar option added to QueryParser 
+    to consider token positions when creating PhraseQuery 
+    and MultiPhraseQuery. Disabled by default (so by default
+    the query parser ignores position increments).
+    (Doron Cohen)  
  
 
 Optimizations
