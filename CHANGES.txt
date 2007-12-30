@@ -207,6 +207,9 @@ Bug fixes
   this flag to true fixes the problem.  This flag is a temporary fix and is already
   marked as being deprecated.  3.x will implement the correct approach.  (Shai Erera via Grant Ingersoll)
     
+28. LUCENE-749: ChainedFilter behavior fixed when logic of 
+    first filter is ANDNOT.  (Antonio Bruno via Doron Cohen)
+    
     
 New features
 

@@ -90,6 +90,16 @@ public class ChainedFilterTest extends TestCase {
     chain = new ChainedFilter(new Filter[] {bobFilter});
     hits = searcher.search(query, chain);
     assertEquals(MAX / 2, hits.length());
+    
+    chain = new ChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND});
+    hits = searcher.search(query, chain);
+    assertEquals(MAX / 2, hits.length());
+    assertEquals("bob", hits.doc(0).get("owner"));
+    
+    chain = new ChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT});
+    hits = searcher.search(query, chain);
+    assertEquals(MAX / 2, hits.length());
+    assertEquals("sue", hits.doc(0).get("owner"));
   }
 
   public void testOR() throws Exception {
@@ -127,6 +137,15 @@ public class ChainedFilterTest extends TestCase {
     assertEquals("ANDNOT matches just bob",
         MAX / 2, hits.length());
     assertEquals("bob", hits.doc(0).get("owner"));
+    
+    chain = new ChainedFilter(
+        new Filter[]{bobFilter, bobFilter},
+          new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT});
+
+      hits = searcher.search(query, chain);
+      assertEquals("ANDNOT bob ANDNOT bob matches all sues",
+          MAX / 2, hits.length());
+      assertEquals("sue", hits.doc(0).get("owner"));
   }
 
   private Date parseDate(String s) throws ParseException {

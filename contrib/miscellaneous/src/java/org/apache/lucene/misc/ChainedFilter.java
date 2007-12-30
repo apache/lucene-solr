@@ -177,6 +177,12 @@ public class ChainedFilter extends Filter
             result = (BitSet) chain[i].bits(reader).clone();
             ++i;
         }
+        else if (logic == ANDNOT)
+        {
+            result = (BitSet) chain[i].bits(reader).clone();
+            result.flip(0,reader.maxDoc());
+            ++i;
+        }
         else
         {
             result = new BitSet(reader.maxDoc());
@@ -210,6 +216,12 @@ public class ChainedFilter extends Filter
         if (logic[0] == AND)
         {
             result = (BitSet) chain[i].bits(reader).clone();
+            ++i;
+        }
+        else if (logic[0] == ANDNOT)
+        {
+            result = (BitSet) chain[i].bits(reader).clone();
+            result.flip(0,reader.maxDoc());
             ++i;
         }
         else
