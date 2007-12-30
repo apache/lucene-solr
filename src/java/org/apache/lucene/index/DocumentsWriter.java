@@ -1373,7 +1373,6 @@ final class DocumentsWriter {
             offsetEnd = offset-1;
             Token token;
             for(;;) {
-              localToken.clear();
               token = stream.next(localToken);
               if (token == null) break;
               position += (token.getPositionIncrement() - 1);

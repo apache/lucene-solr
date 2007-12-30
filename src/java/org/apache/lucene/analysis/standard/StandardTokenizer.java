@@ -92,6 +92,7 @@ public class StandardTokenizer extends Tokenizer {
 	    return null;
 	}
 
+        result.clear();
         scanner.getText(result);
         final int start = scanner.yychar();
         result.setStartOffset(start);

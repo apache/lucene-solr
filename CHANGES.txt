@@ -85,6 +85,10 @@ API Changes
 12. LUCENE-1089: Added PriorityQueue.insertWithOverflow, which returns
     the Object (if any) that was bumped from the queue to allow
     re-use.  (Shai Erera via Mike McCandless)
+    
+13. LUCENE-1101: Token reuse 'contract' (defined LUCENE-969)
+    modified so it is token producer's responsibility
+    to call Token.clear(). (Doron Cohen)   
 
 
 Bug fixes

@@ -45,6 +45,7 @@ public abstract class CharTokenizer extends Tokenizer {
   }
 
   public final Token next(Token token) throws IOException {
+    token.clear();
     int length = 0;
     int start = bufferIndex;
     char[] buffer = token.termBuffer();

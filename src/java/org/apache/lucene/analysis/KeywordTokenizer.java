@@ -42,6 +42,7 @@ public class KeywordTokenizer extends Tokenizer {
     if (!done) {
       done = true;
       int upto = 0;
+      result.clear();
       char[] buffer = result.termBuffer();
       while (true) {
         final int length = input.read(buffer, upto, buffer.length-upto);
