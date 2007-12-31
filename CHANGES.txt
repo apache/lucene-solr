@@ -63,7 +63,7 @@ API Changes
     Doug Cutting via Mike McCandless)
     
  6. LUCENE-743: Add IndexReader.reopen() method that re-opens an
-    existing IndexReader (see New features -> 9.) (Michael Busch)
+    existing IndexReader (see New features -> 8.) (Michael Busch)
 
  7. LUCENE-1062: Add setData(byte[] data), 
     setData(byte[] data, int offset, int length), getData(), getOffset()
