@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/31/07
+  LUCENE-1102: EnwikiDocMaker now indexes the docid field, so results might not be comparable with results prior to this change, although
+  it is doubted that this one small field makes much difference.
+  
 12/13/07
   LUCENE-1086: DocMakers setup for the "docs.dir" property
   fixed to properly handle absolute paths. (Shai Erera via Doron Cohen)

@@ -52,6 +52,7 @@ public class LineDocMaker extends BasicDocMaker {
     Field bodyField;
     Field titleField;
     Field dateField;
+    Field idField;
 
     public DocState() {
 
@@ -70,11 +71,13 @@ public class LineDocMaker extends BasicDocMaker {
                             storeVal,
                             Field.Index.TOKENIZED,
                             termVecVal);
+      idField = new Field(BasicDocMaker.ID_FIELD, "", Field.Store.YES, Field.Index.NO_NORMS);
 
       doc = new Document();
       doc.add(bodyField);
       doc.add(titleField);
       doc.add(dateField);
+      doc.add(idField);
     }
 
     final static String SEP = WriteLineDocTask.SEP;

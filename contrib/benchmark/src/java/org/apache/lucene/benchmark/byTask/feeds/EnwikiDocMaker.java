@@ -36,7 +36,8 @@ public class EnwikiDocMaker extends LineDocMaker {
   static final int TITLE = 0;
   static final int DATE = TITLE+1;
   static final int BODY = DATE+1;
-  static final int LENGTH = BODY+1;
+  static final int ID = BODY + 1;
+  static final int LENGTH = ID+1;
 
   static final String[] months = {"JAN", "FEB", "MAR", "APR",
                                   "MAY", "JUN", "JUL", "AUG",
@@ -113,8 +114,9 @@ public class EnwikiDocMaker extends LineDocMaker {
     String title;
     String body;
     String time;
+    String id;
 
-    static final int BASE = 10;
+
     
     public void startElement(String namespace,
                              String simple,
@@ -124,11 +126,14 @@ public class EnwikiDocMaker extends LineDocMaker {
         title = null;
         body = null;
         time = null;
+        id = null;
       } else if (qualified.equals("text")) {
         contents.setLength(0);
       } else if (qualified.equals("timestamp")) {
         contents.setLength(0);
       } else if (qualified.equals("title")) {
+        contents.setLength(0);
+      } else if (qualified.equals("id")) {
         contents.setLength(0);
       }
     }
@@ -148,11 +153,12 @@ public class EnwikiDocMaker extends LineDocMaker {
       return buffer.toString();
     }
 
-    public void create(String title, String time, String body) {
+    public void create(String title, String time, String body, String id) {
       String[] t = new String[LENGTH];
       t[TITLE] = title.replace('\t', ' ');
       t[DATE] = time.replace('\t', ' ');
       t[BODY] = body.replaceAll("[\t\n]", " ");
+      t[ID] = id;
       synchronized(this) {
         while(tuple!=null) {
           try {
@@ -177,9 +183,12 @@ public class EnwikiDocMaker extends LineDocMaker {
         }
       } else if (qualified.equals("timestamp")) {
         time = time(contents.toString());
-      } else if (qualified.equals("page")) {
+      } else if (qualified.equals("id") && id == null) {//just get the first id
+        id = contents.toString();
+      }
+      else if (qualified.equals("page")) {
         if (body != null) {
-          create(title, time, body);
+          create(title, time, body, id);
         }
       }
     }
@@ -192,6 +201,7 @@ public class EnwikiDocMaker extends LineDocMaker {
       titleField.setValue(tuple[TITLE]);
       dateField.setValue(tuple[DATE]);
       bodyField.setValue(tuple[BODY]);
+      idField.setValue(tuple[ID]);
       return doc;
     }
   }
