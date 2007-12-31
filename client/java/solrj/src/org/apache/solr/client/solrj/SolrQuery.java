@@ -265,6 +265,11 @@ public class SolrQuery extends ModifiableSolrParams
     return this.get(HighlightParams.SIMPLE_POST, "");
   }
 
+  public void setSortField(String field, ORDER order) {
+    this.remove(CommonParams.SORT);
+    addValueToParam(CommonParams.SORT, toSortString(field, order));
+  }
+  
   public void addSortField(String field, ORDER order) {
     addValueToParam(CommonParams.SORT, toSortString(field, order));
   }
@@ -370,6 +375,11 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.ROWS, rows);
   }
 
+  public Integer getRows()
+  {
+    return this.getFieldInt(CommonParams.ROWS, null);
+  }
+
   public void setShowDebugInfo(boolean showDebugInfo) {
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
   }
@@ -381,6 +391,11 @@ public class SolrQuery extends ModifiableSolrParams
 
   public void setStart(Integer start) {
     this.set(CommonParams.START, start);
+  }
+  
+  public Integer getStart()
+  {
+    return this.getFieldInt(CommonParams.START, null);
   }
 
   public void setQueryType(String qt) {
