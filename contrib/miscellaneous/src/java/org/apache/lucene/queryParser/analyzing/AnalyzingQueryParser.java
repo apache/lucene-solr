@@ -212,10 +212,11 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     if (tlist.size() == 1) {
       return super.getPrefixQuery(field, (String) tlist.get(0));
     } else {
-      /* this means that the analyzer used consumed the only token we had,
-       * and we can't build a PrefixQuery */
+      /* this means that the analyzer used either added or consumed
+       * (common for a stemmer) tokens, and we can't build a PrefixQuery */
       throw new ParseException("Cannot build PrefixQuery with analyzer "
-          + getAnalyzer().getClass() + " - token was consumed");
+          + getAnalyzer().getClass()
+          + (tlist.size() > 1 ? " - token(s) added" : " - token consumed"));
     }
   }
 

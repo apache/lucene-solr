@@ -344,6 +344,9 @@ Documentation
     classes, as well as an unified view. Also add an appropriate menu 
     structure to the website. (Michael Busch)
 
+ 2. LUCENE-746: Fix error message in AnalyzingQueryParser.getPrefixQuery.
+    (Ronnie Kolehmainen via Michael Busch)
+
 Build
 
  1. LUCENE-908: Improvements and simplifications for how the MANIFEST
