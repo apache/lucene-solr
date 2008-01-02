@@ -23,6 +23,13 @@
                  java.io.Reader,
                  java.util.StringTokenizer"%>
 <%
+//
+// NOTE -- this file is Deprecated - should use the ShowFileRequestHandler instead
+//
+
+System.out.println( "WARNING -- using deprecated jsp file: " + request.getServletPath() );
+
+
   Object ocore = request.getAttribute("org.apache.solr.SolrCore");
   SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
   String fname = request.getParameter("file");

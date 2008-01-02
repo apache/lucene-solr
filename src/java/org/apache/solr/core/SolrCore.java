@@ -54,6 +54,7 @@ import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.RawResponseWriter;
 import org.apache.solr.request.RubyResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -968,7 +969,9 @@ public final class SolrCore {
     if (responseWriters.get("ruby")==null) {
       responseWriters.put("ruby", new RubyResponseWriter());
     }
-
+    if (responseWriters.get("raw")==null) {
+      responseWriters.put("raw", new RawResponseWriter());
+    }
   }
   
   /** Finds a writer by name, or returns the default writer if not found. */

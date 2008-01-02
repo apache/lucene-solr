@@ -84,7 +84,8 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
       new StandardHandler( "system", new SystemInfoHandler() ),
       new StandardHandler( "plugins", new PluginInfoHandler() ),
       new StandardHandler( "threads", new ThreadDumpHandler() ),
-      new StandardHandler( "properties", new PropertiesRequestHandler() )
+      new StandardHandler( "properties", new PropertiesRequestHandler() ),
+      new StandardHandler( "file", new ShowFileRequestHandler() )
     };
     
     for( StandardHandler handler : list ) {

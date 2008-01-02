@@ -175,6 +175,10 @@ New Features
      <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
     This will register: Luke/SystemInfo/PluginInfo/ThreadDump/PropertiesRequestHandler.
     (ryan)
+    
+35. SOLR-142: Added RawResponseWriter and ShowFileRequestHandler.  This returns config
+    files directly.  If the AdminHandlers is configured, this will be added automatically.
+    (ryan)
 
 Changes in runtime behavior
 

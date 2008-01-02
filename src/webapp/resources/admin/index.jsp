@@ -34,8 +34,8 @@
 	<h3>Solr</h3>
   </td>
   <td>
-    [<a href="get-file.jsp?file=<%=core.getSchemaFile()%>">Schema</a>]
-    [<a href="get-file.jsp?file=<%=core.getConfigFile()%>">Config</a>]
+    [<a href="file/?file=<%=core.getSchemaFile()%>">Schema</a>]
+    [<a href="file/?file=<%=core.getConfigFile()%>">Config</a>]
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
     <br>
     [<a href="stats.jsp">Statistics</a>]
@@ -80,7 +80,10 @@ if (cores.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
 </tr>
 
 
-<jsp:include page="get-file.jsp?file=admin-extra.html&optional=y" flush="true"/>
+<%
+ // a quick hack to get rid of get-file.jsp -- note this still spits out invalid HTML
+ out.write( org.apache.solr.handler.admin.ShowFileRequestHandler.getFileContents( "admin-extra.html" ) );
+%>
 
 </table><P>
 
