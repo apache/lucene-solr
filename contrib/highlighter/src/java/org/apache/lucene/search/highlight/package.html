@@ -10,20 +10,35 @@ Fragmenter, FragmentScorer, Formatter classes.
 <h2>Example Usage</h2>
 
 <pre>
-	IndexSearcher searcher = new IndexSearcher(ramDir);
-	Query query = QueryParser.parse("Kenne*", FIELD_NAME, analyzer);
-	query = query.rewrite(reader); //required to expand search terms
-	Hits hits = searcher.search(query);
+  //... Above, create documents with two fields, one with term vectors (tv) and one without (notv)
+  IndexSearcher searcher = new IndexSearcher(directory);
+  QueryParser parser = new QueryParser("notv", analyzer);
+  Query query = parser.parse("million");
+  //query = query.rewrite(reader); //required to expand search terms
+  Hits hits = searcher.search(query);
 
-	Highlighter highlighter = new Highlighter(this, new QueryScorer(query));
-	for (int i = 0; i &lt; hits.length(); i++)
-	{
-		String text = hits.doc(i).get(FIELD_NAME);
-		TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
-		// Get 3 best fragments and seperate with a "..."
-		String result = highlighter.getBestFragments(tokenStream, text, 3, "...");
-		System.out.println(result);
-	}
+  SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
+  Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
+  for (int i = 0; i < 10; i++) {
+    String text = hits.doc(i).get("notv");
+    TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), hits.id(i), "notv", analyzer);
+    TextFragment[] frag = highlighter.getBestTextFragments(tokenStream, text, false, 10);//highlighter.getBestFragments(tokenStream, text, 3, "...");
+    for (int j = 0; j < frag.length; j++) {
+      if ((frag[j] != null) && (frag[j].getScore() > 0)) {
+        System.out.println((frag[j].toString()));
+      }
+    }
+    //Term vector
+    text = hits.doc(i).get("tv");
+    tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), hits.id(i), "tv", analyzer);
+    frag = highlighter.getBestTextFragments(tokenStream, text, false, 10);
+    for (int j = 0; j < frag.length; j++) {
+      if ((frag[j] != null) && (frag[j].getScore() > 0)) {
+        System.out.println((frag[j].toString()));
+      }
+    }
+    System.out.println("-------------");
+  }
 </pre>
 
 <h2>New features 06/02/2005</h2>
