@@ -263,9 +263,12 @@ public class XMLResponseParser implements ResponseParser
         if( type == null ) {
           type = t;
         }
-        else if( type != t ) {
+        /*** actually, there is no rule that arrays need the same type
+        else if( type != t && !(t == KnownType.NULL || type == KnownType.NULL)) {
           throw new RuntimeException( "arrays must have the same type! ("+type+"!="+t+") "+parser.getLocalName() );
         }
+        ***/
+        type = t;
 
         builder.setLength( 0 ); // reset the text
         
@@ -286,7 +289,7 @@ public class XMLResponseParser implements ResponseParser
         }
         //System.out.println( "ARR:"+type+"::"+builder );
         Object val = type.read( builder.toString().trim() );
-        if( val == null ) {
+        if( val == null && type != KnownType.NULL) {
           throw new XMLStreamException( "error reading value:"+type, parser.getLocation() );
         }
         vals.add( val );
