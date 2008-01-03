@@ -85,10 +85,18 @@ public class LineDocMaker extends BasicDocMaker {
     public Document setFields(String line) {
       // title <TAB> date <TAB> body <NEWLINE>
       int spot = line.indexOf(SEP);
-      titleField.setValue(line.substring(0, spot));
-      int spot2 = line.indexOf(SEP, 1+spot);
-      dateField.setValue(line.substring(1+spot, spot2));
-      bodyField.setValue(line.substring(1+spot2, line.length()));
+      if (spot != -1) {
+        titleField.setValue(line.substring(0, spot));
+        int spot2 = line.indexOf(SEP, 1+spot);
+        if (spot2 != -1) {
+          dateField.setValue(line.substring(1+spot, spot2));
+          bodyField.setValue(line.substring(1+spot2, line.length()));
+        } else {
+          dateField.setValue("");
+          bodyField.setValue("");
+        }
+      } else
+        titleField.setValue("");
       return doc;
     }
   }
@@ -121,12 +129,10 @@ public class LineDocMaker extends BasicDocMaker {
       while(true) {
         line = fileIn.readLine();
         if (line == null) {
+          // Reset the file
+          openFile();
           if (!forever)
             throw new NoMoreDataException();
-          else {
-            // Reset the file
-            openFile();
-          }
         } else {
           break;
         }

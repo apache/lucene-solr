@@ -57,12 +57,8 @@ public class CreateIndexTask extends PerfTask {
     iw.setUseCompoundFile(cmpnd);
     iw.setMergeFactor(mrgf);
     iw.setMaxFieldLength(mxfl);
-    if (flushAtRAMUsage > 0)
-      iw.setRAMBufferSizeMB(flushAtRAMUsage);
-    else if (mxbf != 0)
-      iw.setMaxBufferedDocs(mxbf);
-    else
-      throw new RuntimeException("either max.buffered or ram.flush.mb must be non-zero");
+    iw.setRAMBufferSizeMB(flushAtRAMUsage);
+    iw.setMaxBufferedDocs(mxbf);
     getRunData().setIndexWriter(iw);
     return 1;
   }

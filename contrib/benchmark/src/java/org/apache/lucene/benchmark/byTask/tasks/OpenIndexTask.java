@@ -61,12 +61,8 @@ public class OpenIndexTask extends PerfTask {
     IndexWriter writer = new IndexWriter(dir, autoCommit, analyzer, false);
 
     // must update params for newly opened writer
-    if (flushAtRAMUsage > 0)
-      writer.setRAMBufferSizeMB(flushAtRAMUsage);
-    else if (mxbf != 0)
-      writer.setMaxBufferedDocs(mxbf);
-    else
-      throw new RuntimeException("either max.buffered or ram.flush.mb must be non-zero");
+    writer.setRAMBufferSizeMB(flushAtRAMUsage);
+    writer.setMaxBufferedDocs(mxbf);
     writer.setMaxFieldLength(mxfl);
     writer.setMergeFactor(mrgf);
     writer.setUseCompoundFile(cmpnd); // this one redundant?

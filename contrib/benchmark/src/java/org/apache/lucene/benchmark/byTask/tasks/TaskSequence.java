@@ -38,6 +38,8 @@ public class TaskSequence extends PerfTask {
   private String seqName;
   private boolean exhausted = false;
   private boolean resetExhausted = false;
+  private PerfTask[] tasksArray;
+  private boolean anyExhaustableTasks;
   
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
@@ -47,6 +49,18 @@ public class TaskSequence extends PerfTask {
     this.parent = parent;
     this.parallel = parallel;
     tasks = new ArrayList();
+  }
+
+  private void initTasksArray() {
+    if (tasksArray == null) {
+      final int numTasks = tasks.size();
+      tasksArray = new PerfTask[numTasks];
+      for(int k=0;k<numTasks;k++) {
+        tasksArray[k] = (PerfTask) tasks.get(k);
+        anyExhaustableTasks |= tasksArray[k] instanceof ResetInputsTask;
+        anyExhaustableTasks |= tasksArray[k] instanceof TaskSequence;
+      }
+    }
   }
 
   /**
@@ -92,7 +106,7 @@ public class TaskSequence extends PerfTask {
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#doLogic()
    */
   public int doLogic() throws Exception {
-    resetExhausted = false;
+    exhausted = resetExhausted = false;
     return ( parallel ? doParallelTasks() : doSerialTasks());
   }
 
@@ -101,18 +115,16 @@ public class TaskSequence extends PerfTask {
       return doSerialTasksWithRate();
     }
     
+    initTasksArray();
     int count = 0;
     
-    final int numTasks = tasks.size();
-    final PerfTask[] tasksArray = new PerfTask[numTasks];
-    for(int k=0;k<numTasks;k++)
-      tasksArray[k] = (PerfTask) tasks.get(k);
-
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
-      for(int l=0;l<numTasks;l++)
+      for(int l=0;l<tasksArray.length;l++)
         try {
-          count += tasksArray[l].runAndMaybeStats(letChildReport);
-          updateExhausted(tasksArray[l]);
+          final PerfTask task = tasksArray[l];
+          count += task.runAndMaybeStats(letChildReport);
+          if (anyExhaustableTasks)
+            updateExhausted(task);
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
@@ -121,12 +133,13 @@ public class TaskSequence extends PerfTask {
   }
 
   private int doSerialTasksWithRate() throws Exception {
+    initTasksArray();
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
     int count = 0;
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
-      for (Iterator it = tasks.iterator(); it.hasNext();) {
-        PerfTask task = (PerfTask) it.next();
+      for (int l=0;l<tasksArray.length;l++) {
+        final PerfTask task = tasksArray[l];
         long waitMore = nextStartTime - System.currentTimeMillis();
         if (waitMore > 0) {
           //System.out.println("wait: "+waitMore+" for rate: "+ratePerMin+" (delayStep="+delayStep+")");
@@ -135,7 +148,8 @@ public class TaskSequence extends PerfTask {
         nextStartTime += delayStep; // this aims at avarage rate. 
         try {
           count += task.runAndMaybeStats(letChildReport);
-          updateExhausted(task);
+          if (anyExhaustableTasks)
+            updateExhausted(task);
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
@@ -149,28 +163,27 @@ public class TaskSequence extends PerfTask {
     if (task instanceof ResetInputsTask) {
       exhausted = false;
       resetExhausted = true;
-    } else {
-      if (task instanceof TaskSequence) {
-        TaskSequence t = (TaskSequence) task;
-        if (t.resetExhausted) {
-          exhausted = false;
-          resetExhausted = true;
-          t.resetExhausted = false;
-        } else {
-          exhausted |= t.exhausted;
-        }
+    } else if (task instanceof TaskSequence) {
+      TaskSequence t = (TaskSequence) task;
+      if (t.resetExhausted) {
+        exhausted = false;
+        resetExhausted = true;
+        t.resetExhausted = false;
+      } else {
+        exhausted |= t.exhausted;
       }
     }
   }
 
   private int doParallelTasks() throws Exception {
+    initTasksArray();
     final int count [] = {0};
     Thread t[] = new Thread [repetitions * tasks.size()];
     // prepare threads
     int indx = 0;
     for (int k=0; k<repetitions; k++) {
-      for (int i = 0; i < tasks.size(); i++) {
-        final PerfTask task = (PerfTask) ((PerfTask) tasks.get(i)).clone();
+      for (int i = 0; i < tasksArray.length; i++) {
+        final PerfTask task = (PerfTask) tasksArray[i].clone();
         t[indx++] = new Thread() {
           public void run() {
             int n;
