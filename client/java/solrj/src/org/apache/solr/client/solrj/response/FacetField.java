@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.response;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.solr.client.solrj.util.ClientUtils;
  
  /**
   * A utility class to hold the facet response.  It could use the NamedList container,
@@ -75,9 +77,10 @@ import java.util.List;
      public String getAsFilterQuery() {
        if (_ff.getName().equals("facet_queries")) {
          return _name;
-       } else {
-         return _ff._name+":\""+_name+"\"";
        }
+       return 
+          ClientUtils.escapeQueryChars( _ff._name ) + ":" + 
+          ClientUtils.escapeQueryChars( _name );
      }
    }
    
