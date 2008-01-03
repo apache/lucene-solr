@@ -35,13 +35,16 @@ public class SubmissionReport {
 
   private NumberFormat nf;
   private PrintWriter logger;
+  private String name;
   
   /**
    * Constructor for SubmissionReport.
    * @param logger if null, no submission data is created. 
+   * @param name name of this run.
    */
-  public SubmissionReport (PrintWriter logger) {
+  public SubmissionReport (PrintWriter logger, String name) {
     this.logger = logger;
+    this.name = name;
     nf = NumberFormat.getInstance();
     nf.setMaximumFractionDigits(4);
     nf.setMinimumFractionDigits(4);
@@ -66,14 +69,21 @@ public class SubmissionReport {
       String docName = xt.docName(searcher,sd[i].doc);
       logger.println(
           qq.getQueryID()       + sep +
-          '0'                   + sep +
+          "Q0"                   + sep +
           format(docName,20)    + sep +
           format(""+i,7)        + sep +
-          nf.format(sd[i].score)
+          nf.format(sd[i].score) + sep +
+          name
           );
     }
   }
 
+  public void flush() {
+    if (logger!=null) {
+      logger.flush();
+    }
+  }
+  
   private static String padd = "                                    ";
   private String format(String s, int minLen) {
     s = (s==null ? "" : s);

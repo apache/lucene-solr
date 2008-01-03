@@ -34,6 +34,7 @@ public class QualityStats {
   private double pReleventSum = 0;
   private double numPoints = 0;
   private double numGoodPoints = 0;
+  private double mrr = 0;
   private long searchTime;
   private long docNamesExtractTime;
 
@@ -82,6 +83,9 @@ public class QualityStats {
     if (isRelevant) {
       numGoodPoints+=1;
       recallPoints.add(new RecallPoint(n,numGoodPoints));
+      if (recallPoints.size()==1 && n<=5) { // first point, but only within 5 top scores. 
+        mrr =  1.0 / n;
+      }
     }
     numPoints = n;
     double p = numGoodPoints / numPoints;
@@ -111,7 +115,7 @@ public class QualityStats {
   }
 
   /**
-   * Return the average precision at recall points: sum of precision at recall points / maxGoodPoints.
+   * Return the average precision at recall points.
    */
   public double getAvp() {
     return maxGoodPoints==0 ? 0 : pReleventSum/maxGoodPoints;
@@ -154,6 +158,8 @@ public class QualityStats {
         fracFormat(nf.format(maxGoodPoints)));
     logger.println(prefix+format("Average Precision: ",M)+
         fracFormat(nf.format(getAvp())));
+    logger.println(prefix+format("MRR: ",M)+
+        fracFormat(nf.format(getMRR())));
     logger.println(prefix+format("Recall: ",M)+
         fracFormat(nf.format(getRecall())));
     for (int i=1; i<(int)numPoints && i<pAt.length; i++) {
@@ -186,6 +192,10 @@ public class QualityStats {
    */
   public static QualityStats average(QualityStats[] stats) {
     QualityStats avg = new QualityStats(0,0);
+    if (stats.length==0) {
+      // weired, no stats to average!
+      return avg;
+    }
     int m = 0; // queries with positive judgements
     // aggregate
     for (int i=0; i<stats.length; i++) {
@@ -197,6 +207,7 @@ public class QualityStats {
         avg.numPoints += stats[i].numPoints;
         avg.pReleventSum += stats[i].getAvp();
         avg.recall += stats[i].recall;
+        avg.mrr += stats[i].getMRR();
         avg.maxGoodPoints += stats[i].maxGoodPoints;
         for (int j=1; j<avg.pAt.length; j++) {
           avg.pAt[j] += stats[i].getPrecisionAt(j);
@@ -210,6 +221,7 @@ public class QualityStats {
     avg.numGoodPoints /= m;
     avg.numPoints /= m;
     avg.recall /= m;
+    avg.mrr /= m;
     avg.maxGoodPoints /= m;
     for (int j=1; j<avg.pAt.length; j++) {
       avg.pAt[j] /= m;
@@ -256,6 +268,22 @@ public class QualityStats {
     return (RecallPoint[]) recallPoints.toArray(new RecallPoint[0]);
   }
 
+  /**
+   * Returns the Mean reciprocal rank over the queries or RR for a single query.
+   * <p>
+   * Reciprocal rank is defined as <code>1/r</code> where <code>r</code> is the 
+   * rank of the first correct result, or <code>0</code> if there are no correct 
+   * results within the top 5 results. 
+   * <p>
+   * This follows the definition in 
+   * <a href="http://www.cnlp.org/publications/02cnlptrec10.pdf"> 
+   * Question Answering - CNLP at the TREC-10 Question Answering Track</a>.
+   */
+  public double getMRR() {
+    return mrr;
+  }
+
+  
   /**
    * Returns the search time in milliseconds for the measured query.
    */

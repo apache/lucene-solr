@@ -51,6 +51,12 @@ public class QualityBenchmark {
 
   /** index field to extract doc name for each search result; used for judging the results. */  
   protected String docNameField;
+  
+  /** maximal number of queries that this quality benchmark runs. Default: maxint. Useful for debugging. */
+  private int maxQueries = Integer.MAX_VALUE;
+  
+  /** maximal number of results to collect for each query. Default: 1000. */
+  private int maxResults = 1000;
 
   /**
    * Create a QualityBenchmark.
@@ -71,7 +77,6 @@ public class QualityBenchmark {
 
   /**
    * Run the quality benchmark.
-   * @param maxResults how many results to collect for each quality query.
    * @param judge the judge that can tell if a certain result doc is relevant for a certain quality query. 
    *        If null, no judgements would be made. Usually null for a submission run. 
    * @param submitRep submission report is created if non null.
@@ -79,10 +84,11 @@ public class QualityBenchmark {
    * @return QualityStats of each quality query that was executed.
    * @throws Exception if quality benchmark failed to run.
    */
-  public  QualityStats [] execute(int maxResults, Judge judge, SubmissionReport submitRep, 
+  public  QualityStats [] execute(Judge judge, SubmissionReport submitRep, 
                                   PrintWriter qualityLog) throws Exception {
-    QualityStats stats[] = new QualityStats[qualityQueries.length]; 
-    for (int i=0; i<qualityQueries.length; i++) {
+    int nQueries = Math.min(maxQueries, qualityQueries.length);
+    QualityStats stats[] = new QualityStats[nQueries]; 
+    for (int i=0; i<nQueries; i++) {
       QualityQuery qq = qualityQueries[i];
       // generate query
       Query q = qqParser.parse(qq);
@@ -98,6 +104,9 @@ public class QualityBenchmark {
         submitRep.report(qq,td,docNameField,searcher);
       }
     } 
+    if (submitRep!=null) {
+      submitRep.flush();
+    }
     return stats;
   }
   
@@ -119,6 +128,34 @@ public class QualityBenchmark {
       stts.log(qq.getQueryID()+" Stats:",1,logger,"  ");
     }
     return stts;
+  }
+
+  /**
+   * @return the maximum number of quality queries to run. Useful at debugging.
+   */
+  public int getMaxQueries() {
+    return maxQueries;
+  }
+
+  /**
+   * Set the maximum number of quality queries to run. Useful at debugging.
+   */
+  public void setMaxQueries(int maxQueries) {
+    this.maxQueries = maxQueries;
+  }
+
+  /**
+   * @return the maximum number of results to collect for each quality query.
+   */
+  public int getMaxResults() {
+    return maxResults;
+  }
+
+  /**
+   * set the maximum number of results to collect for each quality query.
+   */
+  public void setMaxResults(int maxResults) {
+    this.maxResults = maxResults;
   }
 
 }

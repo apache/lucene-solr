@@ -4,6 +4,13 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+01/03/08
+  LUCENE-1116: quality package improvements:
+  - add MRR computation; 
+  - allow control of max #queries to run;
+  - verify log & report are flushed.
+  - add TREC query reader for the 1MQ track.  
+      
 12/31/07
   LUCENE-1102: EnwikiDocMaker now indexes the docid field, so results might not be comparable with results prior to this change, although
   it is doubted that this one small field makes much difference.

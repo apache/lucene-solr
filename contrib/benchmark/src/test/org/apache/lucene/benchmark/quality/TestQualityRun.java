@@ -87,8 +87,9 @@ public class TestQualityRun extends TestCase {
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
     
-    SubmissionReport submitLog = DEBUG ? new SubmissionReport(logger) : null;
-    QualityStats stats[] = qrun.execute(maxResults, judge, submitLog, logger);
+    SubmissionReport submitLog = DEBUG ? new SubmissionReport(logger, "TestRun") : null;
+    qrun.setMaxResults(maxResults);
+    QualityStats stats[] = qrun.execute(judge, submitLog, logger);
     
     // --------- verify by the way judgments were altered for this test:
     // for some queries, depending on m = qnum % 8

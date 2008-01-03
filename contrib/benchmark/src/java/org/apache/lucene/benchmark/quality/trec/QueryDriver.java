@@ -46,8 +46,9 @@ public class QueryDriver {
 
     // run the benchmark
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
+    qrun.setMaxResults(maxResults);
     SubmissionReport submitLog = null;
-    QualityStats stats[] = qrun.execute(maxResults, judge, submitLog, logger);
+    QualityStats stats[] = qrun.execute(judge, submitLog, logger);
 
     // print an avarage sum of the results
     QualityStats avg = QualityStats.average(stats);
