@@ -21,14 +21,14 @@
                  java.io.InputStream,
                  java.io.InputStreamReader,
                  java.io.Reader,
-                 java.util.StringTokenizer"%>
+                 java.util.StringTokenizer,
+                 java.util.logging.Logger"%>
+<%!
+  static Logger log = Logger.getLogger(SolrCore.class.getName());
+%>
 <%
-//
-// NOTE -- this file is Deprecated - should use the ShowFileRequestHandler instead
-//
-
-System.out.println( "WARNING -- using deprecated jsp file: " + request.getServletPath() );
-
+  // NOTE -- this file will be removed in a future release
+  log.warning("Using deprecated JSP: " + request.getRequestURL().append("?").append(request.getQueryString()) + " -- check the ShowFileRequestHandler"  );
 
   Object ocore = request.getAttribute("org.apache.solr.SolrCore");
   SolrCore core = ocore instanceof SolrCore? (SolrCore) ocore : SolrCore.getSolrCore();
