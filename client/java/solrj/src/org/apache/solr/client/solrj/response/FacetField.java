@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.response;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
  
@@ -27,9 +28,9 @@ import java.util.List;
   * @version $Id$
   * @since solr 1.3
   */
- public class FacetField 
+ public class FacetField implements Serializable
  {
-   public static class Count 
+   public static class Count implements Serializable 
    {
      private String _name = null;
      private int _count = 0;
