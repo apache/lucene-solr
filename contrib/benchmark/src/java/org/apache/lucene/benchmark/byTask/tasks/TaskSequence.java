@@ -39,7 +39,7 @@ public class TaskSequence extends PerfTask {
   private boolean exhausted = false;
   private boolean resetExhausted = false;
   private PerfTask[] tasksArray;
-  private boolean anyExhaustableTasks;
+  private boolean anyExhaustibleTasks;
   
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
@@ -57,8 +57,8 @@ public class TaskSequence extends PerfTask {
       tasksArray = new PerfTask[numTasks];
       for(int k=0;k<numTasks;k++) {
         tasksArray[k] = (PerfTask) tasks.get(k);
-        anyExhaustableTasks |= tasksArray[k] instanceof ResetInputsTask;
-        anyExhaustableTasks |= tasksArray[k] instanceof TaskSequence;
+        anyExhaustibleTasks |= tasksArray[k] instanceof ResetInputsTask;
+        anyExhaustibleTasks |= tasksArray[k] instanceof TaskSequence;
       }
     }
   }
@@ -123,7 +123,7 @@ public class TaskSequence extends PerfTask {
         try {
           final PerfTask task = tasksArray[l];
           count += task.runAndMaybeStats(letChildReport);
-          if (anyExhaustableTasks)
+          if (anyExhaustibleTasks)
             updateExhausted(task);
         } catch (NoMoreDataException e) {
           exhausted = true;
@@ -148,7 +148,7 @@ public class TaskSequence extends PerfTask {
         nextStartTime += delayStep; // this aims at avarage rate. 
         try {
           count += task.runAndMaybeStats(letChildReport);
-          if (anyExhaustableTasks)
+          if (anyExhaustibleTasks)
             updateExhausted(task);
         } catch (NoMoreDataException e) {
           exhausted = true;
