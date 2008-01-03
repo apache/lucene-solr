@@ -97,6 +97,28 @@ import java.util.Collections;
  * threads and flush only once they are all idle.  This
  * means you can call flush with a given thread even while
  * other threads are actively adding/deleting documents.
+ *
+ *
+ * Exceptions:
+ *
+ * Because this class directly updates in-memory posting
+ * lists, and flushes stored fields and term vectors
+ * directly to files in the directory, there are certain
+ * limited times when an exception can corrupt this state.
+ * For example, a disk full while flushing stored fields
+ * leaves this file in a corrupt state.  Or, an OOM
+ * exception while appending to the in-memory posting lists
+ * can corrupt that posting list.  We call such exceptions
+ * "aborting exceptions".  In these cases we must call
+ * abort() to discard all docs added since the last flush.
+ *
+ * All other exceptions ("non-aborting exceptions") can
+ * still partially update the index structures.  These
+ * updates are consistent, but, they represent only a part
+ * of the document seen up until the exception was hit.
+ * When this happens, we immediately mark the document as
+ * deleted so that the document is always atomically ("all
+ * or none") added to the index.
  */
 
 final class DocumentsWriter {
@@ -137,6 +159,9 @@ final class DocumentsWriter {
   private HashMap bufferedDeleteTerms = new HashMap();
   private int numBufferedDeleteTerms = 0;
 
+  // Currently used only for deleting a doc on hitting an non-aborting exception
+  private List bufferedDeleteDocIDs = new ArrayList();
+
   // The max number of delete terms that can be buffered before
   // they must be flushed to disk.
   private int maxBufferedDeleteTerms = IndexWriter.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
@@ -155,6 +180,7 @@ final class DocumentsWriter {
   private static int OBJECT_HEADER_BYTES = 12;
   private static int OBJECT_POINTER_BYTES = 4;    // TODO: should be 8 on 64-bit platform
   private static int BYTES_PER_CHAR = 2;
+  private static int BYTES_PER_INT = 4;
 
   private BufferedNorms[] norms = new BufferedNorms[0];   // Holds norms until we flush
 
@@ -311,6 +337,7 @@ final class DocumentsWriter {
     pauseAllThreads();
 
     bufferedDeleteTerms.clear();
+    bufferedDeleteDocIDs.clear();
     numBufferedDeleteTerms = 0;
 
     try {
@@ -522,7 +549,8 @@ final class DocumentsWriter {
     int numAllFieldData;
     FieldData[] fieldDataHash;            // Hash FieldData instances by field name
     int fieldDataHashMask;
-    int maxTermHit;                       // Set to > 0 if this doc has a too-large term
+    String maxTermPrefix;                 // Non-null prefix of a too-large term if this
+                                          // doc has one
 
     boolean doFlushAfter;
     boolean abortOnExc;
@@ -623,7 +651,7 @@ final class DocumentsWriter {
       numStoredFields = 0;
       numFieldData = 0;
       numVectorFields = 0;
-      maxTermHit = 0;
+      maxTermPrefix = null;
 
       assert 0 == fdtLocal.length();
       assert 0 == tvfLocal.length();
@@ -717,12 +745,10 @@ final class DocumentsWriter {
         }
 
         if (field.isTermVectorStored()) {
-          if (!fp.doVectors) {
-            if (numVectorFields++ == vectorFieldPointers.length) {
-              final int newSize = (int) (numVectorFields*1.5);
-              vectorFieldPointers = new long[newSize];
-              vectorFieldNumbers = new int[newSize];
-            }
+          if (!fp.doVectors && numVectorFields++ == vectorFieldPointers.length) {
+            final int newSize = (int) (numVectorFields*1.5);
+            vectorFieldPointers = new long[newSize];
+            vectorFieldNumbers = new int[newSize];
           }
           fp.doVectors = true;
           docHasVectors = true;
@@ -988,6 +1014,9 @@ final class DocumentsWriter {
       // We process the document one field at a time
       for(int i=0;i<numFields;i++)
         fieldDataArray[i].processField(analyzer);
+
+      if (maxTermPrefix != null && infoStream != null)
+        infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + maxTermPrefix + "...'"); 
 
       if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
           && numBytesUsed > 0.95 * ramBufferSize)
@@ -1553,11 +1582,17 @@ final class DocumentsWriter {
           final int textLen1 = 1+tokenTextLen;
           if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
             if (textLen1 > CHAR_BLOCK_SIZE) {
-              maxTermHit = tokenTextLen;
-              // Just skip this term; we will throw an
-              // exception after processing all accepted
-              // terms in the doc
+              // Just skip this term, to remain as robust as
+              // possible during indexing.  A TokenFilter
+              // can be inserted into the analyzer chain if
+              // other behavior is wanted (pruning the term
+              // to a prefix, throwing an exception, etc).
               abortOnExc = false;
+              if (maxTermPrefix == null)
+                maxTermPrefix = new String(tokenText, 0, 30);
+
+              // Still increment position:
+              position++;
               return;
             }
             charPool.nextBuffer();
@@ -2267,29 +2302,27 @@ final class DocumentsWriter {
 
   /** Returns true if the caller (IndexWriter) should now
    * flush. */
-  int addDocument(Document doc, Analyzer analyzer)
+  boolean addDocument(Document doc, Analyzer analyzer)
     throws CorruptIndexException, IOException {
     return updateDocument(doc, analyzer, null);
   }
 
-  int updateDocument(Term t, Document doc, Analyzer analyzer)
+  boolean updateDocument(Term t, Document doc, Analyzer analyzer)
     throws CorruptIndexException, IOException {
     return updateDocument(doc, analyzer, t);
   }
 
-  int updateDocument(Document doc, Analyzer analyzer, Term delTerm)
+  boolean updateDocument(Document doc, Analyzer analyzer, Term delTerm)
     throws CorruptIndexException, IOException {
 
     // This call is synchronized but fast
     final ThreadState state = getThreadState(doc, delTerm);
     boolean success = false;
-    int maxTermHit;
     try {
       try {
         // This call is not synchronized and does all the work
         state.processDocument(analyzer);
       } finally {
-        maxTermHit = state.maxTermHit;
         // This call is synchronized but fast
         finishDocument(state);
       }
@@ -2299,16 +2332,20 @@ final class DocumentsWriter {
         synchronized(this) {
           state.isIdle = true;
           if (state.abortOnExc)
+            // Abort all buffered docs since last flush
             abort();
+          else
+            // Immediately mark this document as deleted
+            // since likely it was partially added.  This
+            // keeps indexing as "all or none" (atomic) when
+            // adding a document:
+            addDeleteDocID(state.docID);
           notifyAll();
         }
       }
     }
 
-    int status = maxTermHit<<1;
-    if (state.doFlushAfter || timeToFlushDeletes())
-      status += 1;
-    return status;
+    return state.doFlushAfter || timeToFlushDeletes();
   }
 
   synchronized int getNumBufferedDeleteTerms() {
@@ -2319,9 +2356,14 @@ final class DocumentsWriter {
     return bufferedDeleteTerms;
   }
 
+  synchronized List getBufferedDeleteDocIDs() {
+    return bufferedDeleteDocIDs;
+  }
+
   // Reset buffered deletes.
-  synchronized void clearBufferedDeleteTerms() throws IOException {
+  synchronized void clearBufferedDeletes() throws IOException {
     bufferedDeleteTerms.clear();
+    bufferedDeleteDocIDs.clear();
     numBufferedDeleteTerms = 0;
     if (numBytesUsed > 0)
       resetPostingsData();
@@ -2366,7 +2408,7 @@ final class DocumentsWriter {
   }
 
   synchronized boolean hasDeletes() {
-    return bufferedDeleteTerms.size() > 0;
+    return bufferedDeleteTerms.size() > 0 || bufferedDeleteDocIDs.size() > 0;
   }
 
   // Number of documents a delete term applies to.
@@ -2412,6 +2454,13 @@ final class DocumentsWriter {
       num.setNum(docCount);
     }
     numBufferedDeleteTerms++;
+  }
+
+  // Buffer a specific docID for deletion.  Currently only
+  // used when we hit a exception when adding a document
+  synchronized private void addDeleteDocID(int docId) {
+    bufferedDeleteDocIDs.add(new Integer(docId));
+    numBytesUsed += OBJECT_HEADER_BYTES + BYTES_PER_INT + OBJECT_POINTER_BYTES;
   }
 
   /** Does the synchronized work to finish/flush the
@@ -2909,6 +2958,8 @@ final class DocumentsWriter {
   final static int CHAR_BLOCK_SHIFT = 14;
   final static int CHAR_BLOCK_SIZE = (int) Math.pow(2.0, CHAR_BLOCK_SHIFT);
   final static int CHAR_BLOCK_MASK = CHAR_BLOCK_SIZE - 1;
+
+  final static int MAX_TERM_LENGTH = CHAR_BLOCK_SIZE-1;
 
   private ArrayList freeCharBlocks = new ArrayList();
 

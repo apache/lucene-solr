@@ -538,8 +538,7 @@ public class TestIndexWriter extends LuceneTestCase
     }
 
     /**
-     * Make sure we get a friendly exception for a wicked
-     * long term.
+     * Make sure we skip wicked long terms.
     */
     public void testWickedLongTerm() throws IOException {
       RAMDirectory dir = new RAMDirectory();
@@ -552,13 +551,9 @@ public class TestIndexWriter extends LuceneTestCase
 
       // Max length term is 16383, so this contents produces
       // a too-long term:
-      String contents = "abc xyz x" + bigTerm;
+      String contents = "abc xyz x" + bigTerm + " another term";
       doc.add(new Field("content", contents, Field.Store.NO, Field.Index.TOKENIZED));
-      try {
-        writer.addDocument(doc);
-        fail("did not hit expected exception");
-      } catch (IllegalArgumentException e) {
-      }
+      writer.addDocument(doc);
 
       // Make sure we can add another normal document
       doc = new Document();
@@ -567,9 +562,24 @@ public class TestIndexWriter extends LuceneTestCase
       writer.close();
 
       IndexReader reader = IndexReader.open(dir);
+
       // Make sure all terms < max size were indexed
       assertEquals(2, reader.docFreq(new Term("content", "abc")));
       assertEquals(1, reader.docFreq(new Term("content", "bbb")));
+      assertEquals(1, reader.docFreq(new Term("content", "term")));
+      assertEquals(1, reader.docFreq(new Term("content", "another")));
+
+      // Make sure position is still incremented when
+      // massive term is skipped:
+      TermPositions tps = reader.termPositions(new Term("content", "another"));
+      assertTrue(tps.next());
+      assertEquals(1, tps.freq());
+      assertEquals(3, tps.nextPosition());
+
+      // Make sure the doc that has the massive term is in
+      // the index:
+      assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
+
       reader.close();
 
       // Make sure we can add a document with exactly the
@@ -1789,7 +1799,18 @@ public class TestIndexWriter extends LuceneTestCase
 
     writer.close();
     IndexReader reader = IndexReader.open(dir);
-    assertEquals(reader.docFreq(new Term("content", "aa")), 3);
+    final Term t = new Term("content", "aa");
+    assertEquals(reader.docFreq(t), 3);
+
+    // Make sure the doc that hit the exception was marked
+    // as deleted:
+    TermDocs tdocs = reader.termDocs(t);
+    int count = 0;
+    while(tdocs.next()) {
+      count++;
+    }
+    assertEquals(2, count);
+
     assertEquals(reader.docFreq(new Term("content", "gg")), 0);
     reader.close();
     dir.close();
@@ -1905,11 +1926,17 @@ public class TestIndexWriter extends LuceneTestCase
       int expected = 3+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
+      int numDel = 0;
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document(j);
+        if (reader.isDeleted(j))
+          numDel++;
+        else
+          reader.document(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();
+
+      assertEquals(1, numDel);
 
       writer = new IndexWriter(dir, analyzer);
       writer.setMaxBufferedDocs(10);
@@ -1922,14 +1949,19 @@ public class TestIndexWriter extends LuceneTestCase
       writer.close();
 
       reader = IndexReader.open(dir);
-      expected = 20+(1-i)*2;
+      expected = 19+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
+      numDel = 0;
       for(int j=0;j<reader.maxDoc();j++) {
-        reader.document(j);
+        if (reader.isDeleted(j))
+          numDel++;
+        else
+          reader.document(j);
         reader.getTermFreqVectors(j);
       }
       reader.close();
+      assertEquals(0, numDel);
 
       dir.close();
     }

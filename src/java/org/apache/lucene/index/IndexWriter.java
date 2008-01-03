@@ -241,6 +241,14 @@ public class IndexWriter {
    * Default value is 128. Change using {@link #setTermIndexInterval(int)}.
    */
   public final static int DEFAULT_TERM_INDEX_INTERVAL = 128;
+
+  /**
+   * Absolute hard maximum length for a term.  If a term
+   * arrives from the analyzer longer than this length, it
+   * is skipped and a message is printed to infoStream, if
+   * set (see {@link setInfoStream}).
+   */
+  public final static int MAX_TERM_LENGTH = DocumentsWriter.MAX_TERM_LENGTH;
   
   // The normal read buffer size defaults to 1024, but
   // increasing this during merging seems to yield
@@ -1431,10 +1439,10 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     ensureOpen();
-    int status = 0;
+    boolean doFlush = false;
     boolean success = false;
     try {
-      status = docWriter.addDocument(doc, analyzer);
+      doFlush = docWriter.addDocument(doc, analyzer);
       success = true;
     } finally {
       if (!success) {
@@ -1453,9 +1461,8 @@ public class IndexWriter {
         }
       }
     }
-    if ((status & 1) != 0)
+    if (doFlush)
       flush(true, false);
-    checkMaxTermLength(status);
   }
 
   /**
@@ -1519,10 +1526,10 @@ public class IndexWriter {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    int status = 0;
+    boolean doFlush = false;
     boolean success = false;
     try {
-      status = docWriter.updateDocument(term, doc, analyzer);
+      doFlush = docWriter.updateDocument(term, doc, analyzer);
       success = true;
     } finally {
       if (!success) {
@@ -1539,17 +1546,8 @@ public class IndexWriter {
         }
       }
     }
-    if ((status & 1) != 0)
+    if (doFlush)
       flush(true, false);
-    checkMaxTermLength(status);
-  }
-
-  /** Throws IllegalArgumentException if the return status
-   *  from DocumentsWriter.{add,update}Document indicates
-   *  that a too-long term was encountered */
-  final private void checkMaxTermLength(int status) {
-    if (status > 1)
-      throw new IllegalArgumentException("at least one term (length " + (status>>1) + ") exceeds max term length " + (DocumentsWriter.CHAR_BLOCK_SIZE-1) + "; these terms were skipped");
   }
 
   // for test purpose
@@ -2500,9 +2498,7 @@ public class IndexWriter {
             // buffer deletes longer and then flush them to
             // multiple flushed segments, when
             // autoCommit=false
-            int delCount = applyDeletes(flushDocs);
-            if (infoStream != null)
-              infoStream.println("flushed " + delCount + " deleted documents");
+            applyDeletes(flushDocs);
             doAfterFlush();
           }
 
@@ -3220,68 +3216,65 @@ public class IndexWriter {
   // flushedNewSegment is true then a new segment was just
   // created and flushed from the ram segments, so we will
   // selectively apply the deletes to that new segment.
-  private final int applyDeletes(boolean flushedNewSegment) throws CorruptIndexException, IOException {
+  private final void applyDeletes(boolean flushedNewSegment) throws CorruptIndexException, IOException {
 
     final HashMap bufferedDeleteTerms = docWriter.getBufferedDeleteTerms();
+    final List bufferedDeleteDocIDs = docWriter.getBufferedDeleteDocIDs();
 
-    int delCount = 0;
-    if (bufferedDeleteTerms.size() > 0) {
-      if (infoStream != null)
-        message("flush " + docWriter.getNumBufferedDeleteTerms() + " buffered deleted terms on "
-                + segmentInfos.size() + " segments.");
+    if (infoStream != null)
+      message("flush " + docWriter.getNumBufferedDeleteTerms() + " buffered deleted terms and " +
+              bufferedDeleteDocIDs.size() + " deleted docIDs on "
+              + segmentInfos.size() + " segments.");
 
-      if (flushedNewSegment) {
-        IndexReader reader = null;
-        try {
-          // Open readers w/o opening the stored fields /
-          // vectors because these files may still be held
-          // open for writing by docWriter
-          reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1), false);
+    if (flushedNewSegment) {
+      IndexReader reader = null;
+      try {
+        // Open readers w/o opening the stored fields /
+        // vectors because these files may still be held
+        // open for writing by docWriter
+        reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1), false);
 
-          // Apply delete terms to the segment just flushed from ram
-          // apply appropriately so that a delete term is only applied to
-          // the documents buffered before it, not those buffered after it.
-          delCount += applyDeletesSelectively(bufferedDeleteTerms, reader);
-        } finally {
-          if (reader != null) {
-            try {
-              reader.doCommit();
-            } finally {
-              reader.doClose();
-            }
+        // Apply delete terms to the segment just flushed from ram
+        // apply appropriately so that a delete term is only applied to
+        // the documents buffered before it, not those buffered after it.
+        applyDeletesSelectively(bufferedDeleteTerms, bufferedDeleteDocIDs, reader);
+      } finally {
+        if (reader != null) {
+          try {
+            reader.doCommit();
+          } finally {
+            reader.doClose();
           }
         }
       }
-
-      int infosEnd = segmentInfos.size();
-      if (flushedNewSegment) {
-        infosEnd--;
-      }
-
-      for (int i = 0; i < infosEnd; i++) {
-        IndexReader reader = null;
-        try {
-          reader = SegmentReader.get(segmentInfos.info(i), false);
-
-          // Apply delete terms to disk segments
-          // except the one just flushed from ram.
-          delCount += applyDeletes(bufferedDeleteTerms, reader);
-        } finally {
-          if (reader != null) {
-            try {
-              reader.doCommit();
-            } finally {
-              reader.doClose();
-            }
-          }
-        }
-      }
-
-      // Clean up bufferedDeleteTerms.
-      docWriter.clearBufferedDeleteTerms();
     }
 
-    return delCount;
+    int infosEnd = segmentInfos.size();
+    if (flushedNewSegment) {
+      infosEnd--;
+    }
+
+    for (int i = 0; i < infosEnd; i++) {
+      IndexReader reader = null;
+      try {
+        reader = SegmentReader.get(segmentInfos.info(i), false);
+
+        // Apply delete terms to disk segments
+        // except the one just flushed from ram.
+        applyDeletes(bufferedDeleteTerms, reader);
+      } finally {
+        if (reader != null) {
+          try {
+            reader.doCommit();
+          } finally {
+            reader.doClose();
+          }
+        }
+      }
+    }
+
+    // Clean up bufferedDeleteTerms.
+    docWriter.clearBufferedDeletes();
   }
 
   // For test purposes.
@@ -3297,10 +3290,10 @@ public class IndexWriter {
   // Apply buffered delete terms to the segment just flushed from ram
   // apply appropriately so that a delete term is only applied to
   // the documents buffered before it, not those buffered after it.
-  private final int applyDeletesSelectively(HashMap deleteTerms,
-      IndexReader reader) throws CorruptIndexException, IOException {
+  private final void applyDeletesSelectively(HashMap deleteTerms, List deleteIds,
+                                             IndexReader reader)
+    throws CorruptIndexException, IOException {
     Iterator iter = deleteTerms.entrySet().iterator();
-    int delCount = 0;
     while (iter.hasNext()) {
       Entry entry = (Entry) iter.next();
       Term term = (Term) entry.getKey();
@@ -3315,26 +3308,28 @@ public class IndexWriter {
               break;
             }
             reader.deleteDocument(doc);
-            delCount++;
           }
         } finally {
           docs.close();
         }
       }
     }
-    return delCount;
+
+    if (deleteIds.size() > 0) {
+      iter = deleteIds.iterator();
+      while(iter.hasNext())
+        reader.deleteDocument(((Integer) iter.next()).intValue());
+    }
   }
 
   // Apply buffered delete terms to this reader.
-  private final int applyDeletes(HashMap deleteTerms, IndexReader reader)
+  private final void applyDeletes(HashMap deleteTerms, IndexReader reader)
       throws CorruptIndexException, IOException {
     Iterator iter = deleteTerms.entrySet().iterator();
-    int delCount = 0;
     while (iter.hasNext()) {
       Entry entry = (Entry) iter.next();
-      delCount += reader.deleteDocuments((Term) entry.getKey());
+      reader.deleteDocuments((Term) entry.getKey());
     }
-    return delCount;
   }
 
   // utility routines for tests
