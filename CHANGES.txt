@@ -375,6 +375,9 @@ Build
 
 Test Cases
 
+ 1. LUCENE-766: Test adding two fields with the same name but different 
+    term vector setting.  (Nicolas Lalevée via Doron Cohen)  
+    
 ======================= Release 2.2.0 2007-06-19 =======================
 
 Changes in runtime behavior

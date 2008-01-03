@@ -18,11 +18,13 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -49,7 +51,6 @@ public class TestDocumentWriter extends LuceneTestCase {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
     Analyzer analyzer = new WhitespaceAnalyzer();
-    Similarity similarity = Similarity.getDefault();
     IndexWriter writer = new IndexWriter(dir, analyzer, true);
     writer.addDocument(testDoc);
     writer.flush();
@@ -105,7 +106,6 @@ public class TestDocumentWriter extends LuceneTestCase {
       }
     };
 
-    Similarity similarity = Similarity.getDefault();
     IndexWriter writer = new IndexWriter(dir, analyzer, true);
 
     Document doc = new Document();
@@ -191,7 +191,6 @@ public class TestDocumentWriter extends LuceneTestCase {
 
 
   public void testPreAnalyzedField() throws IOException {
-    Similarity similarity = Similarity.getDefault();
     IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true);
     Document doc = new Document();
     
@@ -231,5 +230,34 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
 
+  }
+
+  /**
+   * Test adding two fields with the same name, but 
+   * with different term vector setting (LUCENE-766).
+   */
+  public void testMixedTermVectorSettingsSameField() throws Exception {
+    Document doc = new Document();
+    // f1 first without tv then with tv
+    doc.add(new Field("f1", "v1", Store.YES, Index.UN_TOKENIZED, TermVector.NO));
+    doc.add(new Field("f1", "v2", Store.YES, Index.UN_TOKENIZED, TermVector.WITH_POSITIONS_OFFSETS));
+    // f2 first with tv then without tv
+    doc.add(new Field("f2", "v1", Store.YES, Index.UN_TOKENIZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("f2", "v2", Store.YES, Index.UN_TOKENIZED, TermVector.NO));
+
+    RAMDirectory ram = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(ram, new StandardAnalyzer(), true);
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = IndexReader.open(ram);
+    // f1
+    TermFreqVector tfv1 = reader.getTermFreqVector(0, "f1");
+    assertNotNull(tfv1);
+    assertEquals("the 'with_tv' setting should rule!",2,tfv1.getTerms().length);
+    // f2
+    TermFreqVector tfv2 = reader.getTermFreqVector(0, "f2");
+    assertNotNull(tfv2);
+    assertEquals("the 'with_tv' setting should rule!",2,tfv2.getTerms().length);
   }
 }
