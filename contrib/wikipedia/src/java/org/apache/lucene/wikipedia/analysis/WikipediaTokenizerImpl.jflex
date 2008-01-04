@@ -53,6 +53,7 @@ public static final int EXTERNAL_LINK_URL = 17;
 private int currentTokType;
 private int numBalanced = 0;
 private int positionInc = 1;
+private int numLinkToks = 0;
 
 public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",
@@ -187,8 +188,10 @@ DOUBLE_EQUALS = "="{2}
 
 //wikipedia
 <YYINITIAL>{
-  //First {ALPHANUM} is always the link, set position to 0 for double bracket
-  {DOUBLE_BRACKET} {positionInc = 0; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
+  //First {ALPHANUM} is always the link, set positioninc to 1 for double bracket, but then inside the internal link state
+  //set it to 0 for the next token, such that the link and the first token are in the same position, but then subsequent
+  //tokens within the link are incremented
+  {DOUBLE_BRACKET} {positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
   {DOUBLE_BRACKET_CAT} {positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);}
   {EXTERNAL_LINK} {positionInc = 1;currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
   {TWO_SINGLE_QUOTES} {positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}}
@@ -201,16 +204,18 @@ DOUBLE_EQUALS = "="{2}
 
 <INTERNAL_LINK_STATE>{
 //First {ALPHANUM} is always the link, set position to 0 for these
-  {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); return currentTokType;}
-  {DOUBLE_BRACKET_CLOSE} {yybegin(YYINITIAL);}
+//This is slightly different from EXTERNAL_LINK_STATE because that one has an explicit grammar for capturing the URL
+  {ALPHANUM} {if (numLinkToks == 1){positionInc = 0;} else{positionInc = 1;} yybegin(INTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
+  {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL);}
   //ignore
   . | {WHITESPACE}                                               { positionInc = 1; }
 }
 
 <EXTERNAL_LINK_STATE>{
-  "http://"{HOST}("/"?({ALPHANUM}|{P}|\?|"&"|"="|"#")*)* {positionInc = 0; yybegin(EXTERNAL_LINK_STATE); return currentTokType;}
-  {ALPHANUM} {positionInc = 1; currentTokType = EXTERNAL_LINK; yybegin(EXTERNAL_LINK_STATE);return currentTokType;}
-  "]" {yybegin(YYINITIAL);}
+//increment the link token, but then don't increment the tokens after that which are still in the link
+  ("http://"|"https://"){HOST}("/"?({ALPHANUM}|{P}|\?|"&"|"="|"#")*)* {positionInc = 1; yybegin(EXTERNAL_LINK_STATE); return currentTokType;}
+  {ALPHANUM} {if (numLinkToks == 0){positionInc = 0;} else{positionInc = 1;} currentTokType = EXTERNAL_LINK; yybegin(EXTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
+  "]" {numLinkToks = 0; positionInc = 0; yybegin(YYINITIAL);}
   {WHITESPACE}                                               { positionInc = 1; }
 }
 

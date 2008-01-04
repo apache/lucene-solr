@@ -21,10 +21,9 @@ package org.apache.lucene.wikipedia.analysis;
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 
-import java.io.File;
 import java.io.StringReader;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -156,7 +155,7 @@ public class WikipediaTokenizerTest extends TestCase {
   }
 
   public void testLinkPhrases() throws Exception {
-    String test = "click [[link here]] click [http://lucene.apache.org here]";
+    String test = "click [[link here again]] click [http://lucene.apache.org here again]";
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test));
     Token token = new Token();
     token = tf.next(token);
@@ -166,11 +165,17 @@ public class WikipediaTokenizerTest extends TestCase {
     token = tf.next(token);
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link", new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
     token = tf.next(token);
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
             new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
+    //The link, and here should be at the same position for phrases to work
+    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+    token = tf.next(token);
+    assertTrue("token is null and it shouldn't be", token != null);
+    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "again",
+            new String(token.termBuffer(), 0, token.termLength()).equals("again") == true);
     assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
 
     token = tf.next(token);
@@ -183,18 +188,24 @@ public class WikipediaTokenizerTest extends TestCase {
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "http://lucene.apache.org",
             new String(token.termBuffer(), 0, token.termLength()).equals("http://lucene.apache.org") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
 
     token = tf.next(token);
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
             new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
+    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+
+    token = tf.next(token);
+    assertTrue("token is null and it shouldn't be", token != null);
+    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "again",
+            new String(token.termBuffer(), 0, token.termLength()).equals("again") == true);
     assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
     
   }
 
   public void testLinks() throws Exception {
-    String test = "[http://lucene.apache.org/java/docs/index.html#news here] [http://lucene.apache.org/java/docs/index.html?b=c here]";
+    String test = "[http://lucene.apache.org/java/docs/index.html#news here] [http://lucene.apache.org/java/docs/index.html?b=c here] [https://lucene.apache.org/java/docs/index.html?b=c here]";
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test));
     Token token = new Token();
     token = tf.next(token);
@@ -204,10 +215,15 @@ public class WikipediaTokenizerTest extends TestCase {
     assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
     tf.next(token);//skip here
     token = tf.next(token);
-
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "http://lucene.apache.org/java/docs/index.html?b=c",
             new String(token.termBuffer(), 0, token.termLength()).equals("http://lucene.apache.org/java/docs/index.html?b=c") == true);
+    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
+    tf.next(token);//skip here
+    token = tf.next(token);
+    assertTrue("token is null and it shouldn't be", token != null);
+    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "https://lucene.apache.org/java/docs/index.html?b=c",
+            new String(token.termBuffer(), 0, token.termLength()).equals("https://lucene.apache.org/java/docs/index.html?b=c") == true);
     assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
   }
 }
