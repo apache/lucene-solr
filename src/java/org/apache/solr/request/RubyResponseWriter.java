@@ -42,7 +42,11 @@ public class RubyResponseWriter implements QueryResponseWriter {
   }
 }
 
-class RubyWriter extends JSONWriter {
+class RubyWriter extends NaNFloatWriter {
+
+  protected String getNaN() { return "(0.0/0.0)"; }
+  protected String getInf() { return "(1.0/0.0)"; }
+
   public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
   }

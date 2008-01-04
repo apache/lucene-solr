@@ -237,6 +237,8 @@ Bug Fixes
 14. The CSV loader incorrectly threw an exception when given
     header=true (the default).  (ryan, yonik)
 
+15. SOLR-449: the python and ruby response writers are now able to correctly 
+    output NaN and Infinity in their respective languages.  (klaas)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

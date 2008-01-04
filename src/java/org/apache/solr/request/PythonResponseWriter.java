@@ -43,7 +43,10 @@ public class PythonResponseWriter implements QueryResponseWriter {
   }
 }
 
-class PythonWriter extends JSONWriter {
+class PythonWriter extends NaNFloatWriter {
+  protected String getNaN() { return "float('NaN')"; }
+  protected String getInf() { return "float('Inf')"; }
+
   public PythonWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
   }

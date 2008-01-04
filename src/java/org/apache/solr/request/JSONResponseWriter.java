@@ -689,3 +689,39 @@ class JSONWriter extends TextResponseWriter {
   }
 
 }
+
+abstract class NaNFloatWriter extends JSONWriter {
+  
+  abstract protected String getNaN();
+  abstract protected String getInf();
+
+  public NaNFloatWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    super(writer, req, rsp);
+  }
+
+  @Override
+  public void writeFloat(String name, float val) throws IOException {
+    if (Float.isNaN(val)) {
+      writer.write(getNaN());
+    } else if (Float.isInfinite(val)) {
+      if (val < 0.0f)
+        writer.write('-');
+      writer.write(getInf());
+    } else {
+      writeFloat(name, Float.toString(val));
+    }
+  }
+
+  @Override
+  public void writeDouble(String name, double val) throws IOException {
+    if (Double.isNaN(val)) {
+      writer.write(getNaN());
+    } else if (Double.isInfinite(val)) {
+      if (val < 0.0)
+        writer.write('-');
+      writer.write(getInf());
+    } else {
+      writeDouble(name, Double.toString(val));
+    }
+  }
+}
