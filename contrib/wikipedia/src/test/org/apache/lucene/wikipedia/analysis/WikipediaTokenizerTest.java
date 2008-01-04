@@ -171,7 +171,7 @@ public class WikipediaTokenizerTest extends TestCase {
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
             new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
     //The link, and here should be at the same position for phrases to work
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
     token = tf.next(token);
     assertTrue("token is null and it shouldn't be", token != null);
     assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "again",

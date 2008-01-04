@@ -193,7 +193,7 @@ DOUBLE_EQUALS = "="{2}
   //tokens within the link are incremented
   {DOUBLE_BRACKET} {positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
   {DOUBLE_BRACKET_CAT} {positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);}
-  {EXTERNAL_LINK} {positionInc = 1;currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
+  {EXTERNAL_LINK} {positionInc = 1; currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
   {TWO_SINGLE_QUOTES} {positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}}
   {DOUBLE_EQUALS} {positionInc = 1; yybegin(DOUBLE_EQUALS_STATE);}
   {DOUBLE_BRACE} {positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
@@ -205,7 +205,7 @@ DOUBLE_EQUALS = "="{2}
 <INTERNAL_LINK_STATE>{
 //First {ALPHANUM} is always the link, set position to 0 for these
 //This is slightly different from EXTERNAL_LINK_STATE because that one has an explicit grammar for capturing the URL
-  {ALPHANUM} {if (numLinkToks == 1){positionInc = 0;} else{positionInc = 1;} yybegin(INTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
+  {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); return currentTokType;}
   {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL);}
   //ignore
   . | {WHITESPACE}                                               { positionInc = 1; }
