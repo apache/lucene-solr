@@ -21,8 +21,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 
 /**
@@ -36,7 +38,7 @@ import java.util.Set;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrDocument implements Serializable
+public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Object>>
 {
   private Map<String,Object> _fields = null;
   
@@ -177,6 +179,13 @@ public class SolrDocument implements Serializable
     return "SolrDocument["+_fields.toString()+"]";
   }
 
+  /**
+   * Iterate of String->Object keys
+   */
+  public Iterator<Entry<String, Object>> iterator() {
+    return _fields.entrySet().iterator();
+  }
+  
   //-----------------------------------------------------------------------------------------
   // JSTL Helpers
   //-----------------------------------------------------------------------------------------
