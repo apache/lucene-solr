@@ -22,15 +22,15 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 
-/** A {@link DeletionPolicy} that wraps around any other
- *  {@link DeletionPolicy} and adds the ability to hold and
+/** A {@link IndexDeletionPolicy} that wraps around any other
+ *  {@link IndexDeletionPolicy} and adds the ability to hold and
  *  later release a single "snapshot" of an index.  While
  *  the snapshot is held, the {@link IndexWriter} will not
  *  remove any files associated with it even if the index is
  *  otherwise being actively, arbitrarily changed.  Because
- *  we wrap another arbitrary {@link DeletionPolicy}, this
+ *  we wrap another arbitrary {@link IndexDeletionPolicy}, this
  *  gives you the freedom to continue using whatever {@link
- *  DeletionPolicy} you would normally want to use with your
+ *  IndexDeletionPolicy} you would normally want to use with your
  *  index. */
 
 public class SnapshotDeletionPolicy implements IndexDeletionPolicy {

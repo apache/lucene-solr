@@ -246,7 +246,7 @@ public class IndexWriter {
    * Absolute hard maximum length for a term.  If a term
    * arrives from the analyzer longer than this length, it
    * is skipped and a message is printed to infoStream, if
-   * set (see {@link setInfoStream}).
+   * set (see {@link #setInfoStream}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriter.MAX_TERM_LENGTH;
   
