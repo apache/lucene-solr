@@ -250,6 +250,7 @@
           <packageset dir="contrib/spellchecker/src/java"/>
           <packageset dir="contrib/surround/src/java"/>
           <packageset dir="contrib/swing/src/java"/>
+          <packageset dir="contrib/wikipedia/src/java"/>
           <packageset dir="contrib/wordnet/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
           <!-- end alpha sort -->
@@ -279,6 +280,7 @@
           <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
           <group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
           <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
+          <group title="contrib: Wikipedia" packages="org.apache.lucene.wikipedia*"/>
           <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
 

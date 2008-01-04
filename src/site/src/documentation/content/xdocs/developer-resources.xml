@@ -35,6 +35,7 @@
         <li><a href="api/contrib-spellchecker/index.html">Spellchecker</a></li>
         <li><a href="api/contrib-surround/index.html">Surround</a></li>
         <li><a href="api/contrib-swing/index.html">Swing</a></li>
+          <li><a href="api/contrib-wikipedia/index.html">Wikipedia</a></li>
         <li><a href="api/contrib-wordnet/index.html">Wordnet</a></li>
         <li><a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a></li></ul></li>
       </ul>
