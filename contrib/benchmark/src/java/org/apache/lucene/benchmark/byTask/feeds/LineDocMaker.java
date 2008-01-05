@@ -101,14 +101,6 @@ public class LineDocMaker extends BasicDocMaker {
     }
   }
 
-  /* (non-Javadoc)
-   * @see SimpleDocMaker#setConfig(java.util.Properties)
-   */
-  public void setConfig(Config config) {
-    super.setConfig(config);
-    resetInputs();
-  }
-
   protected DocData getNextDocData() throws Exception {
     throw new RuntimeException("not implemented");
   }
@@ -154,7 +146,7 @@ public class LineDocMaker extends BasicDocMaker {
     openFile();
   }
 
-  void openFile() {
+  synchronized void openFile() {
     try {
       if (fileIn != null)
         fileIn.close();

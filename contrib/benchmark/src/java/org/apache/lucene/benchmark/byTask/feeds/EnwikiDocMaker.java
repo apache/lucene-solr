@@ -25,6 +25,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import java.io.IOException;
+import java.io.FileInputStream;
 
 import org.apache.lucene.document.Document;
 
@@ -55,16 +56,28 @@ public class EnwikiDocMaker extends LineDocMaker {
         reader.setContentHandler(this);
         reader.setErrorHandler(this);
         while(true){
-          InputSource is = new InputSource(fileIS);
-          reader.parse(is);
-          if (!forever) {
-            synchronized(this) {
+          final FileInputStream localFileIS = fileIS;
+          try {
+            InputSource is = new InputSource(localFileIS);
+            reader.parse(is);
+          } catch (IOException ioe) {
+            synchronized(EnwikiDocMaker.this) {
+              if (localFileIS != fileIS) {
+                // fileIS was closed on us, so, just fall
+                // through
+              } else
+                // Exception is real
+                throw ioe;
+            }
+          }
+          synchronized(this) {
+            if (!forever) {
               nmde = new NoMoreDataException();
               notify();
-            }
-            return;
-          } else {
-            synchronized(this){
+              return;
+            } else if (localFileIS == fileIS) {
+              // If file is not already re-opened then
+              // re-open it now
               openFile();
             }
           }
@@ -77,16 +90,15 @@ public class EnwikiDocMaker extends LineDocMaker {
 
     }
 
-    Parser() {
-      t = new Thread(this);
-      t.setDaemon(true);
-      t.start();
-    }
-
     String[] tuple;
     NoMoreDataException nmde;
 
     String[] next() throws NoMoreDataException {
+      if (t == null) {
+        t = new Thread(this);
+        t.setDaemon(true);
+        t.start();
+      }
       String[] result;
       synchronized(this){
         while(tuple == null && nmde == null){
@@ -96,6 +108,9 @@ public class EnwikiDocMaker extends LineDocMaker {
           }
         }
         if (nmde != null) {
+          // Set to null so we will re-start thread in case
+          // we are re-used:
+          t = null;
           throw nmde;
         }
         result = tuple;
