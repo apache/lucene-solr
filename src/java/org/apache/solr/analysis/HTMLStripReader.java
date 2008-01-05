@@ -38,7 +38,7 @@ public class HTMLStripReader extends Reader {
   private final int READAHEAD=4096;
   private int numWhitespace = 0;
   private int numRead = 0;
-  private Set<String> escapedTags = Collections.emptySet();
+  private Set<String> escapedTags;
 
   // pushback buffer
   private final StringBuilder pushed = new StringBuilder();
@@ -375,7 +375,7 @@ public class HTMLStripReader extends Reader {
         break;
       }
     }
-    if (escapedTags.contains(sb.toString())){
+    if (escapedTags!=null && escapedTags.contains(sb.toString())){
       //if this is a reservedTag, then keep it
       return MISMATCH;
     }
@@ -497,22 +497,22 @@ public class HTMLStripReader extends Reader {
 
 
   private int readName(boolean checkEscaped) throws IOException {
-    StringBuilder builder = new StringBuilder();
+    StringBuilder builder = (checkEscaped && escapedTags!=null) ? new StringBuilder() : null;
     int ch = read();
-    builder.append((char)ch);
+    if (builder!=null) builder.append((char)ch);
     if (!isFirstIdChar(ch)) return MISMATCH;
     ch = read();
-    builder.append((char)ch);
+    if (builder!=null) builder.append((char)ch);
     while(isIdChar(ch)) {
       ch=read();
-      builder.append((char)ch);
+      if (builder!=null) builder.append((char)ch);
     }
     if (ch!=-1) {
       push(ch);
 
     }
     //strip off the trailing >
-    if (checkEscaped && escapedTags.contains(builder.substring(0, builder.length() - 1))){
+    if (builder!=null && escapedTags.contains(builder.substring(0, builder.length() - 1))){
       return MISMATCH;
     }
     return MATCH;
