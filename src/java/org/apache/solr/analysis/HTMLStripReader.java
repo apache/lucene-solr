@@ -23,6 +23,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.Collections;
 
 /**
  * A Reader that wraps another reader and attempts to strip out HTML constructs.
@@ -34,6 +36,9 @@ import java.util.HashMap;
 public class HTMLStripReader extends Reader {
   private final Reader in;
   private final int READAHEAD=4096;
+  private int numWhitespace = 0;
+  private int numRead = 0;
+  private Set<String> escapedTags = Collections.emptySet();
 
   // pushback buffer
   private final StringBuilder pushed = new StringBuilder();
@@ -58,6 +63,11 @@ public class HTMLStripReader extends Reader {
     this.in=source.markSupported() ? source : new BufferedReader(source);
   }
 
+  public HTMLStripReader(Reader source, Set<String> escapedTags){
+    this(source);
+    this.escapedTags = escapedTags;
+  }
+
 
   private int next() throws IOException {
     int len = pushed.length();
@@ -66,6 +76,7 @@ public class HTMLStripReader extends Reader {
       pushed.setLength(len-1);
       return ch;
     }
+    numRead++;
     return in.read();
   }
 
@@ -364,7 +375,10 @@ public class HTMLStripReader extends Reader {
         break;
       }
     }
-
+    if (escapedTags.contains(sb.toString())){
+      //if this is a reservedTag, then keep it
+      return MISMATCH;
+    }
     // After the tag id, there needs to be either whitespace or
     // '>'
     if ( !(ch=='>' || isSpace(ch)) ) {
@@ -445,7 +459,7 @@ public class HTMLStripReader extends Reader {
           push(ch);
           continue;
         }
-        int ret = readName();
+        int ret = readName(false);
         if (ret==MISMATCH) return MISMATCH;
         ch=nextSkipWS();
         if (ch!='>') return MISMATCH;
@@ -482,12 +496,25 @@ public class HTMLStripReader extends Reader {
   }
 
 
-  private int readName() throws IOException {
+  private int readName(boolean checkEscaped) throws IOException {
+    StringBuilder builder = new StringBuilder();
     int ch = read();
+    builder.append((char)ch);
     if (!isFirstIdChar(ch)) return MISMATCH;
     ch = read();
-    while(isIdChar(ch)) ch=read();
-    if (ch!=-1) push(ch);
+    builder.append((char)ch);
+    while(isIdChar(ch)) {
+      ch=read();
+      builder.append((char)ch);
+    }
+    if (ch!=-1) {
+      push(ch);
+
+    }
+    //strip off the trailing >
+    if (checkEscaped && escapedTags.contains(builder.substring(0, builder.length() - 1))){
+      return MISMATCH;
+    }
     return MATCH;
   }
 
@@ -645,12 +672,18 @@ public class HTMLStripReader extends Reader {
   }
 
 
+
   public int read() throws IOException {
     // TODO: Do we ever want to preserve CDATA sections?
     // where do we have to worry about them?
     // <![ CDATA [ unescaped markup ]]>
+    if (numWhitespace > 0){
+      numWhitespace--;
+      return ' ';
+    }
 
     while(true) {
+      int lastNumRead = numRead;
       int ch = next();
 
       switch (ch) {
@@ -660,6 +693,7 @@ public class HTMLStripReader extends Reader {
           if (ch>=0) return ch;
           if (ch==MISMATCH) {
             restoreState();
+
             return '&';
           }
           break;
@@ -671,7 +705,7 @@ public class HTMLStripReader extends Reader {
           if (ch=='!') {
             ret = readBang(false);
           } else if (ch=='/') {
-            ret = readName();
+            ret = readName(true);
             if (ret==MATCH) {
               ch=nextSkipWS();
               ret= ch=='>' ? MATCH : MISMATCH;
@@ -685,7 +719,12 @@ public class HTMLStripReader extends Reader {
 
           // matched something to be discarded, so break
           // from this case and continue in the loop
-          if (ret==MATCH) break;
+          if (ret==MATCH) {
+            //break;//was
+            //return whitespace from
+            numWhitespace = (numRead - lastNumRead) - 1;//tack on the -1 since we are returning a space right now
+            return ' ';
+          }
 
           // didn't match any HTML constructs, so roll back
           // the stream state and just return '<'
