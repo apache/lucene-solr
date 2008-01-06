@@ -272,6 +272,10 @@ Other Changes
     lucene-analyzers-2.2.0.jar -- includes support for German, Chinese,
     Russan, Dutch, Greek, Brazilian, Thai, and French.   (hossman)
 
+ 7. Upgraded to commons-CSV r609327, which fixes escaping bugs and
+    introduces new escaping and whitespace handling options to
+    increase compatibility with different formats.  (yonik)
+
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on
     project-name-version.jar.  This yields, for example:

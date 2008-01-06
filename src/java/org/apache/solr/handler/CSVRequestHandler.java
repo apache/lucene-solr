@@ -99,6 +99,7 @@ abstract class CSVLoader {
   static String EMPTY="keepEmpty";
   static String SPLIT="split";
   static String ENCAPSULATOR="encapsulator";
+  static String ESCAPE="escape";
   static String OVERWRITE="overwrite";
 
   private static Pattern colonSplit = Pattern.compile(":");
@@ -216,7 +217,7 @@ abstract class CSVLoader {
       templateAdd.overwritePending=false;
     }
 
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, true,  false, true);
+    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
     String sep = params.get(SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
@@ -225,8 +226,32 @@ abstract class CSVLoader {
 
     String encapsulator = params.get(ENCAPSULATOR);
     if (encapsulator!=null) {
-      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+sep+"'");
-      strategy.setEncapsulator(encapsulator.charAt(0));
+      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
+    }
+
+    String escape = params.get(ESCAPE);
+    if (escape!=null) {
+      if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
+    }
+
+    // if only encapsulator or escape is set, disable the other escaping mechanism
+    if (encapsulator == null && escape != null) {
+      strategy.setEncapsulator((char)-2);  // TODO: add CSVStrategy.ENCAPSULATOR_DISABLED      
+      strategy.setEscape(escape.charAt(0));
+    } else {
+      if (encapsulator != null) {
+        strategy.setEncapsulator(encapsulator.charAt(0));
+      }
+      if (escape != null) {
+        char ch = escape.charAt(0);
+        strategy.setEscape(ch);
+        if (ch == '\\') {
+          // If the escape is the standard backslash, then also enable
+          // unicode escapes (it's harmless since 'u' would not otherwise
+          // be escaped.
+          strategy.setUnicodeEscapeInterpretation(true);
+        }
+      }
     }
 
     String fn = params.get(FIELDNAMES);

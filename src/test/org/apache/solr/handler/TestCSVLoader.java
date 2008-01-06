@@ -234,7 +234,9 @@ public class TestCSVLoader extends AbstractSolrTestCase {
             +"100|^quoted^\n"
             +"101|a;'b';c\n"
             +"102|a;;b\n"
-            +"103|\n");
+            +"103|\n"
+            +"104|a\\\\b\n"  // no backslash escaping should be done by default
+    );
 
     loadLocal("stream.file",filename, "commit","true",
               "separator","|",
@@ -244,14 +246,38 @@ public class TestCSVLoader extends AbstractSolrTestCase {
               "f.str_s.separator",";",
               "f.str_s.encapsulator","'"
     );
-    assertQ(req("id:[100 TO 110]"),"//*[@numFound='4']");
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='5']");
     assertQ(req("id:100"),"//str[@name='str_s'][.='quoted']");
     assertQ(req("id:101"),"//arr[@name='str_s']/str[1][.='a']");
     assertQ(req("id:101"),"//arr[@name='str_s']/str[2][.='b']");
     assertQ(req("id:101"),"//arr[@name='str_s']/str[3][.='c']");
     assertQ(req("id:102"),"//arr[@name='str_s']/str[2][.='EMPTY']");
     assertQ(req("id:103"),"//str[@name='str_s'][.='EMPTY']");
+    assertQ(req("id:104"),"//str[@name='str_s'][.='a\\\\b']");
 
+    // test no escaping + double encapsulator escaping by default
+    makeFile("id,str_s\n"
+            +"100,\"quoted \"\" \\ string\"\n"
+            +"101,unquoted \"\" \\ string\n"     // double encap shouldn't be an escape outside encap
+            +"102,end quote \\\n"
+    );
+    loadLocal("stream.file",filename, "commit","true"
+    );
+    assertQ(req("id:100"),"//str[@name='str_s'][.='quoted \" \\ string']");
+    assertQ(req("id:101"),"//str[@name='str_s'][.='unquoted \"\" \\ string']");
+    assertQ(req("id:102"),"//str[@name='str_s'][.='end quote \\']");
+
+
+    // setting an escape should disable encapsulator
+    makeFile("id,str_s\n"
+            +"100,\"quoted \"\" \\\" \\\\ string\"\n"  // quotes should be part of value
+            +"101,unquoted \"\" \\\" \\, \\\\ string\n"
+    );
+    loadLocal("stream.file",filename, "commit","true"
+            ,"escape","\\"
+    );
+    assertQ(req("id:100"),"//str[@name='str_s'][.='\"quoted \"\" \" \\ string\"']");
+    assertQ(req("id:101"),"//str[@name='str_s'][.='unquoted \"\" \" , \\ string']");
 
   }
 
