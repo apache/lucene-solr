@@ -2050,7 +2050,7 @@ final class DocumentsWriter {
                       IndexOutput proxOut)
     throws CorruptIndexException, IOException {
 
-    final String fieldName = fields[0].fieldInfo.name;
+    final int fieldNumber = fields[0].fieldInfo.number;
     int numFields = fields.length;
 
     final FieldMergeState[] mergeStates = new FieldMergeState[numFields];
@@ -2100,9 +2100,6 @@ final class DocumentsWriter {
       int pos = start;
       while(text[pos] != 0xffff)
         pos++;
-
-      // TODO: can we avoid 2 new objects here?
-      Term term = new Term(fieldName, new String(text, start, pos-start));
 
       long freqPointer = freqOut.getFilePointer();
       long proxPointer = proxOut.getFilePointer();
@@ -2201,7 +2198,7 @@ final class DocumentsWriter {
 
       // Write term
       termInfo.set(df, freqPointer, proxPointer, (int) (skipPointer - freqPointer));
-      termsOut.add(term, termInfo);
+      termsOut.add(fieldNumber, text, start, pos-start, termInfo);
     }
   }
 

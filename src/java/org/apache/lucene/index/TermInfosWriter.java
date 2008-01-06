@@ -21,7 +21,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.StringHelper;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
@@ -32,9 +31,8 @@ final class TermInfosWriter {
 
   private FieldInfos fieldInfos;
   private IndexOutput output;
-  private Term lastTerm = new Term("", "");
   private TermInfo lastTi = new TermInfo();
-  private long size = 0;
+  private long size;
 
   // TODO: the default values for these two parameters should be settable from
   // IndexWriter.  However, once that's done, folks will start setting them to
@@ -62,10 +60,15 @@ final class TermInfosWriter {
    */
   int maxSkipLevels = 10;
 
-  private long lastIndexPointer = 0;
-  private boolean isIndex = false;
+  private long lastIndexPointer;
+  private boolean isIndex;
+  private char[] lastTermText = new char[10];
+  private int lastTermTextLength;
+  private int lastFieldNumber = -1;
 
-  private TermInfosWriter other = null;
+  private char[] termTextBuffer = new char[10];
+
+  private TermInfosWriter other;
 
   TermInfosWriter(Directory directory, String segment, FieldInfos fis,
                   int interval)
@@ -93,25 +96,59 @@ final class TermInfosWriter {
     output.writeInt(maxSkipLevels);              // write maxSkipLevels
   }
 
-  /** Adds a new <Term, TermInfo> pair to the set.
+  void add(Term term, TermInfo ti) throws IOException {
+
+    final int length = term.text.length();
+    if (termTextBuffer.length < length)
+      termTextBuffer = new char[(int) (length*1.25)];
+
+    term.text.getChars(0, length, termTextBuffer, 0);
+
+    add(fieldInfos.fieldNumber(term.field), termTextBuffer, 0, length, ti);
+  }
+
+  // Currently used only by assert statement
+  private int compareToLastTerm(int fieldNumber, char[] termText, int start, int length) {
+    int pos = 0;
+
+    if (lastFieldNumber != fieldNumber)
+      return fieldInfos.fieldName(lastFieldNumber).compareTo(fieldInfos.fieldName(fieldNumber));
+
+    while(pos < length && pos < lastTermTextLength) {
+      final char c1 = lastTermText[pos];
+      final char c2 = termText[pos + start];
+      if (c1 < c2)
+        return -1;
+      else if (c1 > c2)
+        return 1;
+      pos++;
+    }
+
+    if (pos < lastTermTextLength)
+      // Last term was longer
+      return 1;
+    else if (pos < length)
+      // Last term was shorter
+      return -1;
+    else
+      return 0;
+  }
+
+  /** Adds a new <<fieldNumber, termText>, TermInfo> pair to the set.
     Term must be lexicographically greater than all previous Terms added.
     TermInfo pointers must be positive and greater than all previous.*/
-  final void add(Term term, TermInfo ti)
-       throws CorruptIndexException, IOException {
-    if (!isIndex && term.compareTo(lastTerm) <= 0)
-      throw new CorruptIndexException("term out of order (\"" + term + 
-          "\".compareTo(\"" + lastTerm + "\") <= 0)");
-    if (ti.freqPointer < lastTi.freqPointer)
-      throw new CorruptIndexException("freqPointer out of order (" + ti.freqPointer +
-          " < " + lastTi.freqPointer + ")");
-    if (ti.proxPointer < lastTi.proxPointer)
-      throw new CorruptIndexException("proxPointer out of order (" + ti.proxPointer + 
-          " < " + lastTi.proxPointer + ")");
+  void add(int fieldNumber, char[] termText, int termTextStart, int termTextLength, TermInfo ti)
+    throws IOException {
+
+    assert compareToLastTerm(fieldNumber, termText, termTextStart, termTextLength) < 0 || (isIndex && termTextLength == 0 && lastTermTextLength == 0);
+    assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
+    assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
     if (!isIndex && size % indexInterval == 0)
-      other.add(lastTerm, lastTi);                      // add an index term
+      other.add(lastFieldNumber, lastTermText, 0, lastTermTextLength, lastTi);                      // add an index term
 
-    writeTerm(term);                                    // write term
+    writeTerm(fieldNumber, termText, termTextStart, termTextLength);                        // write term
+
     output.writeVInt(ti.docFreq);                       // write doc freq
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
     output.writeVLong(ti.proxPointer - lastTi.proxPointer);
@@ -125,28 +162,38 @@ final class TermInfosWriter {
       lastIndexPointer = other.output.getFilePointer(); // write pointer
     }
 
+    if (lastTermText.length < termTextLength)
+      lastTermText = new char[(int) (termTextLength*1.25)];
+    System.arraycopy(termText, termTextStart, lastTermText, 0, termTextLength);
+    lastTermTextLength = termTextLength;
+    lastFieldNumber = fieldNumber;
+
     lastTi.set(ti);
     size++;
   }
 
-  private final void writeTerm(Term term)
+  private void writeTerm(int fieldNumber, char[] termText, int termTextStart, int termTextLength)
        throws IOException {
-    int start = StringHelper.stringDifference(lastTerm.text, term.text);
-    int length = term.text.length() - start;
 
-    output.writeVInt(start);                   // write shared prefix length
+    // Compute prefix in common with last term:
+    int start = 0;
+    final int limit = termTextLength < lastTermTextLength ? termTextLength : lastTermTextLength;
+    while(start < limit) {
+      if (termText[termTextStart+start] != lastTermText[start])
+        break;
+      start++;
+    }
+
+    int length = termTextLength - start;
+
+    output.writeVInt(start);                     // write shared prefix length
     output.writeVInt(length);                  // write delta length
-    output.writeChars(term.text, start, length);  // write delta chars
-
-    output.writeVInt(fieldInfos.fieldNumber(term.field)); // write field num
-
-    lastTerm = term;
+    output.writeChars(termText, start+termTextStart, length);  // write delta chars
+    output.writeVInt(fieldNumber); // write field num
   }
 
-
-
   /** Called to complete TermInfos creation. */
-  final void close() throws IOException {
+  void close() throws IOException {
     output.seek(4);          // write size after format
     output.writeLong(size);
     output.close();
