@@ -58,6 +58,19 @@ public class StandardTokenizer extends Tokenizer {
     this.input = reader;
   }
 
+  private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
+
+  /** Set the max allowed token length.  Any token longer
+   *  than this is skipped. */
+  public void setMaxTokenLength(int length) {
+    this.maxTokenLength = length;
+  }
+
+  /** @see #setMaxTokenLength */
+  public int getMaxTokenLength() {
+    return maxTokenLength;
+  }
+
     /**
      * Creates a new instance of the {@link StandardTokenizer}. Attaches the
      * <code>input</code> to a newly created JFlex scanner.
@@ -80,37 +93,49 @@ public class StandardTokenizer extends Tokenizer {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
     this.input = input;
     this.scanner = new StandardTokenizerImpl(input);
-  }/*
-     * (non-Javadoc)
-     *
-     * @see org.apache.lucene.analysis.TokenStream#next()
-     */
-    public Token next(Token result) throws IOException {
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.apache.lucene.analysis.TokenStream#next()
+   */
+  public Token next(Token result) throws IOException {
+      int posIncr = 1;
+
+      while(true) {
 	int tokenType = scanner.getNextToken();
 
 	if (tokenType == StandardTokenizerImpl.YYEOF) {
 	    return null;
 	}
 
-        result.clear();
-        scanner.getText(result);
-        final int start = scanner.yychar();
-        result.setStartOffset(start);
-        result.setEndOffset(start+result.termLength());
-        // This 'if' should be removed in the next release. For now, it converts
-        // invalid acronyms to HOST. When removed, only the 'else' part should
-        // remain.
-        if (tokenType == StandardTokenizerImpl.ACRONYM_DEP) {
-          if (replaceInvalidAcronym) {
-            result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
-            result.setTermLength(result.termLength() - 1); // remove extra '.'
+        if (scanner.yylength() <= maxTokenLength) {
+          result.clear();
+          result.setPositionIncrement(posIncr);
+          scanner.getText(result);
+          final int start = scanner.yychar();
+          result.setStartOffset(start);
+          result.setEndOffset(start+result.termLength());
+          // This 'if' should be removed in the next release. For now, it converts
+          // invalid acronyms to HOST. When removed, only the 'else' part should
+          // remain.
+          if (tokenType == StandardTokenizerImpl.ACRONYM_DEP) {
+            if (replaceInvalidAcronym) {
+              result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
+              result.setTermLength(result.termLength() - 1); // remove extra '.'
+            } else {
+              result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
+            }
           } else {
-            result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
+            result.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
           }
-        } else {
-          result.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
-        }
-        return result;
+          return result;
+        } else
+          // When we skip a too-long term, we still increment the
+          // position increment
+          posIncr++;
+      }
     }
 
     /*

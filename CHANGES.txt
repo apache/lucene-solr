@@ -90,6 +90,10 @@ API Changes
     modified so it is token producer's responsibility
     to call Token.clear(). (Doron Cohen)   
 
+14. LUCENE-1118: Changed StandardAnalyzer to skip too-long (default >
+    255 characters) tokens.  You can increase this limit by calling
+    StandardAnalyzer.setMaxTokenLength(...).  (Michael McCandless)
+
 
 Bug fixes
 

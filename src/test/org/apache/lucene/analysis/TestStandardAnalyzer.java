@@ -30,6 +30,10 @@ public class TestStandardAnalyzer extends LuceneTestCase {
   }
 
   public void assertAnalyzesTo(Analyzer a, String input, String[] expectedImages, String[] expectedTypes) throws Exception {
+    assertAnalyzesTo(a, input, expectedImages, expectedTypes, null);
+  }
+
+  public void assertAnalyzesTo(Analyzer a, String input, String[] expectedImages, String[] expectedTypes, int[] expectedPosIncrs) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
     for (int i = 0; i < expectedImages.length; i++) {
       Token t = ts.next();
@@ -38,11 +42,38 @@ public class TestStandardAnalyzer extends LuceneTestCase {
       if (expectedTypes != null) {
         assertEquals(expectedTypes[i], t.type());
       }
+      if (expectedPosIncrs != null) {
+        assertEquals(expectedPosIncrs[i], t.getPositionIncrement());
+      }
     }
     assertNull(ts.next());
     ts.close();
   }
 
+
+  public void testMaxTermLength() throws Exception {
+    StandardAnalyzer sa = new StandardAnalyzer();
+    sa.setMaxTokenLength(5);
+    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"});
+  }
+
+  public void testMaxTermLength2() throws Exception {
+    StandardAnalyzer sa = new StandardAnalyzer();
+    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "toolong", "xy", "z"});
+    sa.setMaxTokenLength(5);
+    
+    assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"}, null, new int[]{1, 1, 2, 1});
+  }
+
+  public void testMaxTermLength3() throws Exception {
+    char[] chars = new char[255];
+    for(int i=0;i<255;i++)
+      chars[i] = 'a';
+    String longTerm = new String(chars, 0, 255);
+    
+    assertAnalyzesTo(a, "ab cd " + longTerm + " xy z", new String[]{"ab", "cd", longTerm, "xy", "z"});
+    assertAnalyzesTo(a, "ab cd " + longTerm + "a xy z", new String[]{"ab", "cd", "xy", "z"});
+  }
 
   public void testAlphanumeric() throws Exception {
     // alphanumeric tokens

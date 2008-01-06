@@ -144,8 +144,9 @@ public class StandardAnalyzer extends Analyzer {
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
   StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader, replaceInvalidAcronym);
-    result = new StandardFilter(result);
+    StandardTokenizer tokenStream = new StandardTokenizer(reader, replaceInvalidAcronym);
+    tokenStream.setMaxTokenLength(maxTokenLength);
+    TokenStream result = new StandardFilter(tokenStream);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopSet);
     return result;
@@ -154,6 +155,28 @@ public class StandardAnalyzer extends Analyzer {
   private static final class SavedStreams {
     StandardTokenizer tokenStream;
     TokenStream filteredTokenStream;
+  }
+
+  /** Default maximum allowed token length */
+  public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
+
+  private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
+
+  /**
+   * Set maximum allowed token length.  If a token is seen
+   * that exceeds this length then it is discarded.  This
+   * setting only takes effect the next time tokenStream or
+   * reusableTokenStream is called.
+   */
+  public void setMaxTokenLength(int length) {
+    maxTokenLength = length;
+  }
+    
+  /**
+   * @see #setMaxTokenLength
+   */
+  public int getMaxTokenLength() {
+    return maxTokenLength;
   }
   
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
@@ -168,6 +191,7 @@ public class StandardAnalyzer extends Analyzer {
     } else {
       streams.tokenStream.reset(reader);
     }
+    streams.tokenStream.setMaxTokenLength(maxTokenLength);
     
     streams.tokenStream.setReplaceInvalidAcronym(replaceInvalidAcronym);
 

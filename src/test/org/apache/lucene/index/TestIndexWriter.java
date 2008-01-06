@@ -586,7 +586,9 @@ public class TestIndexWriter extends LuceneTestCase
       // maximum length term, and search on that term:
       doc = new Document();
       doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.TOKENIZED));
-      writer  = new IndexWriter(dir, new StandardAnalyzer());
+      StandardAnalyzer sa = new StandardAnalyzer();
+      sa.setMaxTokenLength(100000);
+      writer  = new IndexWriter(dir, sa);
       writer.addDocument(doc);
       writer.close();
       reader = IndexReader.open(dir);
