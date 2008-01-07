@@ -493,16 +493,31 @@ public final class SolrCore {
   private static Map<String, SearchComponent> loadSearchComponents( SolrConfig config )
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
-    components.put( QueryComponent.COMPONENT_NAME,        new QueryComponent()        );
-    components.put( FacetComponent.COMPONENT_NAME,        new FacetComponent()        );
-    components.put( MoreLikeThisComponent.COMPONENT_NAME, new MoreLikeThisComponent() );
-    components.put( HighlightComponent.COMPONENT_NAME,    new HighlightComponent()    );
-    components.put( DebugComponent.COMPONENT_NAME,        new DebugComponent()        );
   
     String xpath = "searchComponent";
     NamedListPluginLoader<SearchComponent> loader = new NamedListPluginLoader<SearchComponent>( xpath, components );
     loader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
   
+    final Map<String,Class<? extends SearchComponent>> standardcomponents 
+        = new HashMap<String, Class<? extends SearchComponent>>();
+    standardcomponents.put( QueryComponent.COMPONENT_NAME,        QueryComponent.class        );
+    standardcomponents.put( FacetComponent.COMPONENT_NAME,        FacetComponent.class        );
+    standardcomponents.put( MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class );
+    standardcomponents.put( HighlightComponent.COMPONENT_NAME,    HighlightComponent.class    );
+    standardcomponents.put( DebugComponent.COMPONENT_NAME,        DebugComponent.class        );
+    for( Map.Entry<String, Class<? extends SearchComponent>> entry : standardcomponents.entrySet() ) {
+      if( components.get( entry.getKey() ) == null ) {
+        try {
+          SearchComponent comp = entry.getValue().newInstance();
+          comp.init( null ); // default components initialized with nothing
+          components.put( entry.getKey(), comp );
+        }
+        catch (Exception e) {
+          SolrConfig.severeErrors.add( e );
+          SolrException.logOnce(log,null,e);
+        }
+      }
+    }
     return components;
   }
   
