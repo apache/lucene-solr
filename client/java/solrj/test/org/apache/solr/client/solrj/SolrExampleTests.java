@@ -31,10 +31,12 @@ import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.common.params.FacetParams;
 
 /**
  * This should include tests against the example solr config
@@ -304,5 +306,73 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     catch( Exception ex ) {
       // expected
     }
+  }
+  
+  public void testFaceting() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    
+    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(10);
+    for( int i=1; i<=10; i++ ) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField( "id", i+"", 1.0f );
+      if( (i%2)==0 ) {
+        doc.addField( "features", "two" );
+      }
+      if( (i%3)==0 ) {
+        doc.addField( "features", "three" );
+      }
+      if( (i%4)==0 ) {
+        doc.addField( "features", "four" );
+      }
+      if( (i%5)==0 ) {
+        doc.addField( "features", "five" );
+      }
+      docs.add( doc );
+    }
+    server.add( docs );
+    server.commit();
+    
+    SolrQuery query = new SolrQuery( "*:*" );
+    query.remove( FacetParams.FACET_FIELD );
+    query.addFacetField( "features" );
+    query.setFacetMinCount( 0 );
+    query.setFacet( true );
+    query.setRows( 0 );
+    
+    QueryResponse rsp = server.query( query );
+    assertEquals( docs.size(), rsp.getResults().getNumFound() );
+    
+    List<FacetField> facets = rsp.getFacetFields();
+    assertEquals( 1, facets.size() );
+    FacetField ff = facets.get( 0 );
+    assertEquals( "features", ff.getName() );
+    System.out.println( "111: "+ff.getValues() );
+    // check all counts
+    assertEquals( "[two (5), three (3), five (2), four (2)]", ff.getValues().toString() );
+    
+    // should be the same facets with minCount=0
+    query.setFilterQueries( "features:two" );
+    rsp = server.query( query );
+    ff = rsp.getFacetField( "features" );
+    assertEquals( "[two (5), four (2), five (1), three (1)]", ff.getValues().toString() );
+    
+    // with minCount > 3
+    query.setFacetMinCount( 4 );
+    rsp = server.query( query );
+    ff = rsp.getFacetField( "features" );
+    assertEquals( "[two (5)]", ff.getValues().toString() );
+
+    // with minCount > 3
+    query.setFacetMinCount( -1 );
+    rsp = server.query( query );
+    ff = rsp.getFacetField( "features" );
+    
+    System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
   }
 }
