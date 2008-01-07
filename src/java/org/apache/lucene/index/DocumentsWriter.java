@@ -177,7 +177,7 @@ final class DocumentsWriter {
   private boolean closed;
 
   // Coarse estimates used to measure RAM usage of buffered deletes
-  private static int OBJECT_HEADER_BYTES = 12;
+  private static int OBJECT_HEADER_BYTES = 8;
   private static int OBJECT_POINTER_BYTES = 4;    // TODO: should be 8 on 64-bit platform
   private static int BYTES_PER_CHAR = 2;
   private static int BYTES_PER_INT = 4;
@@ -1361,9 +1361,14 @@ final class DocumentsWriter {
 
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
+          final int valueLength = stringValue.length();
           Token token = localToken;
           token.clear();
-          token.setTermText(stringValue);
+          char[] termBuffer = token.termBuffer();
+          if (termBuffer.length < valueLength)
+            termBuffer = token.resizeTermBuffer(valueLength);
+          stringValue.getChars(0, valueLength, termBuffer, 0);
+          token.setTermLength(valueLength);
           token.setStartOffset(offset);
           token.setEndOffset(offset + stringValue.length());
           addPosition(token);
@@ -2876,9 +2881,14 @@ final class DocumentsWriter {
   final private static int POINTER_NUM_BYTE = 4;
   final private static int INT_NUM_BYTE = 4;
   final private static int CHAR_NUM_BYTE = 2;
-  final private static int OBJECT_HEADER_NUM_BYTE = 8;
 
-  final static int POSTING_NUM_BYTE = OBJECT_HEADER_NUM_BYTE + 9*INT_NUM_BYTE + POINTER_NUM_BYTE;
+  // Why + 5*POINTER_NUM_BYTE below?
+  //   1: Posting has "vector" field which is a pointer
+  //   2: Posting is referenced by postingsFreeList array
+  //   3,4,5: Posting is referenced by postings hash, which
+  //          targets 25-50% fill factor; approximate this
+  //          as 3X # pointers
+  final static int POSTING_NUM_BYTE = OBJECT_HEADER_BYTES + 9*INT_NUM_BYTE + 5*POINTER_NUM_BYTE;
 
   // Holds free pool of Posting instances
   private Posting[] postingsFreeList;
@@ -2967,7 +2977,7 @@ final class DocumentsWriter {
     if (0 == size) {
       numBytesAlloc += CHAR_BLOCK_SIZE * CHAR_NUM_BYTE;
       balanceRAM();
-      c = new char[BYTE_BLOCK_SIZE];
+      c = new char[CHAR_BLOCK_SIZE];
     } else
       c = (char[]) freeCharBlocks.remove(size-1);
     numBytesUsed += CHAR_BLOCK_SIZE * CHAR_NUM_BYTE;
