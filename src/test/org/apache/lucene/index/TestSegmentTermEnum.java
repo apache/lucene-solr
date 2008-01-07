@@ -30,6 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * @author goller
@@ -64,6 +65,23 @@ public class TestSegmentTermEnum extends LuceneTestCase
 
     // verify document frequency of terms in an optimized index
     verifyDocFreq();
+  }
+
+  public void testPrevTermAtEnd() throws IOException
+  {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    addDoc(writer, "aaa bbb");
+    writer.close();
+    IndexReader reader = IndexReader.open(dir);
+    SegmentTermEnum termEnum = (SegmentTermEnum) reader.terms();
+    assertTrue(termEnum.next());
+    assertEquals("aaa", termEnum.term().text());
+    assertTrue(termEnum.next());
+    assertEquals("aaa", termEnum.prev().text());
+    assertEquals("bbb", termEnum.term().text());
+    assertFalse(termEnum.next());
+    assertEquals("bbb", termEnum.prev().text());
   }
 
   private void verifyDocFreq()

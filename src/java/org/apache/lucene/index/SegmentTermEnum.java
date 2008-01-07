@@ -114,6 +114,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   /** Increments the enumeration to the next element.  True if one exists.*/
   public final boolean next() throws IOException {
     if (position++ >= size - 1) {
+      prevBuffer.set(termBuffer);
       termBuffer.reset();
       return false;
     }

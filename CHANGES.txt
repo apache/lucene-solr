@@ -213,7 +213,11 @@ Bug fixes
     
 28. LUCENE-749: ChainedFilter behavior fixed when logic of 
     first filter is ANDNOT.  (Antonio Bruno via Doron Cohen)
-    
+
+29. LUCENE-508: Make sure SegmentTermEnum.prev() is accurate (= last
+    term) after next() returns false.  (Steven Tamm via Mike
+    McCandless)
+
     
 New features
 
