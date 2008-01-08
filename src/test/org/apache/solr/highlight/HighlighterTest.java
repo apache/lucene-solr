@@ -19,6 +19,8 @@ package org.apache.solr.highlight;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.*;
+import org.apache.solr.common.params.HighlightParams;
+
 import java.util.HashMap;
 
 /**
@@ -27,7 +29,11 @@ import java.util.HashMap;
  */
 public class HighlighterTest extends AbstractSolrTestCase {
 
-  private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all--we want two disjoint long fragments.";
+  private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
+          "is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is " +
+          "is is is is is is is is is is is is is " +
+          "is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated " +
+          "at all--we want two disjoint long fragments.";
 
   @Override public String getSchemaFile() { return "schema.xml"; }
   @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
@@ -65,6 +71,52 @@ public class HighlighterTest extends AbstractSolrTestCase {
     assertSame( gap, frag );
     assertTrue( gap instanceof GapFragmenter );
     assertTrue( regex instanceof RegexFragmenter );
+  }
+
+  public void testMergeContiguous() throws Exception {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put(HighlightParams.HIGHLIGHT, "true");
+    args.put("df", "t_text");
+    args.put(HighlightParams.FIELDS, "");
+    args.put(HighlightParams.SNIPPETS, String.valueOf(4));
+    args.put(HighlightParams.FRAGSIZE, String.valueOf(40));
+    args.put(HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "true");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    String input = "this is some long text.  It has the word long in many places.  In fact, it has long on some different fragments.  " +
+            "Let us see what happens to long in this case.";
+    String gold = "this is some <em>long</em> text.  It has the word <em>long</em> in many places.  In fact, it has <em>long</em> on some different fragments.  " +
+            "Let us see what happens to <em>long</em> in this case.";
+    assertU(adoc("t_text", input, "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Merge Contiguous",
+            sumLRF.makeRequest("t_text:long"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.='" + gold + "']"
+            );
+    args.put("f.t_text." + HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "true");
+    assertU(adoc("t_text", input, "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Merge Contiguous",
+            sumLRF.makeRequest("t_text:long"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.='" + gold + "']"
+            );
+
+    args.put(HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "false");
+    args.put("f.t_text." + HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "false");
+    sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    assertQ("Merge Contiguous",
+            sumLRF.makeRequest("t_text:long"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.='this is some <em>long</em> text.  It has']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.=' the word <em>long</em> in many places.  In fact, it has']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.=' <em>long</em> on some different fragments.  Let us']",
+            "//lst[@name='1']/arr[@name='t_text']/str[.=' see what happens to <em>long</em> in this case.']"
+            );
   }
 
   public void testTermVecHighlight() {

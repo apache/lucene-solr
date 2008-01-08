@@ -187,6 +187,15 @@ public class SolrHighlighter
   protected int getMaxSnippets(String fieldName, SolrParams params) {
      return params.getFieldInt(fieldName, HighlightParams.SNIPPETS,1);
   }
+
+  /**
+   * Return whether adjacent fragments should be merged.
+   * @param fieldName The name of the field
+   * @param params The params controlling Highlighting
+   */
+  protected boolean isMergeContiguousFragments(String fieldName, SolrParams params){
+    return params.getFieldBool(fieldName, HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, false);
+  }
   
   /**
    * Return a formatter appropriate for this field. If a formatter
@@ -260,20 +269,22 @@ public class SolrHighlighter
        searcher.readDocs(readDocs, docs, fset);
      }
 
-     // Highlight each document
-     DocIterator iterator = docs.iterator();
-     for (int i = 0; i < docs.size(); i++) {
-        int docId = iterator.nextDoc();
-        Document doc = readDocs[i];
-        NamedList docSummaries = new SimpleOrderedMap();
-        for (String fieldName : fieldNames) {
-           fieldName = fieldName.trim();
-           String[] docTexts = doc.getValues(fieldName);
-           if (docTexts == null) continue;
 
-           // get highlighter, and number of fragments for this field
-           Highlighter highlighter = getHighlighter(query, fieldName, req);
-           int numFragments = getMaxSnippets(fieldName, params);
+    // Highlight each document
+    DocIterator iterator = docs.iterator();
+    for (int i = 0; i < docs.size(); i++) {
+       int docId = iterator.nextDoc();
+       Document doc = readDocs[i];
+       NamedList docSummaries = new SimpleOrderedMap();
+       for (String fieldName : fieldNames) {
+          fieldName = fieldName.trim();
+          String[] docTexts = doc.getValues(fieldName);
+          if (docTexts == null) continue;
+
+          // get highlighter, and number of fragments for this field
+          Highlighter highlighter = getHighlighter(query, fieldName, req);
+          int numFragments = getMaxSnippets(fieldName, params);
+          boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
 
            String[] summaries = null;
            TextFragment[] frag;
@@ -288,7 +299,7 @@ public class SolrHighlighter
                  // fall back to analyzer
                  tstream = new TokenOrderingFilter(schema.getAnalyzer().tokenStream(fieldName, new StringReader(docTexts[0])), 10);
               }
-              frag = highlighter.getBestTextFragments(tstream, docTexts[0], false, numFragments);
+              frag = highlighter.getBestTextFragments(tstream, docTexts[0], mergeContiguousFragments, numFragments);
            }
            else {
               // multi-valued field

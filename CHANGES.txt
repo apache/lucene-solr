@@ -87,9 +87,11 @@ New Features
 13. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
     highlighting formatters and Fragmenters.  (ryan)
 
-14. SOLR-273/376: Added hl.maxAnalyzedChars highlighting parameter, defaulting to
-    50k.  Also add hl.alternateField, which allows the specification of a backup
-    field to use as summary if no keywords are matched. (klaas)
+14. SOLR-273/376/452: Added hl.maxAnalyzedChars highlighting parameter, defaulting 
+    to 50k, hl.alternateField, which allows the specification of a backup
+    field to use as summary if no keywords are matched, and hl.mergeContiguous,
+    which combines fragments if they are adjacent in the source document.
+    (klaas, Grant Ingersoll via klaas)
 
 15. SOLR-291: Control maximum number of documents to cache for any entry
     in the queryResultCache via queryResultMaxDocsCached solrconfig.xml 
