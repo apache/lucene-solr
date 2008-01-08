@@ -372,7 +372,12 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public void setRows(Integer rows) {
-    this.set(CommonParams.ROWS, rows);
+    if( rows == null ) {
+      this.remove( CommonParams.ROWS );
+    }
+    else {
+      this.set(CommonParams.ROWS, rows);
+    }
   }
 
   public Integer getRows()
@@ -390,7 +395,12 @@ public class SolrQuery extends ModifiableSolrParams
 //  }
 
   public void setStart(Integer start) {
-    this.set(CommonParams.START, start);
+    if( start == null ) {
+      this.remove( CommonParams.START );
+    }
+    else {
+      this.set(CommonParams.START, start);
+    }
   }
   
   public Integer getStart()
