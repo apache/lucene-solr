@@ -398,6 +398,9 @@ Build
 
  7. LUCENE-935: Allow to deploy maven artifacts to a remote m2 repository
     via scp and ssh authentication. (Michael Busch)
+	
+ 8. LUCENE-1123: Allow overriding the specification version for 
+    MANIFEST.MF (Michael Busch)
 
 Test Cases
 

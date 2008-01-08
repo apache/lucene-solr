@@ -41,6 +41,7 @@
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
   <property name="version" value="2.4-dev"/>
+  <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
@@ -270,7 +271,7 @@
       <manifest file="${manifest.file}">
         <attribute name="Specification-Title" value="@{title}"/>
 		<!-- spec version must match "digit+{.digit+}*" -->
-		<attribute name="Specification-Version" value="${version}"/>
+		<attribute name="Specification-Version" value="${spec.version}"/>
 		<attribute name="Specification-Vendor"
 		           value="The Apache Software Foundation"/>
 		<attribute name="Implementation-Title" value="org.apache.lucene"/>
@@ -527,6 +528,7 @@
 
 
 </project>
+
 
 
 
