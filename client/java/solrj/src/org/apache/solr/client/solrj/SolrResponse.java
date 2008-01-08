@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.Serializable;
+
 import org.apache.solr.common.util.NamedList;
 
 
@@ -25,7 +27,7 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public interface SolrResponse 
+public interface SolrResponse extends Serializable
 {
   long getElapsedTime();
   NamedList<Object> getResponse();
