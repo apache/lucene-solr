@@ -40,7 +40,7 @@
 
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="version" value="2.3-dev"/>
+  <property name="version" value="2.4-dev"/>
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 

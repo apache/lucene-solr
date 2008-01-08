@@ -5,6 +5,24 @@ $Id$
 
 Changes in runtime behavior
 
+API Changes
+
+Bug fixes
+    
+New features
+
+Optimizations
+
+Documentation
+
+Build
+
+Test Cases
+
+======================= Release 2.3.0 2008-01-07 =======================
+
+Changes in runtime behavior
+
  1. LUCENE-994: Defaults for IndexWriter have been changed to maximize
     out-of-the-box indexing speed.  First, IndexWriter now flushes by
     RAM usage (16 MB by default) instead of a fixed doc count (call
