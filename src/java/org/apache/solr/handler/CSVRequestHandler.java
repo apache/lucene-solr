@@ -189,7 +189,7 @@ abstract class CSVLoader {
           base.add(builder,line,column,val);
         }
       } catch (IOException e) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,e);
       }
     }
   }
@@ -248,7 +248,7 @@ abstract class CSVLoader {
         if (ch == '\\') {
           // If the escape is the standard backslash, then also enable
           // unicode escapes (it's harmless since 'u' would not otherwise
-          // be escaped.
+          // be escaped.                    
           strategy.setUnicodeEscapeInterpretation(true);
         }
       }
