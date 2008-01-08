@@ -181,6 +181,10 @@ New Features
     The jsp files /admin/get-file.jsp and /admin/raw-schema.jsp have been deprecated.
     (ryan)
 
+36. SOLR-446: TextResponseWriter can write SolrDocuments and SolrDocumentLists the 
+    same way it writes Document and DocList.  (yonik, ryan)
+    
+    
 Changes in runtime behavior
 
 Optimizations

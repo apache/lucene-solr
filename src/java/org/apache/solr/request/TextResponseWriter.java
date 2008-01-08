@@ -20,6 +20,8 @@ package org.apache.solr.request;
 import org.apache.lucene.document.Document;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocList;
 import java.io.IOException;
@@ -131,6 +133,8 @@ public abstract class TextResponseWriter {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
       writeDoc(name, (Document)val, returnFields, 0.0f, false);
+    } else if (val instanceof SolrDocument) {
+      writeSolrDocument(name, (SolrDocument)val, returnFields, null);
     } else if (val instanceof DocList) {
       // requires access to IndexReader
       writeDocList(name, (DocList)val, returnFields,null);
@@ -139,6 +143,8 @@ public abstract class TextResponseWriter {
     // how do we know what fields to read?
     // todo: have a DocList/DocSet wrapper that
     // restricts the fields to write...?
+    } else if (val instanceof SolrDocumentList) {
+      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields, null);
     } else if (val instanceof Map) {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
@@ -161,7 +167,17 @@ public abstract class TextResponseWriter {
 
   public abstract void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException;
 
+  /**
+   * @since solr 1.3
+   */
+  public abstract void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException;  
+
   public abstract void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException;
+
+  /**
+   * @since solr 1.3
+   */
+  public abstract void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException;  
 
   public abstract void writeStr(String name, String val, boolean needsEscaping) throws IOException;
 

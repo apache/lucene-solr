@@ -19,6 +19,8 @@ package org.apache.solr.request;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -386,6 +388,47 @@ class JSONWriter extends TextResponseWriter {
     writeMapCloser();
   }
 
+  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
+    writeMapOpener(-1); // no trivial way to determine map size
+    // TODO: could easily figure out size for SolrDocument if needed...
+    incLevel();
+
+    boolean first=true;
+    for (String fname : doc.getFieldNames()) {
+      if (first) {
+        first=false;
+      }
+      else {
+        writeMapSeparator();
+      }
+
+      indent();
+      writeKey(fname, true);
+      Object val = doc.getFieldValue(fname);
+
+      if (val instanceof Collection) {
+        writeVal(fname, val);
+      } else {
+        // if multivalued field, write single value as an array
+        SchemaField sf = schema.getFieldOrNull(fname);
+        if (sf != null && sf.multiValued()) {
+          writeArrayOpener(-1); // no trivial way to determine array size
+          writeVal(fname, val);
+          writeArrayCloser();
+        }
+        writeVal(fname, val);
+      }
+
+      if (pseudoFields !=null && pseudoFields.size()>0) {
+        writeMap(null,pseudoFields,true,first);
+      }
+    }
+
+    decLevel();
+    writeMapCloser();
+  }
+
+
   // reusable map to store the "score" pseudo-field.
   // if a Doc can ever contain another doc, this optimization would have to go.
   private final HashMap scoreMap = new HashMap(1);
@@ -456,6 +499,64 @@ class JSONWriter extends TextResponseWriter {
     indent();
     writeMapCloser();
   }
+
+
+  @Override
+  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
+    boolean includeScore=false;
+    if (fields!=null) {
+      includeScore = fields.contains("score");
+      if (fields.size()==0 || (fields.size()==1 && includeScore) || fields.contains("*")) {
+        fields=null;  // null means return all stored fields
+      }
+    }
+
+    int sz=docs.size();
+
+    writeMapOpener(includeScore ? 4 : 3);
+    incLevel();
+    writeKey("numFound",false);
+    writeInt(null,docs.getNumFound());
+    writeMapSeparator();
+    writeKey("start",false);
+    writeInt(null,docs.getStart());
+
+    if (includeScore) {
+      writeMapSeparator();
+      writeKey("maxScore",false);
+      writeFloat(null,docs.getMaxScore());
+    }
+    writeMapSeparator();
+    // indent();
+    writeKey("docs",false);
+    writeArrayOpener(sz);
+
+    incLevel();
+    boolean first=true;
+
+    SolrIndexSearcher searcher = req.getSearcher();
+    for (SolrDocument doc : docs) {
+
+      if (first) {
+        first=false;
+      } else {
+        writeArraySeparator();
+      }
+      indent();      
+      writeSolrDocument(null, doc, fields, otherFields);
+    }
+    decLevel();
+    writeArrayCloser();
+
+    if (otherFields !=null) {
+      writeMap(null, otherFields, true, false);
+    }
+
+    decLevel();
+    indent();
+    writeMapCloser();
+  }
+
 
   //
   // Data structure tokens

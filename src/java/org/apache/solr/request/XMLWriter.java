@@ -17,6 +17,8 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -333,7 +335,56 @@ final public class XMLWriter {
     writer.write("</doc>");
   }
 
-  public final void writeDocList(String name, DocList ids, Set<String> fields) throws IOException {
+  /**
+   * @since solr 1.3
+   */
+  final void writeDoc(String name, SolrDocument doc, Set<String> returnFields, boolean includeScore) throws IOException {
+    startTag("doc", name, false);
+    incLevel();
+
+    if (includeScore) {
+      writeVal("score", doc.getFirstValue("score"));
+    }
+
+    for (String fname : doc.getFieldNames()) {
+      Object val = doc.getFieldValue(fname);
+
+      if (val instanceof Collection) {
+        writeVal(fname, val);
+      } else {
+        // single valued... figure out if we should put <arr> tags around it anyway
+        SchemaField sf = schema.getFieldOrNull(fname);
+        if (version>=2100 && sf!=null && sf.multiValued()) {
+          startTag("arr",fname,false);
+          doIndent=false;
+          writeVal(fname, val);
+          writer.write("</arr>");
+          doIndent=defaultIndent;          
+        } else {
+          writeVal(fname, val);          
+        }
+      }
+    }
+
+    decLevel();
+    if (doIndent) indent();
+    writer.write("</doc>");
+  }
+
+
+  private static interface DocumentListInfo {
+    Float getMaxScore();
+    int getCount();
+    int getNumFound();
+    int getStart();
+    void writeDocs( boolean includeScore, Set<String> fields ) throws IOException;
+  }
+
+  private final void writeDocuments(
+      String name, 
+      DocumentListInfo docs, 
+      Set<String> fields) throws IOException 
+  {
     boolean includeScore=false;
     if (fields!=null) {
       includeScore = fields.contains("score");
@@ -341,16 +392,16 @@ final public class XMLWriter {
         fields=null;  // null means return all stored fields
       }
     }
-
-    int sz=ids.size();
-
+    
+    int sz=docs.getCount();
     if (doIndent) indent();
+    
     writer.write("<result");
     writeAttr("name",name);
-    writeAttr("numFound",Integer.toString(ids.matches()));
-    writeAttr("start",Integer.toString(ids.offset()));
-    if (includeScore) {
-      writeAttr("maxScore",Float.toString(ids.maxScore()));
+    writeAttr("numFound",Integer.toString(docs.getNumFound()));  // TODO: change to long
+    writeAttr("start",Integer.toString(docs.getStart()));        // TODO: change to long
+    if (includeScore && docs.getMaxScore()!=null) {
+      writeAttr("maxScore",Float.toString(docs.getMaxScore()));
     }
     if (sz==0) {
       writer.write("/>");
@@ -360,17 +411,72 @@ final public class XMLWriter {
     }
 
     incLevel();
-    SolrIndexSearcher searcher = request.getSearcher();
-    DocIterator iterator = ids.iterator();
-    for (int i=0; i<sz; i++) {
-      int id = iterator.nextDoc();
-      Document doc = searcher.doc(id, fields);
-      writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
-    }
+    docs.writeDocs(includeScore, fields);
     decLevel();
 
     if (doIndent) indent();
     writer.write("</result>");
+  }
+  
+  public final void writeSolrDocumentList(String name, final SolrDocumentList docs, Set<String> fields) throws IOException 
+  {
+    this.writeDocuments( name, new DocumentListInfo() 
+    {  
+      public int getCount() {
+        return docs.size();
+      }
+      
+      public Float getMaxScore() {
+        return docs.getMaxScore();
+      }
+
+      public int getNumFound() {
+        return docs.getNumFound();
+      }
+
+      public int getStart() {
+        return docs.getStart();
+      }
+
+      public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
+        for( SolrDocument doc : docs ) {
+          writeDoc(null, doc, fields, includeScore);
+        }
+      }
+    }, fields );
+  }
+
+  public final void writeDocList(String name, final DocList ids, Set<String> fields) throws IOException 
+  {
+    this.writeDocuments( name, new DocumentListInfo() 
+    {  
+      public int getCount() {
+        return ids.size();
+      }
+      
+      public Float getMaxScore() {
+        return ids.maxScore();
+      }
+
+      public int getNumFound() {
+        return ids.matches();
+      }
+
+      public int getStart() {
+        return ids.offset();
+      }
+
+      public void writeDocs(boolean includeScore, Set<String> fields) throws IOException {
+        SolrIndexSearcher searcher = request.getSearcher();
+        DocIterator iterator = ids.iterator();
+        int sz = ids.size();
+        for (int i=0; i<sz; i++) {
+          int id = iterator.nextDoc();
+          Document doc = searcher.doc(id, fields);
+          writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
+        }
+      }
+    }, fields );
   }
 
 
@@ -405,7 +511,10 @@ final public class XMLWriter {
     } else if (val instanceof DocList) {
       // requires access to IndexReader
       writeDocList(name, (DocList)val, defaultFieldList);
-    } else if (val instanceof DocSet) {
+    }else if (val instanceof SolrDocumentList) {
+        // requires access to IndexReader
+      writeSolrDocumentList(name, (SolrDocumentList)val, defaultFieldList);  
+    }else if (val instanceof DocSet) {
       // how do we know what fields to read?
       // todo: have a DocList/DocSet wrapper that
       // restricts the fields to write...?
