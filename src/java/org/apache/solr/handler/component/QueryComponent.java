@@ -21,7 +21,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.*;

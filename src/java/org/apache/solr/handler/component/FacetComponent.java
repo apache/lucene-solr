@@ -22,7 +22,6 @@ import java.net.URL;
 
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.SearchHandler;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;

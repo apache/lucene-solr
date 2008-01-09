@@ -15,22 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.handler.component;
 
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.DebugComponent;
-import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.handler.component.HighlightComponent;
-import org.apache.solr.handler.component.MoreLikeThisComponent;
-import org.apache.solr.handler.component.QueryComponent;
-import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;

@@ -24,7 +24,6 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.MoreLikeThisHandler;
-import org.apache.solr.handler.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.DocList;

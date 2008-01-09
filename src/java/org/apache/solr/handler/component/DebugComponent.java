@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.QueryParsing;

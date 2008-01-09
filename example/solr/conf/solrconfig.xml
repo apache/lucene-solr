@@ -443,7 +443,7 @@
   
    -->
  
-  <requestHandler name="/search" class="solr.SearchHandler">
+  <requestHandler name="/search" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
     </lst>

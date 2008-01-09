@@ -20,6 +20,8 @@ package org.apache.solr.handler;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.apache.solr.handler.component.SearchHandler;
+
 /**
  * @version $Id$
  *
