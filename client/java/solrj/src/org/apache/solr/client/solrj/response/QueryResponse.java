@@ -135,16 +135,17 @@ public class QueryResponse extends SolrResponseBase
     }
     
     // Parse the facet info into fields
-    NamedList<NamedList<Integer>> ff = (NamedList<NamedList<Integer>>) info.get( "facet_fields" );
+    // TODO?? The list could be <int> or <long>?  If always <long> then we can switch to <Long>
+    NamedList<NamedList<Number>> ff = (NamedList<NamedList<Number>>) info.get( "facet_fields" );
     if( ff != null ) {
       _facetFields = new ArrayList<FacetField>( ff.size() );
       _limitingFacets = new ArrayList<FacetField>( ff.size() );
       
-      int minsize = _results.getNumFound();
-      for( Map.Entry<String,NamedList<Integer>> facet : ff ) {
+      long minsize = _results.getNumFound();
+      for( Map.Entry<String,NamedList<Number>> facet : ff ) {
         FacetField f = new FacetField( facet.getKey() );
-        for( Map.Entry<String, Integer> entry : facet.getValue() ) {
-          f.add( entry.getKey(), entry.getValue() );
+        for( Map.Entry<String, Number> entry : facet.getValue() ) {
+          f.add( entry.getKey(), entry.getValue().longValue() );
         }
         
         _facetFields.add( f );

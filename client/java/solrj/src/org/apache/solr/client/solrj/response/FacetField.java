@@ -35,11 +35,11 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    public static class Count implements Serializable 
    {
      private String _name = null;
-     private int _count = 0;
+     private long _count = 0;
      // hang onto the FacetField for breadcrumb creation convenience
      private FacetField _ff = null;
      
-     public Count( FacetField ff, String n, int c )
+     public Count( FacetField ff, String n, long c )
      {
        _name = n;
        _count = c;
@@ -55,11 +55,11 @@ import org.apache.solr.client.solrj.util.ClientUtils;
        _name = n;
      }
 
-     public int getCount() {
+     public long getCount() {
        return _count;
      }
      
-     public void setCount( int c )
+     public void setCount( long c )
      {
        _count = c;
      }
@@ -95,7 +95,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    /**
     * Insert at the end of the list
     */
-   public void add( String name, int cnt )
+   public void add( String name, long cnt )
    {
      if( _values == null ) {
        _values = new ArrayList<Count>( 30 );
@@ -106,7 +106,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
    /**
     * Insert at the beginning of the list.
     */
-   public void insert( String name, int cnt )
+   public void insert( String name, long cnt )
    {
      if( _values == null ) {
        _values = new ArrayList<Count>( 30 );
@@ -127,7 +127,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
      return _values == null ? 0 : _values.size();
    }
 
-   public FacetField getLimitingFields(int max) 
+   public FacetField getLimitingFields(long max) 
    {
      FacetField ff = new FacetField( _name );
      if( _values != null ) {

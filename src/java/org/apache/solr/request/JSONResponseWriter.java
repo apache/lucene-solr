@@ -516,10 +516,10 @@ class JSONWriter extends TextResponseWriter {
     writeMapOpener(includeScore ? 4 : 3);
     incLevel();
     writeKey("numFound",false);
-    writeInt(null,docs.getNumFound());
+    writeLong(null,docs.getNumFound());
     writeMapSeparator();
     writeKey("start",false);
-    writeInt(null,docs.getStart());
+    writeLong(null,docs.getStart());
 
     if (includeScore) {
       writeMapSeparator();

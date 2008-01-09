@@ -375,8 +375,8 @@ final public class XMLWriter {
   private static interface DocumentListInfo {
     Float getMaxScore();
     int getCount();
-    int getNumFound();
-    int getStart();
+    long getNumFound();
+    long getStart();
     void writeDocs( boolean includeScore, Set<String> fields ) throws IOException;
   }
 
@@ -398,8 +398,8 @@ final public class XMLWriter {
     
     writer.write("<result");
     writeAttr("name",name);
-    writeAttr("numFound",Integer.toString(docs.getNumFound()));  // TODO: change to long
-    writeAttr("start",Integer.toString(docs.getStart()));        // TODO: change to long
+    writeAttr("numFound",Long.toString(docs.getNumFound()));  // TODO: change to long
+    writeAttr("start",Long.toString(docs.getStart()));        // TODO: change to long
     if (includeScore && docs.getMaxScore()!=null) {
       writeAttr("maxScore",Float.toString(docs.getMaxScore()));
     }
@@ -430,11 +430,11 @@ final public class XMLWriter {
         return docs.getMaxScore();
       }
 
-      public int getNumFound() {
+      public long getNumFound() {
         return docs.getNumFound();
       }
 
-      public int getStart() {
+      public long getStart() {
         return docs.getStart();
       }
 
@@ -458,11 +458,11 @@ final public class XMLWriter {
         return ids.maxScore();
       }
 
-      public int getNumFound() {
+      public long getNumFound() {
         return ids.matches();
       }
 
-      public int getStart() {
+      public long getStart() {
         return ids.offset();
       }
 

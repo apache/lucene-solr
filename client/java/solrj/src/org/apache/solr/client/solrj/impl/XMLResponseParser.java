@@ -313,10 +313,10 @@ public class XMLResponseParser implements ResponseParser
       String n = parser.getAttributeLocalName( i );
       String v = parser.getAttributeValue( i );
       if( "numFound".equals( n ) ) {
-        docs.setNumFound( Integer.parseInt( v ) );
+        docs.setNumFound( Long.parseLong( v ) );
       }
       else if( "start".equals( n ) ) {
-        docs.setStart( Integer.parseInt( v ) );
+        docs.setStart( Long.parseLong( v ) );
       }
       else if( "maxScore".equals( n ) ) {
         docs.setMaxScore( Float.parseFloat( v ) );

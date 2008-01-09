@@ -29,8 +29,8 @@ import java.util.ArrayList;
  */
 public class SolrDocumentList extends ArrayList<SolrDocument>
 { 
-  private int numFound = 0;
-  private int start = 0;
+  private long numFound = 0;
+  private long start = 0;
   private Float maxScore = null;
   
   public Float getMaxScore() {
@@ -41,19 +41,19 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
     this.maxScore = maxScore;
   }
   
-  public int getNumFound() {
+  public long getNumFound() {
     return numFound;
   }
   
-  public void setNumFound(int numFound) {
+  public void setNumFound(long numFound) {
     this.numFound = numFound;
   }
   
-  public int getStart() {
+  public long getStart() {
     return start;
   }
   
-  public void setStart(int start) {
+  public void setStart(long start) {
     this.start = start;
   }
 }
