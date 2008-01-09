@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.FileReader;
 import java.io.File;
 import java.io.Reader;
+import java.io.BufferedReader;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
@@ -48,7 +49,7 @@ public class HTMLStripReaderTest extends TestCase {
             "This is an entity: &amp; plus a &lt;.  Here is an &. <!-- is a comment -->";
     String gold = "                 this is some text       here is a                link     and " +
             "another                                     link    . " +
-            "This is an entity: & plus a <.  Here is an &.                      ";
+            "This is an entity: &     plus a <   .  Here is an &.                      ";
     HTMLStripReader reader = new HTMLStripReader(new StringReader(html));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
@@ -57,7 +58,8 @@ public class HTMLStripReaderTest extends TestCase {
     while ((ch = reader.read()) != -1){
       char theChar = (char) ch;
       builder.append(theChar);
-      assertTrue("\"" + theChar + "\"" + " at position: " + position + " does not equal: " + goldArray[position] + " Buffer so far: " + builder + "<EOB>", theChar == goldArray[position]);
+      assertTrue("\"" + theChar + "\"" + " at position: " + position + " does not equal: " + goldArray[position]
+              + " Buffer so far: " + builder + "<EOB>", theChar == goldArray[position]);
       position++;
     }
     assertTrue(gold + " is not equal to " + builder.toString(), gold.equals(builder.toString()) == true);
@@ -79,6 +81,57 @@ public class HTMLStripReaderTest extends TestCase {
 
     assertTrue("File should start with 'Foundation.' after trimming", str.trim().endsWith("Foundation."));
     
+  }
+
+  public void testGamma() throws Exception {
+    String test = "&Gamma;";
+    String gold = "\u0393      ";
+    Set<String> set = new HashSet<String>();
+    set.add("reserved");
+    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    StringBuilder builder = new StringBuilder();
+    int ch = 0;
+    while ((ch = reader.read()) != -1){
+      builder.append((char)ch);
+    }
+    String result = builder.toString();
+    System.out.println("Resu: " + result + "<EOL>");
+    System.out.println("Gold: " + gold + "<EOL>");
+    assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
+  }
+
+  public void testEntities() throws Exception {
+    String test = "&nbsp; &lt;foo&gt; &#61; &Gamma; bar &#x393;";
+    String gold = "       <   foo>    =     \u0393       bar \u0393     ";
+    Set<String> set = new HashSet<String>();
+    set.add("reserved");
+    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    StringBuilder builder = new StringBuilder();
+    int ch = 0;
+    while ((ch = reader.read()) != -1){
+      builder.append((char)ch);
+    }
+    String result = builder.toString();
+    System.out.println("Resu: " + result + "<EOL>");
+    System.out.println("Gold: " + gold + "<EOL>");
+    assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
+  }
+
+  public void testMoreEntities() throws Exception {
+    String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
+    String gold = "       <   junk/>           !     @     and ’      ";
+    Set<String> set = new HashSet<String>();
+    set.add("reserved");
+    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    StringBuilder builder = new StringBuilder();
+    int ch = 0;
+    while ((ch = reader.read()) != -1){
+      builder.append((char)ch);
+    }
+    String result = builder.toString();
+    System.out.println("Resu: " + result + "<EOL>");
+    System.out.println("Gold: " + gold + "<EOL>");
+    assertTrue(result + " is not equal to " + gold, result.equals(gold) == true);
   }
 
   public void testReserved() throws Exception {
@@ -155,4 +208,72 @@ public class HTMLStripReaderTest extends TestCase {
       i++;
     }
   }
+
+  public void testBufferOverflow() throws Exception {
+    StringBuilder testBuilder = new StringBuilder(HTMLStripReader.DEFAULT_READ_AHEAD + 50);
+    testBuilder.append("ah<?> ");
+    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    processBuffer(testBuilder.toString(), "Failed on pseudo proc. instr.");//processing instructions
+
+    testBuilder.setLength(0);
+    testBuilder.append("<!--");//comments
+    appendChars(testBuilder, 3*HTMLStripReader.DEFAULT_READ_AHEAD + 500);//comments have two lookaheads
+
+    testBuilder.append("-->foo");
+    processBuffer(testBuilder.toString(), "Failed w/ comment");
+
+    testBuilder.setLength(0);
+    testBuilder.append("<?");
+    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    testBuilder.append("?>");
+    processBuffer(testBuilder.toString(), "Failed with proc. instr.");
+    
+    testBuilder.setLength(0);
+    testBuilder.append("<b ");
+    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    testBuilder.append("/>");
+    processBuffer(testBuilder.toString(), "Failed on tag");
+
+  }
+
+  private void appendChars(StringBuilder testBuilder, int numChars) {
+    int i1 = numChars / 2;
+    for (int i = 0; i < i1; i++){
+      testBuilder.append('a').append(' ');//tack on enough to go beyond the mark readahead limit, since <?> makes HTMLStripReader think it is a processing instruction
+    }
+  }  
+
+
+  private void processBuffer(String test, String assertMsg) throws IOException {
+    System.out.println("-------------------processBuffer----------");
+    Reader reader = new HTMLStripReader(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
+    int ch = 0;
+    StringBuilder builder = new StringBuilder();
+    try {
+      while ((ch = reader.read()) != -1){
+        builder.append((char)ch);
+      }
+    } finally {
+      System.out.println("String (trimmed): " + builder.toString().trim() + "<EOS>");
+    }
+    assertTrue(assertMsg + "::: " + builder.toString() + " is not equal to " + test, builder.toString().equals(test) == true);
+  }
+
+  public void testComment() throws Exception {
+
+    String test = "<!--- three dashes, still a valid comment ---> ";
+    String gold = "                                               ";
+    Reader reader = new HTMLStripReader(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
+    int ch = 0;
+    StringBuilder builder = new StringBuilder();
+    try {
+      while ((ch = reader.read()) != -1){
+        builder.append((char)ch);
+      }
+    } finally {
+      System.out.println("String: " + builder.toString());
+    }
+    assertTrue(builder.toString() + " is not equal to " + gold + "<EOS>", builder.toString().equals(gold) == true);
+  }
+
 }
