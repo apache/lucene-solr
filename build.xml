@@ -62,7 +62,7 @@
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="src/demo/,src/jsp/,docs/,*.txt"
+              includes="src/demo/,src/jsp/,docs/,*.txt,contrib/*/README*"
               excludes="${build.demo.template}"
   />
 
