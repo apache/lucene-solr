@@ -47,6 +47,7 @@ public class EnwikiDocMaker extends LineDocMaker {
   class Parser extends DefaultHandler implements Runnable {
 
     Thread t;
+    boolean threadDone;
 
     public void run() {
 
@@ -86,8 +87,12 @@ public class EnwikiDocMaker extends LineDocMaker {
         throw new RuntimeException(sae);
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);
+      } finally {
+        synchronized(this) {
+          threadDone = true;
+          notify();
+        }
       }
-
     }
 
     String[] tuple;
@@ -95,13 +100,14 @@ public class EnwikiDocMaker extends LineDocMaker {
 
     String[] next() throws NoMoreDataException {
       if (t == null) {
+        threadDone = false;
         t = new Thread(this);
         t.setDaemon(true);
         t.start();
       }
       String[] result;
       synchronized(this){
-        while(tuple == null && nmde == null){
+        while(tuple == null && nmde == null && !threadDone) {
           try {
             wait();
           } catch (InterruptedException ie) {
@@ -113,6 +119,12 @@ public class EnwikiDocMaker extends LineDocMaker {
           t = null;
           throw nmde;
         }
+        if (t != null && threadDone)
+          // The thread has exited yet did not hit end of
+          // data, so this means it hit an exception.  We
+          // throw NoMorDataException here to force
+          // benchmark to stop the current alg:
+          throw new NoMoreDataException();
         result = tuple;
         tuple = null;
         notify();
