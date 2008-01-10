@@ -295,7 +295,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs-all, war-demo, build-contrib, init-dist">
+  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist">
      <copy file="${build.demo.template}" tofile="${build.dir}/build-demo.xml">
         <filterset begintoken="@PLACEHOLDER_" endtoken="@"> 
 	  <filter token="version" value="${version}"/>
