@@ -1,7 +1,7 @@
 ﻿Lucene Change Log
 $Id$
 
-======================= Trunk (not yet released) =======================
+======================= Release 2.3.0 2008-01-21 =======================
 
 Changes in runtime behavior
 
