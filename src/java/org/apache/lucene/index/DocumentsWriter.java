@@ -2768,10 +2768,26 @@ final class DocumentsWriter {
     public int byteOffset = -BYTE_BLOCK_SIZE;          // Current head offset
 
     public void reset() {
-      recycleByteBlocks(buffers, 1+bufferUpto);
-      bufferUpto = -1;
-      byteUpto = BYTE_BLOCK_SIZE;
-      byteOffset = -BYTE_BLOCK_SIZE;
+      if (bufferUpto != -1) {
+        // We allocated at least one buffer
+
+        for(int i=0;i<bufferUpto;i++)
+          // Fully zero fill buffers that we fully used
+          Arrays.fill(buffers[i], (byte) 0);
+
+        // Partial zero fill the final buffer
+        Arrays.fill(buffers[bufferUpto], 0, byteUpto, (byte) 0);
+          
+        if (bufferUpto > 0)
+          // Recycle all but the first buffer
+          recycleByteBlocks(buffers, 1, 1+bufferUpto);
+
+        // Re-use the first buffer
+        bufferUpto = 0;
+        byteUpto = 0;
+        byteOffset = 0;
+        buffer = buffers[0];
+      }
     }
 
     public void nextBuffer() {
@@ -2782,7 +2798,6 @@ final class DocumentsWriter {
         buffers = newBuffers;
       }
       buffer = buffers[bufferUpto] = getByteBlock();
-      Arrays.fill(buffer, (byte) 0);
 
       byteUpto = 0;
       byteOffset += BYTE_BLOCK_SIZE;
@@ -2954,10 +2969,10 @@ final class DocumentsWriter {
   }
 
   /* Return a byte[] to the pool */
-  synchronized void recycleByteBlocks(byte[][] blocks, int numBlocks) {
-    for(int i=0;i<numBlocks;i++)
+  synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
+    for(int i=start;i<end;i++)
       freeByteBlocks.add(blocks[i]);
-    numBytesUsed -= numBlocks * BYTE_BLOCK_SIZE;
+    numBytesUsed -= (end-start) * BYTE_BLOCK_SIZE;
   }
 
   /* Initial chunk size of the shared char[] blocks used to
