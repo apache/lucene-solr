@@ -229,7 +229,7 @@ public class TestDeletionPolicy extends LuceneTestCase
                                                          "",
                                                          gen);
         long modTime = dir.fileModified(fileName);
-        assertTrue("commit point was older than " + SECONDS + " seconds but did not get deleted", lastDeleteTime - modTime < (SECONDS*1000));
+        assertTrue("commit point was older than " + SECONDS + " seconds (" + (lastDeleteTime - modTime) + " msec) but did not get deleted", lastDeleteTime - modTime <= (SECONDS*1000));
       } catch (IOException e) {
         // OK
         break;
