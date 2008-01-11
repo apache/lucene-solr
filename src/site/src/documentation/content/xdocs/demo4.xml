@@ -139,14 +139,14 @@ In time some of these things may be added to Lucene as features (if you've got a
 to hear it!), but for now: this is where you begin and the search engine/indexer ends.  Lastly, one
 would assume you'd want to follow the above advice and customize the application to look a little
 more fancy than black on white with "Lucene Template" at the top.  We'll see you on the Lucene
-Users' or Developers' <a href="mailinglists.html">mailing lists</a>!
+Users' or Developers' <a href="http://lucene.apache.org/java/docs/mailinglists.html">mailing lists</a>!
 </p>
 </section>
 
 <section id="When to contact the Author"><title>When to contact the Author</title>
 <p>
 Please resist the urge to contact the authors of this document (without bribes of fame and fortune
-attached).  First contact the <a href="mailinglists.html">mailing lists</a>, taking care to <a
+attached).  First contact the <a href="http://lucene.apache.org/java/docs/mailinglists.html">mailing lists</a>, taking care to <a
 href="http://www.catb.org/~esr/faqs/smart-questions.html">Ask Questions The Smart Way</a>.
 Certainly you'll get the most help that way as well.  That being said, feedback, and modifications
 to this document and samples are ever so greatly appreciated.  They are just best sent to the lists
