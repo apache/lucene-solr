@@ -1,151 +1,16 @@
 <?xml version="1.0"?>
 <document>
-	<header>
-        <title>
-	Apache Lucene - Overview
-		</title>
-	</header>
-    <body>
-        <section id="Apache Lucene">
-            <title>Apache Lucene</title>
-            <p>
-                Apache Lucene is a high-performance, full-featured text search engine
-                library written entirely in Java.  It is a technology suitable for nearly any
-                application that requires full-text search, especially cross-platform.
-            </p>
-            <p>
-                Apache Lucene is an open source project available for
-                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">free download</a>.
-                Please use the links on the left to access Lucene.
-            </p>
-        </section>
-
-        <section id="Lucene News">
-          <title>Lucene News</title>
-          <!-- Uncomment when we know the date. -->
-          <!--<section>
-            <title>2 October 2007 - Lucene at OSSummit Asia</title>
-            <p><a href="http://www.ossummit.com"><img src="http://www.ossummit.com/2007/images/logo.png" class="float-right" alt="OSSummit Asia logo" /></a>
-              Lucene and Solr tutorials!
-            </p>
-            <p>The following talks and trainings are scheduled for the
-              upcoming 2008 OSSummit:
-              <ul>
-                <li><a href="http://www.ossummit.com/2007/program/talk/8">Lucene Boot Camp</a> by <s>Grant Ingersoll</s>Erik Hatcher. An all-day training focusing on getting started with Lucene.</li>
-                <li><a href="http://www.ossummit.com/2007/program/talk/25">Solr in a Day</a> by Erik Hatcher.  All you need to know to use Solr effectively.</li>
-                <li><a href="http://www.ossummit.com/2007/program/talk/67">Lucene Case Studies</a> by Erik Hatcher.  A rapid series of examples of many Lucene-using applications.</li>
-              </ul>
-            </p>
-          </section>-->
-
-          <section>
-		    <title>24 December 2007 - Nightly Snapshots available in the Apache Maven Snapshot Repository</title>
-			<p>
-			  We are now publishing nightly artifacts to the <a href="http://people.apache.org/maven-snapshot-repository/org/apache/lucene/">Maven Snapshot Repository</a>. The current version is '2.3-SNAPSHOT'.
-			</p>
-			<p>
-			  The artifacts include:
-			  <ul>
-                <li>Binary jars</li>			  
-                <li>Sources</li>			  				
-                <li>Javadocs</li>			  				
-              </ul>
-              You can find separate artifacts for the core, demo, and the different contrib modules.
-			</p>
-			<p>
-			  Merry Christmas!
-			</p>
-          </section>
-          <section>		  
-            <title>26 August 2007 - Lucene at ApacheCon Atlanta</title>
-            <p><a href="http://www.us.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png" class="float-right" alt="ApacheCon US logo" /></a>
-              Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
-            </p>
-            <p>The following talks and trainings are scheduled for this year's conference:
-              <ul>
-                <li>November 12: <a href="http://us.apachecon.com/us2007/program/talk/1859">Lucene Boot Camp</a> by Grant Ingersoll.  An all-day training focusing on getting started with Lucene.</li>
-                <li>November 16, 9:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1992">Apache Solr out of the Box</a> by Chris Hostetter. Introduction to Solr.</li>
-                <li>November 16, 10:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1943">Building a Vertical Search Site using Apache Software</a> by Ken Krugler. Will cover many Lucene-based projects.</li>
-                <li>November 16, 3:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/1953">Apache Lucene Performance</a> by Grant Ingersoll. Tips and techniques for improving Lucene performance.</li>
-                <li>November 16, 4:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/2017"> Advanced Indexing Techniques with Apache Lucene</a> by Michael Busch. Information on payloads and advanced indexing techniques.</li>
-              </ul>
-            </p>
-          </section>
-          <section>
-            <title>19 June 2007 - Release 2.2 available</title>
-
-            <p>This release has many improvements since release 2.1. New major features:
-			<ul>
-			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/index/IndexWriter.html">"Point-in-time" searching over NFS</a></li>
-			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/search/payloads/package-summary.html">Payloads</a></li>
-			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/search/function/package-summary.html">Function queries</a></li>
-			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/document/Field.html">New API for pre-analyzed fields</a></li>
-			</ul>
-			In addition Lucene 2.2 has many performance
-              improvements, bug fixes, etc. See
-              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_2_0/CHANGES.txt">CHANGES.txt</a>
-              for details.
-            </p>
-
-            <p>Lucene 2.2 includes index format changes that are not readable
-              by older versions of Lucene.  Lucene 2.2 can both read and update
-              older Lucene indexes.  Adding to an index with an older format
-              will cause it to be converted to the newer format.
-            </p>
-
-            <p>Binary and source distributions are
-              available
-              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
-            </p>
-          </section>
-          <section>
-            <title>18 February 2007 - Lucene at ApacheCon Europe</title>
-            <p>
-              <a href="http://www.eu.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png" class="float-right" alt="ApacheCon Europe logo" /></a>
-              Lucene Java and related <a href="http://lucene.apache.org/">Lucene</a> projects will have extensive representation at <a href="http://www.eu.apachecon.com">ApacheCon Europe</a> in Amsterdam this year. For the 2007 session,
-              Yonik Seeley will be giving the <a href="http://www.eu.apachecon.com/program/talk/11">Full-Text Search with Lucene</a> talk at 10:30 am on May 2nd.  Immediately following, Grant Ingersoll
-              will be presenting <a href="http://www.eu.apachecon.com/program/talk/12">Advanced Lucene</a> at 11:30.  Grant will also be leading a full day tutorial session on May 1st titled
-              <a href="http://www.eu.apachecon.com/program/talk/127">Lucene Boot Camp</a>.
-            </p>
-            <p>Lucene related talks include Solr committer Bertrand Delacrétaz's talk titled <a
-            href="http://www.eu.apachecon.com/program/talk/34">Beyond full-text searches with Solr and Lucene</a> and
-              Hadoop committer Owen O'Malley's <a href="http://www.eu.apachecon.com/program/talk/36">Introduction to Hadoop</a>.
-            </p>
-          <p>Registration is now open on the ApacheCon website.</p>
-          </section>
-          <section>
-            <title>17 February 2007 - Release 2.1 available</title>
-
-            <p>This release has many improvements since release
-              2.0, including new features, performance
-              improvements, bug fixes, etc. See
-              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_1_0/CHANGES.txt">CHANGES.txt</a>
-              for details.
-            </p>
-
-            <p>Lucene 2.1 includes index format changes that are not readable
-              by older versions of Lucene.  Lucene 2.1 can both read and update
-              older Lucene indexes.  Adding to an index with an older format
-              will cause it to be converted to the newer format.
-            </p>
-
-            <p>Binary and source distributions are
-              available
-              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
-            </p>
-          </section>
-
-            <section>
-                <title>3 January 2007 - Nightly Source builds available</title>
-
-                <p>Nightly source builds of the current development version of Lucene
-                    are now available at
-                    <a href="http://people.apache.org/builds/lucene/java/nightly/">http://people.apache.org/builds/lucene/java/nightly/</a>.  Files are named lucene-DATE-src.tar.gz where DATE is the date of the build.
-                </p>
-            </section>
-
-
-        </section>
-
-    </body>
+  <header>
+    <title>Lucene Java Documentation</title>
+  </header>
+  
+  <body>
+    <p>
+    This is the official documentation for Lucene Java 2.4-dev <BR/>
+	Please use the menu on the left to access the Javadocs and different documents.
+    </p>
+	<p>
+	Additional documentation is available in the <a href="http://wiki.apache.org/lucene-java">Wiki</a>.
+	</p>
+  </body>
 </document>

@@ -37,8 +37,11 @@
   <tab id="" label="Home" dir="" indexfile="index.html"/>
   -->
 
-  <tab id="" label="Main" dir=""/>
+  <tab id="" label="Main" href="http://lucene.apache.org/java/docs/"/>
   <tab id="wiki" label="Wiki" href="http://wiki.apache.org/lucene-java"/>
+  <tab label="Lucene 2.3.0 Documentation" href="http://lucene.apache.org/java/2_3_0/"/>
+  <tab label="Lucene 2.4-dev Documentation" dir=""/>
+
   
   <!--
   <tab id="samples" label="Samples" dir="samples" indexfile="sample.html">
