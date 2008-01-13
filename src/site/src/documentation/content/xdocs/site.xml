@@ -44,7 +44,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   <docs label="Documentation">
       <overview label="Overview" href="index.html"/>
       <javadoc label="Javadocs">
-         <javadoc-all label="All (Core, Demo, Contrib)" href="ext:javadocs-all"/>
+         <javadoc-all label="All" href="ext:javadocs-all"/>
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
 		 <javadoc-demo label="Demo" href="ext:javadocs-demo"/>
 		 <javadoc-contrib label="Contrib">
@@ -65,7 +65,9 @@ See http://forrest.apache.org/docs/linking.html for more info
             <javadoc-contrib-snowball label="Snowball" href="ext:javadocs-contrib-snowball"/>
 		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>
 		    <javadoc-contrib-surround label="Surround" href="ext:javadocs-contrib-surround"/>			
-		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>		    <javadoc-contrib-wordnet label="Wordnet" href="ext:javadocs-contrib-wordnet"/>			
+		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>
+			<javadoc-contrib-wikipedia label="Wikipedia" href="ext:javadocs-contrib-wikipedia"/>					    
+			<javadoc-contrib-wordnet label="Wordnet" href="ext:javadocs-contrib-wordnet"/>			
 		    <javadoc-contrib-xml-query-parser label="XML Query Parser" href="ext:javadocs-contrib-xml-query-parser"/>			
 		 </javadoc-contrib>
 	  </javadoc>
@@ -108,6 +110,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
 	<javadocs-contrib-surround href="api/contrib-surround/index.html"/>
 	<javadocs-contrib-swing href="api/contrib-swing/index.html"/>
+	<javadocs-contrib-wikipedia href="api/contrib-wikipedia/index.html"/>
 	<javadocs-contrib-wordnet href="api/contrib-wordnet/index.html"/>
 	<javadocs-contrib-xml-query-parser href="api/contrib-xml-query-parser/index.html"/>
 	
