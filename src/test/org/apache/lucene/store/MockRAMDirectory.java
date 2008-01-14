@@ -117,7 +117,6 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   void maybeThrowIOException() throws IOException {
-    maybeThrowDeterministicException();
     if (randomIOExceptionRate > 0.0) {
       int number = Math.abs(randomState.nextInt() % 1000);
       if (number < randomIOExceptionRate*1000) {
@@ -198,7 +197,7 @@ public class MockRAMDirectory extends RAMDirectory {
    * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
    */
 
-  final synchronized long getRecomputedActualSizeInBytes() {
+  public final synchronized long getRecomputedActualSizeInBytes() {
     long size = 0;
     Iterator it = fileMap.values().iterator();
     while (it.hasNext())
@@ -245,6 +244,16 @@ public class MockRAMDirectory extends RAMDirectory {
      * mock.failOn(failure.reset())
      */
     public Failure reset() { return this; }
+
+    protected boolean doFail;
+
+    public void setDoFail() {
+      doFail = true;
+    }
+
+    public void clearDoFail() {
+      doFail = false;
+    }
   }
 
   ArrayList failures;
@@ -253,7 +262,7 @@ public class MockRAMDirectory extends RAMDirectory {
    * add a Failure object to the list of objects to be evaluated
    * at every potential failure point
    */
-  public void failOn(Failure fail) {
+  synchronized public void failOn(Failure fail) {
     if (failures == null) {
       failures = new ArrayList();
     }
@@ -261,10 +270,10 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   /**
-   * Itterate through the failures list, giving each object a
+   * Iterate through the failures list, giving each object a
    * chance to throw an IOE
    */
-  void maybeThrowDeterministicException() throws IOException {
+  synchronized void maybeThrowDeterministicException() throws IOException {
     if (failures != null) {
       for(int i = 0; i < failures.size(); i++) {
         ((Failure)failures.get(i)).eval(this);

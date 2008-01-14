@@ -145,11 +145,12 @@ final class DocumentsWriter {
   private ThreadState[] threadStates = new ThreadState[0];
   private final HashMap threadBindings = new HashMap();
   private int numWaiting;
-  private ThreadState[] waitingThreadStates = new ThreadState[1];
+  private final ThreadState[] waitingThreadStates = new ThreadState[MAX_THREAD_STATE];
   private int pauseThreads;                       // Non-zero when we need all threads to
                                                   // pause (eg to flush)
   private boolean flushPending;                   // True when a thread has decided to flush
-  private boolean bufferIsFull;                 // True when it's time to write segment
+  private boolean bufferIsFull;                   // True when it's time to write segment
+  private boolean aborting;                       // True while abort is running
 
   private PrintStream infoStream;
 
@@ -321,74 +322,129 @@ final class DocumentsWriter {
     return files;
   }
 
+  synchronized void setAborting() {
+    aborting = true;
+  }
+
   /** Called if we hit an exception when adding docs,
    *  flushing, etc.  This resets our state, discarding any
-   *  docs added since last flush. */
-  synchronized void abort() throws IOException {
+   *  docs added since last flush.  If ae is non-null, it
+   *  contains the root cause exception (which we re-throw
+   *  after we are done aborting). */
+  synchronized void abort(AbortException ae) throws IOException {
 
-    if (infoStream != null)
-      infoStream.println("docWriter: now abort");
-
-    // Forcefully remove waiting ThreadStates from line
-    for(int i=0;i<numWaiting;i++)
-      waitingThreadStates[i].isIdle = true;
-    numWaiting = 0;
-
-    pauseAllThreads();
-
-    bufferedDeleteTerms.clear();
-    bufferedDeleteDocIDs.clear();
-    numBufferedDeleteTerms = 0;
+    // Anywhere that throws an AbortException must first
+    // mark aborting to make sure while the exception is
+    // unwinding the un-synchronized stack, no thread grabs
+    // the corrupt ThreadState that hit the aborting
+    // exception:
+    assert ae == null || aborting;
 
     try {
 
-      abortedFiles = files();
+      if (infoStream != null)
+        infoStream.println("docWriter: now abort");
 
-      // Discard pending norms:
-      final int numField = fieldInfos.size();
-      for (int i=0;i<numField;i++) {
-        FieldInfo fi = fieldInfos.fieldInfo(i);
-        if (fi.isIndexed && !fi.omitNorms) {
-          BufferedNorms n = norms[i];
-          if (n != null) {
-            n.out.reset();
-            n.reset();
+      // Forcefully remove waiting ThreadStates from line
+      for(int i=0;i<numWaiting;i++)
+        waitingThreadStates[i].isIdle = true;
+      numWaiting = 0;
+
+      // Wait for all other threads to finish with DocumentsWriter:
+      pauseAllThreads();
+
+      assert 0 == numWaiting;
+
+      try {
+
+        bufferedDeleteTerms.clear();
+        bufferedDeleteDocIDs.clear();
+        numBufferedDeleteTerms = 0;
+
+        abortedFiles = files();
+
+        // Discard pending norms:
+        final int numField = fieldInfos.size();
+        for (int i=0;i<numField;i++) {
+          FieldInfo fi = fieldInfos.fieldInfo(i);
+          if (fi.isIndexed && !fi.omitNorms) {
+            BufferedNorms n = norms[i];
+            if (n != null) {
+              n.out.reset();
+              n.reset();
+            }
           }
         }
-      }
 
-      // Reset vectors writer
-      if (tvx != null) {
-        tvx.close();
-        tvf.close();
-        tvd.close();
-        tvx = null;
-      }
-
-      // Reset fields writer
-      if (fieldsWriter != null) {
-        fieldsWriter.close();
-        fieldsWriter = null;
-      }
-
-      // Reset all postings data
-      resetPostingsData();
-
-      // Clear vectors & fields from ThreadStates
-      for(int i=0;i<threadStates.length;i++) {
-        ThreadState state = threadStates[i];
-        if (state.localFieldsWriter != null) {
-          state.localFieldsWriter.close();
-          state.localFieldsWriter = null;
+        // Reset vectors writer
+        if (tvx != null) {
+          try {
+            tvx.close();
+          } catch (IOException ioe) {
+          }
+          tvx = null;
         }
-        state.tvfLocal.reset();
-        state.fdtLocal.reset();
-      }
-      docStoreSegment = null;
-      files = null;
+        if (tvd != null) {
+          try {
+            tvd.close();
+          } catch (IOException ioe) {
+          }
+          tvd = null;
+        }
+        if (tvf != null) {
+          try {
+            tvf.close();
+          } catch (IOException ioe) {
+          }
+          tvf = null;
+        }
 
+        // Reset fields writer
+        if (fieldsWriter != null) {
+          try {
+            fieldsWriter.close();
+          } catch (IOException ioe) {
+          }
+          fieldsWriter = null;
+        }
+
+        // Clear vectors & fields from ThreadStates
+        for(int i=0;i<threadStates.length;i++) {
+          ThreadState state = threadStates[i];
+          if (state.localFieldsWriter != null) {
+            state.localFieldsWriter.close();
+            state.localFieldsWriter = null;
+          }
+          state.tvfLocal.reset();
+          state.fdtLocal.reset();
+        }
+
+        // Reset all postings data
+        resetPostingsData();
+
+        docStoreSegment = null;
+        files = null;
+
+      } finally {
+        resumeAllThreads();
+      }
+
+      // If we have a root cause exception, re-throw it now:
+      if (ae != null) {
+        Throwable t = ae.getCause();
+        if (t instanceof IOException)
+          throw (IOException) t;
+        else if (t instanceof RuntimeException)
+          throw (RuntimeException) t;
+        else if (t instanceof Error)
+          throw (Error) t;
+        else
+          // Should not get here
+          assert false: "unknown exception: " + t;
+      }
     } finally {
-      resumeAllThreads();
+      aborting = false;
+      notifyAll();
     }
   }
 
@@ -412,17 +468,17 @@ final class DocumentsWriter {
     files = null;
   }
 
-  synchronized void pauseAllThreads() {
+  // Returns true if an abort is in progress
+  synchronized boolean pauseAllThreads() {
     pauseThreads++;
-    if (1 == pauseThreads) {
-      while(!allThreadsIdle()) {
-        try {
-          wait();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+    while(!allThreadsIdle()) {
+      try {
+        wait();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
+    return aborting;
   }
 
   synchronized void resumeAllThreads() {
@@ -444,7 +500,7 @@ final class DocumentsWriter {
   List newFiles;
 
   /** Flush all pending docs to a new segment */
-  int flush(boolean closeDocStore) throws IOException {
+  synchronized int flush(boolean closeDocStore) throws IOException {
 
     assert allThreadsIdle();
 
@@ -456,13 +512,6 @@ final class DocumentsWriter {
 
     docStoreOffset = numDocsInStore;
 
-    if (closeDocStore) {
-      assert docStoreSegment != null;
-      assert docStoreSegment.equals(segment);
-      newFiles.addAll(files());
-      closeDocStore();
-    }
-    
     int docCount;
 
     assert numDocsInRAM > 0;
@@ -474,6 +523,13 @@ final class DocumentsWriter {
 
     try {
 
+      if (closeDocStore) {
+        assert docStoreSegment != null;
+        assert docStoreSegment.equals(segment);
+        newFiles.addAll(files());
+        closeDocStore();
+      }
+    
       fieldInfos.write(directory, segment + ".fnm");
 
       docCount = numDocsInRAM;
@@ -484,7 +540,7 @@ final class DocumentsWriter {
 
     } finally {
       if (!success)
-        abort();
+        abort(null);
     }
 
     return docCount;
@@ -553,7 +609,6 @@ final class DocumentsWriter {
                                           // doc has one
 
     boolean doFlushAfter;
-    boolean abortOnExc;
 
     public ThreadState() {
       fieldDataArray = new FieldData[8];
@@ -574,6 +629,7 @@ final class DocumentsWriter {
         localFieldsWriter.close();
         localFieldsWriter = null;
       }
+      fieldGen = 0;
       maxPostingsVectors = 0;
       doFlushAfter = false;
       postingsPool.reset();
@@ -589,52 +645,56 @@ final class DocumentsWriter {
 
     /** Move all per-document state that was accumulated in
      *  the ThreadState into the "real" stores. */
-    public void writeDocument() throws IOException {
+    public void writeDocument() throws IOException, AbortException {
 
       // If we hit an exception while appending to the
       // stored fields or term vectors files, we have to
       // abort all documents since we last flushed because
       // it means those files are possibly inconsistent.
-      abortOnExc = true;
+      try {
 
-      // Append stored fields to the real FieldsWriter:
-      fieldsWriter.flushDocument(numStoredFields, fdtLocal);
-      fdtLocal.reset();
-      numStoredFields = 0;
+        // Append stored fields to the real FieldsWriter:
+        fieldsWriter.flushDocument(numStoredFields, fdtLocal);
+        fdtLocal.reset();
 
-      // Append term vectors to the real outputs:
-      if (tvx != null) {
-        tvx.writeLong(tvd.getFilePointer());
-        tvd.writeVInt(numVectorFields);
-        if (numVectorFields > 0) {
-          for(int i=0;i<numVectorFields;i++)
-            tvd.writeVInt(vectorFieldNumbers[i]);
-          assert 0 == vectorFieldPointers[0];
-          tvd.writeVLong(tvf.getFilePointer());
-          long lastPos = vectorFieldPointers[0];
-          for(int i=1;i<numVectorFields;i++) {
-            long pos = vectorFieldPointers[i];
-            tvd.writeVLong(pos-lastPos);
-            lastPos = pos;
+        // Append term vectors to the real outputs:
+        if (tvx != null) {
+          tvx.writeLong(tvd.getFilePointer());
+          tvd.writeVInt(numVectorFields);
+          if (numVectorFields > 0) {
+            for(int i=0;i<numVectorFields;i++)
+              tvd.writeVInt(vectorFieldNumbers[i]);
+            assert 0 == vectorFieldPointers[0];
+            tvd.writeVLong(tvf.getFilePointer());
+            long lastPos = vectorFieldPointers[0];
+            for(int i=1;i<numVectorFields;i++) {
+              long pos = vectorFieldPointers[i];
+              tvd.writeVLong(pos-lastPos);
+              lastPos = pos;
+            }
+            tvfLocal.writeTo(tvf);
+            tvfLocal.reset();
           }
-          tvfLocal.writeTo(tvf);
-          tvfLocal.reset();
         }
-      }
 
-      // Append norms for the fields we saw:
-      for(int i=0;i<numFieldData;i++) {
-        FieldData fp = fieldDataArray[i];
-        if (fp.doNorms) {
-          BufferedNorms bn = norms[fp.fieldInfo.number];
-          assert bn != null;
-          assert bn.upto <= docID;
-          bn.fill(docID);
-          float norm = fp.boost * writer.getSimilarity().lengthNorm(fp.fieldInfo.name, fp.length);
-          bn.add(norm);
+        // Append norms for the fields we saw:
+        for(int i=0;i<numFieldData;i++) {
+          FieldData fp = fieldDataArray[i];
+          if (fp.doNorms) {
+            BufferedNorms bn = norms[fp.fieldInfo.number];
+            assert bn != null;
+            assert bn.upto <= docID;
+            bn.fill(docID);
+            float norm = fp.boost * writer.getSimilarity().lengthNorm(fp.fieldInfo.name, fp.length);
+            bn.add(norm);
+          }
         }
+      } catch (Throwable t) {
+        // Forcefully idle this threadstate -- its state will
+        // be reset by abort()
+        isIdle = true;
+        throw new AbortException(t, DocumentsWriter.this);
       }
-      abortOnExc = false;
 
       if (bufferIsFull && !flushPending) {
         flushPending = true;
@@ -642,10 +702,13 @@ final class DocumentsWriter {
       }
     }
 
-    /** Initializes shared state for this new document */
-    void init(Document doc, int docID) throws IOException {
+    int fieldGen;
 
-      abortOnExc = false;
+    /** Initializes shared state for this new document */
+    void init(Document doc, int docID) throws IOException, AbortException {
+
+      assert !isIdle;
+
       this.docID = docID;
       docBoost = doc.getBoost();
       numStoredFields = 0;
@@ -654,7 +717,10 @@ final class DocumentsWriter {
       maxTermPrefix = null;
 
       assert 0 == fdtLocal.length();
+      assert 0 == fdtLocal.getFilePointer();
       assert 0 == tvfLocal.length();
+      assert 0 == tvfLocal.getFilePointer();
+      final int thisFieldGen = fieldGen++;
 
       List docFields = doc.getFields();
       final int numDocFields = docFields.size();
@@ -700,36 +766,37 @@ final class DocumentsWriter {
 
           if (numAllFieldData == allFieldDataArray.length) {
             int newSize = (int) (allFieldDataArray.length*1.5);
+            int newHashSize = fieldDataHash.length*2;
 
             FieldData newArray[] = new FieldData[newSize];
+            FieldData newHashArray[] = new FieldData[newHashSize];
             System.arraycopy(allFieldDataArray, 0, newArray, 0, numAllFieldData);
-            allFieldDataArray = newArray;
 
             // Rehash
-            newSize = fieldDataHash.length*2;
-            newArray = new FieldData[newSize];
             fieldDataHashMask = newSize-1;
             for(int j=0;j<fieldDataHash.length;j++) {
               FieldData fp0 = fieldDataHash[j];
               while(fp0 != null) {
                 hashPos = fp0.fieldInfo.name.hashCode() & fieldDataHashMask;
                 FieldData nextFP0 = fp0.next;
-                fp0.next = newArray[hashPos];
-                newArray[hashPos] = fp0;
+                fp0.next = newHashArray[hashPos];
+                newHashArray[hashPos] = fp0;
                 fp0 = nextFP0;
               }
             }
-            fieldDataHash = newArray;
+
+            allFieldDataArray = newArray;
+            fieldDataHash = newHashArray;
           }
           allFieldDataArray[numAllFieldData++] = fp;
         } else {
           assert fp.fieldInfo == fi;
         }
 
-        if (docID != fp.lastDocID) {
+        if (thisFieldGen != fp.lastGen) {
 
           // First time we're seeing this field for this doc
-          fp.lastDocID = docID;
+          fp.lastGen = thisFieldGen;
           fp.fieldCount = 0;
           fp.doVectors = fp.doVectorPositions = fp.doVectorOffsets = false;
           fp.doNorms = fi.isIndexed && !fi.omitNorms;
@@ -776,7 +843,15 @@ final class DocumentsWriter {
           assert docStoreSegment == null;
           assert segment != null;
           docStoreSegment = segment;
-          fieldsWriter = new FieldsWriter(directory, docStoreSegment, fieldInfos);
+          // If we hit an exception while init'ing the
+          // fieldsWriter, we must abort this segment
+          // because those files will be in an unknown
+          // state:
+          try {
+            fieldsWriter = new FieldsWriter(directory, docStoreSegment, fieldInfos);
+          } catch (Throwable t) {
+            throw new AbortException(t, DocumentsWriter.this);
+          }
           files = null;
         }
         localFieldsWriter = new FieldsWriter(null, fdtLocal, fieldInfos);
@@ -787,18 +862,26 @@ final class DocumentsWriter {
       if (docHasVectors) {
         if (tvx == null) {
           assert docStoreSegment != null;
-          tvx = directory.createOutput(docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-          tvx.writeInt(TermVectorsReader.FORMAT_VERSION);
-          tvd = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-          tvd.writeInt(TermVectorsReader.FORMAT_VERSION);
-          tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-          tvf.writeInt(TermVectorsReader.FORMAT_VERSION);
-          files = null;
+          // If we hit an exception while init'ing the term
+          // vector output files, we must abort this segment
+          // because those files will be in an unknown
+          // state:
+          try {
+            tvx = directory.createOutput(docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
+            tvx.writeInt(TermVectorsReader.FORMAT_VERSION);
+            tvd = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+            tvd.writeInt(TermVectorsReader.FORMAT_VERSION);
+            tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
+            tvf.writeInt(TermVectorsReader.FORMAT_VERSION);
 
-          // We must "catch up" for all docIDs that had no
-          // vectors before this one
-          for(int i=0;i<docID;i++)
-            tvx.writeLong(0);
+            // We must "catch up" for all docIDs that had no
+            // vectors before this one
+            for(int i=0;i<docID;i++)
+              tvx.writeLong(0);
+          } catch (Throwable t) {
+            throw new AbortException(t, DocumentsWriter.this);
+          }
+          files = null;
         }
 
         numVectorFields = 0;
@@ -929,7 +1012,7 @@ final class DocumentsWriter {
       int upto = 0;
       for(int i=0;i<numAllFieldData;i++) {
         FieldData fp = allFieldDataArray[i];
-        if (fp.lastDocID == -1) {
+        if (fp.lastGen == -1) {
           // This field was not seen since the previous
           // flush, so, free up its resources now
 
@@ -953,7 +1036,7 @@ final class DocumentsWriter {
 
         } else {
           // Reset
-          fp.lastDocID = -1;
+          fp.lastGen = -1;
           allFieldDataArray[upto++] = fp;
           
           if (fp.numPostings > 0 && ((float) fp.numPostings) / fp.postingsHashSize < 0.2) {
@@ -996,7 +1079,7 @@ final class DocumentsWriter {
 
     /** Tokenizes the fields of a document into Postings */
     void processDocument(Analyzer analyzer)
-      throws IOException {
+      throws IOException, AbortException {
 
       final int numFields = numFieldData;
 
@@ -1215,7 +1298,7 @@ final class DocumentsWriter {
       int fieldCount;
       Fieldable[] docFields = new Fieldable[1];
 
-      int lastDocID = -1;
+      int lastGen = -1;
       FieldData next;
 
       boolean doNorms;
@@ -1284,7 +1367,7 @@ final class DocumentsWriter {
       }
 
       /** Process all occurrences of one field in the document. */
-      public void processField(Analyzer analyzer) throws IOException {
+      public void processField(Analyzer analyzer) throws IOException, AbortException {
         length = 0;
         position = 0;
         offset = 0;
@@ -1316,10 +1399,8 @@ final class DocumentsWriter {
                 // contents of fdtLocal can be corrupt, so
                 // we must discard all stored fields for
                 // this document:
-                if (!success) {
-                  numStoredFields = 0;
+                if (!success)
                   fdtLocal.reset();
-                }
               }
             }
 
@@ -1354,7 +1435,7 @@ final class DocumentsWriter {
       Token localToken = new Token();
 
       /* Invert one occurrence of one field in the document */
-      public void invertField(Fieldable field, Analyzer analyzer, final int maxFieldLength) throws IOException {
+      public void invertField(Fieldable field, Analyzer analyzer, final int maxFieldLength) throws IOException, AbortException {
 
         if (length>0)
           position += analyzer.getPositionIncrementGap(fieldInfo.name);
@@ -1475,7 +1556,7 @@ final class DocumentsWriter {
        *  for every term of every document.  Its job is to *
        *  update the postings byte stream (Postings hash) *
        *  based on the occurence of a single term. */
-      private void addPosition(Token token) {
+      private void addPosition(Token token) throws AbortException {
 
         final Payload payload = token.getPayload();
 
@@ -1519,167 +1600,168 @@ final class DocumentsWriter {
         // partially written and thus inconsistent if
         // flushed, so we have to abort all documents
         // since the last flush:
-        abortOnExc = true;
 
-        if (p != null) {       // term seen since last flush
+        try {
 
-          if (docID != p.lastDocID) { // term not yet seen in this doc
+          if (p != null) {       // term seen since last flush
+
+            if (docID != p.lastDocID) { // term not yet seen in this doc
             
-            // System.out.println("    seen before (new docID=" + docID + ") freqUpto=" + p.freqUpto +" proxUpto=" + p.proxUpto);
+              // System.out.println("    seen before (new docID=" + docID + ") freqUpto=" + p.freqUpto +" proxUpto=" + p.proxUpto);
 
-            assert p.docFreq > 0;
+              assert p.docFreq > 0;
 
-            // Now that we know doc freq for previous doc,
-            // write it & lastDocCode
-            freqUpto = p.freqUpto & BYTE_BLOCK_MASK;
-            freq = postingsPool.buffers[p.freqUpto >> BYTE_BLOCK_SHIFT];
-            if (1 == p.docFreq)
-              writeFreqVInt(p.lastDocCode|1);
-            else {
-              writeFreqVInt(p.lastDocCode);
-              writeFreqVInt(p.docFreq);
+              // Now that we know doc freq for previous doc,
+              // write it & lastDocCode
+              freqUpto = p.freqUpto & BYTE_BLOCK_MASK;
+              freq = postingsPool.buffers[p.freqUpto >> BYTE_BLOCK_SHIFT];
+              if (1 == p.docFreq)
+                writeFreqVInt(p.lastDocCode|1);
+              else {
+                writeFreqVInt(p.lastDocCode);
+                writeFreqVInt(p.docFreq);
+              }
+              p.freqUpto = freqUpto + (p.freqUpto & BYTE_BLOCK_NOT_MASK);
+
+              if (doVectors) {
+                vector = addNewVector();
+                if (doVectorOffsets) {
+                  offsetStartCode = offsetStart = offset + token.startOffset();
+                  offsetEnd = offset + token.endOffset();
+                }
+              }
+
+              proxCode = position;
+
+              p.docFreq = 1;
+
+              // Store code so we can write this after we're
+              // done with this new doc
+              p.lastDocCode = (docID-p.lastDocID) << 1;
+              p.lastDocID = docID;
+
+            } else {                                // term already seen in this doc
+              // System.out.println("    seen before (same docID=" + docID + ") proxUpto=" + p.proxUpto);
+              p.docFreq++;
+
+              proxCode = position-p.lastPosition;
+
+              if (doVectors) {
+                vector = p.vector;
+                if (vector == null)
+                  vector = addNewVector();
+                if (doVectorOffsets) {
+                  offsetStart = offset + token.startOffset();
+                  offsetEnd = offset + token.endOffset();
+                  offsetStartCode = offsetStart-vector.lastOffset;
+                }
+              }
             }
-            p.freqUpto = freqUpto + (p.freqUpto & BYTE_BLOCK_NOT_MASK);
+          } else {					  // term not seen before
+            // System.out.println("    never seen docID=" + docID);
+
+            // Refill?
+            if (0 == postingsFreeCount) {
+              postingsFreeCount = postingsFreeList.length;
+              getPostings(postingsFreeList);
+            }
+
+            final int textLen1 = 1+tokenTextLen;
+            if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
+              if (textLen1 > CHAR_BLOCK_SIZE) {
+                // Just skip this term, to remain as robust as
+                // possible during indexing.  A TokenFilter
+                // can be inserted into the analyzer chain if
+                // other behavior is wanted (pruning the term
+                // to a prefix, throwing an exception, etc).
+                if (maxTermPrefix == null)
+                  maxTermPrefix = new String(tokenText, 0, 30);
+
+                // Still increment position:
+                position++;
+                return;
+              }
+              charPool.nextBuffer();
+            }
+            final char[] text = charPool.buffer;
+            final int textUpto = charPool.byteUpto;
+
+            // Pull next free Posting from free list
+            p = postingsFreeList[--postingsFreeCount];
+
+            p.textStart = textUpto + charPool.byteOffset;
+            charPool.byteUpto += textLen1;
+
+            System.arraycopy(tokenText, 0, text, textUpto, tokenTextLen);
+
+            text[textUpto+tokenTextLen] = 0xffff;
+          
+            assert postingsHash[hashPos] == null;
+
+            postingsHash[hashPos] = p;
+            numPostings++;
+
+            if (numPostings == postingsHashHalfSize)
+              rehashPostings(2*postingsHashSize);
+
+            // Init first slice for freq & prox streams
+            final int firstSize = levelSizeArray[0];
+
+            final int upto1 = postingsPool.newSlice(firstSize);
+            p.freqStart = p.freqUpto = postingsPool.byteOffset + upto1;
+
+            final int upto2 = postingsPool.newSlice(firstSize);
+            p.proxStart = p.proxUpto = postingsPool.byteOffset + upto2;
+
+            p.lastDocCode = docID << 1;
+            p.lastDocID = docID;
+            p.docFreq = 1;
 
             if (doVectors) {
               vector = addNewVector();
               if (doVectorOffsets) {
-                offsetStartCode = offsetStart = offset + token.startOffset();
+                offsetStart = offsetStartCode = offset + token.startOffset();
                 offsetEnd = offset + token.endOffset();
               }
             }
 
             proxCode = position;
-
-            p.docFreq = 1;
-
-            // Store code so we can write this after we're
-            // done with this new doc
-            p.lastDocCode = (docID-p.lastDocID) << 1;
-            p.lastDocID = docID;
-
-          } else {                                // term already seen in this doc
-            // System.out.println("    seen before (same docID=" + docID + ") proxUpto=" + p.proxUpto);
-            p.docFreq++;
-
-            proxCode = position-p.lastPosition;
-
-            if (doVectors) {
-              vector = p.vector;
-              if (vector == null)
-                vector = addNewVector();
-              if (doVectorOffsets) {
-                offsetStart = offset + token.startOffset();
-                offsetEnd = offset + token.endOffset();
-                offsetStartCode = offsetStart-vector.lastOffset;
-              }
-            }
-          }
-        } else {					  // term not seen before
-          // System.out.println("    never seen docID=" + docID);
-
-          // Refill?
-          if (0 == postingsFreeCount) {
-            postingsFreeCount = postingsFreeList.length;
-            getPostings(postingsFreeList);
           }
 
-          final int textLen1 = 1+tokenTextLen;
-          if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
-            if (textLen1 > CHAR_BLOCK_SIZE) {
-              // Just skip this term, to remain as robust as
-              // possible during indexing.  A TokenFilter
-              // can be inserted into the analyzer chain if
-              // other behavior is wanted (pruning the term
-              // to a prefix, throwing an exception, etc).
-              abortOnExc = false;
-              if (maxTermPrefix == null)
-                maxTermPrefix = new String(tokenText, 0, 30);
+          proxUpto = p.proxUpto & BYTE_BLOCK_MASK;
+          prox = postingsPool.buffers[p.proxUpto >> BYTE_BLOCK_SHIFT];
+          assert prox != null;
 
-              // Still increment position:
-              position++;
-              return;
-            }
-            charPool.nextBuffer();
-          }
-          final char[] text = charPool.buffer;
-          final int textUpto = charPool.byteUpto;
+          if (payload != null && payload.length > 0) {
+            writeProxVInt((proxCode<<1)|1);
+            writeProxVInt(payload.length);
+            writeProxBytes(payload.data, payload.offset, payload.length);
+            fieldInfo.storePayloads = true;
+          } else
+            writeProxVInt(proxCode<<1);
 
-          // Pull next free Posting from free list
-          p = postingsFreeList[--postingsFreeCount];
+          p.proxUpto = proxUpto + (p.proxUpto & BYTE_BLOCK_NOT_MASK);
 
-          p.textStart = textUpto + charPool.byteOffset;
-          charPool.byteUpto += textLen1;
+          p.lastPosition = position++;
 
-          System.arraycopy(tokenText, 0, text, textUpto, tokenTextLen);
-
-          text[textUpto+tokenTextLen] = 0xffff;
-          
-          assert postingsHash[hashPos] == null;
-
-          postingsHash[hashPos] = p;
-          numPostings++;
-
-          if (numPostings == postingsHashHalfSize)
-            rehashPostings(2*postingsHashSize);
-
-          // Init first slice for freq & prox streams
-          final int firstSize = levelSizeArray[0];
-
-          final int upto1 = postingsPool.newSlice(firstSize);
-          p.freqStart = p.freqUpto = postingsPool.byteOffset + upto1;
-
-          final int upto2 = postingsPool.newSlice(firstSize);
-          p.proxStart = p.proxUpto = postingsPool.byteOffset + upto2;
-
-          p.lastDocCode = docID << 1;
-          p.lastDocID = docID;
-          p.docFreq = 1;
-
-          if (doVectors) {
-            vector = addNewVector();
-            if (doVectorOffsets) {
-              offsetStart = offsetStartCode = offset + token.startOffset();
-              offsetEnd = offset + token.endOffset();
-            }
+          if (doVectorPositions) {
+            posUpto = vector.posUpto & BYTE_BLOCK_MASK;
+            pos = vectorsPool.buffers[vector.posUpto >> BYTE_BLOCK_SHIFT];
+            writePosVInt(proxCode);
+            vector.posUpto = posUpto + (vector.posUpto & BYTE_BLOCK_NOT_MASK);
           }
 
-          proxCode = position;
+          if (doVectorOffsets) {
+            offsetUpto = vector.offsetUpto & BYTE_BLOCK_MASK;
+            offsets = vectorsPool.buffers[vector.offsetUpto >> BYTE_BLOCK_SHIFT];
+            writeOffsetVInt(offsetStartCode);
+            writeOffsetVInt(offsetEnd-offsetStart);
+            vector.lastOffset = offsetEnd;
+            vector.offsetUpto = offsetUpto + (vector.offsetUpto & BYTE_BLOCK_NOT_MASK);
+          }
+        } catch (Throwable t) {
+          throw new AbortException(t, DocumentsWriter.this);
         }
-
-        proxUpto = p.proxUpto & BYTE_BLOCK_MASK;
-        prox = postingsPool.buffers[p.proxUpto >> BYTE_BLOCK_SHIFT];
-        assert prox != null;
-
-        if (payload != null && payload.length > 0) {
-          writeProxVInt((proxCode<<1)|1);
-          writeProxVInt(payload.length);
-          writeProxBytes(payload.data, payload.offset, payload.length);
-          fieldInfo.storePayloads = true;
-        } else
-          writeProxVInt(proxCode<<1);
-
-        p.proxUpto = proxUpto + (p.proxUpto & BYTE_BLOCK_NOT_MASK);
-
-        p.lastPosition = position++;
-
-        if (doVectorPositions) {
-          posUpto = vector.posUpto & BYTE_BLOCK_MASK;
-          pos = vectorsPool.buffers[vector.posUpto >> BYTE_BLOCK_SHIFT];
-          writePosVInt(proxCode);
-          vector.posUpto = posUpto + (vector.posUpto & BYTE_BLOCK_NOT_MASK);
-        }
-
-        if (doVectorOffsets) {
-          offsetUpto = vector.offsetUpto & BYTE_BLOCK_MASK;
-          offsets = vectorsPool.buffers[vector.offsetUpto >> BYTE_BLOCK_SHIFT];
-          writeOffsetVInt(offsetStartCode);
-          writeOffsetVInt(offsetEnd-offsetStart);
-          vector.lastOffset = offsetEnd;
-          vector.offsetUpto = offsetUpto + (vector.offsetUpto & BYTE_BLOCK_NOT_MASK);
-        }
-
-        abortOnExc = false;
       }
 
       /** Called when postings hash is too small (> 50%
@@ -2209,6 +2291,7 @@ final class DocumentsWriter {
 
   synchronized void close() {
     closed = true;
+    notifyAll();
   }
 
   /** Returns a free (idle) ThreadState that may be used for
@@ -2247,7 +2330,7 @@ final class DocumentsWriter {
     // Next, wait until my thread state is idle (in case
     // it's shared with other threads) and for threads to
     // not be paused nor a flush pending:
-    while(!state.isIdle || pauseThreads != 0 || flushPending)
+    while(!closed && (!state.isIdle || pauseThreads != 0 || flushPending || aborting))
       try {
         wait();
       } catch (InterruptedException e) {
@@ -2275,28 +2358,31 @@ final class DocumentsWriter {
 
     state.isIdle = false;
 
-    boolean success = false;
     try {
-      state.init(doc, nextDocID++);
-
-      if (delTerm != null) {
-        addDeleteTerm(delTerm, state.docID);
-        if (!state.doFlushAfter)
-          state.doFlushAfter = timeToFlushDeletes();
-      }
-
-      success = true;
-    } finally {
-      if (!success) {
-        synchronized(this) {
+      boolean success = false;
+      try {
+        state.init(doc, nextDocID);
+        if (delTerm != null) {
+          addDeleteTerm(delTerm, state.docID);
+          if (!state.doFlushAfter)
+            state.doFlushAfter = timeToFlushDeletes();
+        }
+        // Only increment nextDocID on successful init
+        nextDocID++;
+        success = true;
+      } finally {
+        if (!success) {
+          // Forcefully idle this ThreadState:
           state.isIdle = true;
+          notifyAll();
           if (state.doFlushAfter) {
             state.doFlushAfter = false;
             flushPending = false;
           }
-          notifyAll();
         }
       }
+    } catch (AbortException ae) {
+      abort(ae);
     }
 
     return state;
@@ -2319,32 +2405,30 @@ final class DocumentsWriter {
 
     // This call is synchronized but fast
     final ThreadState state = getThreadState(doc, delTerm);
-    boolean success = false;
     try {
+      boolean success = false;
       try {
-        // This call is not synchronized and does all the work
-        state.processDocument(analyzer);
+        try {
+          // This call is not synchronized and does all the work
+          state.processDocument(analyzer);
+        } finally {
+          // This call is synchronized but fast
+          finishDocument(state);
+        }
+        success = true;
       } finally {
-        // This call is synchronized but fast
-        finishDocument(state);
-      }
-      success = true;
-    } finally {
-      if (!success) {
-        synchronized(this) {
-          state.isIdle = true;
-          if (state.abortOnExc)
-            // Abort all buffered docs since last flush
-            abort();
-          else
+        if (!success) {
+          synchronized(this) {
             // Immediately mark this document as deleted
             // since likely it was partially added.  This
             // keeps indexing as "all or none" (atomic) when
             // adding a document:
             addDeleteDocID(state.docID);
-          notifyAll();
+          }
         }
       }
+    } catch (AbortException ae) {
+      abort(ae);
     }
 
     return state.doFlushAfter || timeToFlushDeletes();
@@ -2467,51 +2551,57 @@ final class DocumentsWriter {
 
   /** Does the synchronized work to finish/flush the
    * inverted document. */
-  private synchronized void finishDocument(ThreadState state) throws IOException {
+  private synchronized void finishDocument(ThreadState state) throws IOException, AbortException {
+    if (aborting) {
+      // Forcefully idle this threadstate -- its state will
+      // be reset by abort()
+      state.isIdle = true;
+      notifyAll();
+      return;
+    }
 
     // Now write the indexed document to the real files.
-
     if (nextWriteDocID == state.docID) {
       // It's my turn, so write everything now:
-      state.isIdle = true;
       nextWriteDocID++;
       state.writeDocument();
+      state.isIdle = true;
+      notifyAll();
 
       // If any states were waiting on me, sweep through and
       // flush those that are enabled by my write.
       if (numWaiting > 0) {
-        while(true) {
-          int upto = 0;
-          for(int i=0;i<numWaiting;i++) {
-            ThreadState s = waitingThreadStates[i];
+        boolean any = true;
+        while(any) {
+          any = false;
+          for(int i=0;i<numWaiting;) {
+            final ThreadState s = waitingThreadStates[i];
             if (s.docID == nextWriteDocID) {
+              s.writeDocument();
               s.isIdle = true;
               nextWriteDocID++;
-              s.writeDocument();
-            } else
-              // Compact as we go
-              waitingThreadStates[upto++] = waitingThreadStates[i];
+              any = true;
+              if (numWaiting > i+1)
+                // Swap in the last waiting state to fill in
+                // the hole we just created.  It's important
+                // to do this as-we-go and not at the end of
+                // the loop, because if we hit an aborting
+                // exception in one of the s.writeDocument
+                // calls (above), it leaves this array in an
+                // inconsistent state:
+                waitingThreadStates[i] = waitingThreadStates[numWaiting-1];
+              numWaiting--;
+            } else {
+              assert !s.isIdle;
+              i++;
+            }
           }
-          if (upto == numWaiting) 
-            break;
-          numWaiting = upto;
         }
       }
-
-      // Now notify any incoming calls to addDocument
-      // (above) that are waiting on our line to
-      // shrink
-      notifyAll();
-
     } else {
       // Another thread got a docID before me, but, it
       // hasn't finished its processing.  So add myself to
       // the line but don't hold up this thread.
-      if (numWaiting == waitingThreadStates.length) {
-        ThreadState[] newWaiting = new ThreadState[2*waitingThreadStates.length];
-        System.arraycopy(waitingThreadStates, 0, newWaiting, 0, numWaiting);
-        waitingThreadStates = newWaiting;
-      }
       waitingThreadStates[numWaiting++] = state;
     }
   }
@@ -3135,5 +3225,14 @@ final class DocumentsWriter {
     int offsetUpto;                                 // Next write address for offsets
     int posStart;                                   // Address of first slice for positions
     int posUpto;                                    // Next write address for positions
+  }
+}
+
+// Used only internally to DW to call abort "up the stack"
+class AbortException extends IOException {
+  public AbortException(Throwable cause, DocumentsWriter docWriter) {
+    super();
+    initCause(cause);
+    docWriter.setAborting();
   }
 }
