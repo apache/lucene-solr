@@ -71,15 +71,20 @@ public class SolrDispatchFilter implements Filter
       // Find a valid solr core
       SolrCore core = null;
       multicore = MultiCore.getRegistry();
-      String instanceDir = SolrResourceLoader.locateInstanceDir();
-      File multiconfig = new File( instanceDir, "multicore.xml" );
-      log.info( "looking for multicore.xml: "+multiconfig.getAbsolutePath() );
-      if( multiconfig.exists() ) {
-        multicore.load( instanceDir, multiconfig );
-        core = multicore.getDefaultCore();
+      if( multicore.isEnabled() ) {
+        log.info( "Using existing multicore configuration" );
+      }
+      else {
+        String instanceDir = SolrResourceLoader.locateInstanceDir();
+        File multiconfig = new File( instanceDir, "multicore.xml" );
+        log.info( "looking for multicore.xml: "+multiconfig.getAbsolutePath() );
+        if( multiconfig.exists() ) {
+          multicore.load( instanceDir, multiconfig );
+        }
       }
       if( multicore.isEnabled() ) {
         singlecore = null;
+        core = multicore.getDefaultCore();
       }
       else {
         singlecore = new SolrCore( null, null, new SolrConfig(), null );
