@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Used by MockRAMDirectory to create an output stream that
@@ -50,6 +49,11 @@ public class MockRAMOutputStream extends RAMOutputStream {
     }
   }
 
+  public void flush() throws IOException {
+    dir.maybeThrowDeterministicException();
+    super.flush();
+  }
+
   public void writeByte(byte b) throws IOException {
     singleByte[0] = b;
     writeBytes(singleByte, 0, 1);
@@ -79,6 +83,8 @@ public class MockRAMOutputStream extends RAMOutputStream {
     } else {
       super.writeBytes(b, offset, len);
     }
+
+    dir.maybeThrowDeterministicException();
 
     if (first) {
       // Maybe throw random exception; only do this on first

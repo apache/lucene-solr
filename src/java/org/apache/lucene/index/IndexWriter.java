@@ -1278,7 +1278,7 @@ public class IndexWriter {
         if (!success) {
           if (infoStream != null)
             message("hit exception closing doc store segment");
-          docWriter.abort();
+          docWriter.abort(null);
         }
       }
 
@@ -1999,7 +1999,7 @@ public class IndexWriter {
         segmentInfos.clear();
         segmentInfos.addAll(rollbackSegmentInfos);
 
-        docWriter.abort();
+        docWriter.abort(null);
 
         // Ask deleter to locate unreferenced files & remove
         // them:
@@ -2401,7 +2401,13 @@ public class IndexWriter {
   private synchronized final boolean doFlush(boolean flushDocStores) throws CorruptIndexException, IOException {
 
     // Make sure no threads are actively adding a document
-    docWriter.pauseAllThreads();
+
+    // Returns true if docWriter is currently aborting, in
+    // which case we skip flushing this segment
+    if (docWriter.pauseAllThreads()) {
+      docWriter.resumeAllThreads();
+      return false;
+    }
 
     try {
 
@@ -2536,7 +2542,7 @@ public class IndexWriter {
                 segmentInfos.remove(segmentInfos.size()-1);
             }
             if (flushDocs)
-              docWriter.abort();
+              docWriter.abort(null);
             deletePartialSegmentsFile();
             deleter.checkpoint(segmentInfos, false);
 

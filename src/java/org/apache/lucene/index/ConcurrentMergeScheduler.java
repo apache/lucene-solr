@@ -251,7 +251,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         message("  merge thread: done");
 
-      } catch (IOException exc) {
+      } catch (Throwable exc) {
 
         if (merge != null) {
           merge.setException(exc);

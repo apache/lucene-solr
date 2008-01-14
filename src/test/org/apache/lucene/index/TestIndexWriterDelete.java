@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.lang.StackTraceElement;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -454,7 +453,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           String[] startFiles = dir.list();
           SegmentInfos infos = new SegmentInfos();
           infos.read(dir);
-          IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
           String[] endFiles = dir.list();
 
           Arrays.sort(startFiles);
@@ -560,8 +559,19 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
         public void eval(MockRAMDirectory dir)  throws IOException {
           if (sawMaybe && !failed) {
-            failed = true;
-            throw new IOException("fail after applyDeletes");
+            boolean seen = false;
+            StackTraceElement[] trace = new Exception().getStackTrace();
+            for (int i = 0; i < trace.length; i++) {
+              if ("applyDeletes".equals(trace[i].getMethodName())) {
+                seen = true;
+                break;
+              }
+            }
+            if (!seen) {
+              // Only fail once we are no longer in applyDeletes
+              failed = true;
+              throw new IOException("fail after applyDeletes");
+            }
           }
           if (!failed) {
             StackTraceElement[] trace = new Exception().getStackTrace();
@@ -740,7 +750,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       String[] startFiles = dir.list();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
-      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
       String[] endFiles = dir.list();
 
       if (!Arrays.equals(startFiles, endFiles)) {
