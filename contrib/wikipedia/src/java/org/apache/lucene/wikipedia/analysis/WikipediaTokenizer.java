@@ -27,8 +27,9 @@ import java.io.IOException;
 /**
  * Extension of StandardTokenizer that is aware of Wikipedia syntax.  It is based off of the
  * Wikipedia tutorial available at http://en.wikipedia.org/wiki/Wikipedia:Tutorial, but it may not be complete.
- *
- *
+ *<p/>
+ * EXPERIMENTAL !!!!!!!!!
+ * NOTE: This Tokenizer is considered experimental and the grammar is subject to change in the trunk and in follow up releases.
  **/
 public class WikipediaTokenizer extends Tokenizer {
   public static final String INTERNAL_LINK = "il";
