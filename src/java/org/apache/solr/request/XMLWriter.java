@@ -342,11 +342,14 @@ final public class XMLWriter {
     startTag("doc", name, false);
     incLevel();
 
-    if (includeScore) {
-      writeVal("score", doc.getFirstValue("score"));
+    if (includeScore && returnFields != null ) {
+      returnFields.add( "score" );
     }
 
     for (String fname : doc.getFieldNames()) {
+      if (returnFields!=null && !returnFields.contains(fname)) {
+        continue;
+      }
       Object val = doc.getFieldValue(fname);
 
       if (val instanceof Collection) {
