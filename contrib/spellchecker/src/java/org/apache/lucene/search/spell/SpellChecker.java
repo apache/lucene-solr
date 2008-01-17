@@ -284,7 +284,9 @@ public class SpellChecker {
    * @throws IOException
    */
   public void clearIndex() throws IOException {
-    IndexReader.unlock(spellIndex);
+      if (IndexReader.isLocked(spellIndex)){
+	IndexReader.unlock(spellIndex);
+      }
     IndexWriter writer = new IndexWriter(spellIndex, null, true);
     writer.close();
   }

@@ -190,9 +190,9 @@ public class TestLockFactory extends LuceneTestCase {
         if (writer2 != null) {
           try {
             writer2.close();
-            fail("writer2.close() should have hit LockReleaseFailedException");
-          } catch (LockReleaseFailedException e) {
             // expected
+          } catch (LockReleaseFailedException e) {
+            fail("writer2.close() should not have hit LockReleaseFailedException");
           }
         }
 
