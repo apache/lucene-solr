@@ -53,6 +53,12 @@ public class SolrUpdateServlet extends HttpServlet {
     BufferedReader requestReader = request.getReader();
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
+    if( request.getQueryString() != null ) {
+      log.warning( 
+          "The @Deprecated SolrUpdateServlet does not accept query parameters: "+request.getQueryString()+"\n"
+          +"  If you are using solrj, make sure to register a request handler to /update rather then use this servlet.\n"
+          +"  Add: <requestHandler name=\"/update\" class=\"solr.XmlUpdateRequestHandler\" > to your solrconfig.xml\n\n" );
+    }
     PrintWriter writer = response.getWriter();
     legacyUpdateHandler.doLegacyUpdate(requestReader, writer);
   }
