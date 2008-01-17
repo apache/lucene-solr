@@ -284,7 +284,9 @@ public class SpellChecker {
    * @throws IOException
    */
   public void clearIndex() throws IOException {
-    IndexReader.unlock(spellIndex);
+    if (IndexReader.isLocked(spellIndex)){
+      IndexReader.unlock(spellIndex);
+    }
     IndexWriter writer = new IndexWriter(spellIndex, null, true);
     writer.close();
   }
@@ -308,7 +310,9 @@ public class SpellChecker {
    * @throws IOException
    */
   public void indexDictionary(Dictionary dict) throws IOException {
-    IndexReader.unlock(spellIndex);
+    if (IndexReader.isLocked(spellIndex)){
+      IndexReader.unlock(spellIndex);
+    }
     IndexWriter writer = new IndexWriter(spellIndex, new WhitespaceAnalyzer(),
         !IndexReader.indexExists(spellIndex));
     writer.setMergeFactor(300);
