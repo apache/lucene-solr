@@ -39,6 +39,8 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
   
   public void testMultiThreaded() throws Exception {
     gserver = this.getSolrServer();
+    gserver.deleteByQuery( "*:*" ); // delete everything!
+    
     DocThread[] threads = new DocThread[threadCount];
     for (int i=0; i<threadCount; i++) {
       threads[i] = new DocThread( "T"+i+":" );
