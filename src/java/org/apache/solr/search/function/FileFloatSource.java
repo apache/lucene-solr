@@ -24,6 +24,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
+import org.apache.solr.util.VersionedFile;
 
 import java.io.*;
 import java.util.*;
@@ -184,7 +185,7 @@ public class FileFloatSource extends ValueSource {
     InputStream is;
     String fname = "external_" + ffs.field.getName();
     try {
-      is = getLatestFile(ffs.dataDir, fname);
+      is = VersionedFile.getLatestFile(ffs.dataDir, fname);
     } catch (IOException e) {
       // log, use defaults
       SolrCore.log.severe("Error opening external value source file: " +e);
@@ -338,79 +339,6 @@ public class FileFloatSource extends ValueSource {
     );
 
     return vals;
-  }
-
-
-  // Future: refactor/pull out into VersionedFile class
-
-  /* Open the latest version of a file... fileName if that exists, or
-   * the last fileName.* after being sorted lexicographically.
-   * Older versions of the file are deleted (and queued for deletion if
-   * that fails).
-   */
-  private static InputStream getLatestFile(String dirName, String fileName) throws FileNotFoundException {
-    Collection<File> oldFiles=null;
-    final String prefix = fileName+'.';
-    File f = new File(dirName, fileName);
-    InputStream is = null;
-
-    // there can be a race between checking for a file and opening it...
-    // the user may have just put a new version in and deleted an old version.
-    // try multiple times in a row.
-    for (int retry=0; retry<10; retry++) {
-      try {
-        if (!f.exists()) {
-          File dir = new File(dirName);
-          String[] names = dir.list(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-              return name.startsWith(prefix);
-            }
-          });
-          Arrays.sort(names);
-          f = new File(dir, names[names.length-1]);
-          oldFiles = new ArrayList<File>();
-          for (int i=0; i<names.length-1; i++) {
-            oldFiles.add(new File(dir, names[i]));
-          }
-        }
-
-        is = new FileInputStream(f);
-      } catch (Exception e) {
-        // swallow exception for now
-      }
-    }
-
-    // allow exception to be thrown from the final try.
-    is = new FileInputStream(f);
-
-    // delete old files only after we have successfuly opened the newest
-    if (oldFiles != null) {
-      delete(oldFiles);
-    }
-
-    return is;
-  }
-
-
-
-  private static final Set<File> deleteList = new HashSet<File>();
-  private static synchronized void delete(Collection<File> files) {
-    synchronized (deleteList) {
-      deleteList.addAll(files);
-      List<File> deleted = new ArrayList<File>();
-      for (File df : deleteList) {
-        try {
-          df.delete();
-          // deleteList.remove(df);
-          deleted.add(df);
-        } catch (SecurityException e) {
-          if (!df.exists()) {
-            deleted.add(df);
-          }
-        }
-      }
-      deleteList.removeAll(deleted);
-    }
   }
 
 

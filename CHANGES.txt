@@ -185,6 +185,10 @@ New Features
 
 36. SOLR-446: TextResponseWriter can write SolrDocuments and SolrDocumentLists the 
     same way it writes Document and DocList.  (yonik, ryan)
+
+37. SOLR-418: Adding a query elevation component.  This is an optional component to
+    elevate some documents to the top positions (or exclude them) for a given query.
+    (ryan)
     
     
 Changes in runtime behavior

@@ -266,6 +266,22 @@
   <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
+  <!-- test elevation -->
+  <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <str name="queryFieldType">string</str>
+    <str name="config-file">elevate.xml</str>
+  </searchComponent>
+ 
+  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="last-components">
+      <str>elevate</str>
+    </arr>
+  </requestHandler>
+  
+
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">

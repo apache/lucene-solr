@@ -19,6 +19,8 @@
 <schema name="test" version="1.0">
   <types>
 
+    <fieldType name="string" class="solr.StrField"/>
+    
     <fieldType name="ftAgain" class="solr.IntField"/>
     <fieldType name="ftAgain" class="solr.IntField"/>
 
@@ -31,6 +33,8 @@
  <fields>
    <field name="id" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
    
+   <fieldType name="string" class="solr.StrField"/>
+    
    <field name="fAgain" type="text" indexed="true" stored="true"/>
    <field name="fAgain" type="text" indexed="true" stored="true"/>
 

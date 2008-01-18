@@ -25,6 +25,7 @@
   -->
 <schema name="test" version="1.0">
   <types>
+    <fieldType name="string" class="solr.StrField"/>
     <fieldtype name="sint" class="solr.SortableIntField" />
     <fieldtype name="text" class="solr.TextField">
       <analyzer>

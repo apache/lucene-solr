@@ -471,6 +471,22 @@
     -->
   </requestHandler>
   
+  <searchComponent name="elevator" class="org.apache.solr.handler.component.QueryElevationComponent" >
+    <!-- pick a fieldType to analyze queries -->
+    <str name="queryFieldType">string</str>
+    <str name="config-file">elevate.xml</str>
+  </searchComponent>
+ 
+  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler" startup="lazy">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
+    <arr name="last-components">
+      <str>elevator</str>
+    </arr>
+  </requestHandler>
+  
+
   
   <!-- Update request handler.  
   
