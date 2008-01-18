@@ -8,7 +8,7 @@ DEST=$(BUILD)/gcj
 CORE=$(BUILD)/classes/java
 SRC=.
 
-CORE_OBJ:=$(subst .jar,.a,$(wildcard $(BUILD)/lucene-[0-9]*.jar))
+CORE_OBJ:=$(subst .jar,.a,$(wildcard $(BUILD)/lucene-core-[0-9]*.jar))
 CORE_JAVA:=$(shell find $(ROOT)/src/java -name '*.java')
 
 CORE_HEADERS=\
