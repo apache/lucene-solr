@@ -85,6 +85,7 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(boolean replaceInvalidAcronym) {
+    this(STOP_WORDS);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
   }
 

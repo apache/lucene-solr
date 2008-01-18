@@ -120,6 +120,16 @@ public class TestStandardAnalyzer extends LuceneTestCase {
     assertAnalyzesTo(a, "Excite@Home", new String[]{"excite@home"});
   }
 
+  public void testLucene1140() throws Exception {
+    try {
+      StandardAnalyzer analyzer = new StandardAnalyzer(true);
+      assertAnalyzesTo(analyzer, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+    } catch (NullPointerException e) {
+      assertTrue("Should not throw an NPE and it did", false);
+    }
+
+  }
+
   public void testDomainNames() throws Exception {
     // domain names
     assertAnalyzesTo(a, "www.nutch.org", new String[]{"www.nutch.org"});
