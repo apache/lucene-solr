@@ -30,6 +30,13 @@ Changes in runtime behavior
     The API to build documents has changed -- you need to pass a boost 
     (or null) with every field.  (ryan)
 
+ 3. SOLR-462: Changes to CommonsHttpSolrServer.java to add soTimeout (read 
+    timeout), connection pool timeout, directive to not follow HTTP redirects, 
+    configurable retries on NoHttpResponseException, compression, and not 
+    creating a new HttpClient on each request.  If your existing code overrides 
+    getHttpConnection(), you will now need to override createHttpClient()
+    (Sean Timm via ryan)
+
 Bug Fixes
 
 Other Changes
