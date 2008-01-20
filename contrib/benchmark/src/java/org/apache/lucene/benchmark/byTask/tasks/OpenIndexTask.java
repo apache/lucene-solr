@@ -17,12 +17,10 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 
@@ -47,30 +45,14 @@ public class OpenIndexTask extends PerfTask {
   }
 
   public int doLogic() throws IOException {
-    Directory dir = getRunData().getDirectory();
-    Analyzer analyzer = getRunData().getAnalyzer();
-    
-    Config config = getRunData().getConfig();
-    
-    boolean cmpnd = config.get("compound",true);
-    int mrgf = config.get("merge.factor",DEFAULT_MERGE_PFACTOR);
-    int mxbf = config.get("max.buffered",DEFAULT_MAX_BUFFERED);
-    int mxfl = config.get("max.field.length",DEFAULT_MAX_FIELD_LENGTH);
-    double flushAtRAMUsage = config.get("ram.flush.mb", DEFAULT_RAM_FLUSH_MB);
-    boolean autoCommit = config.get("autocommit", DEFAULT_AUTO_COMMIT);
-    IndexWriter writer = new IndexWriter(dir, autoCommit, analyzer, false);
-
-    // must update params for newly opened writer
-    writer.setRAMBufferSizeMB(flushAtRAMUsage);
-    writer.setMaxBufferedDocs(mxbf);
-    writer.setMaxFieldLength(mxfl);
-    writer.setMergeFactor(mrgf);
-    writer.setUseCompoundFile(cmpnd); // this one redundant?
-    if (flushAtRAMUsage > 0)
-      writer.setRAMBufferSizeMB(flushAtRAMUsage);
-    
-    getRunData().setIndexWriter(writer);
+    PerfRunData runData = getRunData();
+    Config config = runData.getConfig();
+    IndexWriter writer = new IndexWriter(runData.getDirectory(),
+                                         config.get("autocommit", DEFAULT_AUTO_COMMIT),
+                                         runData.getAnalyzer(),
+                                         false);
+    CreateIndexTask.setIndexWriterConfig(writer, config);
+    runData.setIndexWriter(writer);
     return 1;
   }
-
 }

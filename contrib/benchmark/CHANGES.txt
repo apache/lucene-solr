@@ -4,6 +4,14 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+01/20/08
+  LUCENE-1139: various fixes
+  - add merge.scheduler, merge.policy config properties
+  - refactor Open/CreateIndexTask to share setting config on IndexWriter
+  - added doc.reuse.fields=true|false for LineDocMaker
+  - OptimizeTask now takes int param to call optimize(int maxNumSegments)
+  - CloseIndexTask now takes bool param to call close(false) (abort running merges)
+
 01/03/08
   LUCENE-1116: quality package improvements:
   - add MRR computation; 

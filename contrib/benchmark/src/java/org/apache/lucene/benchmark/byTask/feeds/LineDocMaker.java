@@ -37,6 +37,7 @@ import java.io.InputStreamReader;
  *
  * Config properties:
  * docs.file=&lt;path to the file%gt;
+ * doc.reuse.fields=true|false (default true)
  */
 public class LineDocMaker extends BasicDocMaker {
 
@@ -46,6 +47,9 @@ public class LineDocMaker extends BasicDocMaker {
   private String fileName;
 
   private static int READER_BUFFER_BYTES = 64*1024;
+  private final DocState localDocState = new DocState();
+
+  private boolean doReuseFields = true;
   
   class DocState {
     Document doc;
@@ -84,20 +88,47 @@ public class LineDocMaker extends BasicDocMaker {
 
     public Document setFields(String line) {
       // title <TAB> date <TAB> body <NEWLINE>
+      final String title, date, body;
+
       int spot = line.indexOf(SEP);
       if (spot != -1) {
-        titleField.setValue(line.substring(0, spot));
+        title = line.substring(0, spot);
         int spot2 = line.indexOf(SEP, 1+spot);
         if (spot2 != -1) {
-          dateField.setValue(line.substring(1+spot, spot2));
-          bodyField.setValue(line.substring(1+spot2, line.length()));
-        } else {
-          dateField.setValue("");
-          bodyField.setValue("");
-        }
+          date = line.substring(1+spot, spot2);
+          body = line.substring(1+spot2, line.length());
+        } else 
+          date = body = "";
       } else
-        titleField.setValue("");
-      return doc;
+        title = date = body = "";
+
+      if (doReuseFields) {
+        titleField.setValue(title);
+        dateField.setValue(date);
+        bodyField.setValue(body);
+        return doc;
+      } else {
+        Field localTitleField = new Field(BasicDocMaker.TITLE_FIELD,
+                                          title,
+                                          storeVal,
+                                          Field.Index.TOKENIZED,
+                                          termVecVal);
+        Field localBodyField = new Field(BasicDocMaker.BODY_FIELD,
+                                         body,
+                                         storeVal,
+                                         Field.Index.TOKENIZED,
+                                         termVecVal);
+        Field localDateField = new Field(BasicDocMaker.BODY_FIELD,
+                                         date,
+                                         storeVal,
+                                         Field.Index.TOKENIZED,
+                                         termVecVal);
+        Document localDoc = new Document();
+        localDoc.add(localBodyField);
+        localDoc.add(localTitleField);
+        localDoc.add(localDateField);
+        return localDoc;
+      }
     }
   }
 
@@ -131,7 +162,10 @@ public class LineDocMaker extends BasicDocMaker {
       }
     }
 
-    return getDocState().setFields(line);
+    if (doReuseFields)
+      return getDocState().setFields(line);
+    else
+      return localDocState.setFields(line);
   }
 
   public Document makeDocument(int size) throws Exception {
@@ -144,6 +178,11 @@ public class LineDocMaker extends BasicDocMaker {
     if (fileName == null)
       throw new RuntimeException("docs.file must be set");
     openFile();
+  }
+
+  public void setConfig(Config config) {
+    super.setConfig(config);
+    doReuseFields = config.get("doc.reuse.fields", true);
   }
 
   synchronized void openFile() {

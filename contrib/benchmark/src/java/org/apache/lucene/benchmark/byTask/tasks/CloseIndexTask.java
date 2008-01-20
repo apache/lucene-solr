@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 /**
  * Close index writer.
  * <br>Other side effects: index writer object in perfRunData is nullified.
+ * <br>Takes optional param "doWait": if false, then close(false) is called.
  */
 public class CloseIndexTask extends PerfTask {
 
@@ -32,13 +33,23 @@ public class CloseIndexTask extends PerfTask {
     super(runData);
   }
 
+  boolean doWait = true;
+
   public int doLogic() throws IOException {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw!=null) {
-      iw.close();
+      iw.close(doWait);
     }
     getRunData().setIndexWriter(null);
     return 1;
   }
 
+  public void setParams(String params) {
+    super.setParams(params);
+    doWait = Boolean.valueOf(params).booleanValue();
+  }
+
+  public boolean supportsParams() {
+    return true;
+  }
 }

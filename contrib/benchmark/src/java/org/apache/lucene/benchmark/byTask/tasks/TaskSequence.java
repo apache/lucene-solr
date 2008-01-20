@@ -186,10 +186,10 @@ public class TaskSequence extends PerfTask {
         final PerfTask task = (PerfTask) tasksArray[i].clone();
         t[indx++] = new Thread() {
           public void run() {
-            int n;
             try {
-              n = task.runAndMaybeStats(letChildReport);
-              updateExhausted(task);
+              int n = task.runAndMaybeStats(letChildReport);
+              if (anyExhaustibleTasks)
+                updateExhausted(task);
               synchronized (count) {
                 count[0] += n;
               }

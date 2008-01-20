@@ -24,7 +24,6 @@ import java.io.BufferedReader;
 import java.util.List;
 import java.util.Iterator;
 
-import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
@@ -34,6 +33,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.LogDocMergePolicy;
 
 import junit.framework.TestCase;
 
@@ -205,6 +206,8 @@ public class TestPerfTasksLogic extends TestCase {
       "doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "doc.maker.forever=false",
+      "doc.maker.forever=false",
+      "doc.reuse.fields=false",
       "autocommit=false",
       "ram.flush.mb=4",
       "# ----- alg ",
@@ -392,5 +395,176 @@ public class TestPerfTasksLogic extends TestCase {
     int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
+  }
+
+  /**
+   * Test that we can close IndexWriter with argument "false".
+   */
+  public void testCloseIndexFalse() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "ram.flush.mb=-1",
+        "max.buffered=2",
+        "doc.add.log.step=3",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "  CloseIndex(false)",
+        "} : 2",
+    };
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+  }
+
+  public static class MyMergeScheduler extends SerialMergeScheduler {
+    boolean called;
+    public MyMergeScheduler() {
+      super();
+      called = true;
+    }
+  }
+
+  /**
+   * Test that we can set merge scheduler".
+   */
+  public void testMergeScheduler() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "merge.scheduler=" + MyMergeScheduler.class.getName(),
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "} : 2",
+    };
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    assertTrue("did not use the specified MergeScheduler", ((MyMergeScheduler) benchmark.getRunData().getIndexWriter().getMergeScheduler()).called);
+    benchmark.getRunData().getIndexWriter().close();
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+  }
+
+  public static class MyMergePolicy extends LogDocMergePolicy {
+    boolean called;
+    public MyMergePolicy() {
+      super();
+      called = true;
+    }
+  }
+  /**
+   * Test that we can set merge policy".
+   */
+  public void testMergePolicy() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
+        "ram.flush.mb=-1",
+        "max.buffered=2",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "merge.policy=" + MyMergePolicy.class.getName(),
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "} : 2",
+    };
+
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+    assertTrue("did not use the specified MergeScheduler", ((MyMergePolicy) benchmark.getRunData().getIndexWriter().getMergePolicy()).called);
+    benchmark.getRunData().getIndexWriter().close();
+    
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+  }
+
+  /**
+   * Test that we can call optimize(maxNumSegments).
+   */
+  public void testOptimizeMaxNumSegments() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
+        "ram.flush.mb=-1",
+        "max.buffered=3",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "merge.policy=org.apache.lucene.index.LogDocMergePolicy",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "  Optimize(3)",
+        "  CloseIndex()",
+        "} : 2",
+    };
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+    ir.close();
+
+    // Make sure we have 3 segments:
+    final String[] files = benchmark.getRunData().getDirectory().list();
+    int cfsCount = 0;
+    for(int i=0;i<files.length;i++)
+      if (files[i].endsWith(".cfs"))
+        cfsCount++;
+    assertEquals(3, cfsCount);
   }
 }

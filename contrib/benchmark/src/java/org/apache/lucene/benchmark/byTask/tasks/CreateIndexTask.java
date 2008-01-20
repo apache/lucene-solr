@@ -17,11 +17,11 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MergePolicy;
 
 import java.io.IOException;
 
@@ -39,28 +39,67 @@ public class CreateIndexTask extends PerfTask {
     super(runData);
   }
 
-  public int doLogic() throws IOException {
-    Directory dir = getRunData().getDirectory();
-    Analyzer analyzer = getRunData().getAnalyzer();
-    
-    Config config = getRunData().getConfig();
-    
-    boolean cmpnd = config.get("compound",true);
-    int mrgf = config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR);
-    int mxbf = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
-    int mxfl = config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH);
-    double flushAtRAMUsage = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
-    boolean autoCommit = config.get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT);
+  public static void setIndexWriterConfig(IndexWriter writer, Config config) throws IOException {
+    writer.setUseCompoundFile(config.get("compound",true));
+    writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
+    writer.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
 
-    IndexWriter iw = new IndexWriter(dir, autoCommit, analyzer, true);
-    
-    iw.setUseCompoundFile(cmpnd);
-    iw.setMergeFactor(mrgf);
-    iw.setMaxFieldLength(mxfl);
-    iw.setRAMBufferSizeMB(flushAtRAMUsage);
-    iw.setMaxBufferedDocs(mxbf);
-    getRunData().setIndexWriter(iw);
-    return 1;
+    final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
+    final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
+    if (maxBuffered == IndexWriter.DISABLE_AUTO_FLUSH) {
+      writer.setRAMBufferSizeMB(ramBuffer);
+      writer.setMaxBufferedDocs(maxBuffered);
+    } else {
+      writer.setMaxBufferedDocs(maxBuffered);
+      writer.setRAMBufferSizeMB(ramBuffer);
+    }
+
+    final String mergeScheduler = config.get("merge.scheduler",
+                                             "org.apache.lucene.index.ConcurrentMergeScheduler");
+    RuntimeException err = null;
+    try {
+      writer.setMergeScheduler((MergeScheduler) Class.forName(mergeScheduler).newInstance());
+    } catch (IllegalAccessException iae) {
+      err = new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler");
+      err.initCause(iae);
+    } catch (InstantiationException ie) {
+      err = new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler");
+      err.initCause(ie);
+    } catch (ClassNotFoundException cnfe) {
+      err = new RuntimeException("unable to load class '" + mergeScheduler + "' as merge scheduler");
+      err.initCause(cnfe);
+    }
+    if (err != null)
+      throw err;
+
+    final String mergePolicy = config.get("merge.policy",
+                                          "org.apache.lucene.index.LogByteSizeMergePolicy");
+    err = null;
+    try {
+      writer.setMergePolicy((MergePolicy) Class.forName(mergePolicy).newInstance());
+    } catch (IllegalAccessException iae) {
+      err = new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy");
+      err.initCause(iae);
+    } catch (InstantiationException ie) {
+      err = new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy");
+      err.initCause(ie);
+    } catch (ClassNotFoundException cnfe) {
+      err = new RuntimeException("unable to load class '" + mergePolicy + "' as merge policy");
+      err.initCause(cnfe);
+    }
+    if (err != null)
+      throw err;
   }
 
+  public int doLogic() throws IOException {
+    PerfRunData runData = getRunData();
+    Config config = runData.getConfig();
+    IndexWriter writer = new IndexWriter(runData.getDirectory(),
+                                         runData.getConfig().get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT),
+                                         runData.getAnalyzer(),
+                                         true);
+    CreateIndexTask.setIndexWriterConfig(writer, config);
+    runData.setIndexWriter(writer);
+    return 1;
+  }
 }
