@@ -423,6 +423,8 @@ final class DocumentsWriter {
         resetPostingsData();
 
         docStoreSegment = null;
+        numDocsInStore = 0;
+        docStoreOffset = 0;
         files = null;
 
       } finally {

@@ -76,10 +76,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
       }
 
-      // Even though this won't delete any docs,
-      // IndexWriter's flush will still make a clone for all
-      // SegmentInfos on hitting the exception:
-      writer.deleteDocuments(new Term("id", "1000"));
+      writer.addDocument(doc);
+
       failure.setDoFail();
       try {
         writer.flush();

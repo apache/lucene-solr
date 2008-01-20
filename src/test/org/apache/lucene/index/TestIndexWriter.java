@@ -2254,8 +2254,9 @@ public class TestIndexWriter extends LuceneTestCase
 
       int idUpto = 0;
       int fullCount = 0;
+      final long stopTime = System.currentTimeMillis() + 500;
 
-      while(true) {
+      while(System.currentTimeMillis() < stopTime) {
         try {
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
         } catch (IOException ioe) {
@@ -2435,13 +2436,20 @@ public class TestIndexWriter extends LuceneTestCase
 
   // Throws IOException during FieldsWriter.flushDocument and during DocumentsWriter.abort
   private static class FailOnlyOnAbortOrFlush extends MockRAMDirectory.Failure {
+    private boolean onlyOnce;
+    public FailOnlyOnAbortOrFlush(boolean onlyOnce) {
+      this.onlyOnce = true;
+    }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("abort".equals(trace[i].getMethodName()) ||
-              "flushDocument".equals(trace[i].getMethodName()))
+              "flushDocument".equals(trace[i].getMethodName())) {
+            if (onlyOnce)
+              doFail = false;
             throw new IOException("now failing on purpose");
+          }
         }
       }
     }
@@ -2522,9 +2530,22 @@ public class TestIndexWriter extends LuceneTestCase
           assertTrue("hit unexpected Throwable", threads[i].error == null);
       }
 
+      boolean success = false;
       try {
         writer.close(false);
+        success = true;
       } catch (IOException ioe) {
+      }
+
+      if (success) {
+        IndexReader reader = IndexReader.open(dir);
+        for(int j=0;j<reader.maxDoc();j++) {
+          if (!reader.isDeleted(j)) {
+            reader.document(j);
+            reader.getTermFreqVectors(j);
+          }
+        }
+        reader.close();
       }
 
       dir.close();
@@ -2534,23 +2555,42 @@ public class TestIndexWriter extends LuceneTestCase
   // LUCENE-1130: make sure initial IOException, and then 2nd
   // IOException during abort(), is OK:
   public void testIOExceptionDuringAbort() throws IOException {
-    _testSingleThreadFailure(new FailOnlyOnAbortOrFlush());
+    _testSingleThreadFailure(new FailOnlyOnAbortOrFlush(false));
+  }
+
+  // LUCENE-1130: make sure initial IOException, and then 2nd
+  // IOException during abort(), is OK:
+  public void testIOExceptionDuringAbortOnlyOnce() throws IOException {
+    _testSingleThreadFailure(new FailOnlyOnAbortOrFlush(true));
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
   // IOException during abort(), with multiple threads, is OK:
   public void testIOExceptionDuringAbortWithThreads() throws IOException {
-    _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush());
+    _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(false));
+  }
+
+  // LUCENE-1130: make sure initial IOException, and then 2nd
+  // IOException during abort(), with multiple threads, is OK:
+  public void testIOExceptionDuringAbortWithThreadsOnlyOnce() throws IOException {
+    _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(true));
   }
 
   // Throws IOException during DocumentsWriter.closeDocStore
   private static class FailOnlyInCloseDocStore extends MockRAMDirectory.Failure {
+    private boolean onlyOnce;
+    public FailOnlyInCloseDocStore(boolean onlyOnce) {
+      this.onlyOnce = true;
+    }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("closeDocStore".equals(trace[i].getMethodName()))
+          if ("closeDocStore".equals(trace[i].getMethodName())) {
+            if (onlyOnce)
+              doFail = false;
             throw new IOException("now failing on purpose");
+          }
         }
       }
     }
@@ -2558,33 +2598,62 @@ public class TestIndexWriter extends LuceneTestCase
 
   // LUCENE-1130: test IOException in closeDocStore
   public void testIOExceptionDuringCloseDocStore() throws IOException {
-    _testSingleThreadFailure(new FailOnlyInCloseDocStore());
+    _testSingleThreadFailure(new FailOnlyInCloseDocStore(false));
+  }
+
+  // LUCENE-1130: test IOException in closeDocStore
+  public void testIOExceptionDuringCloseDocStoreOnlyOnce() throws IOException {
+    _testSingleThreadFailure(new FailOnlyInCloseDocStore(true));
   }
 
   // LUCENE-1130: test IOException in closeDocStore, with threads
   public void testIOExceptionDuringCloseDocStoreWithThreads() throws IOException {
-    _testMultipleThreadsFailure(new FailOnlyInCloseDocStore());
+    _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(false));
+  }
+
+  // LUCENE-1130: test IOException in closeDocStore, with threads
+  public void testIOExceptionDuringCloseDocStoreWithThreadsOnlyOnce() throws IOException {
+    _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(true));
   }
 
   // Throws IOException during DocumentsWriter.writeSegment
   private static class FailOnlyInWriteSegment extends MockRAMDirectory.Failure {
+    private boolean onlyOnce;
+    public FailOnlyInWriteSegment(boolean onlyOnce) {
+      this.onlyOnce = true;
+    }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("writeSegment".equals(trace[i].getMethodName()))
+          if ("writeSegment".equals(trace[i].getMethodName())) {
+            if (onlyOnce)
+              doFail = false;
+            // new RuntimeException().printStackTrace(System.out);
             throw new IOException("now failing on purpose");
+          }
         }
       }
     }
   }
+
   // LUCENE-1130: test IOException in writeSegment
   public void testIOExceptionDuringWriteSegment() throws IOException {
-    _testSingleThreadFailure(new FailOnlyInWriteSegment());
+    _testSingleThreadFailure(new FailOnlyInWriteSegment(false));
+  }
+
+  // LUCENE-1130: test IOException in writeSegment
+  public void testIOExceptionDuringWriteSegmentOnlyOnce() throws IOException {
+    _testSingleThreadFailure(new FailOnlyInWriteSegment(true));
   }
 
   // LUCENE-1130: test IOException in writeSegment, with threads
   public void testIOExceptionDuringWriteSegmentWithThreads() throws IOException {
-    _testMultipleThreadsFailure(new FailOnlyInWriteSegment());
+    _testMultipleThreadsFailure(new FailOnlyInWriteSegment(false));
+  }
+
+  // LUCENE-1130: test IOException in writeSegment, with threads
+  public void testIOExceptionDuringWriteSegmentWithThreadsOnlyOnce() throws IOException {
+    _testMultipleThreadsFailure(new FailOnlyInWriteSegment(true));
   }
 }

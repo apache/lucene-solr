@@ -2447,6 +2447,11 @@ public class IndexWriter {
       }
 
       int docStoreOffset = docWriter.getDocStoreOffset();
+
+      // docStoreOffset should only be non-zero when
+      // autoCommit == false
+      assert !autoCommit || 0 == docStoreOffset;
+
       boolean docStoreIsCompoundFile = false;
 
       // Check if the doc stores must be separately flushed
