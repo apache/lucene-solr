@@ -2883,13 +2883,13 @@ final class DocumentsWriter {
     }
 
     public void nextBuffer() {
-      bufferUpto++;
-      if (bufferUpto == buffers.length) {
-        byte[][] newBuffers = new byte[(int) (bufferUpto*1.5)][];
-        System.arraycopy(buffers, 0, newBuffers, 0, bufferUpto);
+      if (1+bufferUpto == buffers.length) {
+        byte[][] newBuffers = new byte[(int) (buffers.length*1.5)][];
+        System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
         buffers = newBuffers;
       }
-      buffer = buffers[bufferUpto] = getByteBlock();
+      buffer = buffers[1+bufferUpto] = getByteBlock();
+      bufferUpto++;
 
       byteUpto = 0;
       byteOffset += BYTE_BLOCK_SIZE;
@@ -2956,13 +2956,13 @@ final class DocumentsWriter {
     }
 
     public void nextBuffer() {
-      bufferUpto++;
-      if (bufferUpto == buffers.length) {
-        char[][] newBuffers = new char[(int) (bufferUpto*1.5)][];
-        System.arraycopy(buffers, 0, newBuffers, 0, bufferUpto);
+      if (1+bufferUpto == buffers.length) {
+        char[][] newBuffers = new char[(int) (buffers.length*1.5)][];
+        System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
         buffers = newBuffers;
       }
-      buffer = buffers[bufferUpto] = getCharBlock();
+      buffer = buffers[1+bufferUpto] = getCharBlock();
+      bufferUpto++;
 
       byteUpto = 0;
       byteOffset += CHAR_BLOCK_SIZE;
