@@ -523,6 +523,42 @@ public class TestPerfTasksLogic extends TestCase {
   }
 
   /**
+   * Test that IndexWriter settings stick.
+   */
+  public void testIndexWriterSettings() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=3",
+        "ram.flush.mb=-1",
+        "max.buffered=2",
+        "compound=false",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "merge.factor=3",
+        "doc.tokenized=false",
+        "debug.level=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "} : 2",
+    };
+
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+    final IndexWriter writer = benchmark.getRunData().getIndexWriter();
+    assertEquals(2, writer.getMaxBufferedDocs());
+    assertEquals(writer.DISABLE_AUTO_FLUSH, (int) writer.getRAMBufferSizeMB());
+    assertEquals(3, writer.getMergeFactor());
+    assertEquals(false, writer.getUseCompoundFile());
+  }
+
+  /**
    * Test that we can call optimize(maxNumSegments).
    */
   public void testOptimizeMaxNumSegments() throws Exception {

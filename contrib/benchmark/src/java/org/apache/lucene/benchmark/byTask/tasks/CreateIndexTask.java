@@ -40,19 +40,6 @@ public class CreateIndexTask extends PerfTask {
   }
 
   public static void setIndexWriterConfig(IndexWriter writer, Config config) throws IOException {
-    writer.setUseCompoundFile(config.get("compound",true));
-    writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
-    writer.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
-
-    final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
-    final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
-    if (maxBuffered == IndexWriter.DISABLE_AUTO_FLUSH) {
-      writer.setRAMBufferSizeMB(ramBuffer);
-      writer.setMaxBufferedDocs(maxBuffered);
-    } else {
-      writer.setMaxBufferedDocs(maxBuffered);
-      writer.setRAMBufferSizeMB(ramBuffer);
-    }
 
     final String mergeScheduler = config.get("merge.scheduler",
                                              "org.apache.lucene.index.ConcurrentMergeScheduler");
@@ -89,6 +76,20 @@ public class CreateIndexTask extends PerfTask {
     }
     if (err != null)
       throw err;
+
+    writer.setUseCompoundFile(config.get("compound",true));
+    writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
+    writer.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
+
+    final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
+    final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
+    if (maxBuffered == IndexWriter.DISABLE_AUTO_FLUSH) {
+      writer.setRAMBufferSizeMB(ramBuffer);
+      writer.setMaxBufferedDocs(maxBuffered);
+    } else {
+      writer.setMaxBufferedDocs(maxBuffered);
+      writer.setRAMBufferSizeMB(ramBuffer);
+    }
   }
 
   public int doLogic() throws IOException {
