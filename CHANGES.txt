@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
