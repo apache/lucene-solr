@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+Lucene Change Log
 $Id$
 
 ======================= Release 2.3.0 2008-01-23 =======================
