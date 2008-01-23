@@ -36,6 +36,9 @@ Changes in runtime behavior
     creating a new HttpClient on each request.  If your existing code overrides 
     getHttpConnection(), you will now need to override createHttpClient()
     (Sean Timm via ryan)
+    
+ 4. SOLR-436: To make future changes easier, SolrServer changed from an
+    interface to an abstract super class. (ryan)
 
 Bug Fixes
 

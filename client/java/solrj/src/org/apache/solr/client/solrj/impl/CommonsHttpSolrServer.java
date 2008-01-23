@@ -46,6 +46,7 @@ import org.apache.commons.httpclient.methods.multipart.PartBase;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -61,7 +62,7 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public class CommonsHttpSolrServer extends BaseSolrServer 
+public class CommonsHttpSolrServer extends SolrServer 
 {
   public static final String AGENT = "Solr["+CommonsHttpSolrServer.class.getName()+"] 1.0"; 
   

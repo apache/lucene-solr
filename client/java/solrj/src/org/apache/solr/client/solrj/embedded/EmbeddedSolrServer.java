@@ -23,8 +23,8 @@ import java.io.StringWriter;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -49,7 +49,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
  * @version $Id$
  * @since solr 1.3
  */
-public class EmbeddedSolrServer extends BaseSolrServer 
+public class EmbeddedSolrServer extends SolrServer
 {
   protected ModifiableSolrParams _invariantParams;
   protected ResponseParser _processor;

@@ -20,6 +20,9 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -28,29 +31,83 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * 
  * @version $Id$
  * @since solr 1.3
  */
-public interface SolrServer 
+public abstract class SolrServer 
 {
-  // A general method to allow various methods 
-  NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException;
+  protected String defaultCore = null;
   
-  void setDefaultCore( String core );
-  String getDefaultCore();
+  public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.add(docs);
+    req.setOverwrite(overwrite);
+    return req.process(this);
+  }
+
+  public UpdateResponse add(SolrInputDocument doc, boolean overwrite ) throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.add(doc);
+    req.setOverwrite(overwrite);
+    return req.process(this);
+  }
+
+  public UpdateResponse add(SolrInputDocument doc) throws SolrServerException, IOException {
+    return add(doc, true);
+  }
+
+  public UpdateResponse add(Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
+    return add(docs, true);
+  }
+
+  /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * @throws IOException 
+   */
+  public UpdateResponse commit( ) throws SolrServerException, IOException {
+    return commit(true, true);
+  }
+
+  /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * @throws IOException 
+   */
+  public UpdateResponse optimize( ) throws SolrServerException, IOException {
+    return optimize(true, true);
+  }
   
-  // Standard methods
-  UpdateResponse add( SolrInputDocument doc ) throws SolrServerException, IOException;
-  UpdateResponse add( Collection<SolrInputDocument> docs ) throws SolrServerException, IOException;
-  UpdateResponse add( SolrInputDocument doc, boolean overwrite ) throws SolrServerException, IOException;
-  UpdateResponse add( Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException;
-  UpdateResponse deleteById( String id ) throws SolrServerException, IOException;
-  UpdateResponse deleteByQuery( String query ) throws SolrServerException, IOException;
-  UpdateResponse commit( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException;
-  UpdateResponse optimize( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException;
-  UpdateResponse commit( ) throws SolrServerException, IOException;
-  UpdateResponse optimize( ) throws SolrServerException, IOException;
-  QueryResponse query( SolrParams params ) throws SolrServerException, IOException;
-  SolrPingResponse ping() throws SolrServerException, IOException;
+  public UpdateResponse commit( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
+    return new UpdateRequest().setAction( UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher ).process( this );
+  }
+
+  public UpdateResponse optimize( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
+    return new UpdateRequest().setAction( UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher ).process( this );
+  }
+
+  public UpdateResponse deleteById(String id) throws SolrServerException, IOException {
+    return new UpdateRequest().deleteById( id ).process( this );
+  }
+
+  public UpdateResponse deleteByQuery(String query) throws SolrServerException, IOException {
+    return new UpdateRequest().deleteByQuery( query ).process( this );
+  }
+
+  public SolrPingResponse ping() throws SolrServerException, IOException {
+    return new SolrPing().process( this );
+  }
+
+  public QueryResponse query(SolrParams params) throws SolrServerException {
+    return new QueryRequest( params ).process( this );
+  }
+
+  public String getDefaultCore() {
+    return defaultCore;
+  }
+
+  public void setDefaultCore(String defaultCore) {
+    this.defaultCore = defaultCore;
+  }
+  
+  /**
+   * SolrServer implementations need to implement a how a request is actually processed
+   */ 
+  public abstract NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException; 
 }
