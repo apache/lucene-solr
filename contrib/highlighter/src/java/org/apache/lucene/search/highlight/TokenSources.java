@@ -43,6 +43,36 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
  */
 public class TokenSources
 {
+  /**
+   * A convenience method that tries to first get a TermPositionVector for the specified docId, then, falls back to
+   * using the passed in {@link org.apache.lucene.document.Document} to retrieve the TokenStream.  This is useful when
+   * you already have the document, but would prefer to use the vector first.
+   * @param reader The {@link org.apache.lucene.index.IndexReader} to use to try and get the vector from
+   * @param docId The docId to retrieve.
+   * @param field The field to retrieve on the document
+   * @param doc The document to fall back on
+   * @param analyzer The analyzer to use for creating the TokenStream if the vector doesn't exist
+   * @return The {@link org.apache.lucene.analysis.TokenStream} for the {@link org.apache.lucene.document.Fieldable} on the {@link org.apache.lucene.document.Document}
+   * @throws IOException if there was an error loading
+   */
+  public static TokenStream getAnyTokenStream(IndexReader reader, int docId, String field, Document doc, Analyzer analyzer) throws IOException{
+    TokenStream ts=null;
+
+		TermFreqVector tfv=(TermFreqVector) reader.getTermFreqVector(docId,field);
+		if(tfv!=null)
+		{
+		    if(tfv instanceof TermPositionVector)
+		    {
+		        ts=getTokenStream((TermPositionVector) tfv);
+		    }
+		}
+		//No token info stored so fall back to analyzing raw content
+		if(ts==null)
+		{
+		    ts=getTokenStream(doc,field,analyzer);
+		}
+		return ts;
+  }
     /**
      * A convenience method that tries a number of approaches to getting a token stream.
      * The cost of finding there are no termVectors in the index is minimal (1000 invocations still 
@@ -219,15 +249,21 @@ public class TokenSources
     //convenience method
     public static TokenStream getTokenStream(IndexReader reader,int docId, String field,Analyzer analyzer) throws IOException
     {
-		Document doc=reader.document(docId);
-		String contents=doc.get(field);
-		if(contents==null)
-		{
-		    throw new IllegalArgumentException("Field "+field +" in document #"+docId+ " is not stored and cannot be analyzed");
-		}
-        return analyzer.tokenStream(field,new StringReader(contents));
+		  Document doc=reader.document(docId);
+		  return getTokenStream(doc, field, analyzer);
     }
     
-    
+  public static TokenStream getTokenStream(Document doc, String field, Analyzer analyzer){
+    String contents=doc.get(field);
+		if(contents==null)
+		{
+		    throw new IllegalArgumentException("Field "+field +" in document is not stored and cannot be analyzed");
+		}
+        return getTokenStream(field, contents, analyzer);
+  }
+  //conevenience method
+  public static TokenStream getTokenStream(String field, String contents, Analyzer analyzer){
+    return analyzer.tokenStream(field,new StringReader(contents));
+  }
 
 }
