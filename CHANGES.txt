@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -11,6 +11,9 @@ Bug fixes
     
 New features
 
+1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
+    process.  The flag is not indexed/stored and is thus only used by analysis.
+
 Optimizations
 
 Documentation
@@ -19,7 +22,7 @@ Build
 
 Test Cases
 
-======================= Release 2.3.0 2008-01-23 =======================
+======================= Release 2.3.0 2008-01-21 =======================
 
 Changes in runtime behavior
 
