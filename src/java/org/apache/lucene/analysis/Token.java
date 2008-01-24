@@ -20,8 +20,6 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;
 
-import java.util.BitSet;
-
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
@@ -170,7 +168,7 @@ public class Token implements Cloneable {
    * @param text
    * @param start
    * @param end
-   * @param typ token type bits
+   * @param flags token type bits
    */
   public Token(String text, int start, int end, int flags) {
     termText = text;
