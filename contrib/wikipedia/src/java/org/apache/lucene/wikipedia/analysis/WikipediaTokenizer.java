@@ -49,7 +49,9 @@ public class WikipediaTokenizer extends Tokenizer {
   public static final int TOKENS_ONLY = 0;
   public static final int UNTOKENIZED_ONLY = 1;
   public static final int BOTH = 2;
-
+  /**
+   * This flag is used to indicate that the produced "Token" would, if {@link #TOKENS_ONLY} was used, produce multiple tokens.
+   */
   public static final int UNTOKENIZED_TOKEN_FLAG = 1;
   /**
    * A private instance of the JFlex-constructed scanner
