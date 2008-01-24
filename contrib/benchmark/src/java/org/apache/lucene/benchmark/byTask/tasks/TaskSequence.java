@@ -40,9 +40,11 @@ public class TaskSequence extends PerfTask {
   private boolean resetExhausted = false;
   private PerfTask[] tasksArray;
   private boolean anyExhaustibleTasks;
+  private boolean collapsable = false; // to not collapse external sequence named in alg.  
   
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
+    collapsable = (name == null);
     name = (name!=null ? name : (parallel ? "Par" : "Seq"));
     setName(name);
     setSequenceName();
@@ -337,6 +339,13 @@ public class TaskSequence extends PerfTask {
       res.tasks.add(((PerfTask)tasks.get(i)).clone());
     }
     return res;
+  }
+
+  /**
+   * Return true if can be collapsed in case it is outermost sequence
+   */
+  public boolean isCollapsable() {
+    return collapsable;
   }
   
 }

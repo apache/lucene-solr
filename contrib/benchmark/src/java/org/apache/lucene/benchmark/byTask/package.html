@@ -290,6 +290,15 @@ The following is an informal description of the supported syntax.
  waiting before starting next add, if otherwise rate would exceed 200 adds/min.
  </li>
  <li>
+ <b>Disable Counting</b>: Each task executed contributes to the records count.
+ This count is reflected in reports under recs/s and under recsPerRun.
+ Most tasks count 1, some count 0, and some count more.
+ (See <a href="#recsCounting">Results record counting clarified</a> for more details.)
+ It is possible to disable counting for a task by preceding it with <font color="#FF0066">-</font>.
+ <br>Example -  <font color="#FF0066"> -CreateIndex </font> - would count 0 while
+ the default behavior for CreateIndex is to count 1.
+ </li>
+ <li>
  <b>Command names</b>: Each class "AnyNameTask" in the
  package org.apache.lucene.benchmark.byTask.tasks,
  that extends PerfTask, is supported as command "AnyName" that can be

@@ -51,7 +51,9 @@ public class Algorithm {
     stok.ordinaryChar('/');
     stok.ordinaryChar('(');
     stok.ordinaryChar(')');
+    stok.ordinaryChar('-');
     boolean colonOk = false; 
+    boolean isDisableCountNextTask = false; // only for primitive tasks
     currSequence.setDepth(0);
     String taskPackage = PerfTask.class.getPackage().getName() + ".";
     
@@ -65,6 +67,8 @@ public class Algorithm {
           String s = stok.sval;
           Constructor cnstr = Class.forName(taskPackage+s+"Task").getConstructor(paramClass);
           PerfTask task = (PerfTask) cnstr.newInstance(paramObj);
+          task.setDisableCounting(isDisableCountNextTask);
+          isDisableCountNextTask = false;
           currSequence.addTask(task);
           if (task instanceof RepSumByPrefTask) {
             stok.nextToken();
@@ -120,7 +124,8 @@ public class Algorithm {
               if ((char)stok.ttype == '*') {
                 ((TaskSequence)prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
               } else {
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expected repetitions number: - "+stok.toString());
+                if (stok.ttype!=StreamTokenizer.TT_NUMBER) 
+                  throw new Exception("expected repetitions number: - "+stok.toString());
                 ((TaskSequence)prevTask).setRepetitions((int)stok.nval);
               }
               // check for rate specification (ops/min)
@@ -184,6 +189,10 @@ public class Algorithm {
               currSequence = currSequence.getParent();
               break;
           
+            case '-' :
+              isDisableCountNextTask = true;
+              break;
+              
           } //switch(c)
           break;
           
@@ -196,7 +205,7 @@ public class Algorithm {
     }
     
     // remove redundant top level enclosing sequences
-    while (sequence.getRepetitions()==1 && sequence.getRate()==0) {
+    while (sequence.isCollapsable() && sequence.getRepetitions()==1 && sequence.getRate()==0) {
       ArrayList t = sequence.getTasks();
       if (t!=null && t.size()==1) {
         PerfTask p = (PerfTask) t.get(0);
@@ -225,7 +234,7 @@ public class Algorithm {
    * @throws Exception 
    */
   public void execute() throws Exception {
-    sequence.doLogic();
+    sequence.runAndMaybeStats(true);
   }
 
   /**

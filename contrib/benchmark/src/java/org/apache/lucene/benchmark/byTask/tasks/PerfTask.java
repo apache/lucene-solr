@@ -41,6 +41,7 @@ public abstract class PerfTask implements Cloneable {
   private String name;
   private int depth = 0;
   private int maxDepthLogStart = 0;
+  private boolean disableCounting = false;
   protected String params = null;
   
   protected static final String NEW_LINE = System.getProperty("line.separator");
@@ -81,6 +82,7 @@ public abstract class PerfTask implements Cloneable {
     if (!reportStats || shouldNotRecordStats()) {
       setup();
       int count = doLogic();
+      count = disableCounting ? 0 : count;
       tearDown();
       return count;
     }
@@ -88,6 +90,7 @@ public abstract class PerfTask implements Cloneable {
     Points pnts = runData.getPoints();
     TaskStats ts = pnts.markTaskStart(this,runData.getConfig().getRoundNumber());
     int count = doLogic();
+    count = disableCounting ? 0 : count;
     pnts.markTaskEnd(ts, count);
     tearDown();
     return count;
@@ -153,6 +156,9 @@ public abstract class PerfTask implements Cloneable {
   public String toString() {
     String padd = getPadding();
     StringBuffer sb = new StringBuffer(padd);
+    if (disableCounting) {
+      sb.append('-');
+    }
     sb.append(getName());
     return sb.toString();
   }
@@ -225,6 +231,20 @@ public abstract class PerfTask implements Cloneable {
    */
   public String getParams() {
     return params;
+  }
+
+  /**
+   * Return true if counting is disabled for this task.
+   */
+  public boolean isDisableCounting() {
+    return disableCounting;
+  }
+
+  /**
+   * See {@link #isDisableCounting()}
+   */
+  public void setDisableCounting(boolean disableCounting) {
+    this.disableCounting = disableCounting;
   }
 
 }

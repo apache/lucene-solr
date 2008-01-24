@@ -4,7 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
-
+1/24/2008
+  LUCENE-1136: add ability to not count sub-task doLogic increment
+  
 1/23/2008
   LUCENE-1129: ReadTask properly uses the traversalSize value
   LUCENE-1128: Added support for benchmarking the highlighter

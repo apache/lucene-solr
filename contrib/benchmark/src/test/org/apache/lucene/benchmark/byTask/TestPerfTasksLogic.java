@@ -24,6 +24,7 @@ import java.io.BufferedReader;
 import java.util.List;
 import java.util.Iterator;
 
+import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
@@ -194,6 +195,7 @@ public class TestPerfTasksLogic extends TestCase {
     try {
       Benchmark benchmark = execBenchmark(algLines);
       assertTrue("CountingHighlighterTest should have thrown an exception", false);
+      assertNotNull(benchmark); // (avoid compile warning on unused variable)
     } catch (Exception e) {
       assertTrue(true);
     }
@@ -311,7 +313,6 @@ public class TestPerfTasksLogic extends TestCase {
       "doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "doc.maker.forever=false",
-      "doc.maker.forever=false",
       "doc.reuse.fields=false",
       "autocommit=false",
       "ram.flush.mb=4",
@@ -404,7 +405,7 @@ public class TestPerfTasksLogic extends TestCase {
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
-        "debug.level=1",
+        "task.max.depth.log=1",
         "# ----- alg ",
         "CreateIndex",
         "{ [ AddDoc]: 4} : * ",
@@ -482,7 +483,7 @@ public class TestPerfTasksLogic extends TestCase {
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
-        "debug.level=1",
+        "task.max.depth.log=1",
         "# ----- alg ",
         "{ \"Rounds\"",
         "  ResetSystemErase",
@@ -501,7 +502,7 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
-
+  
   /**
    * Test that we can close IndexWriter with argument "false".
    */
@@ -658,7 +659,7 @@ public class TestPerfTasksLogic extends TestCase {
     Benchmark benchmark = execBenchmark(algLines);
     final IndexWriter writer = benchmark.getRunData().getIndexWriter();
     assertEquals(2, writer.getMaxBufferedDocs());
-    assertEquals(writer.DISABLE_AUTO_FLUSH, (int) writer.getRAMBufferSizeMB());
+    assertEquals(IndexWriter.DISABLE_AUTO_FLUSH, (int) writer.getRAMBufferSizeMB());
     assertEquals(3, writer.getMergeFactor());
     assertEquals(false, writer.getUseCompoundFile());
   }
@@ -708,4 +709,63 @@ public class TestPerfTasksLogic extends TestCase {
         cfsCount++;
     assertEquals(3, cfsCount);
   }
+  
+  /**
+   * Test disabling task count (LUCENE-1136).
+   */
+  public void testDisableCounting() throws Exception {
+    doTestDisableCounting(true);
+    doTestDisableCounting(false);
+  }
+
+  private void doTestDisableCounting(boolean disable) throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = disableCountingLines(disable);
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test counters
+    int n = disable ? 0 : 1;
+    int nChecked = 0;
+    for (Iterator ts = benchmark.getRunData().getPoints().taskStats().iterator(); ts.hasNext();) {
+      TaskStats stats = (TaskStats) ts.next();
+      String taskName = stats.getTask().getName();
+      if (taskName.equals("Rounds")) {
+        assertEquals("Wrong total count!",20+2*n,stats.getCount());
+        nChecked++;
+      } else if (taskName.equals("CreateIndex")) {
+        assertEquals("Wrong count for CreateIndex!",n,stats.getCount());
+        nChecked++;
+      } else if (taskName.equals("CloseIndex")) {
+        assertEquals("Wrong count for CloseIndex!",n,stats.getCount());
+        nChecked++;
+      }
+    }
+    assertEquals("Missing some tasks to check!",3,nChecked);
+  }
+
+  private static String[] disableCountingLines (boolean disable) {
+    String dis = disable ? "-" : "";
+    return new String[] {
+        "# ----- properties ",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "doc.add.log.step=30",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "task.max.depth.log=1",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  "+dis+"CreateIndex",            // optionally disable counting here
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "  "+dis+"  CloseIndex",             // optionally disable counting here (with extra blanks)
+        "}",
+        "RepSumByName",
+    };
+  }
+  
 }

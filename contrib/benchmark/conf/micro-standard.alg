@@ -50,10 +50,10 @@ log.queries=true
     ResetSystemErase
 
     { "Populate"
-        CreateIndex
+        -CreateIndex
         { "MAddDocs" AddDoc > : 2000
-        Optimize
-        CloseIndex
+        -Optimize
+        -CloseIndex
     }
 
     OpenReader  
