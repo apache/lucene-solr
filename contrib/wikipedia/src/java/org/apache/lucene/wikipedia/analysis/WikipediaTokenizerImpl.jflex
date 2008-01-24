@@ -54,6 +54,10 @@ private int currentTokType;
 private int numBalanced = 0;
 private int positionInc = 1;
 private int numLinkToks = 0;
+//Anytime we start a new on a Wiki reserved token (category, link, etc.) this value will be 0, otherwise it will be the number of tokens seen
+//this can be useful for detecting when a new reserved token is encountered
+//see https://issues.apache.org/jira/browse/LUCENE-1133
+private int numWikiTokensSeen = 0;
 
 public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",
@@ -76,6 +80,14 @@ public static final String [] TOKEN_TYPES = new String [] {
     WikipediaTokenizer.EXTERNAL_LINK_URL
 };
 
+/**
+Returns the number of tokens seen inside a category or link, etc.
+@return the number of tokens seen inside the context of wiki syntax.
+**/
+public final int getNumWikiTokensSeen(){
+  return numWikiTokensSeen;
+}
+
 public final int yychar()
 {
     return yychar;
@@ -88,9 +100,17 @@ public final int getPositionIncrement(){
 /**
  * Fills Lucene token with the current token text.
  */
-final void getText(Token t, int tokType) {
+final void getText(Token t) {
   t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
+
+final int setText(StringBuffer buffer){
+  int length = zzMarkedPos - zzStartRead;
+  buffer.append(zzBuffer, zzStartRead, length);
+  return length;
+}
+
+
 %}
 
 // basic word: a sequence of digits & letters
@@ -191,21 +211,21 @@ DOUBLE_EQUALS = "="{2}
   //First {ALPHANUM} is always the link, set positioninc to 1 for double bracket, but then inside the internal link state
   //set it to 0 for the next token, such that the link and the first token are in the same position, but then subsequent
   //tokens within the link are incremented
-  {DOUBLE_BRACKET} {positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
-  {DOUBLE_BRACKET_CAT} {positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);}
-  {EXTERNAL_LINK} {positionInc = 1; currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
-  {TWO_SINGLE_QUOTES} {positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}}
-  {DOUBLE_EQUALS} {positionInc = 1; yybegin(DOUBLE_EQUALS_STATE);}
-  {DOUBLE_BRACE} {positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
-  {CITATION} {positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
+  {DOUBLE_BRACKET} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = INTERNAL_LINK; yybegin(INTERNAL_LINK_STATE);}
+  {DOUBLE_BRACKET_CAT} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CATEGORY; yybegin(CATEGORY_STATE);}
+  {EXTERNAL_LINK} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = EXTERNAL_LINK_URL; yybegin(EXTERNAL_LINK_STATE);}
+  {TWO_SINGLE_QUOTES} {numWikiTokensSeen = 0; positionInc = 1; if (numBalanced == 0){numBalanced++;yybegin(TWO_SINGLE_QUOTES_STATE);} else{numBalanced = 0;}}
+  {DOUBLE_EQUALS} {numWikiTokensSeen = 0; positionInc = 1; yybegin(DOUBLE_EQUALS_STATE);}
+  {DOUBLE_BRACE} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
+  {CITATION} {numWikiTokensSeen = 0; positionInc = 1; currentTokType = CITATION; yybegin(DOUBLE_BRACE_STATE);}
 //ignore
-  . | {WHITESPACE} |{INFOBOX}                                               { positionInc = 1; }
+  . | {WHITESPACE} |{INFOBOX}                                               {numWikiTokensSeen = 0;  positionInc = 1; }
 }
 
 <INTERNAL_LINK_STATE>{
 //First {ALPHANUM} is always the link, set position to 0 for these
 //This is slightly different from EXTERNAL_LINK_STATE because that one has an explicit grammar for capturing the URL
-  {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); return currentTokType;}
+  {ALPHANUM} {yybegin(INTERNAL_LINK_STATE); numWikiTokensSeen++; return currentTokType;}
   {DOUBLE_BRACKET_CLOSE} {numLinkToks = 0; yybegin(YYINITIAL);}
   //ignore
   . | {WHITESPACE}                                               { positionInc = 1; }
@@ -213,14 +233,14 @@ DOUBLE_EQUALS = "="{2}
 
 <EXTERNAL_LINK_STATE>{
 //increment the link token, but then don't increment the tokens after that which are still in the link
-  ("http://"|"https://"){HOST}("/"?({ALPHANUM}|{P}|\?|"&"|"="|"#")*)* {positionInc = 1; yybegin(EXTERNAL_LINK_STATE); return currentTokType;}
-  {ALPHANUM} {if (numLinkToks == 0){positionInc = 0;} else{positionInc = 1;} currentTokType = EXTERNAL_LINK; yybegin(EXTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
+  ("http://"|"https://"){HOST}("/"?({ALPHANUM}|{P}|\?|"&"|"="|"#")*)* {positionInc = 1; numWikiTokensSeen++; yybegin(EXTERNAL_LINK_STATE); return currentTokType;}
+  {ALPHANUM} {if (numLinkToks == 0){positionInc = 0;} else{positionInc = 1;} numWikiTokensSeen++; currentTokType = EXTERNAL_LINK; yybegin(EXTERNAL_LINK_STATE); numLinkToks++; return currentTokType;}
   "]" {numLinkToks = 0; positionInc = 0; yybegin(YYINITIAL);}
   {WHITESPACE}                                               { positionInc = 1; }
 }
 
 <CATEGORY_STATE>{
-  {ALPHANUM} {yybegin(CATEGORY_STATE); return currentTokType;}
+  {ALPHANUM} {yybegin(CATEGORY_STATE); numWikiTokensSeen++; return currentTokType;}
   {DOUBLE_BRACKET_CLOSE} {yybegin(YYINITIAL);}
   //ignore
   . | {WHITESPACE}                                               { positionInc = 1; }
@@ -229,22 +249,22 @@ DOUBLE_EQUALS = "="{2}
 <TWO_SINGLE_QUOTES_STATE>{
   "'" {currentTokType = BOLD;  yybegin(THREE_SINGLE_QUOTES_STATE);}
    "'''" {currentTokType = BOLD_ITALICS;  yybegin(FIVE_SINGLE_QUOTES_STATE);}
-   {ALPHANUM} {currentTokType = ITALICS; yybegin(STRING); return currentTokType;/*italics*/}
+   {ALPHANUM} {currentTokType = ITALICS; numWikiTokensSeen++;  yybegin(STRING); return currentTokType;/*italics*/}
    //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
 
    //ignore
   . | {WHITESPACE}                                               { /* ignore */ }
 }
 //bold
 <THREE_SINGLE_QUOTES_STATE>{
-  {ALPHANUM} {yybegin(STRING);return currentTokType;}
+  {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0; yybegin(INTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
 
    //ignore
   . | {WHITESPACE}                                               { /* ignore */ }
@@ -252,26 +272,26 @@ DOUBLE_EQUALS = "="{2}
 }
 //bold italics
 <FIVE_SINGLE_QUOTES_STATE>{
-  {ALPHANUM} {yybegin(STRING);return currentTokType;}
+  {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {currentTokType = INTERNAL_LINK; numWikiTokensSeen = 0;  yybegin(INTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET_CAT} {currentTokType = CATEGORY; numWikiTokensSeen = 0; yybegin(CATEGORY_STATE);}
+   {EXTERNAL_LINK} {currentTokType = EXTERNAL_LINK; numWikiTokensSeen = 0; yybegin(EXTERNAL_LINK_STATE);}
 
    //ignore
   . | {WHITESPACE}                                               { /* ignore */ }
 }
 
 <DOUBLE_EQUALS_STATE>{
- "=" {currentTokType = SUB_HEADING; yybegin(STRING);}
- {ALPHANUM} {currentTokType = HEADING; yybegin(DOUBLE_EQUALS_STATE); return currentTokType;}
+ "=" {currentTokType = SUB_HEADING; numWikiTokensSeen = 0; yybegin(STRING);}
+ {ALPHANUM} {currentTokType = HEADING; yybegin(DOUBLE_EQUALS_STATE); numWikiTokensSeen++; return currentTokType;}
  {DOUBLE_EQUALS} {yybegin(YYINITIAL);}
   //ignore
   . | {WHITESPACE}                                               { /* ignore */ }
 }
 
 <DOUBLE_BRACE_STATE>{
-  {ALPHANUM} {yybegin(DOUBLE_BRACE_STATE); return currentTokType;}
+  {ALPHANUM} {yybegin(DOUBLE_BRACE_STATE); numWikiTokensSeen = 0; return currentTokType;}
   {DOUBLE_BRACE_CLOSE} {yybegin(YYINITIAL);}
   {CITATION_CLOSE} {yybegin(YYINITIAL);}
    //ignore
@@ -283,11 +303,11 @@ DOUBLE_EQUALS = "="{2}
   "'''" {numBalanced = 0;currentTokType = ALPHANUM;yybegin(YYINITIAL);/*end bold*/}
   "''" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL);/*end italics*/}
   "===" {numBalanced = 0;currentTokType = ALPHANUM; yybegin(YYINITIAL);/*end sub header*/}
-  {ALPHANUM} {yybegin(STRING); return currentTokType;/* STRING ALPHANUM*/}
+  {ALPHANUM} {yybegin(STRING); numWikiTokensSeen++; return currentTokType;/* STRING ALPHANUM*/}
   //we can have links inside, let those override
-   {DOUBLE_BRACKET} {numBalanced = 0;currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
-   {DOUBLE_BRACKET_CAT} {numBalanced = 0;currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
-   {EXTERNAL_LINK} {numBalanced = 0;currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = INTERNAL_LINK;yybegin(INTERNAL_LINK_STATE);}
+   {DOUBLE_BRACKET_CAT} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = CATEGORY;yybegin(CATEGORY_STATE);}
+   {EXTERNAL_LINK} {numBalanced = 0; numWikiTokensSeen = 0; currentTokType = EXTERNAL_LINK;yybegin(EXTERNAL_LINK_STATE);}
 
 
   {PIPE} {yybegin(STRING); return currentTokType;/*pipe*/}
