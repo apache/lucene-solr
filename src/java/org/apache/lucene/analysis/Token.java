@@ -20,6 +20,8 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;
 
+import java.util.BitSet;
+
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
@@ -76,6 +78,7 @@ import org.apache.lucene.index.TermPositions;
 public class Token implements Cloneable {
 
   public static final String DEFAULT_TYPE = "word";
+
   private static int MIN_BUFFER_SIZE = 10;
 
   /** @deprecated: we will remove this when we remove the
@@ -88,6 +91,7 @@ public class Token implements Cloneable {
   int startOffset;				  // start in source text
   int endOffset;				  // end in source text
   String type = DEFAULT_TYPE;                     // lexical type
+  private int flags;
   
   Payload payload;
   
@@ -114,6 +118,19 @@ public class Token implements Cloneable {
     startOffset = start;
     endOffset = end;
     type = typ;
+  }
+
+  /**
+   * Constructs a Token with null text and start & end
+   *  offsets plus the Token type.
+   *  @param start start offset
+   *  @param end end offset
+   * @param flags The bits to set for this token
+   */
+  public Token(int start, int end, int flags){
+    startOffset = start;
+    endOffset = end;
+    this.flags = flags;
   }
 
   /** Constructs a Token with the given term text, and start
@@ -143,6 +160,23 @@ public class Token implements Cloneable {
     startOffset = start;
     endOffset = end;
     type = typ;
+  }
+
+  /**
+   *  Constructs a Token with the given text, start and end
+   *  offsets, & type.  <b>NOTE:</b> for better indexing
+   *  speed you should instead use the char[] termBuffer
+   *  methods to set the term text.
+   * @param text
+   * @param start
+   * @param end
+   * @param typ token type bits
+   */
+  public Token(String text, int start, int end, int flags) {
+    termText = text;
+    startOffset = start;
+    endOffset = end;
+    this.flags = flags;
   }
 
   /** Set the position increment.  This determines the position of this token
@@ -317,7 +351,30 @@ public class Token implements Cloneable {
     this.type = type;
   }
 
-  /** 
+  /**
+   * EXPERIMENTAL:  While we think this is here to stay, we may want to change it to be a long.
+   * <p/>
+   *
+   * Get the bitset for any bits that have been set.  This is completely distinct from {@link #type()}, although they do share similar purposes.
+   * The flags can be used to encode information about the token for use by other {@link org.apache.lucene.analysis.TokenFilter}s.
+   *
+   *
+   * @return The bits
+   */
+  public int getFlags() {
+    return flags;
+  }
+
+  /**
+   * @see #getFlags()
+   */
+  public void setFlags(int flags) {
+    this.flags = flags;
+  }
+
+  
+
+  /**
    * Returns this Token's payload.
    */ 
   public Payload getPayload() {
@@ -348,7 +405,7 @@ public class Token implements Cloneable {
     return sb.toString();
   }
 
-  /** Resets the term text, payload, and positionIncrement to default.
+  /** Resets the term text, payload, flags, and positionIncrement to default.
    * Other fields such as startOffset, endOffset and the token type are
    * not reset since they are normally overwritten by the tokenizer. */
   public void clear() {
@@ -357,6 +414,7 @@ public class Token implements Cloneable {
     termLength = 0;
     termText = null;
     positionIncrement = 1;
+    flags = 0;
     // startOffset = endOffset = 0;
     // type = DEFAULT_TYPE;
   }
