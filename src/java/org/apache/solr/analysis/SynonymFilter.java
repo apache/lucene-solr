@@ -39,13 +39,11 @@ import java.util.LinkedList;
 public class SynonymFilter extends TokenFilter {
 
   private final SynonymMap map;  // Map<String, SynonymMap>
-  private final boolean ignoreCase;
-  private Iterator replacement;  // iterator over generated tokens
+  private Iterator<Token> replacement;  // iterator over generated tokens
 
-  public SynonymFilter(TokenStream in, SynonymMap map, boolean ignoreCase) {
+  public SynonymFilter(TokenStream in, SynonymMap map) {
     super(in);
     this.map = map;
-    this.ignoreCase = ignoreCase;
   }
 
 
@@ -66,26 +64,26 @@ public class SynonymFilter extends TokenFilter {
    *    merging token streams to preserve token positions.
    *  - preserve original positionIncrement of first matched token
    */
-  public Token next() throws IOException {
+  @Override
+  public Token next(Token target) throws IOException {
     while (true) {
       // if there are any generated tokens, return them... don't try any
       // matches against them, as we specifically don't want recursion.
       if (replacement!=null && replacement.hasNext()) {
-        return (Token)replacement.next();
+        return replacement.next();
       }
 
       // common case fast-path of first token not matching anything
-      Token firstTok = nextTok();
-      if (firstTok ==null) return null;
-      String str = ignoreCase ? firstTok.termText().toLowerCase() : firstTok.termText();
-      Object o = map.submap!=null ? map.submap.get(str) : null;
-      if (o == null) return firstTok;
+      Token firstTok = nextTok(target);
+      if (firstTok == null) return null;
+      SynonymMap result = map.submap!=null ? map.submap.get(firstTok.termBuffer(), 0, firstTok.termLength()) : null;
+      if (result == null) return firstTok;
 
       // OK, we matched a token, so find the longest match.
 
-      matched = new LinkedList();
+      matched = new LinkedList<Token>();
 
-      SynonymMap result = match((SynonymMap)o);
+      result = match(result);
 
       if (result==null) {
         // no match, simply return the first token read.
@@ -93,13 +91,13 @@ public class SynonymFilter extends TokenFilter {
       }
 
       // reuse, or create new one each time?
-      ArrayList generated = new ArrayList(result.synonyms.length + matched.size() + 1);
+      ArrayList<Token> generated = new ArrayList<Token>(result.synonyms.length + matched.size() + 1);
 
       //
       // there was a match... let's generate the new tokens, merging
       // in the matched tokens (position increments need adjusting)
       //
-      Token lastTok = matched.isEmpty() ? firstTok : (Token)matched.getLast();
+      Token lastTok = matched.isEmpty() ? firstTok : matched.getLast();
       boolean includeOrig = result.includeOrig();
 
       Token origTok = includeOrig ? firstTok : null;
@@ -109,7 +107,8 @@ public class SynonymFilter extends TokenFilter {
 
       for (int i=0; i<result.synonyms.length; i++) {
         Token repTok = result.synonyms[i];
-        Token newTok = new Token(repTok.termText(), firstTok.startOffset(), lastTok.endOffset(), firstTok.type());
+        Token newTok = new Token(firstTok.startOffset(), lastTok.endOffset(), firstTok.type());
+        newTok.setTermBuffer(repTok.termBuffer(), 0, repTok.termLength());
         repPos += repTok.getPositionIncrement();
         if (i==0) repPos=origPos;  // make position of first token equal to original
 
@@ -118,7 +117,7 @@ public class SynonymFilter extends TokenFilter {
           origTok.setPositionIncrement(origPos-pos);
           generated.add(origTok);
           pos += origTok.getPositionIncrement();
-          origTok = matched.isEmpty() ? null : (Token)matched.removeFirst();
+          origTok = matched.isEmpty() ? null : matched.removeFirst();
           if (origTok != null) origPos += origTok.getPositionIncrement();
         }
 
@@ -132,7 +131,7 @@ public class SynonymFilter extends TokenFilter {
         origTok.setPositionIncrement(origPos-pos);
         generated.add(origTok);
         pos += origTok.getPositionIncrement();
-        origTok = matched.isEmpty() ? null : (Token)matched.removeFirst();
+        origTok = matched.isEmpty() ? null : matched.removeFirst();
         if (origTok != null) origPos += origTok.getPositionIncrement();
       }
 
@@ -152,21 +151,27 @@ public class SynonymFilter extends TokenFilter {
   // Defer creation of the buffer until the first time it is used to
   // optimize short fields with no matches.
   //
-  private LinkedList buffer;
-  private LinkedList matched;
-
-  // TODO: use ArrayList for better performance?
+  private LinkedList<Token> buffer;
+  private LinkedList<Token> matched;
 
   private Token nextTok() throws IOException {
     if (buffer!=null && !buffer.isEmpty()) {
-      return (Token)buffer.removeFirst();
+      return buffer.removeFirst();
     } else {
       return input.next();
     }
   }
 
+  private Token nextTok(Token target) throws IOException {
+    if (buffer!=null && !buffer.isEmpty()) {
+      return buffer.removeFirst();
+    } else {
+      return input.next(target);
+    }
+  }
+
   private void pushTok(Token t) {
-    if (buffer==null) buffer=new LinkedList();
+    if (buffer==null) buffer=new LinkedList<Token>();
     buffer.addFirst(t);
   }
 
@@ -177,9 +182,7 @@ public class SynonymFilter extends TokenFilter {
       Token tok = nextTok();
       if (tok != null) {
         // check for positionIncrement!=1?  if>1, should not match, if==0, check multiple at this level?
-        String str = ignoreCase ? tok.termText().toLowerCase() : tok.termText();
-
-        SynonymMap subMap = (SynonymMap)map.submap.get(str);
+        SynonymMap subMap = map.submap.get(tok.termBuffer(), 0, tok.termLength());
 
         if (subMap != null) {
           // recurse

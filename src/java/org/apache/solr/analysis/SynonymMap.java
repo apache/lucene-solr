@@ -18,6 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.solr.util.CharArrayMap;
 
 import java.util.*;
 
@@ -26,13 +27,20 @@ import java.util.*;
  * @version $Id$
  */
 public class SynonymMap {
-  Map submap; // recursive: Map<String, SynonymMap>
+  CharArrayMap<SynonymMap> submap; // recursive: Map<String, SynonymMap>
   Token[] synonyms;
   int flags;
 
   static final int INCLUDE_ORIG=0x01;
+  static final int IGNORE_CASE=0x02;
+
+  public SynonymMap() {}
+  public SynonymMap(boolean ignoreCase) {
+    if (ignoreCase) flags |= IGNORE_CASE;
+  }
 
   public boolean includeOrig() { return (flags & INCLUDE_ORIG) != 0; }
+  public boolean ignoreCase() { return (flags & IGNORE_CASE) != 0; }
 
   /**
    * @param singleMatch  List<String>, the sequence of strings to match
@@ -40,17 +48,17 @@ public class SynonymMap {
    * @param includeOrig  sets a flag on this mapping signaling the generation of matched tokens in addition to the replacement tokens
    * @param mergeExisting merge the replacement tokens with any other mappings that exist
    */
-  public void add(List singleMatch, List replacement, boolean includeOrig, boolean mergeExisting) {
+  public void add(List<String> singleMatch, List<Token> replacement, boolean includeOrig, boolean mergeExisting) {
     SynonymMap currMap = this;
-    for (Iterator iter = singleMatch.iterator(); iter.hasNext();) {
-      String str = (String)iter.next();
+    for (String str : singleMatch) {
       if (currMap.submap==null) {
-        currMap.submap = new HashMap(1);
+        currMap.submap = new CharArrayMap<SynonymMap>(1, ignoreCase());
       }
 
-      SynonymMap map = (SynonymMap)currMap.submap.get(str);
+      SynonymMap map = currMap.submap.get(str);
       if (map==null) {
         map = new SynonymMap();
+        map.flags |= flags & IGNORE_CASE;
         currMap.submap.put(str, map);
       }
 
@@ -68,7 +76,7 @@ public class SynonymMap {
 
 
   public String toString() {
-    StringBuffer sb = new StringBuffer("<");
+    StringBuilder sb = new StringBuilder("<");
     if (synonyms!=null) {
       sb.append("[");
       for (int i=0; i<synonyms.length; i++) {
@@ -88,10 +96,12 @@ public class SynonymMap {
 
 
   /** Produces a List<Token> from a List<String> */
-  public static List makeTokens(List strings) {
-    List ret = new ArrayList(strings.size());
-    for (Iterator iter = strings.iterator(); iter.hasNext();) {
-      Token newTok = new Token((String)iter.next(),0,0,"SYNONYM");
+  public static List<Token> makeTokens(List<String> strings) {
+    List<Token> ret = new ArrayList<Token>(strings.size());
+    for (String str : strings) {
+      //Token newTok = new Token(str,0,0,"SYNONYM");
+      Token newTok = new Token(0,0,"SYNONYM");
+      newTok.setTermBuffer(str.toCharArray(), 0, str.length());
       ret.add(newTok);
     }
     return ret;
@@ -106,8 +116,8 @@ public class SynonymMap {
    * Example:  [a,5 b,2] merged with [c d,4 e,4] produces [c a,5/d b,2 e,2]  (a,n means a has posInc=n)
    *
    */
-  public static List mergeTokens(List lst1, List lst2) {
-    ArrayList result = new ArrayList();
+  public static List<Token> mergeTokens(List<Token> lst1, List<Token> lst2) {
+    ArrayList<Token> result = new ArrayList<Token>();
     if (lst1 ==null || lst2 ==null) {
       if (lst2 != null) result.addAll(lst2);
       if (lst1 != null) result.addAll(lst1);
@@ -115,27 +125,29 @@ public class SynonymMap {
     }
 
     int pos=0;
-    Iterator iter1=lst1.iterator();
-    Iterator iter2=lst2.iterator();
-    Token tok1 = iter1.hasNext() ? (Token)iter1.next() : null;
-    Token tok2 = iter2.hasNext() ? (Token)iter2.next() : null;
+    Iterator<Token> iter1=lst1.iterator();
+    Iterator<Token> iter2=lst2.iterator();
+    Token tok1 = iter1.hasNext() ? iter1.next() : null;
+    Token tok2 = iter2.hasNext() ? iter2.next() : null;
     int pos1 = tok1!=null ? tok1.getPositionIncrement() : 0;
     int pos2 = tok2!=null ? tok2.getPositionIncrement() : 0;
     while(tok1!=null || tok2!=null) {
       while (tok1 != null && (pos1 <= pos2 || tok2==null)) {
-        Token tok = new Token(tok1.termText(), tok1.startOffset(), tok1.endOffset(), tok1.type());
+        Token tok = new Token(tok1.startOffset(), tok1.endOffset(), tok1.type());
+        tok.setTermBuffer(tok1.termBuffer(), 0, tok1.termLength());
         tok.setPositionIncrement(pos1-pos);
         result.add(tok);
         pos=pos1;
-        tok1 = iter1.hasNext() ? (Token)iter1.next() : null;
+        tok1 = iter1.hasNext() ? iter1.next() : null;
         pos1 += tok1!=null ? tok1.getPositionIncrement() : 0;
       }
       while (tok2 != null && (pos2 <= pos1 || tok1==null)) {
-        Token tok = new Token(tok2.termText(), tok2.startOffset(), tok2.endOffset(), tok2.type());
+        Token tok = new Token(tok2.startOffset(), tok2.endOffset(), tok2.type());
+        tok.setTermBuffer(tok2.termBuffer(), 0, tok2.termLength());
         tok.setPositionIncrement(pos2-pos);
         result.add(tok);
         pos=pos2;
-        tok2 = iter2.hasNext() ? (Token)iter2.next() : null;
+        tok2 = iter2.hasNext() ? iter2.next() : null;
         pos2 += tok2!=null ? tok2.getPositionIncrement() : 0;
       }
     }

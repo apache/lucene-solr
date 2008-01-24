@@ -48,7 +48,7 @@ public class TestSynonymFilter extends BaseTokenTestCase {
       }
     };
 
-    SynonymFilter sf = new SynonymFilter(ts, dict, true);
+    SynonymFilter sf = new SynonymFilter(ts, dict);
 
     while(true) {
       Token t = sf.next();

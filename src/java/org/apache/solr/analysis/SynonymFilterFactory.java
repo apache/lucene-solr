@@ -35,8 +35,8 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
   public void inform(ResourceLoader loader) {
     String synonyms = args.get("synonyms");
 
-    ignoreCase = getBoolean("ignoreCase",false);
-    expand = getBoolean("expand",true);
+    boolean ignoreCase = getBoolean("ignoreCase", false);
+    boolean expand = getBoolean("expand", true);
 
     if (synonyms != null) {
       List<String> wlist=null;
@@ -45,8 +45,8 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      synMap = new SynonymMap();
-      parseRules(wlist, synMap, "=>", ",", ignoreCase,expand);
+      synMap = new SynonymMap(ignoreCase);
+      parseRules(wlist, synMap, "=>", ",", expand);
       if (wlist.size()<=20) {
         SolrCore.log.fine("SynonymMap "+synonyms +":"+synMap);
       }
@@ -54,10 +54,8 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
   }
 
   private SynonymMap synMap;
-  private boolean ignoreCase;
-  private boolean expand;
 
-  private static void parseRules(List<String> rules, SynonymMap map, String mappingSep, String synSep, boolean ignoreCase, boolean expansion) {
+  private static void parseRules(List<String> rules, SynonymMap map, String mappingSep, String synSep, boolean expansion) {
     int count=0;
     for (String rule : rules) {
       // To use regexes, we need an expression that specifies an odd number of chars.
@@ -91,10 +89,11 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       for (List<String> fromToks : source) {
         count++;
         for (List<String> toToks : target) {
-          map.add(ignoreCase ? StrUtils.toLower(fromToks) : fromToks,
+          map.add(fromToks,
                   SynonymMap.makeTokens(toToks),
                   includeOrig,
-                  true);
+                  true
+          );
         }
       }
     }
@@ -114,7 +113,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
 
 
   public SynonymFilter create(TokenStream input) {
-    return new SynonymFilter(input,synMap,ignoreCase);
+    return new SynonymFilter(input,synMap);
   }
 
 
