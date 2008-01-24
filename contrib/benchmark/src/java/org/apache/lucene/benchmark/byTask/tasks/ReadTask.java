@@ -17,26 +17,31 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
+import java.util.*;
 
 
 /**
  * Read index (abstract) task.
  * Sub classes implement withSearch(), withWarm(), withTraverse() and withRetrieve()
  * methods to configure the actual action.
- * 
- * <p>Note: All ReadTasks reuse the reader if it is already open. 
+ * <p/>
+ * <p>Note: All ReadTasks reuse the reader if it is already open.
  * Otherwise a reader is opened at start and closed at the end.
- *  
+ * <p/>
  * <p>Other side effects: none.
  */
 public abstract class ReadTask extends PerfTask {
@@ -48,7 +53,7 @@ public abstract class ReadTask extends PerfTask {
   public int doLogic() throws Exception {
     int res = 0;
     boolean closeReader = false;
-    
+
     // open reader or use existing one
     IndexReader ir = getRunData().getIndexReader();
     if (ir == null) {
@@ -57,18 +62,18 @@ public abstract class ReadTask extends PerfTask {
       closeReader = true;
       //res++; //this is confusing, comment it out
     }
-    
+
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
       for (int m = 0; m < ir.maxDoc(); m++) {
         if (!ir.isDeleted(m)) {
           doc = ir.document(m);
-          res += (doc==null ? 0 : 1);
+          res += (doc == null ? 0 : 1);
         }
       }
     }
-    
+
     if (withSearch()) {
       res++;
       IndexSearcher searcher = new IndexSearcher(ir);
@@ -76,32 +81,53 @@ public abstract class ReadTask extends PerfTask {
       Query q = queryMaker.makeQuery();
       Hits hits = searcher.search(q);
       //System.out.println("searched: "+q);
-      
-      if (withTraverse() && hits!=null) {
+
+      if (withTraverse() && hits != null) {
         int traversalSize = Math.min(hits.length(), traversalSize());
         if (traversalSize > 0) {
           boolean retrieve = withRetrieve();
-          for (int m = 0; m < hits.length(); m++) {
+          int numHighlight = Math.min(numToHighlight(), hits.length());
+          Analyzer analyzer = getRunData().getAnalyzer();
+          Highlighter highlighter = null;
+          int maxFrags = 1;
+          if (numHighlight > 0) {
+            highlighter = getHighlighter(q);
+            maxFrags = maxNumFragments();
+          }
+          boolean merge = isMergeContiguousFragments();
+          for (int m = 0; m < traversalSize; m++) {
             int id = hits.id(m);
             res++;
             if (retrieve) {
-              res += retrieveDoc(ir, id);
+              Document document = retrieveDoc(ir, id);
+              res += document != null ? 1 : 0;
+              if (numHighlight > 0 && m < numHighlight) {
+                Collection/*<String>*/ fieldsToHighlight = getFieldsToHighlight(document);
+                for (Iterator iterator = fieldsToHighlight.iterator(); iterator.hasNext();) {
+                  String field = (String) iterator.next();
+                  String text = document.get(field);
+                  TokenStream ts = TokenSources.getAnyTokenStream(ir, id, field, document, analyzer);
+                  res += doHighlight(ts, text, highlighter, merge, maxFrags);
+                }
+              }
             }
           }
         }
       }
-      
+
       searcher.close();
     }
-    
+
     if (closeReader) {
       ir.close();
     }
     return res;
   }
 
-  protected int retrieveDoc(IndexReader ir, int id) throws IOException {
-    return (ir.document(id) == null ? 0 : 1);
+
+
+  protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
+    return ir.document(id);
   }
 
   /**
@@ -112,33 +138,82 @@ public abstract class ReadTask extends PerfTask {
   /**
    * Return true if search should be performed.
    */
-  public abstract boolean withSearch ();
+  public abstract boolean withSearch();
 
   /**
    * Return true if warming should be performed.
    */
-  public abstract boolean withWarm ();
-  
+  public abstract boolean withWarm();
+
   /**
    * Return true if, with search, results should be traversed.
    */
-  public abstract boolean withTraverse ();
+  public abstract boolean withTraverse();
 
   /**
    * Specify the number of hits to traverse.  Tasks should override this if they want to restrict the number
    * of hits that are traversed when {@link #withTraverse()} is true. Must be greater than 0.
-   *
+   * <p/>
    * Read task calculates the traversal as: Math.min(hits.length(), traversalSize())
+   *
    * @return Integer.MAX_VALUE
    */
-  public int traversalSize()
-  {
+  public int traversalSize() {
     return Integer.MAX_VALUE;
   }
 
   /**
    * Return true if, with search & results traversing, docs should be retrieved.
    */
-  public abstract boolean withRetrieve ();
+  public abstract boolean withRetrieve();
+
+  /**
+   * Set to the number of documents to highlight.
+   *
+   * @return The number of the results to highlight.  O means no docs will be highlighted.
+   */
+  public int numToHighlight() {
+    return 0;
+  }
+
+  protected Highlighter getHighlighter(Query q){
+    return new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
+  }
+
+  /**
+   *
+   * @return the maxiumum number of highlighter fragments
+   */
+  public int maxNumFragments(){
+    return 10;
+  }
+
+  /**
+   *
+   * @return true if the highlighter should merge contiguous fragments
+   */
+  public boolean isMergeContiguousFragments(){
+    return false;
+  }
+
+  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException {
+    TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
+    return frag != null ? frag.length : 0;
+  }
+
+  /**
+   * Define the fields to highlight.  Base implementation returns all fields
+   * @param document The Document
+   * @return A Collection of Field names (Strings)
+   */
+  protected Collection/*<String>*/ getFieldsToHighlight(Document document) {
+    List/*<Fieldable>*/ fieldables = document.getFields();
+    Set/*<String>*/ result = new HashSet(fieldables.size());
+    for (Iterator iterator = fieldables.iterator(); iterator.hasNext();) {
+      Fieldable fieldable = (Fieldable) iterator.next();
+      result.add(fieldable.name());
+    }
+    return result;
+  }
 
 }

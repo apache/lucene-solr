@@ -109,6 +109,7 @@
     <path id="classpath">
         <pathelement path="${common.dir}/build/classes/java"/>
         <pathelement path="${common.dir}/build/classes/demo"/>
+        <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
         <pathelement path="${basedir}/lib/${digester.jar}"/>
         <pathelement path="${basedir}/lib/${collections.jar}"/>
         <pathelement path="${basedir}/lib/${logging.jar}"/>
@@ -163,9 +164,14 @@
       <subant target="compile-demo">
          <fileset dir="${common.dir}" includes="build.xml"/>
       </subant>
-    </target> 
+    </target>
+    <target name="compile-highlighter">
+      <subant target="compile">
+         <fileset dir="${common.dir}/contrib/highlighter" includes="build.xml"/>
+      </subant>
+    </target>
 
-    <target name="init" depends="common.init,compile-demo,check-files"/>
+    <target name="init" depends="common.init,compile-demo, compile-highlighter,check-files"/>
 
     <!-- make sure online collections (reuters) are first downloaded -->
     <target name="test" depends="init,get-files">

@@ -120,7 +120,7 @@ public class Algorithm {
               if ((char)stok.ttype == '*') {
                 ((TaskSequence)prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
               } else {
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expexted repetitions number: - "+stok.toString());
+                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expected repetitions number: - "+stok.toString());
                 ((TaskSequence)prevTask).setRepetitions((int)stok.nval);
               }
               // check for rate specification (ops/min)
@@ -130,7 +130,7 @@ public class Algorithm {
               } else {
                 // get rate number
                 stok.nextToken();
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expexted rate number: - "+stok.toString());
+                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expected rate number: - "+stok.toString());
                 // check for unit - min or sec, sec is default
                 stok.nextToken();
                 if (stok.ttype!='/') {
@@ -138,14 +138,14 @@ public class Algorithm {
                   ((TaskSequence)prevTask).setRate((int)stok.nval,false); // set rate per sec
                 } else {
                   stok.nextToken();
-                  if (stok.ttype!=StreamTokenizer.TT_WORD) throw new Exception("expexted rate unit: 'min' or 'sec' - "+stok.toString());
+                  if (stok.ttype!=StreamTokenizer.TT_WORD) throw new Exception("expected rate unit: 'min' or 'sec' - "+stok.toString());
                   String unit = stok.sval.toLowerCase();
                   if ("min".equals(unit)) {
                     ((TaskSequence)prevTask).setRate((int)stok.nval,true); // set rate per min
                   } else if ("sec".equals(unit)) {
                     ((TaskSequence)prevTask).setRate((int)stok.nval,false); // set rate per sec
                   } else {
-                    throw new Exception("expexted rate unit: 'min' or 'sec' - "+stok.toString());
+                    throw new Exception("expected rate unit: 'min' or 'sec' - "+stok.toString());
                   }
                 }
               }

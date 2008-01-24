@@ -27,7 +27,9 @@ import java.util.Iterator;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
+import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -92,6 +94,109 @@ public class TestPerfTasksLogic extends TestCase {
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
     ir.close();
+  }
+
+  public void testHighlighting() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "doc.stored=true",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "query.maker=" + ReutersQueryMaker.class.getName(),
+        "ResetSystemErase",
+        "CreateIndex",
+        "{ AddDoc } : 1000",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
+        "CloseReader",
+    };
+
+    // 2. we test this value later
+    CountingHighlighterTestTask.numHighlightedResults = 0;
+    CountingHighlighterTestTask.numDocsRetrieved = 0;
+    // 3. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 4. test specific checks after the benchmark run completed.
+    assertEquals("TestSearchTask was supposed to be called!",147,CountingHighlighterTestTask.numDocsRetrieved);
+    //pretty hard to figure out a priori how many docs are going to have highlighted fragments returned, but we can never have more than the number of docs
+    //we probably should use a different doc/query maker, but...
+    assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
+
+    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    // now we should be able to open the index for write.
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    iw.close();
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
+    ir.close();
+  }
+
+  public void testHighlightingTV() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "doc.stored=true",//doc storage is required in order to have text to highlight
+        "doc.term.vector.offsets=true",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "query.maker=" + ReutersQueryMaker.class.getName(),
+        "ResetSystemErase",
+        "CreateIndex",
+        "{ AddDoc } : 1000",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
+        "CloseReader",
+    };
+
+    // 2. we test this value later
+    CountingHighlighterTestTask.numHighlightedResults = 0;
+    CountingHighlighterTestTask.numDocsRetrieved = 0;
+    // 3. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 4. test specific checks after the benchmark run completed.
+    assertEquals("TestSearchTask was supposed to be called!",147,CountingHighlighterTestTask.numDocsRetrieved);
+    //pretty hard to figure out a priori how many docs are going to have highlighted fragments returned, but we can never have more than the number of docs
+    //we probably should use a different doc/query maker, but...
+    assertTrue("TestSearchTask was supposed to be called!", CountingHighlighterTestTask.numDocsRetrieved >= CountingHighlighterTestTask.numHighlightedResults && CountingHighlighterTestTask.numHighlightedResults > 0);
+
+    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    // now we should be able to open the index for write.
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    iw.close();
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
+    ir.close();
+  }
+
+  public void testHighlightingNoTvNoStore() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "doc.stored=false",
+        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "query.maker=" + ReutersQueryMaker.class.getName(),
+        "ResetSystemErase",
+        "CreateIndex",
+        "{ AddDoc } : 1000",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
+        "CloseReader",
+    };
+
+    // 2. we test this value later
+    CountingHighlighterTestTask.numHighlightedResults = 0;
+    CountingHighlighterTestTask.numDocsRetrieved = 0;
+    // 3. execute the algorithm  (required in every "logic" test)
+    try {
+      Benchmark benchmark = execBenchmark(algLines);
+      assertTrue("CountingHighlighterTest should have thrown an exception", false);
+    } catch (Exception e) {
+      assertTrue(true);
+    }
   }
 
   /**

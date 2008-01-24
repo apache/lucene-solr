@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
 import java.util.StringTokenizer;
@@ -51,8 +52,8 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   }
 
 
-  protected int retrieveDoc(IndexReader ir, int id) throws IOException {
-    return (ir.document(id, fieldSelector) == null ? 0 : 1);
+  protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
+    return ir.document(id, fieldSelector);
   }
 
   public void setParams(String params) {
