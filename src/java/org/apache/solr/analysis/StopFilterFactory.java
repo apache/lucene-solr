@@ -43,10 +43,12 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    } else {
+      stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS, ignoreCase);
     }
   }
 
-  private Set stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS);
+  private Set stopWords;
   private boolean ignoreCase;
 
   public StopFilter create(TokenStream input) {
