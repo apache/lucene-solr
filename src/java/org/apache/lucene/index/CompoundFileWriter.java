@@ -156,12 +156,23 @@ final class CompoundFileWriter {
             // Remember the positions of directory entries so that we can
             // adjust the offsets later
             Iterator it = entries.iterator();
+            long totalSize = 0;
             while(it.hasNext()) {
                 FileEntry fe = (FileEntry) it.next();
                 fe.directoryOffset = os.getFilePointer();
                 os.writeLong(0);    // for now
                 os.writeString(fe.file);
+                totalSize += directory.fileLength(fe.file);
             }
+
+            // Pre-allocate size of file as optimization --
+            // this can potentially help IO performance as
+            // we write the file and also later during
+            // searching.  It also uncovers a disk-full
+            // situation earlier and hopefully without
+            // actually filling disk to 100%:
+            final long finalLength = totalSize+os.getFilePointer();
+            os.setLength(finalLength);
 
             // Open the files and copy their data into the stream.
             // Remember the locations of each file's data section.
@@ -180,6 +191,8 @@ final class CompoundFileWriter {
                 os.seek(fe.directoryOffset);
                 os.writeLong(fe.dataOffset);
             }
+
+            assert finalLength == os.length();
 
             // Close the output stream. Set the os to null before trying to
             // close so that if an exception occurs during the close, the

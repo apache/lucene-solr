@@ -615,6 +615,8 @@ public class FSDirectory extends Directory {
     public long length() throws IOException {
       return file.length();
     }
-  
+    public void setLength(long length) throws IOException {
+      file.setLength(length);
+    }
   }
 }

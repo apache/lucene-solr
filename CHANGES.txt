@@ -20,6 +20,13 @@ New features
 
 Optimizations
 
+ 1. LUCENE-705: When building a compound file, use
+    RandomAccessFile.setLength() to tell the OS/filesystem to
+    pre-allocate space for the file.  This may improve fragmentation
+    in how the CFS file is stored, and allows us to detect an upcoming
+    disk full situation before actually filling up the disk.  (Mike
+    McCandless)
+
 Documentation
 
 Build

@@ -189,5 +189,15 @@ public abstract class IndexOutput {
   /** The number of bytes in the file. */
   public abstract long length() throws IOException;
 
-
+  /** Set the file length. By default, this method does
+   * nothing (it's optional for a Directory to implement
+   * it).  But, certain Directory implementations (for
+   * example @see FSDirectory) can use this to inform the
+   * underlying IO system to pre-allocate the file to the
+   * specified size.  If the length is longer than the
+   * current file length, the bytes added to the file are
+   * undefined.  Otherwise the file is truncated.
+   * @param length file length
+   */
+  public void setLength(long length) throws IOException {};
 }
