@@ -14,6 +14,10 @@ New features
 1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
     process.  The flag is not indexed/stored and is thus only used by analysis.
 
+ 2. LUCENE-1147: Add -segment option to CheckIndex tool so you can
+    check only a specific segment or segments in your index.  (Mike
+    McCandless)
+
 Optimizations
 
 Documentation

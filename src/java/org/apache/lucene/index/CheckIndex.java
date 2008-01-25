@@ -27,6 +27,8 @@ import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Basic tool to check the health of an index and write a
@@ -62,6 +64,11 @@ public class CheckIndex {
 
   /** Returns true if index is clean, else false.*/
   public static boolean check(Directory dir, boolean doFix) throws IOException {
+    return check(dir, doFix, null);
+  }
+
+  /** Returns true if index is clean, else false.*/
+  public static boolean check(Directory dir, boolean doFix, List onlySegments) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
     SegmentInfos sis = new SegmentInfos();
     
@@ -115,6 +122,15 @@ public class CheckIndex {
 
     out.println("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat);
 
+    if (onlySegments != null) {
+      out.print("\nChecking only these segments:");
+      Iterator it = onlySegments.iterator();
+      while (it.hasNext()) {
+        out.print(" " + it.next());
+      }
+      out.println(":");
+    }
+
     if (skip) {
       out.println("\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
       return false;
@@ -127,6 +143,8 @@ public class CheckIndex {
     int numBadSegments = 0;
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = sis.info(i);
+      if (onlySegments != null && !onlySegments.contains(info.name))
+        continue;
       out.println("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
       int toLoseDocCount = info.docCount;
 
@@ -321,16 +339,38 @@ public class CheckIndex {
   public static void main(String[] args) throws Throwable {
 
     boolean doFix = false;
-    for(int i=0;i<args.length;i++)
+    List onlySegments = new ArrayList();
+    String indexPath = null;
+    int i = 0;
+    while(i < args.length) {
       if (args[i].equals("-fix")) {
         doFix = true;
-        break;
+        i++;
+      } else if (args[i].equals("-segment")) {
+        if (i == args.length-1) {
+          out.println("ERROR: missing name for -segment option");
+          System.exit(1);
+        }
+        onlySegments.add(args[i+1]);
+        i += 2;
+      } else {
+        if (indexPath != null) {
+          out.println("ERROR: unexpected extra argument '" + args[i] + "'");
+          System.exit(1);
+        }
+        indexPath = args[i];
+        i++;
       }
+    }
 
-    if (args.length != (doFix ? 2:1)) {
-      out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix]\n" +
+    if (indexPath == null) {
+      out.println("\nERROR: index path not specified");
+      out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
+                         "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
+                         "              times, to check more than one segment, eg '-segment _2 -segment _a'.\n" +
+                         "              You can't use this with the -fix option\n" +
                          "\n" + 
                          "**WARNING**: -fix should only be used on an emergency basis as it will cause\n" +
                          "documents (perhaps many) to be permanently removed from the index.  Always make\n" +
@@ -348,18 +388,24 @@ public class CheckIndex {
       System.exit(1);
     }
 
-    final String dirName = args[0];
-    out.println("\nOpening index @ " + dirName + "\n");
+    if (onlySegments.size() == 0)
+      onlySegments = null;
+    else if (doFix) {
+      out.println("ERROR: cannot specify both -fix and -segment");
+      System.exit(1);
+    }
+
+    out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
-      dir = FSDirectory.getDirectory(dirName);
+      dir = FSDirectory.getDirectory(indexPath);
     } catch (Throwable t) {
-      out.println("ERROR: could not open directory \"" + dirName + "\"; exiting");
+      out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(out);
       System.exit(1);
     }
 
-    boolean isClean = check(dir, doFix);
+    boolean isClean = check(dir, doFix, onlySegments);
 
     final int exitCode;
     if (isClean)

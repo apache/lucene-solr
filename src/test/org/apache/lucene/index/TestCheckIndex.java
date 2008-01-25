@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -46,6 +48,9 @@ public class TestCheckIndex extends LuceneTestCase {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
 
     CheckIndex.out = new PrintStream(bos);
-    assertTrue(CheckIndex.check(dir, false));
+    assertTrue(CheckIndex.check(dir, false, null));
+    final List onlySegments = new ArrayList();
+    onlySegments.add("_0");
+    assertTrue(CheckIndex.check(dir, false, onlySegments));
   }
 }
