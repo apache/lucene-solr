@@ -22,13 +22,18 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @version $Id$
  */
 class TermVectorsReader implements Cloneable {
 
+  // NOTE: if you make a new format, it must be larger than
+  // the current format
   static final int FORMAT_VERSION = 2;
+  static final int FORMAT_VERSION2 = 3;
+
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
 
@@ -41,13 +46,13 @@ class TermVectorsReader implements Cloneable {
   private IndexInput tvd;
   private IndexInput tvf;
   private int size;
+  private int numTotalDocs;
 
   // The docID offset where our docs begin in the index
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
   
-  private int tvdFormat;
-  private int tvfFormat;
+  private final int format;
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
     throws CorruptIndexException, IOException {
@@ -56,7 +61,7 @@ class TermVectorsReader implements Cloneable {
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize)
     throws CorruptIndexException, IOException {
-    this(d, segment, fieldInfos, BufferedIndexInput.BUFFER_SIZE, -1, 0);
+    this(d, segment, fieldInfos, readBufferSize, -1, 0);
   }
     
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize, int docStoreOffset, int size)
@@ -66,22 +71,35 @@ class TermVectorsReader implements Cloneable {
     try {
       if (d.fileExists(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION)) {
         tvx = d.openInput(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION, readBufferSize);
-        checkValidFormat(tvx);
+        format = checkValidFormat(tvx);
         tvd = d.openInput(segment + "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION, readBufferSize);
-        tvdFormat = checkValidFormat(tvd);
+        final int tvdFormat = checkValidFormat(tvd);
         tvf = d.openInput(segment + "." + IndexFileNames.VECTORS_FIELDS_EXTENSION, readBufferSize);
-        tvfFormat = checkValidFormat(tvf);
+        final int tvfFormat = checkValidFormat(tvf);
+
+        assert format == tvdFormat;
+        assert format == tvfFormat;
+
+        if (format >= FORMAT_VERSION2) {
+          assert (tvx.length()-FORMAT_SIZE) % 16 == 0;
+          numTotalDocs = (int) (tvx.length() >> 4);
+        } else {
+          assert (tvx.length()-FORMAT_SIZE) % 8 == 0;
+          numTotalDocs = (int) (tvx.length() >> 3);
+        }
+
         if (-1 == docStoreOffset) {
           this.docStoreOffset = 0;
-          this.size = (int) (tvx.length() >> 3);
+          this.size = numTotalDocs;
         } else {
           this.docStoreOffset = docStoreOffset;
           this.size = size;
           // Verify the file is long enough to hold all of our
           // docs
-          assert ((int) (tvx.length() / 8)) >= size + docStoreOffset;
+          assert numTotalDocs >= size + docStoreOffset;
         }
-      }
+      } else
+        format = 0;
 
       this.fieldInfos = fieldInfos;
       success = true;
@@ -96,26 +114,94 @@ class TermVectorsReader implements Cloneable {
       }
     }
   }
-  
+
+  // Used for bulk copy when merging
+  IndexInput getTvdStream() {
+    return tvd;
+  }
+
+  // Used for bulk copy when merging
+  IndexInput getTvfStream() {
+    return tvf;
+  }
+
+  final private void seekTvx(final int docNum) throws IOException {
+    if (format < FORMAT_VERSION2)
+      tvx.seek((docNum + docStoreOffset) * 8L + FORMAT_SIZE);
+    else
+      tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
+  }
+
+  boolean canReadRawDocs() {
+    return format >= FORMAT_VERSION2;
+  }
+
+  /** Retrieve the length (in bytes) of the tvd and tvf
+   *  entries for the next numDocs starting with
+   *  startDocID.  This is used for bulk copying when
+   *  merging segments, if the field numbers are
+   *  congruent.  Once this returns, the tvf & tvd streams
+   *  are seeked to the startDocID. */
+  final void rawDocs(int[] tvdLengths, int[] tvfLengths, int startDocID, int numDocs) throws IOException {
+
+    if (tvx == null) {
+      Arrays.fill(tvdLengths, 0);
+      Arrays.fill(tvfLengths, 0);
+      return;
+    }
+
+    // SegmentMerger calls canReadRawDocs() first and should
+    // not call us if that returns false.
+    if (format < FORMAT_VERSION2)
+      throw new IllegalStateException("cannot read raw docs with older term vector formats");
+
+    seekTvx(startDocID);
+
+    long tvdPosition = tvx.readLong();
+    tvd.seek(tvdPosition);
+
+    long tvfPosition = tvx.readLong();
+    tvf.seek(tvfPosition);
+
+    long lastTvdPosition = tvdPosition;
+    long lastTvfPosition = tvfPosition;
+
+    int count = 0;
+    while (count < numDocs) {
+      final int docID = startDocID + count + 1;
+      if (docID < numTotalDocs)  {
+        tvdPosition = tvx.readLong();
+        tvfPosition = tvx.readLong();
+      } else {
+        tvdPosition = tvd.length();
+        tvfPosition = tvf.length();
+      }
+      tvdLengths[count] = (int) (tvdPosition-lastTvdPosition);
+      tvfLengths[count] = (int) (tvfPosition-lastTvfPosition);
+      count++;
+      lastTvdPosition = tvdPosition;
+      lastTvfPosition = tvfPosition;
+    }
+  }
+
   private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
-    if (format > FORMAT_VERSION)
-    {
+    if (format > FORMAT_VERSION2) {
       throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                      + FORMAT_VERSION + " or less");
+                                      + FORMAT_VERSION2 + " or less");
     }
     return format;
   }
 
   void close() throws IOException {
-  	// make all effort to close up. Keep the first exception
-  	// and throw it as a new one.
-  	IOException keep = null;
-  	if (tvx != null) try { tvx.close(); } catch (IOException e) { if (keep == null) keep = e; }
-  	if (tvd != null) try { tvd.close(); } catch (IOException e) { if (keep == null) keep = e; }
-  	if (tvf  != null) try {  tvf.close(); } catch (IOException e) { if (keep == null) keep = e; }
-  	if (keep != null) throw (IOException) keep.fillInStackTrace();
+    // make all effort to close up. Keep the first exception
+    // and throw it as a new one.
+    IOException keep = null;
+    if (tvx != null) try { tvx.close(); } catch (IOException e) { if (keep == null) keep = e; }
+    if (tvd != null) try { tvd.close(); } catch (IOException e) { if (keep == null) keep = e; }
+    if (tvf  != null) try {  tvf.close(); } catch (IOException e) { if (keep == null) keep = e; }
+    if (keep != null) throw (IOException) keep.fillInStackTrace();
   }
 
   /**
@@ -133,11 +219,11 @@ class TermVectorsReader implements Cloneable {
       //We don't need to do this in other seeks because we already have the
       // file pointer
       //that was written in another file
-      tvx.seek(((docNum + docStoreOffset) * 8L) + FORMAT_SIZE);
+      seekTvx(docNum);
       //System.out.println("TVX Pointer: " + tvx.getFilePointer());
-      long position = tvx.readLong();
+      long tvdPosition = tvx.readLong();
 
-      tvd.seek(position);
+      tvd.seek(tvdPosition);
       int fieldCount = tvd.readVInt();
       //System.out.println("Num Fields: " + fieldCount);
       // There are only a few fields per document. We opt for a full scan
@@ -146,7 +232,7 @@ class TermVectorsReader implements Cloneable {
       int number = 0;
       int found = -1;
       for (int i = 0; i < fieldCount; i++) {
-        if(tvdFormat == FORMAT_VERSION)
+        if (format >= FORMAT_VERSION)
           number = tvd.readVInt();
         else
           number += tvd.readVInt();
@@ -159,8 +245,12 @@ class TermVectorsReader implements Cloneable {
       // document
       if (found != -1) {
         // Compute position in the tvf file
-        position = 0;
-        for (int i = 0; i <= found; i++)
+        long position;
+        if (format >= FORMAT_VERSION2)
+          position = tvx.readLong();
+        else
+          position = tvd.readVLong();
+        for (int i = 1; i <= found; i++)
           position += tvd.readVLong();
 
         mapper.setDocumentNumber(docNum);
@@ -190,6 +280,45 @@ class TermVectorsReader implements Cloneable {
     return mapper.materializeVector();
   }
 
+  // Reads the String[] fields; you have to pre-seek tvd to
+  // the right point
+  final private String[] readFields(int fieldCount) throws IOException {
+    int number = 0;
+    String[] fields = new String[fieldCount];
+
+    for (int i = 0; i < fieldCount; i++) {
+      if (format >= FORMAT_VERSION)
+        number = tvd.readVInt();
+      else
+        number += tvd.readVInt();
+
+      fields[i] = fieldInfos.fieldName(number);
+    }
+
+    return fields;
+  }
+
+  // Reads the long[] offsets into TVF; you have to pre-seek
+  // tvx/tvd to the right point
+  final private long[] readTvfPointers(int fieldCount) throws IOException {
+    // Compute position in the tvf file
+    long position;
+    if (format >= FORMAT_VERSION2)
+      position = tvx.readLong();
+    else
+      position = tvd.readVLong();
+
+    long[] tvfPointers = new long[fieldCount];
+    tvfPointers[0] = position;
+
+    for (int i = 1; i < fieldCount; i++) {
+      position += tvd.readVLong();
+      tvfPointers[i] = position;
+    }
+
+    return tvfPointers;
+  }
+
   /**
    * Return all term vectors stored for this document or null if the could not be read in.
    * 
@@ -201,34 +330,16 @@ class TermVectorsReader implements Cloneable {
     TermFreqVector[] result = null;
     if (tvx != null) {
       //We need to offset by
-      tvx.seek(((docNum + docStoreOffset) * 8L) + FORMAT_SIZE);
-      long position = tvx.readLong();
+      seekTvx(docNum);
+      long tvdPosition = tvx.readLong();
 
-      tvd.seek(position);
+      tvd.seek(tvdPosition);
       int fieldCount = tvd.readVInt();
 
       // No fields are vectorized for this document
       if (fieldCount != 0) {
-        int number = 0;
-        String[] fields = new String[fieldCount];
-
-        for (int i = 0; i < fieldCount; i++) {
-          if(tvdFormat == FORMAT_VERSION)
-            number = tvd.readVInt();
-          else
-            number += tvd.readVInt();
-
-          fields[i] = fieldInfos.fieldName(number);
-        }
-
-        // Compute position in the tvf file
-        position = 0;
-        long[] tvfPointers = new long[fieldCount];
-        for (int i = 0; i < fieldCount; i++) {
-          position += tvd.readVLong();
-          tvfPointers[i] = position;
-        }
-
+        final String[] fields = readFields(fieldCount);
+        final long[] tvfPointers = readTvfPointers(fieldCount);
         result = readTermVectors(docNum, fields, tvfPointers);
       }
     } else {
@@ -241,34 +352,17 @@ class TermVectorsReader implements Cloneable {
     // Check if no term vectors are available for this segment at all
     if (tvx != null) {
       //We need to offset by
-      tvx.seek((docNumber * 8L) + FORMAT_SIZE);
-      long position = tvx.readLong();
 
-      tvd.seek(position);
+      seekTvx(docNumber);
+      long tvdPosition = tvx.readLong();
+
+      tvd.seek(tvdPosition);
       int fieldCount = tvd.readVInt();
 
       // No fields are vectorized for this document
       if (fieldCount != 0) {
-        int number = 0;
-        String[] fields = new String[fieldCount];
-
-        for (int i = 0; i < fieldCount; i++) {
-          if(tvdFormat == FORMAT_VERSION)
-            number = tvd.readVInt();
-          else
-            number += tvd.readVInt();
-
-          fields[i] = fieldInfos.fieldName(number);
-        }
-
-        // Compute position in the tvf file
-        position = 0;
-        long[] tvfPointers = new long[fieldCount];
-        for (int i = 0; i < fieldCount; i++) {
-          position += tvd.readVLong();
-          tvfPointers[i] = position;
-        }
-
+        final String[] fields = readFields(fieldCount);
+        final long[] tvfPointers = readTvfPointers(fieldCount);
         mapper.setDocumentNumber(docNumber);
         readTermVectors(fields, tvfPointers, mapper);
       }
@@ -293,9 +387,8 @@ class TermVectorsReader implements Cloneable {
   private void readTermVectors(String fields[], long tvfPointers[], TermVectorMapper mapper)
           throws IOException {
     for (int i = 0; i < fields.length; i++) {
-       readTermVector(fields[i], tvfPointers[i], mapper);
+      readTermVector(fields[i], tvfPointers[i], mapper);
     }
-
   }
 
 
@@ -324,7 +417,7 @@ class TermVectorsReader implements Cloneable {
     boolean storePositions;
     boolean storeOffsets;
     
-    if(tvfFormat == FORMAT_VERSION){
+    if (format >= FORMAT_VERSION){
       byte bits = tvf.readByte();
       storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
       storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
@@ -400,8 +493,6 @@ class TermVectorsReader implements Cloneable {
     }
   }
 
-
-
   protected Object clone() {
     
     if (tvx == null || tvd == null || tvf == null)
@@ -418,10 +509,8 @@ class TermVectorsReader implements Cloneable {
     
     return clone;
   }
-
-
-
 }
+
 
 /**
  * Models the existing parallel array structure

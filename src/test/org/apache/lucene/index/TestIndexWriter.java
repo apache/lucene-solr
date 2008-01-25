@@ -1937,9 +1937,10 @@ public class TestIndexWriter extends LuceneTestCase
       for(int j=0;j<reader.maxDoc();j++) {
         if (reader.isDeleted(j))
           numDel++;
-        else
+        else {
           reader.document(j);
-        reader.getTermFreqVectors(j);
+          reader.getTermFreqVectors(j);
+        }
       }
       reader.close();
 
@@ -1963,9 +1964,10 @@ public class TestIndexWriter extends LuceneTestCase
       for(int j=0;j<reader.maxDoc();j++) {
         if (reader.isDeleted(j))
           numDel++;
-        else
+        else {
           reader.document(j);
-        reader.getTermFreqVectors(j);
+          reader.getTermFreqVectors(j);
+        }
       }
       reader.close();
       assertEquals(0, numDel);
@@ -2053,9 +2055,10 @@ public class TestIndexWriter extends LuceneTestCase
       for(int j=0;j<reader.maxDoc();j++) {
         if (reader.isDeleted(j))
           numDel++;
-        else
+        else {
           reader.document(j);
-        reader.getTermFreqVectors(j);
+          reader.getTermFreqVectors(j);
+        }
       }
       reader.close();
 
@@ -2079,9 +2082,10 @@ public class TestIndexWriter extends LuceneTestCase
       for(int j=0;j<reader.maxDoc();j++) {
         if (reader.isDeleted(j))
           numDel++;
-        else
+        else {
           reader.document(j);
-        reader.getTermFreqVectors(j);
+          reader.getTermFreqVectors(j);
+        }
       }
       reader.close();
       assertEquals(0, numDel);

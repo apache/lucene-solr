@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -31,6 +31,10 @@ Optimizations
     in how the CFS file is stored, and allows us to detect an upcoming
     disk full situation before actually filling up the disk.  (Mike
     McCandless)
+
+ 2. LUCENE-1120: Speed up merging of term vectors by bulk-copying the
+    raw bytes for each contiguous range of non-deleted documents.
+    (Mike McCandless)
 
 Documentation
 

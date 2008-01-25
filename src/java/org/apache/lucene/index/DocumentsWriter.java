@@ -662,12 +662,12 @@ final class DocumentsWriter {
         // Append term vectors to the real outputs:
         if (tvx != null) {
           tvx.writeLong(tvd.getFilePointer());
+          tvx.writeLong(tvf.getFilePointer());
           tvd.writeVInt(numVectorFields);
           if (numVectorFields > 0) {
             for(int i=0;i<numVectorFields;i++)
               tvd.writeVInt(vectorFieldNumbers[i]);
             assert 0 == vectorFieldPointers[0];
-            tvd.writeVLong(tvf.getFilePointer());
             long lastPos = vectorFieldPointers[0];
             for(int i=1;i<numVectorFields;i++) {
               long pos = vectorFieldPointers[i];
@@ -870,22 +870,23 @@ final class DocumentsWriter {
           // state:
           try {
             tvx = directory.createOutput(docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-            tvx.writeInt(TermVectorsReader.FORMAT_VERSION);
+            tvx.writeInt(TermVectorsReader.FORMAT_VERSION2);
             tvd = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-            tvd.writeInt(TermVectorsReader.FORMAT_VERSION);
+            tvd.writeInt(TermVectorsReader.FORMAT_VERSION2);
             tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-            tvf.writeInt(TermVectorsReader.FORMAT_VERSION);
+            tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
 
             // We must "catch up" for all docIDs that had no
             // vectors before this one
-            for(int i=0;i<docID;i++)
+            for(int i=0;i<docID;i++) {
               tvx.writeLong(0);
+              tvx.writeLong(0);
+            }
           } catch (Throwable t) {
             throw new AbortException(t, DocumentsWriter.this);
           }
           files = null;
         }
-
         numVectorFields = 0;
       }
     }

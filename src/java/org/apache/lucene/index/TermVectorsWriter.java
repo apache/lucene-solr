@@ -33,11 +33,11 @@ final class TermVectorsWriter {
     throws IOException {
     // Open files for TermVector storage
     tvx = directory.createOutput(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-    tvx.writeInt(TermVectorsReader.FORMAT_VERSION);
+    tvx.writeInt(TermVectorsReader.FORMAT_VERSION2);
     tvd = directory.createOutput(segment + "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-    tvd.writeInt(TermVectorsReader.FORMAT_VERSION);
+    tvd.writeInt(TermVectorsReader.FORMAT_VERSION2);
     tvf = directory.createOutput(segment + "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-    tvf.writeInt(TermVectorsReader.FORMAT_VERSION);
+    tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
 
     this.fieldInfos = fieldInfos;
   }
@@ -53,6 +53,7 @@ final class TermVectorsWriter {
       throws IOException {
 
     tvx.writeLong(tvd.getFilePointer());
+    tvx.writeLong(tvf.getFilePointer());
 
     if (vectors != null) {
       final int numFields = vectors.length;
@@ -145,14 +146,36 @@ final class TermVectorsWriter {
       }
 
       // 2nd pass: write field pointers to tvd
-      long lastFieldPointer = 0;
-      for (int i=0; i<numFields; i++) {
+      long lastFieldPointer = fieldPointers[0];
+      for (int i=1; i<numFields; i++) {
         final long fieldPointer = fieldPointers[i];
         tvd.writeVLong(fieldPointer-lastFieldPointer);
         lastFieldPointer = fieldPointer;
       }
     } else
       tvd.writeVInt(0);
+  }
+
+  /**
+   * Do a bulk copy of numDocs documents from reader to our
+   * streams.  This is used to expedite merging, if the
+   * field numbers are congruent.
+   */
+  final void addRawDocuments(TermVectorsReader reader, int[] tvdLengths, int[] tvfLengths, int numDocs) throws IOException {
+    long tvdPosition = tvd.getFilePointer();
+    long tvfPosition = tvf.getFilePointer();
+    long tvdStart = tvdPosition;
+    long tvfStart = tvfPosition;
+    for(int i=0;i<numDocs;i++) {
+      tvx.writeLong(tvdPosition);
+      tvdPosition += tvdLengths[i];
+      tvx.writeLong(tvfPosition);
+      tvfPosition += tvfLengths[i];
+    }
+    tvd.copyBytes(reader.getTvdStream(), tvdPosition-tvdStart);
+    tvf.copyBytes(reader.getTvfStream(), tvfPosition-tvfStart);
+    assert tvd.getFilePointer() == tvdPosition;
+    assert tvf.getFilePointer() == tvfPosition;
   }
   
   /** Close all streams. */

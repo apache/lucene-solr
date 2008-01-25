@@ -205,6 +205,38 @@ final class SegmentMerger {
     }
   }
 
+  private SegmentReader[] matchingSegmentReaders;
+  private int[] rawDocLengths;
+  private int[] rawDocLengths2;
+
+  private void setMatchingSegmentReaders() {
+    // If the i'th reader is a SegmentReader and has
+    // identical fieldName -> number mapping, then this
+    // array will be non-null at position i:
+    matchingSegmentReaders = new SegmentReader[readers.size()];
+
+    // If this reader is a SegmentReader, and all of its
+    // field name -> number mappings match the "merged"
+    // FieldInfos, then we can do a bulk copy of the
+    // stored fields:
+    for (int i = 0; i < readers.size(); i++) {
+      IndexReader reader = (IndexReader) readers.elementAt(i);
+      if (reader instanceof SegmentReader) {
+        SegmentReader segmentReader = (SegmentReader) reader;
+        boolean same = true;
+        FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
+        for (int j = 0; same && j < segmentFieldInfos.size(); j++)
+          same = fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j));
+        if (same)
+          matchingSegmentReaders[i] = segmentReader;
+      }
+    }
+
+    // Used for bulk-reading raw bytes for stored fields
+    rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
+    rawDocLengths2 = new int[MAX_RAW_MERGE_DOCS];
+  }
+
   /**
    * 
    * @return The number of documents in all of the readers
@@ -248,33 +280,9 @@ final class SegmentMerger {
 
     int docCount = 0;
 
+    setMatchingSegmentReaders();
+
     if (mergeDocStores) {
-
-      // If the i'th reader is a SegmentReader and has
-      // identical fieldName -> number mapping, then this
-      // array will be non-null at position i:
-      SegmentReader[] matchingSegmentReaders = new SegmentReader[readers.size()];
-
-      // If this reader is a SegmentReader, and all of its
-      // field name -> number mappings match the "merged"
-      // FieldInfos, then we can do a bulk copy of the
-      // stored fields:
-      for (int i = 0; i < readers.size(); i++) {
-        IndexReader reader = (IndexReader) readers.elementAt(i);
-        if (reader instanceof SegmentReader) {
-          SegmentReader segmentReader = (SegmentReader) reader;
-          boolean same = true;
-          FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
-          for (int j = 0; same && j < segmentFieldInfos.size(); j++)
-            same = fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j));
-          if (same) {
-            matchingSegmentReaders[i] = segmentReader;
-          }
-        }
-      }
-	
-      // Used for bulk-reading raw bytes for stored fields
-      final int[] rawDocLengths = new int[MAX_RAW_MERGE_DOCS];
 
       // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
       // in  merge mode, we use this FieldSelector
@@ -350,15 +358,45 @@ final class SegmentMerger {
 
     try {
       for (int r = 0; r < readers.size(); r++) {
+        final SegmentReader matchingSegmentReader = matchingSegmentReaders[r];
+        TermVectorsReader matchingVectorsReader;
+        if (matchingSegmentReader != null) {
+          matchingVectorsReader = matchingSegmentReader.termVectorsReaderOrig;
+
+          // If the TV* files are an older format then they
+          // cannot read raw docs:
+          if (matchingVectorsReader != null && !matchingVectorsReader.canReadRawDocs())
+            matchingVectorsReader = null;
+        } else
+          matchingVectorsReader = null;
         IndexReader reader = (IndexReader) readers.elementAt(r);
         int maxDoc = reader.maxDoc();
-        for (int docNum = 0; docNum < maxDoc; docNum++) {
+        for (int docNum = 0; docNum < maxDoc;) {
           // skip deleted docs
-          if (reader.isDeleted(docNum)) 
-            continue;
-          termVectorsWriter.addAllDocVectors(reader.getTermFreqVectors(docNum));
-          if (checkAbort != null)
-            checkAbort.work(300);
+          if (!reader.isDeleted(docNum)) {
+            if (matchingVectorsReader != null) {
+              // We can optimize this case (doing a bulk
+              // byte copy) since the field numbers are
+              // identical
+              int start = docNum;
+              int numDocs = 0;
+              do {
+                docNum++;
+                numDocs++;
+              } while(docNum < maxDoc && !matchingSegmentReader.isDeleted(docNum) && numDocs < MAX_RAW_MERGE_DOCS);
+
+              matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, start, numDocs);
+              termVectorsWriter.addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, numDocs);
+              if (checkAbort != null)
+                checkAbort.work(300*numDocs);
+            } else {
+              termVectorsWriter.addAllDocVectors(reader.getTermFreqVectors(docNum));
+              docNum++;
+              if (checkAbort != null)
+                checkAbort.work(300);
+            }
+          } else
+            docNum++;
         }
       }
     } finally {
