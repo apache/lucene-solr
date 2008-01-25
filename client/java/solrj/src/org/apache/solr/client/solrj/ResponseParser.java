@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj;
 
 import java.io.Reader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.apache.solr.common.util.NamedList;
 
@@ -26,8 +28,11 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public interface ResponseParser 
+public abstract class ResponseParser
 {
-  String getWriterType(); // for example: wt=XML, JSON, etc
-  NamedList<Object> processResponse( Reader body );
+  public abstract String getWriterType(); // for example: wt=XML, JSON, etc
+
+  public abstract NamedList<Object> processResponse(InputStream body, String encoding);
+
+  public abstract NamedList<Object> processResponse(Reader reader);
 }

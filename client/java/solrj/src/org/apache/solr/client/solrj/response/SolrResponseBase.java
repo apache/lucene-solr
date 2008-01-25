@@ -25,7 +25,7 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class SolrResponseBase implements SolrResponse
+public abstract class SolrResponseBase extends SolrResponse
 {
   private long elapsedTime = -1;
   private NamedList<Object> response = null;

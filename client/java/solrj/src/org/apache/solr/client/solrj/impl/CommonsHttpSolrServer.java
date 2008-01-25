@@ -29,14 +29,7 @@ import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.HttpMethodBase;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.NoHttpResponseException;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -88,6 +81,15 @@ public class CommonsHttpSolrServer extends SolrServer
     this(new URL(solrServerUrl));
   }
 
+  /** Talk to the Solr server via the given HttpClient.  The connection manager
+   * for the client should be a MultiThreadedHttpConnectionManager if this
+   * client is being reused across SolrServer instances, or of multiple threads
+   * will use this SolrServer.
+   */
+  public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient) throws MalformedURLException {
+    this(new URL(solrServerUrl), httpClient);
+  }
+
   /**
    * @param baseURL The URL of the Solr server.  For 
    * example, "<code>http://localhost:8983/solr/</code>"
@@ -96,17 +98,26 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   public CommonsHttpSolrServer(URL baseURL) 
   {
+    this(baseURL, null);
+  }
+
+
+  private CommonsHttpSolrServer(URL baseURL, HttpClient client) {
     this._baseURL = baseURL.toExternalForm();
     if( this._baseURL.endsWith( "/" ) ) {
       this._baseURL = this._baseURL.substring( 0, this._baseURL.length()-1 );
     }
-    
-    this._httpClient = createHttpClient();
-    
-    // increase the default connections
-    this.setDefaultMaxConnectionsPerHost( 32 );  // 2
-    this.setMaxTotalConnections( 128 ); // 20
-    
+
+    _httpClient = (client == null) ? new HttpClient(new MultiThreadedHttpConnectionManager()) : client;
+
+    if (client == null) {
+      // set some better defaults if we created a new connection manager and client
+      
+      // increase the default connections
+      this.setDefaultMaxConnectionsPerHost( 32 );  // 2
+      this.setMaxTotalConnections( 128 ); // 20
+    }
+
     // by default use the XML one
     _processor = new XMLResponseParser();
 
@@ -115,14 +126,7 @@ public class CommonsHttpSolrServer extends SolrServer
     _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
     _invariantParams.set( CommonParams.VERSION, "2.2" );
   }
-  
-  /**
-   * This can be overridden to add certificates etc
-   */
-  protected HttpClient createHttpClient()
-  {
-    return new HttpClient( new MultiThreadedHttpConnectionManager() );
-  }
+
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
@@ -320,8 +324,7 @@ public class CommonsHttpSolrServer extends SolrServer
           }
         }
       }
-      Reader reader = new InputStreamReader( respBody, charset ); 
-      return _processor.processResponse( reader );
+      return _processor.processResponse(respBody, charset);
     } 
     catch (HttpException e) {
       throw new SolrServerException( e );
@@ -362,11 +365,15 @@ public class CommonsHttpSolrServer extends SolrServer
     _processor = processor;
   }
 
-  public MultiThreadedHttpConnectionManager getConnectionManager() {
-    return (MultiThreadedHttpConnectionManager)_httpClient.getHttpConnectionManager();
+  public HttpClient getHttpClient() {
+    return _httpClient;
+  }
+
+  private HttpConnectionManager getConnectionManager() {
+    return _httpClient.getHttpConnectionManager();
   }
   
-  /** set connectionTimeout on the underlying MultiThreadedHttpConnectionManager */
+  /** set connectionTimeout on the underlying HttpConnectionManager */
   public void setConnectionTimeout(int timeout) {
     getConnectionManager().getParams().setConnectionTimeout(timeout);
   }
@@ -376,17 +383,17 @@ public class CommonsHttpSolrServer extends SolrServer
     _httpClient.getParams().setConnectionManagerTimeout(timeout);
   }
   
-  /** set soTimeout (read timeout) on the underlying MultiThreadedHttpConnectionManager.  This is desirable for queries, but probably not for indexing. */
+  /** set soTimeout (read timeout) on the underlying HttpConnectionManager.  This is desirable for queries, but probably not for indexing. */
   public void setSoTimeout(int timeout) {
     getConnectionManager().getParams().setSoTimeout(timeout);
   }
   
-  /** set maxConnectionsPerHost on the underlying MultiThreadedHttpConnectionManager */
+  /** set maxConnectionsPerHost on the underlying HttpConnectionManager */
   public void setDefaultMaxConnectionsPerHost(int connections) {
     getConnectionManager().getParams().setDefaultMaxConnectionsPerHost(connections);
   }
   
-  /** set maxTotalConnection on the underlying MultiThreadedHttpConnectionManager */
+  /** set maxTotalConnection on the underlying HttpConnectionManager */
   public void setMaxTotalConnections(int connections) {
     getConnectionManager().getParams().setMaxTotalConnections(connections);
   }

@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,7 +32,7 @@ import org.apache.solr.common.util.ContentStream;
  * @version $Id$
  * @since solr 1.3
  */
-public class QueryRequest extends RequestBase
+public class QueryRequest extends SolrRequest
 {
   private SolrParams query;
   

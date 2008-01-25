@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
@@ -39,7 +40,7 @@ import org.apache.solr.common.util.XML;
  * @version $Id$
  * @since solr 1.3
  */
-public class UpdateRequest extends RequestBase
+public class UpdateRequest extends SolrRequest
 {
   public enum ACTION {
     COMMIT,
@@ -139,6 +140,7 @@ public class UpdateRequest extends RequestBase
     if( documents != null && documents.size() > 0 ) {
       writer.write("<add ");
       writer.write("allowDups=\"" + allowDups + "\" ");
+      // TODO: remove these when deprecations are removed
       writer.write("overwriteCommitted=\"" + overwriteCommitted + "\" ");
       writer.write("overwritePending=\"" + overwritePending + "\">");
       for (SolrInputDocument doc : documents ) {
@@ -243,6 +245,7 @@ public class UpdateRequest extends RequestBase
     this.allowDups = allowDups;
   }
 
+  @Deprecated
   public boolean isOverwriteCommitted() {
     return overwriteCommitted;
   }
@@ -255,6 +258,7 @@ public class UpdateRequest extends RequestBase
     this.overwriteCommitted = overwriteCommitted;
   }
 
+  @Deprecated
   public boolean isOverwritePending() {
     return overwritePending;
   }

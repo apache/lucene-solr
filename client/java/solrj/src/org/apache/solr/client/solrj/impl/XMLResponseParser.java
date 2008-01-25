@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.Reader;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -40,14 +41,14 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public class XMLResponseParser implements ResponseParser
+public class XMLResponseParser extends ResponseParser
 {
   public static Logger log = Logger.getLogger(XMLResponseParser.class.getName());
-  
-  XMLInputFactory factory;
-  
-  public XMLResponseParser()
-  {
+
+  // reuse the factory among all parser instances so things like string caches
+  // won't be duplicated
+  static final XMLInputFactory factory;
+  static {
     factory = XMLInputFactory.newInstance();
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
@@ -64,25 +65,43 @@ public class XMLResponseParser implements ResponseParser
       log.fine( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
     }
   }
+
+  public XMLResponseParser() {}
   
   public String getWriterType()
   {
     return "xml";
   }
 
+  public NamedList<Object> processResponse(Reader in) {
+    XMLStreamReader parser = null;
+    try {
+      parser = factory.createXMLStreamReader(in);
+    } catch (XMLStreamException e) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+    }
+
+    return processResponse(parser);    
+  }
+
+  public NamedList<Object> processResponse(InputStream in, String encoding)
+  {
+     XMLStreamReader parser = null;
+    try {
+      parser = factory.createXMLStreamReader(in, encoding);
+    } catch (XMLStreamException e) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+    }
+
+    return processResponse(parser);
+  }
+
   /**
    * parse the text into a named list...
    */
-  public NamedList<Object> processResponse( Reader in )
+  private NamedList<Object> processResponse(XMLStreamReader parser)
   {
-    XMLStreamReader parser = null;
-    try { 
-//      String txt = IOUtils.toString( in );
-//      in = new StringReader( txt );
-//      System.out.println( "TEXT:"+txt );
-      
-      parser = factory.createXMLStreamReader(in);
-      
+    try {
       NamedList<Object> response = null;
       for (int event = parser.next();  
        event != XMLStreamConstants.END_DOCUMENT;

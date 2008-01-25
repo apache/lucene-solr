@@ -165,6 +165,7 @@ public class EmbeddedSolrServer extends SolrServer
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
       StringWriter out = new StringWriter();
       responseWriter.write(out, req, rsp);
+      // TODO: writers might be able to output binary someday
       
       req.close();
       return _processor.processResponse( new StringReader( out.toString() ) );

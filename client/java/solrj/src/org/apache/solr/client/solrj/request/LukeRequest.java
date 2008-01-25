@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,7 +36,7 @@ import org.apache.solr.common.util.ContentStream;
  * @version $Id$
  * @since solr 1.3
  */
-public class LukeRequest extends RequestBase
+public class LukeRequest extends SolrRequest
 {
   private List<String> fields;
   private int count = -1;

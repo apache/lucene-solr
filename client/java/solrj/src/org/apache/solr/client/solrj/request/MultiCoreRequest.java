@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.MultiCoreResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiCoreParams;
@@ -34,7 +35,7 @@ import org.apache.solr.common.util.ContentStream;
  * @version $Id$
  * @since solr 1.3
  */
-public class MultiCoreRequest extends RequestBase
+public class MultiCoreRequest extends SolrRequest
 {
   private MultiCoreParams.MultiCoreAction action = null;
   private String core = null;

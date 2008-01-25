@@ -27,8 +27,8 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public interface SolrResponse extends Serializable
+public abstract class SolrResponse implements Serializable
 {
-  long getElapsedTime();
-  NamedList<Object> getResponse();
+  public abstract long getElapsedTime();
+  public abstract NamedList<Object> getResponse();
 }

@@ -29,17 +29,53 @@ import org.apache.solr.common.util.ContentStream;
  * @version $Id$
  * @since solr 1.3
  */
-public interface SolrRequest extends Serializable
+public abstract class SolrRequest implements Serializable
 {
   public enum METHOD {
     GET,
     POST
   };
-  
-  public String getPath();
-  public String getCore();  // the name of requested core
-  public METHOD getMethod();
-  public SolrParams getParams();
-  public Collection<ContentStream> getContentStreams() throws IOException;
-  public SolrResponse process( SolrServer server ) throws SolrServerException, IOException;
+
+  private METHOD method = METHOD.GET;
+  private String path = null;
+  private String core = null;
+
+  //---------------------------------------------------------
+  //---------------------------------------------------------
+
+  public SolrRequest( METHOD m, String path )
+  {
+    this.method = m;
+    this.path = path;
+  }
+
+  //---------------------------------------------------------
+  //---------------------------------------------------------
+
+  public METHOD getMethod() {
+    return method;
+  }
+  public void setMethod(METHOD method) {
+    this.method = method;
+  }
+
+  public String getPath() {
+    return path;
+  }
+  public void setPath(String path) {
+    this.path = path;
+  }
+
+  public String getCore() {
+    return core;
+  }
+
+  public void setCore(String core) {
+    this.core = core;
+  }
+
+
+  public abstract SolrParams getParams();
+  public abstract Collection<ContentStream> getContentStreams() throws IOException;
+  public abstract SolrResponse process( SolrServer server ) throws SolrServerException, IOException;
 }
