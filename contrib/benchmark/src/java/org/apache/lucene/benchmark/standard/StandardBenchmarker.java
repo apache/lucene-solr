@@ -133,7 +133,7 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
             TestRunData trd = new TestRunData();
             trd.startRun();
             trd.setId(String.valueOf(i));
-            IndexWriter iw = new IndexWriter(params.getDirectory(), params.getAnalyzer(), true);
+            IndexWriter iw = new IndexWriter(params.getDirectory(), params.getAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
             iw.setMergeFactor(params.getMergeFactor());
             iw.setMaxBufferedDocs(params.getMaxBufferedDocs());
 

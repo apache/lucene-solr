@@ -53,7 +53,7 @@ public class IndexFiles {
     
     Date start = new Date();
     try {
-      IndexWriter writer = new IndexWriter(INDEX_DIR, new StandardAnalyzer(), true);
+      IndexWriter writer = new IndexWriter(INDEX_DIR, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       System.out.println("Indexing to directory '" +INDEX_DIR+ "'...");
       indexDocs(writer, docDir);
       System.out.println("Optimizing...");

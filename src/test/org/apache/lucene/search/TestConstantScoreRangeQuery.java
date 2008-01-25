@@ -67,11 +67,10 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         };
         
         small = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(small,
-                                             new WhitespaceAnalyzer(),
-                                             true);
-        
-        for (int i = 0; i < data.length; i++) {
+        IndexWriter writer = new IndexWriter(small, new WhitespaceAnalyzer(), true, 
+                                             IndexWriter.MaxFieldLength.LIMITED);
+
+      for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
             doc.add(new Field("id", String.valueOf(i), Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id",String.valueOf(i)));
             doc.add(new Field("all", "all", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("all","all"));

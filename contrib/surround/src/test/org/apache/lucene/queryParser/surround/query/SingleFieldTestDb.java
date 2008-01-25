@@ -36,7 +36,8 @@ public class SingleFieldTestDb {
       docs = documents;
       fieldName = fName;
       Analyzer analyzer = new WhitespaceAnalyzer();
-      IndexWriter writer = new IndexWriter(db, analyzer, true);
+      IndexWriter writer = new IndexWriter(db, analyzer, true, 
+                                           IndexWriter.MaxFieldLength.LIMITED);
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
         d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.TOKENIZED));

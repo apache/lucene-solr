@@ -50,7 +50,8 @@ public class TestDemo extends LuceneTestCase {
     // parameter true will overwrite the index in that directory
     // if one exists):
     //Directory directory = FSDirectory.getDirectory("/tmp/testindex", true);
-    IndexWriter iwriter = new IndexWriter(directory, analyzer, true);
+    IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
+                                          IndexWriter.MaxFieldLength.LIMITED);
     iwriter.setMaxFieldLength(25000);
     Document doc = new Document();
     String text = "This is the text to be indexed.";

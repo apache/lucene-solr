@@ -29,7 +29,7 @@ class IndexTest {
     try {
       Date start = new Date();
       IndexWriter writer = new IndexWriter(File.createTempFile("luceneTest", "idx"),
-        new SimpleAnalyzer(), true);
+        new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
       writer.setMergeFactor(20);
 

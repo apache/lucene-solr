@@ -84,7 +84,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer();
-      IndexWriter writer = new IndexWriter(directory, analyzer, true);
+      IndexWriter writer = new IndexWriter(directory, analyzer, true,
+                                           IndexWriter.MaxFieldLength.LIMITED);
 
       writer.setUseCompoundFile(useCompoundFiles);
 

@@ -77,7 +77,8 @@ public class TestSearch extends LuceneTestCase {
     {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer();
-      IndexWriter writer = new IndexWriter(directory, analyzer, true);
+      IndexWriter writer = new IndexWriter(directory, analyzer, true, 
+                                           IndexWriter.MaxFieldLength.LIMITED);
 
       writer.setUseCompoundFile(useCompoundFile);
 

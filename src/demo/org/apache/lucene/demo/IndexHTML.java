@@ -68,7 +68,8 @@ public class IndexHTML {
         deleting = true;
         indexDocs(root, index, create);
       }
-      writer = new IndexWriter(index, new StandardAnalyzer(), create);
+      writer = new IndexWriter(index, new StandardAnalyzer(), create, 
+                               IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxFieldLength(1000000);
       indexDocs(root, index, create);		  // add new docs
 

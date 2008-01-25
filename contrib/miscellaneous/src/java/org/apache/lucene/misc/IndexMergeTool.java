@@ -38,7 +38,7 @@ public class IndexMergeTool {
     }
     File mergedIndex = new File(args[0]);
 
-    IndexWriter writer = new IndexWriter(mergedIndex, new  SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(mergedIndex, new  SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
     Directory[] indexes = new Directory[args.length - 1];
     for (int i = 1; i < args.length; i++) {

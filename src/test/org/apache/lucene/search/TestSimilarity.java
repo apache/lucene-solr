@@ -51,7 +51,8 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     writer.setSimilarity(new SimpleSimilarity());
     
     Document d1 = new Document();

@@ -114,11 +114,13 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     Directory d1 = new RAMDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(), true);
+    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(), true,
+                                      IndexWriter.MaxFieldLength.LIMITED);
     addCollection1(iw1);
     iw1.close();
     Directory d2 = new RAMDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(), true);
+    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(), true,
+                                      IndexWriter.MaxFieldLength.LIMITED);
     addCollection2(iw2);
     iw2.close();
 
@@ -129,7 +131,8 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
 
     // create IndexSearcher which contains all documents
     Directory d = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(), true);
+    IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(), true,
+                                     IndexWriter.MaxFieldLength.LIMITED);
     addCollection1(iw);
     addCollection2(iw);
     iw.close();

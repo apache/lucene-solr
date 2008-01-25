@@ -55,7 +55,8 @@ public class TestPhraseQuery extends LuceneTestCase {
         return 100;
       }
     };
-    IndexWriter writer = new IndexWriter(directory, analyzer, true);
+    IndexWriter writer = new IndexWriter(directory, analyzer, true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
@@ -201,7 +202,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     StopAnalyzer stopAnalyzer = new StopAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true);
+    IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
@@ -232,7 +234,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
     doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.TOKENIZED));
@@ -267,7 +270,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     
     searcher.close();
     
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+                             IndexWriter.MaxFieldLength.LIMITED);
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
@@ -316,7 +320,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.TOKENIZED));

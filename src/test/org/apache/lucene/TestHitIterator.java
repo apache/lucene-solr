@@ -40,7 +40,8 @@ public class TestHitIterator extends LuceneTestCase {
   public void testIterator() throws Exception {
     RAMDirectory directory = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "iterator test doc 1", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);

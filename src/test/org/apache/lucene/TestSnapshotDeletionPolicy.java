@@ -68,7 +68,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     final long stopTime = System.currentTimeMillis() + 7000;
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    final IndexWriter writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp);
+    final IndexWriter writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
+                                               IndexWriter.MaxFieldLength.LIMITED);
 
     // Force frequent commits
     writer.setMaxBufferedDocs(2);

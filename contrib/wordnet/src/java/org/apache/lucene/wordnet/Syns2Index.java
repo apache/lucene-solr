@@ -242,7 +242,7 @@ public class Syns2Index
         int mod = 1;
 
         // override the specific index if it already exists
-        IndexWriter writer = new IndexWriter(indexDir, ana, true);
+        IndexWriter writer = new IndexWriter(indexDir, ana, true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setUseCompoundFile(true); // why?
 		// blindly up these parameters for speed
 		writer.setMergeFactor( writer.getMergeFactor() * 2);

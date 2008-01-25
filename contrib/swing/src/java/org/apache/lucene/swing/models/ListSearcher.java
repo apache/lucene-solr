@@ -111,7 +111,7 @@ public class ListSearcher extends AbstractListModel {
         try {
             // recreate the RAMDirectory
             directory = new RAMDirectory();
-            IndexWriter writer = new IndexWriter(directory, analyzer, true);
+            IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
             // iterate through all rows
             for (int row=0; row < listModel.getSize(); row++){

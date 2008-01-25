@@ -66,7 +66,8 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
     };
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, analyzer, true);
+    IndexWriter writer = new IndexWriter(store, analyzer, true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document d = new Document();
     d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(d);

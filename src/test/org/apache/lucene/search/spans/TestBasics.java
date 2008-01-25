@@ -50,8 +50,8 @@ public class TestBasics extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer
-      = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

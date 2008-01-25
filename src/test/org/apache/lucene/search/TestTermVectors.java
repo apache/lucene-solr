@@ -41,8 +41,8 @@ public class TestTermVectors extends LuceneTestCase {
 
   public void setUp() throws Exception {                  
     super.setUp();
-    IndexWriter writer
-            = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -201,7 +201,8 @@ public class TestTermVectors extends LuceneTestCase {
     Directory dir = new RAMDirectory();
     
     try {
-      IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true);
+      IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, 
+                                           IndexWriter.MaxFieldLength.LIMITED);
       assertTrue(writer != null);
       writer.addDocument(testDoc1);
       writer.addDocument(testDoc2);
@@ -318,7 +319,8 @@ public class TestTermVectors extends LuceneTestCase {
 
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     for(int i=0;i<100;i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(i),
@@ -349,7 +351,8 @@ public class TestTermVectors extends LuceneTestCase {
   // In a single doc, for the same field, mix the term
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "one",
                       Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));

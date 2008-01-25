@@ -2656,4 +2656,26 @@ public class TestIndexWriter extends LuceneTestCase
   public void testIOExceptionDuringWriteSegmentWithThreadsOnlyOnce() throws IOException {
     _testMultipleThreadsFailure(new FailOnlyInWriteSegment(true));
   }
+
+  // LUCENE-1084: test unlimited field length
+  public void testUnlimitedMaxFieldLength() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+
+    Document doc = new Document();
+    StringBuffer b = new StringBuffer();
+    for(int i=0;i<10000;i++)
+      b.append(" a");
+    b.append(" x");
+    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    Term t = new Term("field", "x");
+    assertEquals(1, reader.docFreq(t));
+    reader.close();
+    dir.close();
+  }
 }

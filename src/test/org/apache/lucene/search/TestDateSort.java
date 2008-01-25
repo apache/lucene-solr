@@ -49,7 +49,8 @@ public class TestDateSort extends TestCase {
   public void setUp() throws Exception {
     // Create an index writer.
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007

@@ -45,7 +45,8 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestMultiLevelSkipList extends LuceneTestCase {
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new PayloadAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir, new PayloadAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();

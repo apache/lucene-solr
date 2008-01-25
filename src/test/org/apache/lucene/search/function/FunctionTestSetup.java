@@ -88,7 +88,8 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     super.setUp();
     dir = new RAMDirectory();
     anlzr = new StandardAnalyzer();
-    IndexWriter iw = new IndexWriter(dir,anlzr);
+    IndexWriter iw = new IndexWriter(dir, anlzr,
+                                     IndexWriter.MaxFieldLength.LIMITED);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];

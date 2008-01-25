@@ -93,8 +93,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     RAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer =
-      new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
 
     Document d1 = new Document();
     d1.add(new Field("default","one two", Field.Store.YES, Field.Index.TOKENIZED));

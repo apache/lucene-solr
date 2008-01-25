@@ -55,7 +55,8 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
   private static void startServer() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(),true);
+    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.TOKENIZED));
     doc.add(new Field("type", "A", Field.Store.YES, Field.Index.TOKENIZED));

@@ -75,10 +75,10 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         try {
             
             /* build an index */
-            IndexWriter writer = new IndexWriter(index,
-                                                 new SimpleAnalyzer(), T);
+            IndexWriter writer = new IndexWriter(index, new SimpleAnalyzer(), T, 
+                                                 IndexWriter.MaxFieldLength.LIMITED);
 
-            for (int d = minId; d <= maxId; d++) {
+          for (int d = minId; d <= maxId; d++) {
                 Document doc = new Document();
                 doc.add(new Field("id",pad(d), Field.Store.YES, Field.Index.UN_TOKENIZED));
                 int r= rand.nextInt();

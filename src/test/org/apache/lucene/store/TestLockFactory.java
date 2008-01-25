@@ -49,7 +49,8 @@ public class TestLockFactory extends LuceneTestCase {
         // Lock prefix should have been set:
         assertTrue("lock prefix was not set by the RAMDirectory", lf.lockPrefixSet);
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         // add 100 documents (so that commit lock is used)
         for (int i = 0; i < 100; i++) {
@@ -82,13 +83,15 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory.setLockFactory did not take",
                    NoLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(), false,
+                                      IndexWriter.MaxFieldLength.LIMITED);
         } catch (Exception e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException with no locking");
@@ -108,12 +111,14 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.getLockFactory(),
                    SingleInstanceLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         // Create a 2nd IndexWriter.  This should fail:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(), false,
+                                      IndexWriter.MaxFieldLength.LIMITED);
             fail("Should have hit an IOException with two IndexWriters on default SingleInstanceLockFactory");
         } catch (IOException e) {
         }
@@ -129,7 +134,8 @@ public class TestLockFactory extends LuceneTestCase {
     public void testDefaultFSDirectory() throws IOException {
         String indexDirName = "index.TestLockFactory1";
 
-        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                    SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()) ||
@@ -139,7 +145,8 @@ public class TestLockFactory extends LuceneTestCase {
 
         // Create a 2nd IndexWriter.  This should fail:
         try {
-            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), false);
+            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), false,
+                                      IndexWriter.MaxFieldLength.LIMITED);
             fail("Should have hit an IOException with two IndexWriters on default SimpleFSLockFactory");
         } catch (IOException e) {
         }
@@ -157,7 +164,8 @@ public class TestLockFactory extends LuceneTestCase {
     public void testFSDirectoryTwoCreates() throws IOException {
         String indexDirName = "index.TestLockFactory2";
 
-        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                    SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()) ||
@@ -180,7 +188,8 @@ public class TestLockFactory extends LuceneTestCase {
         // Create a 2nd IndexWriter.  This should not fail:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                      IndexWriter.MaxFieldLength.LIMITED);
         } catch (IOException e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException with two IndexWriters with create=true, on default SimpleFSLockFactory");
@@ -213,28 +222,32 @@ public class TestLockFactory extends LuceneTestCase {
 
           // NoLockFactory:
           System.setProperty(prpName, "org.apache.lucene.store.NoLockFactory");
-          IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                               IndexWriter.MaxFieldLength.LIMITED);
           assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                      NoLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
           writer.close();
 
           // SingleInstanceLockFactory:
           System.setProperty(prpName, "org.apache.lucene.store.SingleInstanceLockFactory");
-          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                   IndexWriter.MaxFieldLength.LIMITED);
           assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                      SingleInstanceLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
           writer.close();
 
           // NativeFSLockFactory:
           System.setProperty(prpName, "org.apache.lucene.store.NativeFSLockFactory");
-          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                   IndexWriter.MaxFieldLength.LIMITED);
           assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                      NativeFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
           writer.close();
 
           // SimpleFSLockFactory:
           System.setProperty(prpName, "org.apache.lucene.store.SimpleFSLockFactory");
-          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                   IndexWriter.MaxFieldLength.LIMITED);
           assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
                      SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
           writer.close();
@@ -254,7 +267,8 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("Locks are already disabled", !FSDirectory.getDisableLocks());
         FSDirectory.setDisableLocks(true);
 
-        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
+                                             IndexWriter.MaxFieldLength.LIMITED);
 
         assertTrue("FSDirectory did not use correct default LockFactory: got " + writer.getDirectory().getLockFactory(),
                    NoLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
@@ -262,7 +276,8 @@ public class TestLockFactory extends LuceneTestCase {
         // Should be no error since locking is disabled:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), false);
+            writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), false,
+                                      IndexWriter.MaxFieldLength.LIMITED);
         } catch (IOException e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException with locking disabled");
@@ -328,7 +343,8 @@ public class TestLockFactory extends LuceneTestCase {
         FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory);
 
         // First create a 1 doc index:
-        IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true);
+        IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true,
+                                        IndexWriter.MaxFieldLength.LIMITED);
         addDoc(w);
         w.close();
 
@@ -418,7 +434,8 @@ public class TestLockFactory extends LuceneTestCase {
             IndexWriter writer = null;
             for(int i=0;i<this.numIteration;i++) {
                 try {
-                    writer = new IndexWriter(dir, analyzer, false);
+                    writer = new IndexWriter(dir, analyzer, false,
+                                             IndexWriter.MaxFieldLength.LIMITED);
                 } catch (IOException e) {
                     if (e.toString().indexOf(" timed out:") == -1) {
                         hitException = true;

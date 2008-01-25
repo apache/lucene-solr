@@ -33,7 +33,8 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);      
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, 
+                                          IndexWriter.MaxFieldLength.LIMITED);      
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
     doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

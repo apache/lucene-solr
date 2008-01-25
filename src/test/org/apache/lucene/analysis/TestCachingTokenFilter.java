@@ -37,7 +37,7 @@ public class TestCachingTokenFilter extends LuceneTestCase {
   
   public void testCaching() throws IOException {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer());
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;

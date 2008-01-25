@@ -7,6 +7,11 @@ Changes in runtime behavior
 
 API Changes
 
+ 1. LUCENE-1084: Changed all IndexWriter constructors to take an
+    explicit parameter for maximum field size.  Deprecated all the
+    pre-existing constructors; these will be removed in release 3.0.
+    (Steven Rowe via Mike McCandless)
+
 Bug fixes
     
 New features
