@@ -18,8 +18,6 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.Date;
-import java.util.List;
-
 import org.apache.solr.common.util.NamedList;
 
 

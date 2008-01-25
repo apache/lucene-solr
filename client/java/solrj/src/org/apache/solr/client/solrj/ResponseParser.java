@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj;
 
 import java.io.Reader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import org.apache.solr.common.util.NamedList;
 
 /**

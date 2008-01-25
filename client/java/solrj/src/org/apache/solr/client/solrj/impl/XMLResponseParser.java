@@ -68,11 +68,13 @@ public class XMLResponseParser extends ResponseParser
 
   public XMLResponseParser() {}
   
+  @Override
   public String getWriterType()
   {
     return "xml";
   }
 
+  @Override
   public NamedList<Object> processResponse(Reader in) {
     XMLStreamReader parser = null;
     try {
@@ -84,6 +86,7 @@ public class XMLResponseParser extends ResponseParser
     return processResponse(parser);    
   }
 
+  @Override
   public NamedList<Object> processResponse(InputStream in, String encoding)
   {
      XMLStreamReader parser = null;

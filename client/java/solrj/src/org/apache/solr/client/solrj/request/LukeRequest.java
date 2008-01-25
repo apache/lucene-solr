@@ -74,10 +74,12 @@ public class LukeRequest extends SolrRequest
     this.showSchema = showSchema;
   }
 
+  @Override
   public Collection<ContentStream> getContentStreams() {
     return null;
   }
 
+  @Override
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if( fields != null && fields.size() > 0 ) {
@@ -92,6 +94,7 @@ public class LukeRequest extends SolrRequest
     return params;
   }
 
+  @Override
   public LukeResponse process( SolrServer server ) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();

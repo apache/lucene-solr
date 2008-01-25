@@ -65,14 +65,17 @@ public class QueryRequest extends SolrRequest
   //---------------------------------------------------------------------------------
   //---------------------------------------------------------------------------------
   
+  @Override
   public Collection<ContentStream> getContentStreams() {
     return null;
   }
 
+  @Override
   public SolrParams getParams() {
     return query;
   }
 
+  @Override
   public QueryResponse process( SolrServer server ) throws SolrServerException 
   {
     try 

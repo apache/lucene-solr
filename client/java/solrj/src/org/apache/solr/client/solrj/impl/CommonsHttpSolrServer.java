@@ -19,9 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
@@ -131,6 +129,7 @@ public class CommonsHttpSolrServer extends SolrServer
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
 
+  @Override
   public NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException
   {
     // TODO -- need to set the WRITER TYPE!!!

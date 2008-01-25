@@ -42,14 +42,17 @@ public class SolrPing extends SolrRequest
     params = new ModifiableSolrParams();
   }
 
+  @Override
   public Collection<ContentStream> getContentStreams() {
     return null;
   }
 
+  @Override
   public ModifiableSolrParams getParams() {
     return params;
   }
 
+  @Override
   public SolrPingResponse process( SolrServer server ) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();

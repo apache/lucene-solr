@@ -85,6 +85,7 @@ public class EmbeddedSolrServer extends SolrServer
     return new SolrRequestParsers( true, Long.MAX_VALUE );
   }
 
+  @Override
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException 
   {
     String path = request.getPath();

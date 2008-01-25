@@ -36,6 +36,7 @@ public abstract class SolrResponseBase extends SolrResponse
     response = res;
   }
 
+  @Override
   public long getElapsedTime() {
     return elapsedTime;
   }
@@ -44,6 +45,7 @@ public abstract class SolrResponseBase extends SolrResponse
     this.elapsedTime = elapsedTime;
   }
 
+  @Override
   public NamedList<Object> getResponse() {
     return response;
   }

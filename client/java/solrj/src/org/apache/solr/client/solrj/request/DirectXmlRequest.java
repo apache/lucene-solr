@@ -44,14 +44,17 @@ public class DirectXmlRequest extends SolrRequest
     xml = body;
   }
 
+  @Override
   public Collection<ContentStream> getContentStreams() {
     return ClientUtils.toContentStreams( xml, ClientUtils.TEXT_XML );
   }
 
+  @Override
   public SolrParams getParams() {
     return null;
   }
 
+  @Override
   public UpdateResponse process( SolrServer server ) throws SolrServerException, IOException
   {
     long startTime = System.currentTimeMillis();

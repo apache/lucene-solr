@@ -131,6 +131,7 @@ public class UpdateRequest extends SolrRequest
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
+  @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
     return ClientUtils.toContentStreams( getXML(), ClientUtils.TEXT_XML );
   }
@@ -182,6 +183,7 @@ public class UpdateRequest extends SolrRequest
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
+  @Override
   public SolrParams getParams() {
     if( action != null ) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -198,6 +200,7 @@ public class UpdateRequest extends SolrRequest
     return null; 
   }
   
+  @Override
   public UpdateResponse process( SolrServer server ) throws SolrServerException, IOException
   {
     long startTime = System.currentTimeMillis();

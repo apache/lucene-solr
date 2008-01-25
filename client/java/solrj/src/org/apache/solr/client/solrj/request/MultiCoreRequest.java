@@ -80,6 +80,7 @@ public class MultiCoreRequest extends SolrRequest
   //
   //---------------------------------------------------------------------------------------
 
+  @Override
   public SolrParams getParams() 
   {
     if( action == null ) {
@@ -95,10 +96,12 @@ public class MultiCoreRequest extends SolrRequest
   //
   //---------------------------------------------------------------------------------------
 
+  @Override
   public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }
   
+  @Override
   public MultiCoreResponse process(SolrServer server) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();
