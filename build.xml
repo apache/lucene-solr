@@ -40,14 +40,16 @@
     <path refid="classpath"/>
     <pathelement location="${build.dir}/classes/demo"/>
   </path>
-
+  
   <path id="test.classpath">
     <path refid="demo.classpath"/>
+    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
 
   <path id="junit.classpath">
+    <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/test"/>
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement location="${build.dir}/classes/demo"/>

@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -39,6 +39,8 @@ Optimizations
 Documentation
 
 Build
+
+  1. LUCENE-1153: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
 
 Test Cases
 

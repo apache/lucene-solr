@@ -45,6 +45,12 @@
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
 
+  <property name="junit.jar" value="junit-3.8.2.jar"/>
+  <property name="junit-location.jar" value="${common.dir}/lib/${junit.jar}"/>
+  <path id="junit-path">
+    <pathelement location="${junit-location.jar}"/>
+  </path>
+
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.4"/>
@@ -108,11 +114,6 @@
     property="jflex.present"
     classname="JFlex.anttask.JFlexTask"
     classpath="${jflex.home}/lib/JFlex.jar"
-    />
-
-  <available
-    property="junit.present"
-    classname="junit.framework.TestCase"
     />
 
   <available
@@ -334,13 +335,6 @@
   <property name="tests.verbose" value="false"/>
 
   <target name="test" depends="compile-test" description="Runs unit tests">
-    <fail unless="junit.present">
-      ##################################################################
-      JUnit not found.
-      Please make sure junit.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-    </fail>
     <mkdir dir="${junit.output.dir}"/>
     <junit printsummary="off" haltonfailure="no"
       errorProperty="tests.failed" failureProperty="tests.failed">
