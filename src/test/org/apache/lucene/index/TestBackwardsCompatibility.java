@@ -48,16 +48,22 @@ import org.apache.lucene.document.Field;
 public class TestBackwardsCompatibility extends LuceneTestCase
 {
 
-  // Uncomment these cases & run in a pre-lockless checkout
-  // to create indices:
+  // Uncomment these cases & run them on an older Lucene
+  // version, to generate an index to test backwards
+  // compatibility.  Then, cd to build/test/index.cfs and
+  // run "zip index.<VERSION>.cfs.zip *"; cd to
+  // build/test/index.nocfs and run "zip
+  // index.<VERSION>.nocfs.zip *".  Then move those 2 zip
+  // files to your trunk checkout and add them to the
+  // oldNames array.
 
   /*
   public void testCreatePreLocklessCFS() throws IOException {
-    createIndex("src/test/org/apache/lucene/index/index.cfs", true);
+    createIndex("index.cfs", true);
   }
 
   public void testCreatePreLocklessNoCFS() throws IOException {
-    createIndex("src/test/org/apache/lucene/index/index.nocfs", false);
+    createIndex("index.nocfs", false);
   }
   */
 
@@ -116,7 +122,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase
                              "21.cfs",
                              "21.nocfs",
                              "22.cfs",
-                             "22.nocfs"};
+                             "22.nocfs",
+                             "23.cfs",
+                             "23.nocfs",
+  };
 
   public void testSearchOldIndex() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
