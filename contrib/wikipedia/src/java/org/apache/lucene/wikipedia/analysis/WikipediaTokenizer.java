@@ -46,6 +46,25 @@ public class WikipediaTokenizer extends Tokenizer {
   public static final String HEADING = "h";
   public static final String SUB_HEADING = "sh";
 
+  public static final int ALPHANUM_ID          = 0;
+  public static final int APOSTROPHE_ID        = 1;
+  public static final int ACRONYM_ID           = 2;
+  public static final int COMPANY_ID           = 3;
+  public static final int EMAIL_ID             = 4;
+  public static final int HOST_ID              = 5;
+  public static final int NUM_ID               = 6;
+  public static final int CJ_ID                = 7;
+  public static final int INTERNAL_LINK_ID     = 8;
+  public static final int EXTERNAL_LINK_ID     = 9;
+  public static final int CITATION_ID          = 10;
+  public static final int CATEGORY_ID          = 11;
+  public static final int BOLD_ID              = 12;
+  public static final int ITALICS_ID           = 13;
+  public static final int BOLD_ITALICS_ID      = 14;
+  public static final int HEADING_ID           = 15;
+  public static final int SUB_HEADING_ID       = 16;
+  public static final int EXTERNAL_LINK_URL_ID = 17;
+
   public static final int TOKENS_ONLY = 0;
   public static final int UNTOKENIZED_ONLY = 1;
   public static final int BOTH = 2;

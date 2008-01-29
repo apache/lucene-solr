@@ -30,24 +30,24 @@ import org.apache.lucene.analysis.Token;
 
 %{
 
-public static final int ALPHANUM          = 0;
-public static final int APOSTROPHE        = 1;
-public static final int ACRONYM           = 2;
-public static final int COMPANY           = 3;
-public static final int EMAIL             = 4;
-public static final int HOST              = 5;
-public static final int NUM               = 6;
-public static final int CJ                = 7;
-public static final int INTERNAL_LINK     = 8;
-public static final int EXTERNAL_LINK     = 9;
-public static final int CITATION          = 10;
-public static final int CATEGORY         = 11;
-public static final int BOLD     = 12;
-public static final int ITALICS     = 13;
-public static final int BOLD_ITALICS     = 14;
-public static final int HEADING     = 15;
-public static final int SUB_HEADING     = 16;
-public static final int EXTERNAL_LINK_URL = 17;
+public static final int ALPHANUM          = WikipediaTokenizer.ALPHANUM_ID;
+public static final int APOSTROPHE        = WikipediaTokenizer.APOSTROPHE_ID;
+public static final int ACRONYM           = WikipediaTokenizer.ACRONYM_ID;
+public static final int COMPANY           = WikipediaTokenizer.COMPANY_ID;
+public static final int EMAIL             = WikipediaTokenizer.EMAIL_ID;
+public static final int HOST              = WikipediaTokenizer.HOST_ID;
+public static final int NUM               = WikipediaTokenizer.NUM_ID;
+public static final int CJ                = WikipediaTokenizer.CJ_ID;
+public static final int INTERNAL_LINK     = WikipediaTokenizer.INTERNAL_LINK_ID;
+public static final int EXTERNAL_LINK     = WikipediaTokenizer.EXTERNAL_LINK_ID;
+public static final int CITATION          = WikipediaTokenizer.CITATION_ID;
+public static final int CATEGORY          = WikipediaTokenizer.CATEGORY_ID;
+public static final int BOLD              = WikipediaTokenizer.BOLD_ID;
+public static final int ITALICS           = WikipediaTokenizer.ITALICS_ID;
+public static final int BOLD_ITALICS      = WikipediaTokenizer.BOLD_ITALICS_ID;
+public static final int HEADING           = WikipediaTokenizer.HEADING_ID;
+public static final int SUB_HEADING       = WikipediaTokenizer.SUB_HEADING_ID;
+public static final int EXTERNAL_LINK_URL = WikipediaTokenizer.EXTERNAL_LINK_URL_ID;
 
 
 private int currentTokType;

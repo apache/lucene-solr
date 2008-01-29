@@ -437,7 +437,7 @@ public class FSDirectory extends Directory {
 
   // Inherit javadoc
   public IndexInput openInput(String name) throws IOException {
-    return new FSIndexInput(new File(directory, name));
+    return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
   // Inherit javadoc

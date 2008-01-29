@@ -12,6 +12,10 @@ API Changes
     pre-existing constructors; these will be removed in release 3.0.
     (Steven Rowe via Mike McCandless)
 
+ 2. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
+    this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
+    Mike McCandless)
+
 Bug fixes
     
 New features
