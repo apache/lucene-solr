@@ -38,7 +38,7 @@ public class SimpleFragmenter implements Fragmenter
 
 	/**
 	 * 
-	 * @param fragmentSize size in bytes of each fragment
+	 * @param fragmentSize size in number of characters of each fragment
 	 */
 	public SimpleFragmenter(int fragmentSize)
 	{
@@ -67,7 +67,7 @@ public class SimpleFragmenter implements Fragmenter
 	}
 
 	/**
-	 * @return size in bytes of each fragment
+	 * @return size in number of characters of each fragment
 	 */
 	public int getFragmentSize()
 	{
@@ -75,7 +75,7 @@ public class SimpleFragmenter implements Fragmenter
 	}
 
 	/**
-	 * @param size size in bytes of each fragment
+	 * @param size size in characters of each fragment
 	 */
 	public void setFragmentSize(int size)
 	{

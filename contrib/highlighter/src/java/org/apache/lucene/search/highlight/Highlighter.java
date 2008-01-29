@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -34,9 +33,12 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class Highlighter
 {
-
-	public static final  int DEFAULT_MAX_DOC_BYTES_TO_ANALYZE=50*1024;
-	private int maxDocBytesToAnalyze=DEFAULT_MAX_DOC_BYTES_TO_ANALYZE;
+  public static final int DEFAULT_MAX_CHARS_TO_ANALYZE = 50*1024;
+  /**
+   * @deprecated See {@link #DEFAULT_MAX_CHARS_TO_ANALYZE}
+   */
+	public static final  int DEFAULT_MAX_DOC_BYTES_TO_ANALYZE=DEFAULT_MAX_CHARS_TO_ANALYZE;
+  private int maxDocCharsToAnalyze = DEFAULT_MAX_CHARS_TO_ANALYZE;
 	private Formatter formatter;
 	private Encoder encoder;
 	private Fragmenter textFragmenter=new SimpleFragmenter();
@@ -224,7 +226,7 @@ public class Highlighter
 
 			TokenGroup tokenGroup=new TokenGroup();
 			token = tokenStream.next();
-			while ((token!= null)&&(token.startOffset()<maxDocBytesToAnalyze))
+			while ((token!= null)&&(token.startOffset()< maxDocCharsToAnalyze))
 			{
 				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(token)))
 				{
@@ -283,7 +285,7 @@ public class Highlighter
 					(lastEndOffset < text.length()) 
 					&&
 //					and that text is not too large...
-					(text.length()<maxDocBytesToAnalyze)
+					(text.length()< maxDocCharsToAnalyze)
 				)				
 			{
 				//append it to the last fragment
@@ -471,23 +473,35 @@ public class Highlighter
 	}
 
 	/**
-	 * @return the maximum number of bytes to be tokenized per doc 
+	 * @return the maximum number of bytes to be tokenized per doc
+   *
+   * @deprecated See {@link #getMaxDocCharsToAnalyze()}, since this value has always counted on chars.  They both set the same internal value, however
 	 */
 	public int getMaxDocBytesToAnalyze()
 	{
-		return maxDocBytesToAnalyze;
+		return maxDocCharsToAnalyze;
 	}
 
 	/**
 	 * @param byteCount the maximum number of bytes to be tokenized per doc
 	 * (This can improve performance with large documents)
+   *
+   * @deprecated See {@link #setMaxDocCharsToAnalyze(int)}, since this value has always counted chars
 	 */
 	public void setMaxDocBytesToAnalyze(int byteCount)
 	{
-		maxDocBytesToAnalyze = byteCount;
+		maxDocCharsToAnalyze = byteCount;
 	}
 
-	/**
+  public int getMaxDocCharsToAnalyze() {
+    return maxDocCharsToAnalyze;
+  }
+
+  public void setMaxDocCharsToAnalyze(int maxDocCharsToAnalyze) {
+    this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
+  }
+
+  /**
 	 */
 	public Fragmenter getTextFragmenter()
 	{
