@@ -145,7 +145,7 @@
     </echo>
   </target>
 
-  <target name="init" depends="javacc-uptodate-check, javacc-notice, jflex-uptodate-check, jflex-notice, changes-uptodate-check">
+  <target name="init" depends="javacc-uptodate-check, javacc-notice, jflex-uptodate-check, jflex-notice">
   </target>
 
   <target name="jflex-uptodate-check">
@@ -212,7 +212,7 @@
     </fail>
   </target>
 
-  <target name="compile-core" depends="init, clover, changes-to-html"
+  <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile
       srcdir="src/java"
@@ -520,23 +520,17 @@
    </sequential>
   </macrodef>
 
-  <target name="changes-uptodate-check">
-    <uptodate property="changes.file.uptodate" targetfile="Changes.html">
-      <srcfiles dir= "." includes="CHANGES.txt,*.css,*.pl"/>
-    </uptodate>
-  </target>
-
-  <condition property="changes.html.complete">
-    <and>
-      <isset property="changes.file.uptodate" />
-      <length file="Changes.html" when="greater" length="100" />
-    </and>
-  </condition>
-
-  <target name="changes-to-html" unless="changes.html.complete" depends="init">
-    <exec executable="perl" input="CHANGES.txt" output="Changes.html" failonerror="true">
-      <arg value="${common.dir}/changes2html.pl"/>
-    </exec>
-  </target>
 
 </project>
+
+
+
+
+
+
+
+
+
+
+
+

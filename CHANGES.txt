@@ -42,9 +42,6 @@ Optimizations
 
 Documentation
 
- 1. LUCENE-1157: Formatable changes log - Changes.html created by
-    parsing CHANGES.txt.   (Steven Rowe, Doron Cohen) 
-
 Build
 
   1. LUCENE-1153: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
