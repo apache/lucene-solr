@@ -70,7 +70,7 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(Date, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>; using UTC as timezone 
+   *  depeding on <code>resolution</code>; using GMT as timezone 
    */
   public static String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
@@ -83,7 +83,7 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(long, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>; using UTC as timezone
+   *  depeding on <code>resolution</code>; using GMT as timezone
    */
   public static String timeToString(long time, Resolution resolution) {
     Calendar cal = Calendar.getInstance(GMT);
