@@ -1,0 +1,1906 @@
+<!--
+**********************************************************
+** WARNING: This file is generated from CHANGES.txt by the 
+**          Perl script 'changes2html.pl'.
+**          Do *not* edit this file!
+**********************************************************
+          
+****************************************************************************
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+****************************************************************************
+-->
+<html>
+<head>
+  <title>﻿Lucene Change Log</title>
+  <link rel="stylesheet" href="ChangesFancyStyle.css" title="Fancy">
+  <link rel="alternate stylesheet" href="ChangesSimpleStyle.css" title="Simple">
+  <META http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <SCRIPT>
+    function toggleList(e) {
+      element = document.getElementById(e).style;
+      element.display == 'none' ? element.display = 'block' : element.display='none';
+    }
+    function collapse() {
+      for (var i = 0; i < document.getElementsByTagName("ul").length; i++) {
+        var list = document.getElementsByTagName("ul")[i];
+        if (list.id != 'trunk' && list.id != '2.3.0') {
+          list.style.display = "none";
+        }
+      }
+      for (var i = 0; i < document.getElementsByTagName("ol").length; i++) {
+        document.getElementsByTagName("ol")[i].style.display = "none"; 
+      }
+    }
+    window.onload = collapse;
+  </SCRIPT>
+</head>
+<body>
+
+<h1>﻿Lucene Change Log</h1>
+
+<h2><a href="javascript:toggleList('trunk')">Trunk (not yet released)</a></h2>
+<ul id="trunk">
+  <li><a href="javascript:toggleList('trunk.changes_in_runtime_behavior')">Changes in runtime behavior</a>&nbsp;&nbsp;&nbsp;(none)
+    <ol id="trunk.changes_in_runtime_behavior">
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="trunk.api_changes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1084">LUCENE-1084</a>: Changed all IndexWriter constructors to take an
+explicit parameter for maximum field size.  Deprecated all the
+pre-existing constructors; these will be removed in release 3.0.<br />(Steven Rowe via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1150">LUCENE-1150</a>: Re-expose StandardTokenizer's constants publicly;
+this was accidentally lost with <a href="http://issues.apache.org/jira/browse/LUCENE-966">LUCENE-966</a>.<br />(Nicolas Lalevée via
+Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(none)
+    <ol id="trunk.bug_fixes">
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="trunk.new_features">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1137">LUCENE-1137</a>: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
+ process.  The flag is not indexed/stored and is thus only used by analysis.
+</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1147">LUCENE-1147</a>: Add -segment option to CheckIndex tool so you can
+check only a specific segment or segments in your index.<br />(Mike
+McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.optimizations')">Optimizations</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="trunk.optimizations">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-705">LUCENE-705</a>: When building a compound file, use
+RandomAccessFile.setLength() to tell the OS/filesystem to
+pre-allocate space for the file.  This may improve fragmentation
+in how the CFS file is stored, and allows us to detect an upcoming
+disk full situation before actually filling up the disk.<br />(Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1120">LUCENE-1120</a>: Speed up merging of term vectors by bulk-copying the
+raw bytes for each contiguous range of non-deleted documents.<br />(Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.documentation')">Documentation</a>&nbsp;&nbsp;&nbsp;(1)
+    <ol id="trunk.documentation">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1157">LUCENE-1157</a>: Formatable changes log - Changes.html created by
+parsing CHANGES.txt.<br />(Steven Rowe, Doron Cohen)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.build')">Build</a>&nbsp;&nbsp;&nbsp;(1)
+    <ol id="trunk.build">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1153">LUCENE-1153</a>: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
+</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('trunk.test_cases')">Test Cases</a>&nbsp;&nbsp;&nbsp;(none)
+    <ol id="trunk.test_cases">
+    </ol>
+  </li>
+</ul>
+<h2><a href="javascript:toggleList('2.3.0')">Release 2.3.0  [2008-01-21]</a></h2>
+<ul id="2.3.0">
+  <li><a href="javascript:toggleList('2.3.0.changes_in_runtime_behavior')">Changes in runtime behavior</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="2.3.0.changes_in_runtime_behavior">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-994">LUCENE-994</a>: Defaults for IndexWriter have been changed to maximize
+out-of-the-box indexing speed.  First, IndexWriter now flushes by
+RAM usage (16 MB by default) instead of a fixed doc count (call
+IndexWriter.setMaxBufferedDocs to get backwards compatible
+behavior).  Second, ConcurrentMergeScheduler is used to run merges
+using background threads (call IndexWriter.setMergeScheduler(new
+SerialMergeScheduler()) to get backwards compatible behavior).
+Third, merges are chosen based on size in bytes of each segment
+rather than document count of each segment (call
+IndexWriter.setMergePolicy(new LogDocMergePolicy()) to get
+backwards compatible behavior).
+<p/>
+NOTE: users of ParallelReader must change back all of these
+defaults in order to ensure the docIDs "align" across all parallel
+indices.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1045">LUCENE-1045</a>: SortField.AUTO didn't work with long. When detecting
+the field type for sorting automatically, numbers used to be
+interpreted as int, then as float, if parsing the number as an int
+failed. Now the detection checks for int, then for long,
+then for float.<br />(Daniel Naber)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(14)
+    <ol id="2.3.0.api_changes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-843">LUCENE-843</a>: Added IndexWriter.setRAMBufferSizeMB(...) to have
+IndexWriter flush whenever the buffered documents are using more
+than the specified amount of RAM.  Also added new APIs to Token
+that allow one to set a char[] plus offset and length to specify a
+token (to avoid creating a new String() for each Token).<br />(Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-963">LUCENE-963</a>: Add setters to Field to allow for re-using a single
+Field instance during indexing.  This is a sizable performance
+gain, especially for small documents.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>: Add new APIs to Token, TokenStream and Analyzer to
+permit re-using of Token and TokenStream instances during
+indexing.  Changed Token to use a char[] as the store for the
+termText instead of String.  This gives faster tokenization
+performance (~10-15%).<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-847">LUCENE-847</a>: Factored MergePolicy, which determines which merges
+should take place and when, as well as MergeScheduler, which
+determines when the selected merges should actually run, out of
+IndexWriter.  The default merge policy is now
+LogByteSizeMergePolicy (see <a href="http://issues.apache.org/jira/browse/LUCENE-845">LUCENE-845</a>) and the default merge
+scheduler is now ConcurrentMergeScheduler (see
+<a href="http://issues.apache.org/jira/browse/LUCENE-870">LUCENE-870</a>).<br />(Steven Parkes via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1052">LUCENE-1052</a>: Add IndexReader.setTermInfosIndexDivisor(int) method
+that allows you to reduce memory usage of the termInfos by further
+sub-sampling (over the termIndexInterval that was used during
+indexing) which terms are loaded into memory.<br />(Chuck Williams,
+Doug Cutting via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-743">LUCENE-743</a>: Add IndexReader.reopen() method that re-opens an
+existing IndexReader (see New features -&gt; 8.)<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1062">LUCENE-1062</a>: Add setData(byte[] data),
+setData(byte[] data, int offset, int length), getData(), getOffset()
+and clone() methods to o.a.l.index.Payload. Also add the field name
+as arg to Similarity.scorePayload().<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-982">LUCENE-982</a>: Add IndexWriter.optimize(int maxNumSegments) method to
+"partially optimize" an index down to maxNumSegments segments.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1080">LUCENE-1080</a>: Changed Token.DEFAULT_TYPE to be public.
+</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1064">LUCENE-1064</a>: Changed TopDocs constructor to be public.<br />(Shai Erera via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1079">LUCENE-1079</a>: DocValues cleanup: constructor now has no params,
+and getInnerArray() now throws UnsupportedOperationException<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1089">LUCENE-1089</a>: Added PriorityQueue.insertWithOverflow, which returns
+the Object (if any) that was bumped from the queue to allow
+re-use.<br />(Shai Erera via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1101">LUCENE-1101</a>: Token reuse 'contract' (defined <a href="http://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>)
+modified so it is token producer's responsibility
+to call Token.clear().<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1118">LUCENE-1118</a>: Changed StandardAnalyzer to skip too-long (default &gt;
+255 characters) tokens.  You can increase this limit by calling
+StandardAnalyzer.setMaxTokenLength(...).<br />(Michael McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(28)
+    <ol id="2.3.0.bug_fixes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-933">LUCENE-933</a>: QueryParser fixed to not produce empty sub
+BooleanQueries "()" even if the Analyzer produced no
+tokens for input.<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-955">LUCENE-955</a>: Fixed SegmentTermPositions to work correctly with the
+first term in the dictionary.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-951">LUCENE-951</a>: Fixed NullPointerException in MultiLevelSkipListReader
+that was thrown after a call of TermPositions.seek().<br />(Rich Johnson via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-938">LUCENE-938</a>: Fixed cases where an unhandled exception in
+IndexWriter's methods could cause deletes to be lost.<br />(Steven Parkes via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-962">LUCENE-962</a>: Fixed case where an unhandled exception in
+IndexWriter.addDocument or IndexWriter.updateDocument could cause
+unreferenced files in the index to not be deleted<br />(Steven Parkes via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-957">LUCENE-957</a>: RAMDirectory fixed to properly handle directories
+larger than Integer.MAX_VALUE.<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-781">LUCENE-781</a>: MultiReader fixed to not throw NPE if isCurrent(),
+isOptimized() or getVersion() is called. Separated MultiReader
+into two classes: MultiSegmentReader extends IndexReader, is
+package-protected and is created automatically by IndexReader.open()
+in case the index has multiple segments. The public MultiReader
+now extends MultiSegmentReader and is intended to be used by users
+who want to add their own subreaders.<br />(Daniel Naber, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-970">LUCENE-970</a>: FilterIndexReader now implements isOptimized(). Before
+a call of isOptimized() would throw a NPE.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-832">LUCENE-832</a>: ParallelReader fixed to not throw NPE if isCurrent(),
+isOptimized() or getVersion() is called.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-948">LUCENE-948</a>: Fix FNFE exception caused by stale NFS client
+directory listing caches when writers on different machines are
+sharing an index over NFS and using a custom deletion policy<br />(Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-978">LUCENE-978</a>: Ensure TermInfosReader, FieldsReader, and FieldsReader
+close any streams they had opened if an exception is hit in the
+constructor.<br />(Ning Li via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-985">LUCENE-985</a>: If an extremely long term is in a doc (&gt; 16383 chars),
+we now throw an IllegalArgumentException saying the term is too
+long, instead of cryptic ArrayIndexOutOfBoundsException.<br />(Karl
+Wettin via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-991">LUCENE-991</a>: The explain() method of BoostingTermQuery had errors
+when no payloads were present on a document.<br />(Peter Keegan via
+Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-992">LUCENE-992</a>: Fixed IndexWriter.updateDocument to be atomic again
+(this was broken by <a href="http://issues.apache.org/jira/browse/LUCENE-843">LUCENE-843</a>).<br />(Ning Li via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1008">LUCENE-1008</a>: Fixed corruption case when document with no term
+vector fields is added after documents with term vector fields.
+This bug was introduced with <a href="http://issues.apache.org/jira/browse/LUCENE-843">LUCENE-843</a>.<br />(Grant Ingersoll via
+Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1006">LUCENE-1006</a>: Fixed QueryParser to accept a "" field value (zero
+length quoted string.)<br />(yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1010">LUCENE-1010</a>: Fixed corruption case when document with no term
+vector fields is added after documents with term vector fields.
+This case is hit during merge and would cause an EOFException.
+This bug was introduced with <a href="http://issues.apache.org/jira/browse/LUCENE-984">LUCENE-984</a>.<br />(Andi Vajda via Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1009">LUCENE-1009</a>: Fix merge slowdown with LogByteSizeMergePolicy when
+autoCommit=false and documents are using stored fields and/or term
+vectors.<br />(Mark Miller via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1011">LUCENE-1011</a>: Fixed corruption case when two or more machines,
+sharing an index over NFS, can be writers in quick succession.<br />(Patrick Kimber via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1028">LUCENE-1028</a>: Fixed Weight serialization for few queries:
+DisjunctionMaxQuery, ValueSourceQuery, CustomScoreQuery.
+Serialization check added for all queries.<br />(Kyle Maxwell via Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1048">LUCENE-1048</a>: Fixed incorrect behavior in Lock.obtain(...) when the
+timeout argument is very large (eg Long.MAX_VALUE).  Also added
+Lock.LOCK_OBTAIN_WAIT_FOREVER constant to never timeout.<br />(Nikolay
+Diakov via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1050">LUCENE-1050</a>: Throw LockReleaseFailedException in
+Simple/NativeFSLockFactory if we fail to delete the lock file when
+releasing the lock.<br />(Nikolay Diakov via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1071">LUCENE-1071</a>: Fixed SegmentMerger to correctly set payload bit in
+the merged segment.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1042">LUCENE-1042</a>: Remove throwing of IOException in getTermFreqVector(int, String, TermVectorMapper) to be consistent
+with other getTermFreqVector calls.  Also removed the throwing of the other IOException in that method to be consistent.<br />(Karl Wettin via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1096">LUCENE-1096</a>: Fixed Hits behavior when hits' docs are deleted
+along with iterating the hits. Deleting docs already retrieved
+now works seamlessly. If docs not yet retrieved are deleted
+(e.g. from another thread), and then, relying on the initial
+Hits.length(), an application attempts to retrieve more hits
+than actually exist , a ConcurrentMidificationException
+is thrown.<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>: Changed StandardTokenizer to fix an issue with it marking
+  the type of some tokens incorrectly.  This is done by adding a new flag named
+  replaceInvalidAcronym which defaults to false, the current, incorrect behavior.  Setting
+  this flag to true fixes the problem.  This flag is a temporary fix and is already
+  marked as being deprecated.  3.x will implement the correct approach.  (Shai Erera via Grant Ingersoll)
+  <a href="http://issues.apache.org/jira/browse/LUCENE-1140">LUCENE-1140</a>: Fixed NPE caused by 1068<br />(Alexei Dets via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-749">LUCENE-749</a>: ChainedFilter behavior fixed when logic of
+first filter is ANDNOT.<br />(Antonio Bruno via Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-508">LUCENE-508</a>: Make sure SegmentTermEnum.prev() is accurate (= last
+term) after next() returns false.<br />(Steven Tamm via Mike
+McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(13)
+    <ol id="2.3.0.new_features">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-906">LUCENE-906</a>: Elision filter for French.<br />(Mathieu Lecarme via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-960">LUCENE-960</a>: Added a SpanQueryFilter and related classes to allow for
+not only filtering, but knowing where in a Document a Filter matches<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-868">LUCENE-868</a>: Added new Term Vector access features.  New callback
+mechanism allows application to define how and where to read Term
+Vectors from disk. This implementation contains several extensions
+of the new abstract TermVectorMapper class.  The new API should be
+back-compatible.  No changes in the actual storage of Term Vectors
+has taken place.
+</li>
+      <li>1 <a href="http://issues.apache.org/jira/browse/LUCENE-1038">LUCENE-1038</a>: Added setDocumentNumber() method to TermVectorMapper
+  to provide information about what document is being accessed.<br />(Karl Wettin via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-975">LUCENE-975</a>: Added PositionBasedTermVectorMapper that allows for
+position based lookup of term vector information.
+See item #3 above (<a href="http://issues.apache.org/jira/browse/LUCENE-868">LUCENE-868</a>).
+</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1011">LUCENE-1011</a>: Added simple tools (all in org.apache.lucene.store)
+to verify that locking is working properly.  LockVerifyServer runs
+a separate server to verify locks.  LockStressTest runs a simple
+tool that rapidly obtains and releases locks.
+VerifyingLockFactory is a LockFactory that wraps any other
+LockFactory and consults the LockVerifyServer whenever a lock is
+obtained or released, throwing an exception if an illegal lock
+obtain occurred.<br />(Patrick Kimber via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1015">LUCENE-1015</a>: Added FieldCache extension (ExtendedFieldCache) to
+support doubles and longs.  Added support into SortField for sorting
+on doubles and longs as well.<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1020">LUCENE-1020</a>: Created basic index checking &amp; repair tool
+(o.a.l.index.CheckIndex).  When run without -fix it does a
+detailed test of all segments in the index and reports summary
+information and any errors it hit.  With -fix it will remove
+segments that had errors.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-743">LUCENE-743</a>: Add IndexReader.reopen() method that re-opens an
+existing IndexReader by only loading those portions of an index
+that have changed since the reader was (re)opened. reopen() can
+be significantly faster than open(), depending on the amount of
+index changes. SegmentReader, MultiSegmentReader, MultiReader,
+and ParallelReader implement reopen().<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1040">LUCENE-1040</a>: CharArraySet useful for efficiently checking
+set membership of text specified by char[].<br />(yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1073">LUCENE-1073</a>: Created SnapshotDeletionPolicy to facilitate taking a
+live backup of an index without pausing indexing.<br />(Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1019">LUCENE-1019</a>: CustomScoreQuery enhanced to support multiple
+ValueSource queries.<br />(Kyle Maxwell via Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1095">LUCENE-1095</a>: Added an option to StopFilter to increase
+positionIncrement of the token succeeding a stopped token.
+Disabled by default. Similar option added to QueryParser
+to consider token positions when creating PhraseQuery
+and MultiPhraseQuery. Disabled by default (so by default
+the query parser ignores position increments).<br />(Doron Cohen)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.optimizations')">Optimizations</a>&nbsp;&nbsp;&nbsp;(14)
+    <ol id="2.3.0.optimizations">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-937">LUCENE-937</a>: CachingTokenFilter now uses an iterator to access the
+Tokens that are cached in the LinkedList. This increases performance
+significantly, especially when the number of Tokens is large.<br />(Mark Miller via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-843">LUCENE-843</a>: Substantial optimizations to improve how IndexWriter
+uses RAM for buffering documents and to speed up indexing (2X-8X
+faster).  A single shared hash table now records the in-memory
+postings per unique term and is directly flushed into a single
+segment.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-892">LUCENE-892</a>: Fixed extra "buffer to buffer copy" that sometimes
+takes place when using compound files.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-959">LUCENE-959</a>: Remove synchronization in Document<br />(yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-963">LUCENE-963</a>: Add setters to Field to allow for re-using a single
+Field instance during indexing.  This is a sizable performance
+gain, especially for small documents.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-939">LUCENE-939</a>: Check explicitly for boundary conditions in FieldInfos
+and don't rely on exceptions.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-966">LUCENE-966</a>: Very substantial speedups (~6X faster) for
+StandardTokenizer (StandardAnalyzer) by using JFlex instead of
+JavaCC to generate the tokenizer.<br />(Stanislaw Osinski via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>: Changed core tokenizers &amp; filters to re-use Token and
+TokenStream instances when possible to improve tokenization
+performance (~10-15%).<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-871">LUCENE-871</a>: Speedup ISOLatin1AccentFilter<br />(Ian Boston via Mike
+McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-986">LUCENE-986</a>: Refactored SegmentInfos from IndexReader into the new
+subclass DirectoryIndexReader. SegmentReader and MultiSegmentReader
+now extend DirectoryIndexReader and are the only IndexReader
+implementations that use SegmentInfos to access an index and
+acquire a write lock for index modifications.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1007">LUCENE-1007</a>: Allow flushing in IndexWriter to be triggered by
+either RAM usage or document count or both (whichever comes
+first), by adding symbolic constant DISABLE_AUTO_FLUSH to disable
+one of the flush triggers.<br />(Ning Li via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1043">LUCENE-1043</a>: Speed up merging of stored fields by bulk-copying the
+raw bytes for each contiguous range of non-deleted documents.<br />(Robert Engels via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-693">LUCENE-693</a>: Speed up nested conjunctions (~2x) that match many
+documents, and a slight performance increase for top level
+conjunctions.<br />(yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1098">LUCENE-1098</a>: Make inner class StandardAnalyzer.SavedStreams static
+and final.<br />(Nathan Beyer via Michael Busch)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.documentation')">Documentation</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="2.3.0.documentation">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1051">LUCENE-1051</a>: Generate separate javadocs for core, demo and contrib
+classes, as well as an unified view. Also add an appropriate menu
+structure to the website.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-746">LUCENE-746</a>: Fix error message in AnalyzingQueryParser.getPrefixQuery.<br />(Ronnie Kolehmainen via Michael Busch)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.build')">Build</a>&nbsp;&nbsp;&nbsp;(8)
+    <ol id="2.3.0.build">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-908">LUCENE-908</a>: Improvements and simplifications for how the MANIFEST
+file and the META-INF dir are created.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-935">LUCENE-935</a>: Various improvements for the maven artifacts. Now the
+artifacts also include the sources as .jar files.<br />(Michael Busch)</li>
+      <li>Added apply-patch target to top-level build.  Defaults to looking for
+a patch in ${basedir}/../patches with name specified by -Dpatch.name.
+Can also specify any location by -Dpatch.file property on the command
+line.  This should be helpful for easy application of patches, but it
+is also a step towards integrating automatic patch application with
+JIRA and Hudson, and is thus subject to change.<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-935">LUCENE-935</a>: Defined property "m2.repository.url" to allow setting
+the url to a maven remote repository to deploy to.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1051">LUCENE-1051</a>: Include javadocs in the maven artifacts.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1055">LUCENE-1055</a>: Remove gdata-server from build files and its sources
+from trunk.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-935">LUCENE-935</a>: Allow to deploy maven artifacts to a remote m2 repository
+via scp and ssh authentication.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1123">LUCENE-1123</a>: Allow overriding the specification version for
+MANIFEST.MF<br />(Michael Busch)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.3.0.test_cases')">Test Cases</a>&nbsp;&nbsp;&nbsp;(1)
+    <ol id="2.3.0.test_cases">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-766">LUCENE-766</a>: Test adding two fields with the same name but different
+term vector setting.<br />(Nicolas Lalevée via Doron Cohen)</li>
+    </ol>
+  </li>
+</ul>
+<h2><a href="javascript:toggleList('older')">Older Releases</a></h2>
+<ul id="older">
+<h3><a href="javascript:toggleList('2.2.0')">Release 2.2.0  [2007-06-19]</a></h3>
+<ul id="2.2.0">
+  <li><a href="javascript:toggleList('2.2.0.changes_in_runtime_behavior')">Changes in runtime behavior</a>&nbsp;&nbsp;&nbsp;(none)
+    <ol id="2.2.0.changes_in_runtime_behavior">
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(13)
+    <ol id="2.2.0.api_changes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-793">LUCENE-793</a>: created new exceptions and added them to throws clause
+for many methods (all subclasses of IOException for backwards
+compatibility): index.StaleReaderException,
+index.CorruptIndexException, store.LockObtainFailedException.
+This was done to better call out the possible root causes of an
+IOException from these methods.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-811">LUCENE-811</a>: make SegmentInfos class, plus a few methods from related
+classes, package-private again (they were unnecessarily made public
+as part of <a href="http://issues.apache.org/jira/browse/LUCENE-701">LUCENE-701</a>).<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-710">LUCENE-710</a>: added optional autoCommit boolean to IndexWriter
+constructors.  When this is false, index changes are not committed
+until the writer is closed.  This gives explicit control over when
+a reader will see the changes.  Also added optional custom
+deletion policy to explicitly control when prior commits are
+removed from the index.  This is intended to allow applications to
+share an index over NFS by customizing when prior commits are
+deleted.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-818">LUCENE-818</a>: changed most public methods of IndexWriter,
+IndexReader (and its subclasses), FieldsReader and RAMDirectory to
+throw AlreadyClosedException if they are accessed after being
+closed.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-834">LUCENE-834</a>: Changed some access levels for certain Span classes to allow them
+to be overridden.  They have been marked expert only and not for public
+consumption.<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-796">LUCENE-796</a>: Removed calls to super.* from various get*Query methods in
+MultiFieldQueryParser, in order to allow sub-classes to override them.<br />(Steven Parkes via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-857">LUCENE-857</a>: Removed caching from QueryFilter and deprecated QueryFilter
+in favour of QueryWrapperFilter or QueryWrapperFilter + CachingWrapperFilter
+combination when caching is desired.<br />(Chris Hostetter, Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-869">LUCENE-869</a>: Changed FSIndexInput and FSIndexOutput to inner classes of FSDirectory
+to enable extensibility of these classes.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-580">LUCENE-580</a>: Added the public method reset() to TokenStream. This method does
+nothing by default, but may be overwritten by subclasses to support consuming
+the TokenStream more than once.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-580">LUCENE-580</a>: Added a new constructor to Field that takes a TokenStream as
+argument, available as tokenStreamValue(). This is useful to avoid the need of
+"dummy analyzers" for pre-analyzed fields.<br />(Karl Wettin, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-730">LUCENE-730</a>: Added the new methods to BooleanQuery setAllowDocsOutOfOrder() and
+getAllowDocsOutOfOrder(). Deprecated the methods setUseScorer14() and
+getUseScorer14(). The optimization patch <a href="http://issues.apache.org/jira/browse/LUCENE-730">LUCENE-730</a> (see Optimizations-&gt;3.)
+improves performance for certain queries but results in scoring out of docid
+order. This patch reverse this change, so now by default hit docs are scored
+in docid order if not setAllowDocsOutOfOrder(true) is explicitly called.
+This patch also enables the tests in QueryUtils again that check for docid
+order.<br />(Paul Elschot, Doron Cohen, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-888">LUCENE-888</a>: Added Directory.openInput(File path, int bufferSize)
+to optionally specify the size of the read buffer.  Also added
+BufferedIndexInput.setBufferSize(int) to change the buffer size.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-923">LUCENE-923</a>: Make SegmentTermPositionVector package-private. It does not need
+to be public because it implements the public interface TermPositionVector.<br />(Michael Busch)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(24)
+    <ol id="2.2.0.bug_fixes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-804">LUCENE-804</a>: Fixed build.xml to pack a fully compilable src dist.<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-813">LUCENE-813</a>: Leading wildcard fixed to work with trailing wildcard.
+Query parser modified to create a prefix query only for the case
+that there is a single trailing wildcard (and no additional wildcard
+or '?' in the query text).<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-812">LUCENE-812</a>: Add no-argument constructors to NativeFSLockFactory
+and SimpleFSLockFactory.  This enables all 4 builtin LockFactory
+implementations to be specified via the System property
+org.apache.lucene.store.FSDirectoryLockFactoryClass.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-821">LUCENE-821</a>: The new single-norm-file introduced by <a href="http://issues.apache.org/jira/browse/LUCENE-756">LUCENE-756</a>
+failed to reduce the number of open descriptors since it was still
+opened once per field with norms.<br />(yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-823">LUCENE-823</a>: Make sure internal file handles are closed when
+hitting an exception (eg disk full) while flushing deletes in
+IndexWriter's mergeSegments, and also during
+IndexWriter.addIndexes.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-825">LUCENE-825</a>: If directory is removed after
+FSDirectory.getDirectory() but before IndexReader.open you now get
+a FileNotFoundException like Lucene pre-2.1 (before this fix you
+got an NPE).<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-800">LUCENE-800</a>: Removed backslash from the TERM_CHAR list in the queryparser,
+because the backslash is the escape character. Also changed the ESCAPED_CHAR
+list to contain all possible characters, because every character that
+follows a backslash should be considered as escaped.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-372">LUCENE-372</a>: QueryParser.parse() now ensures that the entire input string
+is consumed. Now a ParseException is thrown if a query contains too many
+closing parentheses.<br />(Andreas Neumann via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-814">LUCENE-814</a>: javacc build targets now fix line-end-style of generated files.
+Now also deleting all javacc generated files before calling javacc.<br />(Steven Parkes, Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-829">LUCENE-829</a>: close readers in contrib/benchmark.<br />(Karl Wettin, Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-828">LUCENE-828</a>: Minor fix for Term's equal().<br />(Paul Cowan via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-846">LUCENE-846</a>: Fixed: if IndexWriter is opened with autoCommit=false,
+and you call addIndexes, and hit an exception (eg disk full) then
+when IndexWriter rolls back its internal state this could corrupt
+the instance of IndexWriter (but, not the index itself) by
+referencing already deleted segments.  This bug was only present
+in 2.2 (trunk), ie was never released.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-736">LUCENE-736</a>: Sloppy phrase query with repeating terms matches wrong docs.
+For example query "B C B"~2 matches the doc "A B C D E".<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-789">LUCENE-789</a>: Fixed: custom similarity is ignored when using MultiSearcher (problem reported
+by Alexey Lef). Now the similarity applied by MultiSearcer.setSimilarity(sim) is being used.
+Note that as before this fix, creating a multiSearcher from Searchers for whom custom similarity
+was set has no effect - it is masked by the similarity of the MultiSearcher. This is as
+designed, because MultiSearcher operates on Searchables (not Searchers).<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-880">LUCENE-880</a>: Fixed DocumentWriter to close the TokenStreams after it
+has written the postings. Then the resources associated with the
+TokenStreams can safely be released.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-883">LUCENE-883</a>: consecutive calls to Spellchecker.indexDictionary()
+won't insert terms twice anymore.<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-881">LUCENE-881</a>: QueryParser.escape() now also escapes the characters
+'|' and '&amp;' which are part of the queryparser syntax.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-886">LUCENE-886</a>: Spellchecker clean up: exceptions aren't printed to STDERR
+anymore and ignored, but re-thrown. Some javadoc improvements.<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-698">LUCENE-698</a>: FilteredQuery now takes the query boost into account for
+scoring.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-763">LUCENE-763</a>: Spellchecker: LuceneDictionary used to skip first word in
+enumeration.<br />(Christian Mallwitz via Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-903">LUCENE-903</a>: FilteredQuery explanation inaccuracy with boost.
+Explanation tests now "deep" check the explanation details.<br />(Chris Hostetter, Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-912">LUCENE-912</a>: DisjunctionMaxScorer first skipTo(target) call ignores the
+skip target param and ends up at the first match.<br />(Sudaakeran B. via Chris Hostetter &amp; Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-913">LUCENE-913</a>: Two consecutive score() calls return different
+scores for Boolean Queries.<br />(Michael Busch, Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1013">LUCENE-1013</a>: Fix IndexWriter.setMaxMergeDocs to work "out of the
+box", again, by moving set/getMaxMergeDocs up from
+LogDocMergePolicy into LogMergePolicy.  This fixes the API
+breakage (non backwards compatible change) caused by <a href="http://issues.apache.org/jira/browse/LUCENE-994">LUCENE-994</a>.<br />(Yonik Seeley via Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(9)
+    <ol id="2.2.0.new_features">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-759">LUCENE-759</a>: Added two n-gram-producing TokenFilters.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-822">LUCENE-822</a>: Added FieldSelector capabilities to Searchable for use with
+RemoteSearcher, and other Searchable implementations.<br />(Mark Miller, Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-755">LUCENE-755</a>: Added the ability to store arbitrary binary metadata in the posting list.
+These metadata are called Payloads. For every position of a Token one Payload in the form
+of a variable length byte array can be stored in the prox file.
+Remark: The APIs introduced with this feature are in experimental state and thus
+        contain appropriate warnings in the javadocs.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-834">LUCENE-834</a>: Added BoostingTermQuery which can boost scores based on the
+values of a payload (see #3 above.)<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-834">LUCENE-834</a>: Similarity has a new method for scoring payloads called
+scorePayloads that can be overridden to take advantage of payload
+storage<br />(see #3 above)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-834">LUCENE-834</a>: Added isPayloadAvailable() onto TermPositions interface and
+implemented it in the appropriate places<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-853">LUCENE-853</a>: Added RemoteCachingWrapperFilter to enable caching of Filters
+on the remote side of the RMI connection.<br />(Matt Ericson via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-446">LUCENE-446</a>: Added Solr's search.function for scores based on field
+values, plus CustomScoreQuery for simple score (post) customization.<br />(Yonik Seeley, Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-1058">LUCENE-1058</a>: Added new TeeTokenFilter (like the UNIX 'tee' command) and SinkTokenizer which can be used to share tokens between two or more
+Fields such that the other Fields do not have to go through the whole Analysis process over again.  For instance, if you have two
+Fields that share all the same analysis steps except one lowercases tokens and the other does not, you can coordinate the operations
+between the two using the TeeTokenFilter and the SinkTokenizer.  See TeeSinkTokenTest.java for examples.<br />(Grant Ingersoll, Michael Busch, Yonik Seeley)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.optimizations')">Optimizations</a>&nbsp;&nbsp;&nbsp;(7)
+    <ol id="2.2.0.optimizations">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-761">LUCENE-761</a>: The proxStream is now cloned lazily in SegmentTermPositions
+when nextPosition() is called for the first time. This allows using instances
+of SegmentTermPositions instead of SegmentTermDocs without additional costs.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-431">LUCENE-431</a>: RAMInputStream and RAMOutputStream extend IndexInput and
+IndexOutput directly now. This avoids further buffering and thus avoids
+unnecessary array copies.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-730">LUCENE-730</a>: Updated BooleanScorer2 to make use of BooleanScorer in some
+cases and possibly improve scoring performance.  Documents can now be
+delivered out-of-order as they are scored (e.g. to HitCollector).
+N.B. A bit of code had to be disabled in QueryUtils in order for
+TestBoolean2 test to keep passing.<br />(Paul Elschot via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-882">LUCENE-882</a>: Spellchecker doesn't store the ngrams anymore but only indexes
+them to keep the spell index small.<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-430">LUCENE-430</a>: Delay allocation of the buffer after a clone of BufferedIndexInput.
+Together with <a href="http://issues.apache.org/jira/browse/LUCENE-888">LUCENE-888</a> this will allow to adjust the buffer size
+dynamically.<br />(Paul Elschot, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-888">LUCENE-888</a>: Increase buffer sizes inside CompoundFileWriter and
+BufferedIndexOutput.  Also increase buffer size in
+BufferedIndexInput, but only when used during merging.  Together,
+these increases yield 10-18% overall performance gain vs the
+previous 1K defaults.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-866">LUCENE-866</a>: Adds multi-level skip lists to the posting lists. This speeds
+up most queries that use skipTo(), especially on big indexes with large posting
+lists. For average AND queries the speedup is about 20%, for queries that
+contain very frequent and very unique terms the speedup can be over 80%.<br />(Michael Busch)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.documentation')">Documentation</a>&nbsp;&nbsp;&nbsp;(6)
+    <ol id="2.2.0.documentation">
+      <li>LUCENE 791 &amp;&amp; INFRA-1173: Infrastructure moved the Wiki to
+http://wiki.apache.org/lucene-java/   Updated the links in the docs and
+wherever else I found references.<br />(Grant Ingersoll, Joe Schaefer)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-807">LUCENE-807</a>: Fixed the javadoc for ScoreDocComparator.compare() to be
+consistent with java.util.Comparator.compare(): Any integer is allowed to
+be returned instead of only -1/0/1.<br />(Paul Cowan via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-875">LUCENE-875</a>: Solved javadoc warnings &amp; errors under jdk1.4.
+Solved javadoc errors under jdk5 (jars in path for gdata).
+Made "javadocs" target depend on "build-contrib" for first downloading
+contrib jars configured for dynamic downloaded. (Note: when running
+behind firewall, a firewall prompt might pop up)<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-740">LUCENE-740</a>: Added SNOWBALL-LICENSE.txt to the snowball package and a
+remark about the license to NOTICE.TXT.<br />(Steven Parkes via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-925">LUCENE-925</a>: Added analysis package javadocs.<br />(Grant Ingersoll and Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-926">LUCENE-926</a>: Added document package javadocs.<br />(Grant Ingersoll)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.2.0.build')">Build</a>&nbsp;&nbsp;&nbsp;(10)
+    <ol id="2.2.0.build">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-802">LUCENE-802</a>: Added LICENSE.TXT and NOTICE.TXT to Lucene jars.<br />(Steven Parkes via Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-885">LUCENE-885</a>: "ant test" now includes all contrib tests.  The new
+"ant test-core" target can be used to run only the Core (non
+contrib) tests.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-900">LUCENE-900</a>: "ant test" now enables Java assertions (in Lucene packages).<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-894">LUCENE-894</a>: Add custom build file for binary distributions that includes
+targets to build the demos.<br />(Chris Hostetter, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-904">LUCENE-904</a>: The "package" targets in build.xml now also generate .md5
+checksum files.<br />(Chris Hostetter, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-907">LUCENE-907</a>: Include LICENSE.TXT and NOTICE.TXT in the META-INF dirs of
+demo war, demo jar, and the contrib jars.<br />(Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-909">LUCENE-909</a>: Demo targets for running the demo.<br />(Doron Cohen)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-908">LUCENE-908</a>: Improves content of MANIFEST file and makes it customizable
+for the contribs. Adds SNOWBALL-LICENSE.txt to META-INF of the snowball
+jar and makes sure that the lucli jar contains LICENSE.txt and NOTICE.txt.<br />(Chris Hostetter, Michael Busch)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-930">LUCENE-930</a>: Various contrib building improvements to ensure contrib
+dependencies are met, and test compilation errors fail the build.<br />(Steven Parkes, Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-622">LUCENE-622</a>: Add ant target and pom.xml files for building maven artifacts
+of the Lucene core and the contrib modules.<br />(Sami Siren, Karl Wettin, Michael Busch)</li>
+    </ol>
+  </li>
+</ul>
+<h3><a href="javascript:toggleList('2.1.0')">Release 2.1.0  [2007-02-14]</a></h3>
+<ul id="2.1.0">
+  <li><a href="javascript:toggleList('2.1.0.changes_in_runtime_behavior')">Changes in runtime behavior</a>&nbsp;&nbsp;&nbsp;(9)
+    <ol id="2.1.0.changes_in_runtime_behavior">
+      <li>'s' and 't' have been removed from the list of default stopwords
+in StopAnalyzer (also used in by StandardAnalyzer). Having e.g. 's'
+as a stopword meant that 's-class' led to the same results as 'class'.
+Note that this problem still exists for 'a', e.g. in 'a-class' as
+'a' continues to be a stopword.<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-478">LUCENE-478</a>: Updated the list of Unicode code point ranges for CJK
+(now split into CJ and K) in StandardAnalyzer.<br />(John Wang and
+Steven Rowe via Otis Gospodnetic)</li>
+      <li>Modified some CJK Unicode code point ranges in StandardTokenizer.jj,
+and added a few more of them to increase CJK character coverage.
+Also documented some of the ranges.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-489">LUCENE-489</a>: Add support for leading wildcard characters (*, ?) to
+QueryParser.  Default is to disallow them, as before.<br />(Steven Parkes via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-703">LUCENE-703</a>: QueryParser changed to default to use of ConstantScoreRangeQuery
+for range queries. Added useOldRangeQuery property to QueryParser to allow
+selection of old RangeQuery class if required.<br />(Mark Harwood)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-543">LUCENE-543</a>: WildcardQuery now performs a TermQuery if the provided term
+does not contain a wildcard character (? or *), when previously a
+StringIndexOutOfBoundsException was thrown.<br />(Michael Busch via Erik Hatcher)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-726">LUCENE-726</a>: Removed the use of deprecated doc.fields() method and
+Enumeration.<br />(Michael Busch via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-436">LUCENE-436</a>: Removed finalize() in TermInfosReader and SegmentReader,
+and added a call to enumerators.remove() in TermInfosReader.close().
+The finalize() overrides were added to help with a pre-1.4.2 JVM bug
+that has since been fixed, plus we no longer support pre-1.4.2 JVMs.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-771">LUCENE-771</a>: The default location of the write lock is now the
+index directory, and is named simply "write.lock" (without a big
+digest prefix).  The system properties "org.apache.lucene.lockDir"
+nor "java.io.tmpdir" are no longer used as the global directory
+for storing lock files, and the LOCK_DIR field of FSDirectory is
+now deprecated.<br />(Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(15)
+    <ol id="2.1.0.new_features">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-503">LUCENE-503</a>: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers<br />(Samphan Raruenrom via Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-545">LUCENE-545</a>: New FieldSelector API and associated changes to
+IndexReader and implementations.  New Fieldable interface for use
+with the lazy field loading mechanism.<br />(Grant Ingersoll and Chuck
+Williams via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-676">LUCENE-676</a>: Move Solr's PrefixFilter to Lucene core.<br />(Yura
+Smolsky, Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-678">LUCENE-678</a>: Added NativeFSLockFactory, which implements locking
+using OS native locking (via java.nio.*).<br />(Michael McCandless via
+Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-544">LUCENE-544</a>: Added the ability to specify different boosts for
+different fields when using MultiFieldQueryParser<br />(Matt Ericson
+via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-528">LUCENE-528</a>: New IndexWriter.addIndexesNoOptimize() that doesn't
+optimize the index when adding new segments, only performing
+merges as needed.<br />(Ning Li via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-573">LUCENE-573</a>: QueryParser now allows backslash escaping in
+quoted terms and phrases.<br />(Michael Busch via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-716">LUCENE-716</a>: QueryParser now allows specification of Unicode
+characters in terms via a unicode escape of the form \uXXXX<br />(Michael Busch via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-709">LUCENE-709</a>: Added RAMDirectory.sizeInBytes(), IndexWriter.ramSizeInBytes()
+and IndexWriter.flushRamSegments(), allowing applications to
+control the amount of memory used to buffer documents.<br />(Chuck Williams via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-723">LUCENE-723</a>: QueryParser now parses *:* as MatchAllDocsQuery<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-741">LUCENE-741</a>: Command-line utility for modifying or removing norms
+on fields in an existing index.  This is mostly based on <a href="http://issues.apache.org/jira/browse/LUCENE-496">LUCENE-496</a>
+and lives in contrib/miscellaneous.<br />(Chris Hostetter, Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-759">LUCENE-759</a>: Added NGramTokenizer and EdgeNGramTokenizer classes and
+their passing unit tests.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-565">LUCENE-565</a>: Added methods to IndexWriter to more efficiently
+handle updating documents (the "delete then add" use case).  This
+is intended to be an eventual replacement for the existing
+IndexModifier.  Added IndexWriter.flush() (renamed from
+flushRamSegments()) to flush all pending updates (held in RAM), to
+the Directory.<br />(Ning Li via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-762">LUCENE-762</a>: Added in SIZE and SIZE_AND_BREAK FieldSelectorResult options
+which allow one to retrieve the size of a field without retrieving the
+actual field.<br />(Chuck Williams via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-799">LUCENE-799</a>: Properly handle lazy, compressed fields.<br />(Mike Klaas via Grant Ingersoll)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(19)
+    <ol id="2.1.0.api_changes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-438">LUCENE-438</a>: Remove "final" from Token, implement Cloneable, allow
+changing of termText via setTermText().<br />(Yonik Seeley)</li>
+      <li>org.apache.lucene.analysis.nl.WordlistLoader has been deprecated
+and is supposed to be replaced with the WordlistLoader class in
+package org.apache.lucene.analysis<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-609">LUCENE-609</a>: Revert return type of Document.getField(s) to Field
+for backward compatibility, added new Document.getFieldable(s)
+for access to new lazy loaded fields.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-608">LUCENE-608</a>: Document.fields() has been deprecated and a new method
+Document.getFields() has been added that returns a List instead of
+an Enumeration<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-605">LUCENE-605</a>: New Explanation.isMatch() method and new ComplexExplanation
+subclass allows explain methods to produce Explanations which model
+"matching" independent of having a positive value.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-621">LUCENE-621</a>: New static methods IndexWriter.setDefaultWriteLockTimeout
+and IndexWriter.setDefaultCommitLockTimeout for overriding default
+timeout values for all future instances of IndexWriter (as well
+as for any other classes that may reference the static values,
+ie: IndexReader).<br />(Michael McCandless via Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-638">LUCENE-638</a>: FSDirectory.list() now only returns the directory's
+Lucene-related files. Thanks to this change one can now construct
+a RAMDirectory from a file system directory that contains files
+not related to Lucene.<br />(Simon Willnauer via Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-635">LUCENE-635</a>: Decoupling locking implementation from Directory
+implementation.  Added set/getLockFactory to Directory and moved
+all locking code into subclasses of abstract class LockFactory.
+FSDirectory and RAMDirectory still default to their prior locking
+implementations, but now you can mix &amp; match, for example using
+SingleInstanceLockFactory (ie, in memory locking) locking with an
+FSDirectory.  Note that now you must call setDisableLocks before
+the instantiation a FSDirectory if you wish to disable locking
+for that Directory.<br />(Michael McCandless, Jeff Patterson via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-657">LUCENE-657</a>: Made FuzzyQuery non-final and inner ScoreTerm protected.<br />(Steven Parkes via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-701">LUCENE-701</a>: Lockless commits: a commit lock is no longer required
+when a writer commits and a reader opens the index.  This includes
+a change to the index file format (see docs/fileformats.html for
+details).  It also removes all APIs associated with the commit
+lock &amp; its timeout.  Readers are now truly read-only and do not
+block one another on startup.  This is the first step to getting
+Lucene to work correctly over NFS (second step is
+<a href="http://issues.apache.org/jira/browse/LUCENE-710">LUCENE-710</a>).<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-722">LUCENE-722</a>: DEFAULT_MIN_DOC_FREQ was misspelled DEFALT_MIN_DOC_FREQ
+in Similarity's MoreLikeThis class. The misspelling has been
+replaced by the correct spelling.<br />(Andi Vajda via Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-738">LUCENE-738</a>: Reduce the size of the file that keeps track of which
+documents are deleted when the number of deleted documents is
+small.  This changes the index file format and cannot be
+read by previous versions of Lucene.<br />(Doron Cohen via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-756">LUCENE-756</a>: Maintain all norms in a single .nrm file to reduce the
+number of open files and file descriptors for the non-compound index
+format.  This changes the index file format, but maintains the
+ability to read and update older indices. The first segment merge
+on an older format index will create a single .nrm file for the new
+segment.<br />(Doron Cohen via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-732">LUCENE-732</a>: DateTools support has been added to QueryParser, with
+setters for both the default Resolution, and per-field Resolution.
+For backwards compatibility, DateField is still used if no Resolutions
+are specified.<br />(Michael Busch via Chris Hostetter)</li>
+      <li>Added isOptimized() method to IndexReader.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-773">LUCENE-773</a>: Deprecate the FSDirectory.getDirectory(*) methods that
+take a boolean "create" argument.  Instead you should use
+IndexWriter's "create" argument to create a new index.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-780">LUCENE-780</a>: Add a static Directory.copy() method to copy files
+from one Directory to another.<br />(Jiri Kuhn via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-773">LUCENE-773</a>: Added Directory.clearLock(String name) to forcefully
+remove an old lock.  The default implementation is to ask the
+lockFactory (if non null) to clear the lock.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-795">LUCENE-795</a>: Directory.renameFile() has been deprecated as it is
+not used anymore inside Lucene.<br />(Daniel Naber)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(32)
+    <ol id="2.1.0.bug_fixes">
+      <li>Fixed the web application demo (built with "ant war-demo") which
+didn't work because it used a QueryParser method that had
+been removed<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-583">LUCENE-583</a>: ISOLatin1AccentFilter fails to preserve positionIncrement<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-575">LUCENE-575</a>: SpellChecker min score is incorrectly changed by suggestSimilar<br />(Karl Wettin via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-587">LUCENE-587</a>: Explanation.toHtml was producing malformed HTML<br />(Chris Hostetter)</li>
+      <li>Fix to allow MatchAllDocsQuery to be used with RemoteSearcher<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-601">LUCENE-601</a>: RAMDirectory and RAMFile made Serializable<br />(Karl Wettin via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-557">LUCENE-557</a>: Fixes to BooleanQuery and FilteredQuery so that the score
+Explanations match up with the real scores.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-607">LUCENE-607</a>: ParallelReader's TermEnum fails to advance properly to
+new fields<br />(Chuck Williams, Christian Kohlschuetter via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-610">LUCENE-610</a>,<a href="http://issues.apache.org/jira/browse/LUCENE-611">LUCENE-611</a>: Simple syntax changes to allow compilation with ecj:
+disambiguate inner class scorer's use of doc() in BooleanScorer2,
+other test code changes.<br />(DM Smith via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-451">LUCENE-451</a>: All core query types now use ComplexExplanations so that
+boosts of zero don't confuse the BooleanWeight explain method.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-593">LUCENE-593</a>: Fixed LuceneDictionary's inner Iterator<br />(Kåre Fiedler Christiansen via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-641">LUCENE-641</a>: fixed an off-by-one bug with IndexWriter.setMaxFieldLength()<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-659">LUCENE-659</a>: Make PerFieldAnalyzerWrapper delegate getPositionIncrementGap()
+to the correct analyzer for the field.<br />(Chuck Williams via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-650">LUCENE-650</a>: Fixed NPE in Locale specific String Sort when Document
+has no value.<br />(Oliver Hutchison via Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-683">LUCENE-683</a>: Fixed data corruption when reading lazy loaded fields.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-678">LUCENE-678</a>: Fixed bug in NativeFSLockFactory which caused the same
+lock to be shared between different directories.<br />(Michael McCandless via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-690">LUCENE-690</a>: Fixed thread unsafe use of IndexInput by lazy loaded fields.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-696">LUCENE-696</a>: Fix bug when scorer for DisjunctionMaxQuery has skipTo()
+called on it before next().<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-569">LUCENE-569</a>: Fixed SpanNearQuery bug, for 'inOrder' queries it would fail
+to recognize ordered spans if they overlapped with unordered spans.<br />(Paul Elschot via Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-706">LUCENE-706</a>: Updated fileformats.xml|html concerning the docdelta value
+in the frequency file.<br />(Johan Stuyts, Doron Cohen via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-715">LUCENE-715</a>: Fixed private constructor in IndexWriter.java to
+properly release the acquired write lock if there is an
+IOException after acquiring the write lock but before finishing
+instantiation.<br />(Matthew Bogosian via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-651">LUCENE-651</a>: Multiple different threads requesting the same
+FieldCache entry (often for Sorting by a field) at the same
+time caused multiple generations of that entry, which was
+detrimental to performance and memory use.<br />(Oliver Hutchison via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-717">LUCENE-717</a>: Fixed build.xml not to fail when there is no lib dir.<br />(Doron Cohen via Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-728">LUCENE-728</a>: Removed duplicate/old MoreLikeThis and SimilarityQueries
+classes from contrib/similarity, as their new home is under
+contrib/queries.<br />(Otis Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-669">LUCENE-669</a>: Do not double-close the RandomAccessFile in
+FSIndexInput/Output during finalize().  Besides sending an
+IOException up to the GC, this may also be the cause intermittent
+"The handle is invalid" IOExceptions on Windows when trying to
+close readers or writers.<br />(Michael Busch via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-702">LUCENE-702</a>: Fix IndexWriter.addIndexes(*) to not corrupt the index
+on any exceptions (eg disk full).  The semantics of these methods
+is now transactional: either all indices are merged or none are.
+Also fixed IndexWriter.mergeSegments (called outside of
+addIndexes(*) by addDocument, optimize, flushRamSegments) and
+IndexReader.commit() (called by close) to clean up and keep the
+instance state consistent to what's actually in the index (Mike
+McCandless).
+</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-129">LUCENE-129</a>: Change finalizers to do "try {...} finally
+{super.finalize();}" to make sure we don't miss finalizers in
+classes above us.<br />(Esmond Pitt via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-754">LUCENE-754</a>: Fix a problem introduced by <a href="http://issues.apache.org/jira/browse/LUCENE-651">LUCENE-651</a>, causing
+IndexReaders to hang around forever, in addition to not
+fixing the original FieldCache performance problem.<br />(Chris Hostetter, Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-140">LUCENE-140</a>: Fix IndexReader.deleteDocument(int docNum) to
+correctly raise ArrayIndexOutOfBoundsException when docNum is too
+large.  Previously, if docNum was only slightly too large (within
+the same multiple of 8, ie, up to 7 ints beyond maxDoc), no
+exception would be raised and instead the index would become
+silently corrupted.  The corruption then only appears much later,
+in mergeSegments, when the corrupted segment is merged with
+segment(s) after it.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-768">LUCENE-768</a>: Fix case where an Exception during deleteDocument,
+undeleteAll or setNorm in IndexReader could leave the reader in a
+state where close() fails to release the write lock.<br />(Mike McCandless)</li>
+      <li>Remove "tvp" from known index file extensions because it is
+never used.<br />(Nicolas Lalevée via Bernhard Messer)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-767">LUCENE-767</a>: Change how SegmentReader.maxDoc() is computed to not
+rely on file length check and instead use the SegmentInfo's
+docCount that's already stored explicitly in the index.  This is a
+defensive bug fix (ie, there is no known problem seen "in real
+life" due to this, just a possible future problem).<br />(Chuck
+Williams via Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.optimizations')">Optimizations</a>&nbsp;&nbsp;&nbsp;(16)
+    <ol id="2.1.0.optimizations">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-586">LUCENE-586</a>: TermDocs.skipTo() is now more efficient for
+multi-segment indexes.  This will improve the performance of many
+types of queries against a non-optimized index.<br />(Andrew Hudson
+via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-623">LUCENE-623</a>: RAMDirectory.close now nulls out its reference to all
+internal "files", allowing them to be GCed even if references to the
+RAMDirectory itself still exist.<br />(Nadav Har'El via Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-629">LUCENE-629</a>: Compressed fields are no longer uncompressed and
+recompressed during segment merges (e.g. during indexing or
+optimizing), thus improving performance .<br />(Michael Busch via Otis
+Gospodnetic)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-388">LUCENE-388</a>: Improve indexing performance when maxBufferedDocs is
+large by keeping a count of buffered documents rather than
+counting after each document addition.<br />(Doron Cohen, Paul Smith,
+Yonik Seeley)</li>
+      <li>Modified TermScorer.explain to use TermDocs.skipTo() instead of
+looping through docs.<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-672">LUCENE-672</a>: New indexing segment merge policy flushes all
+buffered docs to their own segment and delays a merge until
+mergeFactor segments of a certain level have been accumulated.
+This increases indexing performance in the presence of deleted
+docs or partially full segments as well as enabling future
+optimizations.
+<p/>
+NOTE: this also fixes an "under-merging" bug whereby it is
+possible to get far too many segments in your index (which will
+drastically slow down search, risks exhausting file descriptor
+limit, etc.).  This can happen when the number of buffered docs
+at close, plus the number of docs in the last non-ram segment is
+greater than mergeFactor.<br />(Ning Li, Yonik Seeley)</li>
+      <li>Lazy loaded fields unnecessarily retained an extra copy of loaded
+String data.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-443">LUCENE-443</a>: ConjunctionScorer performance increase.  Speed up
+any BooleanQuery with more than one mandatory clause.<br />(Abdul Chaudhry, Paul Elschot via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-365">LUCENE-365</a>: DisjunctionSumScorer performance increase of
+~30%. Speeds up queries with optional clauses.<br />(Paul Elschot via
+Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-695">LUCENE-695</a>: Optimized BufferedIndexInput.readBytes() for medium
+size buffers, which will speed up merging and retrieving binary
+and compressed fields.<br />(Nadav Har'El via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-687">LUCENE-687</a>: Lazy skipping on proximity file speeds up most
+queries involving term positions, including phrase queries.<br />(Michael Busch via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-714">LUCENE-714</a>: Replaced 2 cases of manual for-loop array copying
+with calls to System.arraycopy instead, in DocumentWriter.java.<br />(Nicolas Lalevee via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-729">LUCENE-729</a>: Non-recursive skipTo and next implementation of
+TermDocs for a MultiReader.  The old implementation could
+recurse up to the number of segments in the index.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-739">LUCENE-739</a>: Improve segment merging performance by reusing
+the norm array across different fields and doing bulk writes
+of norms of segments with no deleted docs.<br />(Michael Busch via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-745">LUCENE-745</a>: Add BooleanQuery.clauses(), allowing direct access
+to the List of clauses and replaced the internal synchronized Vector
+with an unsynchronized List.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-750">LUCENE-750</a>: Remove finalizers from FSIndexOutput and move the
+FSIndexInput finalizer to the actual file so all clones don't
+register a new finalizer.<br />(Yonik Seeley)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.test_cases')">Test Cases</a>&nbsp;&nbsp;&nbsp;(3)
+    <ol id="2.1.0.test_cases">
+      <li>Added TestTermScorer.java<br />(Grant Ingersoll)</li>
+      <li>Added TestWindowsMMap.java<br />(Benson Margulies via Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-744">LUCENE-744</a> Append the user.name property onto the temporary directory
+that is created so it doesn't interfere with other users.<br />(Grant Ingersoll)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.documentation')">Documentation</a>&nbsp;&nbsp;&nbsp;(11)
+    <ol id="2.1.0.documentation">
+      <li>Added style sheet to xdocs named lucene.css and included in the
+Anakia VSL descriptor.<br />(Grant Ingersoll)</li>
+      <li>Added scoring.xml document into xdocs.  Updated Similarity.java
+scoring formula.(Grant Ingersoll and Steve Rowe.  Updates from:
+Michael McCandless, Doron Cohen, Chris Hostetter, Doug Cutting).
+Issue 664.
+</li>
+      <li>Added javadocs for FieldSelectorResult.java.<br />(Grant Ingersoll)</li>
+      <li>Moved xdocs directory to src/site/src/documentation/content/xdocs per
+Issue 707.  Site now builds using Forrest, just like the other Lucene
+siblings.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite
+for info on updating the website.<br />(Grant Ingersoll with help from Steve Rowe,
+Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)</li>
+      <li>Added in Developer and System Requirements sections under Resources<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-713">LUCENE-713</a> Updated the Term Vector section of File Formats to include
+documentation on how Offset and Position info are stored in the TVF file.<br />(Grant Ingersoll, Samir Abdou)</li>
+      <li>Added in link to Clover Test Code Coverage Reports under the Develop
+section in Resources<br />(Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-748">LUCENE-748</a>: Added details for semantics of IndexWriter.close on
+hitting an Exception.<br />(Jed Wesley-Smith via Mike McCandless)</li>
+      <li>Added some text about what is contained in releases.<br />(Eric Haszlakiewicz via Grant Ingersoll)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-758">LUCENE-758</a>: Fix javadoc to clarify that RAMDirectory(Directory)
+makes a full copy of the starting Directory.<br />(Mike McCandless)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-764">LUCENE-764</a>: Fix javadocs to detail temporary space requirements
+for IndexWriter's optimize(), addIndexes(*) and addDocument(...)
+methods.<br />(Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.1.0.build')">Build</a>&nbsp;&nbsp;&nbsp;(3)
+    <ol id="2.1.0.build">
+      <li>Added in clover test code coverage per <a href="http://issues.apache.org/jira/browse/LUCENE-721">LUCENE-721</a>
+To enable clover code coverage, you must have clover.jar in the ANT
+classpath and specify -Drun.clover=true on the command line.<br />(Michael Busch and Grant Ingersoll)</li>
+      <li>Added a sysproperty in common-build.xml per Lucene 752 to map java.io.tmpdir to
+${build.dir}/test just like the tempDir sysproperty.
+</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-757">LUCENE-757</a> Added new target named init-dist that does setup for
+distribution of both binary and source distributions.  Called by package
+and package-*-src
+</li>
+    </ol>
+  </li>
+</ul>
+<h3><a href="javascript:toggleList('2.0.0')">Release 2.0.0  [2006-05-26]</a></h3>
+<ul id="2.0.0">
+  <li><a href="javascript:toggleList('2.0.0.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(4)
+    <ol id="2.0.0.api_changes">
+      <li>All deprecated methods and fields have been removed, except
+DateField, which will still be supported for some time
+so Lucene can read its date fields from old indexes<br />(Yonik Seeley &amp; Grant Ingersoll)</li>
+      <li>DisjunctionSumScorer is no longer public.<br />(Paul Elschot via Otis Gospodnetic)</li>
+      <li>Creating a Field with both an empty name and an empty value
+now throws an IllegalArgumentException<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-301">LUCENE-301</a>: Added new IndexWriter({String,File,Directory},
+Analyzer) constructors that do not take a boolean "create"
+argument.  These new constructors will create a new index if
+necessary, else append to the existing one.<br />(Dan Armbrust via
+Mike McCandless)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.0.0.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="2.0.0.new_features">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-496">LUCENE-496</a>: Command line tool for modifying the field norms of an
+existing index; added to contrib/miscellaneous.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-577">LUCENE-577</a>: SweetSpotSimilarity added to contrib/miscellaneous.<br />(Chris Hostetter)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('2.0.0.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(16)
+    <ol id="2.0.0.bug_fixes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-330">LUCENE-330</a>: Fix issue of FilteredQuery not working properly within
+BooleanQuery.<br />(Paul Elschot via Erik Hatcher)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-515">LUCENE-515</a>: Make ConstantScoreRangeQuery and ConstantScoreQuery work
+with RemoteSearchable.<br />(Philippe Laflamme via Yonik Seeley)</li>
+      <li>Added methods to get/set writeLockTimeout and commitLockTimeout in
+IndexWriter. These could be set in Lucene 1.4 using a system property.
+This feature had been removed without adding the corresponding
+getter/setter methods.<br />(Daniel Naber)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-413">LUCENE-413</a>: Fixed ArrayIndexOutOfBoundsException exceptions
+when using SpanQueries.<br />(Paul Elschot via Yonik Seeley)</li>
+      <li>Implemented FilterIndexReader.getVersion() and isCurrent()<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-540">LUCENE-540</a>: Fixed a bug with IndexWriter.addIndexes(Directory[])
+that sometimes caused the index order of documents to change.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-526">LUCENE-526</a>: Fixed a bug in FieldSortedHitQueue that caused
+subsequent String sorts with different locales to sort identically.<br />(Paul Cowan via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-541">LUCENE-541</a>: Add missing extractTerms() to DisjunctionMaxQuery<br />(Stefan Will via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-514">LUCENE-514</a>: Added getTermArrays() and extractTerms() to
+MultiPhraseQuery<br />(Eric Jain &amp; Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-512">LUCENE-512</a>: Fixed ClassCastException in ParallelReader.getTermFreqVectors<br />(frederic via Yonik)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-352">LUCENE-352</a>: Fixed bug in SpanNotQuery that manifested as
+NullPointerException when "exclude" query was not a SpanTermQuery.<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-572">LUCENE-572</a>: Fixed bug in SpanNotQuery hashCode, was ignoring exclude clause<br />(Chris Hostetter)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-561">LUCENE-561</a>: Fixed some ParallelReader bugs. NullPointerException if the reader
+didn't know about the field yet, reader didn't keep track if it had deletions,
+and deleteDocument calls could circumvent synchronization on the subreaders.<br />(Chuck Williams via Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-556">LUCENE-556</a>: Added empty extractTerms() implementation to MatchAllDocsQuery and
+ConstantScoreQuery in order to allow their use with a MultiSearcher.<br />(Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-546">LUCENE-546</a>: Removed 2GB file size limitations for RAMDirectory.<br />(Peter Royal, Michael Chan, Yonik Seeley)</li>
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-485">LUCENE-485</a>: Don't hold commit lock while removing obsolete index
+files.<br />(Luc Vanlerberghe via cutting)</li>
+    </ol>
+  </li>
+</ul>
+<h3><a href="javascript:toggleList('1.9.1')">Release 1.9.1  [2006-03-02]</a></h3>
+<ul id="1.9.1">
+  <li><a href="javascript:toggleList('1.9.1.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(1)
+    <ol id="1.9.1.bug_fixes">
+      <li><a href="http://issues.apache.org/jira/browse/LUCENE-511">LUCENE-511</a>: Fix a bug in the BufferedIndexOutput optimization
+introduced in 1.9-final.<br />(Shay Banon &amp; Steven Tamm via cutting)</li>
+    </ol>
+  </li>
+</ul>
+<h3><a href="javascript:toggleList('1.9_final')">Release 1.9 final  [2006-02-27]</a></h3>
+    <ul id="1.9_final">
+      <li>Note that this release is mostly but not 100% source compatible with
+the previous release of Lucene (1.4.3). In other words, you should
+make sure your application compiles with this version of Lucene before
+you replace the old Lucene JAR with the new one.  Many methods have
+been deprecated in anticipation of release 2.0, so deprecation
+warnings are to be expected when upgrading from 1.4.3 to 1.9.
+</li>
+    </ul>
+    <ol id="1.9_final.bug_fixes">
+      <li>The fix that made IndexWriter.setMaxBufferedDocs(1) work had negative
+effects on indexing performance and has thus been reverted. The
+argument for setMaxBufferedDocs(int) must now at least be 2, otherwise
+an exception is thrown.<br />(Daniel Naber)</li>
+    </ol>
+    <ol id="1.9_final.optimizations">
+      <li>Optimized BufferedIndexOutput.writeBytes() to use
+System.arraycopy() in more cases, rather than copying byte-by-byte.<br />(Lukas Zapletal via Cutting)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.9_rc1')">Release 1.9 RC1  [2006-02-21]</a></h3>
+<ul id="1.9_rc1">
+  <li><a href="javascript:toggleList('1.9_rc1.requirements')">Requirements</a>&nbsp;&nbsp;&nbsp;(1)
+    <ol id="1.9_rc1.requirements">
+      <li>To compile and use Lucene you now need Java 1.4 or later.
+</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.changes_in_runtime_behavior')">Changes in runtime behavior</a>&nbsp;&nbsp;&nbsp;(9)
+    <ol id="1.9_rc1.changes_in_runtime_behavior">
+      <li>FuzzyQuery can no longer throw a TooManyClauses exception. If a
+FuzzyQuery expands to more than BooleanQuery.maxClauseCount
+terms only the BooleanQuery.maxClauseCount most similar terms
+go into the rewritten query and thus the exception is avoided.<br />(Christoph)</li>
+      <li>Changed system property from "org.apache.lucene.lockdir" to
+"org.apache.lucene.lockDir", so that its casing follows the existing
+pattern used in other Lucene system properties.<br />(Bernhard)</li>
+      <li>The terms of RangeQueries and FuzzyQueries are now converted to
+lowercase by default (as it has been the case for PrefixQueries
+and WildcardQueries before). Use setLowercaseExpandedTerms(false)
+to disable that behavior but note that this also affects
+PrefixQueries and WildcardQueries.<br />(Daniel Naber)</li>
+      <li>Document frequency that is computed when MultiSearcher is used is now
+computed correctly and "globally" across subsearchers and indices, while
+before it used to be computed locally to each index, which caused
+ranking across multiple indices not to be equivalent.<br />(Chuck Williams, Wolf Siberski via Otis, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31841">bug #31841</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-295">LUCENE-295</a>])</li>
+      <li>When opening an IndexWriter with create=true, Lucene now only deletes
+its own files from the index directory (looking at the file name suffixes
+to decide if a file belongs to Lucene). The old behavior was to delete
+all files.<br />(Daniel Naber and Bernhard Messer, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=34695">bug #34695</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-385">LUCENE-385</a>])</li>
+      <li>The version of an IndexReader, as returned by getCurrentVersion()
+and getVersion() doesn't start at 0 anymore for new indexes. Instead, it
+is now initialized by the system time in milliseconds.<br />(Bernhard Messer via Daniel Naber)</li>
+      <li>Several default values cannot be set via system properties anymore, as
+this has been considered inappropriate for a library like Lucene. For
+most properties there are set/get methods available in IndexWriter which
+you should use instead. This affects the following properties:
+See IndexWriter for getter/setter methods:
+  org.apache.lucene.writeLockTimeout, org.apache.lucene.commitLockTimeout,
+  org.apache.lucene.minMergeDocs, org.apache.lucene.maxMergeDocs,
+  org.apache.lucene.maxFieldLength, org.apache.lucene.termIndexInterval,
+  org.apache.lucene.mergeFactor,
+See BooleanQuery for getter/setter methods:
+  org.apache.lucene.maxClauseCount
+See FSDirectory for getter/setter methods:
+  disableLuceneLocks<br />(Daniel Naber)</li>
+      <li>Fixed FieldCacheImpl to use user-provided IntParser and FloatParser,
+instead of using Integer and Float classes for parsing.<br />(Yonik Seeley via Otis Gospodnetic)</li>
+      <li>Expert level search routines returning TopDocs and TopFieldDocs
+no longer normalize scores.  This also fixes bugs related to
+MultiSearchers and score sorting/normalization.<br />(Luc Vanlerberghe via Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-469">LUCENE-469</a>)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.new_features')">New features</a>&nbsp;&nbsp;&nbsp;(33)
+    <ol id="1.9_rc1.new_features">
+      <li>Added support for stored compressed fields (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31149">patch #31149</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-274">LUCENE-274</a>])<br />(Bernhard Messer via Christoph)</li>
+      <li>Added support for binary stored fields (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=29370">patch #29370</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-229">LUCENE-229</a>])<br />(Drew Farris and Bernhard Messer via Christoph)</li>
+      <li>Added support for position and offset information in term vectors
+(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=18927">patch #18927</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-95">LUCENE-95</a>]).<br />(Grant Ingersoll &amp; Christoph)</li>
+      <li>A new class DateTools has been added. It allows you to format dates
+in a readable format adequate for indexing. Unlike the existing
+DateField class DateTools can cope with dates before 1970 and it
+forces you to specify the desired date resolution (e.g. month, day,
+second, ...) which can make RangeQuerys on those fields more efficient.<br />(Daniel Naber)</li>
+      <li>QueryParser now correctly works with Analyzers that can return more
+than one token per position. For example, a query "+fast +car"
+would be parsed as "+fast +(car automobile)" if the Analyzer
+returns "car" and "automobile" at the same position whenever it
+finds "car" (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=23307">Patch #23307</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-133">LUCENE-133</a>]).<br />(Pierrick Brihaye, Daniel Naber)</li>
+      <li>Permit unbuffered Directory implementations (e.g., using mmap).
+InputStream is replaced by the new classes IndexInput and
+BufferedIndexInput.  OutputStream is replaced by the new classes
+IndexOutput and BufferedIndexOutput.  InputStream and OutputStream
+are now deprecated and FSDirectory is now subclassable.<br />(cutting)</li>
+      <li>Add native Directory and TermDocs implementations that work under
+GCJ.  These require GCC 3.4.0 or later and have only been tested
+on Linux.  Use 'ant gcj' to build demo applications.<br />(cutting)</li>
+      <li>Add MMapDirectory, which uses nio to mmap input files.  This is
+still somewhat slower than FSDirectory.  However it uses less
+memory per query term, since a new buffer is not allocated per
+term, which may help applications which use, e.g., wildcard
+queries.  It may also someday be faster.<br />(cutting &amp; Paul Elschot)</li>
+      <li>Added javadocs-internal to build.xml - <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=30360">bug #30360</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-250">LUCENE-250</a>]<br />(Paul Elschot via Otis)</li>
+      <li>Added RangeFilter, a more generically useful filter than DateFilter.<br />(Chris M Hostetter via Erik)</li>
+      <li>Added NumberTools, a utility class indexing numeric fields.<br />(adapted from code contributed by Matt Quail; committed by Erik)</li>
+      <li>Added public static IndexReader.main(String[] args) method.
+IndexReader can now be used directly at command line level
+to list and optionally extract the individual files from an existing
+compound index file.<br />(adapted from code contributed by Garrett Rooney; committed by Bernhard)</li>
+      <li>Add IndexWriter.setTermIndexInterval() method.  See javadocs.<br />(Doug Cutting)</li>
+      <li>Added LucenePackage, whose static get() method returns java.util.Package,
+which lets the caller get the Lucene version information specified in
+the Lucene Jar.<br />(Doug Cutting via Otis)</li>
+      <li>Added Hits.iterator() method and corresponding HitIterator and Hit objects.
+This provides standard java.util.Iterator iteration over Hits.
+Each call to the iterator's next() method returns a Hit object.<br />(Jeremy Rayner via Erik)</li>
+      <li>Add ParallelReader, an IndexReader that combines separate indexes
+over different fields into a single virtual index.<br />(Doug Cutting)</li>
+      <li>Add IntParser and FloatParser interfaces to FieldCache, so that
+fields in arbitrarily formats can be cached as ints and floats.<br />(Doug Cutting)</li>
+      <li>Added class org.apache.lucene.index.IndexModifier which combines
+IndexWriter and IndexReader, so you can add and delete documents without
+worrying about synchronization/locking issues.<br />(Daniel Naber)</li>
+      <li>Lucene can now be used inside an unsigned applet, as Lucene's access
+to system properties will not cause a SecurityException anymore.<br />(Jon Schuster via Daniel Naber, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=34359">bug #34359</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-369">LUCENE-369</a>])</li>
+      <li>Added a new class MatchAllDocsQuery that matches all documents.<br />(John Wang via Daniel Naber, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=34946">bug #34946</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-389">LUCENE-389</a>])</li>
+      <li>Added ability to omit norms on a per field basis to decrease
+index size and memory consumption when there are many indexed fields.
+See Field.setOmitNorms()<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-448">LUCENE-448</a>)</li>
+      <li>Added NullFragmenter to contrib/highlighter, which is useful for
+highlighting entire documents or fields.<br />(Erik Hatcher)</li>
+      <li>Added regular expression queries, RegexQuery and SpanRegexQuery.
+Note the same term enumeration caveats apply with these queries as
+apply to WildcardQuery and other term expanding queries.
+These two new queries are not currently supported via QueryParser.<br />(Erik Hatcher)</li>
+      <li>Added ConstantScoreQuery which wraps a filter and produces a score
+equal to the query boost for every matching document.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-383">LUCENE-383</a>)</li>
+      <li>Added ConstantScoreRangeQuery which produces a constant score for
+every document in the range.  One advantage over a normal RangeQuery
+is that it doesn't expand to a BooleanQuery and thus doesn't have a maximum
+number of terms the range can cover.  Both endpoints may also be open.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-383">LUCENE-383</a>)</li>
+      <li>Added ability to specify a minimum number of optional clauses that
+must match in a BooleanQuery.  See BooleanQuery.setMinimumNumberShouldMatch().<br />(Paul Elschot, Chris Hostetter via Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-395">LUCENE-395</a>)</li>
+      <li>Added DisjunctionMaxQuery which provides the maximum score across its clauses.
+It's very useful for searching across multiple fields.<br />(Chuck Williams via Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-323">LUCENE-323</a>)</li>
+      <li>New class ISOLatin1AccentFilter that replaces accented characters in the ISO
+Latin 1 character set by their unaccented equivalent.<br />(Sven Duzont via Erik Hatcher)</li>
+      <li>New class KeywordAnalyzer. "Tokenizes" the entire stream as a single token.
+This is useful for data like zip codes, ids, and some product names.<br />(Erik Hatcher)</li>
+      <li>Copied LengthFilter from contrib area to core. Removes words that are too
+long and too short from the stream.<br />(David Spencer via Otis and Daniel)</li>
+      <li>Added getPositionIncrementGap(String fieldName) to Analyzer.  This allows
+custom analyzers to put gaps between Field instances with the same field
+name, preventing phrase or span queries crossing these boundaries.  The
+default implementation issues a gap of 0, allowing the default token
+position increment of 1 to put the next field's first token into a
+successive position.<br />(Erik Hatcher, with advice from Yonik)</li>
+      <li>StopFilter can now ignore case when checking for stop words.<br />(Grant Ingersoll via Yonik, <a href="http://issues.apache.org/jira/browse/LUCENE-248">LUCENE-248</a>)</li>
+      <li>Add TopDocCollector and TopFieldDocCollector.  These simplify the
+implementation of hit collectors that collect only the
+top-scoring or top-sorting hits.
+</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.api_changes')">API Changes</a>&nbsp;&nbsp;&nbsp;(5)
+    <ol id="1.9_rc1.api_changes">
+      <li>Several methods and fields have been deprecated. The API documentation
+contains information about the recommended replacements. It is planned
+that most of the deprecated methods and fields will be removed in
+Lucene 2.0.<br />(Daniel Naber)</li>
+      <li>The Russian and the German analyzers have been moved to contrib/analyzers.
+Also, the WordlistLoader class has been moved one level up in the
+hierarchy and is now org.apache.lucene.analysis.WordlistLoader<br />(Daniel Naber)</li>
+      <li>The API contained methods that declared to throw an IOException
+but that never did this. These declarations have been removed. If
+your code tries to catch these exceptions you might need to remove
+those catch clauses to avoid compile errors.<br />(Daniel Naber)</li>
+      <li>Add a serializable Parameter Class to standardize parameter enum
+classes in BooleanClause and Field.<br />(Christoph)</li>
+      <li>Added rewrite methods to all SpanQuery subclasses that nest other SpanQuerys.
+This allows custom SpanQuery subclasses that rewrite (for term expansion, for
+example) to nest within the built-in SpanQuery classes successfully.
+</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.bug_fixes')">Bug fixes</a>&nbsp;&nbsp;&nbsp;(24)
+    <ol id="1.9_rc1.bug_fixes">
+      <li>The JSP demo page (src/jsp/results.jsp) now properly closes the
+IndexSearcher it opens.<br />(Daniel Naber)</li>
+      <li>Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+prevented deletion of obsolete segments.<br />(Christoph Goller)</li>
+      <li>Fix in FieldInfos to avoid the return of an extra blank field in
+IndexReader.getFieldNames() (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=19058">Patch #19058</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-102">LUCENE-102</a>]).<br />(Mark Harwood via Bernhard)</li>
+      <li>Some combinations of BooleanQuery and MultiPhraseQuery (formerly
+PhrasePrefixQuery) could provoke UnsupportedOperationException
+(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=33161">bug #33161</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-337">LUCENE-337</a>]).<br />(Rhett Sutphin via Daniel Naber)</li>
+      <li>Small bug in skipTo of ConjunctionScorer that caused NullPointerException
+if skipTo() was called without prior call to next() fixed.<br />(Christoph)</li>
+      <li>Disable Similiarty.coord() in the scoring of most automatically
+generated boolean queries.  The coord() score factor is
+appropriate when clauses are independently specified by a user,
+but is usually not appropriate when clauses are generated
+automatically, e.g., by a fuzzy, wildcard or range query.  Matches
+on such automatically generated queries are no longer penalized
+for not matching all terms.<br />(Doug Cutting, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=33472">Patch #33472</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-346">LUCENE-346</a>])</li>
+      <li>Getting a lock file with Lock.obtain(long) was supposed to wait for
+a given amount of milliseconds, but this didn't work.<br />(John Wang via Daniel Naber, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=33799">Bug #33799</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-353">LUCENE-353</a>])</li>
+      <li>Fix FSDirectory.createOutput() to always create new files.
+Previously, existing files were overwritten, and an index could be
+corrupted when the old version of a file was longer than the new.
+Now any existing file is first removed.<br />(Doug Cutting)</li>
+      <li>Fix BooleanQuery containing nested SpanTermQuery's, which previously
+could return an incorrect number of hits.<br />(Reece Wilton via Erik Hatcher, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=35157">Bug #35157</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-393">LUCENE-393</a>])</li>
+      <li>Fix NullPointerException that could occur with a MultiPhraseQuery
+inside a BooleanQuery.<br />(Hans Hjelm and Scotty Allen via Daniel Naber, <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=35626">Bug #35626</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-404">LUCENE-404</a>])</li>
+      <li>Fixed SnowballFilter to pass through the position increment from
+the original token.<br />(Yonik Seeley via Erik Hatcher, <a href="http://issues.apache.org/jira/browse/LUCENE-437">LUCENE-437</a>)</li>
+      <li>Added Unicode range of Korean characters to StandardTokenizer,
+grouping contiguous characters into a token rather than one token
+per character.  This change also changes the token type to "&lt;CJ&gt;"
+for Chinese and Japanese character tokens (previously it was "&lt;CJK&gt;").<br />(Cheolgoo Kang via Otis and Erik, <a href="http://issues.apache.org/jira/browse/LUCENE-444">LUCENE-444</a> and <a href="http://issues.apache.org/jira/browse/LUCENE-461">LUCENE-461</a>)</li>
+      <li>FieldsReader now looks at FieldInfo.storeOffsetWithTermVector and
+FieldInfo.storePositionWithTermVector and creates the Field with
+correct TermVector parameter.<br />(Frank Steinmann via Bernhard, <a href="http://issues.apache.org/jira/browse/LUCENE-455">LUCENE-455</a>)</li>
+      <li>Fixed WildcardQuery to prevent "cat" matching "ca??".<br />(Xiaozheng Ma via Bernhard, <a href="http://issues.apache.org/jira/browse/LUCENE-306">LUCENE-306</a>)</li>
+      <li>Fixed a bug where MultiSearcher and ParallelMultiSearcher could
+change the sort order when sorting by string for documents without
+a value for the sort field.<br />(Luc Vanlerberghe via Yonik, <a href="http://issues.apache.org/jira/browse/LUCENE-453">LUCENE-453</a>)</li>
+      <li>Fixed a sorting problem with MultiSearchers that can lead to
+missing or duplicate docs due to equal docs sorting in an arbitrary order.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-456">LUCENE-456</a>)</li>
+      <li>A single hit using the expert level sorted search methods
+resulted in the score not being normalized.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-462">LUCENE-462</a>)</li>
+      <li>Fixed inefficient memory usage when loading an index into RAMDirectory.<br />(Volodymyr Bychkoviak via Bernhard, <a href="http://issues.apache.org/jira/browse/LUCENE-475">LUCENE-475</a>)</li>
+      <li>Corrected term offsets returned by ChineseTokenizer.<br />(Ray Tsang via Erik Hatcher, <a href="http://issues.apache.org/jira/browse/LUCENE-324">LUCENE-324</a>)</li>
+      <li>Fixed MultiReader.undeleteAll() to correctly update numDocs.<br />(Robert Kirchgessner via Doug Cutting, <a href="http://issues.apache.org/jira/browse/LUCENE-479">LUCENE-479</a>)</li>
+      <li>Race condition in IndexReader.getCurrentVersion() and isCurrent()
+fixed by acquiring the commit lock.<br />(Luc Vanlerberghe via Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-481">LUCENE-481</a>)</li>
+      <li>IndexWriter.setMaxBufferedDocs(1) didn't have the expected effect,
+this has now been fixed.<br />(Daniel Naber)</li>
+      <li>Fixed QueryParser when called with a date in local form like
+"[1/16/2000 TO 1/18/2000]". This query did not include the documents
+of 1/18/2000, i.e. the last day was not included.<br />(Daniel Naber)</li>
+      <li>Removed sorting constraint that threw an exception if there were
+not yet any values for the sort field<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-374">LUCENE-374</a>)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.optimizations')">Optimizations</a>&nbsp;&nbsp;&nbsp;(11)
+    <ol id="1.9_rc1.optimizations">
+      <li>Disk usage (peak requirements during indexing and optimization)
+in case of compound file format has been improved.<br />(Bernhard, Dmitry, and Christoph)</li>
+      <li>Optimize the performance of certain uses of BooleanScorer,
+TermScorer and IndexSearcher.  In particular, a BooleanQuery
+composed of TermQuery, with not all terms required, that returns a
+TopDocs (e.g., through a Hits with no Sort specified) runs much
+faster.<br />(cutting)</li>
+      <li>Removed synchronization from reading of term vectors with an
+IndexReader (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=30736">Patch #30736</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-265">LUCENE-265</a>]).<br />(Bernhard Messer via Christoph)</li>
+      <li>Optimize term-dictionary lookup to allocate far fewer terms when
+scanning for the matching term.  This speeds searches involving
+low-frequency terms, where the cost of dictionary lookup can be
+significant.<br />(cutting)</li>
+      <li>Optimize fuzzy queries so the standard fuzzy queries with a prefix
+of 0 now run 20-50% faster (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31882">Patch #31882</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-296">LUCENE-296</a>]).<br />(Jonathan Hager via Daniel Naber)</li>
+      <li>A Version of BooleanScorer (BooleanScorer2) added that delivers
+documents in increasing order and implements skipTo. For queries
+with required or forbidden clauses it may be faster than the old
+BooleanScorer, for BooleanQueries consisting only of optional
+clauses it is probably slower. The new BooleanScorer is now the
+default.<br />(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31785">Patch 31785</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-294">LUCENE-294</a>] by Paul Elschot via Christoph)</li>
+      <li>Use uncached access to norms when merging to reduce RAM usage.
+(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=32847">Bug #32847</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-326">LUCENE-326</a>]).<br />(Doug Cutting)</li>
+      <li>Don't read term index when random-access is not required.  This
+reduces time to open IndexReaders and they use less memory when
+random access is not required, e.g., when merging segments.  The
+term index is now read into memory lazily at the first
+random-access.<br />(Doug Cutting)</li>
+      <li>Optimize IndexWriter.addIndexes(Directory[]) when the number of
+added indexes is larger than mergeFactor.  Previously this could
+result in quadratic performance.  Now performance is n log(n).<br />(Doug Cutting)</li>
+      <li>Speed up the creation of TermEnum for indices with multiple
+segments and deleted documents, and thus speed up PrefixQuery,
+RangeQuery, WildcardQuery, FuzzyQuery, RangeFilter, DateFilter,
+and sorting the first time on a field.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-454">LUCENE-454</a>)</li>
+      <li>Optimized and generalized 32 bit floating point to byte
+(custom 8 bit floating point) conversions.  Increased the speed of
+Similarity.encodeNorm() anywhere from 10% to 250%, depending on the JVM.<br />(Yonik Seeley, <a href="http://issues.apache.org/jira/browse/LUCENE-467">LUCENE-467</a>)</li>
+    </ol>
+  </li>
+  <li><a href="javascript:toggleList('1.9_rc1.infrastructure')">Infrastructure</a>&nbsp;&nbsp;&nbsp;(2)
+    <ol id="1.9_rc1.infrastructure">
+      <li>Lucene's source code repository has converted from CVS to
+Subversion.  The new repository is at
+http://svn.apache.org/repos/asf/lucene/java/trunk
+</li>
+      <li>Lucene's issue tracker has migrated from Bugzilla to JIRA.
+Lucene's JIRA is at http://issues.apache.org/jira/browse/LUCENE
+The old issues are still available at
+http://issues.apache.org/bugzilla/show_bug.cgi?id=xxxx<br />(use the bug number instead of xxxx)</li>
+    </ol>
+  </li>
+</ul>
+<h3><a href="javascript:toggleList('1.4.3')">Release 1.4.3  [2004-12-07]</a></h3>
+    <ol id="1.4.3">
+      <li>The JSP demo page (src/jsp/results.jsp) now properly escapes error
+messages which might contain user input (e.g. error messages about
+query parsing). If you used that page as a starting point for your
+own code please make sure your code also properly escapes HTML
+characters from user input in order to avoid so-called cross site
+scripting attacks.<br />(Daniel Naber)</li>
+      <li>QueryParser changes in 1.4.2 broke the QueryParser API. Now the old
+API is supported again.<br />(Christoph)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4.2')">Release 1.4.2  [2004-10-01]</a></h3>
+    <ol id="1.4.2">
+      <li>Fixed <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31241">bug #31241</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-277">LUCENE-277</a>]: Sorting could lead to incorrect results (documents
+missing, others duplicated) if the sort keys were not unique and there
+were more than 100 matches.<br />(Daniel Naber)</li>
+      <li>Memory leak in Sort code (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=31240">bug #31240</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-276">LUCENE-276</a>]) eliminated.<br />(Rafal Krzewski via Christoph and Daniel)</li>
+      <li>FuzzyQuery now takes an additional parameter that specifies the
+minimum similarity that is required for a term to match the query.
+The QueryParser syntax for this is term~x, where x is a floating
+point number &gt;= 0 and &lt; 1 (a bigger number means that a higher
+similarity is required). Furthermore, a prefix can be specified
+for FuzzyQuerys so that only those terms are considered similar that
+start with this prefix. This can speed up FuzzyQuery greatly.<br />(Daniel Naber, Christoph Goller)</li>
+      <li>PhraseQuery and PhrasePrefixQuery now allow the explicit specification
+of relative positions.<br />(Christoph Goller)</li>
+      <li>QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions
+(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=9110">patch #9110</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-35">LUCENE-35</a>]); some unused method parameters removed; The ability
+to specify a minimum similarity for FuzzyQuery has been added.<br />(Christoph Goller)</li>
+      <li>IndexSearcher optimization: a new ScoreDoc is no longer allocated
+for every non-zero-scoring hit.  This makes 'OR' queries that
+contain common terms substantially faster.<br />(cutting)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4.1')">Release 1.4.1  [2004-08-02]</a></h3>
+    <ol id="1.4.1">
+      <li>Fixed a performance bug in hit sorting code, where values were not
+correctly cached.<br />(Aviran via cutting)</li>
+      <li>Fixed errors in file format documentation.<br />(Daniel Naber)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4_final')">Release 1.4 final  [2004-07-01]</a></h3>
+    <ol id="1.4_final">
+      <li>Added "an" to the list of stop words in StopAnalyzer, to complement
+the existing "a" there.  Fix for <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=28960">bug 28960</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-132">LUCENE-132</a>]
+ (http://issues.apache.org/bugzilla/show_bug.cgi?id=28960).<br />(Otis)</li>
+      <li>Added new class FieldCache to manage in-memory caches of field term
+values.<br />(Tim Jones)</li>
+      <li>Added overloaded getFieldQuery method to QueryParser which
+accepts the slop factor specified for the phrase (or the default
+phrase slop for the QueryParser instance).  This allows overriding
+methods to replace a PhraseQuery with a SpanNearQuery instead,
+keeping the proper slop factor.<br />(Erik Hatcher)</li>
+      <li>Changed the encoding of GermanAnalyzer.java and GermanStemmer.java to
+UTF-8 and changed the build encoding to UTF-8, to make changed files
+compile.<br />(Otis Gospodnetic)</li>
+      <li>Removed synchronization from term lookup under IndexReader methods
+termFreq(), termDocs() or termPositions() to improve
+multi-threaded performance.<br />(cutting)</li>
+      <li>Fix a bug where obsolete segment files were not deleted on Win32.
+</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4_rc3')">Release 1.4 RC3  [2004-05-11]</a></h3>
+    <ol id="1.4_rc3">
+      <li>Fixed several search bugs introduced by the skipTo() changes in
+release 1.4RC1.  The index file format was changed a bit, so
+collections must be re-indexed to take advantage of the skipTo()
+optimizations.<br />(Christoph Goller)</li>
+      <li>Added new Document methods, removeField() and removeFields().<br />(Christoph Goller)</li>
+      <li>Fixed inconsistencies with index closing.  Indexes and directories
+are now only closed automatically by Lucene when Lucene opened
+them automatically.<br />(Christoph Goller)</li>
+      <li>Added new class: FilteredQuery.<br />(Tim Jones)</li>
+      <li>Added a new SortField type for custom comparators.<br />(Tim Jones)</li>
+      <li>Lock obtain timed out message now displays the full path to the lock
+file.<br />(Daniel Naber via Erik)</li>
+      <li>Fixed a bug in SpanNearQuery when ordered.<br />(Paul Elschot via cutting)</li>
+      <li>Fixed so that FSDirectory's locks still work when the
+java.io.tmpdir system property is null.<br />(cutting)</li>
+      <li>Changed FilteredTermEnum's constructor to take no parameters,
+as the parameters were ignored anyway<br />(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=28858">bug #28858</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-224">LUCENE-224</a>])</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4_rc2')">Release 1.4 RC2  [2004-03-30]</a></h3>
+    <ol id="1.4_rc2">
+      <li>GermanAnalyzer now throws an exception if the stopword file
+cannot be found (<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=27987">bug #27987</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-203">LUCENE-203</a>]). It now uses LowerCaseFilter
+(<a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=18410">bug #18410</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-87">LUCENE-87</a>])<br />(Daniel Naber via Otis, Erik)</li>
+      <li>Fixed a few bugs in the file format documentation.<br />(cutting)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.4_rc1')">Release 1.4 RC1  [2004-03-29]</a></h3>
+    <ol id="1.4_rc1">
+      <li>Changed the format of the .tis file, so that:
+<p/>
+- it has a format version number, which makes it easier to
+  back-compatibly change file formats in the future.
+<p/>
+- the term count is now stored as a long.  This was the one aspect
+  of the Lucene's file formats which limited index size.
+<p/>
+- a few internal index parameters are now stored in the index, so
+  that they can (in theory) now be changed from index to index,
+  although there is not yet an API to do so.
+<p/>
+These changes are back compatible.  The new code can read old
+indexes.  But old code will not be able read new indexes.<br />(cutting)</li>
+      <li>Added an optimized implementation of TermDocs.skipTo().  A skip
+table is now stored for each term in the .frq file.  This only
+adds a percent or two to overall index size, but can substantially
+speedup many searches.<br />(cutting)</li>
+      <li>Restructured the Scorer API and all Scorer implementations to take
+advantage of an optimized TermDocs.skipTo() implementation.  In
+particular, PhraseQuerys and conjunctive BooleanQuerys are
+faster when one clause has substantially fewer matches than the
+others.  (A conjunctive BooleanQuery is a BooleanQuery where all
+clauses are required.)<br />(cutting)</li>
+      <li>Added new class ParallelMultiSearcher.  Combined with
+RemoteSearchable this makes it easy to implement distributed
+search systems.<br />(Jean-Francois Halleux via cutting)</li>
+      <li>Added support for hit sorting.  Results may now be sorted by any
+indexed field.  For details see the javadoc for
+Searcher#search(Query, Sort).<br />(Tim Jones via Cutting)</li>
+      <li>Changed FSDirectory to auto-create a full directory tree that it
+needs by using mkdirs() instead of mkdir().<br />(Mladen Turk via Otis)</li>
+      <li>Added a new span-based query API.  This implements, among other
+things, nested phrases.  See javadocs for details.<br />(Doug Cutting)</li>
+      <li>Added new method Query.getSimilarity(Searcher), and changed
+scorers to use it.  This permits one to subclass a Query class so
+that it can specify its own Similarity implementation, perhaps
+one that delegates through that of the Searcher.<br />(Julien Nioche
+via Cutting)</li>
+      <li>Added MultiReader, an IndexReader that combines multiple other
+IndexReaders.<br />(Cutting)</li>
+      <li>Added support for term vectors.  See Field#isTermVectorStored().<br />(Grant Ingersoll, Cutting &amp; Dmitry)</li>
+      <li>Fixed the old bug with escaping of special characters in query
+strings: http://issues.apache.org/bugzilla/show_bug.cgi?id=24665<br />(Jean-Francois Halleux via Otis)</li>
+      <li>Added support for overriding default values for the following,
+using system properties:
+  - default commit lock timeout
+  - default maxFieldLength
+  - default maxMergeDocs
+  - default mergeFactor
+  - default minMergeDocs
+  - default write lock timeout<br />(Otis)</li>
+      <li>Changed QueryParser.jj to allow '-' and '+' within tokens:
+http://issues.apache.org/bugzilla/show_bug.cgi?id=27491<br />(Morus Walter via Otis)</li>
+      <li>Changed so that the compound index format is used by default.
+This makes indexing a bit slower, but vastly reduces the chances
+of file handle problems.<br />(Cutting)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.3_final')">Release 1.3 final  [2003-12-26]</a></h3>
+    <ol id="1.3_final">
+      <li>Added catch of BooleanQuery$TooManyClauses in QueryParser to
+throw ParseException instead.<br />(Erik Hatcher)</li>
+      <li>Fixed a NullPointerException in Query.explain().<br />(Doug Cutting)</li>
+      <li>Added a new method IndexReader.setNorm(), that permits one to
+alter the boosting of fields after an index is created.
+</li>
+      <li>Distinguish between the final position and length when indexing a
+field.  The length is now defined as the total number of tokens,
+instead of the final position, as it was previously.  Length is
+used for score normalization (Similarity.lengthNorm()) and for
+controlling memory usage (IndexWriter.maxFieldLength).  In both of
+these cases, the total number of tokens is a better value to use
+than the final token position.  Position is used in phrase
+searching (see PhraseQuery and Token.setPositionIncrement()).
+</li>
+      <li>Fix StandardTokenizer's handling of CJK characters (Chinese,
+Japanese and Korean ideograms).  Previously contiguous sequences
+were combined in a single token, which is not very useful.  Now
+each ideogram generates a separate token, which is more useful.
+</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.3_rc3')">Release 1.3 RC3  [2003-11-25]</a></h3>
+    <ol id="1.3_rc3">
+      <li>Added minMergeDocs in IndexWriter.  This can be raised to speed
+indexing without altering the number of files, but only using more
+memory.<br />(Julien Nioche via Otis)</li>
+      <li>Fix <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=24786">bug #24786</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-162">LUCENE-162</a>], in query rewriting.<br />(bschneeman via Cutting)</li>
+      <li>Fix <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=16952">bug #16952</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-85">LUCENE-85</a>], in demo HTML parser, skip comments in
+javascript.<br />(Christoph Goller)</li>
+      <li>Fix <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=19253">bug #19253</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-105">LUCENE-105</a>], in demo HTML parser, add whitespace as needed to
+output<br />(Daniel Naber via Christoph Goller)</li>
+      <li>Fix <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=24301">bug #24301</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-159">LUCENE-159</a>], in demo HTML parser, long titles no longer
+hang things.<br />(Christoph Goller)</li>
+      <li>Fix <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=23534">bug #23534</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-138">LUCENE-138</a>], Replace use of file timestamp of segments file
+with an index version number stored in the segments file.  This
+resolves problems when running on file systems with low-resolution
+timestamps, e.g., HFS under MacOS X.<br />(Christoph Goller)</li>
+      <li>Fix QueryParser so that TokenMgrError is not thrown, only
+ParseException.<br />(Erik Hatcher)</li>
+      <li>Fix some bugs introduced by change 11 of RC2.<br />(Christoph Goller)</li>
+      <li>Fixed a problem compiling TestRussianStem.<br />(Christoph Goller)</li>
+      <li>Cleaned up some build stuff.<br />(Erik Hatcher)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.3_rc2')">Release 1.3 RC2  [2003-10-22]</a></h3>
+    <ol id="1.3_rc2">
+      <li>Added getFieldNames(boolean) to IndexReader, SegmentReader, and
+SegmentsReader.<br />(Julien Nioche via otis)</li>
+      <li>Changed file locking to place lock files in
+System.getProperty("java.io.tmpdir"), where all users are
+permitted to write files.  This way folks can open and correctly
+lock indexes which are read-only to them.
+</li>
+      <li>IndexWriter: added a new method, addDocument(Document, Analyzer),
+permitting one to easily use different analyzers for different
+documents in the same index.
+</li>
+      <li>Minor enhancements to FuzzyTermEnum.<br />(Christoph Goller via Otis)</li>
+      <li>PriorityQueue: added insert(Object) method and adjusted IndexSearcher
+and MultiIndexSearcher to use it.<br />(Christoph Goller via Otis)</li>
+      <li>Fixed a bug in IndexWriter that returned incorrect docCount().<br />(Christoph Goller via Otis)</li>
+      <li>Fixed SegmentsReader to eliminate the confusing and slightly different
+behaviour of TermEnum when dealing with an enumeration of all terms,
+versus an enumeration starting from a specific term.
+This patch also fixes incorrect term document frequencies when the same term
+is present in multiple segments.<br />(Christoph Goller via Otis)</li>
+      <li>Added CachingWrapperFilter and PerFieldAnalyzerWrapper.<br />(Erik Hatcher)</li>
+      <li>Added support for the new "compound file" index format<br />(Dmitry
+Serebrennikov)</li>
+      <li>Added Locale setting to QueryParser, for use by date range parsing.
+</li>
+      <li>Changed IndexReader so that it can be subclassed by classes
+outside of its package.  Previously it had package-private
+abstract methods.  Also modified the index merging code so that it
+can work on an arbitrary IndexReader implementation, and added a
+new method, IndexWriter.addIndexes(IndexReader[]), to take
+advantage of this.<br />(cutting)</li>
+      <li>Added a limit to the number of clauses which may be added to a
+BooleanQuery.  The default limit is 1024 clauses.  This should
+stop most OutOfMemoryExceptions by prefix, wildcard and fuzzy
+queries which run amok.<br />(cutting)</li>
+      <li>Add new method: IndexReader.undeleteAll().  This undeletes all
+deleted documents which still remain in the index.<br />(cutting)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.3_rc1')">Release 1.3 RC1  [2003-03-24]</a></h3>
+    <ol id="1.3_rc1">
+      <li>Fixed PriorityQueue's clear() method.
+Fix for <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=9454">bug 9454</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-37">LUCENE-37</a>], http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9454<br />(Matthijs Bomhoff via otis)</li>
+      <li>Changed StandardTokenizer.jj grammar for EMAIL tokens.
+Fix for <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=9015">bug 9015</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-34">LUCENE-34</a>], http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9015<br />(Dale Anson via otis)</li>
+      <li>Added the ability to disable lock creation by using disableLuceneLocks
+system property.  This is useful for read-only media, such as CD-ROMs.<br />(otis)</li>
+      <li>Added id method to Hits to be able to access the index global id.
+Required for sorting options.<br />(carlson)</li>
+      <li>Added support for new range query syntax to QueryParser.jj.<br />(briangoetz)</li>
+      <li>Added the ability to retrieve HTML documents' META tag values to
+HTMLParser.jj.<br />(Mark Harwood via otis)</li>
+      <li>Modified QueryParser to make it possible to programmatically specify the
+default Boolean operator (OR or AND).<br />(Péter Halácsy via otis)</li>
+      <li>Made many search methods and classes non-final, per requests.
+This includes IndexWriter and IndexSearcher, among others.<br />(cutting)</li>
+      <li>Added class RemoteSearchable, providing support for remote
+searching via RMI.  The test class RemoteSearchableTest.java
+provides an example of how this can be used.<br />(cutting)</li>
+      <li>Added PhrasePrefixQuery (and supporting MultipleTermPositions).  The
+test class TestPhrasePrefixQuery provides the usage example.<br />(Anders Nielsen via otis)</li>
+      <li>Changed the German stemming algorithm to ignore case while
+stripping. The new algorithm is faster and produces more equal
+stems from nouns and verbs derived from the same word.<br />(gschwarz)</li>
+      <li>Added support for boosting the score of documents and fields via
+the new methods Document.setBoost(float) and Field.setBoost(float).
+<p/>
+Note: This changes the encoding of an indexed value.  Indexes
+should be re-created from scratch in order for search scores to
+be correct.  With the new code and an old index, searches will
+yield very large scores for shorter fields, and very small scores
+for longer fields.  Once the index is re-created, scores will be
+as before.<br />(cutting)</li>
+      <li>Added new method Token.setPositionIncrement().
+<p/>
+This permits, for the purpose of phrase searching, placing
+multiple terms in a single position.  This is useful with
+stemmers that produce multiple possible stems for a word.
+<p/>
+This also permits the introduction of gaps between terms, so that
+terms which are adjacent in a token stream will not be matched by
+and exact phrase query.  This makes it possible, e.g., to build
+an analyzer where phrases are not matched over stop words which
+have been removed.
+<p/>
+Finally, repeating a token with an increment of zero can also be
+used to boost scores of matches on that token.<br />(cutting)</li>
+      <li>Added new Filter class, QueryFilter.  This constrains search
+results to only match those which also match a provided query.
+Results are cached, so that searches after the first on the same
+index using this filter are very fast.
+<p/>
+This could be used, for example, with a RangeQuery on a formatted
+date field to implement date filtering.  One could re-use a
+single QueryFilter that matches, e.g., only documents modified
+within the last week.  The QueryFilter and RangeQuery would only
+need to be reconstructed once per day.<br />(cutting)</li>
+      <li>Added a new IndexWriter method, getAnalyzer().  This returns the
+analyzer used when adding documents to this index.<br />(cutting)</li>
+      <li>Fixed a bug with IndexReader.lastModified().  Before, document
+deletion did not update this.  Now it does.<br />(cutting)</li>
+      <li>Added Russian Analyzer.<br />(Boris Okner via otis)</li>
+      <li>Added a public, extensible scoring API.  For details, see the
+javadoc for org.apache.lucene.search.Similarity.
+</li>
+      <li>Fixed return of Hits.id() from float to int. (Terry Steichen via Peter).
+</li>
+      <li>Added getFieldNames() to IndexReader and Segment(s)Reader classes.<br />(Peter Mularien via otis)</li>
+      <li>Added getFields(String) and getValues(String) methods.
+Contributed by Rasik Pandey on 2002-10-09<br />(Rasik Pandey via otis)</li>
+      <li>Revised internal search APIs.  Changes include:
+<p/>
+  a. Queries are no longer modified during a search.  This makes
+  it possible, e.g., to reuse the same query instance with
+  multiple indexes from multiple threads.
+<p/>
+  b. Term-expanding queries (e.g. PrefixQuery, WildcardQuery,
+  etc.)  now work correctly with MultiSearcher, fixing bugs 12619
+  and 12667.
+<p/>
+  c. Boosting BooleanQuery's now works, and is supported by the
+  query parser (problem reported by Lee Mallabone).  Thus a query
+  like "(+foo +bar)^2 +baz" is now supported and equivalent to
+  "(+foo^2 +bar^2) +baz".
+<p/>
+  d. New method: Query.rewrite(IndexReader).  This permits a
+  query to re-write itself as an alternate, more primitive query.
+  Most of the term-expanding query classes (PrefixQuery,
+  WildcardQuery, etc.) are now implemented using this method.
+<p/>
+  e. New method: Searchable.explain(Query q, int doc).  This
+  returns an Explanation instance that describes how a particular
+  document is scored against a query.  An explanation can be
+  displayed as either plain text, with the toString() method, or
+  as HTML, with the toHtml() method.  Note that computing an
+  explanation is as expensive as executing the query over the
+  entire index.  This is intended to be used in developing
+  Similarity implementations, and, for good performance, should
+  not be displayed with every hit.
+<p/>
+  f. Scorer and Weight are public, not package protected.  It now
+  possible for someone to write a Scorer implementation that is
+  not in the org.apache.lucene.search package.  This is still
+  fairly advanced programming, and I don't expect anyone to do
+  this anytime soon, but at least now it is possible.
+<p/>
+  g. Added public accessors to the primitive query classes
+  (TermQuery, PhraseQuery and BooleanQuery), permitting access to
+  their terms and clauses.
+<p/>
+Caution: These are extensive changes and they have not yet been
+tested extensively.  Bug reports are appreciated.<br />(cutting)</li>
+      <li>Added convenience RAMDirectory constructors taking File and String
+arguments, for easy FSDirectory to RAMDirectory conversion.<br />(otis)</li>
+      <li>Added code for manual renaming of files in FSDirectory, since it
+has been reported that java.io.File's renameTo(File) method sometimes
+fails on Windows JVMs.<br />(Matt Tucker via otis)</li>
+      <li>Refactored QueryParser to make it easier for people to extend it.
+Added the ability to automatically lower-case Wildcard terms in
+the QueryParser.<br />(Tatu Saloranta via otis)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.2_rc6')">Release 1.2 RC6  [2002-06-13]</a></h3>
+    <ol id="1.2_rc6">
+      <li>Changed QueryParser.jj to have "?" be a special character which
+allowed it to be used as a wildcard term. Updated TestWildcard
+unit test also.<br />(Ralf Hettesheimer via carlson)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.2_rc5')">Release 1.2 RC5  [2002-05-14]</a></h3>
+    <ol id="1.2_rc5">
+      <li>Renamed build.properties to default.properties and updated
+the BUILD.txt document to describe how to override the
+default.property settings without having to edit the file. This
+brings the build process closer to Scarab's build process.<br />(jon)</li>
+      <li>Added MultiFieldQueryParser class.<br />(Kelvin Tan, via otis)</li>
+      <li>Updated "powered by" links.<br />(otis)</li>
+      <li>Fixed instruction for setting up JavaCC - <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=7017">Bug #7017</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-18">LUCENE-18</a>]<br />(otis)</li>
+      <li>Added throwing exception if FSDirectory could not create directory
+- <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=6914">Bug #6914</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-16">LUCENE-16</a>]<br />(Eugene Gluzberg via otis)</li>
+      <li>Update MultiSearcher, MultiFieldParse, Constants, DateFilter,
+LowerCaseTokenizer javadoc<br />(otis)</li>
+      <li>Added fix to avoid NullPointerException in results.jsp<br />(Mark Hayes via otis)</li>
+      <li>Changed Wildcard search to find 0 or more char instead of 1 or more<br />(Lee Mallobone, via otis)</li>
+      <li>Fixed error in offset issue in GermanStemFilter - <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=7412">Bug #7412</a>&nbsp;[<a href="http://issues.apache.org/jira/browse/LUCENE-23">LUCENE-23</a>]<br />(Rodrigo Reyes, via otis)</li>
+      <li>Added unit tests for wildcard search and DateFilter<br />(otis)</li>
+      <li>Allow co-existence of indexed and non-indexed fields with the same name<br />(cutting/casper, via otis)</li>
+      <li>Add escape character to query parser.<br />(briangoetz)</li>
+      <li>Applied a patch that ensures that searches that use DateFilter
+don't throw an exception when no matches are found.<br />(David Smiley, via
+otis)</li>
+      <li>Fixed bugs in DateFilter and wildcardquery unit tests.<br />(cutting, otis, carlson)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.2_rc4')">Release 1.2 RC4  [2002-02-14]</a></h3>
+    <ol id="1.2_rc4">
+      <li>Updated contributions section of website.
+Add XML Document #3 implementation to Document Section.
+Also added Term Highlighting to Misc Section.<br />(carlson)</li>
+      <li>Fixed NullPointerException for phrase searches containing
+unindexed terms, introduced in 1.2RC3.<br />(cutting)</li>
+      <li>Changed document deletion code to obtain the index write lock,
+enforcing the fact that document addition and deletion cannot be
+performed concurrently.<br />(cutting)</li>
+      <li>Various documentation cleanups.<br />(otis, acoliver)</li>
+      <li>Updated "powered by" links.<br />(cutting, jon)</li>
+      <li>Fixed a bug in the GermanStemmer.<br />(Bernhard Messer, via otis)</li>
+      <li>Changed Term and Query to implement Serializable.<br />(scottganyo)</li>
+      <li>Fixed to never delete indexes added with IndexWriter.addIndexes().<br />(cutting)</li>
+      <li>Upgraded to JUnit 3.7.<br />(otis)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.2_rc3')">Release 1.2 RC3  [2002-01-27]</a></h3>
+    <ol id="1.2_rc3">
+      <li>IndexWriter: fixed a bug where adding an optimized index to an
+empty index failed.  This was encountered using addIndexes to copy
+a RAMDirectory index to an FSDirectory.
+</li>
+      <li>RAMDirectory: fixed a bug where RAMInputStream could not read
+across more than across a single buffer boundary.
+</li>
+      <li>Fix query parser so it accepts queries with unicode characters.<br />(briangoetz)</li>
+      <li>Fix query parser so that PrefixQuery is used in preference to
+WildcardQuery when there's only an asterisk at the end of the
+term.  Previously PrefixQuery would never be used.
+</li>
+      <li>Fix tests so they compile; fix ant file so it compiles tests
+properly.  Added test cases for Analyzers and PriorityQueue.
+</li>
+      <li>Updated demos, added Getting Started documentation.<br />(acoliver)</li>
+      <li>Added 'contributions' section to website &amp; docs.<br />(carlson)</li>
+      <li>Removed JavaCC from source distribution for copyright reasons.
+Folks must now download this separately from metamata in order to
+compile Lucene.<br />(cutting)</li>
+      <li>Substantially improved the performance of DateFilter by adding the
+ability to reuse TermDocs objects.<br />(cutting)</li>
+      <li>Added IndexReader methods:
+  public static boolean indexExists(String directory);
+  public static boolean indexExists(File directory);
+  public static boolean indexExists(Directory directory);
+  public static boolean isLocked(Directory directory);
+  public static void unlock(Directory directory);<br />(cutting, otis)</li>
+      <li>Fixed bugs in GermanAnalyzer<br />(gschwarz)</li>
+    </ol>
+<h3><a href="javascript:toggleList('1.2_rc2')">Release 1.2 RC2  [2001-10-19]</a></h3>
+    <ul id="1.2_rc2">
+      <li>added sources to distribution
+</li>
+      <li>removed broken build scripts and libraries from distribution
+</li>
+      <li>SegmentsReader: fixed potential race condition
+</li>
+      <li>FSDirectory: fixed so that getDirectory(xxx,true) correctly
+erases the directory contents, even when the directory
+has already been accessed in this JVM.
+</li>
+      <li>RangeQuery: Fix issue where an inclusive range query would
+include the nearest term in the index above a non-existant
+specified upper term.
+</li>
+      <li>SegmentTermEnum: Fix NullPointerException in clone() method
+when the Term is null.
+</li>
+      <li>JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
+since they rely on a feature added in JDK 1.2.
+</li>
+    </ul>
+<h3><a href="javascript:toggleList('1.2_rc1')">Release 1.2 RC1 (first Apache release) [2001-10-02]</a></h3>
+    <ul id="1.2_rc1">
+      <li>packages renamed from com.lucene to org.apache.lucene
+</li>
+      <li>license switched from LGPL to Apache
+</li>
+      <li>ant-only build -- no more makefiles
+</li>
+      <li>addition of lock files--now fully thread &amp; process safe
+</li>
+      <li>addition of German stemmer
+</li>
+      <li>MultiSearcher now supports low-level search API
+</li>
+      <li>added RangeQuery, for term-range searching
+</li>
+      <li>Analyzers can choose tokenizer based on field name
+</li>
+      <li>misc bug fixes.
+</li>
+    </ul>
+<h3><a href="javascript:toggleList('1.01b')">Release 1.01b (last Sourceforge release) [2001-07-02]</a></h3>
+    <ul id="1.01b">
+      <li>a few bug fixes
+</li>
+      <li>new Query Parser
+</li>
+      <li>new prefix query (search for "foo*" matches "food")
+</li>
+    </ul>
+<h3><a href="javascript:toggleList('1.0')">Release 1.0  [2000-10-04]</a></h3>
+    <ul id="1.0">
+      <li>This release fixes a few serious bugs and also includes some
+performance optimizations, a stemmer, and a few other minor
+enhancements.
+</li>
+    </ul>
+<h3><a href="javascript:toggleList('0.04')">Release 0.04  [2000-04-19]</a></h3>
+    <ul id="0.04">
+      <li>Lucene now includes a grammar-based tokenizer, StandardTokenizer.
+</li>
+      <li>The only tokenizer included in the previous release (LetterTokenizer)
+identified terms consisting entirely of alphabetic characters.  The
+new tokenizer uses a regular-expression grammar to identify more
+complex classes of terms, including numbers, acronyms, email
+addresses, etc.
+</li>
+      <li>StandardTokenizer serves two purposes:
+</li>
+      <li>1. It is a much better, general purpose tokenizer for use by
+   applications as is.
+</li>
+      <li>The easiest way for applications to start using
+StandardTokenizer is to use StandardAnalyzer.
+</li>
+      <li>2. It provides a good example of grammar-based tokenization.
+</li>
+      <li>If an application has special tokenization requirements, it can
+implement a custom tokenizer by copying the directory containing
+the new tokenizer into the application and modifying it
+accordingly.
+</li>
+    </ul>
+<h3><a href="javascript:toggleList('0.01')">Release 0.01  [2000-03-30]</a></h3>
+    <ul id="0.01">
+      <li>First open source release.
+</li>
+      <li>The code has been re-organized into a new package and directory
+structure for this release.  It builds OK, but has not been tested
+beyond that since the re-organization.
+</li>
+    </ul>
+</ul>
+</body>
+</html>
