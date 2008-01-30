@@ -725,6 +725,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
     }
 
+    // to facilitate testing: blocks if called during commit
+    public synchronized int getCommitCount() { return autoCommitCount; }
+
     public String toString() {
       if(timeUpperBound > 0 || docsUpperBound > 0) {
         return 
