@@ -17,187 +17,127 @@ package org.apache.lucene.benchmark.utils;
  * limitations under the License.
  */
 
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.XMLReaderFactory;
+import org.apache.lucene.benchmark.byTask.feeds.BasicDocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document;
 
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Properties;
 
 /**
  * Extract the downloaded Wikipedia dump into separate files for indexing.
  */
 public class ExtractWikipedia {
 
-  private File wikipedia;
   private File outputDir;
 
-  public ExtractWikipedia(File wikipedia, File outputDir) {
-    this.wikipedia = wikipedia;
+  static public int count = 0;
+
+  static final int BASE = 10;
+  protected DocMaker docMaker;
+
+  public ExtractWikipedia(DocMaker docMaker, File outputDir) {
     this.outputDir = outputDir;
+    this.docMaker = docMaker;
     System.out.println("Deleting all files in " + outputDir);
-    File [] files = outputDir.listFiles();
+    File[] files = outputDir.listFiles();
     for (int i = 0; i < files.length; i++) {
       files[i].delete();
     }
   }
 
-  static public int count = 0;
-  static String[] months = {"JAN", "FEB", "MAR", "APR",
-                            "MAY", "JUN", "JUL", "AUG",
-                            "SEP", "OCT", "NOV", "DEC"};
 
-  public class Parser extends DefaultHandler {
-
-    public Parser() {
+  public File directory(int count, File directory) {
+    if (directory == null) {
+      directory = outputDir;
     }
+    int base = BASE;
+    while (base <= count) {
+      base *= BASE;
+    }
+    if (count < BASE) {
+      return directory;
+    }
+    directory = new File(directory, (Integer.toString(base / BASE)));
+    directory = new File(directory, (Integer.toString(count / (base / BASE))));
+    return directory(count % (base / BASE), directory);
+  }
+
+  public void create(String id, String title, String time, String body) {
+
+    File d = directory(count++, null);
+    d.mkdirs();
+    File f = new File(d, id + ".txt");
 
     StringBuffer contents = new StringBuffer();
 
-    public void characters(char[] ch, int start, int length) {
-      contents.append(ch, start, length);
-    }
-
-    String title;
-    String id;
-    String body;
-    String time;
-
-    static final int BASE = 10;
-
-    public void startElement(String namespace,
-                             String simple,
-                             String qualified,
-                             Attributes attributes) {
-      if (qualified.equals("page")) {
-        title = null;
-        id = null;
-        body = null;
-        time = null;
-      } else if (qualified.equals("text")) {
-        contents.setLength(0);
-      } else if (qualified.equals("timestamp")) {
-        contents.setLength(0);
-      } else if (qualified.equals("title")) {
-        contents.setLength(0);
-      } else if (qualified.equals("id")) {
-        contents.setLength(0);
-      }
-    }
-
-    public File directory (int count, File directory) {
-      if (directory == null) {
-        directory = outputDir;
-      }
-      int base = BASE;
-      while (base <= count) {
-        base *= BASE;
-      }
-      if (count < BASE) {
-        return directory;
-      }
-      directory = new File (directory, (Integer.toString(base / BASE)));
-      directory = new File (directory, (Integer.toString(count / (base / BASE))));
-      return directory(count % (base / BASE), directory);
-    }
-
-    public void create(String id, String title, String time, String body) {
-
-      File d = directory(count++, null);
-      d.mkdirs();
-      File f = new File(d, id + ".txt");
-
-      StringBuffer contents = new StringBuffer();
-
-      contents.append(time);
-      contents.append("\n\n");
-      contents.append(title);
-      contents.append("\n\n");
-      contents.append(body);
-      contents.append("\n");
-
-      try {
-        FileWriter writer = new FileWriter(f);
-        writer.write(contents.toString());
-        writer.close();
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-
-    }
-
-    String time(String original) {
-      StringBuffer buffer = new StringBuffer();
-
-      buffer.append(original.substring(8, 10));
-      buffer.append('-');
-      buffer.append(months[Integer.valueOf(original.substring(5, 7)).intValue() - 1]);
-      buffer.append('-');
-      buffer.append(original.substring(0, 4));
-      buffer.append(' ');
-      buffer.append(original.substring(11, 19));
-      buffer.append(".000");
-
-      return buffer.toString();
-    }
-
-    public void endElement(String namespace, String simple, String qualified) {
-      if (qualified.equals("title")) {
-        title = contents.toString();
-      } else if (qualified.equals("text")) {
-        body = contents.toString();
-        if (body.startsWith("#REDIRECT") ||
-             body.startsWith("#redirect")) {
-          body = null;
-        }
-      } else if (qualified.equals("timestamp")) {
-        time = time(contents.toString());
-      } else if (qualified.equals("id") && id == null) {
-        id = contents.toString();
-      } else if (qualified.equals("page")) {
-        if (body != null) {
-          create(id, title, time, body);
-        }
-      }
-    }
-  }
-
-  public void extract() {
+    contents.append(time);
+    contents.append("\n\n");
+    contents.append(title);
+    contents.append("\n\n");
+    contents.append(body);
+    contents.append("\n");
 
     try {
-      Parser parser = new Parser();
-      if (false) {
-        SAXParser sp = SAXParserFactory.newInstance().newSAXParser();
-        sp.parse(new FileInputStream(wikipedia), parser);
-      } else {
-        XMLReader reader =
-          XMLReaderFactory.createXMLReader("org.apache.xerces.parsers.SAXParser");
-        reader.setContentHandler(parser);
-        reader.setErrorHandler(parser);
-        reader.parse(new InputSource(new FileInputStream(wikipedia)));
-      }
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      FileWriter writer = new FileWriter(f);
+      writer.write(contents.toString());
+      writer.close();
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
     }
+
   }
 
-  public static void main(String[] args) {
-    if (args.length != 2) {
-      printUsage();
+  public void extract() throws Exception {
+    Document doc = null;
+    System.out.println("Starting Extraction");
+    long start = System.currentTimeMillis();
+    try {
+      while ((doc = docMaker.makeDocument()) != null) {
+        create(doc.get(BasicDocMaker.ID_FIELD), doc.get(BasicDocMaker.TITLE_FIELD), doc.get(BasicDocMaker.DATE_FIELD), doc.get(BasicDocMaker.BODY_FIELD));
+      }
+    } catch (NoMoreDataException e) {
+      //continue
     }
+    long finish = System.currentTimeMillis();
+    System.out.println("Extraction took " + (finish - start) + " ms");
+  }
 
-    File wikipedia = new File(args[0]);
+  public static void main(String[] args) throws Exception {
 
-    if (wikipedia.exists()) {
-      File outputDir = new File(args[1]);
+    File wikipedia = null;
+    File outputDir = new File("./enwiki");
+    boolean keepImageOnlyDocs = true;
+    for (int i = 0; i < args.length; i++) {
+      String arg = args[i];
+      if (arg.equals("--input") || arg.equals("-i")) {
+        wikipedia = new File(args[i + 1]);
+        i++;
+      } else if (arg.equals("--output") || arg.equals("-o")) {
+        outputDir = new File(args[i + 1]);
+        i++;
+      } else if (arg.equals("--discardImageOnlyDocs") || arg.equals("-d")) {
+        keepImageOnlyDocs = false;
+      }
+
+    }
+    DocMaker docMaker = new EnwikiDocMaker();
+    Properties properties = new Properties();
+
+    properties.setProperty("docs.file", wikipedia.getAbsolutePath());
+    properties.setProperty("doc.maker.forever", "false");
+    properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
+    docMaker.setConfig(new Config(properties));
+    docMaker.resetInputs();
+    if (wikipedia != null && wikipedia.exists()) {
+      System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiDocMaker");
       outputDir.mkdirs();
-      ExtractWikipedia extractor = new ExtractWikipedia(wikipedia, outputDir);
+      ExtractWikipedia extractor = new ExtractWikipedia(docMaker, outputDir);
       extractor.extract();
     } else {
       printUsage();
@@ -205,7 +145,10 @@ public class ExtractWikipedia {
   }
 
   private static void printUsage() {
-    System.err.println("Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractWikipedia <Path to Wikipedia XML file> <Output Path>");
+    System.err.println("Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractWikipedia --input|-i <Path to Wikipedia XML file> " +
+            "[--output|-o <Output Path>] [--discardImageOnlyDocs|-d] [--useLineDocMaker|-l]");
+    System.err.println("--discardImageOnlyDocs tells the extractor to skip Wiki docs that contain only images");
+    System.err.println("--useLineDocMaker uses the LineDocMaker.  Default is EnwikiDocMaker");
   }
 
 }

@@ -28,12 +28,21 @@ import java.io.IOException;
 import java.io.FileInputStream;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
  * A LineDocMaker which reads the uncompressed english wikipedia dump.
+ *
+ * Config properties:
+ * keep.image.only.docs=false|true
+ * <br/>
+ * Plus those available in LineDocMaker
+ *
+ *
+ * @see org.apache.lucene.benchmark.byTask.feeds.LineDocMaker
  */
 public class EnwikiDocMaker extends LineDocMaker {
-
+  protected boolean keepImages = true;
   static final int TITLE = 0;
   static final int DATE = TITLE+1;
   static final int BODY = DATE+1;
@@ -43,6 +52,11 @@ public class EnwikiDocMaker extends LineDocMaker {
   static final String[] months = {"JAN", "FEB", "MAR", "APR",
                                   "MAY", "JUN", "JUL", "AUG",
                                   "SEP", "OCT", "NOV", "DEC"};
+
+  public void setConfig(Config config) {
+    super.setConfig(config);
+    keepImages = config.get("keep.image.only.docs", true);
+  }
 
   class Parser extends DefaultHandler implements Runnable {
 
@@ -204,8 +218,9 @@ public class EnwikiDocMaker extends LineDocMaker {
         title = contents.toString();
       } else if (qualified.equals("text")) {
         body = contents.toString();
-        if (body.startsWith("#REDIRECT") ||
-             body.startsWith("#redirect")) {
+        //workaround that startswith doesn't have an ignore case option, get at least 20 chars.
+        String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase();
+        if (startsWith.startsWith("#redirect")) {
           body = null;
         }
       } else if (qualified.equals("timestamp")) {
@@ -214,7 +229,8 @@ public class EnwikiDocMaker extends LineDocMaker {
         id = contents.toString();
       }
       else if (qualified.equals("page")) {
-        if (body != null) {
+        //the body must be null and we either are keeping image docs or the title does not start with Image:
+        if (body != null && (keepImages == true || title.startsWith("Image:") == false)) {
           create(title, time, body, id);
         }
       }
