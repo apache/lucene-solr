@@ -46,12 +46,12 @@ public class TrecDocMaker extends BasicDocMaker {
 
   private static final String newline = System.getProperty("line.separator");
   
-  private ThreadLocal dateFormat = new ThreadLocal();
-  private File dataDir = null;
-  private ArrayList inputFiles = new ArrayList();
-  private int nextFile = 0;
-  private int iteration=0;
-  private BufferedReader reader;
+  protected ThreadLocal dateFormat = new ThreadLocal();
+  protected File dataDir = null;
+  protected ArrayList inputFiles = new ArrayList();
+  protected int nextFile = 0;
+  protected int iteration=0;
+  protected BufferedReader reader;
   private GZIPInputStream zis;
   
   private static final String DATE_FORMATS [] = {
@@ -78,7 +78,7 @@ public class TrecDocMaker extends BasicDocMaker {
     }
  }
 
-  private void openNextFile() throws NoMoreDataException, Exception {
+  protected void openNextFile() throws NoMoreDataException, Exception {
     closeInputs();
     int retries = 0;
     while (true) {
@@ -111,7 +111,7 @@ public class TrecDocMaker extends BasicDocMaker {
     }
   }
 
-  private void closeInputs() {
+  protected void closeInputs() {
     if (zis!=null) {
       try {
         zis.close();
@@ -133,7 +133,7 @@ public class TrecDocMaker extends BasicDocMaker {
   }
   
   // read until finding a line that starts with the specified prefix
-  private StringBuffer read (String prefix, StringBuffer sb, boolean collectMatchLine, boolean collectAll) throws Exception {
+  protected StringBuffer read (String prefix, StringBuffer sb, boolean collectMatchLine, boolean collectAll) throws Exception {
     sb = (sb==null ? new StringBuffer() : sb);
     String sep = "";
     while (true) {
@@ -186,7 +186,7 @@ public class TrecDocMaker extends BasicDocMaker {
     return docData;
   }
 
-  private DateFormat getDateFormat(int n) {
+  protected DateFormat getDateFormat(int n) {
     DateFormat df[] = (DateFormat[]) dateFormat.get();
     if (df == null) {
       df = new SimpleDateFormat[DATE_FORMATS.length];
@@ -199,7 +199,7 @@ public class TrecDocMaker extends BasicDocMaker {
     return df[n];
   }
 
-  private Date parseDate(String dateStr) {
+  protected Date parseDate(String dateStr) {
     Date date = null;
     for (int i=0; i<DATE_FORMATS.length; i++) {
       try {
