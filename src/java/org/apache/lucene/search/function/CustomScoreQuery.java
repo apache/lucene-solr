@@ -430,7 +430,7 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Checks if this is strict custom scoring.
-   * In strict custom scoring, the ValueSource part of does not participate in weight normalization.
+   * In strict custom scoring, the ValueSource part does not participate in weight normalization.
    * This may be useful when one wants full control over how scores are modified, and does 
    * not care about normalizing by the ValueSource part.
    * One particular case where this is useful if for testing this query.   
