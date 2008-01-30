@@ -40,9 +40,9 @@ import java.util.Stack;
  */
 public class DirDocMaker extends BasicDocMaker {
 
-  private ThreadLocal dateFormat = new ThreadLocal();
-  private File dataDir = null;
-  private int iteration=0;
+  protected ThreadLocal dateFormat = new ThreadLocal();
+  protected File dataDir = null;
+  protected int iteration=0;
   
   static public class Iterator implements java.util.Iterator {
 
@@ -133,7 +133,7 @@ public class DirDocMaker extends BasicDocMaker {
 
   }
 
-  private Iterator inputFiles = null;
+  protected Iterator inputFiles = null;
 
   /* (non-Javadoc)
    * @see SimpleDocMaker#setConfig(java.util.Properties)
