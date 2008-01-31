@@ -31,7 +31,7 @@ class SearchTest {
     try {
       Directory directory = new RAMDirectory();  
       Analyzer analyzer = new SimpleAnalyzer();
-      IndexWriter writer = new IndexWriter(directory, analyzer, true);
+      IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
       String[] docs = {
         "a b c d e",

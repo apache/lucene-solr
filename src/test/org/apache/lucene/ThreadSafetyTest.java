@@ -68,7 +68,7 @@ class ThreadSafetyTest {
 
           if (i%reopenInterval == 0) {
             writer.close();
-            writer = new IndexWriter("index", ANALYZER, false);
+            writer = new IndexWriter("index", ANALYZER, false, IndexWriter.MaxFieldLength.LIMITED);
           }
         }
         
@@ -142,7 +142,7 @@ class ThreadSafetyTest {
     IndexReader.unlock(FSDirectory.getDirectory(indexDir));
 
     if (!readOnly) {
-      IndexWriter writer = new IndexWriter(indexDir, ANALYZER, !add);
+      IndexWriter writer = new IndexWriter(indexDir, ANALYZER, !add, IndexWriter.MaxFieldLength.LIMITED);
       
       Thread indexerThread = new IndexerThread(writer);
       indexerThread.start();
