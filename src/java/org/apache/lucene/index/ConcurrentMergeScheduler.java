@@ -35,14 +35,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private int mergeThreadPriority = -1;
 
-  private List mergeThreads = new ArrayList();
+  protected List mergeThreads = new ArrayList();
   private int maxThreadCount = 3;
 
   private List exceptions = new ArrayList();
-  private Directory dir;
+  protected Directory dir;
 
   private boolean closed;
-  private IndexWriter writer;
+  protected IndexWriter writer;
 
   public ConcurrentMergeScheduler() {
     if (allInstances != null) {
@@ -176,11 +176,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           if (mergeThreadCount() < maxThreadCount) {
             // OK to spawn a new merge thread to handle this
             // merge:
-            MergeThread merger = new MergeThread(writer, merge);
+            final MergeThread merger = getMergeThread(writer, merge);
             mergeThreads.add(merger);
             message("    launch new thread [" + merger.getName() + "]");
-            merger.setThreadPriority(mergeThreadPriority);
-            merger.setDaemon(true);
             merger.start();
             continue;
           } else
@@ -190,11 +188,25 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       // Too many merge threads already running, so we do
       // this in the foreground of the calling thread
-      writer.merge(merge);
+      doMerge(merge);
     }
   }
 
-  private class MergeThread extends Thread {
+  /** Does the actual merge, by calling {@link IndexWriter#merge} */
+  protected void doMerge(MergePolicy.OneMerge merge)
+    throws IOException {
+    writer.merge(merge);
+  }
+
+  /** Create and return a new MergeThread */
+  protected MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+    final MergeThread thread = new MergeThread(writer, merge);
+    thread.setThreadPriority(mergeThreadPriority);
+    thread.setDaemon(true);
+    return thread;
+  }
+
+  protected class MergeThread extends Thread {
 
     IndexWriter writer;
     MergePolicy.OneMerge startMerge;
@@ -237,7 +249,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         while(true) {
           setRunningMerge(merge);
-          writer.merge(merge);
+          doMerge(merge);
 
           // Subsequent times through the loop we do any new
           // merge that writer says is necessary:
@@ -268,7 +280,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
             // suppressExceptions is normally only set during
             // testing.
             anyExceptions = true;
-            throw new MergePolicy.MergeException(exc);
+            handleMergeException(exc);
           }
         }
       } finally {
@@ -287,6 +299,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
+  /** Called when an exception is hit in a background merge
+   *  thread */
+  protected void handleMergeException(Throwable exc) {
+    throw new MergePolicy.MergeException(exc, dir);
+  }
+
   static boolean anyExceptions = false;
 
   /** Used for testing */
@@ -297,7 +315,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // any exceptions they may produce:
       for(int i=0;i<count;i++)
         ((ConcurrentMergeScheduler) allInstances.get(i)).sync();
-      return anyExceptions;
+      boolean v = anyExceptions;
+      anyExceptions = false;
+      return v;
     }
   }
 

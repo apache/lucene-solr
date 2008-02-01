@@ -117,7 +117,7 @@ public abstract class MergePolicy {
       StringBuffer b = new StringBuffer();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
-        if (i > 0) b.append(" ");
+        if (i > 0) b.append(' ');
         b.append(segments.info(i).segString(dir));
       }
       if (info != null)
@@ -159,11 +159,29 @@ public abstract class MergePolicy {
   /** Exception thrown if there are any problems while
    *  executing a merge. */
   public static class MergeException extends RuntimeException {
+    private Directory dir;
+    /** @deprecated
+     *  Use {@link #MergePolicy.MergeException(String,Directory)} instead */
     public MergeException(String message) {
       super(message);
     }
+    public MergeException(String message, Directory dir) {
+      super(message);
+      this.dir = dir;
+    }
+    /** @deprecated
+     *  Use {@link #MergePolicy.MergeException(Throwable,Directory)} instead */
     public MergeException(Throwable exc) {
       super(exc);
+    }
+    public MergeException(Throwable exc, Directory dir) {
+      super(exc);
+      this.dir = dir;
+    }
+    /** Returns the {@link Directory} of the index that hit
+     *  the exception. */
+    public Directory getDirectory() {
+      return dir;
     }
   }
 

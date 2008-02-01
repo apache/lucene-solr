@@ -2542,7 +2542,8 @@ public class IndexWriter {
           // into an inconsistent state (where segmentInfos
           // has been written with such external segments
           // that an IndexReader would fail to load).
-          throw new MergePolicy.MergeException("segment \"" + info.name + " exists in external directory yet the MergeScheduler executed the merge in a separate thread");
+          throw new MergePolicy.MergeException("segment \"" + info.name + " exists in external directory yet the MergeScheduler executed the merge in a separate thread",
+                                               directory);
       }
     }
   }
@@ -2882,7 +2883,7 @@ public class IndexWriter {
 
     int first = segmentInfos.indexOf(merge.segments.info(0));
     if (first == -1)
-      throw new MergePolicy.MergeException("could not find segment " + merge.segments.info(0).name + " in current segments");
+      throw new MergePolicy.MergeException("could not find segment " + merge.segments.info(0).name + " in current segments", directory);
 
     final int numSegments = segmentInfos.size();
     
@@ -2892,9 +2893,10 @@ public class IndexWriter {
 
       if (first + i >= numSegments || !segmentInfos.info(first+i).equals(info)) {
         if (segmentInfos.indexOf(info) == -1)
-          throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the index");
+          throw new MergePolicy.MergeException("MergePolicy selected a segment (" + info.name + ") that is not in the index", directory);
         else
-          throw new MergePolicy.MergeException("MergePolicy selected non-contiguous segments to merge (" + merge + " vs " + segString() + "), which IndexWriter (currently) cannot handle");
+          throw new MergePolicy.MergeException("MergePolicy selected non-contiguous segments to merge (" + merge + " vs " + segString() + "), which IndexWriter (currently) cannot handle",
+                                               directory);
       }
     }
 
