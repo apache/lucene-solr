@@ -85,7 +85,7 @@ public class ConstantScoreQuery extends Query {
     public Explanation explain(IndexReader reader, int doc) throws IOException {
 
       ConstantScorer cs = (ConstantScorer)scorer(reader);
-      boolean exists = cs.bits.get(doc);
+      boolean exists = cs.docIdSetIterator.skipTo(doc) && (cs.docIdSetIterator.doc() == doc);
 
       ComplexExplanation result = new ComplexExplanation();
 
@@ -107,23 +107,22 @@ public class ConstantScoreQuery extends Query {
   }
 
   protected class ConstantScorer extends Scorer {
-    final BitSet bits;
+    final DocIdSetIterator docIdSetIterator;
     final float theScore;
     int doc=-1;
 
     public ConstantScorer(Similarity similarity, IndexReader reader, Weight w) throws IOException {
       super(similarity);
       theScore = w.getValue();
-      bits = filter.bits(reader);
+      docIdSetIterator = filter.getDocIdSet(reader).iterator();
     }
 
     public boolean next() throws IOException {
-      doc = bits.nextSetBit(doc+1);
-      return doc >= 0;
+      return docIdSetIterator.next();
     }
 
     public int doc() {
-      return doc;
+      return docIdSetIterator.doc();
     }
 
     public float score() throws IOException {
@@ -131,8 +130,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     public boolean skipTo(int target) throws IOException {
-      doc = bits.nextSetBit(target);  // requires JDK 1.4
-      return doc >= 0;
+      return docIdSetIterator.skipTo(target);
     }
 
     public Explanation explain(int doc) throws IOException {
@@ -168,5 +166,6 @@ public class ConstantScoreQuery extends Query {
   }
 
 }
+
 
 

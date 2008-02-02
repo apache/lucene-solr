@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -94,9 +95,72 @@ public class RangeFilter extends Filter {
      * Returns a BitSet with true for documents which should be
      * permitted in search results, and false for those that should
      * not.
+     * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
      */
     public BitSet bits(IndexReader reader) throws IOException {
         BitSet bits = new BitSet(reader.maxDoc());
+        TermEnum enumerator =
+            (null != lowerTerm
+             ? reader.terms(new Term(fieldName, lowerTerm))
+             : reader.terms(new Term(fieldName,"")));
+        
+        try {
+            
+            if (enumerator.term() == null) {
+                return bits;
+            }
+            
+            boolean checkLower = false;
+            if (!includeLower) // make adjustments to set to exclusive
+                checkLower = true;
+        
+            TermDocs termDocs = reader.termDocs();
+            try {
+                
+                do {
+                    Term term = enumerator.term();
+                    if (term != null && term.field().equals(fieldName)) {
+                        if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
+                            checkLower = false;
+                            if (upperTerm != null) {
+                                int compare = upperTerm.compareTo(term.text());
+                                /* if beyond the upper term, or is exclusive and
+                                 * this is equal to the upper term, break out */
+                                if ((compare < 0) ||
+                                    (!includeUpper && compare==0)) {
+                                    break;
+                                }
+                            }
+                            /* we have a good term, find the docs */
+                            
+                            termDocs.seek(enumerator.term());
+                            while (termDocs.next()) {
+                                bits.set(termDocs.doc());
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                while (enumerator.next());
+                
+            } finally {
+                termDocs.close();
+            }
+        } finally {
+            enumerator.close();
+        }
+
+        return bits;
+    }
+    
+    /**
+     * Returns a DocIdSet with documents that should be
+     * permitted in search results.
+     */
+    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+        OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+        
         TermEnum enumerator =
             (null != lowerTerm
              ? reader.terms(new Term(fieldName, lowerTerm))

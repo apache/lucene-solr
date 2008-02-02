@@ -50,9 +50,21 @@ public class RemoteCachingWrapperFilter extends Filter {
    * searcher side of a remote connection.
    * @param reader the index reader for the Filter
    * @return the bitset
+   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
    */
   public BitSet bits(IndexReader reader) throws IOException {
     Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
     return cachedFilter.bits(reader);
+  }
+  
+  /**
+   * Uses the {@link FilterManager} to keep the cache for a filter on the 
+   * searcher side of a remote connection.
+   * @param reader the index reader for the Filter
+   * @return the DocIdSet
+   */
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
+    return cachedFilter.getDocIdSet(reader);
   }
 }

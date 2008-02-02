@@ -33,6 +33,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.DocIdBitSet;
 
 import java.util.Random;
 import java.util.BitSet;
@@ -122,12 +123,12 @@ public class TestExplanations extends LuceneTestCase {
     public ItemizedFilter(int[] docs) {
       this.docs = docs;
     }
-    public BitSet bits(IndexReader r) {
+    public DocIdSet getDocIdSet(IndexReader r) {
       BitSet b = new BitSet(r.maxDoc());
       for (int i = 0; i < docs.length; i++) {
         b.set(docs[i]);
       }
-      return b;
+      return new DocIdBitSet(b);
     }
   }
 

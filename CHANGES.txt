@@ -15,12 +15,16 @@ API Changes
  2. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
     this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
     Mike McCandless)
+	
+ 3. LUCENE-584: Changed Filter API to return a DocIdSet instead of a
+    java.util.BitSet. This allows using more efficient data structures
+    for Filters and makes them more flexible. (Paul Elschot, Michael Busch)
 
 Bug fixes
     
 New features
 
-1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
+ 1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
     process.  The flag is not indexed/stored and is thus only used by analysis.
 
  2. LUCENE-1147: Add -segment option to CheckIndex tool so you can
@@ -28,6 +32,12 @@ New features
     McCandless)
 
  3. LUCENE-1045: Reopened this issue to add support for short and bytes. 
+ 
+ 4. LUCENE-584: Added new data structures to o.a.l.util, such as 
+    OpenBitSet and SortedVIntList. These extend DocIdSet and can 
+    directly be used for Filters with the new Filter API. Also changed
+    the core Filters to use OpenBitSet instead of java.util.BitSet.
+    (Paul Elschot, Michael Busch)
 
 Optimizations
 

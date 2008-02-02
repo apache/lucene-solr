@@ -91,7 +91,7 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
 
 
   public void testTermRemoteFilter() throws Exception {
-    CachingWrapperFilterHelper cwfh = new CachingWrapperFilterHelper(new QueryFilter(new TermQuery(new Term("type", "a"))));
+    CachingWrapperFilterHelper cwfh = new CachingWrapperFilterHelper(new QueryWrapperFilter(new TermQuery(new Term("type", "a"))));
     
     // This is what we are fixing - if one uses a CachingWrapperFilter(Helper) it will never 
     // cache the filter on the remote site
@@ -112,16 +112,16 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
     // assert that we get the same cached Filter, even if we create a new instance of RemoteCachingWrapperFilter(Helper)
     // this should pass because the Filter parameters are the same, and the cache uses Filter's hashCode() as cache keys,
     // and Filters' hashCode() builds on Filter parameters, not the Filter instance itself
-    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryFilter(new TermQuery(new Term("type", "a"))), false);
+    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryWrapperFilter(new TermQuery(new Term("type", "a"))), false);
     rcwfh.shouldHaveCache(false);
     search(new TermQuery(new Term("test", "test")), rcwfh, 0, "A");
 
-    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryFilter(new TermQuery(new Term("type", "a"))), false);
+    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryWrapperFilter(new TermQuery(new Term("type", "a"))), false);
     rcwfh.shouldHaveCache(true);
     search(new TermQuery(new Term("test", "test")), rcwfh, 0, "A");
 
     // assert that we get a non-cached version of the Filter because this is a new Query (type:b)
-    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryFilter(new TermQuery(new Term("type", "b"))), false);
+    rcwfh = new RemoteCachingWrapperFilterHelper(new QueryWrapperFilter(new TermQuery(new Term("type", "b"))), false);
     rcwfh.shouldHaveCache(false);
     search(new TermQuery(new Term("type", "b")), rcwfh, 0, "B");
   }

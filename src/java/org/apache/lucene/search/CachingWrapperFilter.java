@@ -43,6 +43,9 @@ public class CachingWrapperFilter extends Filter {
     this.filter = filter;
   }
 
+  /**
+   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
+   */
   public BitSet bits(IndexReader reader) throws IOException {
     if (cache == null) {
       cache = new WeakHashMap();
@@ -62,6 +65,28 @@ public class CachingWrapperFilter extends Filter {
     }
 
     return bits;
+  }
+  
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    if (cache == null) {
+      cache = new WeakHashMap();
+    }
+
+    synchronized (cache) {  // check cache
+      DocIdSet cached = (DocIdSet) cache.get(reader);
+      if (cached != null) {
+        return cached;
+      }
+    }
+
+    final DocIdSet docIdSet = filter.getDocIdSet(reader);
+
+    synchronized (cache) {  // update cache
+      cache.put(reader, docIdSet);
+    }
+
+    return docIdSet;
+    
   }
 
   public String toString() {

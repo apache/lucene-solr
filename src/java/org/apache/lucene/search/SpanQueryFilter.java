@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,15 +55,14 @@ public class SpanQueryFilter extends SpanFilter {
     this.query = query;
   }
 
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     SpanFilterResult result = bitSpans(reader);
-    return result.getBits();
+    return result.getDocIdSet();
   }
-
 
   public SpanFilterResult bitSpans(IndexReader reader) throws IOException {
 
-    final BitSet bits = new BitSet(reader.maxDoc());
+    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
     Spans spans = query.getSpans(reader);
     List tmp = new ArrayList(20);
     int currentDoc = -1;

@@ -109,7 +109,7 @@ public abstract class Searcher implements Searchable {
    * non-high-scoring hits.
    *
    * @param query to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
+   * @param filter if non-null, used to permit documents to be collected.
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
    */

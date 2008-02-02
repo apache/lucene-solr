@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryFilter;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.FilterBuilderFactory;
@@ -105,7 +105,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 		//cache miss
 		if (qb != null)
 		{
-			cachedFilter = new QueryFilter(q);
+			cachedFilter = new QueryWrapperFilter(q);
 		} else
 		{
 			cachedFilter = new CachingWrapperFilter(f);

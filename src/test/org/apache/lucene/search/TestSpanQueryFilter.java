@@ -56,20 +56,36 @@ public class TestSpanQueryFilter extends LuceneTestCase {
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(10).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
     SpanFilterResult result = filter.bitSpans(reader);
-    BitSet bits = result.getBits();
-    assertTrue("bits is null and it shouldn't be", bits != null);
-    assertTrue("tenth bit is not on", bits.get(10));
+    DocIdSet docIdSet = result.getDocIdSet();
+    assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
+    assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, 10);
     List spans = result.getPositions();
     assertTrue("spans is null and it shouldn't be", spans != null);
-    assertTrue("spans Size: " + spans.size() + " is not: " + bits.cardinality(), spans.size() == bits.cardinality());
+    int size = getDocIdSetSize(docIdSet);
+    assertTrue("spans Size: " + spans.size() + " is not: " + size, spans.size() == size);
     for (Iterator iterator = spans.iterator(); iterator.hasNext();) {
        SpanFilterResult.PositionInfo info = (SpanFilterResult.PositionInfo) iterator.next();
       assertTrue("info is null and it shouldn't be", info != null);
       //The doc should indicate the bit is on
-      assertTrue("Bit is not on and it should be", bits.get(info.getDoc()));
+      assertContainsDocId("docIdSet doesn't contain docId " + info.getDoc(), docIdSet, info.getDoc());
       //There should be two positions in each
       assertTrue("info.getPositions() Size: " + info.getPositions().size() + " is not: " + 2, info.getPositions().size() == 2);
     }
     reader.close();
+  }
+  
+  int getDocIdSetSize(DocIdSet docIdSet) throws Exception {
+    int size = 0;
+    DocIdSetIterator it = docIdSet.iterator();
+    while (it.next()) {
+      size++;
+    }
+    return size;
+  }
+  
+  public void assertContainsDocId(String msg, DocIdSet docIdSet, int docId) throws Exception {
+    DocIdSetIterator it = docIdSet.iterator();
+    assertTrue(msg, it.skipTo(docId));
+    assertTrue(msg, it.doc() == docId);
   }
 }

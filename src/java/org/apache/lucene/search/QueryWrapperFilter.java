@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.OpenBitSet;
 
 /** 
  * Constrains search results to only match those which also match a provided
@@ -44,8 +45,22 @@ public class QueryWrapperFilter extends Filter {
     this.query = query;
   }
 
+  /**
+   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
+   */
   public BitSet bits(IndexReader reader) throws IOException {
     final BitSet bits = new BitSet(reader.maxDoc());
+
+    new IndexSearcher(reader).search(query, new HitCollector() {
+      public final void collect(int doc, float score) {
+        bits.set(doc);  // set bit for hit
+      }
+    });
+    return bits;
+  }
+  
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
 
     new IndexSearcher(reader).search(query, new HitCollector() {
       public final void collect(int doc, float score) {

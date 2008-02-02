@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Set;
 
 
@@ -47,7 +46,7 @@ extends Query {
 
   /**
    * Constructs a new query which applies a filter to the results of the original query.
-   * Filter.bits() will be called every time this query is used in a search.
+   * Filter.getDocIdSet() will be called every time this query is used in a search.
    * @param query  Query to be filtered, cannot be <code>null</code>.
    * @param filter Filter to apply to query results, cannot be <code>null</code>.
    */
@@ -86,13 +85,15 @@ extends Query {
           inner.addDetail(preBoost);
         }
         Filter f = FilteredQuery.this.filter;
-        BitSet matches = f.bits(ir);
-        if (matches.get(i))
+        DocIdSetIterator docIdSetIterator = f.getDocIdSet(ir).iterator();
+        if (docIdSetIterator.skipTo(i) && (docIdSetIterator.doc() == i)) {
           return inner;
-        Explanation result = new Explanation
-          (0.0f, "failure to match filter: " + f.toString());
-        result.addDetail(inner);
-        return result;
+        } else {
+          Explanation result = new Explanation
+            (0.0f, "failure to match filter: " + f.toString());
+          result.addDetail(inner);
+          return result;
+        }
       }
 
       // return this query
@@ -100,50 +101,49 @@ extends Query {
 
       // return a filtering scorer
        public Scorer scorer (IndexReader indexReader) throws IOException {
-        final Scorer scorer = weight.scorer (indexReader);
-        final BitSet bitset = filter.bits (indexReader);
-        return new Scorer (similarity) {
+        final Scorer scorer = weight.scorer(indexReader);
+        final DocIdSetIterator docIdSetIterator = filter.getDocIdSet(indexReader).iterator();
 
-          public boolean next() throws IOException {
-            do {
-              if (! scorer.next()) {
+        return new Scorer(similarity) {
+
+          private boolean advanceToCommon() throws IOException {
+            while (scorer.doc() != docIdSetIterator.doc()) {
+              if (scorer.doc() < docIdSetIterator.doc()) {
+                if (!scorer.skipTo(docIdSetIterator.doc())) {
+                  return false;
+                }
+              } else if (!docIdSetIterator.skipTo(scorer.doc())) {
                 return false;
               }
-            } while (! bitset.get(scorer.doc()));
-            /* When skipTo() is allowed on scorer it should be used here
-             * in combination with bitset.nextSetBit(...)
-             * See the while loop in skipTo() below.
-             */
+            }
             return true;
           }
+
+          public boolean next() throws IOException {
+            return docIdSetIterator.next() && scorer.next() && advanceToCommon();
+          }
+
           public int doc() { return scorer.doc(); }
 
           public boolean skipTo(int i) throws IOException {
-            if (! scorer.skipTo(i)) {
-              return false;
-            }
-            while (! bitset.get(scorer.doc())) {
-              int nextFiltered = bitset.nextSetBit(scorer.doc() + 1);
-              if (nextFiltered == -1) {
-                return false;
-              } else if (! scorer.skipTo(nextFiltered)) {
-                return false;
-              }
-            }
-            return true;
-           }
+            return docIdSetIterator.skipTo(i)
+                && scorer.skipTo(docIdSetIterator.doc())
+                && advanceToCommon();
+          }
 
           public float score() throws IOException { return getBoost() * scorer.score(); }
 
           // add an explanation about whether the document was filtered
           public Explanation explain (int i) throws IOException {
-            Explanation exp = scorer.explain (i);
-            exp.setValue(getBoost() * exp.getValue());
+            Explanation exp = scorer.explain(i);
             
-            if (bitset.get(i))
+            if (docIdSetIterator.skipTo(i) && (docIdSetIterator.doc() == i)) {
               exp.setDescription ("allowed by filter: "+exp.getDescription());
-            else
+              exp.setValue(getBoost() * exp.getValue());
+            } else {
               exp.setDescription ("removed by filter: "+exp.getDescription());
+              exp.setValue(0.0f);
+            }
             return exp;
           }
         };

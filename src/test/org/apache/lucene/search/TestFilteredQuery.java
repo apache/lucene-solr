@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.DocIdBitSet;
 
 import java.util.BitSet;
 
@@ -82,11 +83,11 @@ extends LuceneTestCase {
   // must be static for serialization tests
   private static Filter newStaticFilterB() {
     return new Filter() {
-      public BitSet bits (IndexReader reader) {
+      public DocIdSet getDocIdSet (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
         bitset.set (3);
-        return bitset;
+        return new DocIdBitSet(bitset);
       }
     };
   }
@@ -150,10 +151,10 @@ extends LuceneTestCase {
   // must be static for serialization tests 
   private static Filter newStaticFilterA() {
     return new Filter() {
-      public BitSet bits (IndexReader reader) {
+      public DocIdSet getDocIdSet (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);
-        return bitset;
+        return new DocIdBitSet(bitset);
       }
     };
   }
@@ -198,5 +199,6 @@ extends LuceneTestCase {
     QueryUtils.check(query,searcher);    
   }
 }
+
 
 

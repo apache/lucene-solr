@@ -43,11 +43,19 @@ public class CachingSpanFilter extends SpanFilter {
     this.filter = filter;
   }
 
+  /**
+   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
+   */
   public BitSet bits(IndexReader reader) throws IOException {
     SpanFilterResult result = getCachedResult(reader);
     return result != null ? result.getBits() : null;
   }
-
+  
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    SpanFilterResult result = getCachedResult(reader);
+    return result != null ? result.getDocIdSet() : null;
+  }
+  
   private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
     SpanFilterResult result = null;
     if (cache == null) {

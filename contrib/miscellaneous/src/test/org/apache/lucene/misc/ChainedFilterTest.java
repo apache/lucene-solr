@@ -37,8 +37,8 @@ public class ChainedFilterTest extends TestCase {
   private Query query;
   // private DateFilter dateFilter;   DateFilter was deprecated and removed
   private RangeFilter dateFilter;
-  private QueryFilter bobFilter;
-  private QueryFilter sueFilter;
+  private QueryWrapperFilter bobFilter;
+  private QueryWrapperFilter sueFilter;
 
   public void setUp() throws Exception {
     directory = new RAMDirectory();
@@ -74,9 +74,9 @@ public class ChainedFilterTest extends TestCase {
     // just treat dates as strings and select the whole range for now...
     dateFilter = new RangeFilter("date","","ZZZZ",true,true);
 
-    bobFilter = new QueryFilter(
+    bobFilter = new QueryWrapperFilter(
         new TermQuery(new Term("owner", "bob")));
-    sueFilter = new QueryFilter(
+    sueFilter = new QueryWrapperFilter(
         new TermQuery(new Term("owner", "sue")));
   }
 

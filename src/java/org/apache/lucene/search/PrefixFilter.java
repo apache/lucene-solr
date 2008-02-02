@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermEnum;
@@ -39,8 +40,21 @@ public class PrefixFilter extends Filter {
 
   public Term getPrefix() { return prefix; }
 
+  /**
+   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
+   */  
   public BitSet bits(IndexReader reader) throws IOException {
     final BitSet bitSet = new BitSet(reader.maxDoc());
+    new PrefixGenerator(prefix) {
+      public void handleDoc(int doc) {
+        bitSet.set(doc);
+      }
+    }.generate(reader);
+    return bitSet;
+  }
+  
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
     new PrefixGenerator(prefix) {
       public void handleDoc(int doc) {
         bitSet.set(doc);
@@ -103,5 +117,6 @@ abstract class PrefixGenerator implements IdGenerator {
     }
   }
 }
+
 
 

@@ -128,22 +128,33 @@ public class IndexSearcher extends Searcher {
   // inherit javadoc
   public void search(Weight weight, Filter filter,
                      final HitCollector results) throws IOException {
-    HitCollector collector = results;
-    if (filter != null) {
-      final BitSet bits = filter.bits(reader);
-      collector = new HitCollector() {
-          public final void collect(int doc, float score) {
-            if (bits.get(doc)) {                  // skip docs not in bits
-              results.collect(doc, score);
-            }
-          }
-        };
-    }
 
     Scorer scorer = weight.scorer(reader);
     if (scorer == null)
       return;
-    scorer.score(collector);
+
+    if (filter == null) {
+      scorer.score(results);
+      return;
+    }
+
+    DocIdSetIterator docIdSetIterator = filter.getDocIdSet(reader).iterator(); // CHECKME: use ConjunctionScorer here?
+    boolean more = docIdSetIterator.next();
+    while (more) {
+      int filterDocId = docIdSetIterator.doc();
+      if (! scorer.skipTo(filterDocId)) {
+        more = false;
+      } else {
+        int scorerDocId = scorer.doc();
+        if (scorerDocId == filterDocId) { // permitted by filter
+          results.collect(scorerDocId, scorer.score());
+          more = docIdSetIterator.skipTo(scorerDocId + 1);
+        } else {
+          more = docIdSetIterator.skipTo(scorerDocId);
+        }
+      }
+    }
+
   }
 
   public Query rewrite(Query original) throws IOException {

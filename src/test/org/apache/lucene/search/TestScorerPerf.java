@@ -1,5 +1,6 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
@@ -95,16 +96,6 @@ public class TestScorerPerf extends LuceneTestCase {
     return sets;
   }
 
-  public static class BitSetFilter extends Filter {
-    public BitSet set;
-    public BitSetFilter(BitSet set) {
-      this.set = set;
-    }
-    public BitSet bits(IndexReader reader) throws IOException {
-      return set;
-    }
-  }
-
   public static class CountingHitCollector extends HitCollector {
     int count=0;
     int sum=0;
@@ -137,8 +128,12 @@ public class TestScorerPerf extends LuceneTestCase {
 
 
   BitSet addClause(BooleanQuery bq, BitSet result) {
-    BitSet rnd = sets[r.nextInt(sets.length)];
-    Query q = new ConstantScoreQuery(new BitSetFilter(rnd));
+    final BitSet rnd = sets[r.nextInt(sets.length)];
+    Query q = new ConstantScoreQuery(new Filter() {
+      public DocIdSet getDocIdSet(IndexReader reader) {
+        return new DocIdBitSet(rnd);
+      };
+    });
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {
       if (result==null) result = (BitSet)rnd.clone();

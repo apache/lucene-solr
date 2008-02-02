@@ -43,13 +43,13 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
     this.shouldHaveCache = shouldHaveCache;
   }
   
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     if (cache == null) {
       cache = new WeakHashMap();
     }
     
     synchronized (cache) {  // check cache
-      BitSet cached = (BitSet) cache.get(reader);
+      DocIdSet cached = (DocIdSet) cache.get(reader);
       if (shouldHaveCache) {
         TestCase.assertNotNull("Cache should have data ", cached);
       } else {
@@ -60,7 +60,7 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
       }
     }
 
-    final BitSet bits = filter.bits(reader);
+    final DocIdSet bits = filter.getDocIdSet(reader);
 
     synchronized (cache) {  // update cache
       cache.put(reader, bits);

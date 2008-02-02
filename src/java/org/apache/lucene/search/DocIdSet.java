@@ -17,23 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.DocIdBitSet;
-import java.util.BitSet;
 
-public class MockFilter extends Filter {
-  private boolean wasCalled;
-
-  public DocIdSet getDocIdSet(IndexReader reader) {
-    wasCalled = true;
-    return new DocIdBitSet(new BitSet());
-  }
-
-  public void clear() {
-    wasCalled = false;
-  }
-
-  public boolean wasCalled() {
-    return wasCalled;
-  }
+/**
+ * A DocIdSet contains a set of doc ids. Implementing classes must provide
+ * a {@link DocIdSetIterator} to access the set. 
+ */
+public abstract class DocIdSet {
+	public abstract DocIdSetIterator iterator();
 }

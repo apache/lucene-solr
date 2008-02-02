@@ -116,11 +116,11 @@ public class TestRemoteSearchable extends LuceneTestCase {
     Searcher searcher = new MultiSearcher(searchables);
     Hits hits = searcher.search(
           new TermQuery(new Term("test", "text")),
-          new QueryFilter(new TermQuery(new Term("test", "test"))));
+          new QueryWrapperFilter(new TermQuery(new Term("test", "test"))));
     assertEquals(1, hits.length());
     Hits nohits = searcher.search(
           new TermQuery(new Term("test", "text")),
-          new QueryFilter(new TermQuery(new Term("test", "non-existent-term"))));
+          new QueryWrapperFilter(new TermQuery(new Term("test", "non-existent-term"))));
     assertEquals(0, nohits.length());
   }
 
@@ -129,7 +129,7 @@ public class TestRemoteSearchable extends LuceneTestCase {
     Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     Hits hits = searcher.search(
-          new ConstantScoreQuery(new QueryFilter(
+          new ConstantScoreQuery(new QueryWrapperFilter(
                                    new TermQuery(new Term("test", "test")))));
     assertEquals(1, hits.length());
   }

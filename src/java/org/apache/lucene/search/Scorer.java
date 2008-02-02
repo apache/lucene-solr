@@ -33,7 +33,7 @@ import java.io.IOException;
  * </p>
  * @see BooleanQuery#setAllowDocsOutOfOrder
  */
-public abstract class Scorer {
+public abstract class Scorer extends DocIdSetIterator {
   private Similarity similarity;
 
   /** Constructs a Scorer.
@@ -76,64 +76,11 @@ public abstract class Scorer {
     return true;
   }
 
-  /**
-   * Advances to the document matching this Scorer with the lowest doc Id
-   * greater than the current value of {@link #doc()} (or to the matching
-   * document with the lowest doc Id if next has never been called on
-   * this Scorer).
-   *
-   * <p>
-   * When this method is used the {@link #explain(int)} method should not
-   * be used.
-   * </p>
-   *
-   * @return true iff there is another document matching the query.
-   * @see BooleanQuery#setAllowDocsOutOfOrder
-   */
-  public abstract boolean next() throws IOException;
-
-  /** Returns the current document number matching the query.
-   * Initially invalid, until {@link #next()} is called the first time.
-   */
-  public abstract int doc();
-
   /** Returns the score of the current document matching the query.
    * Initially invalid, until {@link #next()} or {@link #skipTo(int)}
    * is called the first time.
    */
   public abstract float score() throws IOException;
-
-  /**
-   * Skips to the document matching this Scorer with the lowest doc Id
-   * greater than or equal to a given target.
-   *
-   * <p>
-   * The behavior of this method is undefined if the target specified is
-   * less than or equal to the current value of {@link #doc()}.
-   * <p>
-   * Behaves as if written:
-   * <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > doc());
-   *     return true;
-   *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
-   * </p>
-   *
-   * <p>
-   * When this method is used the {@link #explain(int)} method should not
-   * be used.
-   * </p>
-   *
-   * @param target The target document number.
-   * @return true iff there is such a match.
-   * @see BooleanQuery#setAllowDocsOutOfOrder
-   */
-  public abstract boolean skipTo(int target) throws IOException;
 
   /** Returns an explanation of the score for a document.
    * <br>When this method is used, the {@link #next()}, {@link #skipTo(int)} and

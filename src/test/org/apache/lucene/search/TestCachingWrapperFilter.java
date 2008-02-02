@@ -36,12 +36,12 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
 
     // first time, nested filter is called
-    cacher.bits(reader);
+    cacher.getDocIdSet(reader);
     assertTrue("first time", filter.wasCalled());
 
     // second time, nested filter should not be called
     filter.clear();
-    cacher.bits(reader);
+    cacher.getDocIdSet(reader);
     assertFalse("second time", filter.wasCalled());
 
     reader.close();

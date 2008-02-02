@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.DocIdBitSet;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -571,10 +572,10 @@ implements Serializable {
 
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
-      public BitSet bits(IndexReader reader) throws IOException {
+      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
         BitSet bs = new BitSet(reader.maxDoc());
         bs.set(docs1.scoreDocs[0].doc);
-        return bs;
+        return new DocIdBitSet(bs);
       }
     };
 

@@ -42,7 +42,7 @@ public class RemoteCachingWrapperFilterHelper extends RemoteCachingWrapperFilter
     this.shouldHaveCache = shouldHaveCache;
   }
 
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
     
     TestCase.assertNotNull("Filter should not be null", cachedFilter);
@@ -55,6 +55,6 @@ public class RemoteCachingWrapperFilterHelper extends RemoteCachingWrapperFilter
     if (filter instanceof CachingWrapperFilterHelper) {
       ((CachingWrapperFilterHelper)cachedFilter).setShouldHaveCache(shouldHaveCache);
     }
-    return cachedFilter.bits(reader);
+    return cachedFilter.getDocIdSet(reader);
   }
 }

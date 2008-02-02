@@ -30,7 +30,7 @@ import java.io.IOException;
 public abstract class SpanFilter extends Filter{
   /** Returns a SpanFilterResult with true for documents which should be permitted in
     search results, and false for those that should not and Spans for where the true docs match.
-   * @param reader The {@link org.apache.lucene.index.IndexReader} to load position and bitset information from
+   * @param reader The {@link org.apache.lucene.index.IndexReader} to load position and DocIdSet information from
    * @return A {@link SpanFilterResult}
    * @throws java.io.IOException if there was an issue accessing the necessary information
    * */
