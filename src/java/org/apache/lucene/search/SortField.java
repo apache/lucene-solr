@@ -68,9 +68,20 @@ implements Serializable {
    * lower values are at the front. */
   public static final int DOUBLE = 7;
 
+    /**
+   * Sort using term values as encoded Shorts.  Sort values are shorts and lower values are at the front
+   */
+  public static final int SHORT = 8;
+
+
   /** Sort using a custom Comparator.  Sort values are any Comparable and
    * sorting is done according to natural order. */
   public static final int CUSTOM = 9;
+  /**
+   * Sort using term values as encoded bytes.  Sort values are bytes and lower values are at the front
+   */
+  public static final int BYTE = 10;
+
 
   // IMPLEMENTATION NOTE: the FieldCache.STRING_INDEX is in the same "namespace"
   // as the above static int values.  Any new values must not have the same value

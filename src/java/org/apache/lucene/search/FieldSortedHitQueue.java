@@ -196,6 +196,12 @@ extends PriorityQueue {
         case SortField.DOUBLE:
           comparator = comparatorDouble(reader, fieldname);
           break;
+        case SortField.SHORT:
+          comparator = comparatorShort(reader, fieldname);
+          break;
+        case SortField.BYTE:
+          comparator = comparatorByte(reader, fieldname);
+          break;
         case SortField.STRING:
           if (locale != null) comparator = comparatorStringLocale (reader, fieldname, locale);
           else comparator = comparatorString (reader, fieldname);
@@ -209,6 +215,68 @@ extends PriorityQueue {
       return comparator;
     }
   };
+
+   /**
+   * Returns a comparator for sorting hits according to a field containing bytes.
+   * @param reader  Index to use.
+   * @param fieldname  Fieldable containg integer values.
+   * @return  Comparator for sorting hits.
+   * @throws IOException If an error occurs reading the index.
+   */
+  static ScoreDocComparator comparatorByte(final IndexReader reader, final String fieldname)
+  throws IOException {
+    final String field = fieldname.intern();
+    final byte[] fieldOrder = FieldCache.DEFAULT.getBytes(reader, field);
+    return new ScoreDocComparator() {
+
+      public final int compare (final ScoreDoc i, final ScoreDoc j) {
+        final int fi = fieldOrder[i.doc];
+        final int fj = fieldOrder[j.doc];
+        if (fi < fj) return -1;
+        if (fi > fj) return 1;
+        return 0;
+      }
+
+      public Comparable sortValue (final ScoreDoc i) {
+        return new Byte(fieldOrder[i.doc]);
+      }
+
+      public int sortType() {
+        return SortField.INT;
+      }
+    };
+  }
+
+  /**
+   * Returns a comparator for sorting hits according to a field containing shorts.
+   * @param reader  Index to use.
+   * @param fieldname  Fieldable containg integer values.
+   * @return  Comparator for sorting hits.
+   * @throws IOException If an error occurs reading the index.
+   */
+  static ScoreDocComparator comparatorShort(final IndexReader reader, final String fieldname)
+  throws IOException {
+    final String field = fieldname.intern();
+    final short[] fieldOrder = FieldCache.DEFAULT.getShorts(reader, field);
+    return new ScoreDocComparator() {
+
+      public final int compare (final ScoreDoc i, final ScoreDoc j) {
+        final int fi = fieldOrder[i.doc];
+        final int fj = fieldOrder[j.doc];
+        if (fi < fj) return -1;
+        if (fi > fj) return 1;
+        return 0;
+      }
+
+      public Comparable sortValue (final ScoreDoc i) {
+        return new Short(fieldOrder[i.doc]);
+      }
+
+      public int sortType() {
+        return SortField.SHORT;
+      }
+    };
+  }
 
   /**
    * Returns a comparator for sorting hits according to a field containing integers.

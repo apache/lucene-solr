@@ -27,6 +27,8 @@ New features
     check only a specific segment or segments in your index.  (Mike
     McCandless)
 
+ 3. LUCENE-1045: Reopened this issue to add support for short and bytes. 
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

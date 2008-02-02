@@ -160,6 +160,20 @@ extends PriorityQueue {
 					if (d1 > d2) c = 1;
 					break;
         }
+        case SortField.BYTE:{
+					int i1 = ((Byte)docA.fields[i]).byteValue();
+					int i2 = ((Byte)docB.fields[i]).byteValue();
+					if (i1 < i2) c = -1;
+					if (i1 > i2) c = 1;
+					break;
+        }
+        case SortField.SHORT:{
+					int i1 = ((Short)docA.fields[i]).shortValue();
+					int i2 = ((Short)docB.fields[i]).shortValue();
+					if (i1 < i2) c = -1;
+					if (i1 > i2) c = 1;
+					break;
+        }
         case SortField.CUSTOM:{
 					c = docA.fields[i].compareTo (docB.fields[i]);
 					break;
