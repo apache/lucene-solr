@@ -1335,7 +1335,7 @@ document.write("Last Published: " + document.lastModified);
                     IsCompoundFile, HasSingleNormFile, DocStoreIsCompoundFile --&gt; Int8
                 </p>
 <p>
-                    Format is -1 as of Lucene 1.4 and -3 (SemgentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1.
+                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, and -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3
                 </p>
 <p>
                     Version counts how often the index has been
@@ -2164,26 +2164,33 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <a name="N10774"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
+<p>
+		  Term Vector support is an optional on a field by
+                  field basis. It consists of 4 files.
+                </p>
 <ol>
                     
 <li>
                         
 <p>The Document Index or .tvx file.</p>
                         
-<p>This contains, for each document, a pointer to the document data in the Document
-                            (.tvd) file.
+<p>For each document, this stores the offset
+                           into the document data (.tvd) and field
+                           data (.tvf) files.
                         </p>
                         
-<p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition&gt;
+<p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition,FieldPosition&gt;
                             <sup>NumDocs</sup>
                         
 </p>
                         
-<p>TVXVersion --&gt; Int</p>
+<p>TVXVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
                         
-<p>DocumentPosition --&gt; UInt64</p>
+<p>DocumentPosition --&gt; UInt64 (offset in
+                        the .tvd file)</p>
                         
-<p>This is used to find the position of the Document in the .tvd file.</p>
+<p>FieldPosition --&gt; UInt64 (offset in the
+                        .tvf file)</p>
                     
 </li>
                     
@@ -2196,12 +2203,12 @@ document.write("Last Published: " + document.lastModified);
                             (Term Vector Fields) file.</p>
                         
 <p>
-                            Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums, FieldPositions,&gt;
+                            Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums, FieldPositions&gt;
                             <sup>NumDocs</sup>
                         
 </p>
                         
-<p>TVDVersion --&gt; Int</p>
+<p>TVDVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
                         
 <p>NumFields --&gt; VInt</p>
                         
@@ -2212,12 +2219,12 @@ document.write("Last Published: " + document.lastModified);
                         
 <p>FieldNumDelta --&gt; VInt</p>
                         
-<p>FieldPositions --&gt; &lt;FieldPosition&gt;
-                            <sup>NumFields</sup>
+<p>FieldPositions --&gt; &lt;FieldPositionDelta&gt;
+                            <sup>NumFields-1</sup>
                         
 </p>
                         
-<p>FieldPosition --&gt; VLong</p>
+<p>FieldPositionDelta --&gt; VLong</p>
                         
 <p>The .tvd file is used to map out the fields that have term vectors stored and
                             where the field information is in the .tvf file.</p>
@@ -2236,7 +2243,7 @@ document.write("Last Published: " + document.lastModified);
                         
 </p>
                         
-<p>TVFVersion --&gt; Int</p>
+<p>TVFVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
                         
 <p>NumTerms --&gt; VInt</p>
                         
@@ -2288,7 +2295,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10807"></a><a name="Deleted Documents"></a>
+<a name="N1080A"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2360,7 +2367,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1084A"></a><a name="Limitations"></a>
+<a name="N1084D"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
