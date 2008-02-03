@@ -56,22 +56,24 @@ public class EmbeddedSolrServer extends SolrServer
   
   protected final SolrCore core;
   protected final SolrRequestParsers parser;
-  protected boolean useMultiCore;
+  protected final String coreName;  // use MultiCore registry
   
   public EmbeddedSolrServer( SolrCore core )
   {
     this.core = core;
-    this.useMultiCore = false;
+    this.coreName = null;
     this.parser = init();
   }
     
-  public EmbeddedSolrServer()
+  public EmbeddedSolrServer( String coreName )
   {
-    this( null );
-    if( MultiCore.getRegistry().getDefaultCore() == null ) {
-      throw new RuntimeException( "Must initialize multicore if you want to use this" );
+    this.core = null;
+    this.coreName = coreName;
+    SolrCore c = MultiCore.getRegistry().getCore( coreName );
+    if( c == null ) {
+      throw new RuntimeException( "Unknown core: "+coreName );
     }
-    this.useMultiCore = true;
+    this.parser = init();
   }
   
   private SolrRequestParsers init()
@@ -94,32 +96,13 @@ public class EmbeddedSolrServer extends SolrServer
     }
 
     // Check for multicore action
-    SolrCore core = this.core;
     MultiCore multicore = MultiCore.getRegistry();
-    if( useMultiCore ) {
-      String c = getDefaultCore();
-      if( request.getCore() != null ) {
-        c = request.getCore();
-      }
-      if( c != null ) {
-        if( !multicore.isEnabled() ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-              "multicore access is not enabled" );
-        }
-        if( c.length() > 0 ) {
-          core = multicore.getCore( c );
-        }
-        else {
-          core = multicore.getDefaultCore();
-        }
-        if( core == null ) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
-              "Unknown core: "+c );
-        }
-      }
-      else {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
-            "missing core" );
+    SolrCore core = this.core;
+    if( core == null ) {
+      core = multicore.getCore( coreName );
+      if( core == null ) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+            "Unknown core: "+coreName );
       }
     }
 
@@ -143,7 +126,7 @@ public class EmbeddedSolrServer extends SolrServer
       }
       // Perhaps the path is to manage the cores
       if( handler == null &&
-          useMultiCore && 
+          coreName != null && 
           path.equals( multicore.getAdminPath() ) && 
           multicore.isEnabled() ) {
         handler = multicore.getMultiCoreHandler();

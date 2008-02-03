@@ -31,8 +31,6 @@ import org.apache.solr.core.MultiCore;
  */
 public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
 
-  SolrServer server;
-  
   @Override public void setUp() throws Exception 
   {
     super.setUp();
@@ -40,20 +38,23 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
     File home = new File( getSolrHome() );
     File f = new File( home, "multicore.xml" );
     MultiCore.getRegistry().load( getSolrHome(), f );
-    
-    // setup the server...
-    server = createNewSolrServer();
   }
 
   @Override
-  protected SolrServer getSolrServer()
+  protected SolrServer getSolrCore0()
   {
-    return server;
+    return new EmbeddedSolrServer( "core0" );
   }
 
   @Override
-  protected SolrServer createNewSolrServer()
+  protected SolrServer getSolrCore1()
   {
-    return new EmbeddedSolrServer();
+    return new EmbeddedSolrServer( "core1" );
   }
+
+  @Override
+  protected SolrServer getSolrAdmin()
+  {
+    return new EmbeddedSolrServer( "core0" );
+  } 
 }

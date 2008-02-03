@@ -36,8 +36,6 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class SolrServer 
 {
-  protected String defaultCore = null;
-  
   public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(docs);
@@ -96,14 +94,6 @@ public abstract class SolrServer
 
   public QueryResponse query(SolrParams params) throws SolrServerException {
     return new QueryRequest( params ).process( this );
-  }
-
-  public String getDefaultCore() {
-    return defaultCore;
-  }
-
-  public void setDefaultCore(String defaultCore) {
-    this.defaultCore = defaultCore;
   }
   
   /**

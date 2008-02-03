@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.MultiCoreResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 
 
 /**
@@ -37,17 +38,30 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   @Override public String getSolrConfigFile() { return getSolrHome()+"core0/conf/solrconfig.xml"; }
   
 
+  @Override
+  protected final SolrServer getSolrServer()
+  {
+    throw new UnsupportedOperationException();
+  }
+  
+  @Override
+  protected final SolrServer createNewSolrServer()
+  {
+    throw new UnsupportedOperationException();
+  }
+
+  protected abstract SolrServer getSolrCore0();
+  protected abstract SolrServer getSolrCore1();
+  protected abstract SolrServer getSolrAdmin();
+  
+
   public void testMultiCore() throws Exception
   {
-    SolrServer solr = getSolrServer();
-    
     UpdateRequest up = new UpdateRequest();
     up.setAction( ACTION.COMMIT, true, true );
-    up.setCore( "core0" );
     up.deleteByQuery( "*:*" );
-    up.process( solr );
-    up.setCore( "core1" );
-    up.process( solr );
+    up.process( getSolrCore0() );
+    up.process( getSolrCore1() );
     up.clear();
     
     // Add something to each core
@@ -56,30 +70,26 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     doc.setField( "core0", "yup" );
    
     // Add to core0
-    up.setCore( "core0" );
     up.add( doc );
-    up.process( solr );
+    up.process( getSolrCore0() );
 
     // You can't add it to core1
     try {
-      up.setCore( "core1" );
-      up.process( solr );
+      up.process( getSolrCore1() );
       fail( "Can't add core0 field to core1!" );
     }
     catch( Exception ex ) {}
 
     // Add to core1
-    up.setCore( "core1" );
     doc.setField( "id", "BBB" );
     doc.setField( "core1", "yup" );
     doc.removeField( "core0" );
     up.add( doc );
-    up.process( solr );
+    up.process( getSolrCore1() );
 
     // You can't add it to core1
     try {
-      up.setCore( "core0" );
-      up.process( solr );
+      up.process( getSolrCore0() );
       fail( "Can't add core1 field to core0!" );
     }
     catch( Exception ex ) {}
@@ -87,28 +97,25 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();
     QueryRequest r = new QueryRequest( q );
-    r.setCore( "core0" );
     q.setQuery( "id:AAA" );
-    assertEquals( 1, r.process( solr ).getResults().size() );
-    r.setCore( "core1" );
-    assertEquals( 0, r.process( solr ).getResults().size() );
+    assertEquals( 1, r.process( getSolrCore0() ).getResults().size() );
+    assertEquals( 0, r.process( getSolrCore1() ).getResults().size() );
     
     // Now test Changing the default core
-    solr.setDefaultCore( "core0" );
-    assertEquals( 1, solr.query( new SolrQuery( "id:AAA" ) ).getResults().size() );
-    assertEquals( 0, solr.query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+    assertEquals( 1, getSolrCore0().query( new SolrQuery( "id:AAA" ) ).getResults().size() );
+    assertEquals( 0, getSolrCore0().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
-    solr.setDefaultCore( "core1" );
-    assertEquals( 0, solr.query( new SolrQuery( "id:AAA" ) ).getResults().size() );
-    assertEquals( 1, solr.query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+    assertEquals( 0, getSolrCore1().query( new SolrQuery( "id:AAA" ) ).getResults().size() );
+    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
   
     // Now test reloading it should have a newer open time
     String name = "core0";
-    MultiCoreResponse mcr = MultiCoreRequest.getStatus( name, solr );
+    SolrServer coreadmin = getSolrAdmin();
+    MultiCoreResponse mcr = MultiCoreRequest.getStatus( name, coreadmin );
     long before = mcr.getStartTime( name ).getTime();
-    MultiCoreRequest.reloadCore( name, solr );
+    MultiCoreRequest.reloadCore( name, coreadmin );
     
-    mcr = MultiCoreRequest.getStatus( name, solr );
+    mcr = MultiCoreRequest.getStatus( name, coreadmin );
     long after = mcr.getStartTime( name ).getTime();
     assertTrue( "should have more recent time: "+after+","+before, after > before );
   }

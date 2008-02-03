@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
  */
 public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
 
-  SolrServer server;
   JettySolrRunner jetty;
 
   static final int port = 8984; // not 8983
@@ -44,7 +43,6 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty = new JettySolrRunner( context, port );
     jetty.start();
     
-    server = this.createNewSolrServer();
   }
 
   @Override public void tearDown() throws Exception 
@@ -53,18 +51,30 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty.stop();  // stop the server
   }
   
+
   @Override
-  protected SolrServer getSolrServer()
+  protected SolrServer getSolrCore0()
   {
-    return server;
+    return createServer( "core0" );
   }
 
   @Override
-  protected SolrServer createNewSolrServer()
+  protected SolrServer getSolrCore1()
+  {
+    return createServer( "core1" );
+  }
+
+  @Override
+  protected SolrServer getSolrAdmin()
+  {
+    return createServer( "" );
+  } 
+  
+  private SolrServer createServer( String name )
   {
     try {
       // setup the server...
-      String url = "http://localhost:"+port+context;
+      String url = "http://localhost:"+port+context+"/"+name;
       CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
       s.setConnectionTimeout(100); // 1/10th sec
       s.setDefaultMaxConnectionsPerHost(100);

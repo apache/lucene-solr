@@ -54,18 +54,6 @@ public class MultiCoreRequest extends SolrRequest
   {
     this.core = v;
   }
-
-  @Override
-  public final void setCore( String v )
-  {
-    throw new UnsupportedOperationException( "MultiCoreRequest does not use a core.");
-  }
-  
-  @Override
-  public final String getCore()
-  {
-    return ""; // force it to invalid core
-  }
   
   //---------------------------------------------------------------------------------------
   //

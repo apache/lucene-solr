@@ -38,7 +38,6 @@ public abstract class SolrRequest implements Serializable
 
   private METHOD method = METHOD.GET;
   private String path = null;
-  private String core = null;
 
   //---------------------------------------------------------
   //---------------------------------------------------------
@@ -65,15 +64,6 @@ public abstract class SolrRequest implements Serializable
   public void setPath(String path) {
     this.path = path;
   }
-
-  public String getCore() {
-    return core;
-  }
-
-  public void setCore(String core) {
-    this.core = core;
-  }
-
 
   public abstract SolrParams getParams();
   public abstract Collection<ContentStream> getContentStreams() throws IOException;
