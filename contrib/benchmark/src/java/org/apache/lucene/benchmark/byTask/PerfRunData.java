@@ -137,6 +137,9 @@ public class PerfRunData {
     // release unused stuff
     System.runFinalization();
     System.gc();
+
+    // Re-init clock
+    setStartTimeMillis();
   }
   
   public long setStartTimeMillis() {
