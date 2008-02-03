@@ -5,6 +5,19 @@ $Id$
 
 Changes in runtime behavior
 
+ 1. LUCENE-1151: Fix StandardAnalyzer to not mis-identify host names
+    (eg lucene.apache.org) as an ACRONYM.  To get back to the pre-2.4
+    backwards compatible, but buggy, behavior, you can either call
+    StandardAnalyzer.setDefaultReplaceInvalidAcronym(false) (static
+    method), or, set system property
+    org.apache.lucene.analysis.standard.StandardAnalyzer.replaceInvalidAcronym
+    to "false" on JVM startup.  All StandardAnalyzer instances created
+    after that will then show the pre-2.4 behavior.  Alternatively,
+    you can call setReplaceInvalidAcronym(false) to change the
+    behavior per instance of StandardAnalyzer.  This backwards
+    compatibility will be removed in 3.0 (hardwiring the value to
+    true).  (Mike McCandless)
+
 API Changes
 
  1. LUCENE-1084: Changed all IndexWriter constructors to take an

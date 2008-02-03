@@ -134,11 +134,11 @@ public class TestStandardAnalyzer extends LuceneTestCase {
     // domain names
     assertAnalyzesTo(a, "www.nutch.org", new String[]{"www.nutch.org"});
     //Notice the trailing .  See https://issues.apache.org/jira/browse/LUCENE-1068.
-     //TODO: Remove in 3.x
-     assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
-     // the following should be recognized as HOST. The code that sets replaceDepAcronym should be removed in the next release.
-     ((StandardAnalyzer) a).setReplaceInvalidAcronym(true);
- 	  assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+    // the following should be recognized as HOST:
+    assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+    ((StandardAnalyzer) a).setReplaceInvalidAcronym(false);
+    assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
+    ((StandardAnalyzer) a).setReplaceInvalidAcronym(true);
   }
 
   public void testEMailAddresses() throws Exception {
@@ -247,6 +247,6 @@ public class TestStandardAnalyzer extends LuceneTestCase {
    public void testDeprecatedAcronyms() throws Exception {
  	// test backward compatibility for applications that require the old behavior.
  	// this should be removed once replaceDepAcronym is removed.
- 	  assertAnalyzesTo(a, "lucene.apache.org.", new String[]{ "luceneapacheorg" }, new String[] { "<ACRONYM>" });
+ 	  assertAnalyzesTo(a, "lucene.apache.org.", new String[]{ "lucene.apache.org" }, new String[] { "<HOST>" });
    }
 }

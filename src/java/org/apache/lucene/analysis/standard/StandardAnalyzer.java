@@ -41,8 +41,49 @@ public class StandardAnalyzer extends Analyzer {
    *
    * See https://issues.apache.org/jira/browse/LUCENE-1068
    */
-  private boolean replaceInvalidAcronym = false;
-  
+  private boolean replaceInvalidAcronym = defaultReplaceInvalidAcronym;
+
+  private static boolean defaultReplaceInvalidAcronym;
+
+  // Default to false (fixed the bug), unless the system prop is set
+  static {
+    final String v = System.getProperty("org.apache.lucene.analysis.standard.StandardAnalyzer.replaceInvalidAcronym");
+    if (v == null || v.equals("true"))
+      defaultReplaceInvalidAcronym = true;
+    else
+      defaultReplaceInvalidAcronym = false;
+  }
+
+  /**
+   *
+   * @return true if new instances of StandardTokenizer will
+   * replace mischaracterized acronyms
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   * @deprecated This will be removed (hardwired to true) in 3.0
+   */
+  public static boolean getDefaultReplaceInvalidAcronym() {
+    return defaultReplaceInvalidAcronym;
+  }
+
+  /**
+   *
+   * @param replaceInvalidAcronym Set to true to have new
+   * instances of StandardTokenizer replace mischaracterized
+   * acronyms by default.  Set to false to preseve the
+   * previous (before 2.4) buggy behavior.  Alternatively,
+   * set the system property
+   * org.apache.lucene.analysis.standard.StandardAnalyzer.replaceInvalidAcronym
+   * to false.
+   *
+   * See https://issues.apache.org/jira/browse/LUCENE-1068
+   * @deprecated This will be removed (hardwired to true) in 3.0
+   */
+  public static void setDefaultReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
+    defaultReplaceInvalidAcronym = replaceInvalidAcronym;
+  }
+
+
   /** An array containing some common English words that are usually not
   useful for searching. */
   public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
@@ -204,6 +245,7 @@ public class StandardAnalyzer extends Analyzer {
    * @return true if this Analyzer is replacing mischaracterized acronyms in the StandardTokenizer
    *
    * See https://issues.apache.org/jira/browse/LUCENE-1068
+   * @deprecated This will be removed (hardwired to true) in 3.0
    */
   public boolean isReplaceInvalidAcronym() {
     return replaceInvalidAcronym;
@@ -214,6 +256,7 @@ public class StandardAnalyzer extends Analyzer {
    * @param replaceInvalidAcronym Set to true if this Analyzer is replacing mischaracterized acronyms in the StandardTokenizer
    *
    * See https://issues.apache.org/jira/browse/LUCENE-1068
+   * @deprecated This will be removed (hardwired to true) in 3.0
    */
   public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
