@@ -363,7 +363,7 @@ public class BooleanQuery extends Query {
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
-    if (clauses.size() == 1) {                    // optimize 1-clause queries
+    if (minNrShouldMatch == 0 && clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.get(0);
       if (!c.isProhibited()) {			  // just return clause
 

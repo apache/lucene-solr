@@ -22,6 +22,9 @@ API Changes
 
 Bug fixes
     
+ 1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimze a single 
+    clause query if minNumShouldMatch<=0. (Shai Erera via Michael Busch)
+	
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

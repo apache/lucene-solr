@@ -284,6 +284,16 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         verifyNrHits(q, 0);
     }
 
+    public void testNoOptionalButMin2() throws Exception {
+
+        /* one required, no optional */
+        BooleanQuery q = new BooleanQuery();
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.MUST);//true,  false);
+
+        q.setMinimumNumberShouldMatch(1); // 1 of 0 optional 
+
+        verifyNrHits(q, 0);
+    }
 
     public void testRandomQueries() throws Exception {
       final Random rnd = new Random(0);
