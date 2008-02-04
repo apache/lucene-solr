@@ -39,7 +39,7 @@ public interface RegexCapabilities {
   boolean match(String string);
 
   /**
-   * A wise prefix implementation can reduce the term enumeration (and thus performance)
+   * A wise prefix implementation can reduce the term enumeration (and thus increase performance)
    * of RegexQuery dramatically!
    *
    * @return static non-regex prefix of the pattern last passed to {@link #compile}.  May return null.
