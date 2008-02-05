@@ -50,7 +50,7 @@ public class TestDateFilter
     {
 	// create an index
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
  	long now = System.currentTimeMillis();
 
@@ -111,7 +111,7 @@ public class TestDateFilter
     {
 	// create an index
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
  	long now = System.currentTimeMillis();
 

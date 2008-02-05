@@ -61,7 +61,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         index = new RAMDirectory();
         IndexWriter writer = new IndexWriter(index,
                                              new WhitespaceAnalyzer(),
-                                             true);
+                                             true, IndexWriter.MaxFieldLength.LIMITED);
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();

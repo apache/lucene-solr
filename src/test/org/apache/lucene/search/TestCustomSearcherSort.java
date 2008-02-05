@@ -71,7 +71,7 @@ implements Serializable {
 	private Directory getIndex()
 	throws IOException {
 	        RAMDirectory indexStore = new RAMDirectory ();
-	        IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(), true);
+	        IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 	        RandomGen random = new RandomGen();
 	        for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
 	        Document doc = new Document();

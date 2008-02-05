@@ -38,7 +38,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         Document doc;
 
         RAMDirectory rd1 = new RAMDirectory();
-        IndexWriter iw1 = new IndexWriter(rd1, new SimpleAnalyzer(), true);
+        IndexWriter iw1 = new IndexWriter(rd1, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
         doc = new Document();
         doc.add(new Field("field1", "the quick brown fox jumps", Store.YES,
@@ -50,7 +50,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw1.close();
         RAMDirectory rd2 = new RAMDirectory();
-        IndexWriter iw2 = new IndexWriter(rd2, new SimpleAnalyzer(), true);
+        IndexWriter iw2 = new IndexWriter(rd2, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
         doc = new Document();
         doc.add(new Field("field0", "", Store.NO, Index.TOKENIZED));

@@ -38,7 +38,7 @@ public class TestExtendedFieldCache extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){

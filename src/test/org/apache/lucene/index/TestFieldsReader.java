@@ -46,7 +46,7 @@ public class TestFieldsReader extends LuceneTestCase {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(false);
     writer.addDocument(testDoc);
     writer.close();
@@ -204,7 +204,7 @@ public class TestFieldsReader extends LuceneTestCase {
     FSDirectory tmpDir = FSDirectory.getDirectory(file);
     assertTrue(tmpDir != null);
 
-    IndexWriter writer = new IndexWriter(tmpDir, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(tmpDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(false);
     writer.addDocument(testDoc);
     writer.close();

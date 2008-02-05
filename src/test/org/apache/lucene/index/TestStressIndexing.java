@@ -118,7 +118,7 @@ public class TestStressIndexing extends LuceneTestCase {
     stress test.
   */
   public void runStressTest(Directory directory, boolean autoCommit, MergeScheduler mergeScheduler) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, autoCommit, ANALYZER, true);
+    IndexWriter modifier = new IndexWriter(directory, autoCommit, ANALYZER, true, IndexWriter.MaxFieldLength.LIMITED);
 
     modifier.setMaxBufferedDocs(10);
 

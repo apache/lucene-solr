@@ -202,7 +202,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     Directory dir = FSDirectory.getDirectory(dirName);
 
     // open writer
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -240,7 +240,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     writer.close();
 
@@ -290,7 +290,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     writer.close();
 
@@ -312,7 +312,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.getDirectory(dirName);
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(doCFS);
     writer.setMaxBufferedDocs(10);
     
@@ -347,7 +347,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
         boolean autoCommit = 0 == pass;
  
-        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setRAMBufferSizeMB(16.0);
         //IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
         for(int i=0;i<35;i++) {

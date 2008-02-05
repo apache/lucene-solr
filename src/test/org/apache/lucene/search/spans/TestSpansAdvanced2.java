@@ -40,7 +40,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
         super.setUp();
 
         // create test index
-        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(), false);
+        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
         addDocument(writer, "A", "Should we, could we, would we?");
         addDocument(writer, "B", "It should.  Should it?");
         addDocument(writer, "C", "It shouldn't.");

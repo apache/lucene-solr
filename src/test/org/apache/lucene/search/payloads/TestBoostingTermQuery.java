@@ -86,7 +86,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer
-            = new IndexWriter(directory, analyzer, true);
+            = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setSimilarity(similarity);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

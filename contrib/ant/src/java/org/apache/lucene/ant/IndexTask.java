@@ -259,7 +259,7 @@ public class IndexTask extends Task {
     log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
 
     IndexWriter writer =
-      new IndexWriter(indexDir, analyzer, create);
+      new IndexWriter(indexDir, analyzer, create, IndexWriter.MaxFieldLength.LIMITED);
 
     writer.setUseCompoundFile(useCompoundIndex);
     int totalFiles = 0;

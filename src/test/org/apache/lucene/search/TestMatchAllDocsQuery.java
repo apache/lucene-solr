@@ -36,7 +36,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
   public void testQuery() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true);
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("one", iw);
     addDoc("two", iw);
     addDoc("three four", iw);

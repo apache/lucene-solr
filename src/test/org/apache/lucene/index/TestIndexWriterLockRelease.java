@@ -75,10 +75,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
         IndexWriter im;
 
         try {
-            im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
+            im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
         } catch (FileNotFoundException e) {
             try {
-                im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false);
+                im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
             } catch (FileNotFoundException e1) {
             }
         }

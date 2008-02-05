@@ -51,7 +51,7 @@ public class TestPhrasePrefixQuery
         throws IOException
     {
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
+        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         Document doc1 = new Document();
         Document doc2 = new Document();
         Document doc3 = new Document();

@@ -231,7 +231,7 @@ class DocHelper {
    */ 
   public static SegmentInfo writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException
   {
-    IndexWriter writer = new IndexWriter(dir, analyzer);
+    IndexWriter writer = new IndexWriter(dir, analyzer, IndexWriter.MaxFieldLength.LIMITED);
     writer.setSimilarity(similarity);
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);

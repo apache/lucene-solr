@@ -50,7 +50,7 @@ extends LuceneTestCase {
   public void setUp()
   throws Exception {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));

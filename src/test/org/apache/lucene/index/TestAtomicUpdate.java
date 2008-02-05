@@ -118,7 +118,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     TimedThread[] threads = new TimedThread[4];
 
-    IndexWriter writer = new IndexWriter(directory, ANALYZER, true);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.LIMITED);
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {

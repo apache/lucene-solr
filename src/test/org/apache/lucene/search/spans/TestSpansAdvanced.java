@@ -56,7 +56,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
 
         // create test index
         mDirectory = new RAMDirectory();
-        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(), true);
+        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         addDocument(writer, "1", "I think it should work.");
         addDocument(writer, "2", "I think it should work.");
         addDocument(writer, "3", "I think it should work.");

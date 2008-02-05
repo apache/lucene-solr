@@ -150,7 +150,7 @@ public class TestMultiSegmentReader extends LuceneTestCase {
   }
 
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(), create);
+    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(), create, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
     iw.addDocument(doc);

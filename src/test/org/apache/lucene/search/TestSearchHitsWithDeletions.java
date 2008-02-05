@@ -49,7 +49,7 @@ public class TestSearchHitsWithDeletions extends TestCase {
   public void setUp() throws Exception {
     // Create an index writer.
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i=0; i<N; i++) {
       writer.addDocument(createDocument(i));
     }

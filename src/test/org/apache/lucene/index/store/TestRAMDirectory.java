@@ -62,7 +62,7 @@ public class TestRAMDirectory extends LuceneTestCase {
       throw new IOException("java.io.tmpdir undefined, cannot run test");
     indexDir = new File(tempDir, "RAMDirIndex");
     
-    IndexWriter writer  = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true);
+    IndexWriter writer  = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     // add some documents
     Document doc = null;
     for (int i = 0; i < docsToAdd; i++) {
@@ -159,7 +159,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   public void testRAMDirectorySize() throws IOException, InterruptedException {
       
     final MockRAMDirectory ramDir = new MockRAMDirectory(indexDir.getCanonicalPath());
-    final IndexWriter writer  = new IndexWriter(ramDir, new WhitespaceAnalyzer(), false);
+    final IndexWriter writer  = new IndexWriter(ramDir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());

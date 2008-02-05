@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir);

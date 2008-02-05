@@ -56,7 +56,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Directory merged = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, new StandardAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(merged, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergeFactor(2);
 
     writer.addIndexes(new Directory[]{indexA, indexB});
@@ -92,7 +92,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   private void fillIndex(Directory dir, int start, int numDocs) throws IOException
   {
 
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergeFactor(2);
     writer.setMaxBufferedDocs(2);
 

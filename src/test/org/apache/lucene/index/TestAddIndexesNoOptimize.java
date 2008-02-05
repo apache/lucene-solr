@@ -326,7 +326,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
-    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create);
+    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergePolicy(new LogDocMergePolicy());
     return writer;
   }
