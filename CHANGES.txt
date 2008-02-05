@@ -40,6 +40,10 @@ Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimze a single 
     clause query if minNumShouldMatch<=0. (Shai Erera via Michael Busch)
+
+ 2. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
+    offset, int len) that was ignoring offset and thus giving the
+    wrong answer.  (Thomas Peuss via Mike McCandless)
 	
 New features
 

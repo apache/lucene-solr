@@ -17,20 +17,27 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.CharArraySet;
 
 public class TestCharArraySet extends LuceneTestCase
 {
-    public void testRehash() throws Exception {
-      CharArraySet cas = new CharArraySet(0, true);
-      for(int i=0;i<StopAnalyzer.ENGLISH_STOP_WORDS.length;i++)
-        cas.add(StopAnalyzer.ENGLISH_STOP_WORDS[i]);
-      assertEquals(StopAnalyzer.ENGLISH_STOP_WORDS.length, cas.size());
-      for(int i=0;i<StopAnalyzer.ENGLISH_STOP_WORDS.length;i++)
-        assertTrue(cas.contains(StopAnalyzer.ENGLISH_STOP_WORDS[i]));
-    }
+  public void testRehash() throws Exception {
+    CharArraySet cas = new CharArraySet(0, true);
+    for(int i=0;i<StopAnalyzer.ENGLISH_STOP_WORDS.length;i++)
+      cas.add(StopAnalyzer.ENGLISH_STOP_WORDS[i]);
+    assertEquals(StopAnalyzer.ENGLISH_STOP_WORDS.length, cas.size());
+    for(int i=0;i<StopAnalyzer.ENGLISH_STOP_WORDS.length;i++)
+      assertTrue(cas.contains(StopAnalyzer.ENGLISH_STOP_WORDS[i]));
+  }
+
+  public void testNonZeroOffset() {
+    String[] words={"Hello","World","this","is","a","test"};
+    char[] findme="xthisy".toCharArray();   
+    CharArraySet set=new CharArraySet(10,true);
+    set.addAll(Arrays.asList(words));
+    assertTrue(set.contains(findme, 1, 4));
+    assertTrue(set.contains(new String(findme,1,4)));
+  }
 }
