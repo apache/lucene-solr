@@ -66,6 +66,13 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='0']"
             );
 
+
+    assertQ("test custom plugin query",
+            req("q","<!foo f=v_t>hello")
+            ,"//result[@numFound='2']"
+            );
+
+
     assertQ("test single term field query on text type",
             req("q","<!field f=v_t>HELLO")
             ,"//result[@numFound='2']"
