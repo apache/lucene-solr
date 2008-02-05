@@ -470,6 +470,8 @@
         source="${javac.source}"
         target="${javac.target}">
         <nested/>
+        <compilerarg line="-Xmaxwarns 10000000"/>
+        <compilerarg line="-Xmaxerrs 10000000"/>
       </javac>
     </sequential>
   </macrodef>
