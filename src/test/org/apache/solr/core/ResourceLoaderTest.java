@@ -32,6 +32,16 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 public class ResourceLoaderTest extends TestCase 
 {
+  public void testInstanceDir() throws Exception {
+    SolrResourceLoader loader = new SolrResourceLoader(null);
+    String instDir = loader.getInstanceDir();
+    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr/") == true);
+
+    loader = new SolrResourceLoader("solr");
+    instDir = loader.getInstanceDir();
+    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr/") == true);
+  }
+
   public void testAwareCompatibility() 
   {
     SolrResourceLoader loader = new SolrResourceLoader( "." );

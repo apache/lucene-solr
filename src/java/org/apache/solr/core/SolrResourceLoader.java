@@ -75,9 +75,11 @@ public class SolrResourceLoader implements ResourceLoader
    */
   public SolrResourceLoader( String instanceDir, ClassLoader parent )
   {
-    if( instanceDir == null )
-      instanceDir = SolrResourceLoader.locateInstanceDir();
-    this.instanceDir = normalizeDir(instanceDir);
+    if( instanceDir == null ) {
+      this.instanceDir = SolrResourceLoader.locateInstanceDir();
+    } else{
+      this.instanceDir = normalizeDir(instanceDir);
+    }
     log.info("Solr home set to '" + this.instanceDir + "'");
     this.classLoader = createClassLoader(new File(this.instanceDir + "lib/"), parent);
   }
@@ -255,8 +257,20 @@ public class SolrResourceLoader implements ResourceLoader
     }
     waitingForResources.clear();
   }
-  
 
+  /**
+   * Finds the instanceDir based on looking up the value in one of three places:
+   * <ol>
+   *  <li>JNDI: via java:comp/env/solr/home</li>
+   *  <li>The system property solr.solr.home</li>
+   *  <li>Look in the current working directory for a solr/ directory</li> 
+   * </ol>
+   *
+   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
+   * @return A normalized instanceDir
+   *
+   * @see #normalizeDir(String) 
+   */
   public static String locateInstanceDir() {
     String home = null;
     // Try JNDI
@@ -275,7 +289,7 @@ public class SolrResourceLoader implements ResourceLoader
     // Now try system property
     if( home == null ) {
       String prop = project + ".solr.home";
-      home = normalizeDir(System.getProperty(prop));
+      home = System.getProperty(prop);
       if( home != null ) {
         log.info("using system property "+prop+": " + home );
       }
