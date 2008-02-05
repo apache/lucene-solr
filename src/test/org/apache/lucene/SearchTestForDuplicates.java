@@ -38,7 +38,7 @@ class SearchTestForDuplicates {
     try {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer();
-      IndexWriter writer = new IndexWriter(directory, analyzer, true);
+      IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
       final int MAX_DOCS = 225;
 

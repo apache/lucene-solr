@@ -40,7 +40,7 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory,
                                          new SimpleAnalyzer(),
-                                         true);
+                                         true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.UN_TOKENIZED));
@@ -67,7 +67,7 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir,new KeywordAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(dir,new KeywordAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
