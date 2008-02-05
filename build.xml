@@ -307,7 +307,7 @@
      </copy>
   </target>
 
-  <target name="nightly" depends="test, package-tgz">
+  <target name="nightly" depends="test, package-tgz, changes-to-html">
   </target>
 
   <!-- ================================================================== -->
@@ -599,6 +599,20 @@
       </concat>
     </sequential>
   </macrodef>
+
+  <!--
+   compile changes.txt into an html file
+   -->
+
+  <target name="changes-to-html">
+    <mkdir dir="${changes.target.dir}"/>
+    <exec executable="perl" input="CHANGES.txt" output="${changes.target.dir}/Changes.html" failonerror="true">
+      <arg value="${changes.src.dir}/changes2html.pl"/>
+    </exec>
+    <copy todir="${changes.target.dir}">
+      <fileset dir="${changes.src.dir}" includes="*.css"/>
+    </copy>
+  </target>
 
   <!--
    Committer helpers

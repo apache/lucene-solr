@@ -65,6 +65,9 @@
     <pathelement location="${ant.home}/lib/ant.jar"/>
   </path>
 	
+  <property name="changes.src.dir" value="${common.dir}/src/site/changes"/>
+  <property name="changes.target.dir" value="${common.dir}/build/docs/changes"/>
+
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
   <property name="build.encoding" value="utf-8"/>
 
