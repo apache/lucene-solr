@@ -62,6 +62,9 @@ New features
     the core Filters to use OpenBitSet instead of java.util.BitSet.
     (Paul Elschot, Michael Busch)
 
+ 5. LUCENE-494: Added QueryAutoStopWordAnalyzer to allow for the automatic removal, from a query of frequently occurring terms.
+    This Analyzer is not intended for use during indexing. (Mark Harwood via Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use
