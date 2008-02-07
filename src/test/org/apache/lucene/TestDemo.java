@@ -51,8 +51,7 @@ public class TestDemo extends LuceneTestCase {
     // if one exists):
     //Directory directory = FSDirectory.getDirectory("/tmp/testindex", true);
     IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
-                                          IndexWriter.MaxFieldLength.LIMITED);
-    iwriter.setMaxFieldLength(25000);
+                                          new IndexWriter.MaxFieldLength(25000));
     Document doc = new Document();
     String text = "This is the text to be indexed.";
     doc.add(new Field("fieldname", text, Field.Store.YES,

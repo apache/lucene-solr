@@ -385,8 +385,7 @@ public class MemoryIndexTest extends TestCase {
     RAMDirectory dir = new RAMDirectory();    
     IndexWriter writer = null;
     try {
-      writer = new IndexWriter(dir, analyzer, true);
-      writer.setMaxFieldLength(Integer.MAX_VALUE);
+      writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.addDocument(doc);
       writer.optimize();
       return dir;

@@ -69,8 +69,7 @@ public class IndexHTML {
         indexDocs(root, index, create);
       }
       writer = new IndexWriter(index, new StandardAnalyzer(), create, 
-                               IndexWriter.MaxFieldLength.LIMITED);
-      writer.setMaxFieldLength(1000000);
+                               new IndexWriter.MaxFieldLength(1000000));
       indexDocs(root, index, create);		  // add new docs
 
       System.out.println("Optimizing index...");

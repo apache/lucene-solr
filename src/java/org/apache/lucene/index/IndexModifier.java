@@ -201,7 +201,7 @@ public class IndexModifier {
         indexReader.close();
         indexReader = null;
       }
-      indexWriter = new IndexWriter(directory, analyzer, false, IndexWriter.MaxFieldLength.LIMITED);
+      indexWriter = new IndexWriter(directory, analyzer, false, new IndexWriter.MaxFieldLength(maxFieldLength));
       // IndexModifier cannot use ConcurrentMergeScheduler
       // because it synchronizes on the directory which can
       // cause deadlock
@@ -210,7 +210,6 @@ public class IndexModifier {
       indexWriter.setUseCompoundFile(useCompoundFile);
       if (maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH)
         indexWriter.setMaxBufferedDocs(maxBufferedDocs);
-      indexWriter.setMaxFieldLength(maxFieldLength);
       indexWriter.setMergeFactor(mergeFactor);
     }
   }

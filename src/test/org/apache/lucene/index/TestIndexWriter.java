@@ -1478,9 +1478,8 @@ public class TestIndexWriter extends LuceneTestCase
 
     public void testHighFreqTerm() throws IOException {
       RAMDirectory dir = new RAMDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, new IndexWriter.MaxFieldLength(100000000));
       writer.setRAMBufferSizeMB(0.01);
-      writer.setMaxFieldLength(100000000);
       // Massive doc that has 128 K a's
       StringBuffer b = new StringBuffer(1024*1024);
       for(int i=0;i<4096;i++) {
