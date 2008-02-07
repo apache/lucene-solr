@@ -876,10 +876,12 @@ final class DocumentsWriter {
             tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
             tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
 
-            // We must "catch up" for all docIDs that had no
-            // vectors before this one
-            for(int i=0;i<docID;i++) {
-              tvx.writeLong(0);
+            // We must "catch up" for all docs before us
+            // that had no vectors:
+            final long tvdPos = tvd.getFilePointer();
+            tvd.writeVInt(0);
+            for(int i=0;i<numDocsInStore-1;i++) {
+              tvx.writeLong(tvdPos);
               tvx.writeLong(0);
             }
           } catch (Throwable t) {

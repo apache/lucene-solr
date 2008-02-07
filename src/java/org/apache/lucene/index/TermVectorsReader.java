@@ -168,7 +168,8 @@ class TermVectorsReader implements Cloneable {
 
     int count = 0;
     while (count < numDocs) {
-      final int docID = startDocID + count + 1;
+      final int docID = docStoreOffset + startDocID + count + 1;
+      assert docID <= numTotalDocs;
       if (docID < numTotalDocs)  {
         tvdPosition = tvx.readLong();
         tvfPosition = tvx.readLong();

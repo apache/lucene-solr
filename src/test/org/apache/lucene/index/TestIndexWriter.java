@@ -2682,6 +2682,148 @@ public class TestIndexWriter extends LuceneTestCase
     dir.close();
   }
 
+  // LUCENE-1168
+  public void testTermVectorCorruption() throws IOException {
+
+    Directory dir = new MockRAMDirectory();
+    for(int iter=0;iter<4;iter++) {
+      final boolean autoCommit = 1==iter/2;
+      IndexWriter writer = new IndexWriter(dir,
+                                           autoCommit, new StandardAnalyzer(),
+                                           IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+      writer.setMergeScheduler(new SerialMergeScheduler());
+      writer.setMergePolicy(new LogDocMergePolicy());
+
+      Document document = new Document();
+
+      Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                    Field.Index.NO);
+      document.add(storedField);
+      writer.addDocument(document);
+      writer.addDocument(document);
+
+      document = new Document();
+      document.add(storedField);
+      Field termVectorField = new Field("termVector", "termVector",
+                                        Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                        Field.TermVector.WITH_POSITIONS_OFFSETS);
+
+      document.add(termVectorField);
+      writer.addDocument(document);
+      writer.optimize();
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      for(int i=0;i<reader.numDocs();i++) {
+        reader.document(i);
+        reader.getTermFreqVectors(i);
+      }
+      reader.close();
+
+      writer = new IndexWriter(dir,
+                               autoCommit, new StandardAnalyzer(),
+                               IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+      writer.setMergeScheduler(new SerialMergeScheduler());
+      writer.setMergePolicy(new LogDocMergePolicy());
+
+      Directory[] indexDirs = { dir};
+      writer.addIndexes(indexDirs);
+      writer.close();
+    }
+    dir.close();
+  }
+
+  // LUCENE-1168
+  public void testTermVectorCorruption2() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    for(int iter=0;iter<4;iter++) {
+      final boolean autoCommit = 1==iter/2;
+      IndexWriter writer = new IndexWriter(dir,
+                                           autoCommit, new StandardAnalyzer(),
+                                           IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+      writer.setMergeScheduler(new SerialMergeScheduler());
+      writer.setMergePolicy(new LogDocMergePolicy());
+
+      Document document = new Document();
+
+      Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                    Field.Index.NO);
+      document.add(storedField);
+      writer.addDocument(document);
+      writer.addDocument(document);
+
+      document = new Document();
+      document.add(storedField);
+      Field termVectorField = new Field("termVector", "termVector",
+                                        Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                        Field.TermVector.WITH_POSITIONS_OFFSETS);
+      document.add(termVectorField);
+      writer.addDocument(document);
+      writer.optimize();
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      assertTrue(reader.getTermFreqVectors(0)==null);
+      assertTrue(reader.getTermFreqVectors(1)==null);
+      assertTrue(reader.getTermFreqVectors(2)!=null);
+      reader.close();
+    }
+    dir.close();
+  }
+
+  // LUCENE-1168
+  public void testTermVectorCorruption3() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         false, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+    writer.setMergeScheduler(new SerialMergeScheduler());
+    writer.setMergePolicy(new LogDocMergePolicy());
+
+    Document document = new Document();
+
+    document = new Document();
+    Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                  Field.Index.NO);
+    document.add(storedField);
+    Field termVectorField = new Field("termVector", "termVector",
+                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    document.add(termVectorField);
+    for(int i=0;i<10;i++)
+      writer.addDocument(document);
+    writer.close();
+
+    writer = new IndexWriter(dir,
+                             false, new StandardAnalyzer(),
+                             IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+    writer.setMergeScheduler(new SerialMergeScheduler());
+    writer.setMergePolicy(new LogDocMergePolicy());
+    for(int i=0;i<6;i++)
+      writer.addDocument(document);
+
+    writer.optimize();
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    for(int i=0;i<10;i++) {
+      reader.getTermFreqVectors(i);
+      reader.document(i);
+    }
+    reader.close();
+    dir.close();
+  }
+
   // LUCENE-1084: test user-specified field length
   public void testUserSpecifiedMaxFieldLength() throws IOException {
     Directory dir = new MockRAMDirectory();

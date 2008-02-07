@@ -44,6 +44,10 @@ Bug fixes
  2. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
     offset, int len) that was ignoring offset and thus giving the
     wrong answer.  (Thomas Peuss via Mike McCandless)
+
+ 3. LUCENE-1168: Fixed corruption cases when autoCommit=false and
+    documents have mixed term vectors (Suresh Guvvala via Mike
+    McCandless).
 	
 New features
 
