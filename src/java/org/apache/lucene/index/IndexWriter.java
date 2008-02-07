@@ -439,7 +439,8 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -492,7 +493,8 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -545,7 +547,8 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -595,7 +598,8 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -640,7 +644,8 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -685,7 +690,8 @@ public class IndexWriter {
    *
    * @param d the index directory
    * @param a the analyzer to use
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -731,7 +737,8 @@ public class IndexWriter {
    * @param d the index directory
    * @param autoCommit see <a href="#autoCommit">above</a>
    * @param a the analyzer to use
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -781,7 +788,8 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -834,7 +842,8 @@ public class IndexWriter {
    * @param autoCommit see <a href="#autoCommit">above</a>
    * @param a the analyzer to use
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -888,7 +897,8 @@ public class IndexWriter {
    *  the existing one; <code>false</code> to append to the existing
    *  index
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl whether or not to limit field lengths
+   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -3639,18 +3649,38 @@ public class IndexWriter {
    * {@link IndexWriter#setMaxFieldLength(int)} overrides the value set by
    * the constructor.
    */
-  public static final class MaxFieldLength extends Parameter implements java.io.Serializable {
+  public static final class MaxFieldLength {
 
     private int limit;
+    private String name;
 
+    /**
+     * Private type-safe-enum-pattern constructor.
+     * 
+     * @param name instance name
+     * @param limit maximum field length
+     */
     private MaxFieldLength(String name, int limit) {
-      // typesafe enum pattern, no public constructor
-      super(name);
+      this.name = name;
       this.limit = limit;
     }
 
+    /**
+     * Public constructor to allow users to specify the maximum field size limit.
+     * 
+     * @param limit The maximum field length
+     */
+    public MaxFieldLength(int limit) {
+      this("User-specified", limit);
+    }
+    
     public int getLimit() {
       return limit;
+    }
+    
+    public String toString()
+    {
+      return name + ":" + limit;
     }
 
     /** Sets the maximum field length to {@link Integer#MAX_VALUE}. */

@@ -2682,4 +2682,26 @@ public class TestIndexWriter extends LuceneTestCase
     reader.close();
     dir.close();
   }
+
+  // LUCENE-1084: test user-specified field length
+  public void testUserSpecifiedMaxFieldLength() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), new IndexWriter.MaxFieldLength(100000));
+
+    Document doc = new Document();
+    StringBuffer b = new StringBuffer();
+    for(int i=0;i<10000;i++)
+      b.append(" a");
+    b.append(" x");
+    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    Term t = new Term("field", "x");
+    assertEquals(1, reader.docFreq(t));
+    reader.close();
+    dir.close();
+  }
 }
