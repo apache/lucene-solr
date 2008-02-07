@@ -49,6 +49,12 @@ Bug fixes
     documents have mixed term vectors (Suresh Guvvala via Mike
     McCandless).
 	
+ 4. LUCENE-1169: Fixed bug in IndexSearcher.search(): searching with
+    a filter might miss some hits because scorer.skipTo() is called
+    without checking if the scorer is already at the right position.
+    scorer.skipTo(scorer.doc()) is not a NOOP, it behaves as 
+    scorer.next(). (Eks Dev, Michael Busch)
+	
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

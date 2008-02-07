@@ -139,16 +139,18 @@ public class IndexSearcher extends Searcher {
     }
 
     DocIdSetIterator docIdSetIterator = filter.getDocIdSet(reader).iterator(); // CHECKME: use ConjunctionScorer here?
-    boolean more = docIdSetIterator.next();
+    
+    boolean more = docIdSetIterator.next() && scorer.skipTo(docIdSetIterator.doc());
+
     while (more) {
       int filterDocId = docIdSetIterator.doc();
-      if (! scorer.skipTo(filterDocId)) {
+      if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
         more = false;
       } else {
         int scorerDocId = scorer.doc();
         if (scorerDocId == filterDocId) { // permitted by filter
           results.collect(scorerDocId, scorer.score());
-          more = docIdSetIterator.skipTo(scorerDocId + 1);
+          more = docIdSetIterator.next();
         } else {
           more = docIdSetIterator.skipTo(scorerDocId);
         }
