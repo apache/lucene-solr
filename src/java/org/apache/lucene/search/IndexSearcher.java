@@ -138,25 +138,24 @@ public class IndexSearcher extends Searcher {
       return;
     }
 
-    DocIdSetIterator docIdSetIterator = filter.getDocIdSet(reader).iterator(); // CHECKME: use ConjunctionScorer here?
+    DocIdSetIterator filterDocIdIterator = filter.getDocIdSet(reader).iterator(); // CHECKME: use ConjunctionScorer here?
     
-    boolean more = docIdSetIterator.next() && scorer.skipTo(docIdSetIterator.doc());
+    boolean more = filterDocIdIterator.next() && scorer.skipTo(filterDocIdIterator.doc());
 
     while (more) {
-      int filterDocId = docIdSetIterator.doc();
+      int filterDocId = filterDocIdIterator.doc();
       if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
         more = false;
       } else {
         int scorerDocId = scorer.doc();
         if (scorerDocId == filterDocId) { // permitted by filter
           results.collect(scorerDocId, scorer.score());
-          more = docIdSetIterator.next();
+          more = filterDocIdIterator.next();
         } else {
-          more = docIdSetIterator.skipTo(scorerDocId);
+          more = filterDocIdIterator.skipTo(scorerDocId);
         }
       }
     }
-
   }
 
   public Query rewrite(Query original) throws IOException {
