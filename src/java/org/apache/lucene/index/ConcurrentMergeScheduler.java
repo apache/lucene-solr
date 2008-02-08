@@ -25,10 +25,11 @@ import java.util.ArrayList;
 
 /** A {@link MergeScheduler} that runs each merge using a
  *  separate thread, up until a maximum number of threads
- *  ({@link #setMaxThreadCount}) at which points merges are
- *  run in the foreground, serially.  This is a simple way
- *  to use concurrency in the indexing process without
- *  having to create and manage application level
+ *  ({@link #setMaxThreadCount}) at which when a merge is
+ *  needed, the thread(s) that are updating the index will
+ *  pause until one or more merges completes.  This is a
+ *  simple way to use concurrency in the indexing process
+ *  without having to create and manage application level
  *  threads. */
 
 public class ConcurrentMergeScheduler extends MergeScheduler {
@@ -36,6 +37,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   private int mergeThreadPriority = -1;
 
   protected List mergeThreads = new ArrayList();
+
+  // Max number of threads allowed to be merging at once
   private int maxThreadCount = 3;
 
   private List exceptions = new ArrayList();
@@ -53,8 +56,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Sets the max # simultaneous threads that may be
    *  running.  If a merge is necessary yet we already have
-   *  this many threads running, the merge is returned back
-   *  to IndexWriter so that it runs in the "foreground". */
+   *  this many threads running, the incoming thread (that
+   *  is calling add/updateDocument) will block until
+   *  a merge thread has completed. */
   public void setMaxThreadCount(int count) {
     if (count < 1)
       throw new IllegalArgumentException("count should be at least 1");
@@ -150,7 +154,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     message("  index: " + writer.segString());
 
     // Iterate, pulling from the IndexWriter's queue of
-    // pending merges, until its empty:
+    // pending merges, until it's empty:
     while(true) {
 
       // TODO: we could be careful about which merges to do in
@@ -167,27 +171,35 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // deterministic assignment of segment names
       writer.mergeInit(merge);
 
-      message("  consider merge " + merge.segString(dir));
+      synchronized(this) {
+        while (mergeThreadCount() >= maxThreadCount) {
+          message("    too many merge threads running; stalling...");
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
+        }
+
+        message("  consider merge " + merge.segString(dir));
       
-      if (merge.isExternal) {
-        message("    merge involves segments from an external directory; now run in foreground");
-      } else {
-        synchronized(this) {
-          if (mergeThreadCount() < maxThreadCount) {
-            // OK to spawn a new merge thread to handle this
-            // merge:
-            final MergeThread merger = getMergeThread(writer, merge);
-            mergeThreads.add(merger);
-            message("    launch new thread [" + merger.getName() + "]");
-            merger.start();
-            continue;
-          } else
-            message("    too many merge threads running; run merge in foreground");
+        if (merge.isExternal) {
+          message("    merge involves segments from an external directory; now run in foreground");
+        } else {
+          assert mergeThreadCount() < maxThreadCount;
+
+          // OK to spawn a new merge thread to handle this
+          // merge:
+          final MergeThread merger = getMergeThread(writer, merge);
+          mergeThreads.add(merger);
+          message("    launch new thread [" + merger.getName() + "]");
+          merger.start();
+          continue;
         }
       }
 
-      // Too many merge threads already running, so we do
-      // this in the foreground of the calling thread
+      // This merge involves segments outside our index
+      // Directory so we must merge in foreground
       doMerge(merge);
     }
   }
@@ -285,7 +297,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         }
       } finally {
         synchronized(ConcurrentMergeScheduler.this) {
-          mergeThreads.remove(this);
+          boolean removed = mergeThreads.remove(this);
+          assert removed;
           ConcurrentMergeScheduler.this.notifyAll();
         }
       }
