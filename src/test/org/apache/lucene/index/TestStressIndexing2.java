@@ -32,9 +32,10 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static boolean autoCommit=false;
   static int mergeFactor=3;
   static int maxBufferedDocs=3;
-  
+  static int seed=0;
+
   static Random r = new Random(0);
- 
+
 
   public void testRandom() throws Exception {
     Directory dir1 = new RAMDirectory();
@@ -58,6 +59,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       autoCommit=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;
+      seed++;
 
       int nThreads=r.nextInt(5)+1;
       int iter=r.nextInt(10)+1;
@@ -367,7 +369,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     public void run() {
       try {
-        r = new Random(base+range);
+        r = new Random(base+range+seed);
         for (int i=0; i<iterations; i++) {
           indexDoc();
         }
