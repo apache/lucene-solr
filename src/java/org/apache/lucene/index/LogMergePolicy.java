@@ -245,6 +245,54 @@ public abstract class LogMergePolicy extends MergePolicy {
     return spec;
   }
 
+  /**
+   * Finds merges necessary to expunge all deletes from the
+   * index.  We simply merge adjacent segments that have
+   * deletes, up to mergeFactor at a time.
+   */ 
+  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos,
+                                                       IndexWriter writer)
+    throws CorruptIndexException, IOException
+  {
+    this.writer = writer;
+
+    final int numSegments = segmentInfos.size();
+
+    message("findMergesToExpungeDeletes: " + numSegments + " segments");
+
+    MergeSpecification spec = new MergeSpecification();
+    int firstSegmentWithDeletions = -1;
+    for(int i=0;i<numSegments;i++) {
+      final SegmentInfo info = segmentInfos.info(i);
+      if (info.hasDeletions()) {
+        message("  segment " + info.name + " has deletions");
+        if (firstSegmentWithDeletions == -1)
+          firstSegmentWithDeletions = i;
+        else if (i - firstSegmentWithDeletions == mergeFactor) {
+          // We've seen mergeFactor segments in a row with
+          // deletions, so force a merge now:
+          message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+          spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i), useCompoundFile));
+          firstSegmentWithDeletions = i;
+        }
+      } else if (firstSegmentWithDeletions != -1) {
+        // End of a sequence of segments with deletions, so,
+        // merge those past segments even if it's fewer than
+        // mergeFactor segments
+        message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+        spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i), useCompoundFile));
+        firstSegmentWithDeletions = -1;
+      }
+    }
+
+    if (firstSegmentWithDeletions != -1) {
+      message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive");
+      spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, numSegments), useCompoundFile));
+    }
+
+    return spec;
+  }
+
   /** Checks if any merges are now necessary and returns a
    *  {@link MergePolicy.MergeSpecification} if so.  A merge
    *  is necessary when there are more than {@link

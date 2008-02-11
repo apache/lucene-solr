@@ -26,7 +26,6 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BitVector;
-import org.apache.lucene.util.Parameter;
 import org.apache.lucene.util.Constants;
 
 import java.io.File;
@@ -2163,6 +2162,7 @@ public class IndexWriter {
           try {
             wait();
           } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
           }
 
           if (mergeExceptions.size() > 0) {
@@ -2203,6 +2203,87 @@ public class IndexWriter {
         return true;
 
     return false;
+  }
+
+  /** Just like {@link #expungeDeletes()}, except you can
+   *  specify whether the call should block until the
+   *  operation completes.  This is only meaningful with a
+   *  {@link MergeScheduler} that is able to run merges in
+   *  background threads. */
+  public void expungeDeletes(boolean doWait)
+    throws CorruptIndexException, IOException {
+    ensureOpen();
+
+    if (infoStream != null)
+      message("expungeDeletes: index now " + segString());
+
+    MergePolicy.MergeSpecification spec;
+
+    synchronized(this) {
+      spec = mergePolicy.findMergesToExpungeDeletes(segmentInfos, this);
+      if (spec != null) {
+        final int numMerges = spec.merges.size();
+        for(int i=0;i<numMerges;i++)
+          registerMerge((MergePolicy.OneMerge) spec.merges.get(i));
+      }
+    }
+
+    mergeScheduler.merge(this);
+
+    if (spec != null && doWait) {
+      final int numMerges = spec.merges.size();
+      synchronized(this) {
+        boolean running = true;
+        while(running) {
+
+          running = false;
+          for(int i=0;i<numMerges;i++) {
+            final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) spec.merges.get(i);
+            if (pendingMerges.contains(merge) || runningMerges.contains(merge))
+              running = true;
+            Throwable t = merge.getException();
+            if (t != null) {
+              IOException ioe = new IOException("background merge hit exception: " + merge.segString(directory));
+              ioe.initCause(t);
+              throw ioe;
+            }
+          }
+
+          if (running) {
+            try {
+              wait();
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+            }
+          }
+        }
+      }
+    }
+
+    // NOTE: in the ConcurrentMergeScheduler case, when
+    // doWait is false, we can return immediately while
+    // background threads accomplish the optimization
+  }
+
+
+  /** Expunges all deletes from the index.  When and index
+   *  has many document deletions (or updates to existing
+   *  documents), it's best to either call optimize or
+   *  expungeDeletes to remove all unusged data in the index
+   *  associated with the deleted documents.  To see how
+   *  many deletions you have pending in your index, call
+   *  {@link IndexReader#maxDoc - IndexReader#numDocs}.
+   *  This saves disk space and memory usage while
+   *  searching.  expungeDeletes should be somewhat faster
+   *  than optimize since it does not insist on reducing the
+   *  index to a single segment (though, this depends on the
+   *  {@link MergePolicy}; see {@link
+   *  MergePolicy#findMergesToExpungeDeletes}.). Note that
+   *  this call does not first commit any buffered
+   *  documents, so you must do so yourself if necessary.
+   *  See also {@link #expungeDeletes(boolean)}*/
+  public void expungeDeletes() throws CorruptIndexException, IOException {
+    expungeDeletes(true);
   }
 
   /**

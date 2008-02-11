@@ -49,6 +49,12 @@ API Changes
     see the changes.  Deprecate IndexWriter.flush() in favor of
     IndexWriter.commit().  (Mike McCandless)
 
+ 5. LUCENE-325: Added IndexWriter.expungeDeletes methods, which
+    consult the MergePolicy to find merges necessary to merge away all
+    deletes from the index.  This should be a somewhat lower cost
+    operation than optimize.  (John Wang via Mike McCandless)
+
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimze a single 

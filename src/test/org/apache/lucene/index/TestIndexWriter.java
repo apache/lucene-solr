@@ -2977,4 +2977,140 @@ public class TestIndexWriter extends LuceneTestCase
     reader.close();
     dir.close();
   }
+
+  // LUCENE-325: test expungeDeletes, when 2 singular merges
+  // are required
+  public void testExpungeDeletes() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         false, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+
+    Document document = new Document();
+
+    document = new Document();
+    Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                  Field.Index.NO);
+    document.add(storedField);
+    Field termVectorField = new Field("termVector", "termVector",
+                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    document.add(termVectorField);
+    for(int i=0;i<10;i++)
+      writer.addDocument(document);
+    writer.close();
+
+    IndexReader ir = IndexReader.open(dir);
+    assertEquals(10, ir.maxDoc());
+    assertEquals(10, ir.numDocs());
+    ir.deleteDocument(0);
+    ir.deleteDocument(7);
+    assertEquals(8, ir.numDocs());
+    ir.close();
+
+    writer = new IndexWriter(dir,
+                             false, new StandardAnalyzer(),
+                             IndexWriter.MaxFieldLength.LIMITED);
+    writer.expungeDeletes();
+    writer.close();
+    ir = IndexReader.open(dir);
+    assertEquals(8, ir.maxDoc());
+    assertEquals(8, ir.numDocs());
+    ir.close();
+    dir.close();
+  }
+
+  // LUCENE-325: test expungeDeletes, when many adjacent merges are required
+  public void testExpungeDeletes2() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         false, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(50);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+
+    Document document = new Document();
+
+    document = new Document();
+    Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                  Field.Index.NO);
+    document.add(storedField);
+    Field termVectorField = new Field("termVector", "termVector",
+                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    document.add(termVectorField);
+    for(int i=0;i<98;i++)
+      writer.addDocument(document);
+    writer.close();
+
+    IndexReader ir = IndexReader.open(dir);
+    assertEquals(98, ir.maxDoc());
+    assertEquals(98, ir.numDocs());
+    for(int i=0;i<98;i+=2)
+      ir.deleteDocument(i);
+    assertEquals(49, ir.numDocs());
+    ir.close();
+
+    writer = new IndexWriter(dir,
+                             false, new StandardAnalyzer(),
+                             IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMergeFactor(3);
+    writer.expungeDeletes();
+    writer.close();
+    ir = IndexReader.open(dir);
+    assertEquals(49, ir.maxDoc());
+    assertEquals(49, ir.numDocs());
+    ir.close();
+    dir.close();
+  }
+
+  // LUCENE-325: test expungeDeletes without waiting, when
+  // many adjacent merges are required
+  public void testExpungeDeletes3() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         false, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(50);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+
+    Document document = new Document();
+
+    document = new Document();
+    Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                  Field.Index.NO);
+    document.add(storedField);
+    Field termVectorField = new Field("termVector", "termVector",
+                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    document.add(termVectorField);
+    for(int i=0;i<98;i++)
+      writer.addDocument(document);
+    writer.close();
+
+    IndexReader ir = IndexReader.open(dir);
+    assertEquals(98, ir.maxDoc());
+    assertEquals(98, ir.numDocs());
+    for(int i=0;i<98;i+=2)
+      ir.deleteDocument(i);
+    assertEquals(49, ir.numDocs());
+    ir.close();
+
+    writer = new IndexWriter(dir,
+                             false, new StandardAnalyzer(),
+                             IndexWriter.MaxFieldLength.LIMITED);
+    // Force many merges to happen
+    writer.setMergeFactor(3);
+    writer.expungeDeletes(false);
+    writer.close();
+    ir = IndexReader.open(dir);
+    assertEquals(49, ir.maxDoc());
+    assertEquals(49, ir.numDocs());
+    ir.close();
+    dir.close();
+  }
 }

@@ -50,6 +50,8 @@ import java.util.Set;
  * 
  * <p>The default MergePolicy is {@link
  * LogByteSizeMergePolicy}.</p>
+ * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
  */
 
 public abstract class MergePolicy {
@@ -209,7 +211,7 @@ public abstract class MergePolicy {
     throws CorruptIndexException, IOException;
 
   /**
-   * Determine what set of merge operations are necessary in
+   * Determine what set of merge operations is necessary in
    * order to optimize the index.  The IndexWriter calls
    * this when its optimize() method is called.  This call
    * is always synchronized on the IndexWriter instance so
@@ -228,6 +230,19 @@ public abstract class MergePolicy {
                                                     int maxSegmentCount,
                                                     Set segmentsToOptimize)
     throws CorruptIndexException, IOException;
+
+  /**
+   * Determine what set of merge operations is necessary in
+   * order to expunge all deletes from the index.
+   * @param segmentInfos the total set of segments in the index
+   * @param writer IndexWriter instance
+   */
+  MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos,
+                                                 IndexWriter writer)
+    throws CorruptIndexException, IOException
+  {
+    throw new RuntimeException("not implemented");
+  }
 
   /**
    * Release all resources for the policy.
