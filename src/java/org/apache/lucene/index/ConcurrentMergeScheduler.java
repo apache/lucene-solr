@@ -46,6 +46,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private boolean closed;
   protected IndexWriter writer;
+  protected int mergeThreadCount;
 
   public ConcurrentMergeScheduler() {
     if (allInstances != null) {
@@ -211,10 +212,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /** Create and return a new MergeThread */
-  protected MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
+  protected synchronized MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
     final MergeThread thread = new MergeThread(writer, merge);
     thread.setThreadPriority(mergeThreadPriority);
     thread.setDaemon(true);
+    thread.setName("Lucene Merge Thread #" + mergeThreadCount++);
     return thread;
   }
 
@@ -297,9 +299,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         }
       } finally {
         synchronized(ConcurrentMergeScheduler.this) {
+          ConcurrentMergeScheduler.this.notifyAll();
           boolean removed = mergeThreads.remove(this);
           assert removed;
-          ConcurrentMergeScheduler.this.notifyAll();
         }
       }
     }
@@ -331,6 +333,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       boolean v = anyExceptions;
       anyExceptions = false;
       return v;
+    }
+  }
+
+  public static void clearUnhandledExceptions() {
+    synchronized(allInstances) {
+      anyExceptions = false;
     }
   }
 

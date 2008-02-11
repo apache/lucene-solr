@@ -46,8 +46,8 @@ public class TestMultiSegmentReader extends LuceneTestCase {
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
     DocHelper.setupDoc(doc2);
-    SegmentInfo info1 = DocHelper.writeDoc(dir, doc1);
-    SegmentInfo info2 = DocHelper.writeDoc(dir, doc2);
+    DocHelper.writeDoc(dir, doc1);
+    DocHelper.writeDoc(dir, doc2);
     sis = new SegmentInfos();
     sis.read(dir);
   }
@@ -102,7 +102,7 @@ public class TestMultiSegmentReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.write(dir);
+      sis.commit(dir);
 
     sis.read(dir);
     reader = openReader();
@@ -115,7 +115,7 @@ public class TestMultiSegmentReader extends LuceneTestCase {
     if (reader instanceof MultiReader)
       // MultiReader does not "own" the directory so it does
       // not write the changes to sis on commit:
-      sis.write(dir);
+      sis.commit(dir);
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );

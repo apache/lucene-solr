@@ -45,11 +45,14 @@ public class MockRAMInputStream extends RAMInputStream {
     if (!isClone) {
       synchronized(dir.openFiles) {
         Integer v = (Integer) dir.openFiles.get(name);
-        if (v.intValue() == 1) {
-          dir.openFiles.remove(name);
-        } else {
-          v = new Integer(v.intValue()-1);
-          dir.openFiles.put(name, v);
+        // Could be null when MockRAMDirectory.crash() was called
+        if (v != null) {
+          if (v.intValue() == 1) {
+            dir.openFiles.remove(name);
+          } else {
+            v = new Integer(v.intValue()-1);
+            dir.openFiles.put(name, v);
+          }
         }
       }
     }

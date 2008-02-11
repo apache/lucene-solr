@@ -18,6 +18,14 @@ Changes in runtime behavior
     compatibility will be removed in 3.0 (hardwiring the value to
     true).  (Mike McCandless)
 
+ 2. LUCENE-1044: IndexWriter with autoCommit=true now commits (such
+    that a reader can see the changes) far less often than it used to.
+    Previously, every flush was also a commit.  You can always force a
+    commit by calling IndexWriter.commit().  Furthermore, in 3.0,
+    autoCommit will be hardwired to false (IndexWriter constructors
+    that take an autoCommit argument have been deprecated) (Mike
+    McCandless)
+
 API Changes
 
  1. LUCENE-1084: Changed all IndexWriter constructors to take an
@@ -35,6 +43,11 @@ API Changes
     Filter.bits(), so all filters that implement this outside
     the Lucene code base will need to be adapted. See also the javadocs
     of the Filter class. (Paul Elschot, Michael Busch)
+
+ 4. LUCENE-1044: Added IndexWriter.commit() which flushes any buffered
+    adds/deletes and then commits a new segments file so readers will
+    see the changes.  Deprecate IndexWriter.flush() in favor of
+    IndexWriter.commit().  (Mike McCandless)
 
 Bug fixes
     
@@ -74,6 +87,12 @@ New features
 
  5. LUCENE-494: Added QueryAutoStopWordAnalyzer to allow for the automatic removal, from a query of frequently occurring terms.
     This Analyzer is not intended for use during indexing. (Mark Harwood via Grant Ingersoll)
+
+ 6. LUCENE-1044: Change Lucene to properly "sync" files after
+    committing, to ensure on a machine or OS crash or power cut, even
+    with cached writes, the index remains consistent.  Also added
+    explicit commit() method to IndexWriter to force a commit without
+    having to close.  (Mike McCandless)
 
 Optimizations
 

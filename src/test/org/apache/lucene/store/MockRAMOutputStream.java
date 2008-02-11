@@ -63,6 +63,11 @@ public class MockRAMOutputStream extends RAMOutputStream {
     long freeSpace = dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
+    // If MockRAMDir crashed since we were opened, then
+    // don't write anything:
+    if (dir.crashed)
+      throw new IOException("MockRAMDirectory was crashed");
+
     // Enforce disk full:
     if (dir.maxSize != 0 && freeSpace <= len) {
       // Compute the real disk free.  This will greatly slow

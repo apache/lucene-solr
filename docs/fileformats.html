@@ -1316,17 +1316,24 @@ document.write("Last Published: " + document.lastModified);
 </p>
 <p>
                     
-<b>2.3 and above:</b>
+<b>2.3:</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile&gt;<sup>SegCount</sup>
                 
 </p>
 <p>
+                    
+<b>2.4 and above:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
+                    NormGen<sup>NumField</sup>,
+                    IsCompoundFile&gt;<sup>SegCount</sup>, Checksum
+                </p>
+<p>
                     Format, NameCounter, SegCount, SegSize, NumField, DocStoreOffset --&gt; Int32
                 </p>
 <p>
-                    Version, DelGen, NormGen --&gt; Int64
+                    Version, DelGen, NormGen, Checksum --&gt; Int64
                 </p>
 <p>
                     SegName, DocStoreSegment --&gt; String
@@ -1335,7 +1342,7 @@ document.write("Last Published: " + document.lastModified);
                     IsCompoundFile, HasSingleNormFile, DocStoreIsCompoundFile --&gt; Int8
                 </p>
 <p>
-                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, and -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3
+                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3 and -5 (SegmentInfos.FORMAT_CHECKSUM) as of Lucene 2.4.
                 </p>
 <p>
                     Version counts how often the index has been
@@ -1408,7 +1415,13 @@ document.write("Last Published: " + document.lastModified);
                     shares a single set of these files with other
                     segments.
                 </p>
-<a name="N104CD"></a><a name="Lock File"></a>
+<p>
+		    Checksum contains the CRC32 checksum of all bytes
+		    in the segments_N file up until the checksum.
+		    This is used to verify integrity of the file on
+		    opening the index.
+		</p>
+<a name="N104DC"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1426,7 +1439,7 @@ document.write("Last Published: " + document.lastModified);
                     Note that prior to version 2.1, Lucene also used a
                     commit lock. This was removed in 2.1.
                 </p>
-<a name="N104D9"></a><a name="Deletable File"></a>
+<a name="N104E8"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     Prior to Lucene 2.1 there was a file "deletable"
@@ -1435,7 +1448,7 @@ document.write("Last Published: " + document.lastModified);
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N104E2"></a><a name="Compound Files"></a>
+<a name="N104F1"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1462,14 +1475,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1050A"></a><a name="Per-Segment Files"></a>
+<a name="N10519"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N10512"></a><a name="Fields"></a>
+<a name="N10521"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1688,7 +1701,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N105CD"></a><a name="Term Dictionary"></a>
+<a name="N105DC"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1874,7 +1887,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1064D"></a><a name="Frequencies"></a>
+<a name="N1065C"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -1992,7 +2005,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N106CF"></a><a name="Positions"></a>
+<a name="N106DE"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2058,7 +2071,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N1070B"></a><a name="Normalization Factors"></a>
+<a name="N1071A"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2162,7 +2175,7 @@ document.write("Last Published: " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10774"></a><a name="Term Vectors"></a>
+<a name="N10783"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2295,7 +2308,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1080A"></a><a name="Deleted Documents"></a>
+<a name="N10819"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2367,7 +2380,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1084D"></a><a name="Limitations"></a>
+<a name="N1085C"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There

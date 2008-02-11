@@ -30,7 +30,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
 
@@ -45,7 +44,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       modifier.setUseCompoundFile(true);
@@ -65,28 +64,17 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         modifier.addDocument(doc);
       }
       modifier.optimize();
-
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       Term term = new Term("city", "Amsterdam");
       int hitCount = getHitCount(dir, term);
       assertEquals(1, hitCount);
-      if (!autoCommit) {
-        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        modifier.setUseCompoundFile(true);
-      }
       modifier.deleteDocuments(term);
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
       hitCount = getHitCount(dir, term);
       assertEquals(0, hitCount);
 
-      if (autoCommit) {
-        modifier.close();
-      }
+      modifier.close();
       dir.close();
     }
   }
@@ -96,7 +84,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       modifier.setMaxBufferedDocs(2);
@@ -108,38 +96,26 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < 7; i++) {
         addDoc(modifier, ++id, value);
       }
-      modifier.flush();
+      modifier.commit();
 
       assertEquals(0, modifier.getNumBufferedDocuments());
       assertTrue(0 < modifier.getSegmentCount());
 
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       IndexReader reader = IndexReader.open(dir);
       assertEquals(7, reader.numDocs());
       reader.close();
 
-      if (!autoCommit) {
-        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        modifier.setMaxBufferedDocs(2);
-        modifier.setMaxBufferedDeleteTerms(2);
-      }
-
       modifier.deleteDocuments(new Term("value", String.valueOf(value)));
       modifier.deleteDocuments(new Term("value", String.valueOf(value)));
 
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       reader = IndexReader.open(dir);
       assertEquals(0, reader.numDocs());
       reader.close();
-      if (autoCommit) {
-        modifier.close();
-      }
+      modifier.close();
       dir.close();
     }
   }
@@ -148,7 +124,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testRAMDeletes() throws IOException {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       modifier.setMaxBufferedDocs(4);
@@ -169,9 +145,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(0, modifier.getSegmentCount());
       modifier.flush();
 
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       IndexReader reader = IndexReader.open(dir);
       assertEquals(1, reader.numDocs());
@@ -179,9 +153,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
       assertEquals(1, hitCount);
       reader.close();
-      if (autoCommit) {
-        modifier.close();
-      }
+      modifier.close();
       dir.close();
     }
   }
@@ -191,7 +163,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       modifier.setMaxBufferedDocs(100);
@@ -208,23 +180,18 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < 5; i++) {
         addDoc(modifier, ++id, value);
       }
-      modifier.flush();
+      modifier.commit();
 
       for (int i = 0; i < 5; i++) {
         addDoc(modifier, ++id, value);
       }
       modifier.deleteDocuments(new Term("value", String.valueOf(value)));
 
-      modifier.flush();
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       IndexReader reader = IndexReader.open(dir);
       assertEquals(5, reader.numDocs());
-      if (autoCommit) {
-        modifier.close();
-      }
+      modifier.close();
     }
   }
 
@@ -232,7 +199,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testBatchDeletes() throws IOException {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                              new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       modifier.setMaxBufferedDocs(2);
@@ -244,29 +211,17 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < 7; i++) {
         addDoc(modifier, ++id, value);
       }
-      modifier.flush();
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       IndexReader reader = IndexReader.open(dir);
       assertEquals(7, reader.numDocs());
       reader.close();
       
-      if (!autoCommit) {
-        modifier = new IndexWriter(dir, autoCommit,
-                                   new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        modifier.setMaxBufferedDocs(2);
-        modifier.setMaxBufferedDeleteTerms(2);
-      }
-
       id = 0;
       modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
       modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
 
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
 
       reader = IndexReader.open(dir);
       assertEquals(5, reader.numDocs());
@@ -276,23 +231,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < terms.length; i++) {
         terms[i] = new Term("id", String.valueOf(++id));
       }
-      if (!autoCommit) {
-        modifier = new IndexWriter(dir, autoCommit,
-                                   new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        modifier.setMaxBufferedDocs(2);
-        modifier.setMaxBufferedDeleteTerms(2);
-      }
       modifier.deleteDocuments(terms);
-      if (!autoCommit) {
-        modifier.close();
-      }
+      modifier.commit();
       reader = IndexReader.open(dir);
       assertEquals(2, reader.numDocs());
       reader.close();
 
-      if (autoCommit) {
-        modifier.close();
-      }
+      modifier.close();
       dir.close();
     }
   }
@@ -338,7 +283,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       boolean autoCommit = (0==pass);
 
       // First build up a starting index:
-      RAMDirectory startDir = new RAMDirectory();
+      MockRAMDirectory startDir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(startDir, autoCommit,
                                            new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for (int i = 0; i < 157; i++) {
@@ -444,38 +389,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             }
           }
 
-          // Whether we succeeded or failed, check that all
-          // un-referenced files were in fact deleted (ie,
-          // we did not create garbage). Just create a
-          // new IndexFileDeleter, have it delete
-          // unreferenced files, then verify that in fact
-          // no files were deleted:
-          String[] startFiles = dir.list();
-          SegmentInfos infos = new SegmentInfos();
-          infos.read(dir);
-          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.list();
-
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
-
-          // for(int i=0;i<startFiles.length;i++) {
-          // System.out.println(" startFiles: " + i + ": " + startFiles[i]);
-          // }
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            String successStr;
-            if (success) {
-              successStr = "success";
-            } else {
-              successStr = "IOException";
-              err.printStackTrace();
-            }
-            fail("reader.close() failed to delete unreferenced files after "
-                 + successStr + " (" + diskFree + " bytes): before delete:\n    "
-                 + arrayToString(startFiles) + "\n  after delete:\n    "
-                 + arrayToString(endFiles));
-          }
+          // If the close() succeeded, make sure there are
+          // no unreferenced files.
+          if (success)
+            TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
@@ -618,12 +535,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       // flush (and commit if ac)
 
       modifier.optimize();
+      modifier.commit();
 
-      // commit if !ac
-
-      if (!autoCommit) {
-        modifier.close();
-      }
       // one of the two files hits
 
       Term term = new Term("city", "Amsterdam");
@@ -631,11 +544,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(1, hitCount);
 
       // open the writer again (closed above)
-
-      if (!autoCommit) {
-        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        modifier.setUseCompoundFile(true);
-      }
 
       // delete the doc
       // max buf del terms is two, so this is buffered
@@ -648,7 +556,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       Document doc = new Document();
       modifier.addDocument(doc);
 
-      // flush the changes, the buffered deletes, and the new doc
+      // commit the changes, the buffered deletes, and the new doc
 
       // The failure object will fail on the first write after the del
       // file gets created when processing the buffered delete
@@ -659,38 +567,28 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       // in the !ac case, a new segments file won't be created but in
       // this case, creation of the cfs file happens next so we need
       // the doc (to test that it's okay that we don't lose deletes if
-      // failing while creating the cfs file
+      // failing while creating the cfs file)
 
       boolean failed = false;
       try {
-        modifier.flush();
+        modifier.commit();
       } catch (IOException ioe) {
         failed = true;
       }
 
       assertTrue(failed);
 
-      // The flush above failed, so we need to retry it (which will
+      // The commit above failed, so we need to retry it (which will
       // succeed, because the failure is a one-shot)
 
-      if (!autoCommit) {
-        modifier.close();
-      } else {
-        modifier.flush();
-      }
+      modifier.commit();
 
       hitCount = getHitCount(dir, term);
 
-      // If the delete was not cleared then hit count will
-      // be 0.  With autoCommit=false, we hit the exception
-      // on creating the compound file, so the delete was
-      // flushed successfully.
-      assertEquals(autoCommit ? 1:0, hitCount);
+      // Make sure the delete was successfully flushed:
+      assertEquals(0, hitCount);
 
-      if (autoCommit) {
-        modifier.close();
-      }
-
+      modifier.close();
       dir.close();
     }
   }

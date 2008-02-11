@@ -349,7 +349,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase
  
         IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setRAMBufferSizeMB(16.0);
-        //IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
         for(int i=0;i<35;i++) {
           addDoc(writer, i);
         }
@@ -390,11 +389,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         expected = new String[] {"_0.cfs",
                     "_0_1.del",
                     "_0_1.s" + contentFieldIndex,
-                    "segments_4",
+                    "segments_3",
                     "segments.gen"};
-
-        if (!autoCommit)
-          expected[3] = "segments_3";
 
         String[] actual = dir.list();
         Arrays.sort(expected);

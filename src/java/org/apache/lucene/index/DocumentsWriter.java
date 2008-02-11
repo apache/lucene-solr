@@ -453,7 +453,8 @@ final class DocumentsWriter {
           assert false: "unknown exception: " + t;
       }
     } finally {
-      abortCount--;
+      if (ae != null)
+        abortCount--;
       notifyAll();
     }
   }

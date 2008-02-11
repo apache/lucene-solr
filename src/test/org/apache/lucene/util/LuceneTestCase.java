@@ -46,6 +46,9 @@ public abstract class LuceneTestCase extends TestCase {
 
   protected void tearDown() throws Exception {
     if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
+      // Clear the failure so that we don't just keep
+      // failing subsequent test cases
+      ConcurrentMergeScheduler.clearUnhandledExceptions();
       fail("ConcurrentMergeScheduler hit unhandled exceptions");
     }
   }

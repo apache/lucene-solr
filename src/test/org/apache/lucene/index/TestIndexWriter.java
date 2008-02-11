@@ -651,19 +651,19 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMaxBufferedDocs(2);
 
       for(int iter=0;iter<10;iter++) {
-
         for(int i=0;i<19;i++)
           writer.addDocument(doc);
 
-        writer.flush();
+        ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
+        writer.commit();
 
         SegmentInfos sis = new SegmentInfos();
-        ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
         sis.read(dir);
 
         final int segCount = sis.size();
 
         writer.optimize(7);
+        writer.commit();
 
         sis = new SegmentInfos();
         ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
@@ -1045,7 +1045,7 @@ public class TestIndexWriter extends LuceneTestCase
      * and add docs to it.
      */
     public void testCommitOnCloseAbort() throws IOException {
-      Directory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(10);
       for (int i = 0; i < 14; i++) {
@@ -1086,6 +1086,11 @@ public class TestIndexWriter extends LuceneTestCase
       // and all is good:
       writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(10);
+
+      // On abort, writer in fact may write to the same
+      // segments_N file:
+      dir.setPreventDoubleWrite(false);
+
       for(int i=0;i<12;i++) {
         for(int j=0;j<17;j++) {
           addDoc(writer);
@@ -1273,48 +1278,48 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMaxBufferedDocs(10);
       writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
 
-      long lastGen = -1;
+      int lastFlushCount = -1;
       for(int j=1;j<52;j++) {
         Document doc = new Document();
         doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
         writer.addDocument(doc);
         _TestUtil.syncConcurrentMerges(writer);
-        long gen = SegmentInfos.generationFromSegmentsFileName(SegmentInfos.getCurrentSegmentFileName(dir.list()));
+        int flushCount = writer.getFlushCount();
         if (j == 1)
-          lastGen = gen;
+          lastFlushCount = flushCount;
         else if (j < 10)
           // No new files should be created
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
         else if (10 == j) {
-          assertTrue(gen > lastGen);
-          lastGen = gen;
+          assertTrue(flushCount > lastFlushCount);
+          lastFlushCount = flushCount;
           writer.setRAMBufferSizeMB(0.000001);
           writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 20) {
-          assertTrue(gen > lastGen);
-          lastGen = gen;
+          assertTrue(flushCount > lastFlushCount);
+          lastFlushCount = flushCount;
         } else if (20 == j) {
           writer.setRAMBufferSizeMB(16);
           writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
-          lastGen = gen;
+          lastFlushCount = flushCount;
         } else if (j < 30) {
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
         } else if (30 == j) {
           writer.setRAMBufferSizeMB(0.000001);
           writer.setMaxBufferedDocs(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 40) {
-          assertTrue(gen> lastGen);
-          lastGen = gen;
+          assertTrue(flushCount> lastFlushCount);
+          lastFlushCount = flushCount;
         } else if (40 == j) {
           writer.setMaxBufferedDocs(10);
           writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
-          lastGen = gen;
+          lastFlushCount = flushCount;
         } else if (j < 50) {
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
           writer.setMaxBufferedDocs(10);
           writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (50 == j) {
-          assertTrue(gen > lastGen);
+          assertTrue(flushCount > lastFlushCount);
         }
       }
       writer.close();
@@ -1334,46 +1339,46 @@ public class TestIndexWriter extends LuceneTestCase
         writer.addDocument(doc);
       }
       
-      long lastGen = -1;
+      int lastFlushCount = -1;
       for(int j=1;j<52;j++) {
         writer.deleteDocuments(new Term("field", "aaa" + j));
         _TestUtil.syncConcurrentMerges(writer);
-        long gen = SegmentInfos.generationFromSegmentsFileName(SegmentInfos.getCurrentSegmentFileName(dir.list()));
+        int flushCount = writer.getFlushCount();
         if (j == 1)
-          lastGen = gen;
+          lastFlushCount = flushCount;
         else if (j < 10) {
           // No new files should be created
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
         } else if (10 == j) {
-          assertTrue(gen > lastGen);
-          lastGen = gen;
+          assertTrue(flushCount > lastFlushCount);
+          lastFlushCount = flushCount;
           writer.setRAMBufferSizeMB(0.000001);
           writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 20) {
-          assertTrue(gen > lastGen);
-          lastGen = gen;
+          assertTrue(flushCount > lastFlushCount);
+          lastFlushCount = flushCount;
         } else if (20 == j) {
           writer.setRAMBufferSizeMB(16);
           writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
-          lastGen = gen;
+          lastFlushCount = flushCount;
         } else if (j < 30) {
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
         } else if (30 == j) {
           writer.setRAMBufferSizeMB(0.000001);
           writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (j < 40) {
-          assertTrue(gen> lastGen);
-          lastGen = gen;
+          assertTrue(flushCount> lastFlushCount);
+          lastFlushCount = flushCount;
         } else if (40 == j) {
           writer.setMaxBufferedDeleteTerms(10);
           writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
-          lastGen = gen;
+          lastFlushCount = flushCount;
         } else if (j < 50) {
-          assertEquals(gen, lastGen);
+          assertEquals(flushCount, lastFlushCount);
           writer.setMaxBufferedDeleteTerms(10);
           writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
         } else if (50 == j) {
-          assertTrue(gen > lastGen);
+          assertTrue(flushCount > lastFlushCount);
         }
       }
       writer.close();
@@ -1831,11 +1836,18 @@ public class TestIndexWriter extends LuceneTestCase
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
+        boolean sawAppend = false;
+        boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if ("org.apache.lucene.index.DocumentsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()) && count++ == 30) {
-            doFail = false;
-            throw new IOException("now failing during flush");
-          }
+          if ("org.apache.lucene.index.DocumentsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()))
+            sawAppend = true;
+          if ("doFlush".equals(trace[i].getMethodName()))
+            sawFlush = true;
+        }
+
+        if (sawAppend && sawFlush && count++ >= 30) {
+          doFail = false;
+          throw new IOException("now failing during flush");
         }
       }
     }
@@ -2263,6 +2275,7 @@ public class TestIndexWriter extends LuceneTestCase
         try {
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
         } catch (IOException ioe) {
+          //ioe.printStackTrace(System.out);
           if (ioe.getMessage().startsWith("fake disk full at") ||
               ioe.getMessage().equals("now failing on purpose")) {
             diskFull = true;
@@ -2282,6 +2295,7 @@ public class TestIndexWriter extends LuceneTestCase
             break;
           }
         } catch (Throwable t) {
+          //t.printStackTrace(System.out);
           if (noErrors) {
             System.out.println(Thread.currentThread().getName() + ": ERROR: unexpected Throwable:");
             t.printStackTrace(System.out);
@@ -2300,7 +2314,7 @@ public class TestIndexWriter extends LuceneTestCase
   public void testCloseWithThreads() throws IOException {
     int NUM_THREADS = 3;
 
-    for(int iter=0;iter<50;iter++) {
+    for(int iter=0;iter<20;iter++) {
       MockRAMDirectory dir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
@@ -2310,7 +2324,6 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMergeFactor(4);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
-      boolean diskFull = false;
 
       for(int i=0;i<NUM_THREADS;i++)
         threads[i] = new IndexerThread(writer, false);
@@ -2319,7 +2332,7 @@ public class TestIndexWriter extends LuceneTestCase
         threads[i].start();
 
       try {
-        Thread.sleep(50);
+        Thread.sleep(100);
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
       }
@@ -2403,7 +2416,6 @@ public class TestIndexWriter extends LuceneTestCase
       dir.setMaxSizeInBytes(4*1024+20*iter);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
-      boolean diskFull = false;
 
       for(int i=0;i<NUM_THREADS;i++)
         threads[i] = new IndexerThread(writer, true);
@@ -2441,7 +2453,7 @@ public class TestIndexWriter extends LuceneTestCase
   private static class FailOnlyOnAbortOrFlush extends MockRAMDirectory.Failure {
     private boolean onlyOnce;
     public FailOnlyOnAbortOrFlush(boolean onlyOnce) {
-      this.onlyOnce = true;
+      this.onlyOnce = onlyOnce;
     }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
@@ -2501,7 +2513,6 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMergeFactor(4);
 
       IndexerThread[] threads = new IndexerThread[NUM_THREADS];
-      boolean diskFull = false;
 
       for(int i=0;i<NUM_THREADS;i++)
         threads[i] = new IndexerThread(writer, true);
@@ -2538,6 +2549,8 @@ public class TestIndexWriter extends LuceneTestCase
         writer.close(false);
         success = true;
       } catch (IOException ioe) {
+        failure.clearDoFail();
+        writer.close(false);
       }
 
       if (success) {
@@ -2583,7 +2596,7 @@ public class TestIndexWriter extends LuceneTestCase
   private static class FailOnlyInCloseDocStore extends MockRAMDirectory.Failure {
     private boolean onlyOnce;
     public FailOnlyInCloseDocStore(boolean onlyOnce) {
-      this.onlyOnce = true;
+      this.onlyOnce = onlyOnce;
     }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
@@ -2623,7 +2636,7 @@ public class TestIndexWriter extends LuceneTestCase
   private static class FailOnlyInWriteSegment extends MockRAMDirectory.Failure {
     private boolean onlyOnce;
     public FailOnlyInWriteSegment(boolean onlyOnce) {
-      this.onlyOnce = true;
+      this.onlyOnce = onlyOnce;
     }
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
@@ -2678,6 +2691,125 @@ public class TestIndexWriter extends LuceneTestCase
     IndexReader reader = IndexReader.open(dir);
     Term t = new Term("field", "x");
     assertEquals(1, reader.docFreq(t));
+    reader.close();
+    dir.close();
+  }
+
+  // LUCENE-1044: Simulate checksum error in segments_N
+  public void testSegmentsChecksumError() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter writer = null;
+
+    writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+
+    // add 100 documents
+    for (int i = 0; i < 100; i++) {
+      addDoc(writer);
+    }
+
+    // close
+    writer.close();
+
+    long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
+    assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+
+    final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
+    IndexInput in = dir.openInput(segmentsFileName);
+    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen));
+    out.copyBytes(in, in.length()-1);
+    byte b = in.readByte();
+    out.writeByte((byte) (1+b));
+    out.close();
+    in.close();
+
+    IndexReader reader = null;
+    try {
+      reader = IndexReader.open(dir);
+    } catch (IOException e) {
+      e.printStackTrace(System.out);
+      fail("segmentInfos failed to retry fallback to correct segments_N file");
+    }
+    reader.close();
+  }
+
+  // LUCENE-1044: test writer.commit() when ac=false
+  public void testForceCommit() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter writer  = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(5);
+
+    for (int i = 0; i < 23; i++)
+      addDoc(writer);
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+    writer.commit();
+    IndexReader reader2 = reader.reopen();
+    assertEquals(0, reader.numDocs());
+    assertEquals(23, reader2.numDocs());
+    reader.close();
+
+    for (int i = 0; i < 17; i++)
+      addDoc(writer);
+    assertEquals(23, reader2.numDocs());
+    reader2.close();
+    reader = IndexReader.open(dir);
+    assertEquals(23, reader.numDocs());
+    reader.close();
+    writer.commit();
+
+    reader = IndexReader.open(dir);
+    assertEquals(40, reader.numDocs());
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  // Throws IOException during MockRAMDirectory.sync
+  private static class FailOnlyInSync extends MockRAMDirectory.Failure {
+    boolean didFail;
+    public void eval(MockRAMDirectory dir)  throws IOException {
+      if (doFail) {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if (doFail && "org.apache.lucene.store.MockRAMDirectory".equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
+            didFail = true;
+            throw new IOException("now failing on purpose during sync");
+          }
+        }
+      }
+    }
+  }
+
+  // LUCENE-1044: test exception during sync
+  public void testExceptionDuringSync() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    FailOnlyInSync failure = new FailOnlyInSync();
+    dir.failOn(failure);
+
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    failure.setDoFail();
+
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    // We expect sync exceptions in the merge threads
+    cms.setSuppressExceptions();
+    writer.setMergeScheduler(cms);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(5);
+
+    for (int i = 0; i < 23; i++)
+      addDoc(writer);
+
+    cms.sync();
+    assertTrue(failure.didFail);
+    failure.clearDoFail();
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(23, reader.numDocs());
     reader.close();
     dir.close();
   }

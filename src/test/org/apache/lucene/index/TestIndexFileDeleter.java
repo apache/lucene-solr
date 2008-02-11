@@ -18,17 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import java.util.Vector;
-import java.util.Arrays;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.IOException;
-import java.io.File;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -77,8 +68,8 @@ public class TestIndexFileDeleter extends LuceneTestCase
     String[] files = dir.list();
 
     /*
-    for(int i=0;i<files.length;i++) {
-      System.out.println(i + ": " + files[i]);
+    for(int j=0;j<files.length;j++) {
+      System.out.println(j + ": " + files[j]);
     }
     */
 
@@ -145,8 +136,8 @@ public class TestIndexFileDeleter extends LuceneTestCase
     copyFile(dir, "_0.cfs", "deletable");
 
     // Create some old segments file:
-    copyFile(dir, "segments_a", "segments");
-    copyFile(dir, "segments_a", "segments_2");
+    copyFile(dir, "segments_3", "segments");
+    copyFile(dir, "segments_3", "segments_2");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
     copyFile(dir, "_2.cfs", "_3.cfs");

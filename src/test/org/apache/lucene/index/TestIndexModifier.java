@@ -202,7 +202,7 @@ public class TestIndexModifier extends LuceneTestCase {
 
 class IndexThread extends Thread {
 
-  private final static int ITERATIONS = 500;       // iterations of thread test
+  private final static int TEST_SECONDS = 3;       // how many seconds to run each test 
 
   static int id = 0;
   static Stack idStack = new Stack();
@@ -224,8 +224,10 @@ class IndexThread extends Thread {
   }
   
   public void run() {
+
+    final long endTime = System.currentTimeMillis() + 1000*TEST_SECONDS;
     try {
-      for(int i = 0; i < ITERATIONS; i++) {
+      while(System.currentTimeMillis() < endTime) {
         int rand = random.nextInt(101);
         if (rand < 5) {
           index.optimize();

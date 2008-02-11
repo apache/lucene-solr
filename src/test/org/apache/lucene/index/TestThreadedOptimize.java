@@ -39,10 +39,10 @@ public class TestThreadedOptimize extends LuceneTestCase {
   private final static int NUM_THREADS = 3;
   //private final static int NUM_THREADS = 5;
 
-  private final static int NUM_ITER = 2;
+  private final static int NUM_ITER = 1;
   //private final static int NUM_ITER = 10;
 
-  private final static int NUM_ITER2 = 2;
+  private final static int NUM_ITER2 = 1;
   //private final static int NUM_ITER2 = 5;
 
   private boolean failed;
@@ -138,8 +138,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
   */
   public void testThreadedOptimize() throws Exception {
     Directory directory = new MockRAMDirectory();
-    runTest(directory, false, null);
-    runTest(directory, true, null);
+    runTest(directory, false, new SerialMergeScheduler());
+    runTest(directory, true, new SerialMergeScheduler());
     runTest(directory, false, new ConcurrentMergeScheduler());
     runTest(directory, true, new ConcurrentMergeScheduler());
     directory.close();
@@ -150,8 +150,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
     String dirName = tempDir + "/luceneTestThreadedOptimize";
     directory = FSDirectory.getDirectory(dirName);
-    runTest(directory, false, null);
-    runTest(directory, true, null);
+    runTest(directory, false, new SerialMergeScheduler());
+    runTest(directory, true, new SerialMergeScheduler());
     runTest(directory, false, new ConcurrentMergeScheduler());
     runTest(directory, true, new ConcurrentMergeScheduler());
     directory.close();

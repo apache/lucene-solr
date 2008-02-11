@@ -819,10 +819,16 @@
                     IsCompoundFile&gt;<sup>SegCount</sup>
                 </p>
                 <p>
-                    <b>2.3 and above:</b>
+                    <b>2.3:</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile&gt;<sup>SegCount</sup>
+                </p>
+                <p>
+                    <b>2.4 and above:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
+                    NormGen<sup>NumField</sup>,
+                    IsCompoundFile&gt;<sup>SegCount</sup>, Checksum
                 </p>
 
                 <p>
@@ -830,7 +836,7 @@
                 </p>
 
                 <p>
-                    Version, DelGen, NormGen --&gt; Int64
+                    Version, DelGen, NormGen, Checksum --&gt; Int64
                 </p>
 
                 <p>
@@ -842,7 +848,7 @@
                 </p>
 
                 <p>
-                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, and -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3
+                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3 and -5 (SegmentInfos.FORMAT_CHECKSUM) as of Lucene 2.4.
                 </p>
 
                 <p>
@@ -925,6 +931,13 @@
                     shares a single set of these files with other
                     segments.
                 </p>
+
+                <p>
+		    Checksum contains the CRC32 checksum of all bytes
+		    in the segments_N file up until the checksum.
+		    This is used to verify integrity of the file on
+		    opening the index.
+		</p>
 		
 
             </section>

@@ -20,11 +20,8 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
-
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.io.File;
@@ -123,6 +120,7 @@ public class TestStressIndexing extends LuceneTestCase {
     modifier.setMaxBufferedDocs(10);
 
     TimedThread[] threads = new TimedThread[4];
+    int numThread = 0;
 
     if (mergeScheduler != null)
       modifier.setMergeScheduler(mergeScheduler);
@@ -130,34 +128,30 @@ public class TestStressIndexing extends LuceneTestCase {
     // One modifier that writes 10 docs then removes 5, over
     // and over:
     IndexerThread indexerThread = new IndexerThread(modifier, threads);
-    threads[0] = indexerThread;
+    threads[numThread++] = indexerThread;
     indexerThread.start();
-      
+    
     IndexerThread indexerThread2 = new IndexerThread(modifier, threads);
-    threads[2] = indexerThread2;
+    threads[numThread++] = indexerThread2;
     indexerThread2.start();
       
     // Two searchers that constantly just re-instantiate the
     // searcher:
     SearcherThread searcherThread1 = new SearcherThread(directory, threads);
-    threads[3] = searcherThread1;
+    threads[numThread++] = searcherThread1;
     searcherThread1.start();
 
     SearcherThread searcherThread2 = new SearcherThread(directory, threads);
-    threads[3] = searcherThread2;
+    threads[numThread++] = searcherThread2;
     searcherThread2.start();
 
-    indexerThread.join();
-    indexerThread2.join();
-    searcherThread1.join();
-    searcherThread2.join();
+    for(int i=0;i<numThread;i++)
+      threads[i].join();
 
     modifier.close();
 
-    assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
-    assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);
-    assertTrue("hit unexpected exception in search1", !searcherThread1.failed);
-    assertTrue("hit unexpected exception in search2", !searcherThread2.failed);
+    for(int i=0;i<numThread;i++)
+      assertTrue(!((TimedThread) threads[i]).failed);
 
     //System.out.println("    Writer: " + indexerThread.count + " iterations");
     //System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");

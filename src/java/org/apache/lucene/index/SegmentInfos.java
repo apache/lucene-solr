@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.ChecksumIndexOutput;
+import org.apache.lucene.store.ChecksumIndexInput;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -55,8 +57,12 @@ final class SegmentInfos extends Vector {
    * vectors and stored fields file. */
   public static final int FORMAT_SHARED_DOC_STORE = -4;
 
+  /** This format adds a checksum at the end of the file to
+   *  ensure all bytes were successfully written. */
+  public static final int FORMAT_CHECKSUM = -5;
+
   /* This must always point to the most recent file format. */
-  private static final int CURRENT_FORMAT = FORMAT_SHARED_DOC_STORE;
+  private static final int CURRENT_FORMAT = FORMAT_CHECKSUM;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -197,7 +203,7 @@ final class SegmentInfos extends Vector {
     // Clear any previous segments:
     clear();
 
-    IndexInput input = directory.openInput(segmentFileName);
+    ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName));
 
     generation = generationFromSegmentsFileName(segmentFileName);
 
@@ -225,6 +231,13 @@ final class SegmentInfos extends Vector {
           version = System.currentTimeMillis(); // old file format without version number
         else
           version = input.readLong(); // read version
+      }
+
+      if (format <= FORMAT_CHECKSUM) {
+        final long checksumNow = input.getChecksum();
+        final long checksumThen = input.readLong();
+        if (checksumNow != checksumThen)
+          throw new CorruptIndexException("checksum mismatch in segments file");
       }
       success = true;
     }
@@ -257,7 +270,7 @@ final class SegmentInfos extends Vector {
     }.run();
   }
 
-  public final void write(Directory directory) throws IOException {
+  private final void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
 
@@ -268,7 +281,7 @@ final class SegmentInfos extends Vector {
       generation++;
     }
 
-    IndexOutput output = directory.createOutput(segmentFileName);
+    ChecksumIndexOutput output = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
 
     boolean success = false;
 
@@ -280,29 +293,31 @@ final class SegmentInfos extends Vector {
       output.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
         info(i).write(output);
-      }         
-    }
-    finally {
+      }
+      final long checksum = output.getChecksum();
+      output.writeLong(checksum);
+      success = true;
+    } finally {
+      boolean success2 = false;
       try {
         output.close();
-        success = true;
+        success2 = true;
       } finally {
-        if (!success) {
+        if (!success || !success2)
           // Try not to leave a truncated segments_N file in
           // the index:
           directory.deleteFile(segmentFileName);
-        }
       }
     }
 
     try {
-      output = directory.createOutput(IndexFileNames.SEGMENTS_GEN);
+      IndexOutput genOutput = directory.createOutput(IndexFileNames.SEGMENTS_GEN);
       try {
-        output.writeInt(FORMAT_LOCKLESS);
-        output.writeLong(generation);
-        output.writeLong(generation);
+        genOutput.writeInt(FORMAT_LOCKLESS);
+        genOutput.writeLong(generation);
+        genOutput.writeLong(generation);
       } finally {
-        output.close();
+        genOutput.close();
       }
     } catch (IOException e) {
       // It's OK if we fail to write this file since it's
@@ -620,7 +635,7 @@ final class SegmentInfos extends Vector {
             retry = true;
           }
 
-        } else {
+        } else if (0 == method) {
           // Segment file has advanced since our last loop, so
           // reset retry:
           retry = false;
@@ -700,5 +715,51 @@ final class SegmentInfos extends Vector {
     SegmentInfos infos = new SegmentInfos();
     infos.addAll(super.subList(first, last));
     return infos;
+  }
+
+  // Carry over generation numbers from another SegmentInfos
+  void updateGeneration(SegmentInfos other) {
+    assert other.generation > generation;
+    lastGeneration = other.lastGeneration;
+    generation = other.generation;
+  }
+
+  /** Writes & syncs to the Directory dir, taking care to
+   *  remove the segments file on exception */
+  public final void commit(Directory dir) throws IOException {
+    boolean success = false;
+    try {
+      write(dir);
+      success = true;
+    } finally {
+      if (!success) {
+        // Must carefully compute fileName from "generation"
+        // since lastGeneration isn't incremented:
+        final String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
+                                                                             "",
+                                                                             generation);
+        dir.deleteFile(segmentFileName);
+      }
+    }
+
+    // NOTE: if we crash here, we have left a segments_N
+    // file in the directory in a possibly corrupt state (if
+    // some bytes made it to stable storage and others
+    // didn't).  But, the segments_N file now includes
+    // checksum at the end, which should catch this case.
+    // So when a reader tries to read it, it will throw a
+    // CorruptIndexException, which should cause the retry
+    // logic in SegmentInfos to kick in and load the last
+    // good (previous) segments_N-1 file.
+
+    final String fileName = getCurrentSegmentFileName();
+    success = false;
+    try {
+      dir.sync(fileName);
+      success = true;
+    } finally {
+      if (!success)
+        dir.deleteFile(fileName);
+    }
   }
 }

@@ -435,6 +435,39 @@ public class FSDirectory extends Directory {
     return new FSIndexOutput(file);
   }
 
+  public void sync(String name) throws IOException {
+    File fullFile = new File(directory, name);
+    boolean success = false;
+    int retryCount = 0;
+    IOException exc = null;
+    while(!success && retryCount < 5) {
+      retryCount++;
+      RandomAccessFile file = null;
+      try {
+        try {
+          file = new RandomAccessFile(fullFile, "rw");
+          file.getFD().sync();
+          success = true;
+        } finally {
+          if (file != null)
+            file.close();
+        }
+      } catch (IOException ioe) {
+        if (exc == null)
+          exc = ioe;
+        try {
+          // Pause 5 msec
+          Thread.sleep(5);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+    if (!success)
+      // Throw original exception
+      throw exc;
+  }
+
   // Inherit javadoc
   public IndexInput openInput(String name) throws IOException {
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);

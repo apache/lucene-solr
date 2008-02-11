@@ -32,13 +32,20 @@ import java.util.Collection;
 
 /*
  * This class keeps track of each SegmentInfos instance that
- * is still "live", either because it corresponds to a 
- * segments_N file in the Directory (a "commit", i.e. a 
- * committed SegmentInfos) or because it's the in-memory SegmentInfos 
- * that a writer is actively updating but has not yet committed 
- * (currently this only applies when autoCommit=false in IndexWriter).
- * This class uses simple reference counting to map the live
- * SegmentInfos instances to individual files in the Directory. 
+ * is still "live", either because it corresponds to a
+ * segments_N file in the Directory (a "commit", i.e. a
+ * committed SegmentInfos) or because it's an in-memory
+ * SegmentInfos that a writer is actively updating but has
+ * not yet committed.  This class uses simple reference
+ * counting to map the live SegmentInfos instances to
+ * individual files in the Directory.
+ *
+ * When autoCommit=true, IndexWriter currently commits only
+ * on completion of a merge (though this may change with
+ * time: it is not a guarantee).  When autoCommit=false,
+ * IndexWriter only commits when it is closed.  Regardless
+ * of autoCommit, the user may call IndexWriter.commit() to
+ * force a blocking commit.
  * 
  * The same directory file may be referenced by more than
  * one IndexCommitPoints, i.e. more than one SegmentInfos.
@@ -260,7 +267,7 @@ final class IndexFileDeleter {
       for(int i=0;i<size;i++) {
         CommitPoint commit = (CommitPoint) commitsToDelete.get(i);
         if (infoStream != null) {
-          message("deleteCommits: now remove commit \"" + commit.getSegmentsFileName() + "\"");
+          message("deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
         int size2 = commit.files.size();
         for(int j=0;j<size2;j++) {
@@ -382,13 +389,6 @@ final class IndexFileDeleter {
 
     // Incref the files:
     incRef(segmentInfos, isCommit);
-    final List docWriterFiles;
-    if (docWriter != null) {
-      docWriterFiles = docWriter.files();
-      if (docWriterFiles != null)
-        incRef(docWriterFiles);
-    } else
-      docWriterFiles = null;
 
     if (isCommit) {
       // Append to our commits list:
@@ -399,17 +399,27 @@ final class IndexFileDeleter {
 
       // Decref files for commits that were deleted by the policy:
       deleteCommits();
-    }
+    } else {
 
-    // DecRef old files from the last checkpoint, if any:
-    int size = lastFiles.size();
-    if (size > 0) {
-      for(int i=0;i<size;i++)
-        decRef((List) lastFiles.get(i));
-      lastFiles.clear();
-    }
+      final List docWriterFiles;
+      if (docWriter != null) {
+        docWriterFiles = docWriter.files();
+        if (docWriterFiles != null)
+          // We must incRef thes files before decRef'ing
+          // last files to make sure we don't accidentally
+          // delete them:
+          incRef(docWriterFiles);
+      } else
+        docWriterFiles = null;
 
-    if (!isCommit) {
+      // DecRef old files from the last checkpoint, if any:
+      int size = lastFiles.size();
+      if (size > 0) {
+        for(int i=0;i<size;i++)
+          decRef((List) lastFiles.get(i));
+        lastFiles.clear();
+      }
+
       // Save files so we can decr on next checkpoint/commit:
       size = segmentInfos.size();
       for(int i=0;i<size;i++) {
@@ -418,9 +428,9 @@ final class IndexFileDeleter {
           lastFiles.add(segmentInfo.files());
         }
       }
+      if (docWriterFiles != null)
+        lastFiles.add(docWriterFiles);
     }
-    if (docWriterFiles != null)
-      lastFiles.add(docWriterFiles);
   }
 
   void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
@@ -458,7 +468,7 @@ final class IndexFileDeleter {
     }
   }
 
-  private void decRef(String fileName) throws IOException {
+  void decRef(String fileName) throws IOException {
     RefCount rc = getRefCount(fileName);
     if (infoStream != null && VERBOSE_REF_COUNTS) {
       message("  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);

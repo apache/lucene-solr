@@ -270,13 +270,10 @@ public class TestDeletionPolicy extends LuceneTestCase
       writer.close();
 
       assertEquals(2, policy.numOnInit);
-      if (autoCommit) {
-        assertTrue(policy.numOnCommit > 2);
-      } else {
+      if (!autoCommit)
         // If we are not auto committing then there should
         // be exactly 2 commits (one per close above):
         assertEquals(2, policy.numOnCommit);
-      }
 
       // Simplistic check: just verify all segments_N's still
       // exist, and, I can open a reader on each:
@@ -334,13 +331,10 @@ public class TestDeletionPolicy extends LuceneTestCase
       writer.close();
 
       assertEquals(2, policy.numOnInit);
-      if (autoCommit) {
-        assertTrue(policy.numOnCommit > 2);
-      } else {
+      if (!autoCommit)
         // If we are not auto committing then there should
         // be exactly 2 commits (one per close above):
         assertEquals(2, policy.numOnCommit);
-      }
 
       // Simplistic check: just verify the index is in fact
       // readable:
@@ -459,11 +453,8 @@ public class TestDeletionPolicy extends LuceneTestCase
       writer.close();
 
       assertEquals(2*(N+2), policy.numOnInit);
-      if (autoCommit) {
-        assertTrue(policy.numOnCommit > 2*(N+2)-1);
-      } else {
+      if (!autoCommit)
         assertEquals(2*(N+2)-1, policy.numOnCommit);
-      }
 
       IndexSearcher searcher = new IndexSearcher(dir);
       Hits hits = searcher.search(query);
@@ -565,11 +556,8 @@ public class TestDeletionPolicy extends LuceneTestCase
       }
 
       assertEquals(1+3*(N+1), policy.numOnInit);
-      if (autoCommit) {
-        assertTrue(policy.numOnCommit > 3*(N+1)-1);
-      } else {
+      if (!autoCommit)
         assertEquals(2*(N+1), policy.numOnCommit);
-      }
 
       IndexSearcher searcher = new IndexSearcher(dir);
       Hits hits = searcher.search(query);

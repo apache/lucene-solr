@@ -20,12 +20,8 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
-import org.apache.lucene.util._TestUtil;
-
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.io.File;
@@ -83,7 +79,6 @@ public class TestAtomicUpdate extends LuceneTestCase {
       // Update all 100 docs...
       for(int i=0; i<100; i++) {
         Document d = new Document();
-        int n = RANDOM.nextInt();
         d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
         d.add(new Field("contents", English.intToEnglish(i+10*count), Field.Store.NO, Field.Index.TOKENIZED));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
@@ -127,7 +122,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
       d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.TOKENIZED));
       writer.addDocument(d);
     }
-    writer.flush();
+    writer.commit();
 
     IndexerThread indexerThread = new IndexerThread(writer, threads);
     threads[0] = indexerThread;

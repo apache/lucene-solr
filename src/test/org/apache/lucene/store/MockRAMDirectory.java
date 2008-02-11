@@ -24,7 +24,10 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This is a subclass of RAMDirectory that adds methods
@@ -40,6 +43,10 @@ public class MockRAMDirectory extends RAMDirectory {
   double randomIOExceptionRate;
   Random randomState;
   boolean noDeleteOpenFile = true;
+  boolean preventDoubleWrite = true;
+  private Set unSyncedFiles;
+  private Set createdFiles;
+  volatile boolean crashed;
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
@@ -47,29 +54,78 @@ public class MockRAMDirectory extends RAMDirectory {
   // like super is called, then our members are initialized:
   Map openFiles;
 
+  private void init() {
+    if (openFiles == null)
+      openFiles = new HashMap();
+    if (createdFiles == null)
+      createdFiles = new HashSet();
+    if (unSyncedFiles == null)
+      unSyncedFiles = new HashSet();
+  }
+
   public MockRAMDirectory() {
     super();
-    if (openFiles == null) {
-      openFiles = new HashMap();
-    }
+    init();
   }
   public MockRAMDirectory(String dir) throws IOException {
     super(dir);
-    if (openFiles == null) {
-      openFiles = new HashMap();
-    }
+    init();
   }
   public MockRAMDirectory(Directory dir) throws IOException {
     super(dir);
-    if (openFiles == null) {
-      openFiles = new HashMap();
-    }
+    init();
   }
   public MockRAMDirectory(File dir) throws IOException {
     super(dir);
-    if (openFiles == null) {
+    init();
+  }
+
+  /** If set to true, we throw an IOException if the same
+   *  file is opened by createOutput, ever. */
+  public void setPreventDoubleWrite(boolean value) {
+    preventDoubleWrite = value;
+  }
+
+  public synchronized void sync(String name) throws IOException {
+    maybeThrowDeterministicException();
+    if (crashed)
+      throw new IOException("cannot sync after crash");
+    if (unSyncedFiles.contains(name))
+      unSyncedFiles.remove(name);
+  }
+
+  /** Simulates a crash of OS or machine by overwriting
+   *  unsycned files. */
+  public void crash() throws IOException {
+    synchronized(this) {
+      crashed = true;
       openFiles = new HashMap();
     }
+    Iterator it = unSyncedFiles.iterator();
+    unSyncedFiles = new HashSet();
+    int count = 0;
+    while(it.hasNext()) {
+      String name = (String) it.next();
+      RAMFile file = (RAMFile) fileMap.get(name);
+      if (count % 3 == 0) {
+        deleteFile(name, true);
+      } else if (count % 3 == 1) {
+        // Zero out file entirely
+        final int numBuffers = file.numBuffers();
+        for(int i=0;i<numBuffers;i++) {
+          byte[] buffer = file.getBuffer(i);
+          Arrays.fill(buffer, (byte) 0);
+        }
+      } else if (count % 3 == 2) {
+        // Truncate the file:
+        file.setLength(file.getLength()/2);
+      }
+      count++;
+    }
+  }
+
+  public synchronized void clearCrash() throws IOException {
+    crashed = false;
   }
 
   public void setMaxSizeInBytes(long maxSize) {
@@ -126,24 +182,41 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   public synchronized void deleteFile(String name) throws IOException {
-    synchronized(openFiles) {
-      if (noDeleteOpenFile && openFiles.containsKey(name)) {
-        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
+    deleteFile(name, false);
+  }
+
+  private synchronized void deleteFile(String name, boolean forced) throws IOException {
+    if (crashed && !forced)
+      throw new IOException("cannot delete after crash");
+
+    if (unSyncedFiles.contains(name))
+      unSyncedFiles.remove(name);
+    if (!forced) {
+      synchronized(openFiles) {
+        if (noDeleteOpenFile && openFiles.containsKey(name)) {
+          throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
+        }
       }
     }
     super.deleteFile(name);
   }
 
   public IndexOutput createOutput(String name) throws IOException {
-    if (openFiles == null) {
-      openFiles = new HashMap();
-    }
+    if (crashed)
+      throw new IOException("cannot createOutput after crash");
+    init();
     synchronized(openFiles) {
+      if (preventDoubleWrite && createdFiles.contains(name))
+        throw new IOException("file \"" + name + "\" was already written to");
       if (noDeleteOpenFile && openFiles.containsKey(name))
        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
     }
     RAMFile file = new RAMFile(this);
     synchronized (this) {
+      if (crashed)
+        throw new IOException("cannot createOutput after crash");
+      unSyncedFiles.add(name);
+      createdFiles.add(name);
       RAMFile existing = (RAMFile)fileMap.get(name);
       // Enforce write once:
       if (existing!=null && !name.equals("segments.gen"))

@@ -83,6 +83,11 @@ public abstract class Directory {
       Returns a stream writing this file. */
   public abstract IndexOutput createOutput(String name) throws IOException;
 
+  /** Ensure that any writes to this file are moved to
+   *  stable storage.  Lucene uses this to properly commit
+   *  changes to the index, to prevent a machine/OS crash
+   *  from corrupting the index. */
+  public void sync(String name) throws IOException {}
 
   /** Returns a stream reading an existing file. */
   public abstract IndexInput openInput(String name)

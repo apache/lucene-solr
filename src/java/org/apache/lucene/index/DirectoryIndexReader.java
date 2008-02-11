@@ -19,6 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import java.util.HashSet;
+import java.util.List;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -37,6 +40,7 @@ abstract class DirectoryIndexReader extends IndexReader {
   private SegmentInfos segmentInfos;
   private Lock writeLock;
   private boolean stale;
+  private HashSet synced = new HashSet();
 
   /** Used by commit() to record pre-commit state in case
    * rollback is necessary */
@@ -44,16 +48,28 @@ abstract class DirectoryIndexReader extends IndexReader {
   private SegmentInfos rollbackSegmentInfos;
 
   
-  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory) {
+  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory)
+    throws IOException {
     this.directory = directory;
     this.segmentInfos = segmentInfos;
     this.closeDirectory = closeDirectory;
+
+    if (segmentInfos != null) {
+      // We assume that this segments_N was previously
+      // properly sync'd:
+      for(int i=0;i<segmentInfos.size();i++) {
+        final SegmentInfo info = segmentInfos.info(i);
+        List files = info.files();
+        for(int j=0;j<files.size();j++)
+          synced.add(files.get(j));
+      }
+    }
   }
   
   protected DirectoryIndexReader() {}
   
   DirectoryIndexReader(Directory directory, SegmentInfos segmentInfos,
-      boolean closeDirectory) {
+      boolean closeDirectory) throws IOException {
     super();
     init(directory, segmentInfos, closeDirectory);
   }
@@ -190,7 +206,22 @@ abstract class DirectoryIndexReader extends IndexReader {
         boolean success = false;
         try {
           commitChanges();
-          segmentInfos.write(directory);
+
+          // Sync all files we just wrote
+          for(int i=0;i<segmentInfos.size();i++) {
+            final SegmentInfo info = segmentInfos.info(i);
+            final List files = info.files();
+            for(int j=0;j<files.size();j++) {
+              final String fileName = (String) files.get(j);
+              if (!synced.contains(fileName)) {
+                assert directory.fileExists(fileName);
+                directory.sync(fileName);
+                synced.add(fileName);
+              }
+            }
+          }
+
+          segmentInfos.commit(directory);
           success = true;
         } finally {
 

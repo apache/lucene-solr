@@ -463,7 +463,7 @@ public class TestIndexReader extends LuceneTestCase
         fileDirName.mkdir();
       }
       try {
-        IndexReader reader = IndexReader.open(fileDirName);
+        IndexReader.open(fileDirName);
         fail("opening IndexReader on empty directory failed to produce FileNotFoundException");
       } catch (FileNotFoundException e) {
         // GOOD
@@ -779,6 +779,11 @@ public class TestIndexReader extends LuceneTestCase
       // Iterate w/ ever increasing free disk space:
       while(!done) {
         MockRAMDirectory dir = new MockRAMDirectory(startDir);
+
+        // If IndexReader hits disk full, it can write to
+        // the same files again.
+        dir.setPreventDoubleWrite(false);
+
         IndexReader reader = IndexReader.open(dir);
 
         // For each disk size, first try to commit against
@@ -838,6 +843,7 @@ public class TestIndexReader extends LuceneTestCase
           } catch (IOException e) {
             if (debug) {
               System.out.println("  hit IOException: " + e);
+              e.printStackTrace(System.out);
             }
             err = e;
             if (1 == x) {
@@ -855,7 +861,7 @@ public class TestIndexReader extends LuceneTestCase
           String[] startFiles = dir.list();
           SegmentInfos infos = new SegmentInfos();
           infos.read(dir);
-          IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
           String[] endFiles = dir.list();
 
           Arrays.sort(startFiles);
@@ -1030,7 +1036,7 @@ public class TestIndexReader extends LuceneTestCase
                           "deletetest");
       Directory dir = FSDirectory.getDirectory(dirFile);
       try {
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
@@ -1040,7 +1046,7 @@ public class TestIndexReader extends LuceneTestCase
 
       // Make sure we still get a CorruptIndexException (not NPE):
       try {
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader.open(dir);
         fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
