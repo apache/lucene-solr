@@ -3698,8 +3698,13 @@ public class IndexWriter {
 
       // Maybe force a sync here to allow reclaiming of the
       // disk space used by the segments we just merged:
-      if (autoCommit && doCommitBeforeMergeCFS(merge))
-        sync(false, merge.info.sizeInBytes());
+      if (autoCommit && doCommitBeforeMergeCFS(merge)) {
+        final long size;
+        synchronized(this) {
+          size = merge.info.sizeInBytes();
+        }
+        sync(false, size);
+      }
       
       success = false;
       final String compoundFileName = mergedName + "." + IndexFileNames.COMPOUND_FILE_EXTENSION;
@@ -3746,8 +3751,13 @@ public class IndexWriter {
     // (somewhat arbitrary) policy; we could try other
     // policies like only sync if it's been > X minutes or
     // more than Y bytes have been written, etc.
-    if (autoCommit)
-      sync(false, merge.info.sizeInBytes());
+    if (autoCommit) {
+      final long size;
+      synchronized(this) {
+        size = merge.info.sizeInBytes();
+      }
+      sync(false, size);
+    }
 
     return mergedDocCount;
   }
