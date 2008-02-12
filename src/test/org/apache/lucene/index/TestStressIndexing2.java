@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
@@ -38,9 +40,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
 
   public void testRandom() throws Exception {
-    Directory dir1 = new RAMDirectory();
+    Directory dir1 = new MockRAMDirectory();
     // dir1 = FSDirectory.getDirectory("foofoofoo");
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = new MockRAMDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     Map docs = indexRandom(10, 100, 100, dir1);
     indexSerial(docs, dir2);
@@ -50,6 +52,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
     // verifyEquals(dir2, dir2, "id");
 
     verifyEquals(dir1, dir2, "id");
+  }
+
+  private void checkIndex(Directory dir) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex.out = new PrintStream(bos);
+    if (!CheckIndex.check(dir, false, null)) {
+      System.out.println("CheckIndex failed");
+      System.out.println(bos.toString());
+      fail("CheckIndex failed");
+    }
   }
 
   public void testMultiConfig() throws Exception {
@@ -65,8 +77,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
       int iter=r.nextInt(10)+1;
       int range=r.nextInt(20)+1;
 
-      Directory dir1 = new RAMDirectory();
-      Directory dir2 = new RAMDirectory();
+      Directory dir1 = new MockRAMDirectory();
+      Directory dir2 = new MockRAMDirectory();
       Map docs = indexRandom(nThreads, iter, range, dir1);
       indexSerial(docs, dir2);
       verifyEquals(dir1, dir2, "id");
@@ -87,7 +99,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   // everything.
 
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
-    IndexWriter w = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+    IndexWriter w = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     w.setUseCompoundFile(false);
     /***
     w.setMaxMergeDocs(Integer.MAX_VALUE);
@@ -128,6 +140,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
         docs.putAll(th.docs);
       }
     }
+
+    checkIndex(dir);
 
     return docs;
   }
@@ -195,7 +209,27 @@ public class TestStressIndexing2 extends LuceneTestCase {
       r2r1[id2] = id1;
 
       // verify stored fields are equivalent
-     verifyEquals(r1.document(id1), r2.document(id2));
+      verifyEquals(r1.document(id1), r2.document(id2));
+
+      try {
+        // verify term vectors are equivalent        
+        verifyEquals(r1.getTermFreqVectors(id1), r2.getTermFreqVectors(id2));
+      } catch (java.lang.Error e) {
+        System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2);
+        TermFreqVector[] tv1 = r1.getTermFreqVectors(id1);
+        System.out.println("  d1=" + tv1);
+        if (tv1 != null)
+          for(int i=0;i<tv1.length;i++)
+            System.out.println("    " + i + ": " + tv1[i]);
+        
+        TermFreqVector[] tv2 = r2.getTermFreqVectors(id2);
+        System.out.println("  d2=" + tv2);
+        if (tv2 != null)
+          for(int i=0;i<tv2.length;i++)
+            System.out.println("    " + i + ": " + tv2[i]);
+        
+        throw e;
+      }
 
     } while (termEnum.next());
 
@@ -300,6 +334,55 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
+  public static void verifyEquals(TermFreqVector[] d1, TermFreqVector[] d2) {
+    if (d1 == null) {
+      assertTrue(d2 == null);
+      return;
+    }
+    assertTrue(d2 != null);
+
+    assertEquals(d1.length, d2.length);
+    for(int i=0;i<d1.length;i++) {
+      TermFreqVector v1 = d1[i];
+      TermFreqVector v2 = d2[i];
+      assertEquals(v1.size(), v2.size());
+      int numTerms = v1.size();
+      String[] terms1 = v1.getTerms();
+      String[] terms2 = v2.getTerms();
+      int[] freq1 = v1.getTermFrequencies();
+      int[] freq2 = v2.getTermFrequencies();
+      for(int j=0;j<numTerms;j++) {
+        if (!terms1[j].equals(terms2[j]))
+          assertEquals(terms1[j], terms2[j]);
+        assertEquals(freq1[j], freq2[j]);
+      }
+      if (v1 instanceof TermPositionVector) {
+        assertTrue(v2 instanceof TermPositionVector);
+        TermPositionVector tpv1 = (TermPositionVector) v1;
+        TermPositionVector tpv2 = (TermPositionVector) v2;
+        for(int j=0;j<numTerms;j++) {
+          int[] pos1 = tpv1.getTermPositions(j);
+          int[] pos2 = tpv2.getTermPositions(j);
+          assertEquals(pos1.length, pos2.length);
+          TermVectorOffsetInfo[] offsets1 = tpv1.getOffsets(j);
+          TermVectorOffsetInfo[] offsets2 = tpv2.getOffsets(j);
+          if (offsets1 == null)
+            assertTrue(offsets2 == null);
+          else
+            assertTrue(offsets2 != null);
+          for(int k=0;k<pos1.length;k++) {
+            assertEquals(pos1[k], pos2[k]);
+            if (offsets1 != null) {
+              assertEquals(offsets1[k].getStartOffset(),
+                           offsets2[k].getStartOffset());
+              assertEquals(offsets1[k].getEndOffset(),
+                           offsets2[k].getEndOffset());
+            }
+          }
+        }
+      }
+    }
+  }
 
   private static class IndexingThread extends Thread {
     IndexWriter w;
@@ -336,18 +419,35 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       int nFields = nextInt(maxFields);
       for (int i=0; i<nFields; i++) {
+
+        Field.TermVector tvVal = Field.TermVector.NO;
+        switch (nextInt(4)) {
+        case 0:
+          tvVal = Field.TermVector.NO;
+          break;
+        case 1:
+          tvVal = Field.TermVector.YES;
+          break;
+        case 2:
+          tvVal = Field.TermVector.WITH_POSITIONS;
+          break;
+        case 3:
+          tvVal = Field.TermVector.WITH_POSITIONS_OFFSETS;
+          break;
+        }
+        
         switch (nextInt(4)) {
           case 0:
-            fields.add(new Field("f0", getString(1), Field.Store.YES, Field.Index.NO_NORMS));
+            fields.add(new Field("f0", getString(1), Field.Store.YES, Field.Index.NO_NORMS, tvVal));
             break;
           case 1:
-            fields.add(new Field("f1", getString(0), Field.Store.NO, Field.Index.TOKENIZED));
+            fields.add(new Field("f1", getString(0), Field.Store.NO, Field.Index.TOKENIZED, tvVal));
             break;
           case 2:
-            fields.add(new Field("f2", getString(0), Field.Store.YES, Field.Index.NO));
+            fields.add(new Field("f2", getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
             break;
           case 3:
-            fields.add(new Field("f3", getString(bigFieldSize), Field.Store.YES, Field.Index.TOKENIZED));
+            fields.add(new Field("f3", getString(bigFieldSize), Field.Store.YES, Field.Index.TOKENIZED, tvVal));
             break;          
         }
       }

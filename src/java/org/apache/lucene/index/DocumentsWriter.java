@@ -258,7 +258,7 @@ final class DocumentsWriter {
     List flushedFiles = files();
 
     if (infoStream != null)
-      infoStream.println("\ncloseDocStore: " + flushedFiles.size() + " files to flush to segment " + docStoreSegment);
+      infoStream.println("\ncloseDocStore: " + flushedFiles.size() + " files to flush to segment " + docStoreSegment + " numDocs=" + numDocsInStore);
 
     if (flushedFiles.size() > 0) {
       files = null;
@@ -665,6 +665,8 @@ final class DocumentsWriter {
       // it means those files are possibly inconsistent.
       try {
 
+        numDocsInStore++;
+
         // Append stored fields to the real FieldsWriter:
         fieldsWriter.flushDocument(numStoredFields, fdtLocal);
         fdtLocal.reset();
@@ -888,10 +890,9 @@ final class DocumentsWriter {
 
             // We must "catch up" for all docs before us
             // that had no vectors:
-            final long tvdPos = tvd.getFilePointer();
-            tvd.writeVInt(0);
-            for(int i=0;i<numDocsInStore-1;i++) {
-              tvx.writeLong(tvdPos);
+            for(int i=0;i<numDocsInStore;i++) {
+              tvx.writeLong(tvd.getFilePointer());
+              tvd.writeVInt(0);
               tvx.writeLong(0);
             }
           } catch (Throwable t) {
@@ -2370,7 +2371,6 @@ final class DocumentsWriter {
       segment = writer.newSegmentName();
 
     numDocsInRAM++;
-    numDocsInStore++;
 
     // We must at this point commit to flushing to ensure we
     // always get N docs when we flush by doc count, even if

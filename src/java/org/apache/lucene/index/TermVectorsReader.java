@@ -96,7 +96,7 @@ class TermVectorsReader implements Cloneable {
           this.size = size;
           // Verify the file is long enough to hold all of our
           // docs
-          assert numTotalDocs >= size + docStoreOffset;
+          assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
         }
       } else
         format = 0;
