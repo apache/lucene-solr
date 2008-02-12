@@ -21,7 +21,7 @@ Bug fixes
     offset, int len) that was ignoring offset and thus giving the
     wrong answer.  (Thomas Peuss via Mike McCandless)
 	
- 5. LUCENE-1177: Fix rare case where IndexWriter.optimize might do doo
+ 5. LUCENE-1177: Fix rare case where IndexWriter.optimize might do too
     many merges at the end.  (Mike McCandless)
 	
 New features
