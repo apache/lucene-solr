@@ -99,6 +99,13 @@ New features
     with cached writes, the index remains consistent.  Also added
     explicit commit() method to IndexWriter to force a commit without
     having to close.  (Mike McCandless)
+    
+ 7. LUCENE-997: Add search timeout (partial) support.
+    A TimeLimitedCollector was added to allow limiting search time.
+    It is a partial solution since timeout is checked only when 
+    collecting a hit, and therefore a search for rare words in a 
+    huge index might not stop within the specified time.
+    (Sean Timm via Doron Cohen) 
 
 Optimizations
 
