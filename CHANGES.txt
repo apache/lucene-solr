@@ -11,6 +11,9 @@ Bug fixes
     documents have mixed term vectors (Suresh Guvvala via Mike
     McCandless).
 	
+ 2. LUCENE-1171: Fixed some cases where OOM errors could cause
+    deadlock in IndexWriter (Mike McCandless).
+	
 New features
 
 Optimizations
