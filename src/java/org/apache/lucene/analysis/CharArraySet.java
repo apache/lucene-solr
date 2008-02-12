@@ -66,7 +66,7 @@ public class CharArraySet extends AbstractSet {
   }
 
   private int getSlot(char[] text, int off, int len) {
-    int code = getHashCode(text, len);
+    int code = getHashCode(text, off, len);
     int pos = code & (entries.length-1);
     char[] text2 = entries[pos];
     if (text2 != null && !equals(text, off, len, text2)) {
@@ -175,14 +175,15 @@ public class CharArraySet extends AbstractSet {
     }
   }
   
-  private int getHashCode(char[] text, int len) {
+  private int getHashCode(char[] text, int offset, int len) {
     int code = 0;
+    final int stop = offset + len;
     if (ignoreCase) {
-      for (int i=0; i<len; i++) {
+      for (int i=offset; i<stop; i++) {
         code = code*31 + Character.toLowerCase(text[i]);
       }
     } else {
-      for (int i=0; i<len; i++) {
+      for (int i=offset; i<stop; i++) {
         code = code*31 + text[i];
       }
     }

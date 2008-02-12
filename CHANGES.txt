@@ -10,12 +10,16 @@ Bug fixes
  1. LUCENE-1168: Fixed corruption cases when autoCommit=false and
     documents have mixed term vectors (Suresh Guvvala via Mike
     McCandless).
-	
+
  2. LUCENE-1171: Fixed some cases where OOM errors could cause
     deadlock in IndexWriter (Mike McCandless).
 
  3. LUCENE-1173: Fixed corruption case when autoCommit=false and bulk
     merging of stored fields is used (Yonik via Mike McCandless).
+
+ 4. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
+    offset, int len) that was ignoring offset and thus giving the
+    wrong answer.  (Thomas Peuss via Mike McCandless)
 	
 New features
 
