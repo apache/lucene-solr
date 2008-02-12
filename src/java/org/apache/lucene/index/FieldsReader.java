@@ -201,7 +201,7 @@ final class FieldsReader {
     int count = 0;
     while (count < numDocs) {
       final long offset;
-      final int docID = startDocID + count + 1;
+      final int docID = docStoreOffset + startDocID + count + 1;
       assert docID <= numTotalDocs;
       if (docID < numTotalDocs) 
         offset = indexStream.readLong();
