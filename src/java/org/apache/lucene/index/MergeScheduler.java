@@ -22,7 +22,10 @@ import java.io.IOException;
 /** Expert: {@link IndexWriter} uses an instance
  *  implementing this interface to execute the merges
  *  selected by a {@link MergePolicy}.  The default
- *  MergeScheduler is {@link ConcurrentMergeScheduler}. */
+ *  MergeScheduler is {@link ConcurrentMergeScheduler}.
+ * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
+*/
 
 public abstract class MergeScheduler {
 

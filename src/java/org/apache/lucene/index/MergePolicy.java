@@ -50,6 +50,8 @@ import java.util.Set;
  * 
  * <p>The default MergePolicy is {@link
  * LogByteSizeMergePolicy}.</p>
+ * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
  */
 
 public abstract class MergePolicy {
