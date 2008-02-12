@@ -13,6 +13,9 @@ Bug fixes
 	
  2. LUCENE-1171: Fixed some cases where OOM errors could cause
     deadlock in IndexWriter (Mike McCandless).
+
+ 3. LUCENE-1173: Fixed corruption case when autoCommit=false and bulk
+    merging of stored fields is used (Yonik via Mike McCandless).
 	
 New features
 

@@ -195,7 +195,7 @@ final class FieldsReader {
    *  startDocID.  Returns the IndexInput (the fieldStream),
    *  already seeked to the starting point for startDocID.*/
   final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
-    indexStream.seek(startDocID * 8L);
+    indexStream.seek((docStoreOffset+startDocID) * 8L);
     long startOffset = indexStream.readLong();
     long lastOffset = startOffset;
     int count = 0;
