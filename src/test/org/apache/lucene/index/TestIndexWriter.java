@@ -2793,4 +2793,48 @@ public class TestIndexWriter extends LuceneTestCase
     reader.close();
     dir.close();
   }
+
+  // Just intercepts all merges & verifies that we are never
+  // merging a segment with >= 20 (maxMergeDocs) docs
+  private class MyIndexWriter extends IndexWriter {
+    int mergeCount;
+    Directory myDir;
+    public MyIndexWriter(Directory dir) throws IOException {
+      super(dir, new StandardAnalyzer());
+      myDir = dir;
+    }
+    synchronized MergePolicy.OneMerge getNextMerge() {
+      MergePolicy.OneMerge merge = super.getNextMerge();
+      if (merge != null)
+        mergeCount++;
+      return merge;
+    }
+  }
+
+  public void testOptimizeOverMerge() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         false, new StandardAnalyzer());
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(100);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
+
+    Document document = new Document();
+
+    document = new Document();
+    Field storedField = new Field("stored", "stored", Field.Store.YES,
+                                  Field.Index.NO);
+    document.add(storedField);
+    Field termVectorField = new Field("termVector", "termVector",
+                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.TermVector.WITH_POSITIONS_OFFSETS);
+    document.add(termVectorField);
+    for(int i=0;i<170;i++)
+      writer.addDocument(document);
+
+    writer.close();
+    MyIndexWriter myWriter = new MyIndexWriter(dir);
+    myWriter.optimize();
+    assertEquals(10, myWriter.mergeCount);
+  }
 }

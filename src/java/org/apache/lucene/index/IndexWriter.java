@@ -3039,6 +3039,11 @@ public class IndexWriter {
                                  docStoreOffset,
                                  docStoreSegment,
                                  docStoreIsCompoundFile);
+    // Also enroll the merged segment into mergingSegments;
+    // this prevents it from getting selected for a merge
+    // after our merge is done but while we are building the
+    // CFS:
+    mergingSegments.add(merge.info);
   }
 
   /** Does fininishing for a merge, which is fast but holds
@@ -3054,6 +3059,7 @@ public class IndexWriter {
     final int end = sourceSegments.size();
     for(int i=0;i<end;i++)
       mergingSegments.remove(sourceSegments.info(i));
+    mergingSegments.remove(merge.info);
     merge.registerDone = false;
   }
 
