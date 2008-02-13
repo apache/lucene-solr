@@ -36,8 +36,15 @@ import java.util.BitSet;
  * and (3) a sanity test with multiple searching threads.
  */
 public class TestTimeLimitedCollector extends LuceneTestCase {
-  private static final int SLOW_DOWN = 10;
-  private static final int N_DOCS = 2000;
+  private static final int SLOW_DOWN = 47;
+  private static final int TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
+  
+  // max time allowed is relaxed for multithreading tests. 
+  // the multithread case fails when setting this to 1 (no slack) and launching many threads (>2000).  
+  // but this is not a real failure, just noise.
+  private static final double MULTI_THREAD_SLACK = 3;      
+            
+  private static final int N_DOCS = 3000;
   private static final int N_THREADS = 50;
 
   private Searcher searcher;
@@ -76,6 +83,9 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     }
     QueryParser queryParser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
     query = queryParser.parse(qtxt);
+    
+    // warm the searcher
+    searcher.search(query);
 
   }
 
@@ -128,8 +138,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
   private void doTestTimeout(boolean multiThreaded) {
     MyHitCollector myHc = new MyHitCollector();
     myHc.setSlowDown(SLOW_DOWN);
-    long timeAllowed = timeAllowed(multiThreaded);
-    HitCollector tlCollector = new TimeLimitedCollector(myHc, timeAllowed);
+    HitCollector tlCollector = new TimeLimitedCollector(myHc, TIME_ALLOWED);
 
     TimeLimitedCollector.TimeExceededException exception = null;
     try {
@@ -142,19 +151,34 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     assertNotNull( "Timeout expected!", exception );
     assertTrue( "no hits found!", myHc.hitCount() > 0 );
     assertTrue( "last doc collected cannot be 0!", exception.getLastDocCollected() > 0 );
-    assertEquals( exception.getTimeAllowed(), timeAllowed);
-    assertTrue ( "elapsed="+exception.getTimeElapsed()+" <= (allowed-resolution)="+(timeAllowed-TimeLimitedCollector.getResolution()),
-        exception.getTimeElapsed() > timeAllowed-TimeLimitedCollector.getResolution());
-    assertTrue ( "lastDoc="+exception.getLastDocCollected()+" ,&& elapsed="+exception.getTimeElapsed()+
-        " >= (allowed+resolution+slowdown)="+(timeAllowed+TimeLimitedCollector.getResolution()+SLOW_DOWN),
-        exception.getTimeElapsed() < timeAllowed+TimeLimitedCollector.getResolution()+SLOW_DOWN);
+    assertEquals( exception.getTimeAllowed(), TIME_ALLOWED);
+    assertTrue ( "elapsed="+exception.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-TimeLimitedCollector.getResolution()),
+        exception.getTimeElapsed() > TIME_ALLOWED-TimeLimitedCollector.getResolution());
+    assertTrue ( "lastDoc="+exception.getLastDocCollected()+
+        " ,&& allowed="+exception.getTimeAllowed() +
+        " ,&& elapsed="+exception.getTimeElapsed() +
+        " >= " + maxTimeStr(multiThreaded),
+        exception.getTimeElapsed() < maxTime(multiThreaded));
   }
 
-  private long timeAllowed(boolean multiThreaded) {
-    if (!multiThreaded) {
-      return 2 * TimeLimitedCollector.getResolution() + SLOW_DOWN; // be on the safe side with this test
+  private long maxTime(boolean multiThreaded) {
+    long res = 2 * TimeLimitedCollector.getResolution() + TIME_ALLOWED + SLOW_DOWN; // some slack for less noise in this test
+    if (multiThreaded) {
+      res *= MULTI_THREAD_SLACK; // larger slack  
     }
-    return 3 * (TimeLimitedCollector.getResolution() + SLOW_DOWN); // even safer (avoid noise in tests)
+    return res;
+  }
+
+  private String maxTimeStr(boolean multiThreaded) {
+    String s =
+      "( " +
+      "2*resolution +  TIME_ALLOWED + SLOW_DOWN = " +
+      "2*" + TimeLimitedCollector.getResolution() + " + " + TIME_ALLOWED + " + " + SLOW_DOWN +
+      ")";
+    if (multiThreaded) {
+      s = MULTI_THREAD_SLACK + " * "+s;  
+    }
+    return maxTime(multiThreaded) + " = " + s;
   }
 
   /**
@@ -226,7 +250,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     if (interrupted) {
       Thread.currentThread().interrupt();
     }
-    assertEquals(N_THREADS,success.cardinality());
+    assertEquals("some threads failed!", N_THREADS,success.cardinality());
   }
   
   // counting hit collector that can slow down at collect().
