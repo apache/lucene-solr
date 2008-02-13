@@ -113,9 +113,8 @@ public class CheckIndex {
       sFormat = "FORMAT_SINGLE_NORM_FILE [Lucene 2.2]";
     else if (format == SegmentInfos.FORMAT_SHARED_DOC_STORE)
       sFormat = "FORMAT_SHARED_DOC_STORE [Lucene 2.3]";
-    else if (format < SegmentInfos.FORMAT_CHECKSUM) {
+    else if (format == SegmentInfos.FORMAT_CHECKSUM) {
       sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
-      skip = true;
     } else if (format < SegmentInfos.FORMAT_CHECKSUM) {
       sFormat = "int=" + format + " [newer version of Lucene than this tool]";
       skip = true;
