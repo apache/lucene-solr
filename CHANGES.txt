@@ -24,6 +24,10 @@ Bug fixes
  5. LUCENE-1177: Fix rare case where IndexWriter.optimize might do too
     many merges at the end.  (Mike McCandless)
 	
+ 6. LUCENE-1176: Fix corruption case when documents with no term
+    vector fields are added before documents with term vector fields.
+    (Mike McCandless)
+	
 New features
 
 Optimizations
