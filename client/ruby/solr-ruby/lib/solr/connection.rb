@@ -78,12 +78,29 @@ class Solr::Connection
   #   conn.query('borges') do |hit|
   #     puts hit
   #   end
+  #
+  # options include:
+  # 
+  #   :sort, :default_field, :rows, :filter_queries, :debug_query,
+  #   :explain_other, :facets, :highlighting, :mlt,
+  #   :operator         => :or / :and
+  #   :start            => defaults to 0
+  #   :field_list       => array, defaults to ["*", "score"]
 
   def query(query, options={}, &action)
     # TODO: Shouldn't this return an exception if the Solr status is not ok?  (rather than true/false).
     create_and_send_query(Solr::Request::Standard, options.update(:query => query), &action)
   end
   
+  # performs a dismax search and returns a Solr::Response::Standard
+  #
+  #   response = conn.search('borges')
+  # 
+  # options are same as query, but also include:
+  # 
+  #   :tie_breaker, :query_fields, :minimum_match, :phrase_fields,
+  #   :phrase_slop, :boost_query, :boost_functions
+
   def search(query, options={}, &action)
     create_and_send_query(Solr::Request::Dismax, options.update(:query => query), &action)
   end
