@@ -232,7 +232,9 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
             } else {
               doTestSearch();
             }
-            success.set(num);
+            synchronized(success) {
+              success.set(num);
+            }
           }
       };
     }
