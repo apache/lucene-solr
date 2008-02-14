@@ -1020,6 +1020,59 @@ final class DocumentsWriter {
       quickSort(postings, left + 1, hi);
     }
 
+    void quickSort(FieldData[] array, int lo, int hi) {
+      if (lo >= hi)
+        return;
+
+      int mid = (lo + hi) >>> 1;
+
+      if (array[lo].compareTo(array[mid]) > 0) {
+        FieldData tmp = array[lo];
+        array[lo] = array[mid];
+        array[mid] = tmp;
+      }
+
+      if (array[mid].compareTo(array[hi]) > 0) {
+        FieldData tmp = array[mid];
+        array[mid] = array[hi];
+        array[hi] = tmp;
+
+        if (array[lo].compareTo(array[mid]) > 0) {
+          FieldData tmp2 = array[lo];
+          array[lo] = array[mid];
+          array[mid] = tmp2;
+        }
+      }
+
+      int left = lo + 1;
+      int right = hi - 1;
+
+      if (left >= right)
+        return;
+
+      FieldData partition = array[mid];
+
+      for (; ;) {
+        while (array[right].compareTo(partition) > 0)
+          --right;
+
+        while (left < right && array[left].compareTo(partition) <= 0)
+          ++left;
+
+        if (left < right) {
+          FieldData tmp = array[left];
+          array[left] = array[right];
+          array[right] = tmp;
+          --right;
+        } else {
+          break;
+        }
+      }
+
+      quickSort(array, lo, left);
+      quickSort(array, left + 1, hi);
+    }
+
     /** If there are fields we've seen but did not see again
      *  in the last run, then free them up.  Also reduce
      *  postings hash size. */
@@ -1098,6 +1151,7 @@ final class DocumentsWriter {
       throws IOException, AbortException {
 
       final int numFields = numFieldData;
+      assert clearLastVectorFieldName();
 
       assert 0 == fdtLocal.length();
 
@@ -1108,7 +1162,7 @@ final class DocumentsWriter {
         // sort the subset of fields that have vectors
         // enabled; we could save [small amount of] CPU
         // here.
-        Arrays.sort(fieldDataArray, 0, numFields);
+        quickSort(fieldDataArray, 0, numFields-1);
 
       // We process the document one field at a time
       for(int i=0;i<numFields;i++)
@@ -1116,10 +1170,6 @@ final class DocumentsWriter {
 
       if (maxTermPrefix != null && infoStream != null)
         infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + maxTermPrefix + "...'"); 
-
-      if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
-          && numBytesUsed > 0.95 * ramBufferSize)
-        balanceRAM();
     }
 
     final ByteBlockPool postingsPool = new ByteBlockPool();
@@ -1295,6 +1345,26 @@ final class DocumentsWriter {
       pos[posUpto++] = b;
     }
 
+    String lastVectorFieldName;
+
+    // Called only by assert
+    final boolean clearLastVectorFieldName() {
+      lastVectorFieldName = null;
+      return true;
+    }
+
+    // Called only by assert
+    final boolean vectorFieldsInOrder(FieldInfo fi) {
+      try {
+        if (lastVectorFieldName != null)
+          return lastVectorFieldName.compareTo(fi.name) < 0;
+        else
+          return true;
+      } finally {
+        lastVectorFieldName = fi.name;
+      }
+    }
+
     PostingVector[] postingsVectors = new PostingVector[1];
     int maxPostingsVectors;
 
@@ -1360,7 +1430,6 @@ final class DocumentsWriter {
         postingsHash = new Posting[postingsHashSize];
       }
 
-      /** So Arrays.sort can sort us. */
       public int compareTo(Object o) {
         return fieldInfo.name.compareTo(((FieldData) o).fieldInfo.name);
       }
@@ -1535,9 +1604,9 @@ final class DocumentsWriter {
 
       /** Only called when term vectors are enabled.  This
        *  is called the first time we see a given term for
-       *  each * document, to allocate a PostingVector
-       *  instance that * is used to record data needed to
-       *  write the posting * vectors. */
+       *  each document, to allocate a PostingVector
+       *  instance that is used to record data needed to
+       *  write the posting vectors. */
       private PostingVector addNewVector() {
 
         if (postingsVectorsUpto == postingsVectors.length) {
@@ -1837,6 +1906,7 @@ final class DocumentsWriter {
       void writeVectors(FieldInfo fieldInfo) throws IOException {
 
         assert fieldInfo.storeTermVector;
+        assert vectorFieldsInOrder(fieldInfo);
 
         vectorFieldNumbers[numVectorFields] = fieldInfo.number;
         vectorFieldPointers[numVectorFields] = tvfLocal.getFilePointer();
@@ -2586,6 +2656,10 @@ final class DocumentsWriter {
       return;
     }
 
+    if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
+        && numBytesUsed >= ramBufferSize)
+      balanceRAM();
+
     // Now write the indexed document to the real files.
     if (nextWriteDocID == state.docID) {
       // It's my turn, so write everything now:
@@ -2649,7 +2723,7 @@ final class DocumentsWriter {
       out.writeByte(b);
   }
 
-  byte[] copyByteBuffer = new byte[4096];
+  final byte[] copyByteBuffer = new byte[4096];
 
   /** Copy numBytes from srcIn to destIn */
   void copyBytes(IndexInput srcIn, IndexOutput destIn, long numBytes) throws IOException {
@@ -3138,7 +3212,7 @@ final class DocumentsWriter {
    * the other two.  This method just frees allocations from
    * the pools once we are over-budget, which balances the
    * pools to match the current docs. */
-  private synchronized void balanceRAM() {
+  synchronized void balanceRAM() {
 
     if (ramBufferSize == IndexWriter.DISABLE_AUTO_FLUSH || bufferIsFull)
       return;

@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ import java.util.SortedSet;
 
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
-  private RAMDirectory directory = new RAMDirectory();
+  private Directory directory = new MockRAMDirectory();
   public TestTermVectors(String s) {
     super(s);
   }
@@ -91,6 +91,37 @@ public class TestTermVectors extends LuceneTestCase {
     }
   }
   
+  public void testTermVectorsFieldOrder() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true);
+    Document doc = new Document();
+    doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.close();
+    IndexReader reader = IndexReader.open(dir);
+    TermFreqVector[] v = reader.getTermFreqVectors(0);
+    assertEquals(4, v.length);
+    String[] expectedFields = new String[]{"a", "b", "c", "x"};
+    int[] expectedPositions = new int[]{1, 2, 0};
+    for(int i=0;i<v.length;i++) {
+      TermPositionVector posVec = (TermPositionVector) v[i];
+      assertEquals(expectedFields[i], posVec.getField());
+      String[] terms = posVec.getTerms();
+      assertEquals(3, terms.length);
+      assertEquals("content", terms[0]);
+      assertEquals("here", terms[1]);
+      assertEquals("some", terms[2]);
+      for(int j=0;j<3;j++) {
+        int[] positions = posVec.getTermPositions(j);
+        assertEquals(1, positions.length);
+        assertEquals(expectedPositions[j], positions[0]);
+      }
+    }
+  }
+
   public void testTermPositionVectors() {
     Query query = new TermQuery(new Term("field", "zero"));
     try {
@@ -198,7 +229,7 @@ public class TestTermVectors extends LuceneTestCase {
     Document testDoc4 = new Document();
     setupDoc(testDoc4, test4);
         
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     
     try {
       IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, 
@@ -310,10 +341,10 @@ public class TestTermVectors extends LuceneTestCase {
   
   private void setupDoc(Document doc, String text)
   {
-    doc.add(new Field("field", text, Field.Store.YES,
-        Field.Index.TOKENIZED, Field.TermVector.YES));
     doc.add(new Field("field2", text, Field.Store.YES,
         Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("field", text, Field.Store.YES,
+        Field.Index.TOKENIZED, Field.TermVector.YES));
     //System.out.println("Document: " + doc);
   }
 
