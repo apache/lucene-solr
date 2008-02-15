@@ -147,7 +147,12 @@ final class TermInfosWriter {
   void add(int fieldNumber, char[] termText, int termTextStart, int termTextLength, TermInfo ti)
     throws IOException {
 
-    assert compareToLastTerm(fieldNumber, termText, termTextStart, termTextLength) < 0 || (isIndex && termTextLength == 0 && lastTermTextLength == 0);
+    assert compareToLastTerm(fieldNumber, termText, termTextStart, termTextLength) < 0 ||
+      (isIndex && termTextLength == 0 && lastTermTextLength == 0) :
+      "Terms are out of order: field=" + fieldInfos.fieldName(fieldNumber) + " (number " + fieldNumber + ")" +
+      " lastField=" + fieldInfos.fieldName(lastFieldNumber) + " (number " + lastFieldNumber + ")" +
+      " text=" + new String(termText, termTextStart, termTextLength) + " lastText=" + new String(lastTermText, 0, lastTermTextLength);
+
     assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
     assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
