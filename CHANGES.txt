@@ -73,6 +73,10 @@ Bug fixes
     without checking if the scorer is already at the right position.
     scorer.skipTo(scorer.doc()) is not a NOOP, it behaves as 
     scorer.next(). (Eks Dev, Michael Busch)
+
+ 5. LUCENE-1179: Fixed assert statement that was incorrectly
+    preventing Fields with empty-string field name from working.
+    (Sergey Kabashnyuk via Mike McCandless)
 	
 New features
 
