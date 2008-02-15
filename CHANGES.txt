@@ -28,6 +28,10 @@ Bug fixes
     vector fields are added before documents with term vector fields.
     (Mike McCandless)
 	
+ 7. LUCENE-1179: Fixed assert statement that was incorrectly
+    preventing Fields with empty-string field name from working.
+    (Sergey Kabashnyuk via Mike McCandless)
+	
 New features
 
 Optimizations

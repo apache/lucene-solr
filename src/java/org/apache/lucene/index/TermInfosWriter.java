@@ -111,8 +111,15 @@ final class TermInfosWriter {
   private int compareToLastTerm(int fieldNumber, char[] termText, int start, int length) {
     int pos = 0;
 
-    if (lastFieldNumber != fieldNumber)
-      return fieldInfos.fieldName(lastFieldNumber).compareTo(fieldInfos.fieldName(fieldNumber));
+    if (lastFieldNumber != fieldNumber) {
+      final int cmp = fieldInfos.fieldName(lastFieldNumber).compareTo(fieldInfos.fieldName(fieldNumber));
+      // If there is a field named "" (empty string) then we
+      // will get 0 on this comparison, yet, it's "OK".  But
+      // it's not OK if two different field numbers map to
+      // the same name.
+      if (cmp != 0 || lastFieldNumber != -1)
+        return cmp;
+    }
 
     while(pos < length && pos < lastTermTextLength) {
       final char c1 = lastTermText[pos];

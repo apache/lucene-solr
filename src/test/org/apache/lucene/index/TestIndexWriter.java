@@ -2837,4 +2837,14 @@ public class TestIndexWriter extends LuceneTestCase
     myWriter.optimize();
     assertEquals(10, myWriter.mergeCount);
   }
+
+  // LUCENE-1179
+  public void testEmptyFieldName() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer());
+    Document doc = new Document();
+    doc.add(new Field("", "a b c", Field.Store.NO, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    writer.close();
+  }
 }
