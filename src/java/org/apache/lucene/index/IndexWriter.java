@@ -2266,10 +2266,10 @@ public class IndexWriter {
   }
 
 
-  /** Expunges all deletes from the index.  When and index
+  /** Expunges all deletes from the index.  When an index
    *  has many document deletions (or updates to existing
    *  documents), it's best to either call optimize or
-   *  expungeDeletes to remove all unusged data in the index
+   *  expungeDeletes to remove all unused data in the index
    *  associated with the deleted documents.  To see how
    *  many deletions you have pending in your index, call
    *  {@link IndexReader#maxDoc - IndexReader#numDocs}.
@@ -2281,7 +2281,7 @@ public class IndexWriter {
    *  MergePolicy#findMergesToExpungeDeletes}.). Note that
    *  this call does not first commit any buffered
    *  documents, so you must do so yourself if necessary.
-   *  See also {@link #expungeDeletes(boolean)}*/
+   *  See also {@link #expungeDeletes(boolean)} */
   public void expungeDeletes() throws CorruptIndexException, IOException {
     expungeDeletes(true);
   }
