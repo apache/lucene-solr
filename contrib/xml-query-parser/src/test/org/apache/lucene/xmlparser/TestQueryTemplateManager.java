@@ -13,7 +13,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -154,7 +153,7 @@ public class TestQueryTemplateManager extends TestCase {
 		searcher=new IndexSearcher(dir);
 		
 		//initialize the parser
-		builder=new CorePlusExtensionsParser(analyzer,new QueryParser("artist", analyzer));
+		builder=new CorePlusExtensionsParser("artist", analyzer);
 		
 	}
 	

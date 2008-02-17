@@ -1,5 +1,6 @@
 package org.apache.lucene.xmlparser.builders;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
@@ -26,17 +27,28 @@ import org.w3c.dom.Element;
  */
 
 /**
+ * UserInputQueryBuilder uses 1 of 2 strategies for thread-safe parsing:
+ * 1) Synchronizing access to "parse" calls on a previously supplied QueryParser
+ * or..
+ * 2) creating a new QueryParser object for each parse request
  * @author maharwood
  */
 public class UserInputQueryBuilder implements QueryBuilder {
 
-	QueryParser parser;
+	QueryParser unSafeParser;
+	private Analyzer analyzer;
+	private String defaultField;
 	
 	/**
-	 * @param parser
+	 * @param parser thread un-safe query parser
 	 */
 	public UserInputQueryBuilder(QueryParser parser) {
-		this.parser = parser;
+		this.unSafeParser = parser;
+	}
+
+	public UserInputQueryBuilder(String defaultField, Analyzer analyzer) {
+		this.analyzer = analyzer;
+		this.defaultField = defaultField;
 	}
 	
 	/* (non-Javadoc)
@@ -45,7 +57,21 @@ public class UserInputQueryBuilder implements QueryBuilder {
 	public Query getQuery(Element e) throws ParserException {
 		String text=DOMUtils.getText(e);
 		try {
-			Query q = parser.parse(text);
+			Query q = null;
+			if(unSafeParser!=null)
+			{
+				//synchronize on unsafe parser
+				synchronized (unSafeParser)
+				{
+					q = unSafeParser.parse(text);
+				}
+			}
+			else
+			{
+				//Create new parser
+				QueryParser parser=new QueryParser(defaultField,analyzer);
+				q = parser.parse(text);				
+			}
 			q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 			return q;
 		} catch (ParseException e1) {

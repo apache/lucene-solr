@@ -12,7 +12,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -56,7 +55,7 @@ public class TestParser extends TestCase {
 		super.setUp();
 		
 		//initialize the parser
-		builder=new CorePlusExtensionsParser(analyzer,new QueryParser("contents", analyzer));
+		builder=new CorePlusExtensionsParser("contents",analyzer);
 		
 		//initialize the index (done once, then cached in static data for use with ALL tests)		
 		if(dir==null)

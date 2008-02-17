@@ -27,9 +27,29 @@ import org.apache.lucene.xmlparser.builders.TermsFilterBuilder;
 public class CorePlusExtensionsParser extends CoreParser
 {
 
+	/**
+	 * Construct an XML parser that uses a single instance QueryParser for handling 
+	 * UserQuery tags - all parse operations are synchronised on this parser
+	 * @param analyzer
+	 * @param parser A QueryParser which will be synchronized on during parse calls.
+	 */
 	public CorePlusExtensionsParser(Analyzer analyzer, QueryParser parser)
 	{
-		super(analyzer, parser);
+		this(null,analyzer, parser);
+	}
+	/**
+	 * Constructs an XML parser that creates a QueryParser for each UserQuery request.
+	 * @param defaultField The default field name used by QueryParsers constructed for UserQuery tags 
+	 * @param analyzer 
+	 */
+	public CorePlusExtensionsParser(String defaultField,Analyzer analyzer)
+	{
+		this(defaultField,analyzer, null);
+	}
+
+	private CorePlusExtensionsParser(String defaultField,Analyzer analyzer, QueryParser parser)
+	{
+		super(defaultField,analyzer, parser);
 		filterFactory.addBuilder("TermsFilter",new TermsFilterBuilder(analyzer));
 		filterFactory.addBuilder("BooleanFilter",new BooleanFilterBuilder(filterFactory));
 		filterFactory.addBuilder("DuplicateFilter",new DuplicateFilterBuilder());
@@ -39,6 +59,4 @@ public class CorePlusExtensionsParser extends CoreParser
 		queryFactory.addBuilder("FuzzyLikeThisQuery", new FuzzyLikeThisQueryBuilder(analyzer));
 		
 	}
-
-
 }

@@ -59,7 +59,28 @@ public class CoreParser implements QueryBuilder
 	public static int maxNumCachedFilters=20;
 
 
+	/**
+	 * Construct an XML parser that uses a single instance QueryParser for handling 
+	 * UserQuery tags - all parse operations are synchronised on this parser
+	 * @param analyzer
+	 * @param parser A QueryParser which will be synchronized on during parse calls.
+	 */
 	public CoreParser(Analyzer analyzer, QueryParser parser)
+	{
+		this(null,analyzer,parser);
+	}
+	
+	/**
+	 * Constructs an XML parser that creates a QueryParser for each UserQuery request.
+	 * @param defaultField The default field name used by QueryParsers constructed for UserQuery tags 
+	 * @param analyzer 
+	 */
+	public CoreParser(String defaultField, Analyzer analyzer)
+	{
+		this(defaultField,analyzer,null);
+	}	
+	
+	protected CoreParser(String defaultField,Analyzer analyzer, QueryParser parser)
 	{
 		this.analyzer=analyzer;
 		this.parser=parser;
@@ -72,7 +93,14 @@ public class CoreParser implements QueryBuilder
 		queryFactory.addBuilder("TermsQuery",new TermsQueryBuilder(analyzer));
 		queryFactory.addBuilder("MatchAllDocsQuery",new MatchAllDocsQueryBuilder());
 		queryFactory.addBuilder("BooleanQuery",new BooleanQueryBuilder(queryFactory));
-		queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));
+		if(parser!=null)
+		{
+			queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));
+		}
+		else
+		{
+			queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(defaultField,analyzer));			
+		}
 		queryFactory.addBuilder("FilteredQuery",new FilteredQueryBuilder(filterFactory,queryFactory));
 		queryFactory.addBuilder("ConstantScoreQuery",new ConstantScoreQueryBuilder(filterFactory));
 		
