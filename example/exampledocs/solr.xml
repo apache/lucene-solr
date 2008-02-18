@@ -23,7 +23,7 @@
   <field name="cat">software</field>
   <field name="cat">search</field>
   <field name="features">Advanced Full-Text Search Capabilities using Lucene</field>
-  <field name="features">Optimizied for High Volume Web Traffic</field>
+  <field name="features">Optimized for High Volume Web Traffic</field>
   <field name="features">Standards Based Open Interfaces - XML and HTTP</field>
   <field name="features">Comprehensive HTML Administration Interfaces</field>
   <field name="features">Scalability - Efficient Replication to other Solr Search Servers</field>
