@@ -66,7 +66,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 		this.cacheSize=cacheSize;
 	}
 
-	public Filter getFilter(Element e) throws ParserException
+	public synchronized Filter getFilter(Element e) throws ParserException
 	{
 
 		Element childElement = DOMUtils.getFirstChildOrFail(e);
@@ -78,8 +78,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 
 		// Test to see if child Element is a query or filter that needs to be
 		// cached
-		QueryBuilder qb = queryFactory.getQueryBuilder(childElement
-				.getNodeName());
+		QueryBuilder qb = queryFactory.getQueryBuilder(childElement.getNodeName());
 		Object cacheKey = null;
 		Query q = null;
 		Filter f = null;
@@ -92,14 +91,10 @@ public class CachedFilterBuilder implements FilterBuilder {
 			f = filterFactory.getFilter(childElement);
 			cacheKey = f;
 		}
-		Filter cachedFilter = null;
-		synchronized (filterCache)
-		{ // check cache
-			cachedFilter = (Filter) filterCache.get(cacheKey);
-			if (cachedFilter != null)
-			{
-				return cachedFilter; // cache hit
-			}
+		Filter cachedFilter = (Filter) filterCache.get(cacheKey);
+		if (cachedFilter != null)
+		{
+			return cachedFilter; // cache hit
 		}
 		
 		//cache miss
@@ -111,10 +106,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 			cachedFilter = new CachingWrapperFilter(f);
 		}
 
-		synchronized (filterCache)
-		{ // update cache
-			filterCache.put(cacheKey, cachedFilter);
-		}
+		filterCache.put(cacheKey, cachedFilter);
 		return cachedFilter;
 	}
 	
