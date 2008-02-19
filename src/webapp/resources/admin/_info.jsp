@@ -23,6 +23,7 @@
 <%@ page import="org.apache.solr.core.Config"%>
 <%@ page import="org.apache.solr.util.XML"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
+<%@ page import="java.net.UnknownHostException" %>
 
 
 <%
@@ -46,8 +47,14 @@
   }
 
   String collectionName = schema!=null ? schema.getName():"unknown";
-  InetAddress addr = InetAddress.getLocalHost();
-  String hostname = addr.getCanonicalHostName();
+  InetAddress addr = null;
+  String hostname = "unknown";
+  try {
+    addr = InetAddress.getLocalHost();
+    hostname = addr.getCanonicalHostName();
+  } catch (UnknownHostException e) {
+    //default to unknown
+  }
 
   String defaultSearch = "";
   { 
