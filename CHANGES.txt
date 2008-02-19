@@ -1,9 +1,7 @@
 Lucene Change Log
 $Id$
 
-Changes in runtime behavior
-
-API Changes
+======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
     
@@ -32,14 +30,6 @@ Bug fixes
     preventing Fields with empty-string field name from working.
     (Sergey Kabashnyuk via Mike McCandless)
 	
-New features
-
-Optimizations
-
-Documentation
-
-Test Cases
-
 ======================= Release 2.3.0 2008-01-23 =======================
 
 Changes in runtime behavior
