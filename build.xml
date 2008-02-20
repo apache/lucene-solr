@@ -94,6 +94,20 @@
   <property name="junit.reports" location="${dest}/test-results/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
 
+  <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
+  <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
+
+    <available
+            property="clover.present"
+            classname="com.cenqua.clover.tasks.CloverReportTask"
+            />
+   <condition property="clover.enabled">
+       <and>
+           <isset property="run.clover"/>
+           <isset property="clover.present"/>
+       </and>
+   </condition>
+
   <!-- Macro for compilation -->
   <macrodef name="solr-javac">
     <attribute name="destdir" />
@@ -434,6 +448,8 @@
       
       <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
+    
+    <pathelement path="${java.class.path}"/>
   </path>
 
   <!-- Compile unit tests. -->
@@ -490,6 +506,45 @@
       </fileset>
       <report format="frames" todir="${junit.reports}"/>
     </junitreport>
+  </target>
+
+  <target name="clover" depends="clover.setup, clover.info"
+          description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
+
+  <target name="clover.setup" if="clover.enabled">
+    <taskdef resource="clovertasks"/>
+    <mkdir dir="${clover.db.dir}"/>
+    <clover-setup initString="${clover.db.dir}/solr_coverage.db">
+      <fileset dir="src/java"/>
+      <fileset dir="src/webapp/src"/>
+    </clover-setup>
+  </target>
+
+  <target name="clover.info" unless="clover.present">
+  	<echo>
+      Clover not found. Code coverage reports disabled.
+  	</echo>
+  </target>
+
+  <target name="clover.check">
+	<fail unless="clover.present">
+	  ##################################################################
+      Clover not found.
+      Please make sure clover.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+  	</fail>
+  </target>
+    <!--
+     Run after Junit tests.
+     -->
+  <target name="generate-clover-reports" depends="clover.check, clover">
+    <mkdir dir="${clover.report.dir}"/>
+    <clover-report>
+       <current outfile="${clover.report.dir}" title="${fullnamever}">
+          <format type="html"/>
+       </current>
+    </clover-report>
   </target>
 
 

@@ -299,6 +299,9 @@ Build
       apache-solr-solrj-1.3-dev.jar
       apache-solr-1.3-dev.jar
 
+2. SOLR-479: Added clover code coverage targets for committers and the nightly build.  Requires the Clover library, as licensed to Apache and only available privately.  To run:
+   	     ant -Drun.clover=true clean clover test generate-clover-reports
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1
