@@ -189,7 +189,8 @@ New Features
 37. SOLR-418: Adding a query elevation component.  This is an optional component to
     elevate some documents to the top positions (or exclude them) for a given query.
     (ryan)
-    
+
+38. SOLR-478: Added ability to get back unique key information from the LukeRequestHandler. (gsingers)    
     
 Changes in runtime behavior
 

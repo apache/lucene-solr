@@ -341,6 +341,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   { 
     Map<String, List<String>> typeusemap = new HashMap<String, List<String>>();
     SimpleOrderedMap<Object> fields = new SimpleOrderedMap<Object>();
+    SchemaField uniqueField = schema.getUniqueKeyField();
     for( SchemaField f : schema.getFields().values() ) {
       FieldType ft = f.getType();
       SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
@@ -351,6 +352,9 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
       if( f.getDefaultValue() != null ) {
         field.add( "default", f.getDefaultValue() );
+      }
+      if (f == uniqueField){
+        field.add("uniqueKey", true);
       }
       fields.add( f.getName(), field );
       
@@ -374,6 +378,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     finfo.add("fields", fields);
+    finfo.add("uniqueKeyField", uniqueField.getName());
     finfo.add("types", types);
     return finfo;
   }
