@@ -17,15 +17,16 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.SortField;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.IntFieldSource;
 import org.apache.lucene.document.Fieldable;
-import org.apache.solr.request.XMLWriter;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.request.XMLWriter;
+import org.apache.solr.search.function.IntFieldSource;
+import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.LongFieldSource;
 
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
 /**
  * @version $Id$
  */
@@ -35,15 +36,15 @@ public class LongField extends FieldType {
   }
 
   /////////////////////////////////////////////////////////////
-  // TODO: ACK.. there is no SortField.LONG!
+
   public SortField getSortField(SchemaField field,boolean reverse) {
-    // todo - log warning
-    return new SortField(field.name,SortField.INT, reverse);
+
+    return new SortField(field.name,SortField.LONG, reverse);
   }
 
   public ValueSource getValueSource(SchemaField field) {
-    // todo - log warning
-    return new IntFieldSource(field.name);
+
+    return new LongFieldSource(field.name);
   }
 
 

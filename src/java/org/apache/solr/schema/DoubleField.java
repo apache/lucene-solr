@@ -17,32 +17,32 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.SortField;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
-import org.apache.solr.request.XMLWriter;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.request.XMLWriter;
+import org.apache.solr.search.function.DoubleFieldSource;
+import org.apache.solr.search.function.ValueSource;
 
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
+
 /**
  * @version $Id$
  */
 public class DoubleField extends FieldType {
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     restrictProps(SORT_MISSING_FIRST | SORT_MISSING_LAST);
   }
 
   /////////////////////////////////////////////////////////////
-  // TODO: ACK.. there is currently no SortField.DOUBLE!
-  public SortField getSortField(SchemaField field,boolean reverse) {
-    return new SortField(field.name,SortField.FLOAT, reverse);
+  public SortField getSortField(SchemaField field, boolean reverse) {
+    return new SortField(field.name, SortField.DOUBLE, reverse);
   }
 
   public ValueSource getValueSource(SchemaField field) {
     // fieldCache doesn't support double
-    return new FloatFieldSource(field.name);
+    return new DoubleFieldSource(field.name);
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
@@ -52,10 +52,10 @@ public class DoubleField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDouble(name, f.stringValue());
   }
-  
+
 
   @Override
   public Double toObject(Fieldable f) {
-    return Double.valueOf( toExternal(f) );
+    return Double.valueOf(toExternal(f));
   }
 }

@@ -33,6 +33,9 @@ import org.apache.lucene.search.Explanation;
 // - For caching, Query objects are often used as keys... you don't
 //   want the Query carrying around big objects
 public abstract class DocValues {
+  public byte byteVal(int doc) { throw new UnsupportedOperationException(); }
+  public short shortVal(int doc) { throw new UnsupportedOperationException(); }
+
   public float floatVal(int doc) { throw new UnsupportedOperationException(); }
   public int intVal(int doc) { throw new UnsupportedOperationException(); }
   public long longVal(int doc) { throw new UnsupportedOperationException(); }
