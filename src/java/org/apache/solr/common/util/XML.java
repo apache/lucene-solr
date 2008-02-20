@@ -82,6 +82,10 @@ public class XML {
     escape(str, out, attribute_escapes);
   }
 
+  public static void escapeAttributeValue(char [] chars, int start, int length, Writer out) throws IOException {
+    escape(chars, start, length, out, attribute_escapes);
+  }
+
 
   public final static void writeXML(Writer out, String tag, String val) throws IOException {
     out.write('<');
@@ -149,6 +153,19 @@ public class XML {
     }
   }
 
+  private static void escape(char [] chars, int offset, int length, Writer out, String [] escapes) throws IOException{
+     for (int i=offset; i<length; i++) {
+      char ch = chars[i];
+      if (ch<escapes.length) {
+        String replacement = escapes[ch];
+        if (replacement != null) {
+          out.write(replacement);
+          continue;
+        }
+      }
+      out.write(ch);
+    }
+  }
 
   private static void escape(String str, Writer out, String[] escapes) throws IOException {
     for (int i=0; i<str.length(); i++) {

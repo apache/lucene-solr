@@ -505,6 +505,16 @@
     -->
   </requestHandler>
 
+  <!--
+   Analysis request handler.  Since Solr 1.3.  Use to returnhow a document is analyzed.  Useful
+   for debugging and as a token server for other types of applications
+   -->
+  <requestHandler name="/analysis" class="solr.AnalysisRequestHandler" >
+    <!--
+    <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
+    -->
+  </requestHandler>
+
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
