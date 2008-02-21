@@ -77,6 +77,8 @@ Bug fixes
  5. LUCENE-1179: Fixed assert statement that was incorrectly
     preventing Fields with empty-string field name from working.
     (Sergey Kabashnyuk via Mike McCandless)
+
+ 6. LUCENE-1182: Added scorePayload to SimilarityDelegator (Andi Vajda via Grant Ingersoll)
 	
 New features
 

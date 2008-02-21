@@ -56,4 +56,7 @@ public class SimilarityDelegator extends Similarity {
     return delegee.coord(overlap, maxOverlap);
   }
 
+  public float scorePayload(String fieldName, byte[] payload, int offset, int length) {
+    return delegee.scorePayload(fieldName, payload, offset, length);
+  }
 }
