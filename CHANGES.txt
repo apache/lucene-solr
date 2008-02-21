@@ -191,6 +191,12 @@ New Features
     (ryan)
 
 38. SOLR-478: Added ability to get back unique key information from the LukeRequestHandler. (gsingers)    
+
+39. SOLR-127: HTTP Caching awareness.  Solr now recognizes HTTP Request
+    headers related to HTTP Caching (see RFC 2616 sec13) and will respond
+    with "304 Not Modified" when appropriate.  New options have been added
+    to solrconfig.xml to influence this behavior.
+    (Thomas Peuss via hossman)
     
 Changes in runtime behavior
 

@@ -264,6 +264,42 @@
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+        
+    <!-- Set HTTP caching related parameters (for proxy caches and clients).
+          
+         To get the behaviour of Solr 1.2 (ie: no caching related headers)
+         use the never304="true" option and do not specify a value for
+         <cacheControl>
+    -->
+    <!-- <httpCaching never304="true"> -->
+    <httpCaching lastModifiedFrom="openTime"
+                 etagSeed="Solr">
+       <!-- lastModFrom="openTime" is the default, the Last-Modified value
+            (and validation against If-Modified-Since requests) will all be
+            relative to when the current Searcher was opened.
+            You can change it to lastModFrom="dirLastMod" if you want the
+            value to exactly corrispond to when the physical index was last
+            modified.
+               
+            etagSeed="..." is an option you can change to force the ETag
+            header (and validation against If-None-Match requests) to be
+            differnet even if the index has not changed (ie: when making
+            significant changes to your config file)
+
+            lastModifiedFrom and etagSeed are both ignored if you use the
+            never304="true" option.
+       -->
+       <!-- If you include a <cacheControl> directive, it will be used to
+            generate a Cache-Control header, as well as an Expires header
+            if the value contains "max-age="
+               
+            By default, no Cache-Control header is generated.
+
+            You can use the <cacheControl> option even if you have set
+            never304="true"
+       -->
+       <!-- <cacheControl>max-age=30, public</cacheControl> -->
+    </httpCaching>
   </requestDispatcher>
   
       

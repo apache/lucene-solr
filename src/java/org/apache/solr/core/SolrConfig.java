@@ -33,6 +33,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.StringTokenizer;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -117,6 +121,8 @@ public class SolrConfig extends Config {
     hashDocSetMaxSize= getInt("//HashDocSet/@maxSize",3000);
     
     pingQueryParams = readPingQueryParams(this);
+
+    httpCachingConfig = new HttpCachingConfig(this);
     Config.log.info("Loaded SolrConfig: " + file);
     
     // TODO -- at solr 2.0. this should go away
@@ -146,6 +152,11 @@ public class SolrConfig extends Config {
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
   
+  private final HttpCachingConfig httpCachingConfig;
+  public HttpCachingConfig getHttpCachingConfig() {
+    return httpCachingConfig;
+  }
+  
   // ping query request parameters
   @Deprecated
   private final NamedList pingQueryParams;
@@ -174,5 +185,77 @@ public class SolrConfig extends Config {
   @Deprecated
   public SolrQueryRequest getPingQueryRequest(SolrCore core) {
     return new LocalSolrQueryRequest(core, pingQueryParams);
+  }
+
+
+  public static class HttpCachingConfig {
+
+    /** config xpath prefix for getting HTTP Caching options */
+    private final static String CACHE_PRE
+      = "requestDispatcher/httpCaching/";
+    
+    /** For extracting Expires "ttl" from <cacheControl> config */
+    private final static Pattern MAX_AGE
+      = Pattern.compile("\\bmax-age=(\\d+)");
+    
+    public static enum LastModFrom {
+      OPENTIME, DIRLASTMOD, BOGUS;
+
+      /** Input must not be null */
+      public static LastModFrom parse(final String s) {
+        try {
+          return valueOf(s.toUpperCase());
+        } catch (Exception e) {
+          log.log(Level.WARNING,
+                  "Unrecognized value for lastModFrom: " + s, e);
+          return BOGUS;
+        }
+      }
+    }
+    
+    private final boolean never304;
+    private final String etagSeed;
+    private final String cacheControlHeader;
+    private final Integer maxAge;
+    private final LastModFrom lastModFrom;
+    
+    private HttpCachingConfig(SolrConfig conf) {
+
+      never304 = conf.getBool(CACHE_PRE+"@never304", false);
+      
+      etagSeed = conf.get(CACHE_PRE+"@etagSeed", "Solr");
+      
+
+      lastModFrom = LastModFrom.parse(conf.get(CACHE_PRE+"@lastModFrom",
+                                               "openTime"));
+      
+      cacheControlHeader = conf.get(CACHE_PRE+"cacheControl",null);
+
+      Integer tmp = null; // maxAge
+      if (null != cacheControlHeader) {
+        try { 
+          final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
+          final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
+          tmp = (null != ttlStr && !"".equals(ttlStr))
+            ? Integer.valueOf(ttlStr)
+            : null;
+        } catch (Exception e) {
+          log.log(Level.WARNING,
+                  "Ignoring exception while attempting to " +
+                  "extract max-age from cacheControl config: " +
+                  cacheControlHeader, e);
+        }
+      }
+      maxAge = tmp;
+
+    }
+    
+    public boolean isNever304() { return never304; }
+    public String getEtagSeed() { return etagSeed; }
+    /** null if no Cache-Control header */
+    public String getCacheControlHeader() { return cacheControlHeader; }
+    /** null if no max age limitation */
+    public Integer getMaxAge() { return maxAge; }
+    public LastModFrom getLastModFrom() { return lastModFrom; }
   }
 }

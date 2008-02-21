@@ -1395,7 +1395,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
   }
 
-
   /**
    * return the named generic cache
    */
@@ -1419,6 +1418,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return cache==null ? null : cache.put(key,val);
   }
 
+  public long getOpenTime() {
+    return openTime;
+  }
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info

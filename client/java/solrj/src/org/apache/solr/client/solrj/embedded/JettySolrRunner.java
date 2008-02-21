@@ -45,6 +45,12 @@ public class JettySolrRunner
   {
     this.init( context, port );
   }
+
+  public JettySolrRunner( String context, int port, String solrConfigFilename )
+  {
+    this.init( context, port );
+    dispatchFilter.setInitParameter("solrconfig-filename", solrConfigFilename);
+  }
   
 //  public JettySolrRunner( String context, String home, String dataDir, int port, boolean log )
 //  {
@@ -88,6 +94,7 @@ public class JettySolrRunner
   {
     if( server.isRunning() ) {
       server.stop();
+      server.join();
     }
   }
   

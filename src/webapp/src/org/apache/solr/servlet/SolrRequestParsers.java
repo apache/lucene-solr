@@ -348,7 +348,7 @@ class StandardRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     String method = req.getMethod().toUpperCase();
-    if( "GET".equals( method ) ) {
+    if( "GET".equals( method ) || "HEAD".equals( method )) {
       return new ServletSolrParams(req);
     }
     if( "POST".equals( method ) ) {
@@ -367,7 +367,7 @@ class StandardRequestParser implements SolrRequestParser
       }
       return raw.parseParamsAndFillStreams(req, streams);
     }
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unsuported method: "+method );
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unsupported method: "+method );
   }
 }
 

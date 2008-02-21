@@ -17,7 +17,7 @@
  limitations under the License.
 -->
 
-<!-- $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
+<!-- $Id$
      $Source$
      $Name$
   -->
@@ -309,9 +309,7 @@
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
     <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
-    <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
-      <cacheControl>max-age=30, public</cacheControl>
-    </httpCaching>
+    <httpCaching never304="true" /> 
   </requestDispatcher>
 
   <admin>
@@ -322,9 +320,5 @@
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
-
-  <queryParser name="foo" class="FooQParserPlugin"/>
-
-
 
 </config>

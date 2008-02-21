@@ -44,6 +44,8 @@ import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
+import org.apache.solr.servlet.cache.Method;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -51,13 +53,14 @@ import org.apache.solr.request.SolrRequestHandler;
 public class SolrDispatchFilter implements Filter 
 {
   final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
-    
+  
   protected SolrCore singlecore;
   protected MultiCore multicore;
   protected SolrRequestParsers parsers;
   protected boolean handleSelect = false;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
+  protected String solrConfigFilename = null;
   
   public void init(FilterConfig config) throws ServletException 
   {
@@ -67,6 +70,7 @@ public class SolrDispatchFilter implements Filter
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
+      this.solrConfigFilename = config.getInitParameter("solrconfig-filename");
       
       // Find a valid solr core
       SolrCore core = null;
@@ -87,7 +91,11 @@ public class SolrDispatchFilter implements Filter
         core = multicore.getDefaultCore();
       }
       else {
-        singlecore = new SolrCore( null, null, new SolrConfig(), null );
+        if (this.solrConfigFilename==null) {
+          singlecore = new SolrCore( null, null, new SolrConfig(), null );
+        } else {
+          singlecore = new SolrCore( null, null, new SolrConfig(this.solrConfigFilename), null);
+        }
         core = singlecore;
       }
       
@@ -168,6 +176,7 @@ public class SolrDispatchFilter implements Filter
     if( request instanceof HttpServletRequest) {
       SolrQueryRequest solrReq = null;
       HttpServletRequest req = (HttpServletRequest)request;
+      HttpServletResponse resp = (HttpServletResponse)response;
       try {
         String path = req.getServletPath();    
         if( req.getPathInfo() != null ) {
@@ -233,7 +242,29 @@ public class SolrDispatchFilter implements Filter
           if( solrReq == null ) {
             solrReq = parsers.parse( core, path, req );
           }
+          
+          final SolrConfig conf = core.getSolrConfig();
+          final Method reqMethod = Method.getMethod(req.getMethod());
+
+          if (Method.POST != reqMethod) {
+            HttpCacheHeaderUtil.setCacheControlHeader(conf, resp);
+          }
+            
+          // unless we have been explicitly told not to, do cache validation
+          if (!conf.getHttpCachingConfig().isNever304()) {
+            // if we've confirmed cache validation, return immediately
+            if (HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq,
+                                                            req,resp)) {
+              return;
+            }
+          }
+          
           SolrQueryResponse solrRsp = new SolrQueryResponse();
+          /* even for HEAD requests, we need to execute the handler to
+           * ensure we don't get an error (and to make sure the correct 
+           * QueryResponseWriter is selectedand we get the correct
+           * Content-Type)
+           */
           this.execute( req, handler, solrReq, solrRsp );
           if( solrRsp.getException() != null ) {
             sendError( (HttpServletResponse)response, solrRsp.getException() );
@@ -243,6 +274,11 @@ public class SolrDispatchFilter implements Filter
           // Now write it out
           QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
           response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
+          if (Method.HEAD == Method.getMethod(req.getMethod())) {
+            // nothing to write out, waited this long just to get ContentType
+            return; 
+          }
+          
           PrintWriter out = response.getWriter();
           responseWriter.write(out, solrReq, solrRsp);
           return;
@@ -303,7 +339,7 @@ public class SolrDispatchFilter implements Filter
       }
     }
     res.sendError( code, ex.getMessage() + trace );
-  }
+  }    
 
   //---------------------------------------------------------------------
   //---------------------------------------------------------------------
