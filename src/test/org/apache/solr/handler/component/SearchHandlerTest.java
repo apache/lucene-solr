@@ -64,7 +64,7 @@ public class SearchHandlerTest extends AbstractSolrTestCase
     names1.add( FacetComponent.COMPONENT_NAME );
     
     args = new NamedList();
-    args.add( SearchHandler.INIT_FISRT_COMPONENTS, names0 );
+    args.add( SearchHandler.INIT_FIRST_COMPONENTS, names0 );
     args.add( SearchHandler.INIT_LAST_COMPONENTS, names1 );
     handler = new SearchHandler();
     handler.init( args );

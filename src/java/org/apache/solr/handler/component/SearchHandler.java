@@ -44,7 +44,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   static final String RESPONSE_BUILDER_CONTEXT_KEY = "ResponseBuilder";
   
   static final String INIT_COMPONENTS = "components";
-  static final String INIT_FISRT_COMPONENTS = "first-components";
+  static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
   
   protected static Logger log = Logger.getLogger(SearchHandler.class.getName());
@@ -76,7 +76,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   public void inform(SolrCore core) 
   {
     Object declaredComponents = initArgs.get(INIT_COMPONENTS);
-    List<String> first = (List<String>) initArgs.get(INIT_FISRT_COMPONENTS);
+    List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
 
     List<String> list = null;
