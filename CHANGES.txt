@@ -113,6 +113,10 @@ Optimizations
  2. LUCENE-1120: Speed up merging of term vectors by bulk-copying the
     raw bytes for each contiguous range of non-deleted documents.
     (Mike McCandless)
+	
+ 3. LUCENE-1185: Avoid checking if the TermBuffer 'scratch' in 
+    SegmentTermEnum is null for every call of scanTo().
+    (Christian Kohlschuetter via Michael Busch)
 
 Documentation
 

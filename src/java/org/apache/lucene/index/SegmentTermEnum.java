@@ -28,7 +28,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   private TermBuffer termBuffer = new TermBuffer();
   private TermBuffer prevBuffer = new TermBuffer();
-  private TermBuffer scratch;                     // used for scanning
+  private TermBuffer scanBuffer = new TermBuffer(); // used for scanning
 
   private TermInfo termInfo = new TermInfo();
 
@@ -97,7 +97,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
     clone.termBuffer = (TermBuffer)termBuffer.clone();
     clone.prevBuffer = (TermBuffer)prevBuffer.clone();
-    clone.scratch = null;
+    clone.scanBuffer = new TermBuffer();
 
     return clone;
   }
@@ -148,10 +148,8 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   /** Optimized scan, without allocating new terms. */
   final void scanTo(Term term) throws IOException {
-    if (scratch == null)
-      scratch = new TermBuffer();
-    scratch.set(term);
-    while (scratch.compareTo(termBuffer) > 0 && next()) {}
+    scanBuffer.set(term);
+    while (scanBuffer.compareTo(termBuffer) > 0 && next()) {}
   }
 
   /** Returns the current Term in the enumeration.
