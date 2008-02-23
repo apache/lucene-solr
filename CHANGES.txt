@@ -60,25 +60,13 @@ Bug fixes
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 
     clause query if minNumShouldMatch<=0. (Shai Erera via Michael Busch)
 
- 2. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
-    offset, int len) that was ignoring offset and thus giving the
-    wrong answer.  (Thomas Peuss via Mike McCandless)
-
- 3. LUCENE-1168: Fixed corruption cases when autoCommit=false and
-    documents have mixed term vectors (Suresh Guvvala via Mike
-    McCandless).
-	
- 4. LUCENE-1169: Fixed bug in IndexSearcher.search(): searching with
+ 2. LUCENE-1169: Fixed bug in IndexSearcher.search(): searching with
     a filter might miss some hits because scorer.skipTo() is called
     without checking if the scorer is already at the right position.
     scorer.skipTo(scorer.doc()) is not a NOOP, it behaves as 
     scorer.next(). (Eks Dev, Michael Busch)
 
- 5. LUCENE-1179: Fixed assert statement that was incorrectly
-    preventing Fields with empty-string field name from working.
-    (Sergey Kabashnyuk via Mike McCandless)
-
- 6. LUCENE-1182: Added scorePayload to SimilarityDelegator (Andi Vajda via Grant Ingersoll)
+ 3. LUCENE-1182: Added scorePayload to SimilarityDelegator (Andi Vajda via Grant Ingersoll)
 	
 New features
 
@@ -133,6 +121,35 @@ Build
   1. LUCENE-1153: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
 
 Test Cases
+
+======================= Release 2.3.1 2008-02-22 =======================
+
+Bug fixes
+    
+ 1. LUCENE-1168: Fixed corruption cases when autoCommit=false and
+    documents have mixed term vectors (Suresh Guvvala via Mike
+    McCandless).
+
+ 2. LUCENE-1171: Fixed some cases where OOM errors could cause
+    deadlock in IndexWriter (Mike McCandless).
+
+ 3. LUCENE-1173: Fixed corruption case when autoCommit=false and bulk
+    merging of stored fields is used (Yonik via Mike McCandless).
+
+ 4. LUCENE-1163: Fixed bug in CharArraySet.contains(char[] buffer, int
+    offset, int len) that was ignoring offset and thus giving the
+    wrong answer.  (Thomas Peuss via Mike McCandless)
+	
+ 5. LUCENE-1177: Fix rare case where IndexWriter.optimize might do too
+    many merges at the end.  (Mike McCandless)
+	
+ 6. LUCENE-1176: Fix corruption case when documents with no term
+    vector fields are added before documents with term vector fields.
+    (Mike McCandless)
+	
+ 7. LUCENE-1179: Fixed assert statement that was incorrectly
+    preventing Fields with empty-string field name from working.
+    (Sergey Kabashnyuk via Mike McCandless)
 
 ======================= Release 2.3.0 2008-01-21 =======================
 
