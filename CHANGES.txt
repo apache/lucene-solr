@@ -106,6 +106,8 @@ New Features
 17. SOLR-248: Added CapitalizationFilterFactory that creates tokens with 
     normalized capitalization.  This filter is useful for facet display,
     but will not work with a prefix query.  (ryan)
+    SOLR-468: Change to the semantics to keep the original token, not the token in the Map.  Also switched to
+    use Lucene's new reusable token capabilities.  (gsingers)
 
 18. SOLR-307: Added NGramFilterFactory and EdgeNGramFilterFactory.
     (Thomas Peuss via Otis Gospodnetic)

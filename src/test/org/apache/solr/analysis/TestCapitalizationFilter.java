@@ -34,14 +34,33 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init( args );
+    char[] termBuffer;
+    termBuffer = "kiTTEN".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "Kitten",  new String(termBuffer, 0, termBuffer.length));
 
-    assertEquals( "Kitten", factory.processWord( "kiTTEN", 0 ) );
     factory.forceFirstLetter = true;
-    assertEquals( "And", factory.processWord( "AnD", 0 ) ); // first is forced
+
+    termBuffer = "and".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length));//first is forced
+
+    termBuffer = "AnD".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length));//first is forced, but it's not a keep word, either
+
     factory.forceFirstLetter = false;
-    assertEquals( "and", factory.processWord( "AnD", 0 ) ); // first is forced
+    termBuffer = "AnD".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length)); //first is not forced, but it's not a keep word, either
+
     factory.forceFirstLetter = true;
-    assertEquals( "BIG", factory.processWord( "big", 0 ) );
+    termBuffer = "big".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "Big",  new String(termBuffer, 0, termBuffer.length));
+    termBuffer = "BIG".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "BIG",  new String(termBuffer, 0, termBuffer.length));
     
     String out = tsToString( factory.create( new IterTokenStream( "Hello thEre my Name is Ryan" ) ) );
     assertEquals( "Hello there my name is ryan", out );
@@ -74,7 +93,27 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     assertEquals( "1st 2nd Third", out );
     
     factory.forceFirstLetter = true;
-    out = tsToString( factory.create( new IterTokenStream( "the The" ) ) );
-    assertEquals( "The the", out );
+    out = tsToString( factory.create( new IterTokenStream( "the The the" ) ) );
+    assertEquals( "The The the", out );
+  }
+
+  public void testKeepIgnoreCase() throws Exception {
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CapitalizationFilterFactory.KEEP, "kitten" );
+    args.put( CapitalizationFilterFactory.KEEP_IGNORE_CASE, "true" );
+    args.put( CapitalizationFilterFactory.ONLY_FIRST_WORD, "true" );
+
+    CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
+    factory.init( args );
+    char[] termBuffer;
+    termBuffer = "kiTTEN".toCharArray();
+    factory.forceFirstLetter = true;
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "KiTTEN",  new String(termBuffer, 0, termBuffer.length));
+
+    factory.forceFirstLetter = false;
+    termBuffer = "kiTTEN".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "kiTTEN",  new String(termBuffer, 0, termBuffer.length));
   }
 }
