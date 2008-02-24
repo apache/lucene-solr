@@ -53,7 +53,7 @@
   <xsl:include href="meta.xsl"/>
 
   <xsl:template match="solr/analysis/form">
-  <form method="GET" action="analysis.jsp">
+  <form method="POST" action="analysis.jsp">
     <table>
       <tr>
         <td>
@@ -72,7 +72,7 @@
         highlight matches <input name="highlight" type="checkbox" checked="true"/>
         </td>
         <td>
-        <textarea class="std" rows="3" cols="70" name="val"><xsl:value-of select="fieldIndexValue" /></textarea>
+        <textarea class="std" rows="8" cols="70" name="val"><xsl:value-of select="fieldIndexValue" /></textarea>
         </td>
       </tr>
       <tr>

@@ -59,7 +59,7 @@
 
 <h2>Field Analysis</h2>
 
-<form method="GET" action="analysis.jsp">
+<form method="POST" action="analysis.jsp">
 <table>
 <tr>
   <td>
@@ -85,7 +85,7 @@
      <%= highlight ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea class="std" rows="3" cols="70" name="val"><% XML.escapeCharData(val,out); %></textarea>
+	<textarea class="std" rows="8" cols="70" name="val"><% XML.escapeCharData(val,out); %></textarea>
   </td>
 </tr>
 <tr>

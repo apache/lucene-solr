@@ -301,6 +301,8 @@ Other Changes
 
  8.  Upgraded to Lucene 2.3.0; Jan 23, 2008.
 
+ 9. SOLR-451: Changed analysis.jsp to use POST instead of GET, also made the input area a bit bigger (gsingers)
+
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on
     project-name-version.jar.  This yields, for example:
