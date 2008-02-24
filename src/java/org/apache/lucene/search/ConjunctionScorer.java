@@ -101,11 +101,11 @@ class ConjunctionScorer extends Scorer {
     // Keep last scorer in it's last place (it will be the first
     // to be skipped on), but reverse all of the others so that
     // they will be skipped on in order of original high skip.
-    int end=(scorers.length-1)-1;
+    int end=(scorers.length-1);
     for (int i=0; i<(end>>1); i++) {
       Scorer tmp = scorers[i];
-      scorers[i] = scorers[end-i];
-      scorers[end-i] = tmp;
+      scorers[i] = scorers[end-i-1];
+      scorers[end-i-1] = tmp;
     }
 
     return more;
