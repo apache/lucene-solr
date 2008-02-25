@@ -113,6 +113,7 @@ import java.net.URL;
  * :TODO: document facet param support
  *
  * </pre>
+ * @deprecated use StandardRequestHandler with a "defType=dismax" param
  */
 @Deprecated
 public class DisMaxRequestHandler extends StandardRequestHandler  

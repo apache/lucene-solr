@@ -338,6 +338,7 @@
         or to add multiple fields to the same field for easier/faster searching.  -->
    <copyField source="id" dest="sku"/>
 
+   <copyField source="incubationdate_dt" dest="incubationdate_s"/>
    <copyField source="cat" dest="text"/>
    <copyField source="name" dest="text"/>
    <copyField source="name" dest="nameSort"/>

@@ -19,8 +19,9 @@ package org.apache.solr.request;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ * @deprecated use org.apache.solr.handler.DisMaxRequestHandler
  */
-@Deprecated
+@Deprecated 
 public class DisMaxRequestHandler extends org.apache.solr.handler.DisMaxRequestHandler  {
  // Don't use this class
 }

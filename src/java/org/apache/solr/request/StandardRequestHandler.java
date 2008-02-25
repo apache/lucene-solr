@@ -19,8 +19,9 @@ package org.apache.solr.request;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ * @deprecated use org.apache.solr.handler.StandardRequestHandler
  */
-@Deprecated
+@Deprecated 
 public class StandardRequestHandler extends org.apache.solr.handler.StandardRequestHandler {
  // Don't use this class
 }
