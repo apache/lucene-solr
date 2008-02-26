@@ -31,6 +31,8 @@ import org.apache.solr.request.XMLResponseWriter;
 
 /**
  * @version $Id$
+ *
+ * @deprecated Register a request handler to /update rather then use this servlet.  Add: &lt;requestHandler name="/update" class="solr.XmlUpdateRequestHandler" > to your solrconfig.xml
  */
 @Deprecated
 public class SolrUpdateServlet extends HttpServlet {

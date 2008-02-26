@@ -95,7 +95,11 @@ public class SolrPluginUtils {
   }
 
 
-  /** standard param for field list */
+  /**
+   * standard param for field list
+   *
+   * @deprecated Use org.apache.solr.common.params.CommonParams.FL.
+   */
   @Deprecated
   public static String FL = org.apache.solr.common.params.CommonParams.FL;
 

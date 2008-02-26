@@ -20,6 +20,8 @@ import java.util.List;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ *
+ * @deprecated Use org.apache.solr.common.util.SimpleOrderedMap<T>.
  */
 @Deprecated
 public class SimpleOrderedMap<T> extends org.apache.solr.common.util.SimpleOrderedMap<T> {

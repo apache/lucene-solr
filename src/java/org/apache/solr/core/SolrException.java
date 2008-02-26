@@ -19,6 +19,8 @@ package org.apache.solr.core;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ *
+ * @deprecated Use org.apache.solr.common.SolrException
  */
 @Deprecated
 public class SolrException extends org.apache.solr.common.SolrException {

@@ -74,12 +74,18 @@ public class SolrException extends RuntimeException {
     logged=true;
   }
   
+  /**
+   * @deprecated Use {@link #SolrException(ErrorCode,String)}.
+   */
   @Deprecated
   public SolrException(int code, String msg) {
     super(msg);
     this.code=code;
   }
   
+  /**
+   * @deprecated Use {@link #SolrException(ErrorCode,String,boolean)}.
+   */
   @Deprecated
   public SolrException(int code, String msg, boolean alreadyLogged) {
     super(msg);
@@ -87,6 +93,9 @@ public class SolrException extends RuntimeException {
     this.logged=alreadyLogged;
   }
 
+  /**
+   * @deprecated Use {@link #SolrException(ErrorCode,String,Throwable,boolean)}.
+   */
   @Deprecated
   public SolrException(int code, String msg, Throwable th, boolean alreadyLogged) {
     super(msg,th);
@@ -94,11 +103,17 @@ public class SolrException extends RuntimeException {
     logged=alreadyLogged;
   }
 
+  /**
+   * @deprecated Use {@link #SolrException(ErrorCode,String,Throwable)}.
+   */
   @Deprecated
   public SolrException(int code, String msg, Throwable th) {
     this(code,msg,th,true);
   }
 
+  /**
+   * @deprecated Use {@link #SolrException(ErrorCode,Throwable)}.
+   */
   @Deprecated
   public SolrException(int code, Throwable th) {
     super(th);

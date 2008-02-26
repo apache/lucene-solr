@@ -23,6 +23,8 @@ import java.util.*;
 
 /**
  * @version $Id$
+ *
+ * @deprecated Solr now supports multiple cores and no longer uses a static singleton for SolrCore. 
  */
 
 // A Registry to hold a collection of SolrInfo objects

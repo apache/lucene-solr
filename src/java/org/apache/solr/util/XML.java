@@ -19,6 +19,8 @@ package org.apache.solr.util;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ *
+ * @deprecated Use org.apache.solr.common.util.XML.
  */
 @Deprecated
 public class XML extends org.apache.solr.common.util.XML {

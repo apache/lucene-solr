@@ -43,14 +43,29 @@ import java.util.HashMap;
  * @version $Id$
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
+  /**
+   * @deprecated Use org.apache.solr.common.params.CommonParams
+   */
   @Deprecated
   public static final String QUERY_NAME="q";
+  /**
+   * @deprecated Use org.apache.solr.common.params.CommonParams
+   */
   @Deprecated
   public static final String START_NAME="start";
+  /**
+   * @deprecated Use org.apache.solr.common.params.CommonParams
+   */
   @Deprecated
   public static final String ROWS_NAME="rows";
+  /**
+   * @deprecated Use org.apache.solr.common.params.CommonParams
+   */
   @Deprecated
   public static final String XSL_NAME="xsl";
+  /**
+   * @deprecated Use org.apache.solr.common.params.CommonParams
+   */
   @Deprecated
   public static final String QUERYTYPE_NAME="qt";
 

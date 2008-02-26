@@ -142,7 +142,7 @@ public class TestHarness {
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
    * 
-   * The better approach is to instanciate a Updatehandler directly
+   * @deprecated The better approach is to instantiate an Updatehandler directly
    *
    * @param xml The XML of the update
    * @return The XML response to the update
