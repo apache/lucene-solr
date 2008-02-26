@@ -63,6 +63,44 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     runTest(dir2);
   }
 
+  public void testReuseAcrossWriters() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    IndexWriter writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
+                                               IndexWriter.MaxFieldLength.LIMITED);
+    // Force frequent commits
+    writer.setMaxBufferedDocs(2);
+    Document doc = new Document();
+    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    for(int i=0;i<7;i++)
+      writer.addDocument(doc);
+    IndexCommitPoint cp = dp.snapshot();
+    copyFiles(dir, dp, cp);
+    writer.close();
+    copyFiles(dir, dp, cp);
+    
+    writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
+                             IndexWriter.MaxFieldLength.LIMITED);
+    copyFiles(dir, dp, cp);
+    for(int i=0;i<7;i++)
+      writer.addDocument(doc);
+    copyFiles(dir, dp, cp);
+    writer.close();
+    copyFiles(dir, dp, cp);
+    dp.release();
+    writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
+                             IndexWriter.MaxFieldLength.LIMITED);
+    writer.close();
+    try {
+      copyFiles(dir, dp, cp);
+      fail("did not hit expected IOException");
+    } catch (IOException ioe) {
+      // expected
+    }
+    dir.close();
+  }
+
   private void runTest(Directory dir) throws IOException {
     // Run for ~7 seconds
     final long stopTime = System.currentTimeMillis() + 7000;
@@ -82,9 +120,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
             for(int i=0;i<27;i++) {
               try {
                 writer.addDocument(doc);
-              } catch (IOException cie) {
+              } catch (Throwable t) {
                 RuntimeException re = new RuntimeException("addDocument failed");
-                re.initCause(cie);
+                re.initCause(t);
                 throw re;
               }
             }
@@ -137,32 +175,33 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
    *  just to test that the files indeed exist and are
    *  readable even while the index is changing. */
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws IOException {
-
     // To backup an index we first take a snapshot:
-    IndexCommitPoint cp = dp.snapshot();
     try {
-
-      // While we hold the snapshot, and nomatter how long
-      // we take to do the backup, the IndexWriter will
-      // never delete the files in the snapshot:
-      Collection files = cp.getFileNames();
-      Iterator it = files.iterator();
-      while(it.hasNext()) {
-        final String fileName = (String) it.next();
-        // NOTE: in a real backup you would not use
-        // readFile; you would need to use something else
-        // that copies the file to a backup location.  This
-        // could even be a spawned shell process (eg "tar",
-        // "zip") that takes the list of files and builds a
-        // backup.
-        readFile(dir, fileName);
-      }
-
+      copyFiles(dir, dp, dp.snapshot());
     } finally {
       // Make sure to release the snapshot, otherwise these
       // files will never be deleted during this IndexWriter
       // session:
       dp.release();
+    }
+  }
+
+  private void copyFiles(Directory dir, SnapshotDeletionPolicy dp, IndexCommitPoint cp) throws IOException {
+
+    // While we hold the snapshot, and nomatter how long
+    // we take to do the backup, the IndexWriter will
+    // never delete the files in the snapshot:
+    Collection files = cp.getFileNames();
+    Iterator it = files.iterator();
+    while(it.hasNext()) {
+      final String fileName = (String) it.next();
+      // NOTE: in a real backup you would not use
+      // readFile; you would need to use something else
+      // that copies the file to a backup location.  This
+      // could even be a spawned shell process (eg "tar",
+      // "zip") that takes the list of files and builds a
+      // backup.
+      readFile(dir, fileName);
     }
   }
 

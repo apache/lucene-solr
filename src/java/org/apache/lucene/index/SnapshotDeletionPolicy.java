@@ -31,13 +31,17 @@ import java.io.IOException;
  *  we wrap another arbitrary {@link IndexDeletionPolicy}, this
  *  gives you the freedom to continue using whatever {@link
  *  IndexDeletionPolicy} you would normally want to use with your
- *  index. */
+ *  index.  Note that you can re-use a single instance of
+ *  SnapshotDeletionPolicy across multiple writers as long
+ *  as they are against the same index Directory.  Any
+ *  snapshot held when a writer is closed will "survive"
+ *  when the next writer is opened. */
 
 public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
 
   private IndexCommitPoint lastCommit;
   private IndexDeletionPolicy primary;
-  private IndexCommitPoint snapshot;
+  private String snapshot;
 
   public SnapshotDeletionPolicy(IndexDeletionPolicy primary) {
     this.primary = primary;
@@ -64,10 +68,10 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    *  you release the snapshot. */
   public synchronized IndexCommitPoint snapshot() {
     if (snapshot == null)
-      snapshot = lastCommit;
+      snapshot = lastCommit.getSegmentsFileName();
     else
       throw new IllegalStateException("snapshot is already set; please call release() first");
-    return snapshot;
+    return lastCommit;
   }
 
   /** Release the currently held snapshot. */
@@ -93,7 +97,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
       synchronized(SnapshotDeletionPolicy.this) {
         // Suppress the delete request if this commit point is
         // our current snapshot.
-        if (snapshot != cp)
+        if (snapshot == null || !snapshot.equals(getSegmentsFileName()))
           cp.delete();
       }
     }

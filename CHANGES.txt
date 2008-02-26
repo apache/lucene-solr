@@ -101,6 +101,10 @@ New features
     huge index might not stop within the specified time.
     (Sean Timm via Doron Cohen) 
 
+ 8. LUCENE-1184: Allow SnapshotDeletionPolicy to be re-used across
+    close/re-open of IndexWriter while still protecting an open
+    snapshot (Tim Brennan via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

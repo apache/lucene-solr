@@ -187,7 +187,7 @@ final class IndexFileDeleter {
               sis = null;
             }
             if (sis != null) {
-              CommitPoint commitPoint = new CommitPoint(sis);
+              CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
               if (sis.getGeneration() == segmentInfos.getGeneration()) {
                 currentCommitPoint = commitPoint;
               }
@@ -215,7 +215,7 @@ final class IndexFileDeleter {
       }
       if (infoStream != null)
         message("forced open of current segments file " + segmentInfos.getCurrentSegmentFileName());
-      currentCommitPoint = new CommitPoint(sis);
+      currentCommitPoint = new CommitPoint(commitsToDelete, directory, sis);
       commits.add(currentCommitPoint);
       incRef(sis, true);
     }
@@ -392,7 +392,7 @@ final class IndexFileDeleter {
 
     if (isCommit) {
       // Append to our commits list:
-      commits.add(new CommitPoint(segmentInfos));
+      commits.add(new CommitPoint(commitsToDelete, directory, segmentInfos));
 
       // Tell policy so it can remove commits:
       policy.onCommit(commits);
@@ -569,14 +569,18 @@ final class IndexFileDeleter {
    * equals.
    */
 
-  final private class CommitPoint implements Comparable, IndexCommitPoint {
+  final private static class CommitPoint implements Comparable, IndexCommitPoint {
 
     long gen;
     List files;
     String segmentsFileName;
     boolean deleted;
+    Directory directory;
+    Collection commitsToDelete;
 
-    public CommitPoint(SegmentInfos segmentInfos) throws IOException {
+    public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
+      this.directory = directory;
+      this.commitsToDelete = commitsToDelete;
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
       int size = segmentInfos.size();
       files = new ArrayList(size);
