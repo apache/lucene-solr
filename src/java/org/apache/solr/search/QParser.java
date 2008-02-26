@@ -197,7 +197,7 @@ public abstract class QParser {
 
     QParserPlugin qplug = req.getCore().getQueryPlugin(type);
     return qplug.createParser(qstr, localParams, req.getParams(), req);
-  }
+  }                            
 
 }
 

@@ -437,11 +437,12 @@ public class SolrPluginUtils {
 
       Document doc = searcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
-      String docname = "";
-      if (strid != null) docname="id="+strid+",";
-      docname = docname + "internal_docid="+id;
 
-      explainList.add(docname, "\n" +explain.toString());
+      // String docname = "";
+      // if (strid != null) docname="id="+strid+",";
+      // docname = docname + "internal_docid="+id;
+
+      explainList.add(strid, "\n" +explain.toString());
     }
     return explainList;
   }

@@ -24,8 +24,6 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.MoreLikeThisHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -40,28 +38,27 @@ public class MoreLikeThisComponent extends SearchComponent
   public static final String COMPONENT_NAME = "mlt";
   
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
+  public void prepare(ResponseBuilder rb) throws IOException
   {
     
   }
 
   @Override
-  public void process(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
+  public void process(ResponseBuilder rb) throws IOException
   {
-    SolrParams p = req.getParams();
+    SolrParams p = rb.req.getParams();
     if( p.getBool( MoreLikeThisParams.MLT, false ) ) {
-      ResponseBuilder builder = SearchHandler.getResponseBuilder( req );
-      SolrIndexSearcher searcher = req.getSearcher();
+      SolrIndexSearcher searcher = rb.req.getSearcher();
       
       MoreLikeThisHandler.MoreLikeThisHelper mlt 
         = new MoreLikeThisHandler.MoreLikeThisHelper( p, searcher );
       
       int mltcount = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
       NamedList<DocList> sim = mlt.getMoreLikeThese(
-          builder.getResults().docList, mltcount, builder.getFieldFlags() );
+          rb.getResults().docList, mltcount, rb.getFieldFlags() );
 
       // TODO ???? add this directly to the response?
-      rsp.add( "moreLikeThis", sim );
+      rb.rsp.add( "moreLikeThis", sim );
     }
   }
 

@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 
 /***
  * SortSpec encapsulates a Lucene Sort and a count of the number of documents
@@ -42,6 +43,18 @@ public class SortSpec
   public void setSort( Sort s )
   {
     sort = s;
+  }
+
+  public static boolean includesScore(Sort sort) {
+    if (sort==null) return true;
+    for (SortField sf : sort.getSort()) {
+      if (sf.getType() == SortField.SCORE) return true;
+    }
+    return false;
+  }
+
+  public boolean includesScore() {
+    return includesScore(sort);
   }
 
   /**

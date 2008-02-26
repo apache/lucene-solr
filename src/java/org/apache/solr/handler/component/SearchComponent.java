@@ -36,11 +36,31 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class SearchComponent implements SolrInfoMBean, NamedListInitializedPlugin
 {
-  public abstract void prepare( SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException, ParseException;
-  public abstract void process( SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException;
+  public abstract void prepare(ResponseBuilder rb) throws IOException;
+  public abstract void process(ResponseBuilder rb) throws IOException;
+
+  /** Process for a distributed search.
+   * @returns the next stage for this component */
+  public int distributedProcess(ResponseBuilder rb) throws IOException {
+    return ResponseBuilder.STAGE_DONE;
+  }
+
+  /** Called after another component adds a request */
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+  }
+
+  /** Called after all responses for a single request were received */
+  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
+  }
+
+  /** Called after all responses have been received for this stage.
+   * Useful when different requests are sent to each shard.
+   */
+  public void finishStage(ResponseBuilder rb) {
+  }
+
 
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
-  
   public void init( NamedList args )
   {
     // By default do nothing

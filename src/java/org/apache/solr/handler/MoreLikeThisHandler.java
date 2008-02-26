@@ -179,7 +179,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         rsp.add( "facet_counts", null );
       }
       else {
-        SimpleFacets f = new SimpleFacets(searcher, mltDocs.docSet, params );
+        SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params );
         rsp.add( "facet_counts", f.getFacetCounts() );
       }
     }

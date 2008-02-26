@@ -473,6 +473,7 @@ final public class XMLWriter {
         SolrIndexSearcher searcher = request.getSearcher();
         DocIterator iterator = ids.iterator();
         int sz = ids.size();
+        includeScore = includeScore && ids.hasScores();
         for (int i=0; i<sz; i++) {
           int id = iterator.nextDoc();
           Document doc = searcher.doc(id, fields);

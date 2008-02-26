@@ -225,7 +225,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
     //System.out.println(resp);
     // second doc ranked first
-    assertTrue( resp.indexOf("id=2") < resp.indexOf("id=1") );
+    assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
   }
 
   public void testFieldBoost() throws Exception {
@@ -243,7 +243,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
     //System.out.println(resp);
     // second doc ranked first
-    assertTrue( resp.indexOf("id=2") < resp.indexOf("id=1") );
+    assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
   }
 
   public void testXMLWriter() throws Exception {

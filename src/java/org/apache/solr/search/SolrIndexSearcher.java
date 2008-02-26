@@ -519,8 +519,15 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
 
-
-  protected DocSet getDocSet(List<Query> queries) throws IOException {
+  /**
+   * Returns the set of document ids matching all queries.
+   * This method is cache-aware and attempts to retrieve the answer from the cache if possible.
+   * If the answer was not cached, it may have been inserted into the cache as a result of this call.
+   * This method can handle negative queries.
+   * <p>
+   * The DocSet returned should <b>not</b> be modified.
+   */
+  public DocSet getDocSet(List<Query> queries) throws IOException {
     if (queries==null) return null;
     if (queries.size()==1) return getDocSet(queries.get(0));
     DocSet answer=null;

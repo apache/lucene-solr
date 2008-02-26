@@ -62,12 +62,13 @@ public class SimpleFacets {
   protected SolrParams params;
   /** Searcher to use for all calculations */
   protected SolrIndexSearcher searcher;
+  protected SolrQueryRequest req;
 
-
-  public SimpleFacets(SolrIndexSearcher searcher,
+  public SimpleFacets(SolrQueryRequest req,
                       DocSet docs,
                       SolrParams params) {
-    this.searcher = searcher;
+    this.req = req;
+    this.searcher = req.getSearcher();
     this.docs = docs;
     this.params = params;
   }
@@ -117,12 +118,13 @@ public class SimpleFacets {
      * If user doesn't want schema default for facet.query, they should be
      * explicit.
      */
-    SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
+    // SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
-        res.add(q, searcher.numDocs(qp.parse(q), docs));
+        Query qobj = QParser.getParser(q, null, req).getQuery();
+        res.add(q, searcher.numDocs(qobj, docs));
       }
     }
 

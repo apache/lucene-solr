@@ -18,23 +18,34 @@
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SortSpec;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * TODO!
+ * This class is experimental and will be changing in the future.
  * 
  * @version $Id$
  * @since solr 1.3
  */
 public class ResponseBuilder 
 {
+  public SolrQueryRequest req;
+  public SolrQueryResponse rsp;
+  public boolean doHighlights;
+  public boolean doFacets;
+
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
@@ -51,11 +62,74 @@ public class ResponseBuilder
   private RTimer timer = null;
   
   private Query highlightQuery = null;
-  
 
-  //-------------------------------------------------------------------------
-  //-------------------------------------------------------------------------
-  
+  public List<SearchComponent> components;
+
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  //// Distributed Search section
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+
+  public static final String FIELD_SORT_VALUES = "fsv";
+  public static final String SHARDS = "shards";
+  public static final String IDS = "ids";
+
+  /***
+  public static final String NUMDOCS = "nd";
+  public static final String DOCFREQS = "tdf";
+  public static final String TERMS = "terms";
+  public static final String EXTRACT_QUERY_TERMS = "eqt";
+  public static final String LOCAL_SHARD = "local";
+  public static final String DOC_QUERY = "dq";
+  ***/
+
+  public static int STAGE_START           = 0;
+  public static int STAGE_PARSE_QUERY     = 1000;
+  public static int STAGE_EXECUTE_QUERY   = 2000;
+  public static int STAGE_GET_FIELDS      = 3000;
+  public static int STAGE_DONE            = Integer.MAX_VALUE;
+
+  public int stage;  // What stage is this current request at?
+
+
+  public String[] shards;
+  public List<ShardRequest> outgoing;  // requests to be sent
+  public List<ShardRequest> finished;  // requests that have received responses from all shards
+
+
+  public int getShardNum(String shard) {
+    for (int i=0; i<shards.length; i++) {
+      if (shards[i]==shard || shards[i].equals(shard)) return i;
+    }
+    return -1;
+  }
+
+  public void addRequest(SearchComponent me, ShardRequest sreq) {
+    outgoing.add(sreq);
+    if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE)==0) {
+      // if this isn't a private request, let other components modify it.
+      for (SearchComponent component : components) {
+        if (component != me) {
+          component.modifyRequest(this, me, sreq);
+        }
+      }
+    }
+  }
+
+  public GlobalCollectionStat globalCollectionStat;
+
+  Map<Object, ShardDoc> resultIds;
+  // Maps uniqueKeyValue to ShardDoc, which may be used to
+  // determine order of the doc or uniqueKey in the final
+  // returned sequence.
+  // Only valid after STAGE_EXECUTE_QUERY has completed.
+
+
+  /* private... components that don't own these shouldn't use them */
+  SolrDocumentList _responseDocs;
+  FacetInfo _facetInfo;
+
   /**
    * Utility function to add debugging info.  This will make sure a valid 
    * debugInfo exists before adding to it.
@@ -70,7 +144,7 @@ public class ResponseBuilder
 
   //-------------------------------------------------------------------------
   //-------------------------------------------------------------------------
-  
+
   public boolean isDebug() {
     return debug;
   }
@@ -174,4 +248,17 @@ public class ResponseBuilder
   public void setTimer(RTimer timer) {
     this.timer = timer;
   }
+
+
+  public static class GlobalCollectionStat {
+    public final long numDocs;
+
+    public final Map<String, Long> dfMap;
+
+    public GlobalCollectionStat(int numDocs, Map<String, Long> dfMap) {
+      this.numDocs = numDocs;
+      this.dfMap = dfMap;
+    }
+  }
+
 }

@@ -118,6 +118,27 @@ public class StrUtils {
     return lst;
   }
 
+  /** Creates a backslash escaped string, joining all the items. */
+  public static String join(List<String> items, char separator) {
+    StringBuilder sb = new StringBuilder(items.size() << 3);
+    boolean first=true;
+    for (String item : items) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(separator);
+      }
+      for (int i=0; i<item.length(); i++) {
+        char ch = item.charAt(i);
+        if (ch=='\\' || ch == separator) {
+          sb.append('\\');
+        }
+        sb.append(ch);
+      }
+    }
+    return sb.toString();
+  }
+
 
 
   public static List<String> splitWS(String s, boolean decode) {

@@ -25,7 +25,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,13 +58,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -304,22 +302,22 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   //---------------------------------------------------------------------------------
   
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
+  public void prepare(ResponseBuilder rb) throws IOException
   {
+    SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     // A runtime param can skip 
     if( !params.getBool( ENABLE, true ) ) {
       return;
     }
     
-    ResponseBuilder builder = SearchHandler.getResponseBuilder( req );
-    Query query = builder.getQuery();
+    Query query = rb.getQuery();
     if( query == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
           "The QueryElevationComponent needs to be registered 'after' the query component" );
     }
     
-    String qstr = getAnalyzedQuery( builder.getQueryString() );
+    String qstr = getAnalyzedQuery( rb.getQueryString() );
     IndexReader reader = req.getSearcher().getReader();
     ElevationObj booster = null;
     try {
@@ -340,11 +338,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           newq.add( bq );
         }
       }
-      builder.setQuery( newq );
+      rb.setQuery( newq );
       
       // if the sort is 'score desc' use a custom sorting method to 
       // insert documents in their proper place 
-      SortSpec sortSpec = builder.getSortSpec();
+      SortSpec sortSpec = rb.getSortSpec();
       if( sortSpec.getSort() == null ) {
         sortSpec.setSort( new Sort( new SortField[] {
             new SortField(idField, new ElevationComparatorSource(booster.priority), false ),
@@ -377,7 +375,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     
     // Add debugging information
-    if( builder.isDebug() ) {
+    if( rb.isDebug() ) {
       List<String> match = null;
       if( booster != null ) {
         // Extract the elevated terms into a list
@@ -391,12 +389,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
       dbg.add( "q", qstr );
       dbg.add( "match", match );
-      builder.addDebugInfo( "queryBoosting", dbg );
+      rb.addDebugInfo( "queryBoosting", dbg );
     }
   }
 
   @Override
-  public void process(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  public void process(ResponseBuilder rb) throws IOException {
     // Do nothing -- the real work is modifying the input query
   }
     

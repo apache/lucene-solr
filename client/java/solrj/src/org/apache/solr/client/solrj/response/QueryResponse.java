@@ -51,7 +51,6 @@ public class QueryResponse extends SolrResponseBase
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
-  private Map<String,Integer> _docIdMap = null;
   private Map<String,String> _explainMap = null;
 
   public QueryResponse( NamedList<Object> res ) 
@@ -81,9 +80,7 @@ public class QueryResponse extends SolrResponseBase
       }
     }
   }
-  
-  private static final String DKEY = ",internal_docid=";
-  
+    
   private void extractDebugInfo( NamedList<Object> debug )
   {
     _debugMap = new LinkedHashMap<String, Object>(); // keep the order
@@ -93,20 +90,11 @@ public class QueryResponse extends SolrResponseBase
 
     // Parse out interisting bits from the debug info
     _explainMap = new HashMap<String, String>();
-    _docIdMap = new HashMap<String, Integer>();
     NamedList<String> explain = (NamedList<String>)_debugMap.get( "explain" );
     if( explain != null ) {
       for( Map.Entry<String, String> info : explain ) {
         String key = info.getKey();
-        int idx0 = key.indexOf( '=' )+1;
-        int idx1 = info.getKey().indexOf( DKEY );
-        int idx2 = idx1 + DKEY.length();
-
-        String id = key.substring( idx0, idx1 );
-        String docID = key.substring( idx2 );
-        
-        _explainMap.put( id, info.getValue() );
-        _docIdMap.put( id, Integer.valueOf( docID ) );
+        _explainMap.put( key, info.getValue() );
       }
     }
   }
@@ -180,10 +168,6 @@ public class QueryResponse extends SolrResponseBase
 
   public Map<String, Object> getDebugMap() {
     return _debugMap;
-  }
-
-  public Map<String, Integer> getDocIdMap() {
-    return _docIdMap;
   }
 
   public Map<String, String> getExplainMap() {

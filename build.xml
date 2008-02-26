@@ -235,9 +235,10 @@
           depends="compile-common,init-forrest-entities">
 
     <solr-javac destdir="${dest}/core"
-                classpathref="compile.classpath">
+                classpathref="compile.classpath.solrj-embedded">
       <src path="${src}/java" />
       <src path="${src}/webapp/src" />
+      <src path="client/java/solrj/src" />
       <exclude name="org/apache/solr/common/**" />
     </solr-javac>
   </target>
@@ -628,6 +629,7 @@
          <include name="${fullnamever}.jar" />
          <include name="${fullname}-common-${version}.jar" />
        </lib>
+       <lib dir="client/java/solrj/lib"/>
        <fileset dir="${src}/webapp/resources" />
        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
     </war>

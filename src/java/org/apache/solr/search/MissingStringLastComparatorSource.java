@@ -33,7 +33,7 @@ import java.io.IOException;
  */
 
 // move to apache package and make public if it is accepted as a patch
-class MissingStringLastComparatorSource implements SortComparatorSource {
+public class MissingStringLastComparatorSource implements SortComparatorSource {
 
   public static final String bigString="\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffffNULL_VAL";
 

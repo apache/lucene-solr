@@ -19,14 +19,16 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 
 /**
  * TODO!
@@ -39,51 +41,113 @@ public class HighlightComponent extends SearchComponent
   public static final String COMPONENT_NAME = "highlight";
   
   @Override
-  public void prepare(SolrQueryRequest req, SolrQueryResponse rsp) 
+  public void prepare(ResponseBuilder rb) throws IOException
   {
-    
+    SolrHighlighter highlighter = rb.req.getCore().getHighlighter();
+    rb.doHighlights = highlighter.isHighlightingEnabled(rb.req.getParams());
   }
   
   @Override
-  public void process(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    SolrHighlighter highlighter = req.getCore().getHighlighter();
-    if (highlighter.isHighlightingEnabled(req.getParams())) {
-      ResponseBuilder builder = SearchHandler.getResponseBuilder( req );
+  public void process(ResponseBuilder rb) throws IOException {
+    SolrQueryRequest req = rb.req;
+    if (rb.doHighlights) {
+      SolrHighlighter highlighter = req.getCore().getHighlighter();
       SolrParams params = req.getParams();
 
       String[] defaultHighlightFields;  //TODO: get from builder by default?
 
-      if (builder.getQparser() != null) {
-        defaultHighlightFields = builder.getQparser().getDefaultHighlightFields();
+      if (rb.getQparser() != null) {
+        defaultHighlightFields = rb.getQparser().getDefaultHighlightFields();
       } else {
         defaultHighlightFields = params.getParams(CommonParams.DF);
       }
       
-      if(builder.getHighlightQuery()==null) {
-        if (builder.getQparser() != null) {
+      if(rb.getHighlightQuery()==null) {
+        if (rb.getQparser() != null) {
           try {
-            builder.setHighlightQuery( builder.getQparser().getHighlightQuery() );
+            rb.setHighlightQuery( rb.getQparser().getHighlightQuery() );
           } catch (Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
         } else {
-          builder.setHighlightQuery( builder.getQuery() );
+          rb.setHighlightQuery( rb.getQuery() );
         }
       }
       
       NamedList sumData = highlighter.doHighlighting(
-              builder.getResults().docList,
-              builder.getHighlightQuery().rewrite(req.getSearcher().getReader()),
+              rb.getResults().docList,
+              rb.getHighlightQuery().rewrite(req.getSearcher().getReader()),
               req, defaultHighlightFields );
       
       if(sumData != null) {
         // TODO ???? add this directly to the response?
-        rsp.add("highlighting", sumData);
+        rb.rsp.add("highlighting", sumData);
       }
     }
   }
-  
-  /////////////////////////////////////////////
+
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    if (!rb.doHighlights) return;
+
+    // Turn on highlighting only only when retrieving fields
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
+        sreq.purpose |= ShardRequest.PURPOSE_GET_HIGHLIGHTS;
+        // should already be true...
+        sreq.params.set(HighlightParams.HIGHLIGHT, "true");      
+    } else {
+      sreq.params.set(HighlightParams.HIGHLIGHT, "false");      
+    }
+  }
+
+  @Override
+  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
+  }
+
+  @Override
+  public void finishStage(ResponseBuilder rb) {
+    if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      NamedList hlResult = new SimpleOrderedMap();
+
+      Object[] arr = new Object[rb.resultIds.size() * 2];
+
+      // TODO: make a generic routine to do automatic merging of id keyed data
+      for (ShardRequest sreq : rb.finished) {
+        if ((sreq.purpose & ShardRequest.PURPOSE_GET_HIGHLIGHTS) == 0) continue;
+        for (ShardResponse srsp : sreq.responses) {
+          NamedList hl = (NamedList)srsp.rsp.getResponse().get("highlighting");
+          for (int i=0; i<hl.size(); i++) {
+            String id = hl.getName(i);
+            ShardDoc sdoc = rb.resultIds.get(id);
+            int idx = sdoc.positionInResponse;
+            arr[idx<<1] = id;
+            arr[(idx<<1)+1] = hl.getVal(i);
+          }
+        }
+      }
+
+      // remove nulls in case not all docs were able to be retrieved
+      rb.rsp.add("highlighting", removeNulls(new NamedList(Arrays.asList(arr))));      
+    }
+  }
+
+
+  static NamedList removeNulls(NamedList nl) {
+    for (int i=0; i<nl.size(); i++) {
+      if (nl.getName(i)==null) {
+        NamedList newList = new NamedList();
+        for (int j=0; j<nl.size(); j++) {
+          String n = nl.getName(j);
+          if (n != null) {
+            newList.add(n, nl.getVal(j));
+          }
+        }
+        return newList;
+      }
+    }
+    return nl;
+  }
+
+  ////////////////////////////////////////////
   ///  SolrInfoMBean
   ////////////////////////////////////////////
   

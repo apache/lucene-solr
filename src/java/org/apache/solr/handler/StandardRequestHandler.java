@@ -17,10 +17,11 @@
 
 package org.apache.solr.handler;
 
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.*;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import org.apache.solr.handler.component.SearchHandler;
 
 /**
  * @version $Id$

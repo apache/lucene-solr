@@ -199,6 +199,15 @@ New Features
     with "304 Not Modified" when appropriate.  New options have been added
     to solrconfig.xml to influence this behavior.
     (Thomas Peuss via hossman)
+
+40. SOLR-303: Distributed Search over HTTP.  Specification of shards
+    argument causes Solr to query those shards and merge the results
+    into a single response.  Querying, field faceting (sorted only),
+    query faceting, highlighting, and debug information are supported
+    in distributed mode.
+    (Sharad Agarwal, Patrick O'Leary, Sabyasachi Dalal, Stu Hood,
+     ryan, yonik)
+    
     
 Changes in runtime behavior
 
