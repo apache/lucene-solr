@@ -63,6 +63,7 @@ import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
@@ -329,6 +330,7 @@ public final class SolrCore {
       
       initWriters();
       initQParsers();
+      initValueSourceParsers();
       
       this.searchComponents = loadSearchComponents( config );
 
@@ -1038,6 +1040,36 @@ public final class SolrCore {
     if (plugin != null) return plugin;
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query type '"+parserName+"'");
   }
+  
+  private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<String, ValueSourceParser>();
+  
+  /** Configure the ValueSource (function) plugins */
+  private void initValueSourceParsers() {
+    String xpath = "valueSourceParser";
+    NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
+
+    NamedListPluginLoader<ValueSourceParser> loader =
+      new NamedListPluginLoader<ValueSourceParser>( "[solrconfig.xml] "+xpath, valueSourceParsers);
+
+    loader.load( solrConfig.getResourceLoader(), nodes );
+
+    // default value source parsers
+    for (Map.Entry<String, ValueSourceParser> entry : ValueSourceParser.standardValueSourceParsers.entrySet()) {
+      try {
+        String name = entry.getKey();
+        ValueSourceParser valueSourceParser = entry.getValue();
+        valueSourceParsers.put(name, valueSourceParser);
+        valueSourceParser.init(null);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    }
+  }
+  
+  public ValueSourceParser getValueSourceParser(String parserName) {
+    return valueSourceParsers.get(parserName);
+  }
+  
 }
 
 

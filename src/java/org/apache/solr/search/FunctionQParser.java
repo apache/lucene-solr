@@ -26,18 +26,18 @@ import org.apache.solr.search.function.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class FunctionQParser extends QParser {
+
+  protected QueryParsing.StrParser sp;
+
   public FunctionQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
-  QueryParsing.StrParser sp;
-
   public Query parse() throws ParseException {
     sp = new QueryParsing.StrParser(getString());
-    ValueSource vs = parseValSource();
+    ValueSource vs = parseValueSource();
 
     /***  boost promoted to top-level query type to avoid this hack 
 
@@ -52,236 +52,173 @@ public class FunctionQParser extends QParser {
     return new FunctionQuery(vs);
   }
 
-  private abstract static class VSParser {
-    abstract ValueSource parse(FunctionQParser fp) throws ParseException;
+  /**
+   * Are there more arguments in the argument list being parsed?
+   * 
+   * @return whether more args exist
+   * @throws ParseException
+   */
+  public boolean hasMoreArguments() throws ParseException {
+    int ch = sp.peek();
+    /* determine whether the function is ending with a paren or end of str */
+    return (! (ch == 0 || ch == ')') );
   }
-
-  private static Map<String, VSParser> vsParsers = new HashMap<String, VSParser>();
-  static {
-    vsParsers.put("ord", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        String field = fp.sp.getId();
-        return new OrdFieldSource(field);
-      }
-    });
-    vsParsers.put("rord", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        String field = fp.sp.getId();
-        return new ReverseOrdFieldSource(field);
-      }
-    });
-    vsParsers.put("linear", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        fp.sp.expect(",");
-        float slope = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float intercept = fp.sp.getFloat();
-        return new LinearFloatFunction(source,slope,intercept);
-      }
-    });
-    vsParsers.put("max", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        fp.sp.expect(",");
-        float val = fp.sp.getFloat();
-        return new MaxFloatFunction(source,val);
-      }
-    });
-    vsParsers.put("recip", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        fp.sp.expect(",");
-        float m = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float a = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float b = fp.sp.getFloat();
-        return new ReciprocalFloatFunction(source,m,a,b);
-      }
-    });
-    vsParsers.put("scale", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        fp.sp.expect(",");
-        float min = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float max = fp.sp.getFloat();
-        return new ScaleFloatFunction(source,min,max);
-      }
-    });
-    vsParsers.put("pow", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource a = fp.parseValSource();
-        fp.sp.expect(",");
-        ValueSource b = fp.parseValSource();
-        return new PowFloatFunction(a,b);
-      }
-    });
-    vsParsers.put("div", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource a = fp.parseValSource();
-        fp.sp.expect(",");
-        ValueSource b = fp.parseValSource();
-        return new DivFloatFunction(a,b);
-      }
-    });
-    vsParsers.put("map", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        fp.sp.expect(",");
-        float min = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float max = fp.sp.getFloat();
-        fp.sp.expect(",");
-        float target = fp.sp.getFloat();
-        return new RangeMapFloatFunction(source,min,max,target);
-      }
-    });
-    vsParsers.put("sqrt", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "sqrt";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.sqrt(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("log", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "log";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.log10(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("abs", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        ValueSource source = fp.parseValSource();
-        return new SimpleFloatFunction(source) {
-          protected String name() {
-            return "abs";
-          }
-          protected float func(int doc, DocValues vals) {
-            return (float)Math.abs(vals.floatVal(doc));
-          }
-        };
-      }
-    });
-    vsParsers.put("sum", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    vsParsers.put("product", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    vsParsers.put("query", new VSParser() {
-      // boost(query($q),rating)
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        Query q = fp.getNestedQuery();
-        float defVal = 0.0f;
-        if (fp.sp.opt(",")) {
-          defVal = fp.sp.getFloat();
-        }
-        return new QueryValueSource(q, defVal);
-      }
-    });
-    vsParsers.put("boost", new VSParser() {
-      ValueSource parse(FunctionQParser fp) throws ParseException {
-        Query q = fp.getNestedQuery();
-        fp.sp.expect(",");
-        ValueSource vs = fp.parseValSource();
-        BoostedQuery bq = new BoostedQuery(q, vs);
-System.out.println("Constructed Boostedquery " + bq);
-        return new QueryValueSource(bq, 0.0f);
-      }
-    });
+  
+  /**
+   * TODO: Doc
+   * 
+   * @return
+   * @throws ParseException
+   */
+  public String parseId() throws ParseException {
+    String value = sp.getId();
+    consumeArgumentDelimiter();
+    return value;
   }
-
-  private List<ValueSource> parseValueSourceList() throws ParseException {
+  
+  /**
+   * Parse a float.
+   * 
+   * @return Float
+   * @throws ParseException
+   */
+  public Float parseFloat() throws ParseException {
+    float value = sp.getFloat();
+    consumeArgumentDelimiter();
+    return value;
+  }
+  
+  /**
+   * Parse a list of ValueSource.  Must be the final set of arguments
+   * to a ValueSource.
+   * 
+   * @return List<ValueSource>
+   * @throws ParseException
+   */
+  public List<ValueSource> parseValueSourceList() throws ParseException {
     List<ValueSource> sources = new ArrayList<ValueSource>(3);
     for (;;) {
-      sources.add(parseValSource());
-      char ch = sp.peek();
-      if (ch==')') break;
-      sp.expect(",");
+      sources.add(parseValueSource(false));
+      if (! consumeArgumentDelimiter()) break;
     }
     return sources;
   }
 
-  private ValueSource parseValSource() throws ParseException {
-    int ch = sp.peek();
-    if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
-      return new ConstValueSource(sp.getFloat());
-    }
-
-    String id = sp.getId();
-    if (sp.opt("(")) {
-      // a function... look it up.
-      VSParser argParser = vsParsers.get(id);
-      if (argParser==null) {
-        throw new ParseException("Unknown function " + id + " in FunctionQuery(" + sp + ")");
-      }
-      ValueSource vs = argParser.parse(this);
-      sp.expect(")");
-      return vs;
-    }
-
-    SchemaField f = req.getSchema().getField(id);
-    return f.getType().getValueSource(f, this);
+  /**
+   * Parse an individual ValueSource.
+   * 
+   * @return
+   * @throws ParseException
+   */
+  public ValueSource parseValueSource() throws ParseException {
+    /* consume the delimiter afterward for an external call to parseValueSource */
+    return parseValueSource(true);
   }
-
-  private Query getNestedQuery() throws ParseException {
+  
+  /**
+   * TODO: Doc
+   * 
+   * @return
+   * @throws ParseException
+   */
+  public Query parseNestedQuery() throws ParseException {
+    Query nestedQuery;
+    
     if (sp.opt("$")) {
       String param = sp.getId();
       sp.pos += param.length();
       String qstr = getParam(param);
       qstr = qstr==null ? "" : qstr;
-      return subQuery(qstr, null).parse();
+      nestedQuery = subQuery(qstr, null).parse();
     }
-
-    int start = sp.pos;
-    int end = sp.pos;
-    String v = sp.val; 
-
-    String qs = v.substring(start);
-    HashMap nestedLocalParams = new HashMap<String,String>();
-    end = QueryParsing.parseLocalParams(qs, start, nestedLocalParams, getParams());
-
-    QParser sub;
-
-    if (end>start) {
-      if (nestedLocalParams.get(QueryParsing.V) != null) {
-        // value specified directly in local params... so the end of the
-        // query should be the end of the local params.
-        sub = subQuery(qs.substring(0, end), null);
+    else {
+      int start = sp.pos;
+      int end = sp.pos;
+      String v = sp.val; 
+  
+      String qs = v.substring(start);
+      HashMap nestedLocalParams = new HashMap<String,String>();
+      end = QueryParsing.parseLocalParams(qs, start, nestedLocalParams, getParams());
+  
+      QParser sub;
+  
+      if (end>start) {
+        if (nestedLocalParams.get(QueryParsing.V) != null) {
+          // value specified directly in local params... so the end of the
+          // query should be the end of the local params.
+          sub = subQuery(qs.substring(0, end), null);
+        } else {
+          // value here is *after* the local params... ask the parser.
+          sub = subQuery(qs, null);
+          // int subEnd = sub.findEnd(')');
+          // TODO.. implement functions to find the end of a nested query
+          throw new ParseException("Nested local params must have value in v parameter.  got '" + qs + "'");
+        }
       } else {
-        // value here is *after* the local params... ask the parser.
-        sub = subQuery(qs, null);
-        // int subEnd = sub.findEnd(')');
-        // TODO.. implement functions to find the end of a nested query
-        throw new ParseException("Nested local params must have value in v parameter.  got '" + qs + "'");
+        throw new ParseException("Nested function query must use $param or <!v=value> forms. got '" + qs + "'");
       }
-    } else {
-      throw new ParseException("Nested function query must use $param or <!v=value> forms. got '" + qs + "'");
+  
+      sp.pos += end-start;  // advance past nested query
+      nestedQuery = sub.getQuery();
     }
-
-    sp.pos += end-start;  // advance past nested query
-    return sub.getQuery();
+    consumeArgumentDelimiter();
+    
+    return nestedQuery;
   }
+
+  /**
+   * Parse an individual value source.
+   * 
+   * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource  
+   * @return
+   * @throws ParseException
+   */
+  protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws ParseException {
+    ValueSource valueSource;
+    
+    int ch = sp.peek();
+    if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
+      valueSource = new ConstValueSource(sp.getFloat());
+    }
+    else {
+      String id = sp.getId();
+      if (sp.opt("(")) {
+        // a function... look it up.
+        ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
+        if (argParser==null) {
+          throw new ParseException("Unknown function " + id + " in FunctionQuery(" + sp + ")");
+        }
+        valueSource = argParser.parse(this);
+        sp.expect(")");
+      }
+      else {
+        SchemaField f = req.getSchema().getField(id);
+        valueSource = f.getType().getValueSource(f, this);
+      }
+    }
+    
+    if (doConsumeDelimiter)
+      consumeArgumentDelimiter();
+    
+    return valueSource;
+  }
+
+  /**
+   * Consume an argument delimiter (a comma) from the token stream.
+   * Only consumes if more arguments should exist (no ending parens or end of string).
+   * 
+   * @return whether a delimiter was consumed
+   * @throws ParseException
+   */
+  protected boolean consumeArgumentDelimiter() throws ParseException {
+    /* if a list of args is ending, don't expect the comma */
+    if (hasMoreArguments()) {
+      sp.expect(",");
+      return true;
+    }
+   
+    return false;
+  }
+    
 
 }

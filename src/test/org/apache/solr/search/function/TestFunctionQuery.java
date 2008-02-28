@@ -17,7 +17,17 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Query;
+import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.FunctionQParser;
+import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.QueryValueSource;
+import org.apache.solr.search.function.SimpleFloatFunction;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
 import java.util.ArrayList;
@@ -36,7 +46,7 @@ import java.io.FileOutputStream;
 public class TestFunctionQuery extends AbstractSolrTestCase {
 
   public String getSchemaFile() { return "schema11.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  public String getSolrConfigFile() { return "solrconfig-functionquery.xml"; }
   public String getCoreName() { return "basic"; }
 
   public void setUp() throws Exception {
@@ -153,6 +163,11 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     // test that infinity doesn't mess up scale function
     singleTest(field,"scale(log(\0),-1000,1000)",100,1000);
 
+    // test use of an ValueSourceParser plugin: nvl function
+    singleTest(field,"nvl(\0,1)", 0, 1, 100, 100);
+    
+    // compose the ValueSourceParser plugin function with another function
+    singleTest(field, "nvl(sum(0,\0),1)", 0, 1, 100, 100);
   }
 
   public void testFunctions() {
@@ -232,5 +247,4 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     }
 
   }
-
 }

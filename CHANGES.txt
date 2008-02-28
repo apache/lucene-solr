@@ -207,7 +207,10 @@ New Features
     in distributed mode.
     (Sharad Agarwal, Patrick O'Leary, Sabyasachi Dalal, Stu Hood,
      ryan, yonik)
-    
+
+41. SOLR-356: Pluggable functions (value sources) that allow 
+    registration of new functions via solrconfig.xml
+    (Doug Daniels via yonik)
     
 Changes in runtime behavior
 
