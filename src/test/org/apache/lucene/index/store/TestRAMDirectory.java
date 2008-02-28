@@ -33,6 +33,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
@@ -213,6 +215,19 @@ public class TestRAMDirectory extends LuceneTestCase {
     if (indexDir != null && indexDir.exists()) {
       rmDir (indexDir);
     }
+  }
+
+  // LUCENE-1196
+  public void testIllegalEOF() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+    IndexOutput o = dir.createOutput("out");
+    byte[] b = new byte[1024];
+    o.writeBytes(b, 0, 1024);
+    o.close();
+    IndexInput i = dir.openInput("out");
+    i.seek(1024);
+    i.close();
+    dir.close();
   }
   
   private void rmDir(File dir) {

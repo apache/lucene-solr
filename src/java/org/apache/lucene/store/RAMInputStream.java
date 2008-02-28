@@ -62,7 +62,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
   public byte readByte() throws IOException {
     if (bufferPosition >= bufferLength) {
       currentBufferIndex++;
-      switchCurrentBuffer();
+      switchCurrentBuffer(true);
     }
     return currentBuffer[bufferPosition++];
   }
@@ -71,7 +71,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
     while (len > 0) {
       if (bufferPosition >= bufferLength) {
         currentBufferIndex++;
-        switchCurrentBuffer();
+        switchCurrentBuffer(true);
       }
 
       int remainInBuffer = bufferLength - bufferPosition;
@@ -83,10 +83,16 @@ class RAMInputStream extends IndexInput implements Cloneable {
     }
   }
 
-  private final void switchCurrentBuffer() throws IOException {
+  private final void switchCurrentBuffer(boolean enforceEOF) throws IOException {
     if (currentBufferIndex >= file.numBuffers()) {
       // end of file reached, no more buffers left
-      throw new IOException("Read past EOF");
+      if (enforceEOF)
+        throw new IOException("Read past EOF");
+      else {
+        // Force EOF if a read takes place at this position
+        currentBufferIndex--;
+        bufferPosition = BUFFER_SIZE;
+      }
     } else {
       currentBuffer = (byte[]) file.getBuffer(currentBufferIndex);
       bufferPosition = 0;
@@ -103,7 +109,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
   public void seek(long pos) throws IOException {
     if (currentBuffer==null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);
-      switchCurrentBuffer();
+      switchCurrentBuffer(false);
     }
     bufferPosition = (int) (pos % BUFFER_SIZE);
   }
