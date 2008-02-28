@@ -289,6 +289,7 @@ public class IndexWriter {
   private static Object MESSAGE_ID_LOCK = new Object();
   private static int MESSAGE_ID = 0;
   private int messageID = -1;
+  volatile private boolean hitOOM;
 
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
@@ -1610,6 +1611,13 @@ public class IndexWriter {
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
     boolean doClose;
+
+    // If any methods have hit OutOfMemoryError, then abort
+    // on close, in case the internal state of IndexWriter
+    // or DocumentsWriter is corrupt
+    if (hitOOM)
+      abort();
+
     synchronized(this) {
       // Ensure that only one thread actually gets to do the closing:
       if (!closing) {
@@ -1676,7 +1684,9 @@ public class IndexWriter {
       synchronized(this) {
         closed = true;
       }
-
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     } finally {
       synchronized(this) {
         if (!closed)
@@ -1862,27 +1872,32 @@ public class IndexWriter {
     boolean doFlush = false;
     boolean success = false;
     try {
-      doFlush = docWriter.addDocument(doc, analyzer);
-      success = true;
-    } finally {
-      if (!success) {
+      try {
+        doFlush = docWriter.addDocument(doc, analyzer);
+        success = true;
+      } finally {
+        if (!success) {
 
-        if (infoStream != null)
-          message("hit exception adding document");
+          if (infoStream != null)
+            message("hit exception adding document");
 
-        synchronized (this) {
-          // If docWriter has some aborted files that were
-          // never incref'd, then we clean them up here
-          if (docWriter != null) {
-            final List files = docWriter.abortedFiles();
-            if (files != null)
-              deleter.deleteNewFiles(files);
+          synchronized (this) {
+            // If docWriter has some aborted files that were
+            // never incref'd, then we clean them up here
+            if (docWriter != null) {
+              final List files = docWriter.abortedFiles();
+              if (files != null)
+                deleter.deleteNewFiles(files);
+            }
           }
         }
       }
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
-    if (doFlush)
-      flush(true, false);
   }
 
   /**
@@ -1893,9 +1908,14 @@ public class IndexWriter {
    */
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = docWriter.bufferDeleteTerm(term);
-    if (doFlush)
-      flush(true, false);
+    try {
+      boolean doFlush = docWriter.bufferDeleteTerm(term);
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
+    }
   }
 
   /**
@@ -1908,9 +1928,14 @@ public class IndexWriter {
    */
   public void deleteDocuments(Term[] terms) throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = docWriter.bufferDeleteTerms(terms);
-    if (doFlush)
-      flush(true, false);
+    try {
+      boolean doFlush = docWriter.bufferDeleteTerms(terms);
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
+    }
   }
 
   /**
@@ -1946,28 +1971,33 @@ public class IndexWriter {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = false;
-    boolean success = false;
     try {
-      doFlush = docWriter.updateDocument(term, doc, analyzer);
-      success = true;
-    } finally {
-      if (!success) {
+      boolean doFlush = false;
+      boolean success = false;
+      try {
+        doFlush = docWriter.updateDocument(term, doc, analyzer);
+        success = true;
+      } finally {
+        if (!success) {
 
-        if (infoStream != null)
-          message("hit exception updating document");
+          if (infoStream != null)
+            message("hit exception updating document");
 
-        synchronized (this) {
-          // If docWriter has some aborted files that were
-          // never incref'd, then we clean them up here
-          final List files = docWriter.abortedFiles();
-          if (files != null)
-            deleter.deleteNewFiles(files);
+          synchronized (this) {
+            // If docWriter has some aborted files that were
+            // never incref'd, then we clean them up here
+            final List files = docWriter.abortedFiles();
+            if (files != null)
+              deleter.deleteNewFiles(files);
+          }
         }
       }
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
-    if (doFlush)
-      flush(true, false);
   }
 
   // for test purpose
@@ -2644,32 +2674,37 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
-    if (infoStream != null)
-      message("flush at addIndexes");
-    flush(true, false);
-
-    boolean success = false;
-
-    startTransaction();
-
     try {
-      for (int i = 0; i < dirs.length; i++) {
-        SegmentInfos sis = new SegmentInfos();	  // read infos from dir
-        sis.read(dirs[i]);
-        for (int j = 0; j < sis.size(); j++) {
-          segmentInfos.addElement(sis.info(j));	  // add each info
+      if (infoStream != null)
+        message("flush at addIndexes");
+      flush(true, false);
+
+      boolean success = false;
+
+      startTransaction();
+
+      try {
+        for (int i = 0; i < dirs.length; i++) {
+          SegmentInfos sis = new SegmentInfos();	  // read infos from dir
+          sis.read(dirs[i]);
+          for (int j = 0; j < sis.size(); j++) {
+            segmentInfos.addElement(sis.info(j));	  // add each info
+          }
+        }
+
+        optimize();
+
+        success = true;
+      } finally {
+        if (success) {
+          commitTransaction();
+        } else {
+          rollbackTransaction();
         }
       }
-
-      optimize();
-
-      success = true;
-    } finally {
-      if (success) {
-        commitTransaction();
-      } else {
-        rollbackTransaction();
-      }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2706,47 +2741,53 @@ public class IndexWriter {
       throws CorruptIndexException, IOException {
 
     ensureOpen();
-    if (infoStream != null)
-      message("flush at addIndexesNoOptimize");
-    flush(true, false);
-
-    boolean success = false;
-
-    startTransaction();
 
     try {
+      if (infoStream != null)
+        message("flush at addIndexesNoOptimize");
+      flush(true, false);
 
-      for (int i = 0; i < dirs.length; i++) {
-        if (directory == dirs[i]) {
-          // cannot add this index: segments may be deleted in merge before added
-          throw new IllegalArgumentException("Cannot add this index to itself");
+      boolean success = false;
+
+      startTransaction();
+
+      try {
+
+        for (int i = 0; i < dirs.length; i++) {
+          if (directory == dirs[i]) {
+            // cannot add this index: segments may be deleted in merge before added
+            throw new IllegalArgumentException("Cannot add this index to itself");
+          }
+
+          SegmentInfos sis = new SegmentInfos(); // read infos from dir
+          sis.read(dirs[i]);
+          for (int j = 0; j < sis.size(); j++) {
+            SegmentInfo info = sis.info(j);
+            segmentInfos.addElement(info); // add each info
+          }
         }
 
-        SegmentInfos sis = new SegmentInfos(); // read infos from dir
-        sis.read(dirs[i]);
-        for (int j = 0; j < sis.size(); j++) {
-          SegmentInfo info = sis.info(j);
-          segmentInfos.addElement(info); // add each info
+        maybeMerge();
+
+        // If after merging there remain segments in the index
+        // that are in a different directory, just copy these
+        // over into our index.  This is necessary (before
+        // finishing the transaction) to avoid leaving the
+        // index in an unusable (inconsistent) state.
+        copyExternalSegments();
+
+        success = true;
+
+      } finally {
+        if (success) {
+          commitTransaction();
+        } else {
+          rollbackTransaction();
         }
       }
-
-      maybeMerge();
-
-      // If after merging there remain segments in the index
-      // that are in a different directory, just copy these
-      // over into our index.  This is necessary (before
-      // finishing the transaction) to avoid leaving the
-      // index in an unusable (inconsistent) state.
-      copyExternalSegments();
-
-      success = true;
-
-    } finally {
-      if (success) {
-        commitTransaction();
-      } else {
-        rollbackTransaction();
-      }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2793,77 +2834,82 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
-    optimize();					  // start with zero or 1 seg
-
-    final String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(this, mergedName, null);
-
-    SegmentInfo info;
-
-    IndexReader sReader = null;
     try {
-      if (segmentInfos.size() == 1){ // add existing index, if any
-        sReader = SegmentReader.get(segmentInfos.info(0));
-        merger.add(sReader);
-      }
+      optimize();					  // start with zero or 1 seg
 
-      for (int i = 0; i < readers.length; i++)      // add new indexes
-        merger.add(readers[i]);
+      final String mergedName = newSegmentName();
+      SegmentMerger merger = new SegmentMerger(this, mergedName, null);
 
-      boolean success = false;
+      SegmentInfo info;
 
-      startTransaction();
-
+      IndexReader sReader = null;
       try {
-        int docCount = merger.merge();                // merge 'em
+        if (segmentInfos.size() == 1){ // add existing index, if any
+          sReader = SegmentReader.get(segmentInfos.info(0));
+          merger.add(sReader);
+        }
 
-        if(sReader != null) {
+        for (int i = 0; i < readers.length; i++)      // add new indexes
+          merger.add(readers[i]);
+
+        boolean success = false;
+
+        startTransaction();
+
+        try {
+          int docCount = merger.merge();                // merge 'em
+
+          if(sReader != null) {
+            sReader.close();
+            sReader = null;
+          }
+
+          segmentInfos.setSize(0);                      // pop old infos & add new
+          info = new SegmentInfo(mergedName, docCount, directory, false, true,
+                                 -1, null, false);
+          segmentInfos.addElement(info);
+
+          success = true;
+
+        } finally {
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception in addIndexes during merge");
+
+            rollbackTransaction();
+          } else {
+            commitTransaction();
+          }
+        }
+      } finally {
+        if (sReader != null) {
           sReader.close();
-          sReader = null;
-        }
-
-        segmentInfos.setSize(0);                      // pop old infos & add new
-        info = new SegmentInfo(mergedName, docCount, directory, false, true,
-                               -1, null, false);
-        segmentInfos.addElement(info);
-
-        success = true;
-
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception in addIndexes during merge");
-
-          rollbackTransaction();
-        } else {
-          commitTransaction();
         }
       }
-    } finally {
-      if (sReader != null) {
-        sReader.close();
-      }
-    }
     
-    if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
+      if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
 
-      boolean success = false;
+        boolean success = false;
 
-      startTransaction();
+        startTransaction();
 
-      try {
-        merger.createCompoundFile(mergedName + ".cfs");
-        info.setUseCompoundFile(true);
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception building compound file in addIndexes during merge");
+        try {
+          merger.createCompoundFile(mergedName + ".cfs");
+          info.setUseCompoundFile(true);
+        } finally {
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception building compound file in addIndexes during merge");
 
-          rollbackTransaction();
-        } else {
-          commitTransaction();
+            rollbackTransaction();
+          } else {
+            commitTransaction();
+          }
         }
       }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -3121,6 +3167,9 @@ public class IndexWriter {
       
       return flushDocs || flushDeletes;
 
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     } finally {
       docWriter.clearFlushPending();
       docWriter.resumeAllThreads();
@@ -3259,6 +3308,9 @@ public class IndexWriter {
   /* FIXME if we want to support non-contiguous segment merges */
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
 
+    if (hitOOM)
+      return false;
+
     if (infoStream != null)
       message("commitMerge: " + merge.segString(directory));
 
@@ -3344,53 +3396,57 @@ public class IndexWriter {
     boolean success = false;
 
     try {
-
       try {
-        mergeInit(merge);
-
-        if (infoStream != null)
-          message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
-
-        mergeMiddle(merge);
-        success = true;
-      } catch (MergePolicy.MergeAbortedException e) {
-        merge.setException(e);
-        addMergeException(merge);
-        // We can ignore this exception, unless the merge
-        // involves segments from external directories, in
-        // which case we must throw it so, for example, the
-        // rollbackTransaction code in addIndexes* is
-        // executed.
-        if (merge.isExternal)
-          throw e;
-      }
-    } finally {
-      synchronized(this) {
         try {
+          mergeInit(merge);
 
-          mergeFinish(merge);
+          if (infoStream != null)
+            message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
 
-          if (!success) {
-            if (infoStream != null)
-              message("hit exception during merge");
-            addMergeException(merge);
-            if (merge.info != null && !segmentInfos.contains(merge.info))
-              deleter.refresh(merge.info.name);
+          mergeMiddle(merge);
+          success = true;
+        } catch (MergePolicy.MergeAbortedException e) {
+          merge.setException(e);
+          addMergeException(merge);
+          // We can ignore this exception, unless the merge
+          // involves segments from external directories, in
+          // which case we must throw it so, for example, the
+          // rollbackTransaction code in addIndexes* is
+          // executed.
+          if (merge.isExternal)
+            throw e;
+        }
+      } finally {
+        synchronized(this) {
+          try {
+
+            mergeFinish(merge);
+
+            if (!success) {
+              if (infoStream != null)
+                message("hit exception during merge");
+              addMergeException(merge);
+              if (merge.info != null && !segmentInfos.contains(merge.info))
+                deleter.refresh(merge.info.name);
+            }
+
+            // This merge (and, generally, any change to the
+            // segments) may now enable new merges, so we call
+            // merge policy & update pending merges.
+            if (success && !merge.isAborted() && !closed && !closing)
+              updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
+          } finally {
+            runningMerges.remove(merge);
+            // Optimize may be waiting on the final optimize
+            // merge to finish; and finishMerges() may be
+            // waiting for all merges to finish:
+            notifyAll();
           }
-
-          // This merge (and, generally, any change to the
-          // segments) may now enable new merges, so we call
-          // merge policy & update pending merges.
-          if (success && !merge.isAborted() && !closed && !closing)
-            updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
-        } finally {
-          runningMerges.remove(merge);
-          // Optimize may be waiting on the final optimize
-          // merge to finish; and finishMerges() may be
-          // waiting for all merges to finish:
-          notifyAll();
         }
       }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -3988,143 +4044,152 @@ public class IndexWriter {
    *  that. */
   private void sync(boolean includeFlushes, long sizeInBytes) throws IOException {
 
-    message("start sync() includeFlushes=" + includeFlushes);
-
-    if (!includeFlushes)
-      syncPause(sizeInBytes);
-
-    // First, we clone & incref the segmentInfos we intend
-    // to sync, then, without locking, we sync() each file
-    // referenced by toSync, in the background.  Multiple
-    // threads can be doing this at once, if say a large
-    // merge and a small merge finish at the same time:
-
-    SegmentInfos toSync = null;
-    final int mySyncCount;
-    synchronized(this) {
-
-      if (!commitPending) {
-        message("  skip sync(): no commit pending");
-        return;
-      }
-
-      // Create the segmentInfos we want to sync, by copying
-      // the current one and possibly removing flushed
-      // segments:
-      toSync = (SegmentInfos) segmentInfos.clone();
-      final int numSegmentsToSync = toSync.size();
-
-      boolean newCommitPending = false;
-
-      if (!includeFlushes) {
-        // Do not sync flushes:
-        assert lastMergeInfo != null;
-        assert toSync.contains(lastMergeInfo);
-        int downTo = numSegmentsToSync-1;
-        while(!toSync.info(downTo).equals(lastMergeInfo)) {
-          message("  skip segment " + toSync.info(downTo).name);
-          toSync.remove(downTo);
-          downTo--;
-          newCommitPending = true;
-        }
-
-      } else if (numSegmentsToSync > 0)
-        // Force all subsequent syncs to include up through
-        // the final info in the current segments.  This
-        // ensure that a call to commit() will force another
-        // sync (due to merge finishing) to sync all flushed
-        // segments as well:
-        lastMergeInfo = toSync.info(numSegmentsToSync-1);
-
-      mySyncCount = syncCount++;
-      deleter.incRef(toSync, false);
-
-      commitPending = newCommitPending;
-    }
-
-    boolean success0 = false;
+    if (hitOOM)
+      return;
 
     try {
 
-      // Loop until all files toSync references are sync'd:
-      while(true) {
+      message("start sync() includeFlushes=" + includeFlushes);
 
-        final Collection pending = new ArrayList();
+      if (!includeFlushes)
+        syncPause(sizeInBytes);
 
-        for(int i=0;i<toSync.size();i++) {
-          final SegmentInfo info = toSync.info(i);
-          final List files = info.files();
-          for(int j=0;j<files.size();j++) {
-            final String fileName = (String) files.get(j);
-            if (startSync(fileName, pending)) {
-              boolean success = false;
-              try {
-                // Because we incRef'd this commit point, above,
-                // the file had better exist:
-                assert directory.fileExists(fileName);
-                message("now sync " + fileName);
-                directory.sync(fileName);
-                success = true;
-              } finally {
-                finishSync(fileName, success);
+      // First, we clone & incref the segmentInfos we intend
+      // to sync, then, without locking, we sync() each file
+      // referenced by toSync, in the background.  Multiple
+      // threads can be doing this at once, if say a large
+      // merge and a small merge finish at the same time:
+
+      SegmentInfos toSync = null;
+      final int mySyncCount;
+      synchronized(this) {
+
+        if (!commitPending) {
+          message("  skip sync(): no commit pending");
+          return;
+        }
+
+        // Create the segmentInfos we want to sync, by copying
+        // the current one and possibly removing flushed
+        // segments:
+        toSync = (SegmentInfos) segmentInfos.clone();
+        final int numSegmentsToSync = toSync.size();
+
+        boolean newCommitPending = false;
+
+        if (!includeFlushes) {
+          // Do not sync flushes:
+          assert lastMergeInfo != null;
+          assert toSync.contains(lastMergeInfo);
+          int downTo = numSegmentsToSync-1;
+          while(!toSync.info(downTo).equals(lastMergeInfo)) {
+            message("  skip segment " + toSync.info(downTo).name);
+            toSync.remove(downTo);
+            downTo--;
+            newCommitPending = true;
+          }
+
+        } else if (numSegmentsToSync > 0)
+          // Force all subsequent syncs to include up through
+          // the final info in the current segments.  This
+          // ensure that a call to commit() will force another
+          // sync (due to merge finishing) to sync all flushed
+          // segments as well:
+          lastMergeInfo = toSync.info(numSegmentsToSync-1);
+
+        mySyncCount = syncCount++;
+        deleter.incRef(toSync, false);
+
+        commitPending = newCommitPending;
+      }
+
+      boolean success0 = false;
+
+      try {
+
+        // Loop until all files toSync references are sync'd:
+        while(true) {
+
+          final Collection pending = new ArrayList();
+
+          for(int i=0;i<toSync.size();i++) {
+            final SegmentInfo info = toSync.info(i);
+            final List files = info.files();
+            for(int j=0;j<files.size();j++) {
+              final String fileName = (String) files.get(j);
+              if (startSync(fileName, pending)) {
+                boolean success = false;
+                try {
+                  // Because we incRef'd this commit point, above,
+                  // the file had better exist:
+                  assert directory.fileExists(fileName);
+                  message("now sync " + fileName);
+                  directory.sync(fileName);
+                  success = true;
+                } finally {
+                  finishSync(fileName, success);
+                }
               }
             }
           }
+
+          // All files that I require are either synced or being
+          // synced by other threads.  If they are being synced,
+          // we must at this point block until they are done.
+          // If this returns false, that means an error in
+          // another thread resulted in failing to actually
+          // sync one of our files, so we repeat:
+          if (waitForAllSynced(pending))
+            break;
         }
 
-        // All files that I require are either synced or being
-        // synced by other threads.  If they are being synced,
-        // we must at this point block until they are done.
-        // If this returns false, that means an error in
-        // another thread resulted in failing to actually
-        // sync one of our files, so we repeat:
-        if (waitForAllSynced(pending))
-          break;
-      }
-
-      synchronized(this) {
-        // If someone saved a newer version of segments file
-        // since I first started syncing my version, I can
-        // safely skip saving myself since I've been
-        // superseded:
-        if (mySyncCount > syncCountSaved) {
+        synchronized(this) {
+          // If someone saved a newer version of segments file
+          // since I first started syncing my version, I can
+          // safely skip saving myself since I've been
+          // superseded:
+          if (mySyncCount > syncCountSaved) {
           
-          if (segmentInfos.getGeneration() > toSync.getGeneration())
-            toSync.updateGeneration(segmentInfos);
+            if (segmentInfos.getGeneration() > toSync.getGeneration())
+              toSync.updateGeneration(segmentInfos);
 
-          boolean success = false;
-          try {
-            toSync.commit(directory);
-            success = true;
-          } finally {
-            // Have our master segmentInfos record the
-            // generations we just sync'd
-            segmentInfos.updateGeneration(toSync);
-            if (!success) {
-              commitPending = true;
-              message("hit exception committing segments file");
+            boolean success = false;
+            try {
+              toSync.commit(directory);
+              success = true;
+            } finally {
+              // Have our master segmentInfos record the
+              // generations we just sync'd
+              segmentInfos.updateGeneration(toSync);
+              if (!success) {
+                commitPending = true;
+                message("hit exception committing segments file");
+              }
             }
-          }
-          message("commit complete");
+            message("commit complete");
 
-          syncCountSaved = mySyncCount;
+            syncCountSaved = mySyncCount;
 
-          deleter.checkpoint(toSync, true);
-          setRollbackSegmentInfos();
-        } else
-          message("sync superseded by newer infos");
+            deleter.checkpoint(toSync, true);
+            setRollbackSegmentInfos();
+          } else
+            message("sync superseded by newer infos");
+        }
+
+        message("done all syncs");
+
+        success0 = true;
+
+      } finally {
+        synchronized(this) {
+          deleter.decRef(toSync);
+          if (!success0)
+            commitPending = true;
+        }
       }
-
-      message("done all syncs");
-
-      success0 = true;
-
-    } finally {
-      synchronized(this) {
-        deleter.decRef(toSync);
-        if (!success0)
-          commitPending = true;
-      }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
