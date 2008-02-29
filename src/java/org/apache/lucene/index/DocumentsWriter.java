@@ -1172,8 +1172,8 @@ final class DocumentsWriter {
         infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + maxTermPrefix + "...'"); 
     }
 
-    final ByteBlockPool postingsPool = new ByteBlockPool();
-    final ByteBlockPool vectorsPool = new ByteBlockPool();
+    final ByteBlockPool postingsPool = new ByteBlockPool(true);
+    final ByteBlockPool vectorsPool = new ByteBlockPool(false);
     final CharBlockPool charPool = new CharBlockPool();
 
     // Current posting we are working on
@@ -2957,6 +2957,12 @@ final class DocumentsWriter {
     public byte[] buffer;                              // Current head buffer
     public int byteOffset = -BYTE_BLOCK_SIZE;          // Current head offset
 
+    private boolean trackAllocations;
+
+    public ByteBlockPool(boolean trackAllocations) {
+      this.trackAllocations = trackAllocations;
+    }
+
     public void reset() {
       if (bufferUpto != -1) {
         // We allocated at least one buffer
@@ -2986,7 +2992,7 @@ final class DocumentsWriter {
         System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
         buffers = newBuffers;
       }
-      buffer = buffers[1+bufferUpto] = getByteBlock();
+      buffer = buffers[1+bufferUpto] = getByteBlock(trackAllocations);
       bufferUpto++;
 
       byteUpto = 0;
@@ -3148,7 +3154,7 @@ final class DocumentsWriter {
   private ArrayList freeByteBlocks = new ArrayList();
 
   /* Allocate another byte[] from the shared pool */
-  synchronized byte[] getByteBlock() {
+  synchronized byte[] getByteBlock(boolean trackAllocations) {
     final int size = freeByteBlocks.size();
     final byte[] b;
     if (0 == size) {
@@ -3157,7 +3163,8 @@ final class DocumentsWriter {
       b = new byte[BYTE_BLOCK_SIZE];
     } else
       b = (byte[]) freeByteBlocks.remove(size-1);
-    numBytesUsed += BYTE_BLOCK_SIZE;
+    if (trackAllocations)
+      numBytesUsed += BYTE_BLOCK_SIZE;
     return b;
   }
 
