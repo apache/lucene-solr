@@ -40,6 +40,9 @@ Changes in runtime behavior
  4. SOLR-436: To make future changes easier, SolrServer changed from an
     interface to an abstract super class. (ryan)
 
+ 5. SOLR-476: CommonsHttpSolrServer can set the ResponseParser on a per 
+    request basis.  (Grant Ingersoll, ryan)
+
 Bug Fixes
 
 Other Changes

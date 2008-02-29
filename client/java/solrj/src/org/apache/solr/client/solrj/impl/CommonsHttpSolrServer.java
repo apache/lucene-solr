@@ -62,7 +62,7 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   protected String _baseURL;
   protected ModifiableSolrParams _invariantParams;
-  protected ResponseParser _processor;
+  protected ResponseParser _parser;
   
   private final HttpClient _httpClient;
   private boolean _followRedirects = false;
@@ -85,7 +85,11 @@ public class CommonsHttpSolrServer extends SolrServer
    * will use this SolrServer.
    */
   public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient) throws MalformedURLException {
-    this(new URL(solrServerUrl), httpClient);
+    this(new URL(solrServerUrl), httpClient, new XMLResponseParser());
+  }
+
+  public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient, ResponseParser parser) throws MalformedURLException {
+    this(new URL(solrServerUrl), httpClient, parser);
   }
 
   /**
@@ -96,11 +100,15 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   public CommonsHttpSolrServer(URL baseURL) 
   {
-    this(baseURL, null);
+    this(baseURL, null, new XMLResponseParser());
+  }
+
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client){
+    this(baseURL, client, new XMLResponseParser());
   }
 
 
-  private CommonsHttpSolrServer(URL baseURL, HttpClient client) {
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser) {
     this._baseURL = baseURL.toExternalForm();
     if( this._baseURL.endsWith( "/" ) ) {
       this._baseURL = this._baseURL.substring( 0, this._baseURL.length()-1 );
@@ -117,24 +125,36 @@ public class CommonsHttpSolrServer extends SolrServer
     }
 
     // by default use the XML one
-    _processor = new XMLResponseParser();
-
-    // TODO -- expose these so that people can add things like 'u' & 'p'
-    _invariantParams = new ModifiableSolrParams();
-    _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
-    _invariantParams.set( CommonParams.VERSION, "2.2" );
+    _parser = parser;
   }
 
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
 
+  /**
+   * Process the request.  If {@link org.apache.solr.client.solrj.SolrRequest#getResponseParser()} is null, then use
+   * {@link #getParser()}
+   * @param request The {@link org.apache.solr.client.solrj.SolrRequest} to process
+   * @return The {@link org.apache.solr.common.util.NamedList} result
+   * @throws SolrServerException
+   * @throws IOException
+   *
+   * @see #request(org.apache.solr.client.solrj.SolrRequest, org.apache.solr.client.solrj.ResponseParser)
+   */
   @Override
   public NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException
   {
-    // TODO -- need to set the WRITER TYPE!!!
-    // params.set( SolrParams.WT, wt );
-   
+    ResponseParser responseParser = request.getResponseParser();
+    if (responseParser == null) {
+      responseParser = _parser;
+    }
+    return request(request, responseParser);
+  }
+
+  
+  public NamedList<Object> request(final SolrRequest request, ResponseParser processor) throws SolrServerException, IOException{
+    
     HttpMethod method = null;
     SolrParams params = request.getParams();
     Collection<ContentStream> streams = request.getContentStreams();
@@ -142,15 +162,29 @@ public class CommonsHttpSolrServer extends SolrServer
     if( path == null || !path.startsWith( "/" ) ) {
       path = "/select";
     }
-        
-    if( params == null ) {
-      params = new ModifiableSolrParams();
+    
+    ResponseParser parser = request.getResponseParser();
+    if( parser == null ) {
+      parser = _parser;
     }
+    
+    // The parser 'wt=' and 'version=' params are used instead of the original params
+    ModifiableSolrParams wparams = new ModifiableSolrParams();
+    wparams = new ModifiableSolrParams();
+    wparams.set( CommonParams.WT, parser.getWriterType() );
+    wparams.set( CommonParams.VERSION, parser.getVersion() );
+    if( params == null ) {
+      params = wparams;
+    }
+    else {
+      params = new DefaultSolrParams( wparams, params );
+    }
+    
     if( _invariantParams != null ) {
       params = new DefaultSolrParams( _invariantParams, params );
     }
-    
-    int tries = _maxRetries + 1;        
+
+    int tries = _maxRetries + 1;
     try {
       while( tries-- > 0 ) {
         // Note: since we aren't do intermittent time keeping
@@ -165,14 +199,14 @@ public class CommonsHttpSolrServer extends SolrServer
             method = new GetMethod( _baseURL + path + ClientUtils.toQueryString( params, false ) );
           }
           else if( SolrRequest.METHOD.POST == request.getMethod() ) {
-            
+
             String url = _baseURL + path;
             boolean isMultipart = ( streams != null && streams.size() > 1 );
-            
+
             if( streams == null || isMultipart ) {
               // Without streams, just post the parameters
               PostMethod post = new PostMethod( url );
-            
+
               Iterator<String> iter = params.getParameterNamesIterator();
               while( iter.hasNext() ) {
                 String p = iter.next();
@@ -186,16 +220,16 @@ public class CommonsHttpSolrServer extends SolrServer
                   post.addParameter( p, null );
                 }
               }
-              
-              post.getParams().setContentCharset("UTF-8");   
+
+              post.getParams().setContentCharset("UTF-8");
 
               if( isMultipart ) {
                 int i=0;
                 Part[] parts = new Part[streams.size()];
-                
+
                 for( ContentStream content : streams ) {
                   final ContentStream c = content;
-                  
+
                   String charSet = null;
                   String transferEncoding = null;
                   parts[i++] = new PartBase( c.getName(), c.getContentType(), charSet, transferEncoding ) {
@@ -203,14 +237,14 @@ public class CommonsHttpSolrServer extends SolrServer
                     protected long lengthOfData() throws IOException {
                       return c.getSize();
                     }
-                    
+
                     @Override
                       protected void sendData(OutputStream out) throws IOException {
                       IOUtils.copy( c.getReader(), out );
                     }
-                  }; 
+                  };
                 }
-                
+
                 // Set the multi-part request
                 post.setRequestEntity( new MultipartRequestEntity( parts, post.getParams() ) );
                 method = post;
@@ -222,11 +256,11 @@ public class CommonsHttpSolrServer extends SolrServer
             else {
               String pstr = ClientUtils.toQueryString( params, false );
               PostMethod post = new PostMethod( url+pstr );
-              
+
               // Single stream as body
               // Using a loop just to get the first one
               for( ContentStream content : streams ) {
-                post.setRequestEntity( 
+                post.setRequestEntity(
                     new InputStreamRequestEntity( content.getStream(), content.getContentType())
                 );
                 break;
@@ -253,17 +287,17 @@ public class CommonsHttpSolrServer extends SolrServer
     catch( IOException ex ) {
       throw new SolrServerException("error reading streams", ex );
     }
-    
+
     method.setFollowRedirects( _followRedirects );
     method.addRequestHeader( "User-Agent", AGENT );
     if( _allowCompression ) {
       method.setRequestHeader( new Header( "Accept-Encoding", "gzip,deflate" ) );
     }
-    
+
     try {
       // Execute the method.
       //System.out.println( "EXECUTE:"+method.getURI() );
-    
+
       int statusCode = _httpClient.executeMethod(method);
       if (statusCode != HttpStatus.SC_OK) {
         StringBuilder msg = new StringBuilder();
@@ -274,7 +308,7 @@ public class CommonsHttpSolrServer extends SolrServer
         msg.append( "request: "+method.getURI() );
         throw new SolrException(statusCode, java.net.URLDecoder.decode(msg.toString(), "UTF-8") );
       }
-      
+
       // Read the contents
       String charset = "UTF-8";
       if( method instanceof HttpMethodBase ) {
@@ -314,8 +348,8 @@ public class CommonsHttpSolrServer extends SolrServer
           }
         }
       }
-      return _processor.processResponse(respBody, charset);
-    } 
+      return processor.processResponse(respBody, charset);
+    }
     catch (HttpException e) {
       throw new SolrServerException( e );
     }
@@ -347,12 +381,16 @@ public class CommonsHttpSolrServer extends SolrServer
     this._baseURL = baseURL;
   }
 
-  public ResponseParser getProcessor() {
-    return _processor;
+  public ResponseParser getParser() {
+    return _parser;
   }
 
-  public void setProcessor(ResponseParser processor) {
-    _processor = processor;
+  /**
+   * Note: Setting this value is not thread-safe.
+   * @param processor The {@link org.apache.solr.client.solrj.ResponseParser}
+   */
+  public void setParser(ResponseParser processor) {
+    _parser = processor;
   }
 
   public HttpClient getHttpClient() {

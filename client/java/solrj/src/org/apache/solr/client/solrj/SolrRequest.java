@@ -39,6 +39,7 @@ public abstract class SolrRequest implements Serializable
   private METHOD method = METHOD.GET;
   private String path = null;
 
+  private ResponseParser responseParser;
   //---------------------------------------------------------
   //---------------------------------------------------------
 
@@ -63,6 +64,23 @@ public abstract class SolrRequest implements Serializable
   }
   public void setPath(String path) {
     this.path = path;
+  }
+
+  /**
+   *
+   * @return The {@link org.apache.solr.client.solrj.ResponseParser}
+   */
+  public ResponseParser getResponseParser() {
+    return responseParser;
+  }
+
+  /**
+   * Optionally specify how the Response should be parsed.  Not all server implementations require a ResponseParser
+   * to be specified.
+   * @param responseParser The {@link org.apache.solr.client.solrj.ResponseParser}
+   */
+  public void setResponseParser(ResponseParser responseParser) {
+    this.responseParser = responseParser;
   }
 
   public abstract SolrParams getParams();

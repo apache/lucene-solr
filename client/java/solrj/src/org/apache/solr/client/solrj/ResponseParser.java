@@ -33,4 +33,12 @@ public abstract class ResponseParser
   public abstract NamedList<Object> processResponse(InputStream body, String encoding);
 
   public abstract NamedList<Object> processResponse(Reader reader);
+  
+  /**
+   * @return the version param passed to solr
+   */
+  public String getVersion()
+  {
+    return "2.2";
+  }
 }
