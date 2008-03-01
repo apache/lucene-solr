@@ -71,6 +71,7 @@ class Solr::Request::Standard < Solr::Request::Select
       hash["facet.missing"] = @params[:facets][:missing]
       hash["facet.mincount"] = @params[:facets][:mincount]
       hash["facet.prefix"] = @params[:facets][:prefix]
+      hash["facet.offset"] = @params[:facets][:offset]
       if @params[:facets][:fields]  # facet fields are optional (could be facet.query only)
         @params[:facets][:fields].each do |f|
           if f.kind_of? Hash
@@ -82,6 +83,7 @@ class Solr::Request::Standard < Solr::Request::Select
             hash["f.#{key}.facet.missing"] = value[:missing]
             hash["f.#{key}.facet.mincount"] = value[:mincount]
             hash["f.#{key}.facet.prefix"] = value[:prefix]
+            hash["f.#{key}.facet.offset"] = value[:offset]
           else
             hash["facet.field"] << f
           end

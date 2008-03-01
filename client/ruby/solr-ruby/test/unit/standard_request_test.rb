@@ -71,10 +71,10 @@ class StandardRequestTest < Test::Unit::TestCase
        :facets => {
          :fields => [:genre,           
                      # field that overrides the global facet parameters
-                     {:year => {:limit => 50, :mincount => 0, :missing => false, :sort => :term, :prefix=>"199"}}], 
+                     {:year => {:limit => 50, :mincount => 0, :missing => false, :sort => :term, :prefix=>"199", :offset => 7}}], 
          :queries => ["q1", "q2"],
          :prefix => "cat",
-         :limit => 5, :zeros => true, :mincount => 20, :sort => :count  # global facet parameters
+         :offset => 3, :limit => 5, :zeros => true, :mincount => 20, :sort => :count  # global facet parameters
         }
     )
     
@@ -90,6 +90,8 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal 0, hash["f.year.facet.mincount"]
     assert_equal false, hash["f.year.facet.sort"]
     assert_equal "199", hash["f.year.facet.prefix"]
+    assert_equal 3, hash["facet.offset"]
+    assert_equal 7, hash["f.year.facet.offset"]
   end
 
   def test_basic_sort
