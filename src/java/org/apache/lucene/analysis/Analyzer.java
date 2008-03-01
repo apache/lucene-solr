@@ -26,16 +26,11 @@ import java.io.IOException;
  *  Typical implementations first build a Tokenizer, which breaks the stream of
  *  characters from the Reader into raw Tokens.  One or more TokenFilters may
  *  then be applied to the output of the Tokenizer.
- *  <p>
- *  WARNING: You must override one of the methods defined by this class in your
- *  subclass or the Analyzer will enter an infinite loop.
  */
 public abstract class Analyzer {
   /** Creates a TokenStream which tokenizes all the text in the provided
-    Reader.  Default implementation forwards to tokenStream(Reader) for 
-    compatibility with older version.  Override to allow Analyzer to choose 
-    strategy based on document and/or field.  Must be able to handle null
-    field name for backward compatibility. */
+   * Reader.  Must be able to handle null field name for backward compatibility.
+   */
   public abstract TokenStream tokenStream(String fieldName, Reader reader);
 
   /** Creates a TokenStream that is allowed to be re-used
