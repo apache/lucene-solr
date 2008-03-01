@@ -157,18 +157,25 @@ public class DirectSolrConnection
       streams.add( new ContentStreamBase.StringStream( body ) );
     }
     
-    SolrQueryRequest req = parser.buildRequestFrom( core, params, streams );
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute( handler, req, rsp );
-    if( rsp.getException() != null ) {
-      throw rsp.getException();
+    SolrQueryRequest req = null;
+    try {
+      req = parser.buildRequestFrom( core, params, streams );
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      core.execute( handler, req, rsp );
+      if( rsp.getException() != null ) {
+        throw rsp.getException();
+      }
+      
+      // Now write it out
+      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+      StringWriter out = new StringWriter();
+      responseWriter.write(out, req, rsp);
+      return out.toString();
+    } finally {
+      if (req != null) {
+        req.close();
+      }
     }
-    
-    // Now write it out
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    StringWriter out = new StringWriter();
-    responseWriter.write(out, req, rsp);
-    return out.toString();
   }
   
   /**
