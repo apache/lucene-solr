@@ -4243,4 +4243,10 @@ public class IndexWriter {
     public static final MaxFieldLength LIMITED
         = new MaxFieldLength("LIMITED", DEFAULT_MAX_FIELD_LENGTH);
   }
+
+  // Used only by assert for testing.  Current points:
+  //  "DocumentsWriter.ThreadState.init start"
+  boolean testPoint(String name) {
+    return true;
+  }
 }

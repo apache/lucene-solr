@@ -3123,4 +3123,39 @@ public class TestIndexWriter extends LuceneTestCase
     writer.addDocument(doc);
     writer.close();
   }
+
+  // LUCENE-1198
+  public class MockIndexWriter extends IndexWriter {
+
+    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean doFail;
+
+    boolean testPoint(String name) {
+      if (doFail && name.equals("DocumentsWriter.ThreadState.init start"))
+        throw new RuntimeException("intentionally failing");
+      return true;
+    }
+  }
+
+  public void testExceptionDocumentsWriterInit() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    MockIndexWriter w = new MockIndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a field", Field.Store.YES,
+                      Field.Index.TOKENIZED));
+    w.addDocument(doc);
+    w.doFail = true;
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (RuntimeException re) {
+      // expected
+    }
+    w.close();
+    _TestUtil.checkIndex(dir);
+    dir.close();
+  }
 }
