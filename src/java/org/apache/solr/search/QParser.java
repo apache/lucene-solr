@@ -113,6 +113,7 @@ public abstract class QParser {
     }
     QParser nestedParser = getParser(q, defaultType, getReq());
     nestedParser.recurseCount = recurseCount;
+    recurseCount--;
     return nestedParser;
   }
 
