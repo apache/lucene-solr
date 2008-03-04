@@ -190,7 +190,8 @@ public abstract class QParser {
     if (localParams == null) {
       type = defaultType;
     } else {
-      type = localParams.get(QueryParsing.TYPE);
+      String localType = localParams.get(QueryParsing.TYPE);
+      type = localType == null ? defaultType : localType;
       qstr = localParams.get("v");
     }
 
