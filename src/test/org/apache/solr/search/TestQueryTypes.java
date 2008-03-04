@@ -182,5 +182,15 @@ public class TestQueryTypes extends AbstractSolrTestCase {
              ,"//result[@numFound='2']"
              );
 
+    assertQ("test nested query",
+            req("q","_query_:\"<!query v=$q1>\"", "q1","<!prefix f=v_t>hel")
+            ,"//result[@numFound='2']"
+            );
+
+    assertQ("test nested nested query",
+            req("q","_query_:\"<!query defType=query v=$q1>\"", "q1","<!v=$q2>","q2","<!prefix f=v_t v=$qqq>","qqq","hel")
+            ,"//result[@numFound='2']"
+            );
+
   }
 }
