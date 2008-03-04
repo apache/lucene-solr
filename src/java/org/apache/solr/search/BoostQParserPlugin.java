@@ -56,7 +56,7 @@ public class BoostQParserPlugin extends QParserPlugin {
         if (bq instanceof FunctionQuery) {
           vs = ((FunctionQuery)bq).getValueSource();
         } else {
-          vs = new QueryValueSource(q, 0.0f);
+          vs = new QueryValueSource(bq, 0.0f);
         }
         return new BoostedQuery(q, vs);
       }
