@@ -70,7 +70,8 @@ public class SolrResourceLoader implements ResourceLoader
    * <p>
    * This loader will delegate to the context classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
-   * found in the "lib/" directory in the "Solr Home" directory.
+   * found in the "lib/" directory in the specified instance directory.
+   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
    * <p>
    */
   public SolrResourceLoader( String instanceDir, ClassLoader parent )
@@ -110,37 +111,55 @@ public class SolrResourceLoader implements ResourceLoader
     this( instanceDir, null );
   }
   
-  protected static String normalizeDir(String path) {
-    if (path==null) return null;
-    if ( !(path.endsWith("/") || path.endsWith("\\")) ) {
-      path+='/';
-    }
-    return path;
+  /** Ensures a directory name allways ends with a '/'. */
+  public  static String normalizeDir(String path) {
+    return ( path != null && (!(path.endsWith("/") || path.endsWith("\\"))) )? path + '/' : path;
   }
 
   public String getConfigDir() {
     return instanceDir + "conf/";
   }
 
+  /** Opens a schema resource by its name.
+   * Override this method to customize loading schema resources.
+   *@return the stream for the named schema
+   */
+  public InputStream openSchema(String name) {
+    return openResource(name);
+  }
+  
+  /** Opens a config resource by its name.
+   * Override this method to customize loading config resources.
+   *@return the stream for the named configuration
+   */
+  public InputStream openConfig(String name) {
+    return openResource(name);
+  }
+  
+  /** Opens any resource by its name.
+   * By default, this will look in multiple locations to load the resource:
+   * $configDir/$resource (if resource is not absolute)
+   * $CWD/$resource
+   * otherwise, it will look for it in any jar accessible through the class loader.
+   * Override this method to customize loading resources.
+   *@return the stream for the named resource
+   */
   public InputStream openResource(String resource) {
     InputStream is=null;
-    
     try {
-      File f = new File(resource);
+      File f0 = new File(resource);
+      File f = f0;
       if (!f.isAbsolute()) {
-        // try $CWD/conf/
+        // try $CWD/$configDir/$resource
         f = new File(getConfigDir() + resource);
       }
       if (f.isFile() && f.canRead()) {
         return new FileInputStream(f);
-      } else {
-        // try $CWD
-        f = new File(resource);
-        if (f.isFile() && f.canRead()) {
-          return new FileInputStream(f);
-        }
+      } else if (f != f0) { // no success with $CWD/$configDir/$resource
+        if (f0.isFile() && f0.canRead())
+          return new FileInputStream(f0);
       }
-      
+      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
       is = classLoader.getResourceAsStream(resource);
     } catch (Exception e) {
       throw new RuntimeException("Error opening " + resource, e);
@@ -257,7 +276,12 @@ public class SolrResourceLoader implements ResourceLoader
     }
     waitingForResources.clear();
   }
-
+  /**
+   * Determines the instanceDir from the environment.
+   * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
+   * if both fail, defaults to solr/
+   * @return the instance directory name
+   */
   /**
    * Finds the instanceDir based on looking up the value in one of three places:
    * <ol>

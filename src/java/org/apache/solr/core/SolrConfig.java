@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -52,18 +51,9 @@ public class SolrConfig extends Config {
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
-  /**
-   * Singleton containing all configuration.
-   * Compatibility feature for single-core (pre-solr215 patch) code.
-   * Most usage should be converted by:
-   * - using the configuration directly when used in Abstract{Tokeinizer,TokenFilter}Factory.init().
-   * - getting the configuration through the owning core if accessible (SolrCore.getSolrConfig()).
-   * - getting the core by name then its configuration as above
-   */
+  // Compatibility feature for single-core (pre-solr{215,350} patch); should go away at solr-2.0
   @Deprecated
   public static SolrConfig config = null; 
-
-  public final String configFile;
 
   /**
    * Singleton keeping track of configuration errors
@@ -73,30 +63,50 @@ public class SolrConfig extends Config {
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {
-    this( new SolrResourceLoader(null), DEFAULT_CONF_FILE, null );
+    this( (SolrResourceLoader) null, DEFAULT_CONF_FILE, null );
   }
-  /** Creates a configuration instance from a file. */
-  public SolrConfig(String file)
+  
+  /** Creates a configuration instance from a configuration name.
+   * A default resource loader will be created (@see SolrResourceLoader)
+   *@param name the configuration name used by the loader
+   */
+  public SolrConfig(String name)
   throws ParserConfigurationException, IOException, SAXException {
-    this( new SolrResourceLoader(null), file, null);
+    this( (SolrResourceLoader) null, name, null);
   }
 
-  @Deprecated
-  public SolrConfig(String file, InputStream is)
+  /** Creates a configuration instance from a configuration name and stream.
+   * A default resource loader will be created (@see SolrResourceLoader).
+   * If the stream is null, the resource loader will open the configuration stream.
+   * If the stream is not null, no attempt to load the resource will occur (the name is not used).
+   *@param name the configuration name
+   *@param is the configuration stream
+   */
+  public SolrConfig(String name, InputStream is)
   throws ParserConfigurationException, IOException, SAXException {
-    this( new SolrResourceLoader(null), file, is );
+    this( (SolrResourceLoader) null, name, is );
   }
   
-  /** Creates a configuration instance from an input stream. */
-  public SolrConfig(String instanceDir, String file, InputStream is)
+  /** Creates a configuration instance from an instance directory, configuration name and stream.
+   *@param instanceDir the directory used to create the resource loader
+   *@param name the configuration name used by the loader if the stream is null
+   *@param is the configuration stream 
+   */
+  public SolrConfig(String instanceDir, String name, InputStream is)
   throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), file, is);
+    this(new SolrResourceLoader(instanceDir), name, is);
   }
   
-  SolrConfig(SolrResourceLoader loader, String file, InputStream is)
+   /** Creates a configuration instance from a resource loader, a configuration name and a stream.
+   * If the stream is null, the resource loader will open the configuration stream.
+   * If the stream is not null, no attempt to load the resource will occur (the name is not used).
+   *@param loader the resource loader
+   *@param name the configuration name
+   *@param is the configuration stream
+   */
+  SolrConfig(SolrResourceLoader loader, String name, InputStream is)
   throws ParserConfigurationException, IOException, SAXException {
-    super(loader, file, is, "/config/");
-    this.configFile = file;
+    super(loader, name, is, "/config/");
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
     
@@ -123,7 +133,7 @@ public class SolrConfig extends Config {
     pingQueryParams = readPingQueryParams(this);
 
     httpCachingConfig = new HttpCachingConfig(this);
-    Config.log.info("Loaded SolrConfig: " + file);
+    Config.log.info("Loaded SolrConfig: " + name);
     
     // TODO -- at solr 2.0. this should go away
     config = this;

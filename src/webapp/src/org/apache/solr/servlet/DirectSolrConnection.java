@@ -41,7 +41,7 @@ import org.apache.solr.schema.IndexSchema;
  * DirectSolrConnection provides an interface to solr that is similar to 
  * the the HTTP interface, but does not require an HTTP connection.
  * 
- * This class is designed to be as simple as possible and alow for more flexibility
+ * This class is designed to be as simple as possible and allow for more flexibility
  * in how you interface to solr.
  * 
  * @version $Id$
@@ -57,8 +57,7 @@ public class DirectSolrConnection
    */
   public DirectSolrConnection()
   {
-    core = SolrCore.getSolrCore();
-    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+    this( SolrCore.getSolrCore() );
   }
 
   /**
@@ -67,7 +66,7 @@ public class DirectSolrConnection
   public DirectSolrConnection( SolrCore c )
   {
     core = c;
-    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+    parser = new SolrRequestParsers( c.getSolrConfig() );
   }
 
   /**
@@ -99,16 +98,16 @@ public class DirectSolrConnection
       }
     }
     
-    // Initalize SolrConfig
+    // Initialize SolrConfig
     SolrConfig config = null;
     try {
       config = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
       instanceDir = config.getResourceLoader().getInstanceDir();
 
       // If the Data directory is specified, initialize SolrCore directly
-      IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml");
+      IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml", null);
       core = new SolrCore( null, dataDir, config, schema );
-      parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+      parser = new SolrRequestParsers( config );
     } 
     catch (Exception ee) {
       throw new RuntimeException(ee);

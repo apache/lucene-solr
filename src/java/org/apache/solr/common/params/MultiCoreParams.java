@@ -32,14 +32,29 @@ public interface MultiCoreParams
   /** The name of the the core to swap names with **/
   public final static String WITH = "with";
   
+  /** If you rename something, what is the new name **/
+  public final static String NAME = "name";
+  
   /** What action **/
   public final static String ACTION = "action";
+  
+  /** If you specify a schema, what is its name **/
+  public final static String SCHEMA = "schema";
+  
+  /** If you specify a config, what is its name **/
+  public final static String CONFIG = "config";
+  
+  /** Specifies a core instance dir. */
+  public final static String INSTANCE_DIR = "instanceDir";
   
   public enum MultiCoreAction {
     STATUS,  
     LOAD,
     UNLOAD,
     RELOAD,
+    CREATE,
+    DROP,
+    PERSIST,
     SWAP;
     
     public static MultiCoreAction get( String p )

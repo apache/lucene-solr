@@ -45,6 +45,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -59,7 +60,7 @@ public final class IndexSchema {
 
   final static Logger log = Logger.getLogger(IndexSchema.class.getName());
   private final SolrConfig solrConfig;
-  private final String schemaFile;
+  private final String resourceName;
   private String name;
   private float version;
 
@@ -70,17 +71,33 @@ public final class IndexSchema {
    * @see Config#openResource
    */
   @Deprecated
-  public IndexSchema(SolrConfig solrConfig, String schemaFile) {
-    this(solrConfig, solrConfig.getResourceLoader().openResource(schemaFile));
+  public IndexSchema(SolrConfig solrConfig, String name) {
+    this(solrConfig, name, null);
   }
-  
-  public IndexSchema(SolrConfig solrConfig, InputStream is) {
+    /**
+   * Constructs a schema using the specified resource name and stream.
+   * If the is stream is null, the resource loader will load the schema resource by name.
+   * @see SolrResourceLoader#openSchema
+   * By default, this follows the normal config path directory searching rules.
+   * @see Config#openResource
+   */
+  public IndexSchema(SolrConfig solrConfig, String name, InputStream is) {
     this.solrConfig = solrConfig;
-    this.schemaFile = DEFAULT_SCHEMA_FILE;
-    
-    readSchema(is);
-    
+    if (name == null)
+      name = DEFAULT_SCHEMA_FILE;
+    this.resourceName = name;
     SolrResourceLoader loader = solrConfig.getResourceLoader();
+    InputStream lis = is;
+    if (lis == null)
+      lis = loader.openSchema(name);
+    readSchema(lis);
+    if (lis != is) {
+      try {
+        lis.close();
+      }
+      catch(IOException xio) {} // ignore
+    }
+    
     loader.inform( loader );
   }
 
@@ -88,26 +105,42 @@ public final class IndexSchema {
     return solrConfig;
   }
   
+  
+  /** Gets the name of the resource used to instantiate this schema. */
+  public String getResourceName() {
+    return resourceName;
+  }
+  
+  /** Gets the name of the schema as specified in the schema resource. */
+  public String getSchemaName() {
+    return name;
+  }
+  
+  float getVersion() {
+    return version;
+  }
+  
   /**
    * Direct access to the InputStream for the schemaFile used by this instance.
-   *
    * @see Config#openResource
    */
   @Deprecated
   public InputStream getInputStream() {
-    return solrConfig.getResourceLoader().openResource(schemaFile);
+    return solrConfig.getResourceLoader().openResource(resourceName);
   }
 
-  /** Gets the name of the schema file. */
+  /** Gets the name of the schema file.
+   * @see IndexSchema#getResourceName
+   */
+  @Deprecated
   public String getSchemaFile() {
-    return schemaFile;
+    return resourceName;
   }
 
-  float getVersion() {
-    return version;
-  }
-
-  /** The Name of this schema (as specified in the schema file) */
+  /** The Name of this schema (as specified in the schema file)
+   * @see IndexSchema#getSchemaName
+   */
+  @Deprecated
   public String getName() { return name; }
 
   private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
@@ -282,6 +315,7 @@ public final class IndexSchema {
       return getAnalyzer(fieldName).tokenStream(fieldName,reader);
     }
 
+    @Override
     public int getPositionIncrementGap(String fieldName) {
       return getAnalyzer(fieldName).getPositionIncrementGap(fieldName);
     }
@@ -289,6 +323,7 @@ public final class IndexSchema {
 
 
   private class SolrQueryAnalyzer extends SolrIndexAnalyzer {
+    @Override
     protected HashMap<String,Analyzer> analyzerCache() {
       HashMap<String,Analyzer> cache = new HashMap<String,Analyzer>();
        for (SchemaField f : getFields().values()) {
@@ -298,6 +333,7 @@ public final class IndexSchema {
       return cache;
     }
 
+    @Override
     protected Analyzer getAnalyzer(String fieldName)
     {
       Analyzer analyzer = analyzers.get(fieldName);
@@ -309,12 +345,9 @@ public final class IndexSchema {
     log.info("Reading Solr Schema");
 
     try {
-      /***
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document document = builder.parse(getInputStream());
-      ***/
-
-      Config schemaConf = new Config("schema", is, "/schema/");
+      // pass the config resource loader to avoid building an empty one for no reason:
+      // in the current case though, the stream is valid so we wont load the resource by name
+      Config schemaConf = new Config(solrConfig.getResourceLoader(), "schema", is, "/schema/");
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
 

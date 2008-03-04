@@ -51,11 +51,38 @@ public class Config {
     this( null, name, is, prefix );
   }
 
+  /**
+   * Builds a config from a resource name with no xpath prefix.
+   * @param loader
+   * @param name
+   * @throws javax.xml.parsers.ParserConfigurationException
+   * @throws java.io.IOException
+   * @throws org.xml.sax.SAXException
+   */
   public Config(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException 
   {
     this( loader, name, null, null );
   }
   
+  /**
+   * Builds a config:
+   * <p>
+   * Note that the 'name' parameter is used to obtain a valid input stream if no valid one is provided through 'is'.
+   * If no valid stream is provided, a valid SolrResourceLoader instance should be provided through 'loader' so
+   * the resource can be opened (@see SolrResourceLoader#openResource); if no SolrResourceLoader instance is provided, a default one
+   * will be created.
+   * </p>
+   * <p>
+   * Consider passing a non-null 'name' parameter in all use-cases since it is used for logging & exception reporting.
+   * </p>
+   * @param loader the resource loader used to obtain an input stream if 'is' is null
+   * @param name the resource name used if the input stream 'is' is null
+   * @param is the resource as a stream
+   * @param prefix an optional prefix that will be preprended to all non-absolute xpath expressions
+   * @throws javax.xml.parsers.ParserConfigurationException
+   * @throws java.io.IOException
+   * @throws org.xml.sax.SAXException
+   */
   public Config(SolrResourceLoader loader, String name, InputStream is, String prefix) throws ParserConfigurationException, IOException, SAXException 
   {
     if( loader == null ) {
@@ -63,14 +90,12 @@ public class Config {
     }
     this.loader = loader;
     this.name = name;
-    this.prefix = prefix;
-    
-    if (prefix!=null && !prefix.endsWith("/")) prefix += '/';
+    this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     InputStream lis = is;
     try {
-      if (lis == null)
-        lis = loader.openResource(name);
-      
+      if (lis == null) {
+        lis = loader.openConfig(name);
+      }
       javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       doc = builder.parse(lis);
 
@@ -80,8 +105,7 @@ public class Config {
     	throw e;
     } finally {
       // if this opens the resource, it also closes it
-      if (lis != is)
-        lis.close();
+      if (lis != is)  lis.close();
     }
   }
   
@@ -93,6 +117,17 @@ public class Config {
     return loader;
   }
 
+  /**
+   * @since solr 1.3
+   */
+  public String getResourceName() {
+    return name;
+  }
+
+  public String getName() {
+    return name;
+  }
+  
   public Document getDocument() {
     return doc;
   }
@@ -206,13 +241,6 @@ public class Config {
     return val!=null ? Float.parseFloat(val) : def;
   }
 
-  /**
-   * @return the XML filename
-   */
-  public String getName() {
-    return name;
-  }
-  
   // The following functions were moved to ResourceLoader
   //-----------------------------------------------------------------------------
   

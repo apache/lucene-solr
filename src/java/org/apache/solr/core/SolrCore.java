@@ -43,7 +43,6 @@ import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -91,7 +90,6 @@ public final class SolrCore {
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
-  private final String index_path;
   private final UpdateHandler updateHandler;
   private final long startTime;
   private final RequestHandlers reqHandlers;
@@ -118,23 +116,68 @@ public final class SolrCore {
     }
   }
 
-  public SolrConfig getSolrConfig() {
-    return solrConfig;
-  }
   
   /**
+   * The SolrResourceLoader used to load all resources for this core.
    * @since solr 1.3
    */
   public SolrResourceLoader getResourceLoader() {
     return solrConfig.getResourceLoader();
   }
 
-  public String getConfigFile() {
-    return solrConfig.configFile;
+  /**
+   * Gets the configuration resource name used by this core instance.
+   * @since solr 1.3
+   */
+  public String getConfigResource() {
+    return solrConfig.getResourceName();
   }
   
+  /**
+   * Gets the configuration resource name used by this core instance.
+   * @see getConfigResource
+   */
+  @Deprecated
+  public String getConfigFile() {
+    return solrConfig.getResourceName();
+  }
+  /**
+   * Gets the configuration object used by this core instance.
+   */
+  public SolrConfig getSolrConfig() {
+    return solrConfig;
+  }
+  
+  /**
+   * Gets the schema resource name used by this core instance.
+   * @since solr 1.3
+   */
+  public String getSchemaResource() {
+    return schema.getResourceName();
+  }
+
+  /**
+   * Gets the schema resource name used by this core instance.
+   * @see getSchemaResource
+   */
+  @Deprecated
   public String getSchemaFile() {
-    return schema.getSchemaFile();
+    return schema.getResourceName();
+  }
+  
+  /**
+   * Gets the schema object used by this core instance.
+   */
+  public IndexSchema getSchema() { 
+    return schema;
+  }
+  
+  public String getDataDir() {
+    return dataDir;
+  }
+  
+  public String getIndexDir() {
+    return dataDir + "index/";
   }
   
   public String getName() {
@@ -183,9 +226,6 @@ public final class SolrCore {
     newSearcherListeners = parseListener("//listener[@event=\"newSearcher\"]");
   }
 
-  public IndexSchema getSchema() { return schema; }
-  public String getDataDir() { return dataDir; }
-  public String getIndexDir() { return index_path; }
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
@@ -305,19 +345,19 @@ public final class SolrCore {
       instance = this;   // set singleton
       this.setName( name );
       SolrResourceLoader loader = config.getResourceLoader();
-      if (dataDir ==null) {
-        dataDir = config.get("dataDir",loader.getInstanceDir()+"data");
-      }
+      if (dataDir == null)
+        dataDir = config.get("dataDir",loader.getInstanceDir()+"data/");
+      else
+        dataDir = SolrResourceLoader.normalizeDir(dataDir);
 
       log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
       if (schema==null) {
-        schema = new IndexSchema(config, "schema.xml");
+        schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
       }
 
       this.schema = schema;
       this.dataDir = dataDir;
-      this.index_path = dataDir + "/" + "index";
       this.solrConfig = config;
       this.startTime = System.currentTimeMillis();
       this.maxWarmingSearchers = config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
@@ -665,7 +705,7 @@ public final class SolrCore {
     // if this fails, we need to decrement onDeckSearchers again.
     SolrIndexSearcher tmp;
     try {
-      tmp = new SolrIndexSearcher(this, schema, "main", index_path, true);
+      tmp = new SolrIndexSearcher(this, schema, "main", getIndexDir(), true);
     } catch (Throwable th) {
       synchronized(searcherLock) {
         onDeckSearchers--;

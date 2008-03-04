@@ -35,7 +35,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
 
@@ -48,7 +47,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    parser = new SolrRequestParsers( true, Long.MAX_VALUE );
+    parser = new SolrRequestParsers( h.getCore().getSolrConfig() );
   }
   
   public void testStreamBody() throws Exception

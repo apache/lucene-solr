@@ -42,6 +42,7 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.ServletSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,17 +61,38 @@ public class SolrRequestParsers
   
   private HashMap<String, SolrRequestParser> parsers;
   private boolean enableRemoteStreams = false;
+  private boolean handleSelect = true;
   private StandardRequestParser standard;
   
-  public SolrRequestParsers( boolean enableRemoteStreams, long uploadLimitKB )
+  /**
+   * Pass in an xml configuration.  A null configuration will enable
+   * everythign with maximum values.
+   */
+  public SolrRequestParsers( Config globalConfig )
   {
-    this.enableRemoteStreams = enableRemoteStreams;
-   
+    long uploadLimitKB = 1048;  // 2MB default
+    if( globalConfig == null ) {
+      uploadLimitKB = Long.MAX_VALUE; 
+      enableRemoteStreams = true;
+      handleSelect = true;
+    }
+    else {
+      uploadLimitKB = globalConfig.getInt( 
+          "requestDispatcher/requestParsers/@multipartUploadLimitInKB", (int)uploadLimitKB );
+      
+      enableRemoteStreams = globalConfig.getBool( 
+          "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
+  
+      // Let this filter take care of /select?xxx format
+      handleSelect = globalConfig.getBool( 
+          "requestDispatcher/@handleSelect", handleSelect ); 
+    }
+       
     MultipartRequestParser multi = new MultipartRequestParser( uploadLimitKB );
     RawRequestParser raw = new RawRequestParser();
     standard = new StandardRequestParser( multi, raw );
     
-    // I don't see a need to have this publically configured just yet
+    // I don't see a need to have this publicly configured just yet
     // adding it is trivial
     parsers = new HashMap<String, SolrRequestParser>();
     parsers.put( MULTIPART, multi );
@@ -178,6 +200,14 @@ public class SolrRequestParsers
       }
     }
     return new MultiMapSolrParams( map );
+  }
+
+  public boolean isHandleSelect() {
+    return handleSelect;
+  }
+
+  public void setHandleSelect(boolean handleSelect) {
+    this.handleSelect = handleSelect;
   }
 }
 

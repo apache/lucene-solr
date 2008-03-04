@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collection;
+import java.util.WeakHashMap;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -35,7 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -49,6 +50,8 @@ import org.apache.solr.servlet.cache.Method;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
+ * 
+ * @since solr 1.2
  */
 public class SolrDispatchFilter implements Filter 
 {
@@ -56,10 +59,9 @@ public class SolrDispatchFilter implements Filter
   
   protected SolrCore singlecore;
   protected MultiCore multicore;
-  protected SolrRequestParsers parsers;
-  protected boolean handleSelect = false;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
+  protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
   protected String solrConfigFilename = null;
   
   public void init(FilterConfig config) throws ServletException 
@@ -72,8 +74,6 @@ public class SolrDispatchFilter implements Filter
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       this.solrConfigFilename = config.getInitParameter("solrconfig-filename");
       
-      // Find a valid solr core
-      SolrCore core = null;
       multicore = MultiCore.getRegistry();
       if( multicore.isEnabled() ) {
         log.info( "Using existing multicore configuration" );
@@ -86,9 +86,18 @@ public class SolrDispatchFilter implements Filter
           multicore.load( instanceDir, multiconfig );
         }
       }
+      
+      abortOnConfigurationError = false;
       if( multicore.isEnabled() ) {
         singlecore = null;
-        core = multicore.getDefaultCore();
+        
+        // if any core aborts on startup, then abort
+        for( SolrCore c : multicore.getCores() ) {
+          if( c.getSolrConfig().getBool( "abortOnConfigurationError",false) ) {
+            abortOnConfigurationError = true;
+            break;
+          }
+        }
       }
       else {
         if (this.solrConfigFilename==null) {
@@ -96,28 +105,8 @@ public class SolrDispatchFilter implements Filter
         } else {
           singlecore = new SolrCore( null, null, new SolrConfig(this.solrConfigFilename), null);
         }
-        core = singlecore;
       }
-      
       log.info("user.dir=" + System.getProperty("user.dir"));
-      
-      // Read global configuration
-      // Only the first registered core configures the following attributes 
-      Config globalConfig = core.getSolrConfig();
-
-      long uploadLimitKB = globalConfig.getInt( 
-          "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2000 ); // 2MB default
-      
-      boolean enableRemoteStreams = globalConfig.getBool( 
-          "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
-
-      parsers = new SolrRequestParsers( enableRemoteStreams, uploadLimitKB );
-      
-      // Let this filter take care of /select?xxx format
-      this.handleSelect = globalConfig.getBool( "requestDispatcher/@handleSelect", false ); 
-      
-      // should it keep going if we hit an error?
-      abortOnConfigurationError = globalConfig.getBool("abortOnConfigurationError",true);
     }
     catch( Throwable t ) {
       // catch this so our filter still works
@@ -197,50 +186,72 @@ public class SolrDispatchFilter implements Filter
         SolrRequestHandler handler = null;
         SolrCore core = singlecore;
         if( core == null ) {
-          // Perhaps this is a muli-core admin page?
+          // Perhaps this is a multi-core admin page?
+          if( path.equals( "/" ) ) {
+            chain.doFilter(request, response);
+            return;  
+          }
           if( path.equals( multicore.getAdminPath() ) ) {
             handler = multicore.getMultiCoreHandler();
+            
+            // pick a core to use for output
+            Collection<SolrCore> cores = multicore.getCores();
+            if( cores != null && cores.size() > 0 ) {
+              core = cores.iterator().next();
+            }
+            if( core == null ) {
+              throw new RuntimeException( "Can not find a valid core for the multicore admin handler" );
+            }
           }
           else {
             idx = path.indexOf( "/", 1 );
-            if( idx > 1 ) {
-              // try to get the corename as a request parameter first
-              String corename = path.substring( 1, idx );
-              path = path.substring( idx );
-              core = multicore.getCore( corename );
-              // invalid core name is ok.  It could fall through to some other request
+            if( idx <= 1 ) {
+              idx = path.length();
+            }
+            
+            // try to get the corename as a request parameter first
+            String corename = path.substring( 1, idx );
+            path = path.substring( idx );
+            core = multicore.getCore( corename );
+            
+            if( path.length() == 0 ) {
+              path = "/";
+            }
+            
+            if( core == null ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown core: "+corename );
             }
           }
         }
         
-        if( core != null ) {
-          // Only try to parse the handler *if* a valid core exists
-          // when multi-core is enabled, the path can lead to a null core.
-          if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
-            handler = core.getRequestHandler( path );
-          }
-          if( handler == null && handleSelect ) {
-            if( "/select".equals( path ) || "/select/".equals( path ) ) {
-              solrReq = parsers.parse( core, path, req );
-              String qt = solrReq.getParams().get( CommonParams.QT );
-              if( qt != null && qt.startsWith( "/" ) ) {
-                throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
-              }
-              handler = core.getRequestHandler( qt );
-              if( handler == null ) {
-                throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
-              }
+        SolrRequestParsers parser = parsers.get( core );
+        if( parser == null ) {
+          parser = new SolrRequestParsers( core.getSolrConfig() );
+          parsers.put( core, parser );
+        }
+        
+        // Only try to parse the handler *if* a valid core exists
+        // when multi-core is enabled, the path can lead to a null core.
+        if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
+          handler = core.getRequestHandler( path );
+        }
+        if( handler == null && parser.isHandleSelect() ) {
+          if( "/select".equals( path ) || "/select/".equals( path ) ) {
+            solrReq = parser.parse( core, path, req );
+            String qt = solrReq.getParams().get( CommonParams.QT );
+            if( qt != null && qt.startsWith( "/" ) ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
+            }
+            handler = core.getRequestHandler( qt );
+            if( handler == null ) {
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
             }
           }
         }
         
-        if( handler != null ) {
-          if( core == null ) {
-            core = multicore.getDefaultCore();
-          }
-          
+        if( handler != null ) {          
           if( solrReq == null ) {
-            solrReq = parsers.parse( core, path, req );
+            solrReq = parser.parse( core, path, req );
           }
           
           final SolrConfig conf = core.getSolrConfig();
@@ -253,8 +264,7 @@ public class SolrDispatchFilter implements Filter
           // unless we have been explicitly told not to, do cache validation
           if (!conf.getHttpCachingConfig().isNever304()) {
             // if we've confirmed cache validation, return immediately
-            if (HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq,
-                                                            req,resp)) {
+            if (HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req,resp)) {
               return;
             }
           }
@@ -287,11 +297,11 @@ public class SolrDispatchFilter implements Filter
         // the servlet/jsp can retrieve it
         else {
           req.setAttribute("org.apache.solr.SolrCore", core);
-          
-          // Modify the request so each core gets its own /admin
+
+          // Let each core have its own admin page...
           if( singlecore == null && path.startsWith( "/admin" ) ) {
             req.getRequestDispatcher( path ).forward( request, response );
-            return;
+            return; 
           }
         }
       }
@@ -343,20 +353,6 @@ public class SolrDispatchFilter implements Filter
 
   //---------------------------------------------------------------------
   //---------------------------------------------------------------------
-
-  /**
-   * Should the filter handle /select even if it is not mapped in solrconfig.xml
-   * 
-   * This will use consistent error handling for /select?qt=xxx and /update/xml
-   * 
-   */
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
-  public void setHandleSelect(boolean handleSelect) {
-    this.handleSelect = handleSelect;
-  }
 
   /**
    * set the prefix for all paths.  This is useful if you want to apply the

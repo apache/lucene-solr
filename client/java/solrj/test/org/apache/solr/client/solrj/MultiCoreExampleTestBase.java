@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+
 import org.apache.solr.client.solrj.request.MultiCoreRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -37,6 +39,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   @Override public String getSchemaFile()     { return getSolrHome()+"core0/conf/schema.xml";     }
   @Override public String getSolrConfigFile() { return getSolrHome()+"core0/conf/solrconfig.xml"; }
   
+  @Override public void setUp() throws Exception {
+//    File src = new File(getSolrHome(), "multicore-base.xml");
+//    File dest = new File(getSolrHome(), "multicore.xml");
+//    org.apache.solr.core.MultiCore.fileCopy(src, dest);
+    super.setUp();
+  }
 
   @Override
   protected final SolrServer getSolrServer()

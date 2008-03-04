@@ -17,12 +17,16 @@
 
 package org.apache.solr.core;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -31,6 +35,7 @@ import javax.xml.xpath.XPathConstants;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.handler.admin.MultiCoreHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Node;
@@ -48,10 +53,8 @@ public class MultiCore
   private static final MultiCore instance = new MultiCore();
   
   // Synchronized map of all cores
-  private final Map<String, SolrCore> cores =
-      Collections.synchronizedMap( new HashMap<String, SolrCore>() );
+  private final Map<String, CoreDescriptor> cores = new LinkedHashMap<String, CoreDescriptor>();
   
-  private SolrCore defaultCore = null;
   private boolean enabled = false;
   private boolean persistent = false;
   private String adminPath = null;
@@ -59,6 +62,7 @@ public class MultiCore
   private File configFile = null;
   private String libDir = null;
   private ClassLoader libLoader = null;
+  private SolrResourceLoader loader = null;
   
   // no one else can make the registry
   private MultiCore() { }
@@ -72,71 +76,61 @@ public class MultiCore
    */
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
-    Config cfg = new Config( new SolrResourceLoader(dir), 
-        null, new FileInputStream( configFile ), null );
+    this.loader = new SolrResourceLoader(dir);
+    FileInputStream cfgis = new FileInputStream(configFile);
+    try {
+      Config cfg = new Config(loader, null, cfgis, null);
     
-    persistent = cfg.getBool( "multicore/@persistent", false );
-    adminPath  = cfg.get(     "multicore/@adminPath", null );
-    libDir     = cfg.get(     "multicore/@sharedLib", null);
-    if (libDir != null) {
-      // relative dir to conf
-      File f = new File(dir, libDir);
-      libDir = f.getPath(); 
-      log.info( "loading shared library: "+f.getAbsolutePath() );
-      libLoader = SolrResourceLoader.createClassLoader(f, null);
-    }
-    
-    if( adminPath != null ) {
-      multiCoreHandler = new MultiCoreHandler();
-    }
-    
-    boolean hasDefault = false;
-    NodeList nodes = (NodeList)cfg.evaluate("multicore/core", XPathConstants.NODESET);
-    for (int i=0; i<nodes.getLength(); i++) {
-      Node node = nodes.item(i);
+      persistent = cfg.getBool( "multicore/@persistent", false );
+      adminPath  = cfg.get(     "multicore/@adminPath", null );
+      libDir     = cfg.get(     "multicore/@sharedLib", null);
       
-      try {
-        String name         = DOMUtil.getAttr(node,"name", "Core needs a name" );
-        String instanceDir  = DOMUtil.getAttr(node,"instanceDir", "Missing required 'instanceDir'" );
-        String dataDir      = DOMUtil.getAttr(node,"dataDir", null );
-        String defaultStr   = DOMUtil.getAttr(node,"default", null );
-        
-        // Make the instanceDir relative to the core config
-        File idir = new File( dir, instanceDir );
-        instanceDir = idir.getPath();
-        
-        // Initialize the solr config
-        SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader);
-        SolrConfig solrConfig = new SolrConfig( solrLoader, SolrConfig.DEFAULT_CONF_FILE, null );
-        IndexSchema schema = new IndexSchema(solrConfig, instanceDir+"/conf/schema.xml");
-        SolrCore core = new SolrCore( name, dataDir, solrConfig, schema );
-        
-        // Register the new core
-        SolrCore old = this.register( core );
-        if( old != null ) {
-          throw new RuntimeException( cfg.getName() +
-                  " registers multiple cores to the same name: "+name );
-        }
-        
-        if( "true".equalsIgnoreCase( defaultStr ) ) {
-          if( hasDefault ) {
-            throw new RuntimeException( 
-                "multicore.xml defines multiple default cores. "+
-                getDefaultCore().getName() + " and " + core.getName() );
+      if (libDir != null) {
+        // relative dir to conf
+        File f = new File(dir, libDir);
+        libDir = f.getPath(); 
+        log.info( "loading shared library: "+f.getAbsolutePath() );
+        libLoader = SolrResourceLoader.createClassLoader(f, null);
+      }
+      
+      if( adminPath != null ) {
+        multiCoreHandler = new MultiCoreHandler();
+      }
+      
+      NodeList nodes = (NodeList)cfg.evaluate("multicore/core", XPathConstants.NODESET);
+      synchronized (cores) {
+        for (int i=0; i<nodes.getLength(); i++) {
+          Node node = nodes.item(i);
+          try {
+            CoreDescriptor p = new CoreDescriptor();
+            p.init(DOMUtil.getAttr(node, "name", null), DOMUtil.getAttr(node, "instanceDir", null));
+            // deal with optional settings
+            String opt = DOMUtil.getAttr(node, "config", null);
+            if (opt != null) {
+              p.setConfigName(opt);
+            }
+            opt = DOMUtil.getAttr(node, "schema", null);
+            if (opt != null) {
+              p.setSchemaName(opt);
+            }
+            CoreDescriptor old = cores.get(p.getName());
+            if (old != null && old.getName() != null && old.getName().equals(p.getName())) {
+              throw new RuntimeException( cfg.getName() +
+                " registers multiple cores to the same name: " + p.name);
+            }
+            p.setCore(create(p));
           }
-          defaultCore = core;
-          hasDefault = true;
+          catch (Throwable ex) {
+            SolrConfig.severeErrors.add( ex );
+            SolrException.logOnce(log,null,ex);
+          }
         }
-      } 
-      catch( Throwable ex ) {
-        SolrConfig.severeErrors.add( ex );
-        SolrException.logOnce(log,null,ex);
       }
     }
-    
-    if( !hasDefault ) {
-      throw new RuntimeException( 
-          "multicore.xml must define at least one default core" );
+    finally {
+      if (cfgis != null) {
+        try { cfgis.close(); } catch (Exception xany) {}
+      }
     }
     enabled = true;
   }
@@ -144,7 +138,11 @@ public class MultiCore
   /** Stops all cores. */
   public void shutdown() {
     synchronized(cores) {
-      for( SolrCore core : cores.values() ) {
+      for(Map.Entry<String,CoreDescriptor> e : cores.entrySet()) {
+        SolrCore core = e.getValue().getCore();
+        if (core == null) continue;
+        String key = e.getKey();
+        if (core.getName().equals(key))
         core.close();
       }
       cores.clear();
@@ -165,11 +163,11 @@ public class MultiCore
     return instance;
   }
   
-  public SolrCore register( SolrCore core ) {
-    if( core == null ) {
+  public CoreDescriptor register( CoreDescriptor descr ) {
+    if( descr == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
-    String name = core.getName();
+    String name = descr.getName();
     if( name == null || 
         name.length() < 1 ||
         name.indexOf( '/'  ) >= 0 ||
@@ -177,16 +175,18 @@ public class MultiCore
       throw new RuntimeException( "Invalid core name: "+name );
     }
     
-    SolrCore old = cores.put(name, core);
+    CoreDescriptor old = cores.put(name, descr);
     if( old == null ) {
       log.info( "registering core: "+name );
-    } else {
+      return null;
+    } 
+    else {
       log.info( "replacing core: "+name );
+      return old;
     }
-    return old;
   }
-
-  public void swap(SolrCore c0, SolrCore c1) {
+  
+  public void swap(CoreDescriptor c0, CoreDescriptor c1) {
     if( c0 == null || c1 == null ) {
       throw new RuntimeException( "Can not swap a null core." );
     }
@@ -196,11 +196,44 @@ public class MultiCore
       cores.put(n0, c1);
       cores.put(n1, c0);
       c0.setName( n1 );
+      if (c0.getCore() != null)
+        c0.getCore().setName(n1);
       c1.setName( n0 );
+      if (c1.getCore() != null)
+        c1.getCore().setName(n0);
     }
     log.info( "swaped: "+c0.getName() + " with " + c1.getName() );
   }
 
+  /**
+   * Creates a new core based on a descriptor.
+   *
+   * @param dcore a core descriptor
+   * @return the newly created core
+   * @throws javax.xml.parsers.ParserConfigurationException
+   * @throws java.io.IOException
+   * @throws org.xml.sax.SAXException
+   */
+  public SolrCore create(CoreDescriptor dcore)  throws ParserConfigurationException, IOException, SAXException {
+    // Make the instanceDir relative to the multicore instanceDir if not absolute
+    File idir = new File(dcore.getInstanceDir());
+    if (!idir.isAbsolute()) {
+      idir = new File(loader.getInstanceDir(), dcore.getInstanceDir());
+    }
+    String instanceDir = idir.getPath();
+    
+    // Initialize the solr config
+    SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader);
+    SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
+    IndexSchema schema = new IndexSchema(config, dcore.getSchemaName(), null);
+    SolrCore core = new SolrCore(dcore.getName(), null, config, schema);
+    dcore.setCore(core);
+    
+    // Register the new core
+    CoreDescriptor old = this.register(dcore);
+    return core;
+  }
+  
   /**
    * While the new core is loading, requests will continue to be dispatched to
    * and processed by the old core
@@ -210,36 +243,51 @@ public class MultiCore
    * @throws IOException
    * @throws SAXException
    */
-  public void reload(SolrCore core) throws ParserConfigurationException, IOException, SAXException 
-  {
-    SolrResourceLoader loader = new SolrResourceLoader( core.getResourceLoader().getInstanceDir() );
-    SolrConfig config = new SolrConfig( loader, core.getConfigFile(), null );
-    IndexSchema schema = new IndexSchema( config, core.getSchemaFile() );
-    SolrCore loaded = new SolrCore( core.getName(), core.getDataDir(), config, schema );
-    this.register( loaded );
-    
-    // TODO? -- add some kind of hook to close the core after all references are 
-    // gone...  is finalize() enough?
-  }
-
-  public void remove( String name ) 
-  {
-    cores.remove( name );
+  public void reload(CoreDescriptor dcore) throws ParserConfigurationException, IOException, SAXException {
+    create(new CoreDescriptor(dcore));
   }
     
-  public SolrCore getDefaultCore() {
-    return defaultCore;
+  // TODO? -- add some kind of hook to close the core after all references are 
+  // gone...  is finalize() enough?
+  public void remove( String name ) {
+    synchronized(cores) {
+      CoreDescriptor dcore = cores.remove( name );
+      if (dcore == null) {
+        return;
+      }
+      
+      SolrCore core = dcore.getCore();
+      if (core != null) {
+        core.close();
+      }
+    }
   }
   
   /**
    * @return a Collection of registered SolrCores
    */
   public Collection<SolrCore> getCores() {
+    java.util.List<SolrCore> l = new java.util.ArrayList<SolrCore>();
+    for(CoreDescriptor descr : this.cores.values()) {
+      if (descr.getCore() != null)
+        l.add(descr.getCore());
+    }
+    return l;
+  }
+  
+  public Collection<CoreDescriptor> getDescriptors() {
     return cores.values();
   }
   
   public SolrCore getCore(String name) {
-    return cores.get( name );
+    CoreDescriptor dcore = getDescriptor( name );
+    return (dcore == null) ? null : dcore.getCore();
+  }
+  
+  public CoreDescriptor getDescriptor(String name) {
+    synchronized(cores) {
+      return cores.get( name );
+    }
   }
   
   public boolean isEnabled() {
@@ -272,5 +320,123 @@ public class MultiCore
   
   public File getConfigFile() {
     return configFile;
+  }
+  
+  /** Persists the multicore config file. */
+  public void persist() {
+    File tmpFile = null;
+    try {
+      // write in temp first
+      tmpFile = File.createTempFile("multicore", ".xml", configFile.getParentFile());
+      java.io.FileOutputStream out = new java.io.FileOutputStream(tmpFile);
+      synchronized(cores) {
+        Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+        persist(writer);
+        writer.flush();
+        writer.close();
+        out.close();
+        // rename over origin or copy it it this fails
+        if (tmpFile.renameTo(configFile))
+          tmpFile = null;
+        else
+          fileCopy(tmpFile, configFile);
+      }
+    } 
+    catch(java.io.FileNotFoundException xnf) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, xnf);
+    } 
+    catch(java.io.IOException xio) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, xio);
+    } 
+    finally {
+      if (tmpFile != null) {
+        if (!tmpFile.delete())
+          tmpFile.deleteOnExit();
+      }
+    }
+  }
+  
+  /** Write the multicore configuration through a writer.*/
+  void persist(Writer writer) throws IOException {
+    writer.write("<?xml version='1.0' encoding='UTF-8'?>");
+    writer.write("\n");
+    writer.write("<multicore adminPath='");
+    XML.escapeAttributeValue(adminPath, writer);
+    writer.write('\'');
+    if (this.libDir != null) {
+      writer.write(" libDir='");
+      XML.escapeAttributeValue(libDir, writer);
+      writer.write('\'');
+    }
+    writer.write(" persistent='");
+    if (isPersistent()) {
+      writer.write("true'");
+    }
+    else {
+      writer.write("false'");
+    }
+    writer.write(">\n");
+    
+    // for all cores...(synchronized on cores by caller)
+    for (Map.Entry<String, CoreDescriptor> entry : cores.entrySet()) {
+      persist(writer, entry.getValue());
+    }
+    writer.write("</multicore>\n");
+  }
+  
+  /** Writes the multicore configuration node for a given core. */
+  void persist(Writer writer, CoreDescriptor dcore) throws IOException {
+    writer.write("  <core");
+    writer.write (" name='");
+    XML.escapeAttributeValue(dcore.getName(), writer);
+    writer.write("' instanceDir='");
+    XML.escapeAttributeValue(dcore.getInstanceDir(), writer);
+    writer.write('\'');
+    //write config (if not default)
+    String opt = dcore.getConfigName();
+    if (opt != null && !opt.equals(dcore.getDefaultConfigName())) {
+      writer.write(" config='");
+      XML.escapeAttributeValue(opt, writer);
+      writer.write('\'');
+    }
+    //write schema (if not default)
+    opt = dcore.getSchemaName();
+    if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
+      writer.write(" schema='");
+      XML.escapeAttributeValue(opt, writer);
+      writer.write('\'');
+    }
+    writer.write("/>\n"); // core
+  }
+  
+  /** Copies a src file to a dest file:
+   *  used to circumvent the platform discrepancies regarding renaming files.
+   */
+  public static void fileCopy(File src, File dest) throws IOException {
+    IOException xforward = null;
+    FileInputStream fis =  null;
+    FileOutputStream fos = null;
+    FileChannel fcin = null;
+    FileChannel fcout = null;
+    try {
+      fis = new FileInputStream(src);
+      fos = new FileOutputStream(dest);
+      fcin = fis.getChannel();
+      fcout = fos.getChannel();
+      // do the file copy
+      fcin.transferTo(0, fcin.size(), fcout);
+    } 
+    catch(IOException xio) {
+      xforward = xio;
+    } 
+    finally {
+      if (fis   != null) try { fis.close(); fis = null; } catch(IOException xio) {}
+      if (fos   != null) try { fos.close(); fos = null; } catch(IOException xio) {}
+      if (fcin  != null && fcin.isOpen() ) try { fcin.close();  fcin = null;  } catch(IOException xio) {}
+      if (fcout != null && fcout.isOpen()) try { fcout.close(); fcout = null; } catch(IOException xio) {}
+    }
+    if (xforward != null) {
+      throw xforward;
+    }
   }
 }

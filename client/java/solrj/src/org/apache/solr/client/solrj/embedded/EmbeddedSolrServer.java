@@ -84,7 +84,7 @@ public class EmbeddedSolrServer extends SolrServer
     _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
     _invariantParams.set( CommonParams.VERSION, "2.2" );
     
-    return new SolrRequestParsers( true, Long.MAX_VALUE );
+    return new SolrRequestParsers( null );
   }
 
   @Override
