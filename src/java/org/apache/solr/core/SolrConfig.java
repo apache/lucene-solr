@@ -226,7 +226,7 @@ public class SolrConfig extends Config {
     private final boolean never304;
     private final String etagSeed;
     private final String cacheControlHeader;
-    private final Integer maxAge;
+    private final Long maxAge;
     private final LastModFrom lastModFrom;
     
     private HttpCachingConfig(SolrConfig conf) {
@@ -241,13 +241,13 @@ public class SolrConfig extends Config {
       
       cacheControlHeader = conf.get(CACHE_PRE+"cacheControl",null);
 
-      Integer tmp = null; // maxAge
+      Long tmp = null; // maxAge
       if (null != cacheControlHeader) {
         try { 
           final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
           final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
           tmp = (null != ttlStr && !"".equals(ttlStr))
-            ? Integer.valueOf(ttlStr)
+            ? Long.valueOf(ttlStr)
             : null;
         } catch (Exception e) {
           log.log(Level.WARNING,
@@ -265,7 +265,7 @@ public class SolrConfig extends Config {
     /** null if no Cache-Control header */
     public String getCacheControlHeader() { return cacheControlHeader; }
     /** null if no max age limitation */
-    public Integer getMaxAge() { return maxAge; }
+    public Long getMaxAge() { return maxAge; }
     public LastModFrom getLastModFrom() { return lastModFrom; }
   }
 }

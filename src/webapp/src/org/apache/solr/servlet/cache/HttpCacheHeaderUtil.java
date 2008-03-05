@@ -175,10 +175,10 @@ public final class HttpCacheHeaderUtil {
     if (null != cc) {
       resp.setHeader("Cache-Control", cc);
     }
-    Integer maxAge = conf.getHttpCachingConfig().getMaxAge();
+    Long maxAge = conf.getHttpCachingConfig().getMaxAge();
     if (null != maxAge) {
       resp.setDateHeader("Expires", System.currentTimeMillis()
-                         + (maxAge * 1000));
+                         + (maxAge * 1000L));
     }
 
     return;
