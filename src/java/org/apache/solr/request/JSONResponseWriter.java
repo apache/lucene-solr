@@ -415,8 +415,9 @@ class JSONWriter extends TextResponseWriter {
           writeArrayOpener(-1); // no trivial way to determine array size
           writeVal(fname, val);
           writeArrayCloser();
+        } else {
+          writeVal(fname, val);
         }
-        writeVal(fname, val);
       }
 
       if (pseudoFields !=null && pseudoFields.size()>0) {
