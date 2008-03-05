@@ -241,6 +241,16 @@ public class Config {
     return val!=null ? Float.parseFloat(val) : def;
   }
 
+
+  public double getDouble(String path){
+     return Double.parseDouble(getVal(path, true));
+   }
+
+   public double getDouble(String path, double def) {
+     String val = getVal(path, false);
+     return val!=null ? Double.parseDouble(val) : def;
+   }
+
   // The following functions were moved to ResourceLoader
   //-----------------------------------------------------------------------------
   

@@ -18,6 +18,9 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
@@ -44,7 +47,7 @@ public class SolrIndexWriter extends IndexWriter {
   String name;
   IndexSchema schema;
 
-  private void init(String name, IndexSchema schema, SolrIndexConfig config) {
+  private void init(String name, IndexSchema schema, SolrIndexConfig config) throws IOException {
     log.fine("Opened Writer " + name);
     this.name = name;
     this.schema = schema;
@@ -53,79 +56,98 @@ public class SolrIndexWriter extends IndexWriter {
 
     if (config != null) {
       setUseCompoundFile(config.useCompoundFile);
-      if (config.maxBufferedDocs != -1) setMaxBufferedDocs(config.maxBufferedDocs);
+      //only set maxBufferedDocs
+      if (config.maxBufferedDocs != -1) {
+        setMaxBufferedDocs(config.maxBufferedDocs);
+      }
+      if (config.ramBufferSizeMB != -1) {
+        setRAMBufferSizeMB(config.ramBufferSizeMB);
+      }
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
-      if (config.mergeFactor != -1)  setMergeFactor(config.mergeFactor);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
+      if (config.mergePolicyClassName != null && SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME.equals(config.mergePolicyClassName) == false) {
+        MergePolicy policy = (MergePolicy) schema.getSolrConfig().getResourceLoader().newInstance(config.mergePolicyClassName);
+        setMergePolicy(policy);///hmm, is this really the best way to get a newInstance?
+      }
+      if (config.mergeFactor != -1 && getMergePolicy() instanceof LogMergePolicy) {
+        setMergeFactor(config.mergeFactor);
+      }
+      if (config.mergeSchedulerClassname != null && SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME.equals(config.mergeSchedulerClassname) == false) {
+        MergeScheduler scheduler = (MergeScheduler) schema.getSolrConfig().getResourceLoader().newInstance(config.mergeSchedulerClassname);
+        setMergeScheduler(scheduler);
+      }
+
       //if (config.commitLockTimeout != -1) setWriteLockTimeout(config.commitLockTimeout);
     }
 
   }
-  
+
   private static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
-	  Directory d = FSDirectory.getDirectory(path);
+    Directory d = FSDirectory.getDirectory(path);
 
     String rawLockType = (null == config) ? null : config.lockType;
     if (null == rawLockType) {
       // we default to "simple" for backwards compatiblitiy
-      log.warning("No lockType configured for "+path+" assuming 'simple'");
+      log.warning("No lockType configured for " + path + " assuming 'simple'");
       rawLockType = "simple";
     }
     final String lockType = rawLockType.toLowerCase().trim();
-    
-	  if ("simple".equals(lockType)) {
-		  d.setLockFactory(new SimpleFSLockFactory(path));
-	  } else if("native".equals(lockType)) {
-		  d.setLockFactory(new NativeFSLockFactory(path));
-	  } else if("single".equals(lockType)) {
-		  d.setLockFactory(new SingleInstanceLockFactory());
-	  } else if("none".equals(lockType)) {
-		  d.setLockFactory(new NoLockFactory());
-	  } else {
+
+    if ("simple".equals(lockType)) {
+      d.setLockFactory(new SimpleFSLockFactory(path));
+    } else if ("native".equals(lockType)) {
+      d.setLockFactory(new NativeFSLockFactory(path));
+    } else if ("single".equals(lockType)) {
+      d.setLockFactory(new SingleInstanceLockFactory());
+    } else if ("none".equals(lockType)) {
+      d.setLockFactory(new NoLockFactory());
+    } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Unrecognized lockType: " + rawLockType);
-	  } 
-	  return d;
+              "Unrecognized lockType: " + rawLockType);
+    }
+    return d;
   }
 
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
-    super(getDirectory(path, null), schema.getAnalyzer(), create);
+    super(getDirectory(path, null), false, schema.getAnalyzer(), create);
     init(name, schema, null);
   }
 
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
-    super(getDirectory(path, config), schema.getAnalyzer(), create);
-    init(name, schema,config);
+    super(getDirectory(path, config), config.luceneAutoCommit, schema.getAnalyzer(), create);
+    init(name, schema, config);
   }
 
-  /*** use DocumentBuilder now...
-  private final void addField(Document doc, String name, String val) {
-      SchemaField ftype = schema.getField(name);
-
-      // we don't check for a null val ourselves because a solr.FieldType
-      // might actually want to map it to something.  If createField()
-      // returns null, then we don't store the field.
-
-      Field field = ftype.createField(val, boost);
-      if (field != null) doc.add(field);
-  }
-
-
-  public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
-    Document doc = new Document();
-    for (int i=0; i<fieldNames.length; i++) {
-      String name = fieldNames[i];
-      String val = fieldNames[i];
-
-      // first null is end of list.  client can reuse arrays if they want
-      // and just write a single null if there is unused space.
-      if (name==null) break;
-
-      addField(doc,name,val);
-    }
-    addDocument(doc);
-  }
-  ******/
+  /**
+   * use DocumentBuilder now...
+   * private final void addField(Document doc, String name, String val) {
+   * SchemaField ftype = schema.getField(name);
+   * <p/>
+   * // we don't check for a null val ourselves because a solr.FieldType
+   * // might actually want to map it to something.  If createField()
+   * // returns null, then we don't store the field.
+   * <p/>
+   * Field field = ftype.createField(val, boost);
+   * if (field != null) doc.add(field);
+   * }
+   * <p/>
+   * <p/>
+   * public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
+   * Document doc = new Document();
+   * for (int i=0; i<fieldNames.length; i++) {
+   * String name = fieldNames[i];
+   * String val = fieldNames[i];
+   * <p/>
+   * // first null is end of list.  client can reuse arrays if they want
+   * // and just write a single null if there is unused space.
+   * if (name==null) break;
+   * <p/>
+   * addField(doc,name,val);
+   * }
+   * addDocument(doc);
+   * }
+   * ****
+   */
 
   public void close() throws IOException {
     log.fine("Closing Writer " + name);
@@ -134,7 +156,10 @@ public class SolrIndexWriter extends IndexWriter {
 
   @Override
   protected void finalize() {
-    try {super.close();} catch (IOException e) {}
+    try {
+      super.close();
+    } catch (IOException e) {
+    }
   }
 
 }

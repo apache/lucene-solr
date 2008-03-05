@@ -36,8 +36,8 @@
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
     <useCompoundFile>false</useCompoundFile>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
     <mergeFactor>10</mergeFactor>
-    <maxBufferedDocs>1000</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
     <writeLockTimeout>1000</writeLockTimeout>
@@ -47,8 +47,8 @@
   <mainIndex>
     <!-- options specific to the main on-disk lucene index -->
     <useCompoundFile>false</useCompoundFile>
+    <ramBufferSizeMB>32</ramBufferSizeMB>
     <mergeFactor>10</mergeFactor>
-    <maxBufferedDocs>1000</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
 

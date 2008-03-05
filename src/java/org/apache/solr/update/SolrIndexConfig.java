@@ -18,6 +18,8 @@
 package org.apache.solr.update;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 
 //
 // For performance reasons, we don't want to re-read
@@ -30,26 +32,38 @@ import org.apache.solr.core.SolrConfig;
 public class SolrIndexConfig {
   public static final String defaultsName ="indexDefaults";
   static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
+  public static final String DEFAULT_MERGE_POLICY_CLASSNAME = LogByteSizeMergePolicy.class.getName();
+  public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
 
   private SolrIndexConfig() {
     useCompoundFile = true;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
     mergeFactor = -1;
+    ramBufferSizeMB = 16;
     maxFieldLength = -1;
     writeLockTimeout = -1;
     commitLockTimeout = -1;
     lockType = null;
+    mergePolicyClassName = DEFAULT_MERGE_POLICY_CLASSNAME;
+    mergeSchedulerClassname = DEFAULT_MERGE_SCHEDULER_CLASSNAME;
+    luceneAutoCommit = false;
   }
   
   public final boolean useCompoundFile;
   public final int maxBufferedDocs;
   public final int maxMergeDocs;
   public final int mergeFactor;
+
+  public final double ramBufferSizeMB;
+
   public final int maxFieldLength;
   public final int writeLockTimeout;
   public final int commitLockTimeout;
   public final String lockType;
+  public final String mergePolicyClassName;
+  public final String mergeSchedulerClassname;
+  public final boolean luceneAutoCommit;
 
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
     if (prefix == null)
@@ -60,9 +74,14 @@ public class SolrIndexConfig {
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
     mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
+    ramBufferSizeMB = solrConfig.getDouble(prefix+"ramBufferSizeMB", def.ramBufferSizeMB);
+
     maxFieldLength=solrConfig.getInt(prefix+"/maxFieldLength",def.maxFieldLength);
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     commitLockTimeout=solrConfig.getInt(prefix+"/commitLockTimeout", def.commitLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
+    mergePolicyClassName = solrConfig.get(prefix + "/mergePolicy", def.mergePolicyClassName);
+    mergeSchedulerClassname = solrConfig.get(prefix + "/mergeScheduler", def.mergeSchedulerClassname);
+    luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
   }
 }

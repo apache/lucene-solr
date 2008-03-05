@@ -228,6 +228,17 @@ Optimizations
 
  5. SOLR-377: Speed up response writers. (yonik)
 
+ 6. SOLR-342:  Added support into the SolrIndexWriter for using several new
+ features of the new LuceneIndexWriter, including: setRAMBufferSizeMB(), setMergePolicy(), setMergeScheduler.  Also, added support
+ to specify Lucene's autoCommit functionality (not to be confused with Solr's similarily named autoCommit functionality) via
+  the <luceneAutoCommit> config. item.  See the test and example solrconfig.xml <indexDefaults> section for usage.  Performance during
+  indexing should be significantly increased by moving up to 2.3 due to Lucene's new indexing capabilities.  Furthermore,
+  the setRAMBufferSizeMB makes it more logical to decide on tuning factors related to indexing.  For best performance, leave the
+  mergePolicy and mergeScheduler as the defaults and set ramBufferSizeMB instead of maxBufferedDocs.  The best value for this
+    depends on the types of documents in use.  32 should be a good starting point, but reports have shown up to 48 MB provides
+    good results. Note, it is acceptable to set both ramBufferSizeMB and maxBufferedDocs, and Lucene will flush based on whichever
+    limit is reached first. (gsingers)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)

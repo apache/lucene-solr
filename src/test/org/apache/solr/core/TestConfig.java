@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.update.SolrIndexConfig;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -49,5 +50,16 @@ public class TestConfig extends AbstractSolrTestCase {
 
     Node node = solrConfig.getNode("propTest", true);
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
+  }
+
+  public void testLucene23Upgrades() throws Exception {
+    double bufferSize = solrConfig.getDouble("indexDefaults/ramBufferSizeMB");
+    assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
+    String mergePolicy = solrConfig.get("indexDefaults/mergePolicy");
+    assertTrue(mergePolicy + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME, mergePolicy.equals(SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME) == true);
+    String mergeSched = solrConfig.get("indexDefaults/mergeScheduler");
+    assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
+    boolean luceneAutoCommit = solrConfig.getBool("indexDefaults/luceneAutoCommit");
+    assertTrue(luceneAutoCommit + " does not equal: " + false, luceneAutoCommit == false);
   }
 }
