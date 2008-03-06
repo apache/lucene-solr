@@ -347,8 +347,8 @@ public final class SolrCore {
       SolrResourceLoader loader = config.getResourceLoader();
       if (dataDir == null)
         dataDir = config.get("dataDir",loader.getInstanceDir()+"data/");
-      else
-        dataDir = SolrResourceLoader.normalizeDir(dataDir);
+
+      dataDir = SolrResourceLoader.normalizeDir(dataDir);
 
       log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
