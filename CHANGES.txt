@@ -110,6 +110,9 @@ New features
     and isLocked methods (deprecating the ones in IndexReader).  (Mike
     McCandless)
 
+10. LUCENE-1201: Add IndexReader.getIndexCommit() method. (Tim Brennan
+    via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

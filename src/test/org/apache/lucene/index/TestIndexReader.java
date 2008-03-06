@@ -1276,4 +1276,37 @@ public class TestIndexReader extends LuceneTestCase
       }
     }
 
+    public void testGetIndexCommit() throws IOException {
+
+      RAMDirectory d = new MockRAMDirectory();
+
+      // set up writer
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      for(int i=0;i<27;i++)
+        addDocumentWithFields(writer);
+      writer.close();
+
+      SegmentInfos sis = new SegmentInfos();
+      sis.read(d);
+      IndexReader r = IndexReader.open(d);
+      IndexCommit c = r.getIndexCommit();
+
+      assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
+
+      assertTrue(c.equals(r.getIndexCommit()));
+
+      // Change the index
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      for(int i=0;i<7;i++)
+        addDocumentWithFields(writer);
+      writer.close();
+
+      IndexReader r2 = r.reopen();
+      assertFalse(c.equals(r2.getIndexCommit()));
+      r.close();
+      r2.close();
+      d.close();
+    }      
 }

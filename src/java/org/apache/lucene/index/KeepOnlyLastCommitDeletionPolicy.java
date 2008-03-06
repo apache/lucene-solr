@@ -44,7 +44,7 @@ public final class KeepOnlyLastCommitDeletionPolicy implements IndexDeletionPoli
     // called by onInit above):
     int size = commits.size();
     for(int i=0;i<size-1;i++) {
-      ((IndexCommitPoint) commits.get(i)).delete();
+      ((IndexCommit) commits.get(i)).delete();
     }
   }
 }

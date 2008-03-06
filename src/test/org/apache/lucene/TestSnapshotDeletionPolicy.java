@@ -31,7 +31,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexCommitPoint;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TestIndexWriter;
@@ -75,25 +75,25 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<7;i++)
       writer.addDocument(doc);
-    IndexCommitPoint cp = dp.snapshot();
-    copyFiles(dir, dp, cp);
+    IndexCommit cp = (IndexCommit) dp.snapshot();
+    copyFiles(dir, cp);
     writer.close();
-    copyFiles(dir, dp, cp);
+    copyFiles(dir, cp);
     
     writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
                              IndexWriter.MaxFieldLength.LIMITED);
-    copyFiles(dir, dp, cp);
+    copyFiles(dir, cp);
     for(int i=0;i<7;i++)
       writer.addDocument(doc);
-    copyFiles(dir, dp, cp);
+    copyFiles(dir, cp);
     writer.close();
-    copyFiles(dir, dp, cp);
+    copyFiles(dir, cp);
     dp.release();
     writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp,
                              IndexWriter.MaxFieldLength.LIMITED);
     writer.close();
     try {
-      copyFiles(dir, dp, cp);
+      copyFiles(dir, cp);
       fail("did not hit expected IOException");
     } catch (IOException ioe) {
       // expected
@@ -177,7 +177,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws IOException {
     // To backup an index we first take a snapshot:
     try {
-      copyFiles(dir, dp, dp.snapshot());
+      copyFiles(dir, (IndexCommit) dp.snapshot());
     } finally {
       // Make sure to release the snapshot, otherwise these
       // files will never be deleted during this IndexWriter
@@ -186,7 +186,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     }
   }
 
-  private void copyFiles(Directory dir, SnapshotDeletionPolicy dp, IndexCommitPoint cp) throws IOException {
+  private void copyFiles(Directory dir, IndexCommit cp) throws IOException {
 
     // While we hold the snapshot, and nomatter how long
     // we take to do the backup, the IndexWriter will

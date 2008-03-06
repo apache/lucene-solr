@@ -187,7 +187,7 @@ import java.util.Iterator;
  * modified) directory files, we have a new "check point". 
  * If the modified/new SegmentInfos is written to disk - as a new 
  * (generation of) segments_N file - this check point is also an 
- * IndexCommitPoint.
+ * IndexCommit.
  * 
  * With autoCommit=true, every checkPoint is also a CommitPoint.
  * With autoCommit=false, some checkPoints may not be commits.

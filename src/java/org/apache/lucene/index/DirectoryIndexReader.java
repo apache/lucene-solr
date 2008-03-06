@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import java.util.HashSet;
+import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.store.Directory;
@@ -96,7 +98,6 @@ abstract class DirectoryIndexReader extends IndexReader {
     }.run();
   }
 
-  
   public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
     ensureOpen();
 
@@ -337,4 +338,42 @@ abstract class DirectoryIndexReader extends IndexReader {
     }
   }
 
+  private static class ReaderCommit extends IndexCommit {
+    private String segmentsFileName;
+    Collection files;
+    Directory dir;
+
+    ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
+      segmentsFileName = infos.getCurrentSegmentFileName();
+      this.dir = dir;
+      final int size = infos.size();
+      files = new ArrayList(size);
+      files.add(segmentsFileName);
+      for(int i=0;i<size;i++) {
+        SegmentInfo info = infos.info(i);
+        if (info.dir == dir)
+          files.addAll(info.files());
+      }
+    }
+    public String getSegmentsFileName() {
+      return segmentsFileName;
+    }
+    public Collection getFileNames() {
+      return files;
+    }
+    public Directory getDirectory() {
+      return dir;
+    }
+  }
+
+  /**
+   * Expert: return the IndexCommit that this reader has
+   * opened.
+   *
+   * <p><b>WARNING</b>: this API is new and experimental and
+   * may suddenly change.</p>
+   */
+  public IndexCommit getIndexCommit() throws IOException {
+    return new ReaderCommit(segmentInfos, directory);
+  }
 }

@@ -48,7 +48,7 @@ import java.util.Collection;
  * force a blocking commit.
  * 
  * The same directory file may be referenced by more than
- * one IndexCommitPoints, i.e. more than one SegmentInfos.
+ * one IndexCommit, i.e. more than one SegmentInfos.
  * Therefore we count how many commits reference each file.
  * When all the commits referencing a certain file have been
  * deleted, the refcount for that file becomes zero, and the
@@ -569,7 +569,7 @@ final class IndexFileDeleter {
    * equals.
    */
 
-  final private static class CommitPoint implements Comparable, IndexCommitPoint {
+  final private static class CommitPoint extends IndexCommit implements Comparable {
 
     long gen;
     List files;
@@ -594,15 +594,16 @@ final class IndexFileDeleter {
       }
     }
 
-    /**
-     * Get the segments_N file for this commit point.
-     */
     public String getSegmentsFileName() {
       return segmentsFileName;
     }
 
     public Collection getFileNames() throws IOException {
       return Collections.unmodifiableCollection(files);
+    }
+
+    public Directory getDirectory() {
+      return directory;
     }
 
     /**

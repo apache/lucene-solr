@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
+import org.apache.lucene.store.Directory;
 
 /** A {@link IndexDeletionPolicy} that wraps around any other
  *  {@link IndexDeletionPolicy} and adds the ability to hold and
@@ -35,11 +36,14 @@ import java.io.IOException;
  *  SnapshotDeletionPolicy across multiple writers as long
  *  as they are against the same index Directory.  Any
  *  snapshot held when a writer is closed will "survive"
- *  when the next writer is opened. */
+ *  when the next writer is opened.
+ *
+ * <p><b>WARNING</b>: This API is a new and experimental and
+ * may suddenly change.</p> */
 
 public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
 
-  private IndexCommitPoint lastCommit;
+  private IndexCommit lastCommit;
   private IndexDeletionPolicy primary;
   private String snapshot;
 
@@ -49,12 +53,12 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
 
   public synchronized void onInit(List commits) throws IOException {
     primary.onInit(wrapCommits(commits));
-    lastCommit = (IndexCommitPoint) commits.get(commits.size()-1);
+    lastCommit = (IndexCommit) commits.get(commits.size()-1);
   }
 
   public synchronized void onCommit(List commits) throws IOException {
     primary.onCommit(wrapCommits(commits));
-    lastCommit = (IndexCommitPoint) commits.get(commits.size()-1);
+    lastCommit = (IndexCommit) commits.get(commits.size()-1);
   }
 
   /** Take a snapshot of the most recent commit to the
@@ -66,6 +70,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    *  you call optimize()) then in the worst case this could
    *  consume an extra 1X of your total index size, until
    *  you release the snapshot. */
+  // TODO 3.0: change this to return IndexCommit instead
   public synchronized IndexCommitPoint snapshot() {
     if (snapshot == null)
       snapshot = lastCommit.getSegmentsFileName();
@@ -82,9 +87,9 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
       throw new IllegalStateException("snapshot was not set; please call snapshot() first");
   }
 
-  private class MyCommitPoint implements IndexCommitPoint {
-    IndexCommitPoint cp;
-    MyCommitPoint(IndexCommitPoint cp) {
+  private class MyCommitPoint extends IndexCommit {
+    IndexCommit cp;
+    MyCommitPoint(IndexCommit cp) {
       this.cp = cp;
     }
     public String getSegmentsFileName() {
@@ -92,6 +97,9 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     }
     public Collection getFileNames() throws IOException {
       return cp.getFileNames();
+    }
+    public Directory getDirectory() {
+      return cp.getDirectory();
     }
     public void delete() {
       synchronized(SnapshotDeletionPolicy.this) {
@@ -107,7 +115,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     final int count = commits.size();
     List myCommits = new ArrayList(count);
     for(int i=0;i<count;i++)
-      myCommits.add(new MyCommitPoint((IndexCommitPoint) commits.get(i)));
+      myCommits.add(new MyCommitPoint((IndexCommit) commits.get(i)));
     return myCommits;
   }
 }

@@ -43,9 +43,9 @@ import java.util.HashSet;
 public class TestDeletionPolicy extends LuceneTestCase
 {
   private void verifyCommitOrder(List commits) {
-    long last = SegmentInfos.generationFromSegmentsFileName(((IndexCommitPoint) commits.get(0)).getSegmentsFileName());
+    long last = SegmentInfos.generationFromSegmentsFileName(((IndexCommit) commits.get(0)).getSegmentsFileName());
     for(int i=1;i<commits.size();i++) {
-      long now = SegmentInfos.generationFromSegmentsFileName(((IndexCommitPoint) commits.get(i)).getSegmentsFileName());
+      long now = SegmentInfos.generationFromSegmentsFileName(((IndexCommit) commits.get(i)).getSegmentsFileName());
       assertTrue("SegmentInfos commits are out-of-order", now > last);
       last = now;
     }
@@ -77,7 +77,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       // On init, delete all commit points:
       Iterator it = commits.iterator();
       while(it.hasNext()) {
-        ((IndexCommitPoint) it.next()).delete();
+        ((IndexCommit) it.next()).delete();
       }
     }
     public void onCommit(List commits) {
@@ -85,7 +85,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       int size = commits.size();
       // Delete all but last one:
       for(int i=0;i<size-1;i++) {
-        ((IndexCommitPoint) commits.get(i)).delete();
+        ((IndexCommit) commits.get(i)).delete();
       }
       numOnCommit++;
     }
@@ -119,7 +119,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       // Assert that we really are only called for each new
       // commit:
       if (isCommit) {
-        String fileName = ((IndexCommitPoint) commits.get(commits.size()-1)).getSegmentsFileName();
+        String fileName = ((IndexCommit) commits.get(commits.size()-1)).getSegmentsFileName();
         if (seen.contains(fileName)) {
           throw new RuntimeException("onCommit was called twice on the same commit point: " + fileName);
         }
@@ -128,7 +128,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       }
       int size = commits.size();
       for(int i=0;i<size-numToKeep;i++) {
-        ((IndexCommitPoint) commits.get(i)).delete();
+        ((IndexCommit) commits.get(i)).delete();
         numDelete++;
       }
     }
@@ -157,7 +157,7 @@ public class TestDeletionPolicy extends LuceneTestCase
     public void onCommit(List commits) throws IOException {
       verifyCommitOrder(commits);
 
-      IndexCommitPoint lastCommit = (IndexCommitPoint) commits.get(commits.size()-1);
+      IndexCommit lastCommit = (IndexCommit) commits.get(commits.size()-1);
 
       // Any commit older than expireTime should be deleted:
       double expireTime = dir.fileModified(lastCommit.getSegmentsFileName())/1000.0 - expirationTimeSeconds;
@@ -165,7 +165,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       Iterator it = commits.iterator();
 
       while(it.hasNext()) {
-        IndexCommitPoint commit = (IndexCommitPoint) it.next();
+        IndexCommit commit = (IndexCommit) it.next();
         double modTime = dir.fileModified(commit.getSegmentsFileName())/1000.0;
         if (commit != lastCommit && modTime < expireTime) {
           commit.delete();

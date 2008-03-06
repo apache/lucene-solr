@@ -886,6 +886,19 @@ public abstract class IndexReader {
   }
 
   /**
+   * Expert: return the IndexCommit that this reader has
+   * opened.  This method is only implemented by those
+   * readers that correspond to a Directory with its own
+   * segments_N file.
+   *
+   * <p><b>WARNING</b>: this API is new and experimental and
+   * may suddenly change.</p>
+   */
+  public IndexCommit getIndexCommit() throws IOException {
+    throw new UnsupportedOperationException("This reader does not support this method.");
+  }
+  
+  /**
    * Prints the filename and size of each file within a given compound file.
    * Add the -extract flag to extract files to the current working directory.
    * In order to make the extracted version of the index work, you have to copy
