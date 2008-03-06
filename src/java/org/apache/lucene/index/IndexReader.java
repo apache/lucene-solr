@@ -852,6 +852,7 @@ public abstract class IndexReader {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
+   * @deprecated Please use {@link IndexWriter#isLocked(Directory)} instead
    */
   public static boolean isLocked(Directory directory) throws IOException {
     return
@@ -863,6 +864,7 @@ public abstract class IndexReader {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
+   * @deprecated Please use {@link IndexWriter#isLocked(String)} instead
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);
@@ -877,6 +879,7 @@ public abstract class IndexReader {
    * Caution: this should only be used by failure recovery code,
    * when it is known that no other process nor thread is in fact
    * currently accessing this index.
+   * @deprecated Please use {@link IndexWriter#unlock(Directory)} instead
    */
   public static void unlock(Directory directory) throws IOException {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();

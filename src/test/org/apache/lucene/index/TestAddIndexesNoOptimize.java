@@ -24,10 +24,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import org.apache.lucene.search.PhraseQuery;
 
 public class TestAddIndexesNoOptimize extends LuceneTestCase {
   public void testSimpleCase() throws IOException {
@@ -120,6 +120,118 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     verifyNumDocs(dir, 231);
 
     verifyTermDocs(dir, new Term("content", "bbb"), 51);
+  }
+
+  public void testWithPendingDeletes() throws IOException {
+    // main directory
+    Directory dir = new RAMDirectory();
+    // auxiliary directory
+    Directory aux = new RAMDirectory();
+
+    setUpDirs(dir, aux);
+    IndexWriter writer = newWriter(dir, false);
+    writer.addIndexesNoOptimize(new Directory[] {aux});
+
+    // Adds 10 docs, then replaces them with another 10
+    // docs, so 10 pending deletes:
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
+                        Field.Index.TOKENIZED));
+      writer.updateDocument(new Term("id", "" + (i%10)), doc);
+    }
+    // Deletes one of the 10 added docs, leaving 9:
+    PhraseQuery q = new PhraseQuery();
+    q.add(new Term("content", "bbb"));
+    q.add(new Term("content", "14"));
+    writer.deleteDocuments(q);
+
+    writer.optimize();
+
+    verifyNumDocs(dir, 1039);
+    verifyTermDocs(dir, new Term("content", "aaa"), 1030);
+    verifyTermDocs(dir, new Term("content", "bbb"), 9);
+
+    writer.close();
+    dir.close();
+    aux.close();
+  }
+
+  public void testWithPendingDeletes2() throws IOException {
+    // main directory
+    Directory dir = new RAMDirectory();
+    // auxiliary directory
+    Directory aux = new RAMDirectory();
+
+    setUpDirs(dir, aux);
+    IndexWriter writer = newWriter(dir, false);
+
+    // Adds 10 docs, then replaces them with another 10
+    // docs, so 10 pending deletes:
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
+                        Field.Index.TOKENIZED));
+      writer.updateDocument(new Term("id", "" + (i%10)), doc);
+    }
+
+    writer.addIndexesNoOptimize(new Directory[] {aux});
+
+    // Deletes one of the 10 added docs, leaving 9:
+    PhraseQuery q = new PhraseQuery();
+    q.add(new Term("content", "bbb"));
+    q.add(new Term("content", "14"));
+    writer.deleteDocuments(q);
+
+    writer.optimize();
+
+    verifyNumDocs(dir, 1039);
+    verifyTermDocs(dir, new Term("content", "aaa"), 1030);
+    verifyTermDocs(dir, new Term("content", "bbb"), 9);
+
+    writer.close();
+    dir.close();
+    aux.close();
+  }
+
+  public void testWithPendingDeletes3() throws IOException {
+    // main directory
+    Directory dir = new RAMDirectory();
+    // auxiliary directory
+    Directory aux = new RAMDirectory();
+
+    setUpDirs(dir, aux);
+    IndexWriter writer = newWriter(dir, false);
+
+    // Adds 10 docs, then replaces them with another 10
+    // docs, so 10 pending deletes:
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
+                        Field.Index.TOKENIZED));
+      writer.updateDocument(new Term("id", "" + (i%10)), doc);
+    }
+
+    // Deletes one of the 10 added docs, leaving 9:
+    PhraseQuery q = new PhraseQuery();
+    q.add(new Term("content", "bbb"));
+    q.add(new Term("content", "14"));
+    writer.deleteDocuments(q);
+
+    writer.addIndexesNoOptimize(new Directory[] {aux});
+
+    writer.optimize();
+
+    verifyNumDocs(dir, 1039);
+    verifyTermDocs(dir, new Term("content", "aaa"), 1030);
+    verifyTermDocs(dir, new Term("content", "bbb"), 9);
+
+    writer.close();
+    dir.close();
+    aux.close();
   }
 
   // case 0: add self or exceed maxMergeDocs, expect exception

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
@@ -39,7 +40,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Iterator;
-import java.util.Map.Entry;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -60,7 +60,9 @@ import java.util.Map.Entry;
   <p>In either case, documents are added with <a
   href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a>
   and removed with <a
-  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments</b></a>.
+  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments</b></a>
+  or <a
+  href="#deleteDocuments(org.apache.lucene.search.Query)"><b>deleteDocuments</b></a>.
   A document can be updated with <a href="#updateDocument(org.apache.lucene.index.Term, org.apache.lucene.document.Document)"><b>updateDocument</b></a> 
   (which just deletes and then adds the entire document).
   When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
@@ -75,9 +77,10 @@ import java.util.Map.Entry;
   #setRAMBufferSizeMB}) or the number of added documents.
   The default is to flush when RAM usage hits 16 MB.  For
   best indexing speed you should flush by RAM usage with a
-  large RAM buffer.  You can also force a flush by calling
-  {@link #flush}.  When a flush occurs, both pending deletes
-  and added documents are flushed to the index.  A flush may
+  large RAM buffer.  Note that flushing just moves the
+  internal buffered state in IndexWriter into the index, but
+  these changes are not visible to IndexReader until either
+  {@link #commit} or {@link #close} is called.  A flush may
   also trigger one or more segment merges which by default
   run with a background thread so as not to block the
   addDocument calls (see <a href="#mergePolicy">below</a>
@@ -296,17 +299,18 @@ public class IndexWriter {
 
   private Similarity similarity = Similarity.getDefault(); // how to normalize
 
-  private volatile boolean commitPending; // true if segmentInfos has changes not yet committed
+  private volatile long changeCount; // increments every a change is completed
+  private long lastCommitChangeCount; // last changeCount that was committed
+
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
   private HashMap rollbackSegments;
 
   private SegmentInfos localRollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
   private boolean localAutoCommit;                // saved autoCommit during local transaction
+  private int localFlushedDocCount;               // saved docWriter.getFlushedDocCount during local transaction
   private boolean autoCommit = true;              // false if we should commit only on close
 
   private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
-  private int syncCount;
-  private int syncCountSaved = -1;
 
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
@@ -334,10 +338,8 @@ public class IndexWriter {
   private boolean stopMerges;
 
   private int flushCount;
+  private int flushDeletesCount;
   private double maxSyncPauseSeconds = DEFAULT_MAX_SYNC_PAUSE_SECONDS;
-
-  // Last (right most) SegmentInfo created by a merge
-  private SegmentInfo lastMergeInfo;
 
   /**
    * Used internally to throw an {@link
@@ -1085,10 +1087,10 @@ public class IndexWriter {
 
     if (create) {
       // Clear the write lock in case it's leftover:
-      directory.clearLock(IndexWriter.WRITE_LOCK_NAME);
+      directory.clearLock(WRITE_LOCK_NAME);
     }
 
-    Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
+    Lock writeLock = directory.makeLock(WRITE_LOCK_NAME);
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
     this.writeLock = writeLock;                   // save it
@@ -1653,7 +1655,7 @@ public class IndexWriter {
 
       // Only allow a new merge to be triggered if we are
       // going to wait for merges:
-      flush(waitForMerges, true);
+      flush(waitForMerges, true, true);
 
       mergePolicy.close();
 
@@ -1662,9 +1664,9 @@ public class IndexWriter {
       mergeScheduler.close();
 
       if (infoStream != null)
-        message("now call final sync()");
+        message("now call final commit()");
 
-      sync(true, 0);
+      commit(true, 0);
 
       if (infoStream != null)
         message("at close: " + segString());
@@ -1790,12 +1792,26 @@ public class IndexWriter {
   /** Returns the number of documents currently in this index. */
   public synchronized int docCount() {
     ensureOpen();
-    int count = docWriter.getNumDocsInRAM();
+    int count;
+    if (docWriter != null)
+      count = docWriter.getNumDocsInRAM();
+    else
+      count = 0;
     for (int i = 0; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       count += si.docCount;
     }
     return count;
+  }
+
+  public synchronized boolean hasDeletions() throws IOException {
+    ensureOpen();
+    if (docWriter.hasDeletes())
+      return true;
+    for (int i = 0; i < segmentInfos.size(); i++)
+      if (segmentInfos.info(i).hasDeletions())
+        return true;
+    return false;
   }
 
   /**
@@ -1893,7 +1909,7 @@ public class IndexWriter {
         }
       }
       if (doFlush)
-        flush(true, false);
+        flush(true, false, false);
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
@@ -1911,7 +1927,7 @@ public class IndexWriter {
     try {
       boolean doFlush = docWriter.bufferDeleteTerm(term);
       if (doFlush)
-        flush(true, false);
+        flush(true, false, false);
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
@@ -1931,11 +1947,39 @@ public class IndexWriter {
     try {
       boolean doFlush = docWriter.bufferDeleteTerms(terms);
       if (doFlush)
-        flush(true, false);
+        flush(true, false, false);
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
     }
+  }
+
+  /**
+   * Deletes the document(s) matching the provided query.
+   * @param query the query to identify the documents to be deleted
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public void deleteDocuments(Query query) throws CorruptIndexException, IOException {
+    ensureOpen();
+    boolean doFlush = docWriter.bufferDeleteQuery(query);
+    if (doFlush)
+      flush(true, false, false);
+  }
+
+  /**
+   * Deletes the document(s) matching any of the provided queries.
+   * All deletes are flushed at the same time.
+   * @param queries array of queries to identify the documents
+   * to be deleted
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public void deleteDocuments(Query[] queries) throws CorruptIndexException, IOException {
+    ensureOpen();
+    boolean doFlush = docWriter.bufferDeleteQueries(queries);
+    if (doFlush)
+      flush(true, false, false);
   }
 
   /**
@@ -1993,7 +2037,7 @@ public class IndexWriter {
         }
       }
       if (doFlush)
-        flush(true, false);
+        flush(true, false, false);
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
@@ -2024,16 +2068,21 @@ public class IndexWriter {
     return flushCount;
   }
 
+  // for test purpose
+  final synchronized int getFlushDeletesCount() {
+    return flushDeletesCount;
+  }
+
   final String newSegmentName() {
     // Cannot synchronize on IndexWriter because that causes
     // deadlock
     synchronized(segmentInfos) {
-      // Important to set commitPending so that the
+      // Important to increment changeCount so that the
       // segmentInfos is written on close.  Otherwise we
       // could close, re-open and re-return the same segment
       // name that was previously returned which can cause
       // problems at least with ConcurrentMergeScheduler.
-      commitPending = true;
+      changeCount++;
       return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
     }
   }
@@ -2158,7 +2207,7 @@ public class IndexWriter {
     if (infoStream != null)
       message("optimize: index now " + segString());
 
-    flush(true, false);
+    flush(true, false, true);
 
     synchronized(this) {
       resetMergeExceptions();
@@ -2408,13 +2457,14 @@ public class IndexWriter {
 
     localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     localAutoCommit = autoCommit;
+    localFlushedDocCount = docWriter.getFlushedDocCount();
 
     if (localAutoCommit) {
 
       if (infoStream != null)
         message("flush at startTransaction");
 
-      flush(true, false);
+      flush(true, false, false);
 
       // Turn off auto-commit during our local transaction:
       autoCommit = false;
@@ -2435,6 +2485,7 @@ public class IndexWriter {
 
     // First restore autoCommit in case we hit an exception below:
     autoCommit = localAutoCommit;
+    docWriter.setFlushedDocCount(localFlushedDocCount);
 
     // Keep the same segmentInfos instance but replace all
     // of its SegmentInfo instances.  This is so the next
@@ -2454,7 +2505,6 @@ public class IndexWriter {
 
     deleter.refresh();
     finishMerges(false);
-    lastMergeInfo = null;
     stopMerges = false;
   }
 
@@ -2477,7 +2527,7 @@ public class IndexWriter {
     if (autoCommit) {
       boolean success = false;
       try {
-        sync(true, 0);
+        commit(true, 0);
         success = true;
       } finally {
         if (!success) {
@@ -2524,9 +2574,9 @@ public class IndexWriter {
 
       finishMerges(false);
 
-      // Must pre-close these two, in case they set
-      // commitPending=true, so that we can then set it to
-      // false before calling closeInternal
+      // Must pre-close these two, in case they increment
+      // changeCount so that we can then set it to false
+      // before calling closeInternal
       mergePolicy.close();
       mergeScheduler.close();
 
@@ -2547,7 +2597,7 @@ public class IndexWriter {
         deleter.refresh();
       }
 
-      commitPending = false;
+      lastCommitChangeCount = changeCount;
       closeInternal(false);
     } else
       waitForClose();
@@ -2614,7 +2664,7 @@ public class IndexWriter {
    * index directory.
    */
   private synchronized void checkpoint() throws IOException {
-    commitPending = true;
+    changeCount++;
     deleter.checkpoint(segmentInfos, false);
   }
 
@@ -2677,20 +2727,26 @@ public class IndexWriter {
     try {
       if (infoStream != null)
         message("flush at addIndexes");
-      flush(true, false);
+      flush(true, false, true);
 
       boolean success = false;
 
       startTransaction();
 
       try {
+        int docCount = 0;
         for (int i = 0; i < dirs.length; i++) {
           SegmentInfos sis = new SegmentInfos();	  // read infos from dir
           sis.read(dirs[i]);
           for (int j = 0; j < sis.size(); j++) {
-            segmentInfos.addElement(sis.info(j));	  // add each info
+            final SegmentInfo info = sis.info(j);
+            docCount += info.docCount;
+            segmentInfos.addElement(info);	  // add each info
           }
         }
+
+        // Notify DocumentsWriter that the flushed count just increased
+        docWriter.updateFlushedDocCount(docCount);
 
         optimize();
 
@@ -2745,7 +2801,7 @@ public class IndexWriter {
     try {
       if (infoStream != null)
         message("flush at addIndexesNoOptimize");
-      flush(true, false);
+      flush(true, false, true);
 
       boolean success = false;
 
@@ -2753,6 +2809,7 @@ public class IndexWriter {
 
       try {
 
+        int docCount = 0;
         for (int i = 0; i < dirs.length; i++) {
           if (directory == dirs[i]) {
             // cannot add this index: segments may be deleted in merge before added
@@ -2763,9 +2820,13 @@ public class IndexWriter {
           sis.read(dirs[i]);
           for (int j = 0; j < sis.size(); j++) {
             SegmentInfo info = sis.info(j);
+            docCount += info.docCount;
             segmentInfos.addElement(info); // add each info
           }
         }
+
+        // Notify DocumentsWriter that the flushed count just increased
+        docWriter.updateFlushedDocCount(docCount);
 
         maybeMerge();
 
@@ -2869,6 +2930,9 @@ public class IndexWriter {
                                  -1, null, false);
           segmentInfos.addElement(info);
 
+          // Notify DocumentsWriter that the flushed count just increased
+          docWriter.updateFlushedDocCount(docCount);
+
           success = true;
 
         } finally {
@@ -2931,7 +2995,7 @@ public class IndexWriter {
    * @deprecated please call {@link #commit}) instead
    */
   public final void flush() throws CorruptIndexException, IOException {  
-    flush(true, false);
+    flush(true, false, true);
   }
 
   /**
@@ -2960,8 +3024,8 @@ public class IndexWriter {
   }
 
   private final void commit(boolean triggerMerges) throws CorruptIndexException, IOException {
-    flush(triggerMerges, true);
-    sync(true, 0);
+    flush(triggerMerges, true, true);
+    commit(true, 0);
   }
 
   /**
@@ -2971,22 +3035,34 @@ public class IndexWriter {
    *  deletes or docs were flushed) if necessary
    * @param flushDocStores if false we are allowed to keep
    *  doc stores open to share with the next segment
+   * @param flushDeletes whether pending deletes should also
+   *  be flushed
    */
-  protected final void flush(boolean triggerMerge, boolean flushDocStores) throws CorruptIndexException, IOException {
+  protected final void flush(boolean triggerMerge, boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
     ensureOpen();
-
-    if (doFlush(flushDocStores) && triggerMerge)
+    if (doFlush(flushDocStores, flushDeletes) && triggerMerge)
       maybeMerge();
   }
 
   // TODO: this method should not have to be entirely
   // synchronized, ie, merges should be allowed to commit
   // even while a flush is happening
-  private synchronized final boolean doFlush(boolean flushDocStores) throws CorruptIndexException, IOException {
+  private synchronized final boolean doFlush(boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
 
     // Make sure no threads are actively adding a document
 
+    assert testPoint("startDoFlush");
+
     flushCount++;
+
+    flushDeletes |= docWriter.deletesFull();
+
+    // When autoCommit=true we must always flush deletes
+    // when flushing a segment; otherwise deletes may become
+    // visible before their corresponding added document
+    // from an updateDocument call
+    if (autoCommit)
+      flushDeletes = true;
 
     // Returns true if docWriter is currently aborting, in
     // which case we skip flushing this segment
@@ -3010,15 +3086,6 @@ public class IndexWriter {
       String docStoreSegment = docWriter.getDocStoreSegment();
       if (docStoreSegment == null)
         flushDocStores = false;
-
-      // Always flush deletes if there are any delete terms.
-      // TODO: when autoCommit=false we don't have to flush
-      // deletes with every flushed segment; we can save
-      // CPU/IO by buffering longer & flushing deletes only
-      // when they are full or writer is being closed.  We
-      // have to fix the "applyDeletesSelectively" logic to
-      // apply to more than just the last flushed segment
-      boolean flushDeletes = docWriter.hasDeletes();
 
       int docStoreOffset = docWriter.getDocStoreOffset();
 
@@ -3095,54 +3162,17 @@ public class IndexWriter {
                                      docStoreIsCompoundFile);
       }
 
-      if (flushDeletes) {
-        try {
-          SegmentInfos rollback = (SegmentInfos) segmentInfos.clone();
-
-          boolean success = false;
-          try {
-            // we should be able to change this so we can
-            // buffer deletes longer and then flush them to
-            // multiple flushed segments only when a commit()
-            // finally happens
-            applyDeletes(newSegment);
-            success = true;
-          } finally {
-            if (!success) {
-              if (infoStream != null)
-                message("hit exception flushing deletes");
-                
-              // Carefully remove any partially written .del
-              // files
-              final int size = rollback.size();
-              for(int i=0;i<size;i++) {
-                final String newDelFileName = segmentInfos.info(i).getDelFileName();
-                final String delFileName = rollback.info(i).getDelFileName();
-                if (newDelFileName != null && !newDelFileName.equals(delFileName))
-                  deleter.deleteFile(newDelFileName);
-              }
-
-              // Remove just flushed segment
-              deleter.refresh(segment);
-
-              // Fully replace the segmentInfos since flushed
-              // deletes could have changed any of the
-              // SegmentInfo instances:
-              segmentInfos.clear();
-              segmentInfos.addAll(rollback);
-            }              
-          }
-        } finally {
-          // Regardless of success of failure in flushing
-          // deletes, we must clear them from our buffer:
-          docWriter.clearBufferedDeletes();
-        }
-      }
+      docWriter.pushDeletes();
 
       if (flushDocs)
         segmentInfos.addElement(newSegment);
 
-      if (flushDocs || flushDeletes)
+      if (flushDeletes) {
+        flushDeletesCount++;
+        applyDeletes();
+      }
+      
+      if (flushDocs)
         checkpoint();
 
       doAfterFlush();
@@ -3164,8 +3194,8 @@ public class IndexWriter {
         newSegment.setUseCompoundFile(true);
         checkpoint();
       }
-      
-      return flushDocs || flushDeletes;
+
+      return flushDocs;
 
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
@@ -3226,11 +3256,14 @@ public class IndexWriter {
    *  delete generation for merge.info).  If no deletes were
    *  flushed, no new deletes file is saved. */
   synchronized private void commitMergedDeletes(MergePolicy.OneMerge merge) throws IOException {
+
+    assert testPoint("startCommitMergeDeletes");
+
     final SegmentInfos sourceSegmentsClone = merge.segmentsClone;
     final SegmentInfos sourceSegments = merge.segments;
 
     if (infoStream != null)
-      message("commitMerge " + merge.segString(directory));
+      message("commitMergeDeletes " + merge.segString(directory));
 
     // Carefully merge deletes that occurred after we
     // started merging:
@@ -3301,12 +3334,15 @@ public class IndexWriter {
 
     if (deletes != null) {
       merge.info.advanceDelGen();
+      message("commit merge deletes to " + merge.info.getDelFileName());
       deletes.write(directory, merge.info.getDelFileName());
     }
   }
 
   /* FIXME if we want to support non-contiguous segment merges */
-  synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
+  synchronized private boolean commitMerge(MergePolicy.OneMerge merge, SegmentMerger merger, int mergedDocCount) throws IOException {
+
+    assert testPoint("startCommitMerge");
 
     if (hitOOM)
       return false;
@@ -3334,6 +3370,8 @@ public class IndexWriter {
 
     commitMergedDeletes(merge);
 
+    docWriter.remapDeletes(segmentInfos, merger.getDocMaps(), merger.getDelCounts(), merge, mergedDocCount);
+      
     // Simple optimization: if the doc store we are using
     // has been closed and is in now compound format (but
     // wasn't when we started), then we will switch to the
@@ -3355,11 +3393,6 @@ public class IndexWriter {
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     segmentInfos.add(start, merge.info);
-    if (lastMergeInfo == null || segmentInfos.indexOf(lastMergeInfo) < start)
-      lastMergeInfo = merge.info;
-
-    if (merge.optimize)
-      segmentsToOptimize.add(merge.info);
 
     // Must checkpoint before decrefing so any newly
     // referenced files in the new merge.info are incref'd
@@ -3368,6 +3401,8 @@ public class IndexWriter {
 
     decrefMergeSegments(merge);
 
+    if (merge.optimize)
+      segmentsToOptimize.add(merge.info);
     return true;
   }
 
@@ -3497,6 +3532,8 @@ public class IndexWriter {
    *  the synchronized lock on IndexWriter instance. */
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
 
+    assert testPoint("startMergeInit");
+
     assert merge.registerDone;
     assert !merge.optimize || merge.maxNumSegmentsOptimize > 0;
 
@@ -3507,10 +3544,14 @@ public class IndexWriter {
     if (merge.isAborted())
       return;
 
+    boolean changed = applyDeletes();
+
+    // If autoCommit == true then all deletes should have
+    // been flushed when we flushed the last segment
+    assert !changed || !autoCommit;
+
     final SegmentInfos sourceSegments = merge.segments;
     final int end = sourceSegments.size();
-
-    ensureContiguousMerge(merge);
 
     // Check whether this merge will allow us to skip
     // merging the doc stores (stored field & vectors).
@@ -3598,7 +3639,7 @@ public class IndexWriter {
       // make compound file out of them...
       if (infoStream != null)
         message("flush at merge");
-      flush(false, true);
+      flush(false, true, false);
     }
 
     // We must take a full copy at this point so that we can
@@ -3746,7 +3787,7 @@ public class IndexWriter {
       }
     }
 
-    if (!commitMerge(merge))
+    if (!commitMerge(merge, merger, mergedDocCount))
       // commitMerge will return false if this merge was aborted
       return 0;
 
@@ -3759,7 +3800,7 @@ public class IndexWriter {
         synchronized(this) {
           size = merge.info.sizeInBytes();
         }
-        sync(false, size);
+        commit(false, size);
       }
       
       success = false;
@@ -3812,7 +3853,7 @@ public class IndexWriter {
       synchronized(this) {
         size = merge.info.sizeInBytes();
       }
-      sync(false, size);
+      commit(false, size);
     }
 
     return mergedDocCount;
@@ -3823,63 +3864,41 @@ public class IndexWriter {
       mergeExceptions.add(merge);
   }
 
-  // Called during flush to apply any buffered deletes.  If
-  // flushedNewSegment is true then a new segment was just
-  // created and flushed from the ram segments, so we will
-  // selectively apply the deletes to that new segment.
-  private final void applyDeletes(SegmentInfo newSegment) throws CorruptIndexException, IOException {
+  // Apply buffered deletes to all segments.
+  private final synchronized boolean applyDeletes() throws CorruptIndexException, IOException {
+    assert testPoint("startApplyDeletes");
+    SegmentInfos rollback = (SegmentInfos) segmentInfos.clone();
+    boolean success = false;
+    boolean changed;
+    try {
+      changed = docWriter.applyDeletes(segmentInfos);
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream != null)
+          message("hit exception flushing deletes");
 
-    final HashMap bufferedDeleteTerms = docWriter.getBufferedDeleteTerms();
-    final List bufferedDeleteDocIDs = docWriter.getBufferedDeleteDocIDs();
-
-    if (infoStream != null)
-      message("flush " + docWriter.getNumBufferedDeleteTerms() + " buffered deleted terms and " +
-              bufferedDeleteDocIDs.size() + " deleted docIDs on "
-              + segmentInfos.size() + " segments.");
-
-    if (newSegment != null) {
-      IndexReader reader = null;
-      try {
-        // Open readers w/o opening the stored fields /
-        // vectors because these files may still be held
-        // open for writing by docWriter
-        reader = SegmentReader.get(newSegment, false);
-
-        // Apply delete terms to the segment just flushed from ram
-        // apply appropriately so that a delete term is only applied to
-        // the documents buffered before it, not those buffered after it.
-        applyDeletesSelectively(bufferedDeleteTerms, bufferedDeleteDocIDs, reader);
-      } finally {
-        if (reader != null) {
-          try {
-            reader.doCommit();
-          } finally {
-            reader.doClose();
-          }
+        // Carefully remove any partially written .del
+        // files
+        final int size = rollback.size();
+        for(int i=0;i<size;i++) {
+          final String newDelFileName = segmentInfos.info(i).getDelFileName();
+          final String delFileName = rollback.info(i).getDelFileName();
+          if (newDelFileName != null && !newDelFileName.equals(delFileName))
+            deleter.deleteFile(newDelFileName);
         }
+
+        // Fully replace the segmentInfos since flushed
+        // deletes could have changed any of the
+        // SegmentInfo instances:
+        segmentInfos.clear();
+        segmentInfos.addAll(rollback);
       }
     }
 
-    final int infosEnd = segmentInfos.size();
-
-    for (int i = 0; i < infosEnd; i++) {
-      IndexReader reader = null;
-      try {
-        reader = SegmentReader.get(segmentInfos.info(i), false);
-
-        // Apply delete terms to disk segments
-        // except the one just flushed from ram.
-        applyDeletes(bufferedDeleteTerms, reader);
-      } finally {
-        if (reader != null) {
-          try {
-            reader.doCommit();
-          } finally {
-            reader.doClose();
-          }
-        }
-      }
-    }
+    if (changed)
+      checkpoint();
+    return changed;
   }
 
   // For test purposes.
@@ -3892,65 +3911,24 @@ public class IndexWriter {
     return docWriter.getNumBufferedDeleteTerms();
   }
 
-  // Apply buffered delete terms to the segment just flushed from ram
-  // apply appropriately so that a delete term is only applied to
-  // the documents buffered before it, not those buffered after it.
-  private final void applyDeletesSelectively(HashMap deleteTerms, List deleteIds,
-                                             IndexReader reader)
-    throws CorruptIndexException, IOException {
-    Iterator iter = deleteTerms.entrySet().iterator();
-    while (iter.hasNext()) {
-      Entry entry = (Entry) iter.next();
-      Term term = (Term) entry.getKey();
-
-      TermDocs docs = reader.termDocs(term);
-      if (docs != null) {
-        int num = ((DocumentsWriter.Num) entry.getValue()).getNum();
-        try {
-          while (docs.next()) {
-            int doc = docs.doc();
-            if (doc >= num) {
-              break;
-            }
-            reader.deleteDocument(doc);
-          }
-        } finally {
-          docs.close();
-        }
-      }
-    }
-
-    if (deleteIds.size() > 0) {
-      iter = deleteIds.iterator();
-      while(iter.hasNext())
-        reader.deleteDocument(((Integer) iter.next()).intValue());
-    }
-  }
-
-  // Apply buffered delete terms to this reader.
-  private final void applyDeletes(HashMap deleteTerms, IndexReader reader)
-      throws CorruptIndexException, IOException {
-    Iterator iter = deleteTerms.entrySet().iterator();
-    while (iter.hasNext()) {
-      Entry entry = (Entry) iter.next();
-      reader.deleteDocuments((Term) entry.getKey());
-    }
-  }
-
   // utility routines for tests
   SegmentInfo newestSegment() {
     return segmentInfos.info(segmentInfos.size()-1);
   }
 
   public synchronized String segString() {
+    return segString(segmentInfos);
+  }
+
+  private synchronized String segString(SegmentInfos infos) {
     StringBuffer buffer = new StringBuffer();
-    for(int i = 0; i < segmentInfos.size(); i++) {
+    final int count = infos.size();
+    for(int i = 0; i < count; i++) {
       if (i > 0) {
         buffer.append(' ');
       }
-      buffer.append(segmentInfos.info(i).segString(directory));
+      buffer.append(infos.info(i).segString(directory));
     }
-
     return buffer.toString();
   }
 
@@ -4042,68 +4020,49 @@ public class IndexWriter {
    *  sync each file, if it wasn't already.  If that
    *  succeeds, then we write a new segments_N file & sync
    *  that. */
-  private void sync(boolean includeFlushes, long sizeInBytes) throws IOException {
+  private void commit(boolean skipWait, long sizeInBytes) throws IOException {
+
+    assert testPoint("startCommit");
 
     if (hitOOM)
       return;
 
     try {
 
-      message("start sync() includeFlushes=" + includeFlushes);
+      if (infoStream != null)
+        message("start commit() skipWait=" + skipWait + " sizeInBytes=" + sizeInBytes);
 
-      if (!includeFlushes)
+      if (!skipWait)
         syncPause(sizeInBytes);
 
-      // First, we clone & incref the segmentInfos we intend
-      // to sync, then, without locking, we sync() each file
-      // referenced by toSync, in the background.  Multiple
-      // threads can be doing this at once, if say a large
-      // merge and a small merge finish at the same time:
-
       SegmentInfos toSync = null;
-      final int mySyncCount;
+      final long myChangeCount;
+
       synchronized(this) {
 
-        if (!commitPending) {
-          message("  skip sync(): no commit pending");
+        assert lastCommitChangeCount <= changeCount;
+
+        if (changeCount == lastCommitChangeCount) {
+          if (infoStream != null)
+            message("  skip commit(): no changes pending");
           return;
         }
 
-        // Create the segmentInfos we want to sync, by copying
-        // the current one and possibly removing flushed
-        // segments:
+        // First, we clone & incref the segmentInfos we intend
+        // to sync, then, without locking, we sync() each file
+        // referenced by toSync, in the background.  Multiple
+        // threads can be doing this at once, if say a large
+        // merge and a small merge finish at the same time:
+
         toSync = (SegmentInfos) segmentInfos.clone();
-        final int numSegmentsToSync = toSync.size();
-
-        boolean newCommitPending = false;
-
-        if (!includeFlushes) {
-          // Do not sync flushes:
-          assert lastMergeInfo != null;
-          assert toSync.contains(lastMergeInfo);
-          int downTo = numSegmentsToSync-1;
-          while(!toSync.info(downTo).equals(lastMergeInfo)) {
-            message("  skip segment " + toSync.info(downTo).name);
-            toSync.remove(downTo);
-            downTo--;
-            newCommitPending = true;
-          }
-
-        } else if (numSegmentsToSync > 0)
-          // Force all subsequent syncs to include up through
-          // the final info in the current segments.  This
-          // ensure that a call to commit() will force another
-          // sync (due to merge finishing) to sync all flushed
-          // segments as well:
-          lastMergeInfo = toSync.info(numSegmentsToSync-1);
-
-        mySyncCount = syncCount++;
         deleter.incRef(toSync, false);
-
-        commitPending = newCommitPending;
+        myChangeCount = changeCount;
       }
 
-      boolean success0 = false;
+      if (infoStream != null)
+        message("commit index=" + segString(toSync));
+
+      assert testPoint("midCommit");
 
       try {
 
@@ -4143,12 +4102,14 @@ public class IndexWriter {
             break;
         }
 
+        assert testPoint("midCommit2");
+      
         synchronized(this) {
           // If someone saved a newer version of segments file
           // since I first started syncing my version, I can
           // safely skip saving myself since I've been
           // superseded:
-          if (mySyncCount > syncCountSaved) {
+          if (myChangeCount > lastCommitChangeCount) {
           
             if (segmentInfos.getGeneration() > toSync.getGeneration())
               toSync.updateGeneration(segmentInfos);
@@ -4161,14 +4122,13 @@ public class IndexWriter {
               // Have our master segmentInfos record the
               // generations we just sync'd
               segmentInfos.updateGeneration(toSync);
-              if (!success) {
-                commitPending = true;
+              if (!success)
                 message("hit exception committing segments file");
-              }
             }
+
             message("commit complete");
 
-            syncCountSaved = mySyncCount;
+            lastCommitChangeCount = myChangeCount;
 
             deleter.checkpoint(toSync, true);
             setRollbackSegmentInfos();
@@ -4178,19 +4138,54 @@ public class IndexWriter {
 
         message("done all syncs");
 
-        success0 = true;
+        assert testPoint("midCommitSuccess");
 
       } finally {
         synchronized(this) {
           deleter.decRef(toSync);
-          if (!success0)
-            commitPending = true;
         }
       }
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
     }
+    assert testPoint("finishCommit");
+  }
+
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a low-level IO error
+   */
+  public static boolean isLocked(Directory directory) throws IOException {
+    return directory.makeLock(WRITE_LOCK_NAME).isLocked();
+  }
+
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a low-level IO error
+   */
+  public static boolean isLocked(String directory) throws IOException {
+    Directory dir = FSDirectory.getDirectory(directory);
+    try {
+      return isLocked(dir);
+    } finally {
+      dir.close();
+    }
+  }
+
+  /**
+   * Forcibly unlocks the index in the named directory.
+   * <P>
+   * Caution: this should only be used by failure recovery code,
+   * when it is known that no other process nor thread is in fact
+   * currently accessing this index.
+   */
+  public static void unlock(Directory directory) throws IOException {
+    directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
   }
 
   /**
@@ -4245,7 +4240,17 @@ public class IndexWriter {
   }
 
   // Used only by assert for testing.  Current points:
-  //  "DocumentsWriter.ThreadState.init start"
+  //   startDoFlush
+  //   startCommitMerge
+  //   startCommit
+  //   midCommit
+  //   midCommit2
+  //   midCommitSuccess
+  //   finishCommit
+  //   startCommitMergeDeletes
+  //   startMergeInit
+  //   startApplyDeletes
+  //   DocumentsWriter.ThreadState.init start
   boolean testPoint(String name) {
     return true;
   }

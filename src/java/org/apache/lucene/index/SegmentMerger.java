@@ -436,10 +436,21 @@ final class SegmentMerger {
 
   private final void mergeTermInfos() throws CorruptIndexException, IOException {
     int base = 0;
-    for (int i = 0; i < readers.size(); i++) {
+    final int readerCount = readers.size();
+    for (int i = 0; i < readerCount; i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
+      int[] docMap  = smi.getDocMap();
+      if (docMap != null) {
+        if (docMaps == null) {
+          docMaps = new int[readerCount][];
+          delCounts = new int[readerCount];
+        }
+        docMaps[i] = docMap;
+        delCounts[i] = smi.reader.maxDoc() - smi.reader.numDocs();
+      }
+
       base += reader.numDocs();
       if (smi.next())
         queue.put(smi);				  // initialize queue
@@ -504,7 +515,15 @@ final class SegmentMerger {
     return df;
   }
   
-  private byte[] payloadBuffer = null;
+  private byte[] payloadBuffer;
+  private int[][] docMaps;
+  int[][] getDocMaps() {
+    return docMaps;
+  }
+  private int[] delCounts;
+  int[] getDelCounts() {
+    return delCounts;
+  }
 
   /** Process postings from multiple segments all positioned on the
    *  same term. Writes out merged entries into freqOutput and

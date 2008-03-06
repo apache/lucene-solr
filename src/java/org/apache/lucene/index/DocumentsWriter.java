@@ -23,6 +23,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
@@ -33,9 +37,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 import java.text.NumberFormat;
 import java.util.Collections;
 
@@ -154,14 +160,109 @@ final class DocumentsWriter {
 
   private PrintStream infoStream;
 
-  // This Hashmap buffers delete terms in ram before they
-  // are applied.  The key is delete term; the value is
-  // number of buffered documents the term applies to.
-  private HashMap bufferedDeleteTerms = new HashMap();
-  private int numBufferedDeleteTerms = 0;
+  // Holds buffered deletes, by docID, term or query.  We
+  // hold two instances of this class: one for the deletes
+  // prior to the last flush, the other for deletes after
+  // the last flush.  This is so if we need to abort
+  // (discard all buffered docs) we can also discard the
+  // buffered deletes yet keep the deletes done during
+  // previously flushed segments.
+  private static class BufferedDeletes {
+    int numTerms;
+    HashMap terms = new HashMap();
+    HashMap queries = new HashMap();
+    List docIDs = new ArrayList();
 
-  // Currently used only for deleting a doc on hitting an non-aborting exception
-  private List bufferedDeleteDocIDs = new ArrayList();
+    private void update(BufferedDeletes in) {
+      numTerms += in.numTerms;
+      terms.putAll(in.terms);
+      queries.putAll(in.queries);
+      docIDs.addAll(in.docIDs);
+      in.terms.clear();
+      in.numTerms = 0;
+      in.queries.clear();
+      in.docIDs.clear();
+    }
+    
+    void clear() {
+      terms.clear();
+      queries.clear();
+      docIDs.clear();
+      numTerms = 0;
+    }
+
+    boolean any() {
+      return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0;
+    }
+
+    // Remaps all buffered deletes based on a completed
+    // merge
+    synchronized void remap(MergeDocIDRemapper mapper,
+                            SegmentInfos infos,
+                            int[][] docMaps,
+                            int[] delCounts,
+                            MergePolicy.OneMerge merge,
+                            int mergeDocCount) {
+
+      final HashMap newDeleteTerms;
+
+      // Remap delete-by-term
+      if (terms.size() > 0) {
+        newDeleteTerms = new HashMap();
+        Iterator iter = terms.entrySet().iterator();
+        while(iter.hasNext()) {
+          Entry entry = (Entry) iter.next();
+          Num num = (Num) entry.getValue();
+          newDeleteTerms.put(entry.getKey(),
+                             new Num(mapper.remap(num.getNum())));
+        }
+      } else
+        newDeleteTerms = null;
+
+      // Remap delete-by-docID
+      final List newDeleteDocIDs;
+
+      if (docIDs.size() > 0) {
+        newDeleteDocIDs = new ArrayList(docIDs.size());
+        Iterator iter = docIDs.iterator();
+        while(iter.hasNext()) {
+          Integer num = (Integer) iter.next();
+          newDeleteDocIDs.add(new Integer(mapper.remap(num.intValue())));
+        }
+      } else
+        newDeleteDocIDs = null;
+
+      // Remap delete-by-query
+      final HashMap newDeleteQueries;
+    
+      if (queries.size() > 0) {
+        newDeleteQueries = new HashMap(queries.size());
+        Iterator iter = queries.entrySet().iterator();
+        while(iter.hasNext()) {
+          Entry entry = (Entry) iter.next();
+          Integer num = (Integer) entry.getValue();
+          newDeleteQueries.put(entry.getKey(),
+                               new Integer(mapper.remap(num.intValue())));
+        }
+      } else
+        newDeleteQueries = null;
+
+      if (newDeleteTerms != null)
+        terms = newDeleteTerms;
+      if (newDeleteDocIDs != null)
+        docIDs = newDeleteDocIDs;
+      if (newDeleteQueries != null)
+        queries = newDeleteQueries;
+    }
+  }
+
+  // Deletes done after the last flush; these are discarded
+  // on abort
+  private BufferedDeletes deletesInRAM = new BufferedDeletes();
+
+  // Deletes done before the last flush; these are still
+  // kept on abort
+  private BufferedDeletes deletesFlushed = new BufferedDeletes();
 
   // The max number of delete terms that can be buffered before
   // they must be flushed to disk.
@@ -175,20 +276,29 @@ final class DocumentsWriter {
   // non-zero we will flush by RAM usage instead.
   private int maxBufferedDocs = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
 
+  private int flushedDocCount;                      // How many docs already flushed to index
+
+  synchronized void updateFlushedDocCount(int n) {
+    flushedDocCount += n;
+  }
+  synchronized int getFlushedDocCount() {
+    return flushedDocCount;
+  }
+  synchronized void setFlushedDocCount(int n) {
+    flushedDocCount = n;
+  }
+
   private boolean closed;
 
   // Coarse estimates used to measure RAM usage of buffered deletes
   private static int OBJECT_HEADER_BYTES = 8;
-  private static int OBJECT_POINTER_BYTES = 4;    // TODO: should be 8 on 64-bit platform
-  private static int BYTES_PER_CHAR = 2;
-  private static int BYTES_PER_INT = 4;
 
   private BufferedNorms[] norms = new BufferedNorms[0];   // Holds norms until we flush
 
   DocumentsWriter(Directory directory, IndexWriter writer) throws IOException {
     this.directory = directory;
     this.writer = writer;
-
+    flushedDocCount = writer.docCount();
     postingsFreeList = new Posting[0];
   }
 
@@ -357,9 +467,7 @@ final class DocumentsWriter {
 
       try {
 
-        bufferedDeleteTerms.clear();
-        bufferedDeleteDocIDs.clear();
-        numBufferedDeleteTerms = 0;
+        deletesInRAM.clear();
 
         try {
           abortedFiles = files();
@@ -546,6 +654,8 @@ final class DocumentsWriter {
       docCount = numDocsInRAM;
 
       newFiles.addAll(writeSegment());
+
+      flushedDocCount += docCount;
 
       success = true;
 
@@ -2110,12 +2220,7 @@ final class DocumentsWriter {
     }
 
     resetPostingsData();
-
-    nextDocID = 0;
-    nextWriteDocID = 0;
-    numDocsInRAM = 0;
-    files = null;
-
+    
     // Maybe downsize postingsFreeList array
     if (postingsFreeList.length > 1.5*postingsFreeCount) {
       int newSize = postingsFreeList.length;
@@ -2128,6 +2233,10 @@ final class DocumentsWriter {
     }
 
     return flushedFiles;
+  }
+
+  synchronized void pushDeletes() {
+    deletesFlushed.update(deletesInRAM);
   }
 
   /** Returns the name of the file with this extension, on
@@ -2428,15 +2537,7 @@ final class DocumentsWriter {
     // Next, wait until my thread state is idle (in case
     // it's shared with other threads) and for threads to
     // not be paused nor a flush pending:
-    while(!closed && (!state.isIdle || pauseThreads != 0 || flushPending || abortCount > 0))
-      try {
-        wait();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-
-    if (closed)
-      throw new AlreadyClosedException("this IndexWriter is closed");
+    waitReady(state);
 
     if (segment == null)
       segment = writer.newSegmentName();
@@ -2529,55 +2630,72 @@ final class DocumentsWriter {
     return state.doFlushAfter || timeToFlushDeletes();
   }
 
+  // for testing
   synchronized int getNumBufferedDeleteTerms() {
-    return numBufferedDeleteTerms;
+    return deletesInRAM.numTerms;
   }
 
+  // for testing
   synchronized HashMap getBufferedDeleteTerms() {
-    return bufferedDeleteTerms;
+    return deletesInRAM.terms;
   }
 
-  synchronized List getBufferedDeleteDocIDs() {
-    return bufferedDeleteDocIDs;
+  /** Called whenever a merge has completed and the merged segments had deletions */
+  synchronized void remapDeletes(SegmentInfos infos, int[][] docMaps, int[] delCounts, MergePolicy.OneMerge merge, int mergeDocCount) {
+    if (docMaps == null)
+      // The merged segments had no deletes so docIDs did not change and we have nothing to do
+      return;
+    MergeDocIDRemapper mapper = new MergeDocIDRemapper(infos, docMaps, delCounts, merge, mergeDocCount);
+    deletesInRAM.remap(mapper, infos, docMaps, delCounts, merge, mergeDocCount);
+    deletesFlushed.remap(mapper, infos, docMaps, delCounts, merge, mergeDocCount);
+    flushedDocCount -= mapper.docShift;
   }
 
-  // Reset buffered deletes.
-  synchronized void clearBufferedDeletes() throws IOException {
-    bufferedDeleteTerms.clear();
-    bufferedDeleteDocIDs.clear();
-    numBufferedDeleteTerms = 0;
-    if (numBytesUsed > 0)
-      resetPostingsData();
-  }
-
-  synchronized boolean bufferDeleteTerms(Term[] terms) throws IOException {
-    while(pauseThreads != 0 || flushPending)
+  synchronized private void waitReady(ThreadState state) {
+    while(!closed && ((state != null && !state.isIdle) || pauseThreads != 0 || flushPending || abortCount > 0))
       try {
         wait();
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
-      for (int i = 0; i < terms.length; i++)
-        addDeleteTerm(terms[i], numDocsInRAM);
+
+    if (closed)
+      throw new AlreadyClosedException("this IndexWriter is closed");
+  }
+
+  synchronized boolean bufferDeleteTerms(Term[] terms) throws IOException {
+    waitReady(null);
+    for (int i = 0; i < terms.length; i++)
+      addDeleteTerm(terms[i], numDocsInRAM);
     return timeToFlushDeletes();
   }
 
   synchronized boolean bufferDeleteTerm(Term term) throws IOException {
-    while(pauseThreads != 0 || flushPending)
-      try {
-        wait();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    waitReady(null);
     addDeleteTerm(term, numDocsInRAM);
     return timeToFlushDeletes();
   }
 
+  synchronized boolean bufferDeleteQueries(Query[] queries) throws IOException {
+    waitReady(null);
+    for (int i = 0; i < queries.length; i++)
+      addDeleteQuery(queries[i], numDocsInRAM);
+    return timeToFlushDeletes();
+  }
+
+  synchronized boolean bufferDeleteQuery(Query query) throws IOException {
+    waitReady(null);
+    addDeleteQuery(query, numDocsInRAM);
+    return timeToFlushDeletes();
+  }
+
+  synchronized boolean deletesFull() {
+    return maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH
+      && ((deletesInRAM.numTerms + deletesInRAM.queries.size() + deletesInRAM.docIDs.size()) >= maxBufferedDeleteTerms);
+  }
+
   synchronized private boolean timeToFlushDeletes() {
-    return (bufferIsFull
-            || (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH
-                && numBufferedDeleteTerms >= maxBufferedDeleteTerms))
-           && setFlushPending();
+    return (bufferIsFull || deletesFull()) && setFlushPending();
   }
 
   void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
@@ -2589,7 +2707,108 @@ final class DocumentsWriter {
   }
 
   synchronized boolean hasDeletes() {
-    return bufferedDeleteTerms.size() > 0 || bufferedDeleteDocIDs.size() > 0;
+    return deletesFlushed.any();
+  }
+
+  synchronized boolean applyDeletes(SegmentInfos infos) throws IOException {
+
+    if (!hasDeletes())
+      return false;
+
+    if (infoStream != null)
+      infoStream.println("apply " + deletesFlushed.numTerms + " buffered deleted terms and " +
+                         deletesFlushed.docIDs.size() + " deleted docIDs and " +
+                         deletesFlushed.queries.size() + " deleted queries on " +
+                         + infos.size() + " segments.");
+
+    final int infosEnd = infos.size();
+
+    int docStart = 0;
+    boolean any = false;
+    for (int i = 0; i < infosEnd; i++) {
+      IndexReader reader = SegmentReader.get(infos.info(i), false);
+      boolean success = false;
+      try {
+        any |= applyDeletes(reader, docStart);
+        docStart += reader.maxDoc();
+        success = true;
+      } finally {
+        if (reader != null) {
+          try {
+            if (success)
+              reader.doCommit();
+          } finally {
+            reader.doClose();
+          }
+        }
+      }
+    }
+
+    deletesFlushed.clear();
+
+    return any;
+  }
+
+  // Apply buffered delete terms, queries and docIDs to the
+  // provided reader
+  private final synchronized boolean applyDeletes(IndexReader reader, int docIDStart)
+    throws CorruptIndexException, IOException {
+
+    final int docEnd = docIDStart + reader.maxDoc();
+    boolean any = false;
+
+    // Delete by term
+    Iterator iter = deletesFlushed.terms.entrySet().iterator();
+    while (iter.hasNext()) {
+      Entry entry = (Entry) iter.next();
+      Term term = (Term) entry.getKey();
+
+      TermDocs docs = reader.termDocs(term);
+      if (docs != null) {
+        int limit = ((DocumentsWriter.Num) entry.getValue()).getNum();
+        try {
+          while (docs.next()) {
+            int docID = docs.doc();
+            if (docIDStart+docID >= limit)
+              break;
+            reader.deleteDocument(docID);
+            any = true;
+          }
+        } finally {
+          docs.close();
+        }
+      }
+    }
+
+    // Delete by docID
+    iter = deletesFlushed.docIDs.iterator();
+    while(iter.hasNext()) {
+      int docID = ((Integer) iter.next()).intValue();
+      if (docID >= docIDStart && docID < docEnd) {
+        reader.deleteDocument(docID-docIDStart);
+        any = true;
+      }
+    }
+
+    // Delete by query
+    IndexSearcher searcher = new IndexSearcher(reader);
+    iter = deletesFlushed.queries.entrySet().iterator();
+    while(iter.hasNext()) {
+      Entry entry = (Entry) iter.next();
+      Query query = (Query) entry.getKey();
+      int limit = ((Integer) entry.getValue()).intValue();
+      Weight weight = query.weight(searcher);
+      Scorer scorer = weight.scorer(reader);
+      while(scorer.next()) {
+        final int docID = scorer.doc();
+        if (docIDStart + docID >= limit)
+          break;
+        reader.deleteDocument(docID);
+        any = true;
+      }
+    }
+    searcher.close();
+    return any;
   }
 
   // Number of documents a delete term applies to.
@@ -2621,27 +2840,23 @@ final class DocumentsWriter {
   // delete term will be applied to those documents as well
   // as the disk segments.
   synchronized private void addDeleteTerm(Term term, int docCount) {
-    Num num = (Num) bufferedDeleteTerms.get(term);
-    if (num == null) {
-      bufferedDeleteTerms.put(term, new Num(docCount));
-      // This is coarse approximation of actual bytes used:
-      numBytesUsed += (term.field().length() + term.text().length()) * BYTES_PER_CHAR
-          + 4 + 5 * OBJECT_HEADER_BYTES + 5 * OBJECT_POINTER_BYTES;
-      if (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH
-          && numBytesUsed > ramBufferSize) {
-        bufferIsFull = true;
-      }
-    } else {
-      num.setNum(docCount);
-    }
-    numBufferedDeleteTerms++;
+    Num num = (Num) deletesInRAM.terms.get(term);
+    final int docIDUpto = flushedDocCount + docCount;
+    if (num == null)
+      deletesInRAM.terms.put(term, new Num(docIDUpto));
+    else
+      num.setNum(docIDUpto);
+    deletesInRAM.numTerms++;
   }
 
   // Buffer a specific docID for deletion.  Currently only
   // used when we hit a exception when adding a document
-  synchronized private void addDeleteDocID(int docId) {
-    bufferedDeleteDocIDs.add(new Integer(docId));
-    numBytesUsed += OBJECT_HEADER_BYTES + BYTES_PER_INT + OBJECT_POINTER_BYTES;
+  synchronized private void addDeleteDocID(int docID) {
+    deletesInRAM.docIDs.add(new Integer(flushedDocCount+docID));
+  }
+
+  synchronized private void addDeleteQuery(Query query, int docID) {
+    deletesInRAM.queries.put(query, new Integer(flushedDocCount + docID));
   }
 
   /** Does the synchronized work to finish/flush the
@@ -3132,6 +3347,7 @@ final class DocumentsWriter {
         postingsAllocCount++;
       }
     }
+    assert numBytesUsed <= numBytesAlloc;
   }
 
   synchronized void recyclePostings(Posting[] postings, int numPostings) {
@@ -3164,6 +3380,7 @@ final class DocumentsWriter {
       b = (byte[]) freeByteBlocks.remove(size-1);
     if (trackAllocations)
       numBytesUsed += BYTE_BLOCK_SIZE;
+    assert numBytesUsed <= numBytesAlloc;
     return b;
   }
 
@@ -3194,6 +3411,7 @@ final class DocumentsWriter {
     } else
       c = (char[]) freeCharBlocks.remove(size-1);
     numBytesUsed += CHAR_BLOCK_SIZE * CHAR_NUM_BYTE;
+    assert numBytesUsed <= numBytesAlloc;
     return c;
   }
 

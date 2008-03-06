@@ -91,6 +91,7 @@ class TermVectorsReader implements Cloneable {
         if (-1 == docStoreOffset) {
           this.docStoreOffset = 0;
           this.size = numTotalDocs;
+          assert size == 0 || numTotalDocs == size;
         } else {
           this.docStoreOffset = docStoreOffset;
           this.size = size;
@@ -176,6 +177,7 @@ class TermVectorsReader implements Cloneable {
       } else {
         tvdPosition = tvd.length();
         tvfPosition = tvf.length();
+        assert count == numDocs-1;
       }
       tvdLengths[count] = (int) (tvdPosition-lastTvdPosition);
       tvfLengths[count] = (int) (tvfPosition-lastTvfPosition);

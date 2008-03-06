@@ -108,7 +108,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       reader.close();
 
       modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
 
       modifier.commit();
 
@@ -120,41 +119,65 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
   }
 
-  // test when delete terms only apply to ram segments
-  public void testRAMDeletes() throws IOException {
+  public void testMaxBufferedDeletes() throws IOException {
     for(int pass=0;pass<2;pass++) {
       boolean autoCommit = (0==pass);
       Directory dir = new MockRAMDirectory();
-      IndexWriter modifier = new IndexWriter(dir, autoCommit,
-                                             new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-      modifier.setMaxBufferedDocs(4);
-      modifier.setMaxBufferedDeleteTerms(4);
-
-      int id = 0;
-      int value = 100;
-
-      addDoc(modifier, ++id, value);
-      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-      addDoc(modifier, ++id, value);
-      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-
-      assertEquals(2, modifier.getNumBufferedDeleteTerms());
-      assertEquals(1, modifier.getBufferedDeleteTermsSize());
-
-      addDoc(modifier, ++id, value);
-      assertEquals(0, modifier.getSegmentCount());
-      modifier.flush();
-
-      modifier.commit();
-
-      IndexReader reader = IndexReader.open(dir);
-      assertEquals(1, reader.numDocs());
-
-      int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
-      assertEquals(1, hitCount);
-      reader.close();
-      modifier.close();
+      IndexWriter writer = new IndexWriter(dir, autoCommit,
+                                           new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDeleteTerms(1);
+      writer.deleteDocuments(new Term("foobar", "1"));
+      writer.deleteDocuments(new Term("foobar", "1"));
+      writer.deleteDocuments(new Term("foobar", "1"));
+      assertEquals(3, writer.getFlushDeletesCount());
+      writer.close();
       dir.close();
+    }
+  }
+
+  // test when delete terms only apply to ram segments
+  public void testRAMDeletes() throws IOException {
+    for(int pass=0;pass<2;pass++) {
+      for(int t=0;t<2;t++) {
+        boolean autoCommit = (0==pass);
+        Directory dir = new MockRAMDirectory();
+        IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                               new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        modifier.setMaxBufferedDocs(4);
+        modifier.setMaxBufferedDeleteTerms(4);
+
+        int id = 0;
+        int value = 100;
+
+        addDoc(modifier, ++id, value);
+        if (0 == t)
+          modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+        else
+          modifier.deleteDocuments(new TermQuery(new Term("value", String.valueOf(value))));
+        addDoc(modifier, ++id, value);
+        if (0 == t) {
+          modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+          assertEquals(2, modifier.getNumBufferedDeleteTerms());
+          assertEquals(1, modifier.getBufferedDeleteTermsSize());
+        }
+        else
+          modifier.deleteDocuments(new TermQuery(new Term("value", String.valueOf(value))));
+
+        addDoc(modifier, ++id, value);
+        assertEquals(0, modifier.getSegmentCount());
+        modifier.flush();
+
+        modifier.commit();
+
+        IndexReader reader = IndexReader.open(dir);
+        assertEquals(1, reader.numDocs());
+
+        int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
+        assertEquals(1, hitCount);
+        reader.close();
+        modifier.close();
+        dir.close();
+      }
     }
   }
 
@@ -306,6 +329,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       // Iterate w/ ever increasing free disk space:
       while (!done) {
         MockRAMDirectory dir = new MockRAMDirectory(startDir);
+        dir.setPreventDoubleWrite(false);
         IndexWriter modifier = new IndexWriter(dir, autoCommit,
                                                new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
 

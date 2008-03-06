@@ -38,6 +38,19 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   static Random r = new Random(0);
 
+  public class MockIndexWriter extends IndexWriter {
+
+    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean testPoint(String name) {
+      //      if (name.equals("startCommit")) {
+      if (r.nextInt(4) == 2)
+        Thread.yield();
+      return true;
+    }
+  }
 
   public void testRandom() throws Exception {
     Directory dir1 = new MockRAMDirectory();
@@ -99,7 +112,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   // everything.
 
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
-    IndexWriter w = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     w.setUseCompoundFile(false);
     /***
     w.setMaxMergeDocs(Integer.MAX_VALUE);

@@ -25,10 +25,25 @@ import org.apache.lucene.queryParser.*;
 
 import java.util.Random;
 import java.io.File;
+import java.io.IOException;
 
 public class TestAtomicUpdate extends LuceneTestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
   private static final Random RANDOM = new Random();
+
+  public class MockIndexWriter extends IndexWriter {
+
+    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean testPoint(String name) {
+      //      if (name.equals("startCommit")) {
+      if (RANDOM.nextInt(4) == 2)
+        Thread.yield();
+      return true;
+    }
+  }
 
   private static abstract class TimedThread extends Thread {
     boolean failed;
@@ -113,7 +128,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     TimedThread[] threads = new TimedThread[4];
 
-    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new MockIndexWriter(directory, true, ANALYZER, true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(7);
+    writer.setMergeFactor(3);
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {

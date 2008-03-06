@@ -1353,7 +1353,7 @@ public class TestIndexWriter extends LuceneTestCase
           assertTrue(flushCount > lastFlushCount);
           lastFlushCount = flushCount;
           writer.setRAMBufferSizeMB(0.000001);
-          writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
+          writer.setMaxBufferedDeleteTerms(1);
         } else if (j < 20) {
           assertTrue(flushCount > lastFlushCount);
           lastFlushCount = flushCount;
@@ -1366,6 +1366,7 @@ public class TestIndexWriter extends LuceneTestCase
         } else if (30 == j) {
           writer.setRAMBufferSizeMB(0.000001);
           writer.setMaxBufferedDeleteTerms(IndexWriter.DISABLE_AUTO_FLUSH);
+          writer.setMaxBufferedDeleteTerms(1);
         } else if (j < 40) {
           assertTrue(flushCount> lastFlushCount);
           lastFlushCount = flushCount;
@@ -1554,7 +1555,7 @@ public class TestIndexWriter extends LuceneTestCase
       doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       for(int i=0;i<19;i++)
         writer.addDocument(doc);
-      writer.flush(false, true);
+      writer.flush(false, true, true);
       writer.close();
       SegmentInfos sis = new SegmentInfos();
       sis.read(dir);

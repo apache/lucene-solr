@@ -105,6 +105,11 @@ New features
     close/re-open of IndexWriter while still protecting an open
     snapshot (Tim Brennan via Mike McCandless)
 
+ 9. LUCENE-1194: Added IndexWriter.deleteDocuments(Query) to delete
+    documents matching the specified query.  Also added static unlock
+    and isLocked methods (deprecating the ones in IndexReader).  (Mike
+    McCandless)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use
