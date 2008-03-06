@@ -19,6 +19,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.TermQuery;
 
 import java.util.*;
 import java.io.ByteArrayOutputStream;
@@ -89,7 +90,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       int nThreads=r.nextInt(5)+1;
       int iter=r.nextInt(10)+1;
       int range=r.nextInt(20)+1;
-
       Directory dir1 = new MockRAMDirectory();
       Directory dir2 = new MockRAMDirectory();
       Map docs = indexRandom(nThreads, iter, range, dir1);
@@ -210,7 +210,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
       if (term==null || term.field() != idField) break;
 
       termDocs1.seek (termEnum);
-      assertTrue(termDocs1.next());
+      if (!termDocs1.next()) {
+        // This doc is deleted and wasn't replaced
+        termDocs2.seek(termEnum);
+        assertFalse(termDocs2.next());
+        continue;
+      }
+
       int id1 = termDocs1.doc();
       assertFalse(termDocs1.next());
 
@@ -420,14 +426,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return new String(arr);
     }
 
+    public String getIdString() {
+      return Integer.toString(base + nextInt(range));
+    }
 
     public void indexDoc() throws IOException {
       Document d = new Document();
 
       ArrayList fields = new ArrayList();      
-      int id = base + nextInt(range);
-      String idString = ""+id;
-      Field idField =  new Field("id", idString, Field.Store.YES, Field.Index.NO_NORMS);
+      String idString = getIdString();
+      Field idField =  new Field(idTerm.field(), idString, Field.Store.YES, Field.Index.NO_NORMS);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
@@ -480,11 +488,30 @@ public class TestStressIndexing2 extends LuceneTestCase {
       docs.put(idString, d);
     }
 
+    public void deleteDoc() throws IOException {
+      String idString = getIdString();
+      w.deleteDocuments(idTerm.createTerm(idString));
+      docs.remove(idString);
+    }
+
+    public void deleteByQuery() throws IOException {
+      String idString = getIdString();
+      w.deleteDocuments(new TermQuery(idTerm.createTerm(idString)));
+      docs.remove(idString);
+    }
+
     public void run() {
       try {
         r = new Random(base+range+seed);
         for (int i=0; i<iterations; i++) {
-          indexDoc();
+          int what = nextInt(100);
+          if (what < 5) {
+            deleteDoc();
+          } else if (what < 10) {
+            deleteByQuery();
+          } else {
+            indexDoc();
+          }
         }
       } catch (Exception e) {
         e.printStackTrace();
