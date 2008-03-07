@@ -82,7 +82,7 @@ public class RawResponseWriter implements QueryResponseWriter
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      IOUtils.copy( content.getStream(), writer );
+      IOUtils.copy( content.getReader(), writer );
     }
     else {
       getBaseWriter( request ).write( writer, request, response );
