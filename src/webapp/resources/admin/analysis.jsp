@@ -372,8 +372,7 @@
     if (needRaw) {
       printRow(out,"raw text", arr, new ToStr() {
         public String toStr(Object o) {
-          // todo: output in hex or something?
-          // check if it's all ascii or not?
+          // page is UTF-8, so anything goes.
           return ((Tok)o).token.termText();
         }
       }
@@ -386,7 +385,12 @@
     if (verbose) {
       printRow(out,"term type", arr, new ToStr() {
         public String toStr(Object o) {
-          return  ((Tok)o).token.type();
+          String tt =  ((Tok)o).token.type();
+          if (tt == null) {
+             return "null";
+          } else {
+             return tt;
+          }
         }
       }
               ,true
