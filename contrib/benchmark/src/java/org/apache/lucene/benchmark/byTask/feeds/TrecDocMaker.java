@@ -72,6 +72,8 @@ public class TrecDocMaker extends BasicDocMaker {
     if (!dataDir.isAbsolute()) {
       dataDir = new File(workDir, d);
     }
+    resetUniqueBytes();
+    inputFiles.clear();
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {
       throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());

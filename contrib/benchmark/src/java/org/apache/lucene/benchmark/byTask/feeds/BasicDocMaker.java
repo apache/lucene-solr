@@ -219,6 +219,7 @@ public abstract class BasicDocMaker implements DocMaker {
    */
   public synchronized void resetInputs() {
     printDocStatistics();
+    setConfig(config); //re-initiate since properties by round may have changed.  
     numBytes = 0;
     numDocsCreated = 0;
     resetLeftovers();
@@ -252,6 +253,10 @@ public abstract class BasicDocMaker implements DocMaker {
     numUniqueBytes += n;
   }
   
+  protected void resetUniqueBytes () {
+    numUniqueBytes = 0;
+  }
+
   protected synchronized void addBytes (long n) {
     numBytes += n;
   }

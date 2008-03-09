@@ -3,6 +3,11 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+3/9/08
+  LUCENE-1209: Fixed DocMaker settings by round. Prior to this fix, DocMaker settings of 
+  first round were used in all rounds.  (E.g. term vectors.)
+  (Mark Miller via Doron Cohen) 
+
 1/30/08
   LUCENE-1156: Fixed redirect problem in EnwikiDocMaker.  Refactored ExtractWikipedia to use EnwikiDocMaker.  Added property to EnwikiDocMaker to allow
   for skipping image only documents.

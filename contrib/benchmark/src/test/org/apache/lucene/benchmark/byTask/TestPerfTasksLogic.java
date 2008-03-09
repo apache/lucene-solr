@@ -38,6 +38,8 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.store.Directory;
 
 import junit.framework.TestCase;
 
@@ -165,7 +167,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -237,7 +239,7 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -327,7 +329,7 @@ public class TestPerfTasksLogic extends TestCase {
     benchmark = execBenchmark(algLines2);
 
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
     iw.close();
 
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
@@ -639,8 +641,8 @@ public class TestPerfTasksLogic extends TestCase {
         "doc.add.log.step=3",
         "ram.flush.mb=-1",
         "max.buffered=2",
-        "compound=false",
-        "doc.term.vector=false",
+        "compound=cmpnd:true:false",
+        "doc.term.vector=vector:false:true",
         "doc.maker.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
@@ -652,6 +654,7 @@ public class TestPerfTasksLogic extends TestCase {
         "  ResetSystemErase",
         "  CreateIndex",
         "  { \"AddDocs\"  AddDoc > : * ",
+        "  NewRound",
         "} : 2",
     };
 
@@ -661,7 +664,14 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals(2, writer.getMaxBufferedDocs());
     assertEquals(IndexWriter.DISABLE_AUTO_FLUSH, (int) writer.getRAMBufferSizeMB());
     assertEquals(3, writer.getMergeFactor());
-    assertEquals(false, writer.getUseCompoundFile());
+    assertFalse(writer.getUseCompoundFile());
+    writer.close();
+    Directory dir = benchmark.getRunData().getDirectory();
+    IndexReader reader = IndexReader.open(dir);
+    TermFreqVector [] tfv = reader.getTermFreqVectors(0);
+    assertNotNull(tfv);
+    assertTrue(tfv.length > 0);
+    reader.close();
   }
 
   /**
