@@ -3181,7 +3181,7 @@ public class TestIndexWriter extends LuceneTestCase
                            Field.Index.TOKENIZED));
     try {
       w.addDocument(crashDoc, analyzer);
-      fail("did not hit exxpected exception");
+      fail("did not hit expected exception");
     } catch (IOException ioe) {
       // expected
     }
@@ -3189,4 +3189,46 @@ public class TestIndexWriter extends LuceneTestCase
     w.close();
     dir.close();
   }    
+
+  public class MockIndexWriter2 extends IndexWriter {
+
+    public MockIndexWriter2(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean doFail;
+    boolean failed;
+
+    boolean testPoint(String name) {
+      if (doFail && name.equals("startMergeInit")) {
+        failed = true;
+        throw new RuntimeException("intentionally failing");
+      }
+      return true;
+    }
+  }
+
+  // LUCENE-1210
+  public void testExceptionOnMergeInit() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    MockIndexWriter2 w = new MockIndexWriter2(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    w.setMaxBufferedDocs(2);
+    w.setMergeFactor(2);
+    w.doFail = true;
+    w.setMergeScheduler(new ConcurrentMergeScheduler());
+    Document doc = new Document();
+    doc.add(new Field("field", "a field", Field.Store.YES,
+                      Field.Index.TOKENIZED));
+    for(int i=0;i<10;i++)
+      try {
+        w.addDocument(doc);
+      } catch (RuntimeException re) {
+        break;
+      }
+
+    ((ConcurrentMergeScheduler) w.getMergeScheduler()).sync();
+    assertTrue(w.failed);
+    w.close();
+    dir.close();
+  }
 }
