@@ -25,7 +25,7 @@
 #merge.factor=mrg:10:100:10:100
 #max.buffered=buf:10:10:100:100
 ram.flush.mb=ram:32
-autocommit=ac:true:false
+autocommit=acommit:true:false
 
 max.field.length=2147483647
 
