@@ -1023,6 +1023,14 @@ final class DocumentsWriter {
     void quickSort(Posting[] postings, int lo, int hi) {
       if (lo >= hi)
         return;
+      else if (hi == 1+lo) {
+        if (comparePostings(postings[lo], postings[hi]) > 0) {
+          final Posting tmp = postings[lo];
+          postings[lo] = postings[hi];
+          postings[hi] = tmp;
+        }
+        return;
+      }
 
       int mid = (lo + hi) >>> 1;
 
@@ -1081,6 +1089,14 @@ final class DocumentsWriter {
     void quickSort(PostingVector[] postings, int lo, int hi) {
       if (lo >= hi)
         return;
+      else if (hi == 1+lo) {
+        if (comparePostings(postings[lo].p, postings[hi].p) > 0) {
+          final PostingVector tmp = postings[lo];
+          postings[lo] = postings[hi];
+          postings[hi] = tmp;
+        }
+        return;
+      }
 
       int mid = (lo + hi) >>> 1;
 
@@ -1134,6 +1150,14 @@ final class DocumentsWriter {
     void quickSort(FieldData[] array, int lo, int hi) {
       if (lo >= hi)
         return;
+      else if (hi == 1+lo) {
+        if (array[lo].compareTo(array[hi]) > 0) {
+          final FieldData tmp = array[lo];
+          array[lo] = array[hi];
+          array[hi] = tmp;
+        }
+        return;
+      }
 
       int mid = (lo + hi) >>> 1;
 
@@ -1321,6 +1345,8 @@ final class DocumentsWriter {
      *  returns -1 if p1 < p2; 1 if p1 > p2; else 0.
      */
     int comparePostings(Posting p1, Posting p2) {
+      if (p1 == p2)
+        return 0;
       final char[] text1 = charPool.buffers[p1.textStart >> CHAR_BLOCK_SHIFT];
       int pos1 = p1.textStart & CHAR_BLOCK_MASK;
       final char[] text2 = charPool.buffers[p2.textStart >> CHAR_BLOCK_SHIFT];
