@@ -467,6 +467,10 @@ public final class SolrCore {
     }
   }
 
+  public boolean isClosed() {
+    return _searcher == null;
+  }
+  
   @Override
   protected void finalize() { close(); }
 
@@ -926,7 +930,7 @@ public final class SolrCore {
     synchronized (searcherLock) {
       if (_searcher != null) {
         _searcher.decref();   // dec refcount for this._searcher
-        _searcher=null;
+        _searcher=null; // isClosed() does check this
         infoRegistry.remove("currentSearcher");
       }
     }

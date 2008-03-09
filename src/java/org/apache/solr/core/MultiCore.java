@@ -49,30 +49,33 @@ import org.xml.sax.SAXException;
  */
 public class MultiCore 
 {
-  private static Logger log = Logger.getLogger(MultiCore.class.getName());
-  private static final MultiCore instance = new MultiCore();
+  protected static Logger log = Logger.getLogger(MultiCore.class.getName());
   
-  // Synchronized map of all cores
-  private final Map<String, CoreDescriptor> cores = new LinkedHashMap<String, CoreDescriptor>();
+  protected final Map<String, CoreDescriptor> cores = new LinkedHashMap<String, CoreDescriptor>();
+  protected boolean enabled = false;
+  protected boolean persistent = false;
+  protected String adminPath = null;
+  protected MultiCoreHandler multiCoreHandler = null;
+  protected File configFile = null;
+  protected String libDir = null;
+  protected ClassLoader libLoader = null;
+  protected SolrResourceLoader loader = null;
+  protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   
-  private boolean enabled = false;
-  private boolean persistent = false;
-  private String adminPath = null;
-  private MultiCoreHandler multiCoreHandler = null;
-  private File configFile = null;
-  private String libDir = null;
-  private ClassLoader libLoader = null;
-  private SolrResourceLoader loader = null;
-  
-  // no one else can make the registry
-  private MultiCore() { }
+  public MultiCore() {
+  }
   
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
   
   /**
-   * Load a config file listing the available solr cores
+   * Load a config file listing the available solr cores.
+   * @param dir the home directory of all resources.
+   * @param configFile the configuration file
+   * @throws javax.xml.parsers.ParserConfigurationException
+   * @throws java.io.IOException
+   * @throws org.xml.sax.SAXException
    */
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
@@ -94,7 +97,7 @@ public class MultiCore
       }
       
       if( adminPath != null ) {
-        multiCoreHandler = new MultiCoreHandler();
+        multiCoreHandler = this.createMultiCoreHandler();
       }
       
       NodeList nodes = (NodeList)cfg.evaluate("multicore/core", XPathConstants.NODESET);
@@ -135,7 +138,9 @@ public class MultiCore
     enabled = true;
   }
   
-  /** Stops all cores. */
+  /**
+   * Stops all cores.
+   */
   public void shutdown() {
     synchronized(cores) {
       for(Map.Entry<String,CoreDescriptor> e : cores.entrySet()) {
@@ -154,15 +159,11 @@ public class MultiCore
     shutdown();
   }
   
-  //-------------------------------------------------------------------
-  //
-  //-------------------------------------------------------------------
-  
-  /** Get the singleton */
-  public static MultiCore getRegistry() {
-    return instance;
-  }
-  
+  /**
+   * Registers a SolrCore descriptor in the registry.
+   * @param descr the Solr core descriptor
+   * @return a previous descriptor having the same name if it existed, null otherwise
+   */
   public CoreDescriptor register( CoreDescriptor descr ) {
     if( descr == null ) {
       throw new RuntimeException( "Can not register a null core." );
@@ -186,6 +187,12 @@ public class MultiCore
     }
   }
   
+
+  /**
+   * Swaps two SolrCore descriptors.
+   * @param c0
+   * @param c1
+   */
   public void swap(CoreDescriptor c0, CoreDescriptor c1) {
     if( c0 == null || c1 == null ) {
       throw new RuntimeException( "Can not swap a null core." );
@@ -235,10 +242,11 @@ public class MultiCore
   }
   
   /**
+   * Recreates a SolrCore.
    * While the new core is loading, requests will continue to be dispatched to
    * and processed by the old core
    * 
-   * @param core
+   * @param core the SolrCore to reload
    * @throws ParserConfigurationException
    * @throws IOException
    * @throws SAXException
@@ -314,6 +322,49 @@ public class MultiCore
     this.adminPath = adminPath;
   }
   
+  /**
+   * Sets the preferred core used to handle MultiCore admin tasks.
+   * Note that getAdminCore is not symmetrical to this method since
+   * it will allways return an opened SolrCore.
+   * This however can be useful implementing a "metacore" (a core of cores).
+   */
+  public void setAdminCore(SolrCore core) {
+    adminCore = new java.lang.ref.WeakReference<SolrCore>(core);
+  }
+
+  /**
+   * Gets a core to handle MultiCore admin tasks (@see SolrDispatchFilter).
+   * This makes the best attempt to reuse the same opened SolrCore accross calls.
+   */
+  public SolrCore getAdminCore() {
+    SolrCore core = adminCore != null ? adminCore.get() : null;
+    if (core == null || core.isClosed()) {
+      for (CoreDescriptor descr : this.cores.values()) {
+        core = descr.getCore();
+        if (core == null || core.isClosed()) {
+          core = null;
+        } else {
+          break;
+        }
+      }
+      setAdminCore(core);
+    }
+    return core;
+  }
+
+  /** 
+   * Creates a MultiCoreHandler for this MultiCore.
+   * @return a MultiCoreHandler
+   */
+  public MultiCoreHandler createMultiCoreHandler() {
+    return new MultiCoreHandler() {
+      @Override
+      public MultiCore getMultiCore() {
+        return MultiCore.this;
+      }
+    };
+  }
+ 
   public MultiCoreHandler getMultiCoreHandler() {
     return multiCoreHandler;
   }
@@ -439,4 +490,5 @@ public class MultiCore
       throw xforward;
     }
   }
+ 
 }

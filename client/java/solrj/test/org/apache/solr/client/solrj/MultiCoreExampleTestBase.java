@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.MultiCoreResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.MultiCore;
 
 
 /**
@@ -34,6 +34,9 @@ import org.apache.solr.core.SolrCore;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
+  @SuppressWarnings("deprecation")
+  protected static final MultiCore multicore =  org.apache.solr.core.SolrMultiCore.getInstance();
+  
   @Override public String getSolrHome() { return "../../../example/multicore/"; }
   
   @Override public String getSchemaFile()     { return getSolrHome()+"core0/conf/schema.xml";     }

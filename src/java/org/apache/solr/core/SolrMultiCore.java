@@ -15,45 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.embedded;
-
-import java.io.File;
-
-import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
-import org.apache.solr.client.solrj.SolrServer;
+package org.apache.solr.core;
 
 /**
- * This runs SolrServer test using 
+ * A MultiCore singleton.
+ * Marked as deprecated to avoid usage proliferation of core code that would
+ * assume MultiCore being a singleton.  In solr 2.0, the MultiCore factory
+ * should be popluated with a standard tool like spring.  Until then, this is
+ * a simple static factory that should not be used widely. 
  * 
  * @version $Id$
  * @since solr 1.3
  */
-public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
-
-  @Override public void setUp() throws Exception 
-  {
-    super.setUp();
-    
-    File home = new File( getSolrHome() );
-    File f = new File( home, "multicore.xml" );
-    multicore.load( getSolrHome(), f );
+@Deprecated
+public final class SolrMultiCore extends MultiCore
+{
+  private static MultiCore instance = null;
+  
+  // no one else can make the registry
+  private SolrMultiCore() {}
+  
+  /** Returns a default MultiCore singleton.
+   * @return
+   */
+  public static synchronized MultiCore getInstance() {
+    if (instance == null) {
+      instance = new SolrMultiCore();
+    }
+    return instance;
   }
-
-  @Override
-  protected SolrServer getSolrCore0()
-  {
-    return new EmbeddedSolrServer( multicore, "core0" );
-  }
-
-  @Override
-  protected SolrServer getSolrCore1()
-  {
-    return new EmbeddedSolrServer( multicore, "core1" );
-  }
-
-  @Override
-  protected SolrServer getSolrAdmin()
-  {
-    return new EmbeddedSolrServer( multicore, "core0" );
-  } 
 }

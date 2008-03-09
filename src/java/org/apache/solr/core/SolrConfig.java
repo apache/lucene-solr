@@ -32,7 +32,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;

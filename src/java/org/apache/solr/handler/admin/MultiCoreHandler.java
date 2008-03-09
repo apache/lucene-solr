@@ -39,7 +39,7 @@ import org.apache.solr.util.RefCounted;
  * @version $Id$
  * @since solr 1.3
  */
-public class MultiCoreHandler extends RequestHandlerBase
+public abstract class MultiCoreHandler extends RequestHandlerBase
 {
   public MultiCoreHandler()
   {
@@ -56,11 +56,18 @@ public class MultiCoreHandler extends RequestHandlerBase
         "it is a special Handler configured directly by the RequestDispatcher" );
   }
   
+  /**
+   * The instance of multicore this handler handles.
+   * This should be the MultiCore instance that created this handler.
+   * @return a MultiCore instance
+   */
+  public abstract MultiCore getMultiCore();
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     // Make sure the manager is enabled
-    MultiCore manager = MultiCore.getRegistry();
+    MultiCore manager = getMultiCore();
     if( !manager.isEnabled() ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
           "MultiCore support must be enabled at startup." );

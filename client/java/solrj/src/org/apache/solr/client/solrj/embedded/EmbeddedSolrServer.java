@@ -54,22 +54,31 @@ public class EmbeddedSolrServer extends SolrServer
   protected ModifiableSolrParams _invariantParams;
   protected ResponseParser _processor;
   
-  protected final SolrCore core;
+  protected final MultiCore multicore; // either multicore
+  protected final SolrCore core; // or single core
   protected final SolrRequestParsers parser;
   protected final String coreName;  // use MultiCore registry
   
   public EmbeddedSolrServer( SolrCore core )
   {
+    if ( core == null ) {
+      throw new NullPointerException("SolrCore instance required");
+    }
     this.core = core;
+    this.multicore = null;
     this.coreName = null;
     this.parser = init();
   }
     
-  public EmbeddedSolrServer( String coreName )
+  public EmbeddedSolrServer(  MultiCore multicore, String coreName )
   {
+    if ( multicore == null ) {
+      throw new NullPointerException("MultiCore instance required");
+    }
     this.core = null;
+    this.multicore = multicore;
     this.coreName = coreName;
-    SolrCore c = MultiCore.getRegistry().getCore( coreName );
+    SolrCore c = multicore.getCore( coreName );
     if( c == null ) {
       throw new RuntimeException( "Unknown core: "+coreName );
     }
@@ -96,7 +105,6 @@ public class EmbeddedSolrServer extends SolrServer
     }
 
     // Check for multicore action
-    MultiCore multicore = MultiCore.getRegistry();
     SolrCore core = this.core;
     if( core == null ) {
       core = multicore.getCore( coreName );
@@ -126,7 +134,7 @@ public class EmbeddedSolrServer extends SolrServer
       }
       // Perhaps the path is to manage the cores
       if( handler == null &&
-          coreName != null && 
+          multicore != null &&
           path.equals( multicore.getAdminPath() ) && 
           multicore.isEnabled() ) {
         handler = multicore.getMultiCoreHandler();
