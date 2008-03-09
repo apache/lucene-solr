@@ -122,7 +122,7 @@ public class QualityStats {
   }
   
   /**
-   * Return the recall: |{relevant hits}| / |{hits}|.
+   * Return the recall: |{relevant hits found}| / |{relevant hits existing}|.
    */
   public double getRecall() {
     return recall;
