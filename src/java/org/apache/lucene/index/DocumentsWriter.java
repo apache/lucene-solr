@@ -722,6 +722,7 @@ final class DocumentsWriter {
     void init(Document doc, int docID) throws IOException, AbortException {
 
       assert !isIdle;
+      assert writer.testPoint("DocumentsWriter.ThreadState.init start");
 
       this.docID = docID;
       docBoost = doc.getBoost();
@@ -2371,18 +2372,6 @@ final class DocumentsWriter {
     if (segment == null)
       segment = writer.newSegmentName();
 
-    numDocsInRAM++;
-
-    // We must at this point commit to flushing to ensure we
-    // always get N docs when we flush by doc count, even if
-    // > 1 thread is adding documents:
-    if (!flushPending && maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH
-        && numDocsInRAM >= maxBufferedDocs) {
-      flushPending = true;
-      state.doFlushAfter = true;
-    } else
-      state.doFlushAfter = false;
-
     state.isIdle = false;
 
     try {
@@ -2391,11 +2380,21 @@ final class DocumentsWriter {
         state.init(doc, nextDocID);
         if (delTerm != null) {
           addDeleteTerm(delTerm, state.docID);
-          if (!state.doFlushAfter)
-            state.doFlushAfter = timeToFlushDeletes();
+          state.doFlushAfter = timeToFlushDeletes();
         }
-        // Only increment nextDocID on successful init
+        // Only increment nextDocID & numDocsInRAM on successful init
         nextDocID++;
+        numDocsInRAM++;
+
+        // We must at this point commit to flushing to ensure we
+        // always get N docs when we flush by doc count, even if
+        // > 1 thread is adding documents:
+        if (!flushPending && maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH
+            && numDocsInRAM >= maxBufferedDocs) {
+          flushPending = true;
+          state.doFlushAfter = true;
+        }
+
         success = true;
       } finally {
         if (!success) {

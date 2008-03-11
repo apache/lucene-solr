@@ -3434,4 +3434,10 @@ public class IndexWriter {
 
     return buffer.toString();
   }
+
+  // Used only by assert for testing.  Current points:
+  //  "DocumentsWriter.ThreadState.init start"
+  boolean testPoint(String name) {
+    return true;
+  }
 }

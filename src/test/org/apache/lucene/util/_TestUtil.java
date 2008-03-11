@@ -22,6 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.store.Directory;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 public class _TestUtil {
 
@@ -49,4 +53,16 @@ public class _TestUtil {
     if (ms instanceof ConcurrentMergeScheduler)
       ((ConcurrentMergeScheduler) ms).sync();
   }
+
+  public static boolean checkIndex(Directory dir) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex.out = new PrintStream(bos);
+    if (!CheckIndex.check(dir, false)) {
+      System.out.println("CheckIndex failed");
+      System.out.println(bos.toString());
+      return false;
+    } else
+      return true;
+  }
+
 }
