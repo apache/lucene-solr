@@ -3037,8 +3037,23 @@ public class IndexWriter {
   }
 
   /** Does initial setup for a merge, which is fast but holds
-   *  the synchronized lock on IndexWriter instance. */
+   *  the synchronized lock on IndexWriter instance.  */
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
+    boolean success = false;
+    try {
+      _mergeInit(merge);
+      success = true;
+    } finally {
+      if (!success) {
+        mergeFinish(merge);
+        runningMerges.remove(merge);
+      }
+    }
+  }
+
+  final synchronized private void _mergeInit(MergePolicy.OneMerge merge) throws IOException {
+
+    assert testPoint("startMergeInit");
 
     assert merge.registerDone;
 
