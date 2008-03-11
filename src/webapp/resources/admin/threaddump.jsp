@@ -27,7 +27,7 @@
   SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
   if (core == null) {
     String coreParam = request.getParameter("core");
-    core = coreParam != null? org.apache.solr.core.MultiCore.getRegistry().getCore(coreParam) : null;
+    core = coreParam != null? org.apache.solr.core.SolrMultiCore.getInstance().getCore(coreParam) : null;
   }
   if (core == null)
     core = SolrCore.getSolrCore();
