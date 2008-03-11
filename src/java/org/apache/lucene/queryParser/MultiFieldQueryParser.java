@@ -99,7 +99,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        Query q = getFieldQuery(fields[i], queryText);
+        Query q = super.getFieldQuery(fields[i], queryText);
         if (q != null) {
           //If the user passes a map of boosts
           if (boosts != null) {
@@ -109,12 +109,7 @@ public class MultiFieldQueryParser extends QueryParser
               q.setBoost(boost.floatValue());
             }
           }
-          if (q instanceof PhraseQuery) {
-            ((PhraseQuery) q).setSlop(slop);
-          }
-          if (q instanceof MultiPhraseQuery) {
-            ((MultiPhraseQuery) q).setSlop(slop);
-          }
+          applySlop(q,slop);
           clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
         }
       }
@@ -122,7 +117,17 @@ public class MultiFieldQueryParser extends QueryParser
         return null;
       return getBooleanQuery(clauses, true);
     }
-    return super.getFieldQuery(field, queryText);
+    Query q = super.getFieldQuery(field, queryText);
+    applySlop(q,slop);
+    return q;
+  }
+
+  private void applySlop(Query q, int slop) {
+    if (q instanceof PhraseQuery) {
+      ((PhraseQuery) q).setSlop(slop);
+    } else if (q instanceof MultiPhraseQuery) {
+      ((MultiPhraseQuery) q).setSlop(slop);
+    }
   }
   
 

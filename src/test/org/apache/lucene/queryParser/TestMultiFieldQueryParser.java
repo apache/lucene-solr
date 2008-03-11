@@ -113,6 +113,10 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     q = mfqp.parse("\"foo bar\"~4");
     assertEquals("b:\"foo bar\"~4 t:\"foo bar\"~4", q.toString());
 
+    // LUCENE-1213: MultiFieldQueryParser was ignoring slop when phrase had a field.
+    q = mfqp.parse("b:\"foo bar\"~4"); 
+    assertEquals("b:\"foo bar\"~4", q.toString());
+
     // make sure that terms which have a field are not touched:
     q = mfqp.parse("one f:two");
     assertEquals("(b:one t:one) f:two", q.toString());

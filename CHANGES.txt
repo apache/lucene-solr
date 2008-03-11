@@ -67,6 +67,9 @@ Bug fixes
     scorer.next(). (Eks Dev, Michael Busch)
 
  3. LUCENE-1182: Added scorePayload to SimilarityDelegator (Andi Vajda via Grant Ingersoll)
+ 
+ 4. LUCENE-1213: MultiFieldQueryParser was ignoring slop in case
+    of a single field phrase. (Trejkaz via Doron Cohen)
 	
 New features
 
