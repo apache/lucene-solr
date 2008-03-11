@@ -16,6 +16,9 @@ Bug fixes
  4. LUCENE-1199: Added defensive check for null indexReader before
     calling close in IndexModifier.close() (Mike McCandless)
 
+ 5. LUCENE-1200: Fix rare deadlock case in addIndexes* when
+    ConcurrentMergeScheduler is in use (Mike McCandless)
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
