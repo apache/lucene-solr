@@ -13,6 +13,9 @@ Bug fixes
  3. LUCENE-1198: Don't corrupt index if an exception happens inside
     DocumentsWriter.init (Mike McCandless)
 
+ 4. LUCENE-1199: Added defensive check for null indexReader before
+    calling close in IndexModifier.close() (Mike McCandless)
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes

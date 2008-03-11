@@ -572,7 +572,7 @@ public class IndexModifier {
       if (indexWriter != null) {
         indexWriter.close();
         indexWriter = null;
-      } else {
+      } else if (indexReader != null) {
         indexReader.close();
         indexReader = null;
       }
