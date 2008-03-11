@@ -3231,10 +3231,10 @@ public class IndexWriter {
         applyDeletes();
       }
       
+      doAfterFlush();
+
       if (flushDocs)
         checkpoint();
-
-      doAfterFlush();
 
       if (flushDocs && mergePolicy.useCompoundFile(segmentInfos, newSegment)) {
         // Now build compound file

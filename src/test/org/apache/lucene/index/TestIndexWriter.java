@@ -3231,4 +3231,41 @@ public class TestIndexWriter extends LuceneTestCase
     w.close();
     dir.close();
   }
+
+  public class MockIndexWriter3 extends IndexWriter {
+
+    public MockIndexWriter3(Directory dir, boolean autoCommit, Analyzer a, boolean create, IndexWriter.MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean wasCalled;
+
+    public void doAfterFlush() {
+      wasCalled = true;
+    }
+  }
+
+  // LUCENE-1222
+  public void testDoAfterFlush() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    MockIndexWriter3 w = new MockIndexWriter3(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a field", Field.Store.YES,
+                      Field.Index.TOKENIZED));
+    w.addDocument(doc);
+    w.commit();
+    assertTrue(w.wasCalled);
+    w.wasCalled = true;
+    w.deleteDocuments(new Term("field", "field"));
+    w.commit();
+    assertTrue(w.wasCalled);
+    w.close();
+
+    IndexReader ir = IndexReader.open(dir);
+    assertEquals(1, ir.maxDoc());
+    assertEquals(0, ir.numDocs());
+    ir.close();
+
+    dir.close();
+  }
 }
