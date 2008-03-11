@@ -2882,4 +2882,34 @@ public class TestIndexWriter extends LuceneTestCase
     _TestUtil.checkIndex(dir);
     dir.close();
   }
+
+  // LUCENE-1208
+  public void testExceptionJustBeforeFlush() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    MockIndexWriter w = new MockIndexWriter(dir, false, new WhitespaceAnalyzer(), true);
+    w.setMaxBufferedDocs(2);
+    Document doc = new Document();
+    doc.add(new Field("field", "a field", Field.Store.YES,
+                      Field.Index.TOKENIZED));
+    w.addDocument(doc);
+
+    Analyzer analyzer = new Analyzer() {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
+      }
+    };
+
+    Document crashDoc = new Document();
+    crashDoc.add(new Field("crash", "do it on token 4", Field.Store.YES,
+                           Field.Index.TOKENIZED));
+    try {
+      w.addDocument(crashDoc, analyzer);
+      fail("did not hit exxpected exception");
+    } catch (IOException ioe) {
+      // expected
+    }
+    w.addDocument(doc);
+    w.close();
+    dir.close();
+  }    
 }

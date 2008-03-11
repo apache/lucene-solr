@@ -2445,6 +2445,15 @@ final class DocumentsWriter {
       } finally {
         if (!success) {
           synchronized(this) {
+
+            // If this thread state had decided to flush, we
+            // must clear it so another thread can flush
+            if (state.doFlushAfter) {
+              state.doFlushAfter = false;
+              flushPending = false;
+              notifyAll();
+            }
+
             // Immediately mark this document as deleted
             // since likely it was partially added.  This
             // keeps indexing as "all or none" (atomic) when
