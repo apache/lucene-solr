@@ -305,7 +305,7 @@ public class SolrDispatchFilter implements Filter
             }
           }
         }
-        log.info("no handler or core retrieved for " + path + ", follow through...");
+        log.fine("no handler or core retrieved for " + path + ", follow through...");
       } catch (Throwable ex) {
         sendError( (HttpServletResponse)response, ex );
         return;
