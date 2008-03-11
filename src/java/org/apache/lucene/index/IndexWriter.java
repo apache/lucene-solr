@@ -262,6 +262,7 @@ public class IndexWriter {
   private static Object MESSAGE_ID_LOCK = new Object();
   private static int MESSAGE_ID = 0;
   private int messageID = -1;
+  volatile private boolean hitOOM;
 
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
@@ -1166,6 +1167,13 @@ public class IndexWriter {
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
     boolean doClose;
+
+    // If any methods have hit OutOfMemoryError, then abort
+    // on close, in case the internal state of IndexWriter
+    // or DocumentsWriter is corrupt
+    if (hitOOM)
+      abort();
+
     synchronized(this) {
       // Ensure that only one thread actually gets to do the closing:
       if (!closing) {
@@ -1247,7 +1255,9 @@ public class IndexWriter {
         writeLock = null;
       }
       closed = true;
-
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     } finally {
       synchronized(this) {
         if (!closed)
@@ -1442,27 +1452,32 @@ public class IndexWriter {
     boolean doFlush = false;
     boolean success = false;
     try {
-      doFlush = docWriter.addDocument(doc, analyzer);
-      success = true;
-    } finally {
-      if (!success) {
+      try {
+        doFlush = docWriter.addDocument(doc, analyzer);
+        success = true;
+      } finally {
+        if (!success) {
 
-        if (infoStream != null)
-          message("hit exception adding document");
+          if (infoStream != null)
+            message("hit exception adding document");
 
-        synchronized (this) {
-          // If docWriter has some aborted files that were
-          // never incref'd, then we clean them up here
-          if (docWriter != null) {
-            final List files = docWriter.abortedFiles();
-            if (files != null)
-              deleter.deleteNewFiles(files);
+          synchronized (this) {
+            // If docWriter has some aborted files that were
+            // never incref'd, then we clean them up here
+            if (docWriter != null) {
+              final List files = docWriter.abortedFiles();
+              if (files != null)
+                deleter.deleteNewFiles(files);
+            }
           }
         }
       }
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
-    if (doFlush)
-      flush(true, false);
   }
 
   /**
@@ -1473,9 +1488,14 @@ public class IndexWriter {
    */
   public void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = docWriter.bufferDeleteTerm(term);
-    if (doFlush)
-      flush(true, false);
+    try {
+      boolean doFlush = docWriter.bufferDeleteTerm(term);
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
+    }
   }
 
   /**
@@ -1488,9 +1508,14 @@ public class IndexWriter {
    */
   public void deleteDocuments(Term[] terms) throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = docWriter.bufferDeleteTerms(terms);
-    if (doFlush)
-      flush(true, false);
+    try {
+      boolean doFlush = docWriter.bufferDeleteTerms(terms);
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
+    }
   }
 
   /**
@@ -1526,28 +1551,33 @@ public class IndexWriter {
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
     ensureOpen();
-    boolean doFlush = false;
-    boolean success = false;
     try {
-      doFlush = docWriter.updateDocument(term, doc, analyzer);
-      success = true;
-    } finally {
-      if (!success) {
+      boolean doFlush = false;
+      boolean success = false;
+      try {
+        doFlush = docWriter.updateDocument(term, doc, analyzer);
+        success = true;
+      } finally {
+        if (!success) {
 
-        if (infoStream != null)
-          message("hit exception updating document");
+          if (infoStream != null)
+            message("hit exception updating document");
 
-        synchronized (this) {
-          // If docWriter has some aborted files that were
-          // never incref'd, then we clean them up here
-          final List files = docWriter.abortedFiles();
-          if (files != null)
-            deleter.deleteNewFiles(files);
+          synchronized (this) {
+            // If docWriter has some aborted files that were
+            // never incref'd, then we clean them up here
+            final List files = docWriter.abortedFiles();
+            if (files != null)
+              deleter.deleteNewFiles(files);
+          }
         }
       }
+      if (doFlush)
+        flush(true, false);
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
-    if (doFlush)
-      flush(true, false);
   }
 
   // for test purpose
@@ -2142,32 +2172,37 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
-    if (infoStream != null)
-      message("flush at addIndexes");
-    flush();
-
-    boolean success = false;
-
-    startTransaction();
-
     try {
-      for (int i = 0; i < dirs.length; i++) {
-        SegmentInfos sis = new SegmentInfos();	  // read infos from dir
-        sis.read(dirs[i]);
-        for (int j = 0; j < sis.size(); j++) {
-          segmentInfos.addElement(sis.info(j));	  // add each info
+      if (infoStream != null)
+        message("flush at addIndexes");
+      flush();
+
+      boolean success = false;
+
+      startTransaction();
+
+      try {
+        for (int i = 0; i < dirs.length; i++) {
+          SegmentInfos sis = new SegmentInfos();	  // read infos from dir
+          sis.read(dirs[i]);
+          for (int j = 0; j < sis.size(); j++) {
+            segmentInfos.addElement(sis.info(j));	  // add each info
+          }
+        }
+
+        optimize();
+
+        success = true;
+      } finally {
+        if (success) {
+          commitTransaction();
+        } else {
+          rollbackTransaction();
         }
       }
-
-      optimize();
-
-      success = true;
-    } finally {
-      if (success) {
-        commitTransaction();
-      } else {
-        rollbackTransaction();
-      }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2204,47 +2239,53 @@ public class IndexWriter {
       throws CorruptIndexException, IOException {
 
     ensureOpen();
-    if (infoStream != null)
-      message("flush at addIndexesNoOptimize");
-    flush();
-
-    boolean success = false;
-
-    startTransaction();
 
     try {
+      if (infoStream != null)
+        message("flush at addIndexesNoOptimize");
+      flush();
 
-      for (int i = 0; i < dirs.length; i++) {
-        if (directory == dirs[i]) {
-          // cannot add this index: segments may be deleted in merge before added
-          throw new IllegalArgumentException("Cannot add this index to itself");
+      boolean success = false;
+
+      startTransaction();
+
+      try {
+
+        for (int i = 0; i < dirs.length; i++) {
+          if (directory == dirs[i]) {
+            // cannot add this index: segments may be deleted in merge before added
+            throw new IllegalArgumentException("Cannot add this index to itself");
+          }
+
+          SegmentInfos sis = new SegmentInfos(); // read infos from dir
+          sis.read(dirs[i]);
+          for (int j = 0; j < sis.size(); j++) {
+            SegmentInfo info = sis.info(j);
+            segmentInfos.addElement(info); // add each info
+          }
         }
 
-        SegmentInfos sis = new SegmentInfos(); // read infos from dir
-        sis.read(dirs[i]);
-        for (int j = 0; j < sis.size(); j++) {
-          SegmentInfo info = sis.info(j);
-          segmentInfos.addElement(info); // add each info
+        maybeMerge();
+
+        // If after merging there remain segments in the index
+        // that are in a different directory, just copy these
+        // over into our index.  This is necessary (before
+        // finishing the transaction) to avoid leaving the
+        // index in an unusable (inconsistent) state.
+        copyExternalSegments();
+
+        success = true;
+
+      } finally {
+        if (success) {
+          commitTransaction();
+        } else {
+          rollbackTransaction();
         }
       }
-
-      maybeMerge();
-
-      // If after merging there remain segments in the index
-      // that are in a different directory, just copy these
-      // over into our index.  This is necessary (before
-      // finishing the transaction) to avoid leaving the
-      // index in an unusable (inconsistent) state.
-      copyExternalSegments();
-
-      success = true;
-
-    } finally {
-      if (success) {
-        commitTransaction();
-      } else {
-        rollbackTransaction();
-      }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2290,77 +2331,82 @@ public class IndexWriter {
     throws CorruptIndexException, IOException {
 
     ensureOpen();
-    optimize();					  // start with zero or 1 seg
-
-    final String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(this, mergedName, null);
-
-    SegmentInfo info;
-
-    IndexReader sReader = null;
     try {
-      if (segmentInfos.size() == 1){ // add existing index, if any
-        sReader = SegmentReader.get(segmentInfos.info(0));
-        merger.add(sReader);
-      }
+      optimize();					  // start with zero or 1 seg
 
-      for (int i = 0; i < readers.length; i++)      // add new indexes
-        merger.add(readers[i]);
+      final String mergedName = newSegmentName();
+      SegmentMerger merger = new SegmentMerger(this, mergedName, null);
 
-      boolean success = false;
+      SegmentInfo info;
 
-      startTransaction();
-
+      IndexReader sReader = null;
       try {
-        int docCount = merger.merge();                // merge 'em
+        if (segmentInfos.size() == 1){ // add existing index, if any
+          sReader = SegmentReader.get(segmentInfos.info(0));
+          merger.add(sReader);
+        }
 
-        if(sReader != null) {
+        for (int i = 0; i < readers.length; i++)      // add new indexes
+          merger.add(readers[i]);
+
+        boolean success = false;
+
+        startTransaction();
+
+        try {
+          int docCount = merger.merge();                // merge 'em
+
+          if(sReader != null) {
+            sReader.close();
+            sReader = null;
+          }
+
+          segmentInfos.setSize(0);                      // pop old infos & add new
+          info = new SegmentInfo(mergedName, docCount, directory, false, true,
+                                 -1, null, false);
+          segmentInfos.addElement(info);
+
+          success = true;
+
+        } finally {
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception in addIndexes during merge");
+
+            rollbackTransaction();
+          } else {
+            commitTransaction();
+          }
+        }
+      } finally {
+        if (sReader != null) {
           sReader.close();
-          sReader = null;
-        }
-
-        segmentInfos.setSize(0);                      // pop old infos & add new
-        info = new SegmentInfo(mergedName, docCount, directory, false, true,
-                               -1, null, false);
-        segmentInfos.addElement(info);
-
-        success = true;
-
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception in addIndexes during merge");
-
-          rollbackTransaction();
-        } else {
-          commitTransaction();
         }
       }
-    } finally {
-      if (sReader != null) {
-        sReader.close();
-      }
-    }
     
-    if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
+      if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
 
-      boolean success = false;
+        boolean success = false;
 
-      startTransaction();
+        startTransaction();
 
-      try {
-        merger.createCompoundFile(mergedName + ".cfs");
-        info.setUseCompoundFile(true);
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception building compound file in addIndexes during merge");
+        try {
+          merger.createCompoundFile(mergedName + ".cfs");
+          info.setUseCompoundFile(true);
+        } finally {
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception building compound file in addIndexes during merge");
 
-          rollbackTransaction();
-        } else {
-          commitTransaction();
+            rollbackTransaction();
+          } else {
+            commitTransaction();
+          }
         }
       }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2584,6 +2630,9 @@ public class IndexWriter {
         return false;
       }
 
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     } finally {
       docWriter.clearFlushPending();
       docWriter.resumeAllThreads();
@@ -2633,6 +2682,12 @@ public class IndexWriter {
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge) throws IOException {
 
     assert merge.registerDone;
+
+    if (hitOOM)
+      return false;
+
+    if (infoStream != null)
+      message("commitMerge: " + merge.segString(directory));
 
     // If merge was explicitly aborted, or, if abort() or
     // rollbackTransaction() had been called since our merge
@@ -2823,48 +2878,58 @@ public class IndexWriter {
     boolean success = false;
 
     try {
-
       try {
-        if (merge.info == null)
+        try {
           mergeInit(merge);
 
-        if (infoStream != null)
-          message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
+          if (infoStream != null)
+            message("now merge\n  merge=" + merge.segString(directory) + "\n  index=" + segString());
 
-        mergeMiddle(merge);
-        success = true;
-      } catch (MergePolicy.MergeAbortedException e) {
-        merge.setException(e);
-        addMergeException(merge);
-        // We can ignore this exception, unless the merge
-        // involves segments from external directories, in
-        // which case we must throw it so, for example, the
-        // rollbackTransaction code in addIndexes* is
-        // executed.
-        if (merge.isExternal)
-          throw e;
-      }
-    } finally {
-      synchronized(this) {
-        try {
-          if (!success && infoStream != null)
-            message("hit exception during merge");
+          mergeMiddle(merge);
+          success = true;
+        } catch (MergePolicy.MergeAbortedException e) {
+          merge.setException(e);
+          addMergeException(merge);
+          // We can ignore this exception, unless the merge
+          // involves segments from external directories, in
+          // which case we must throw it so, for example, the
+          // rollbackTransaction code in addIndexes* is
+          // executed.
+          if (merge.isExternal)
+            throw e;
+        }
+      } finally {
+        synchronized(this) {
+          try {
 
-          mergeFinish(merge);
+            mergeFinish(merge);
 
-          // This merge (and, generally, any change to the
-          // segments) may now enable new merges, so we call
-          // merge policy & update pending merges.
-          if (success && !merge.isAborted() && !closed && !closing)
-            updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
-        } finally {
-          runningMerges.remove(merge);
-          // Optimize may be waiting on the final optimize
-          // merge to finish; and finishMerges() may be
-          // waiting for all merges to finish:
-          notifyAll();
+            if (!success) {
+              if (infoStream != null)
+                message("hit exception during merge");
+              addMergeException(merge);
+              if (merge.info != null && !segmentInfos.contains(merge.info))
+                deleter.refresh(merge.info.name);
+            }
+
+            // This merge (and, generally, any change to the
+            // segments) may now enable new merges, so we call
+            // merge policy & update pending merges.
+            if (success && !merge.isAborted() && !closed && !closing)
+              updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
+
+          } finally {
+            runningMerges.remove(merge);
+            // Optimize may be waiting on the final optimize
+            // merge to finish; and finishMerges() may be
+            // waiting for all merges to finish:
+            notifyAll();
+          }
         }
       }
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
     }
   }
 
@@ -2916,6 +2981,10 @@ public class IndexWriter {
   final synchronized void mergeInit(MergePolicy.OneMerge merge) throws IOException {
 
     assert merge.registerDone;
+
+    if (merge.info != null)
+      // mergeInit already done
+      return;
 
     if (merge.isAborted())
       return;

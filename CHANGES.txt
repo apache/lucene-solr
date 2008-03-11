@@ -1,6 +1,12 @@
 Lucene Change Log
 $Id$
 
+Bug fixes
+
+ 1. LUCENE-1191: On hitting OutOfMemoryError in any index-modifying
+    methods in IndexWriter, do not commit any further changes to the
+    index to prevent risk of possible corruption.  (Mike McCandless)
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
