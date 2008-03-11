@@ -7,6 +7,9 @@ Bug fixes
     methods in IndexWriter, do not commit any further changes to the
     index to prevent risk of possible corruption.  (Mike McCandless)
 
+ 2. LUCENE-1197: Fixed issue whereby IndexWriter would flush by RAM
+    too early when TermVectors were in use.  (Mike McCandless)
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
