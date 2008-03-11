@@ -148,7 +148,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   /** The value of the field in Binary, or null.  If null, the Reader value,
    * String value, or TokenStream value is used. Exactly one of stringValue(), 
    * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
-  public byte[] binaryValue()   { return fieldsData instanceof byte[] ? (byte[])fieldsData : null; }
+  public byte[] binaryValue()   { return isBinary ? (byte[])fieldsData : null; }
   
   /** The value of the field as a TokesStream, or null.  If null, the Reader value,
    * String value, or binary value is used. Exactly one of stringValue(), 

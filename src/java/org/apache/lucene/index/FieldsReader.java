@@ -416,7 +416,7 @@ final class FieldsReader {
       if (fieldsData == null) {
         final byte[] b = new byte[toRead];
         IndexInput localFieldsStream = getFieldStream();
-        //Throw this IO Exception since IndexREader.document does so anyway, so probably not that big of a change for people
+        //Throw this IO Exception since IndexReader.document does so anyway, so probably not that big of a change for people
         //since they are already handling this exception when getting the document
         try {
           localFieldsStream.seek(pointer);
@@ -426,11 +426,12 @@ final class FieldsReader {
           } else {
             fieldsData = b;
           }
+          isBinary = true;
         } catch (IOException e) {
           throw new FieldReaderException(e);
         }
       }
-      return fieldsData instanceof byte[] ? (byte[]) fieldsData : null;
+      return isBinary ? (byte[]) fieldsData : null;
     }
 
     /** The value of the field as a Reader, or null.  If null, the String value,

@@ -133,6 +133,10 @@ Optimizations
     SegmentTermEnum is null for every call of scanTo().
     (Christian Kohlschuetter via Michael Busch)
 
+ 4. LUCENE-1217: Internal to Field.java, use isBinary instead of
+    runtime type checking for possible speedup of binaryValue().
+    (Eks Dev via Mike McCandless)
+
 Documentation
 
 Build
