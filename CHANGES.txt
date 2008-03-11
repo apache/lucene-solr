@@ -25,6 +25,9 @@ Bug fixes
  7. LUCENE-1210: Fix deadlock case on hitting an exception while
     starting a merge when using ConcurrentMergeScheduler (Mike McCandless)
 
+ 8. LUCENE-1222: Fix IndexWriter.doAfterFlush to always be called on
+    flush (Mark Ferguson via Mike McCandless)
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes

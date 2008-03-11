@@ -2610,14 +2610,14 @@ public class IndexWriter {
             segmentInfos.addElement(newSegment);
           }
 
-          if (flushDeletes) {
+          if (flushDeletes)
             // we should be able to change this so we can
             // buffer deletes longer and then flush them to
             // multiple flushed segments, when
             // autoCommit=false
             applyDeletes(flushDocs);
-            doAfterFlush();
-          }
+
+          doAfterFlush();
 
           checkpoint();
           success = true;
