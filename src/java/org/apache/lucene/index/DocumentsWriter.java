@@ -18,10 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
@@ -30,12 +27,10 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.AlreadyClosedException;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -129,132 +124,40 @@ import java.util.Collections;
 
 final class DocumentsWriter {
 
-  private IndexWriter writer;
-  private Directory directory;
+  IndexWriter writer;
+  Directory directory;
 
-  private FieldInfos fieldInfos = new FieldInfos(); // All fields we've seen
-  private IndexOutput tvx, tvf, tvd;              // To write term vectors
-  private FieldsWriter fieldsWriter;              // To write stored fields
+  FieldInfos fieldInfos = new FieldInfos(); // All fields we've seen
+  IndexOutput tvx, tvf, tvd;              // To write term vectors
+  FieldsWriter fieldsWriter;              // To write stored fields
 
-  private String segment;                         // Current segment we are working on
-  private String docStoreSegment;                 // Current doc-store segment we are writing
+  String segment;                         // Current segment we are working on
+  String docStoreSegment;                 // Current doc-store segment we are writing
   private int docStoreOffset;                     // Current starting doc-store offset of current segment
 
   private int nextDocID;                          // Next docID to be added
   private int numDocsInRAM;                       // # docs buffered in RAM
-  private int numDocsInStore;                     // # docs written to doc stores
+  int numDocsInStore;                     // # docs written to doc stores
   private int nextWriteDocID;                     // Next docID to be written
 
   // Max # ThreadState instances; if there are more threads
   // than this they share ThreadStates
   private final static int MAX_THREAD_STATE = 5;
-  private ThreadState[] threadStates = new ThreadState[0];
+  private DocumentsWriterThreadState[] threadStates = new DocumentsWriterThreadState[0];
   private final HashMap threadBindings = new HashMap();
   private int numWaiting;
-  private final ThreadState[] waitingThreadStates = new ThreadState[MAX_THREAD_STATE];
+  private final DocumentsWriterThreadState[] waitingThreadStates = new DocumentsWriterThreadState[MAX_THREAD_STATE];
   private int pauseThreads;                       // Non-zero when we need all threads to
                                                   // pause (eg to flush)
-  private boolean flushPending;                   // True when a thread has decided to flush
-  private boolean bufferIsFull;                   // True when it's time to write segment
+  boolean flushPending;                   // True when a thread has decided to flush
+  boolean bufferIsFull;                   // True when it's time to write segment
   private int abortCount;                         // Non-zero while abort is pending or running
 
-  private PrintStream infoStream;
+  PrintStream infoStream;
 
-  // Holds buffered deletes, by docID, term or query.  We
-  // hold two instances of this class: one for the deletes
-  // prior to the last flush, the other for deletes after
-  // the last flush.  This is so if we need to abort
-  // (discard all buffered docs) we can also discard the
-  // buffered deletes yet keep the deletes done during
-  // previously flushed segments.
-  private static class BufferedDeletes {
-    int numTerms;
-    HashMap terms = new HashMap();
-    HashMap queries = new HashMap();
-    List docIDs = new ArrayList();
+  boolean hasNorms;                       // Whether any norms were seen since last flush
 
-    private void update(BufferedDeletes in) {
-      numTerms += in.numTerms;
-      terms.putAll(in.terms);
-      queries.putAll(in.queries);
-      docIDs.addAll(in.docIDs);
-      in.terms.clear();
-      in.numTerms = 0;
-      in.queries.clear();
-      in.docIDs.clear();
-    }
-    
-    void clear() {
-      terms.clear();
-      queries.clear();
-      docIDs.clear();
-      numTerms = 0;
-    }
-
-    boolean any() {
-      return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0;
-    }
-
-    // Remaps all buffered deletes based on a completed
-    // merge
-    synchronized void remap(MergeDocIDRemapper mapper,
-                            SegmentInfos infos,
-                            int[][] docMaps,
-                            int[] delCounts,
-                            MergePolicy.OneMerge merge,
-                            int mergeDocCount) {
-
-      final HashMap newDeleteTerms;
-
-      // Remap delete-by-term
-      if (terms.size() > 0) {
-        newDeleteTerms = new HashMap();
-        Iterator iter = terms.entrySet().iterator();
-        while(iter.hasNext()) {
-          Entry entry = (Entry) iter.next();
-          Num num = (Num) entry.getValue();
-          newDeleteTerms.put(entry.getKey(),
-                             new Num(mapper.remap(num.getNum())));
-        }
-      } else
-        newDeleteTerms = null;
-
-      // Remap delete-by-docID
-      final List newDeleteDocIDs;
-
-      if (docIDs.size() > 0) {
-        newDeleteDocIDs = new ArrayList(docIDs.size());
-        Iterator iter = docIDs.iterator();
-        while(iter.hasNext()) {
-          Integer num = (Integer) iter.next();
-          newDeleteDocIDs.add(new Integer(mapper.remap(num.intValue())));
-        }
-      } else
-        newDeleteDocIDs = null;
-
-      // Remap delete-by-query
-      final HashMap newDeleteQueries;
-    
-      if (queries.size() > 0) {
-        newDeleteQueries = new HashMap(queries.size());
-        Iterator iter = queries.entrySet().iterator();
-        while(iter.hasNext()) {
-          Entry entry = (Entry) iter.next();
-          Integer num = (Integer) entry.getValue();
-          newDeleteQueries.put(entry.getKey(),
-                               new Integer(mapper.remap(num.intValue())));
-        }
-      } else
-        newDeleteQueries = null;
-
-      if (newDeleteTerms != null)
-        terms = newDeleteTerms;
-      if (newDeleteDocIDs != null)
-        docIDs = newDeleteDocIDs;
-      if (newDeleteQueries != null)
-        queries = newDeleteQueries;
-    }
-  }
+  List newFiles;
 
   // Deletes done after the last flush; these are discarded
   // on abort
@@ -293,7 +196,7 @@ final class DocumentsWriter {
   // Coarse estimates used to measure RAM usage of buffered deletes
   private static int OBJECT_HEADER_BYTES = 8;
 
-  private BufferedNorms[] norms = new BufferedNorms[0];   // Holds norms until we flush
+  BufferedNorms[] norms = new BufferedNorms[0];   // Holds norms until we flush
 
   DocumentsWriter(Directory directory, IndexWriter writer) throws IOException {
     this.directory = directory;
@@ -398,7 +301,7 @@ final class DocumentsWriter {
     }
   }
 
-  private List files = null;                      // Cached list of files we've created
+  List files = null;                      // Cached list of files we've created
   private List abortedFiles = null;               // List of files that were written before last abort()
 
   List abortedFiles() {
@@ -482,7 +385,7 @@ final class DocumentsWriter {
 
         // Clear vectors & fields from ThreadStates
         for(int i=0;i<threadStates.length;i++) {
-          ThreadState state = threadStates[i];
+          DocumentsWriterThreadState state = threadStates[i];
           state.tvfLocal.reset();
           state.fdtLocal.reset();
           if (state.localFieldsWriter != null) {
@@ -614,10 +517,6 @@ final class DocumentsWriter {
     return true;
   }
 
-  private boolean hasNorms;                       // Whether any norms were seen since last flush
-
-  List newFiles;
-
   /** Flush all pending docs to a new segment */
   synchronized int flush(boolean closeDocStore) throws IOException {
 
@@ -696,1430 +595,6 @@ final class DocumentsWriter {
     flushPending = false;
   }
 
-  /** Per-thread state.  We keep a separate Posting hash and
-   *  other state for each thread and then merge postings *
-   *  hashes from all threads when writing the segment. */
-  private final class ThreadState {
-
-    Posting[] postingsFreeList;           // Free Posting instances
-    int postingsFreeCount;
-
-    RAMOutputStream tvfLocal = new RAMOutputStream();    // Term vectors for one doc
-    RAMOutputStream fdtLocal = new RAMOutputStream();    // Stored fields for one doc
-    FieldsWriter localFieldsWriter;       // Fields for one doc
-
-    long[] vectorFieldPointers;
-    int[] vectorFieldNumbers;
-
-    boolean isIdle = true;                // Whether we are in use
-    int numThreads = 1;                   // Number of threads that use this instance
-
-    int docID;                            // docID we are now working on
-    int numStoredFields;                  // How many stored fields in current doc
-    float docBoost;                       // Boost for current doc
-
-    FieldData[] fieldDataArray;           // Fields touched by current doc
-    int numFieldData;                     // How many fields in current doc
-    int numVectorFields;                  // How many vector fields in current doc
-
-    FieldData[] allFieldDataArray = new FieldData[10]; // All FieldData instances
-    int numAllFieldData;
-    FieldData[] fieldDataHash;            // Hash FieldData instances by field name
-    int fieldDataHashMask;
-    String maxTermPrefix;                 // Non-null prefix of a too-large term if this
-                                          // doc has one
-
-    boolean doFlushAfter;
-
-    public ThreadState() {
-      fieldDataArray = new FieldData[8];
-
-      fieldDataHash = new FieldData[16];
-      fieldDataHashMask = 15;
-
-      vectorFieldPointers = new long[10];
-      vectorFieldNumbers = new int[10];
-      postingsFreeList = new Posting[256];
-      postingsFreeCount = 0;
-    }
-
-    /** Clear the postings hash and return objects back to
-     *  shared pool */
-    public void resetPostings() throws IOException {
-      fieldGen = 0;
-      maxPostingsVectors = 0;
-      doFlushAfter = false;
-      if (localFieldsWriter != null) {
-        localFieldsWriter.close();
-        localFieldsWriter = null;
-      }
-      postingsPool.reset();
-      charPool.reset();
-      recyclePostings(postingsFreeList, postingsFreeCount);
-      postingsFreeCount = 0;
-      for(int i=0;i<numAllFieldData;i++) {
-        FieldData fp = allFieldDataArray[i];
-        fp.lastGen = -1;
-        if (fp.numPostings > 0)
-          fp.resetPostingArrays();
-      }
-    }
-
-    /** Move all per-document state that was accumulated in
-     *  the ThreadState into the "real" stores. */
-    public void writeDocument() throws IOException, AbortException {
-
-      // If we hit an exception while appending to the
-      // stored fields or term vectors files, we have to
-      // abort all documents since we last flushed because
-      // it means those files are possibly inconsistent.
-      try {
-
-        numDocsInStore++;
-
-        // Append stored fields to the real FieldsWriter:
-        fieldsWriter.flushDocument(numStoredFields, fdtLocal);
-        fdtLocal.reset();
-
-        // Append term vectors to the real outputs:
-        if (tvx != null) {
-          tvx.writeLong(tvd.getFilePointer());
-          tvx.writeLong(tvf.getFilePointer());
-          tvd.writeVInt(numVectorFields);
-          if (numVectorFields > 0) {
-            for(int i=0;i<numVectorFields;i++)
-              tvd.writeVInt(vectorFieldNumbers[i]);
-            assert 0 == vectorFieldPointers[0];
-            long lastPos = vectorFieldPointers[0];
-            for(int i=1;i<numVectorFields;i++) {
-              long pos = vectorFieldPointers[i];
-              tvd.writeVLong(pos-lastPos);
-              lastPos = pos;
-            }
-            tvfLocal.writeTo(tvf);
-            tvfLocal.reset();
-          }
-        }
-
-        // Append norms for the fields we saw:
-        for(int i=0;i<numFieldData;i++) {
-          FieldData fp = fieldDataArray[i];
-          if (fp.doNorms) {
-            BufferedNorms bn = norms[fp.fieldInfo.number];
-            assert bn != null;
-            assert bn.upto <= docID;
-            bn.fill(docID);
-            float norm = fp.boost * writer.getSimilarity().lengthNorm(fp.fieldInfo.name, fp.length);
-            bn.add(norm);
-          }
-        }
-      } catch (Throwable t) {
-        // Forcefully idle this threadstate -- its state will
-        // be reset by abort()
-        isIdle = true;
-        throw new AbortException(t, DocumentsWriter.this);
-      }
-
-      if (bufferIsFull && !flushPending) {
-        flushPending = true;
-        doFlushAfter = true;
-      }
-    }
-
-    int fieldGen;
-
-    /** Initializes shared state for this new document */
-    void init(Document doc, int docID) throws IOException, AbortException {
-
-      assert !isIdle;
-      assert writer.testPoint("DocumentsWriter.ThreadState.init start");
-
-      this.docID = docID;
-      docBoost = doc.getBoost();
-      numStoredFields = 0;
-      numFieldData = 0;
-      numVectorFields = 0;
-      maxTermPrefix = null;
-
-      assert 0 == fdtLocal.length();
-      assert 0 == fdtLocal.getFilePointer();
-      assert 0 == tvfLocal.length();
-      assert 0 == tvfLocal.getFilePointer();
-      final int thisFieldGen = fieldGen++;
-
-      List docFields = doc.getFields();
-      final int numDocFields = docFields.size();
-      boolean docHasVectors = false;
-
-      // Absorb any new fields first seen in this document.
-      // Also absorb any changes to fields we had already
-      // seen before (eg suddenly turning on norms or
-      // vectors, etc.):
-
-      for(int i=0;i<numDocFields;i++) {
-        Fieldable field = (Fieldable) docFields.get(i);
-
-        FieldInfo fi = fieldInfos.add(field.name(), field.isIndexed(), field.isTermVectorStored(),
-                                      field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false);
-        if (fi.isIndexed && !fi.omitNorms) {
-          // Maybe grow our buffered norms
-          if (norms.length <= fi.number) {
-            int newSize = (int) ((1+fi.number)*1.25);
-            BufferedNorms[] newNorms = new BufferedNorms[newSize];
-            System.arraycopy(norms, 0, newNorms, 0, norms.length);
-            norms = newNorms;
-          }
-          
-          if (norms[fi.number] == null)
-            norms[fi.number] = new BufferedNorms();
-
-          hasNorms = true;
-        }
-
-        // Make sure we have a FieldData allocated
-        int hashPos = fi.name.hashCode() & fieldDataHashMask;
-        FieldData fp = fieldDataHash[hashPos];
-        while(fp != null && !fp.fieldInfo.name.equals(fi.name))
-          fp = fp.next;
-
-        if (fp == null) {
-
-          fp = new FieldData(fi);
-          fp.next = fieldDataHash[hashPos];
-          fieldDataHash[hashPos] = fp;
-
-          if (numAllFieldData == allFieldDataArray.length) {
-            int newSize = (int) (allFieldDataArray.length*1.5);
-            int newHashSize = fieldDataHash.length*2;
-
-            FieldData newArray[] = new FieldData[newSize];
-            FieldData newHashArray[] = new FieldData[newHashSize];
-            System.arraycopy(allFieldDataArray, 0, newArray, 0, numAllFieldData);
-
-            // Rehash
-            fieldDataHashMask = newSize-1;
-            for(int j=0;j<fieldDataHash.length;j++) {
-              FieldData fp0 = fieldDataHash[j];
-              while(fp0 != null) {
-                hashPos = fp0.fieldInfo.name.hashCode() & fieldDataHashMask;
-                FieldData nextFP0 = fp0.next;
-                fp0.next = newHashArray[hashPos];
-                newHashArray[hashPos] = fp0;
-                fp0 = nextFP0;
-              }
-            }
-
-            allFieldDataArray = newArray;
-            fieldDataHash = newHashArray;
-          }
-          allFieldDataArray[numAllFieldData++] = fp;
-        } else {
-          assert fp.fieldInfo == fi;
-        }
-
-        if (thisFieldGen != fp.lastGen) {
-
-          // First time we're seeing this field for this doc
-          fp.lastGen = thisFieldGen;
-          fp.fieldCount = 0;
-          fp.doVectors = fp.doVectorPositions = fp.doVectorOffsets = false;
-          fp.doNorms = fi.isIndexed && !fi.omitNorms;
-
-          if (numFieldData == fieldDataArray.length) {
-            int newSize = fieldDataArray.length*2;
-            FieldData newArray[] = new FieldData[newSize];
-            System.arraycopy(fieldDataArray, 0, newArray, 0, numFieldData);
-            fieldDataArray = newArray;
-
-          }
-          fieldDataArray[numFieldData++] = fp;
-        }
-
-        if (field.isTermVectorStored()) {
-          if (!fp.doVectors && numVectorFields++ == vectorFieldPointers.length) {
-            final int newSize = (int) (numVectorFields*1.5);
-            vectorFieldPointers = new long[newSize];
-            vectorFieldNumbers = new int[newSize];
-          }
-          fp.doVectors = true;
-          docHasVectors = true;
-
-          fp.doVectorPositions |= field.isStorePositionWithTermVector();
-          fp.doVectorOffsets |= field.isStoreOffsetWithTermVector();
-        }
-
-        if (fp.fieldCount == fp.docFields.length) {
-          Fieldable[] newArray = new Fieldable[fp.docFields.length*2];
-          System.arraycopy(fp.docFields, 0, newArray, 0, fp.docFields.length);
-          fp.docFields = newArray;
-        }
-
-        // Lazily allocate arrays for postings:
-        if (field.isIndexed() && fp.postingsHash == null)
-          fp.initPostingArrays();
-
-        fp.docFields[fp.fieldCount++] = field;
-      }
-
-      // Maybe init the local & global fieldsWriter
-      if (localFieldsWriter == null) {
-        if (fieldsWriter == null) {
-          assert docStoreSegment == null;
-          assert segment != null;
-          docStoreSegment = segment;
-          // If we hit an exception while init'ing the
-          // fieldsWriter, we must abort this segment
-          // because those files will be in an unknown
-          // state:
-          try {
-            fieldsWriter = new FieldsWriter(directory, docStoreSegment, fieldInfos);
-          } catch (Throwable t) {
-            throw new AbortException(t, DocumentsWriter.this);
-          }
-          files = null;
-        }
-        localFieldsWriter = new FieldsWriter(null, fdtLocal, fieldInfos);
-      }
-
-      // First time we see a doc that has field(s) with
-      // stored vectors, we init our tvx writer
-      if (docHasVectors) {
-        if (tvx == null) {
-          assert docStoreSegment != null;
-          // If we hit an exception while init'ing the term
-          // vector output files, we must abort this segment
-          // because those files will be in an unknown
-          // state:
-          try {
-            tvx = directory.createOutput(docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-            tvx.writeInt(TermVectorsReader.FORMAT_VERSION2);
-            tvd = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-            tvd.writeInt(TermVectorsReader.FORMAT_VERSION2);
-            tvf = directory.createOutput(docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-            tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
-
-            // We must "catch up" for all docs before us
-            // that had no vectors:
-            for(int i=0;i<numDocsInStore;i++) {
-              tvx.writeLong(tvd.getFilePointer());
-              tvd.writeVInt(0);
-              tvx.writeLong(0);
-            }
-          } catch (Throwable t) {
-            throw new AbortException(t, DocumentsWriter.this);
-          }
-          files = null;
-        }
-        numVectorFields = 0;
-      }
-    }
-
-    /** Do in-place sort of Posting array */
-    void doPostingSort(Posting[] postings, int numPosting) {
-      quickSort(postings, 0, numPosting-1);
-    }
-
-    void quickSort(Posting[] postings, int lo, int hi) {
-      if (lo >= hi)
-        return;
-      else if (hi == 1+lo) {
-        if (comparePostings(postings[lo], postings[hi]) > 0) {
-          final Posting tmp = postings[lo];
-          postings[lo] = postings[hi];
-          postings[hi] = tmp;
-        }
-        return;
-      }
-
-      int mid = (lo + hi) >>> 1;
-
-      if (comparePostings(postings[lo], postings[mid]) > 0) {
-        Posting tmp = postings[lo];
-        postings[lo] = postings[mid];
-        postings[mid] = tmp;
-      }
-
-      if (comparePostings(postings[mid], postings[hi]) > 0) {
-        Posting tmp = postings[mid];
-        postings[mid] = postings[hi];
-        postings[hi] = tmp;
-
-        if (comparePostings(postings[lo], postings[mid]) > 0) {
-          Posting tmp2 = postings[lo];
-          postings[lo] = postings[mid];
-          postings[mid] = tmp2;
-        }
-      }
-
-      int left = lo + 1;
-      int right = hi - 1;
-
-      if (left >= right)
-        return;
-
-      Posting partition = postings[mid];
-
-      for (; ;) {
-        while (comparePostings(postings[right], partition) > 0)
-          --right;
-
-        while (left < right && comparePostings(postings[left], partition) <= 0)
-          ++left;
-
-        if (left < right) {
-          Posting tmp = postings[left];
-          postings[left] = postings[right];
-          postings[right] = tmp;
-          --right;
-        } else {
-          break;
-        }
-      }
-
-      quickSort(postings, lo, left);
-      quickSort(postings, left + 1, hi);
-    }
-
-    /** Do in-place sort of PostingVector array */
-    void doVectorSort(PostingVector[] postings, int numPosting) {
-      quickSort(postings, 0, numPosting-1);
-    }
-
-    void quickSort(PostingVector[] postings, int lo, int hi) {
-      if (lo >= hi)
-        return;
-      else if (hi == 1+lo) {
-        if (comparePostings(postings[lo].p, postings[hi].p) > 0) {
-          final PostingVector tmp = postings[lo];
-          postings[lo] = postings[hi];
-          postings[hi] = tmp;
-        }
-        return;
-      }
-
-      int mid = (lo + hi) >>> 1;
-
-      if (comparePostings(postings[lo].p, postings[mid].p) > 0) {
-        PostingVector tmp = postings[lo];
-        postings[lo] = postings[mid];
-        postings[mid] = tmp;
-      }
-
-      if (comparePostings(postings[mid].p, postings[hi].p) > 0) {
-        PostingVector tmp = postings[mid];
-        postings[mid] = postings[hi];
-        postings[hi] = tmp;
-
-        if (comparePostings(postings[lo].p, postings[mid].p) > 0) {
-          PostingVector tmp2 = postings[lo];
-          postings[lo] = postings[mid];
-          postings[mid] = tmp2;
-        }
-      }
-
-      int left = lo + 1;
-      int right = hi - 1;
-
-      if (left >= right)
-        return;
-
-      PostingVector partition = postings[mid];
-
-      for (; ;) {
-        while (comparePostings(postings[right].p, partition.p) > 0)
-          --right;
-
-        while (left < right && comparePostings(postings[left].p, partition.p) <= 0)
-          ++left;
-
-        if (left < right) {
-          PostingVector tmp = postings[left];
-          postings[left] = postings[right];
-          postings[right] = tmp;
-          --right;
-        } else {
-          break;
-        }
-      }
-
-      quickSort(postings, lo, left);
-      quickSort(postings, left + 1, hi);
-    }
-
-    void quickSort(FieldData[] array, int lo, int hi) {
-      if (lo >= hi)
-        return;
-      else if (hi == 1+lo) {
-        if (array[lo].compareTo(array[hi]) > 0) {
-          final FieldData tmp = array[lo];
-          array[lo] = array[hi];
-          array[hi] = tmp;
-        }
-        return;
-      }
-
-      int mid = (lo + hi) >>> 1;
-
-      if (array[lo].compareTo(array[mid]) > 0) {
-        FieldData tmp = array[lo];
-        array[lo] = array[mid];
-        array[mid] = tmp;
-      }
-
-      if (array[mid].compareTo(array[hi]) > 0) {
-        FieldData tmp = array[mid];
-        array[mid] = array[hi];
-        array[hi] = tmp;
-
-        if (array[lo].compareTo(array[mid]) > 0) {
-          FieldData tmp2 = array[lo];
-          array[lo] = array[mid];
-          array[mid] = tmp2;
-        }
-      }
-
-      int left = lo + 1;
-      int right = hi - 1;
-
-      if (left >= right)
-        return;
-
-      FieldData partition = array[mid];
-
-      for (; ;) {
-        while (array[right].compareTo(partition) > 0)
-          --right;
-
-        while (left < right && array[left].compareTo(partition) <= 0)
-          ++left;
-
-        if (left < right) {
-          FieldData tmp = array[left];
-          array[left] = array[right];
-          array[right] = tmp;
-          --right;
-        } else {
-          break;
-        }
-      }
-
-      quickSort(array, lo, left);
-      quickSort(array, left + 1, hi);
-    }
-
-    /** If there are fields we've seen but did not see again
-     *  in the last run, then free them up.  Also reduce
-     *  postings hash size. */
-    void trimFields() {
-
-      int upto = 0;
-      for(int i=0;i<numAllFieldData;i++) {
-        FieldData fp = allFieldDataArray[i];
-        if (fp.lastGen == -1) {
-          // This field was not seen since the previous
-          // flush, so, free up its resources now
-
-          // Unhash
-          final int hashPos = fp.fieldInfo.name.hashCode() & fieldDataHashMask;
-          FieldData last = null;
-          FieldData fp0 = fieldDataHash[hashPos];
-          while(fp0 != fp) {
-            last = fp0;
-            fp0 = fp0.next;
-          }
-          assert fp0 != null;
-
-          if (last == null)
-            fieldDataHash[hashPos] = fp.next;
-          else
-            last.next = fp.next;
-
-          if (infoStream != null)
-            infoStream.println("  remove field=" + fp.fieldInfo.name);
-
-        } else {
-          // Reset
-          fp.lastGen = -1;
-          allFieldDataArray[upto++] = fp;
-          
-          if (fp.numPostings > 0 && ((float) fp.numPostings) / fp.postingsHashSize < 0.2) {
-            int hashSize = fp.postingsHashSize;
-
-            // Reduce hash so it's between 25-50% full
-            while (fp.numPostings < (hashSize>>1) && hashSize >= 2)
-              hashSize >>= 1;
-            hashSize <<= 1;
-
-            if (hashSize != fp.postingsHash.length)
-              fp.rehashPostings(hashSize);
-          }
-        }
-      }
-
-      // If we didn't see any norms for this field since
-      // last flush, free it
-      for(int i=0;i<norms.length;i++) {
-        BufferedNorms n = norms[i];
-        if (n != null && n.upto == 0)
-          norms[i] = null;
-      }
-
-      numAllFieldData = upto;
-
-      // Also pare back PostingsVectors if it's excessively
-      // large
-      if (maxPostingsVectors * 1.5 < postingsVectors.length) {
-        final int newSize;
-        if (0 == maxPostingsVectors)
-          newSize = 1;
-        else
-          newSize = (int) (1.5*maxPostingsVectors);
-        PostingVector[] newArray = new PostingVector[newSize];
-        System.arraycopy(postingsVectors, 0, newArray, 0, newSize);
-        postingsVectors = newArray;
-      }
-    }
-
-    /** Tokenizes the fields of a document into Postings */
-    void processDocument(Analyzer analyzer)
-      throws IOException, AbortException {
-
-      final int numFields = numFieldData;
-      assert clearLastVectorFieldName();
-
-      assert 0 == fdtLocal.length();
-
-      if (tvx != null)
-        // If we are writing vectors then we must visit
-        // fields in sorted order so they are written in
-        // sorted order.  TODO: we actually only need to
-        // sort the subset of fields that have vectors
-        // enabled; we could save [small amount of] CPU
-        // here.
-        quickSort(fieldDataArray, 0, numFields-1);
-
-      // We process the document one field at a time
-      for(int i=0;i<numFields;i++)
-        fieldDataArray[i].processField(analyzer);
-
-      if (maxTermPrefix != null && infoStream != null)
-        infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + maxTermPrefix + "...'"); 
-    }
-
-    final ByteBlockPool postingsPool = new ByteBlockPool(true);
-    final ByteBlockPool vectorsPool = new ByteBlockPool(false);
-    final CharBlockPool charPool = new CharBlockPool();
-
-    // Current posting we are working on
-    Posting p;
-    PostingVector vector;
-
-    // USE ONLY FOR DEBUGGING!
-    /*
-      public String getPostingText() {
-      char[] text = charPool.buffers[p.textStart >> CHAR_BLOCK_SHIFT];
-      int upto = p.textStart & CHAR_BLOCK_MASK;
-      while(text[upto] != 0xffff)
-      upto++;
-      return new String(text, p.textStart, upto-(p.textStart & BYTE_BLOCK_MASK));
-      }
-    */
-
-    /** Test whether the text for current Posting p equals
-     *  current tokenText. */
-    boolean postingEquals(final char[] tokenText, final int tokenTextLen) {
-
-      final char[] text = charPool.buffers[p.textStart >> CHAR_BLOCK_SHIFT];
-      assert text != null;
-      int pos = p.textStart & CHAR_BLOCK_MASK;
-
-      int tokenPos = 0;
-      for(;tokenPos<tokenTextLen;pos++,tokenPos++)
-        if (tokenText[tokenPos] != text[pos])
-          return false;
-      return 0xffff == text[pos];
-    }
-
-    /** Compares term text for two Posting instance and
-     *  returns -1 if p1 < p2; 1 if p1 > p2; else 0.
-     */
-    int comparePostings(Posting p1, Posting p2) {
-      if (p1 == p2)
-        return 0;
-      final char[] text1 = charPool.buffers[p1.textStart >> CHAR_BLOCK_SHIFT];
-      int pos1 = p1.textStart & CHAR_BLOCK_MASK;
-      final char[] text2 = charPool.buffers[p2.textStart >> CHAR_BLOCK_SHIFT];
-      int pos2 = p2.textStart & CHAR_BLOCK_MASK;
-      while(true) {
-        final char c1 = text1[pos1++];
-        final char c2 = text2[pos2++];
-        if (c1 < c2)
-          if (0xffff == c2)
-            return 1;
-          else
-            return -1;
-        else if (c2 < c1)
-          if (0xffff == c1)
-            return -1;
-          else
-            return 1;
-        else if (0xffff == c1)
-          return 0;
-      }
-    }
-
-    /** Write vInt into freq stream of current Posting */
-    public void writeFreqVInt(int i) {
-      while ((i & ~0x7F) != 0) {
-        writeFreqByte((byte)((i & 0x7f) | 0x80));
-        i >>>= 7;
-      }
-      writeFreqByte((byte) i);
-    }
-
-    /** Write vInt into prox stream of current Posting */
-    public void writeProxVInt(int i) {
-      while ((i & ~0x7F) != 0) {
-        writeProxByte((byte)((i & 0x7f) | 0x80));
-        i >>>= 7;
-      }
-      writeProxByte((byte) i);
-    }
-
-    /** Write byte into freq stream of current Posting */
-    byte[] freq;
-    int freqUpto;
-    public void writeFreqByte(byte b) {
-      assert freq != null;
-      if (freq[freqUpto] != 0) {
-        freqUpto = postingsPool.allocSlice(freq, freqUpto);
-        freq = postingsPool.buffer;
-        p.freqUpto = postingsPool.byteOffset;
-      }
-      freq[freqUpto++] = b;
-    }
-
-    /** Write byte into prox stream of current Posting */
-    byte[] prox;
-    int proxUpto;
-    public void writeProxByte(byte b) {
-      assert prox != null;
-      if (prox[proxUpto] != 0) {
-        proxUpto = postingsPool.allocSlice(prox, proxUpto);
-        prox = postingsPool.buffer;
-        p.proxUpto = postingsPool.byteOffset;
-        assert prox != null;
-      }
-      prox[proxUpto++] = b;
-      assert proxUpto != prox.length;
-    }
-
-    /** Currently only used to copy a payload into the prox
-     *  stream. */
-    public void writeProxBytes(byte[] b, int offset, int len) {
-      final int offsetEnd = offset + len;
-      while(offset < offsetEnd) {
-        if (prox[proxUpto] != 0) {
-          // End marker
-          proxUpto = postingsPool.allocSlice(prox, proxUpto);
-          prox = postingsPool.buffer;
-          p.proxUpto = postingsPool.byteOffset;
-        }
-
-        prox[proxUpto++] = b[offset++];
-        assert proxUpto != prox.length;
-      }
-    }
-
-    /** Write vInt into offsets stream of current
-     *  PostingVector */
-    public void writeOffsetVInt(int i) {
-      while ((i & ~0x7F) != 0) {
-        writeOffsetByte((byte)((i & 0x7f) | 0x80));
-        i >>>= 7;
-      }
-      writeOffsetByte((byte) i);
-    }
-
-    byte[] offsets;
-    int offsetUpto;
-
-    /** Write byte into offsets stream of current
-     *  PostingVector */
-    public void writeOffsetByte(byte b) {
-      assert offsets != null;
-      if (offsets[offsetUpto] != 0) {
-        offsetUpto = vectorsPool.allocSlice(offsets, offsetUpto);
-        offsets = vectorsPool.buffer;
-        vector.offsetUpto = vectorsPool.byteOffset;
-      }
-      offsets[offsetUpto++] = b;
-    }
-
-    /** Write vInt into pos stream of current
-     *  PostingVector */
-    public void writePosVInt(int i) {
-      while ((i & ~0x7F) != 0) {
-        writePosByte((byte)((i & 0x7f) | 0x80));
-        i >>>= 7;
-      }
-      writePosByte((byte) i);
-    }
-
-    byte[] pos;
-    int posUpto;
-
-    /** Write byte into pos stream of current
-     *  PostingVector */
-    public void writePosByte(byte b) {
-      assert pos != null;
-      if (pos[posUpto] != 0) {
-        posUpto = vectorsPool.allocSlice(pos, posUpto);
-        pos = vectorsPool.buffer;
-        vector.posUpto = vectorsPool.byteOffset;
-      }
-      pos[posUpto++] = b;
-    }
-
-    String lastVectorFieldName;
-
-    // Called only by assert
-    final boolean clearLastVectorFieldName() {
-      lastVectorFieldName = null;
-      return true;
-    }
-
-    // Called only by assert
-    final boolean vectorFieldsInOrder(FieldInfo fi) {
-      try {
-        if (lastVectorFieldName != null)
-          return lastVectorFieldName.compareTo(fi.name) < 0;
-        else
-          return true;
-      } finally {
-        lastVectorFieldName = fi.name;
-      }
-    }
-
-    PostingVector[] postingsVectors = new PostingVector[1];
-    int maxPostingsVectors;
-
-    // Used to read a string value for a field
-    ReusableStringReader stringReader = new ReusableStringReader();
-
-    /** Holds data associated with a single field, including
-     *  the Postings hash.  A document may have many *
-     *  occurrences for a given field name; we gather all *
-     *  such occurrences here (in docFields) so that we can
-     *  * process the entire field at once. */
-    private final class FieldData implements Comparable {
-
-      ThreadState threadState;
-      FieldInfo fieldInfo;
-
-      int fieldCount;
-      Fieldable[] docFields = new Fieldable[1];
-
-      int lastGen = -1;
-      FieldData next;
-
-      boolean doNorms;
-      boolean doVectors;
-      boolean doVectorPositions;
-      boolean doVectorOffsets;
-      boolean postingsCompacted;
-
-      int numPostings;
-      
-      Posting[] postingsHash;
-      int postingsHashSize;
-      int postingsHashHalfSize;
-      int postingsHashMask;
-
-      int position;
-      int length;
-      int offset;
-      float boost;
-      int postingsVectorsUpto;
-
-      public FieldData(FieldInfo fieldInfo) {
-        this.fieldInfo = fieldInfo;
-        threadState = ThreadState.this;
-      }
-
-      void resetPostingArrays() {
-        if (!postingsCompacted)
-          compactPostings();
-        recyclePostings(this.postingsHash, numPostings);
-        Arrays.fill(postingsHash, 0, postingsHash.length, null);
-        postingsCompacted = false;
-        numPostings = 0;
-      }
-
-      void initPostingArrays() {
-        // Target hash fill factor of <= 50%
-        // NOTE: must be a power of two for hash collision
-        // strategy to work correctly
-        postingsHashSize = 4;
-        postingsHashHalfSize = 2;
-        postingsHashMask = postingsHashSize-1;
-        postingsHash = new Posting[postingsHashSize];
-      }
-
-      public int compareTo(Object o) {
-        return fieldInfo.name.compareTo(((FieldData) o).fieldInfo.name);
-      }
-
-      private void compactPostings() {
-        int upto = 0;
-        for(int i=0;i<postingsHashSize;i++)
-          if (postingsHash[i] != null)
-            postingsHash[upto++] = postingsHash[i];
-
-        assert upto == numPostings;
-        postingsCompacted = true;
-      }
-
-      /** Collapse the hash table & sort in-place. */
-      public Posting[] sortPostings() {
-        compactPostings();
-        doPostingSort(postingsHash, numPostings);
-        return postingsHash;
-      }
-
-      /** Process all occurrences of one field in the document. */
-      public void processField(Analyzer analyzer) throws IOException, AbortException {
-        length = 0;
-        position = 0;
-        offset = 0;
-        boost = docBoost;
-
-        final int maxFieldLength = writer.getMaxFieldLength();
-
-        final int limit = fieldCount;
-        final Fieldable[] docFieldsFinal = docFields;
-
-        boolean doWriteVectors = true;
-
-        // Walk through all occurrences in this doc for this
-        // field:
-        try {
-          for(int j=0;j<limit;j++) {
-            Fieldable field = docFieldsFinal[j];
-
-            if (field.isIndexed())
-              invertField(field, analyzer, maxFieldLength);
-
-            if (field.isStored()) {
-              numStoredFields++;
-              boolean success = false;
-              try {
-                localFieldsWriter.writeField(fieldInfo, field);
-                success = true;
-              } finally {
-                // If we hit an exception inside
-                // localFieldsWriter.writeField, the
-                // contents of fdtLocal can be corrupt, so
-                // we must discard all stored fields for
-                // this document:
-                if (!success)
-                  fdtLocal.reset();
-              }
-            }
-
-            docFieldsFinal[j] = null;
-          }
-        } catch (AbortException ae) {
-          doWriteVectors = false;
-          throw ae;
-        } finally {
-          if (postingsVectorsUpto > 0) {
-            try {
-              if (doWriteVectors) {
-                // Add term vectors for this field
-                boolean success = false;
-                try {
-                  writeVectors(fieldInfo);
-                  success = true;
-                } finally {
-                  if (!success) {
-                    // If we hit an exception inside
-                    // writeVectors, the contents of tvfLocal
-                    // can be corrupt, so we must discard all
-                    // term vectors for this document:
-                    numVectorFields = 0;
-                    tvfLocal.reset();
-                  }
-                }
-              }
-            } finally {
-              if (postingsVectorsUpto > maxPostingsVectors)
-                maxPostingsVectors = postingsVectorsUpto;
-              postingsVectorsUpto = 0;
-              vectorsPool.reset();
-            }
-          }
-        }
-      }
-
-      int offsetEnd;
-      Token localToken = new Token();
-
-      /* Invert one occurrence of one field in the document */
-      public void invertField(Fieldable field, Analyzer analyzer, final int maxFieldLength) throws IOException, AbortException {
-
-        if (length>0)
-          position += analyzer.getPositionIncrementGap(fieldInfo.name);
-
-        if (!field.isTokenized()) {		  // un-tokenized field
-          String stringValue = field.stringValue();
-          final int valueLength = stringValue.length();
-          Token token = localToken;
-          token.clear();
-          char[] termBuffer = token.termBuffer();
-          if (termBuffer.length < valueLength)
-            termBuffer = token.resizeTermBuffer(valueLength);
-          stringValue.getChars(0, valueLength, termBuffer, 0);
-          token.setTermLength(valueLength);
-          token.setStartOffset(offset);
-          token.setEndOffset(offset + stringValue.length());
-          addPosition(token);
-          offset += stringValue.length();
-          length++;
-        } else {                                  // tokenized field
-          final TokenStream stream;
-          final TokenStream streamValue = field.tokenStreamValue();
-
-          if (streamValue != null) 
-            stream = streamValue;
-          else {
-            // the field does not have a TokenStream,
-            // so we have to obtain one from the analyzer
-            final Reader reader;			  // find or make Reader
-            final Reader readerValue = field.readerValue();
-
-            if (readerValue != null)
-              reader = readerValue;
-            else {
-              String stringValue = field.stringValue();
-              if (stringValue == null)
-                throw new IllegalArgumentException("field must have either TokenStream, String or Reader value");
-              stringReader.init(stringValue);
-              reader = stringReader;
-            }
-          
-            // Tokenize field and add to postingTable
-            stream = analyzer.reusableTokenStream(fieldInfo.name, reader);
-          }
-
-          // reset the TokenStream to the first token
-          stream.reset();
-
-          try {
-            offsetEnd = offset-1;
-            Token token;
-            for(;;) {
-              token = stream.next(localToken);
-              if (token == null) break;
-              position += (token.getPositionIncrement() - 1);
-              addPosition(token);
-              if (++length >= maxFieldLength) {
-                if (infoStream != null)
-                  infoStream.println("maxFieldLength " +maxFieldLength+ " reached for field " + fieldInfo.name + ", ignoring following tokens");
-                break;
-              }
-            }
-            offset = offsetEnd+1;
-          } finally {
-            stream.close();
-          }
-        }
-
-        boost *= field.getBoost();
-      }
-
-      /** Only called when term vectors are enabled.  This
-       *  is called the first time we see a given term for
-       *  each document, to allocate a PostingVector
-       *  instance that is used to record data needed to
-       *  write the posting vectors. */
-      private PostingVector addNewVector() {
-
-        if (postingsVectorsUpto == postingsVectors.length) {
-          final int newSize;
-          if (postingsVectors.length < 2)
-            newSize = 2;
-          else
-            newSize = (int) (1.5*postingsVectors.length);
-          PostingVector[] newArray = new PostingVector[newSize];
-          System.arraycopy(postingsVectors, 0, newArray, 0, postingsVectors.length);
-          postingsVectors = newArray;
-        }
-        
-        p.vector = postingsVectors[postingsVectorsUpto];
-        if (p.vector == null)
-          p.vector = postingsVectors[postingsVectorsUpto] = new PostingVector();
-
-        postingsVectorsUpto++;
-
-        final PostingVector v = p.vector;
-        v.p = p;
-
-        final int firstSize = levelSizeArray[0];
-
-        if (doVectorPositions) {
-          final int upto = vectorsPool.newSlice(firstSize);
-          v.posStart = v.posUpto = vectorsPool.byteOffset + upto;
-        }
-
-        if (doVectorOffsets) {
-          final int upto = vectorsPool.newSlice(firstSize);
-          v.offsetStart = v.offsetUpto = vectorsPool.byteOffset + upto;
-        }
-
-        return v;
-      }
-
-      int offsetStartCode;
-      int offsetStart;
-
-      /** This is the hotspot of indexing: it's called once
-       *  for every term of every document.  Its job is to *
-       *  update the postings byte stream (Postings hash) *
-       *  based on the occurence of a single term. */
-      private void addPosition(Token token) throws AbortException {
-
-        final Payload payload = token.getPayload();
-
-        // Get the text of this term.  Term can either
-        // provide a String token or offset into a char[]
-        // array
-        final char[] tokenText = token.termBuffer();
-        final int tokenTextLen = token.termLength();
-
-        int code = 0;
-
-        // Compute hashcode
-        int downto = tokenTextLen;
-        while (downto > 0)
-          code = (code*31) + tokenText[--downto];
-
-        // System.out.println("  addPosition: buffer=" + new String(tokenText, 0, tokenTextLen) + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset + token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
-
-        int hashPos = code & postingsHashMask;
-
-        assert !postingsCompacted;
-
-        // Locate Posting in hash
-        p = postingsHash[hashPos];
-
-        if (p != null && !postingEquals(tokenText, tokenTextLen)) {
-          // Conflict: keep searching different locations in
-          // the hash table.
-          final int inc = ((code>>8)+code)|1;
-          do {
-            code += inc;
-            hashPos = code & postingsHashMask;
-            p = postingsHash[hashPos];
-          } while (p != null && !postingEquals(tokenText, tokenTextLen));
-        }
-        
-        final int proxCode;
-
-        // If we hit an exception below, it's possible the
-        // posting list or term vectors data will be
-        // partially written and thus inconsistent if
-        // flushed, so we have to abort all documents
-        // since the last flush:
-
-        try {
-
-          if (p != null) {       // term seen since last flush
-
-            if (docID != p.lastDocID) { // term not yet seen in this doc
-            
-              // System.out.println("    seen before (new docID=" + docID + ") freqUpto=" + p.freqUpto +" proxUpto=" + p.proxUpto);
-
-              assert p.docFreq > 0;
-
-              // Now that we know doc freq for previous doc,
-              // write it & lastDocCode
-              freqUpto = p.freqUpto & BYTE_BLOCK_MASK;
-              freq = postingsPool.buffers[p.freqUpto >> BYTE_BLOCK_SHIFT];
-              if (1 == p.docFreq)
-                writeFreqVInt(p.lastDocCode|1);
-              else {
-                writeFreqVInt(p.lastDocCode);
-                writeFreqVInt(p.docFreq);
-              }
-              p.freqUpto = freqUpto + (p.freqUpto & BYTE_BLOCK_NOT_MASK);
-
-              if (doVectors) {
-                vector = addNewVector();
-                if (doVectorOffsets) {
-                  offsetStartCode = offsetStart = offset + token.startOffset();
-                  offsetEnd = offset + token.endOffset();
-                }
-              }
-
-              proxCode = position;
-
-              p.docFreq = 1;
-
-              // Store code so we can write this after we're
-              // done with this new doc
-              p.lastDocCode = (docID-p.lastDocID) << 1;
-              p.lastDocID = docID;
-
-            } else {                                // term already seen in this doc
-              // System.out.println("    seen before (same docID=" + docID + ") proxUpto=" + p.proxUpto);
-              p.docFreq++;
-
-              proxCode = position-p.lastPosition;
-
-              if (doVectors) {
-                vector = p.vector;
-                if (vector == null)
-                  vector = addNewVector();
-                if (doVectorOffsets) {
-                  offsetStart = offset + token.startOffset();
-                  offsetEnd = offset + token.endOffset();
-                  offsetStartCode = offsetStart-vector.lastOffset;
-                }
-              }
-            }
-          } else {					  // term not seen before
-            // System.out.println("    never seen docID=" + docID);
-
-            // Refill?
-            if (0 == postingsFreeCount) {
-              getPostings(postingsFreeList);
-              postingsFreeCount = postingsFreeList.length;
-            }
-
-            final int textLen1 = 1+tokenTextLen;
-            if (textLen1 + charPool.byteUpto > CHAR_BLOCK_SIZE) {
-              if (textLen1 > CHAR_BLOCK_SIZE) {
-                // Just skip this term, to remain as robust as
-                // possible during indexing.  A TokenFilter
-                // can be inserted into the analyzer chain if
-                // other behavior is wanted (pruning the term
-                // to a prefix, throwing an exception, etc).
-                if (maxTermPrefix == null)
-                  maxTermPrefix = new String(tokenText, 0, 30);
-
-                // Still increment position:
-                position++;
-                return;
-              }
-              charPool.nextBuffer();
-            }
-            final char[] text = charPool.buffer;
-            final int textUpto = charPool.byteUpto;
-
-            // Pull next free Posting from free list
-            p = postingsFreeList[--postingsFreeCount];
-
-            p.textStart = textUpto + charPool.byteOffset;
-            charPool.byteUpto += textLen1;
-
-            System.arraycopy(tokenText, 0, text, textUpto, tokenTextLen);
-
-            text[textUpto+tokenTextLen] = 0xffff;
-          
-            assert postingsHash[hashPos] == null;
-
-            postingsHash[hashPos] = p;
-            numPostings++;
-
-            if (numPostings == postingsHashHalfSize)
-              rehashPostings(2*postingsHashSize);
-
-            // Init first slice for freq & prox streams
-            final int firstSize = levelSizeArray[0];
-
-            final int upto1 = postingsPool.newSlice(firstSize);
-            p.freqStart = p.freqUpto = postingsPool.byteOffset + upto1;
-
-            final int upto2 = postingsPool.newSlice(firstSize);
-            p.proxStart = p.proxUpto = postingsPool.byteOffset + upto2;
-
-            p.lastDocCode = docID << 1;
-            p.lastDocID = docID;
-            p.docFreq = 1;
-
-            if (doVectors) {
-              vector = addNewVector();
-              if (doVectorOffsets) {
-                offsetStart = offsetStartCode = offset + token.startOffset();
-                offsetEnd = offset + token.endOffset();
-              }
-            }
-
-            proxCode = position;
-          }
-
-          proxUpto = p.proxUpto & BYTE_BLOCK_MASK;
-          prox = postingsPool.buffers[p.proxUpto >> BYTE_BLOCK_SHIFT];
-          assert prox != null;
-
-          if (payload != null && payload.length > 0) {
-            writeProxVInt((proxCode<<1)|1);
-            writeProxVInt(payload.length);
-            writeProxBytes(payload.data, payload.offset, payload.length);
-            fieldInfo.storePayloads = true;
-          } else
-            writeProxVInt(proxCode<<1);
-
-          p.proxUpto = proxUpto + (p.proxUpto & BYTE_BLOCK_NOT_MASK);
-
-          p.lastPosition = position++;
-
-          if (doVectorPositions) {
-            posUpto = vector.posUpto & BYTE_BLOCK_MASK;
-            pos = vectorsPool.buffers[vector.posUpto >> BYTE_BLOCK_SHIFT];
-            writePosVInt(proxCode);
-            vector.posUpto = posUpto + (vector.posUpto & BYTE_BLOCK_NOT_MASK);
-          }
-
-          if (doVectorOffsets) {
-            offsetUpto = vector.offsetUpto & BYTE_BLOCK_MASK;
-            offsets = vectorsPool.buffers[vector.offsetUpto >> BYTE_BLOCK_SHIFT];
-            writeOffsetVInt(offsetStartCode);
-            writeOffsetVInt(offsetEnd-offsetStart);
-            vector.lastOffset = offsetEnd;
-            vector.offsetUpto = offsetUpto + (vector.offsetUpto & BYTE_BLOCK_NOT_MASK);
-          }
-        } catch (Throwable t) {
-          throw new AbortException(t, DocumentsWriter.this);
-        }
-      }
-
-      /** Called when postings hash is too small (> 50%
-       *  occupied) or too large (< 20% occupied). */
-      void rehashPostings(final int newSize) {
-
-        final int newMask = newSize-1;
-
-        Posting[] newHash = new Posting[newSize];
-        for(int i=0;i<postingsHashSize;i++) {
-          Posting p0 = postingsHash[i];
-          if (p0 != null) {
-            final int start = p0.textStart & CHAR_BLOCK_MASK;
-            final char[] text = charPool.buffers[p0.textStart >> CHAR_BLOCK_SHIFT];
-            int pos = start;
-            while(text[pos] != 0xffff)
-              pos++;
-            int code = 0;
-            while (pos > start)
-              code = (code*31) + text[--pos];
-
-            int hashPos = code & newMask;
-            assert hashPos >= 0;
-            if (newHash[hashPos] != null) {
-              final int inc = ((code>>8)+code)|1;
-              do {
-                code += inc;
-                hashPos = code & newMask;
-              } while (newHash[hashPos] != null);
-            }
-            newHash[hashPos] = p0;
-          }
-        }
-
-        postingsHashMask =  newMask;
-        postingsHash = newHash;
-        postingsHashSize = newSize;
-        postingsHashHalfSize = newSize >> 1;
-      }
-      
-      final ByteSliceReader vectorSliceReader = new ByteSliceReader();
-
-      /** Called once per field per document if term vectors
-       *  are enabled, to write the vectors to *
-       *  RAMOutputStream, which is then quickly flushed to
-       *  * the real term vectors files in the Directory. */
-      void writeVectors(FieldInfo fieldInfo) throws IOException {
-
-        assert fieldInfo.storeTermVector;
-        assert vectorFieldsInOrder(fieldInfo);
-
-        vectorFieldNumbers[numVectorFields] = fieldInfo.number;
-        vectorFieldPointers[numVectorFields] = tvfLocal.getFilePointer();
-        numVectorFields++;
-
-        final int numPostingsVectors = postingsVectorsUpto;
-
-        tvfLocal.writeVInt(numPostingsVectors);
-        byte bits = 0x0;
-        if (doVectorPositions)
-          bits |= TermVectorsReader.STORE_POSITIONS_WITH_TERMVECTOR;
-        if (doVectorOffsets) 
-          bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
-        tvfLocal.writeByte(bits);
-
-        doVectorSort(postingsVectors, numPostingsVectors);
-
-        Posting lastPosting = null;
-
-        final ByteSliceReader reader = vectorSliceReader;
-
-        for(int j=0;j<numPostingsVectors;j++) {
-          PostingVector vector = postingsVectors[j];
-          Posting posting = vector.p;
-          final int freq = posting.docFreq;
-          
-          final int prefix;
-          final char[] text2 = charPool.buffers[posting.textStart >> CHAR_BLOCK_SHIFT];
-          final int start2 = posting.textStart & CHAR_BLOCK_MASK;
-          int pos2 = start2;
-
-          // Compute common prefix between last term and
-          // this term
-          if (lastPosting == null)
-            prefix = 0;
-          else {
-            final char[] text1 = charPool.buffers[lastPosting.textStart >> CHAR_BLOCK_SHIFT];
-            final int start1 = lastPosting.textStart & CHAR_BLOCK_MASK;
-            int pos1 = start1;
-            while(true) {
-              final char c1 = text1[pos1];
-              final char c2 = text2[pos2];
-              if (c1 != c2 || c1 == 0xffff) {
-                prefix = pos1-start1;
-                break;
-              }
-              pos1++;
-              pos2++;
-            }
-          }
-          lastPosting = posting;
-
-          // Compute length
-          while(text2[pos2] != 0xffff)
-            pos2++;
-
-          final int suffix = pos2 - start2 - prefix;
-          tvfLocal.writeVInt(prefix);
-          tvfLocal.writeVInt(suffix);
-          tvfLocal.writeChars(text2, start2 + prefix, suffix);
-          tvfLocal.writeVInt(freq);
-
-          if (doVectorPositions) {
-            reader.init(vectorsPool, vector.posStart, vector.posUpto);
-            reader.writeTo(tvfLocal);
-          }
-
-          if (doVectorOffsets) {
-            reader.init(vectorsPool, vector.offsetStart, vector.offsetUpto);
-            reader.writeTo(tvfLocal);
-          }
-        }
-      }
-    }
-  }
-
   private static final byte defaultNorm = Similarity.encodeNorm(1.0f);
 
   /** Write norms in the "true" segment format.  This is
@@ -2181,11 +656,11 @@ final class DocumentsWriter {
     ArrayList allFields = new ArrayList();
     assert allThreadsIdle();
     for(int i=0;i<threadStates.length;i++) {
-      ThreadState state = threadStates[i];
+      DocumentsWriterThreadState state = threadStates[i];
       state.trimFields();
       final int numFields = state.numAllFieldData;
       for(int j=0;j<numFields;j++) {
-        ThreadState.FieldData fp = state.allFieldDataArray[j];
+        DocumentsWriterFieldData fp = state.allFieldDataArray[j];
         if (fp.numPostings > 0)
           allFields.add(fp);
       }
@@ -2202,15 +677,15 @@ final class DocumentsWriter {
     int start = 0;
     while(start < numAllFields) {
 
-      final String fieldName = ((ThreadState.FieldData) allFields.get(start)).fieldInfo.name;
+      final String fieldName = ((DocumentsWriterFieldData) allFields.get(start)).fieldInfo.name;
 
       int end = start+1;
-      while(end < numAllFields && ((ThreadState.FieldData) allFields.get(end)).fieldInfo.name.equals(fieldName))
+      while(end < numAllFields && ((DocumentsWriterFieldData) allFields.get(end)).fieldInfo.name.equals(fieldName))
         end++;
       
-      ThreadState.FieldData[] fields = new ThreadState.FieldData[end-start];
+      DocumentsWriterFieldData[] fields = new DocumentsWriterFieldData[end-start];
       for(int i=start;i<end;i++)
-        fields[i-start] = (ThreadState.FieldData) allFields.get(i);
+        fields[i-start] = (DocumentsWriterFieldData) allFields.get(i);
 
       // If this field has postings then add them to the
       // segment
@@ -2271,78 +746,7 @@ final class DocumentsWriter {
     return segment + "." + extension;
   }
 
-  private final TermInfo termInfo = new TermInfo(); // minimize consing
-
-  /** Used to merge the postings from multiple ThreadStates
-   * when creating a segment */
-  final static class FieldMergeState {
-
-    private ThreadState.FieldData field;
-
-    private Posting[] postings;
-
-    private Posting p;
-    private  char[] text;
-    private int textOffset;
-
-    private int postingUpto = -1;
-
-    private ByteSliceReader freq = new ByteSliceReader();
-    private ByteSliceReader prox = new ByteSliceReader();
-
-    private int docID;
-    private int termFreq;
-
-    boolean nextTerm() throws IOException {
-      postingUpto++;
-      if (postingUpto == field.numPostings)
-        return false;
-
-      p = postings[postingUpto];
-      docID = 0;
-
-      text = field.threadState.charPool.buffers[p.textStart >> CHAR_BLOCK_SHIFT];
-      textOffset = p.textStart & CHAR_BLOCK_MASK;
-
-      if (p.freqUpto > p.freqStart)
-        freq.init(field.threadState.postingsPool, p.freqStart, p.freqUpto);
-      else
-        freq.bufferOffset = freq.upto = freq.endIndex = 0;
-
-      prox.init(field.threadState.postingsPool, p.proxStart, p.proxUpto);
-
-      // Should always be true
-      boolean result = nextDoc();
-      assert result;
-
-      return true;
-    }
-
-    public boolean nextDoc() throws IOException {
-      if (freq.bufferOffset + freq.upto == freq.endIndex) {
-        if (p.lastDocCode != -1) {
-          // Return last doc
-          docID = p.lastDocID;
-          termFreq = p.docFreq;
-          p.lastDocCode = -1;
-          return true;
-        } else 
-          // EOF
-          return false;
-      }
-
-      final int code = freq.readVInt();
-      docID += code >>> 1;
-      if ((code & 1) != 0)
-        termFreq = 1;
-      else
-        termFreq = freq.readVInt();
-
-      return true;
-    }
-  }
-
-  int compareText(final char[] text1, int pos1, final char[] text2, int pos2) {
+  static int compareText(final char[] text1, int pos1, final char[] text2, int pos2) {
     while(true) {
       final char c1 = text1[pos1++];
       final char c2 = text2[pos2++];
@@ -2361,10 +765,12 @@ final class DocumentsWriter {
     }
   }
 
+  private final TermInfo termInfo = new TermInfo(); // minimize consing
+
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
-  void appendPostings(ThreadState.FieldData[] fields,
+  void appendPostings(DocumentsWriterFieldData[] fields,
                       TermInfosWriter termsOut,
                       IndexOutput freqOut,
                       IndexOutput proxOut)
@@ -2373,10 +779,10 @@ final class DocumentsWriter {
     final int fieldNumber = fields[0].fieldInfo.number;
     int numFields = fields.length;
 
-    final FieldMergeState[] mergeStates = new FieldMergeState[numFields];
+    final DocumentsWriterFieldMergeState[] mergeStates = new DocumentsWriterFieldMergeState[numFields];
 
     for(int i=0;i<numFields;i++) {
-      FieldMergeState fms = mergeStates[i] = new FieldMergeState();
+      DocumentsWriterFieldMergeState fms = mergeStates[i] = new DocumentsWriterFieldMergeState();
       fms.field = fields[i];
       fms.postings = fms.field.sortPostings();
 
@@ -2390,7 +796,7 @@ final class DocumentsWriter {
     final int skipInterval = termsOut.skipInterval;
     currentFieldStorePayloads = fields[0].fieldInfo.storePayloads;
 
-    FieldMergeState[] termStates = new FieldMergeState[numFields];
+    DocumentsWriterFieldMergeState[] termStates = new DocumentsWriterFieldMergeState[numFields];
 
     while(numFields > 0) {
 
@@ -2436,7 +842,7 @@ final class DocumentsWriter {
           skipListWriter.bufferSkip(df);
         }
 
-        FieldMergeState minState = termStates[0];
+        DocumentsWriterFieldMergeState minState = termStates[0];
         for(int i=1;i<numToMerge;i++)
           if (termStates[i].docID < minState.docID)
             minState = termStates[i];
@@ -2532,17 +938,17 @@ final class DocumentsWriter {
    * flush is pending.  If delTerm is non-null then we
    * buffer this deleted term after the thread state has
    * been acquired. */
-  synchronized ThreadState getThreadState(Document doc, Term delTerm) throws IOException {
+  synchronized DocumentsWriterThreadState getThreadState(Document doc, Term delTerm) throws IOException {
 
     // First, find a thread state.  If this thread already
     // has affinity to a specific ThreadState, use that one
     // again.
-    ThreadState state = (ThreadState) threadBindings.get(Thread.currentThread());
+    DocumentsWriterThreadState state = (DocumentsWriterThreadState) threadBindings.get(Thread.currentThread());
     if (state == null) {
       // First time this thread has called us since last flush
-      ThreadState minThreadState = null;
+      DocumentsWriterThreadState minThreadState = null;
       for(int i=0;i<threadStates.length;i++) {
-        ThreadState ts = threadStates[i];
+        DocumentsWriterThreadState ts = threadStates[i];
         if (minThreadState == null || ts.numThreads < minThreadState.numThreads)
           minThreadState = ts;
       }
@@ -2551,10 +957,10 @@ final class DocumentsWriter {
         state.numThreads++;
       } else {
         // Just create a new "private" thread state
-        ThreadState[] newArray = new ThreadState[1+threadStates.length];
+        DocumentsWriterThreadState[] newArray = new DocumentsWriterThreadState[1+threadStates.length];
         if (threadStates.length > 0)
           System.arraycopy(threadStates, 0, newArray, 0, threadStates.length);
-        state = newArray[threadStates.length] = new ThreadState();
+        state = newArray[threadStates.length] = new DocumentsWriterThreadState(this);
         threadStates = newArray;
       }
       threadBindings.put(Thread.currentThread(), state);
@@ -2626,7 +1032,7 @@ final class DocumentsWriter {
     throws CorruptIndexException, IOException {
 
     // This call is synchronized but fast
-    final ThreadState state = getThreadState(doc, delTerm);
+    final DocumentsWriterThreadState state = getThreadState(doc, delTerm);
     try {
       boolean success = false;
       try {
@@ -2686,7 +1092,7 @@ final class DocumentsWriter {
     flushedDocCount -= mapper.docShift;
   }
 
-  synchronized private void waitReady(ThreadState state) {
+  synchronized private void waitReady(DocumentsWriterThreadState state) {
     while(!closed && ((state != null && !state.isIdle) || pauseThreads != 0 || flushPending || abortCount > 0))
       try {
         wait();
@@ -2800,7 +1206,7 @@ final class DocumentsWriter {
 
       TermDocs docs = reader.termDocs(term);
       if (docs != null) {
-        int limit = ((DocumentsWriter.Num) entry.getValue()).getNum();
+        int limit = ((BufferedDeletes.Num) entry.getValue()).getNum();
         try {
           while (docs.next()) {
             int docID = docs.doc();
@@ -2846,39 +1252,15 @@ final class DocumentsWriter {
     return any;
   }
 
-  // Number of documents a delete term applies to.
-  static class Num {
-    private int num;
-
-    Num(int num) {
-      this.num = num;
-    }
-
-    int getNum() {
-      return num;
-    }
-
-    void setNum(int num) {
-      // Only record the new number if it's greater than the
-      // current one.  This is important because if multiple
-      // threads are replacing the same doc at nearly the
-      // same time, it's possible that one thread that got a
-      // higher docID is scheduled before the other
-      // threads.
-      if (num > this.num)
-        this.num = num;
-    }
-  }
-
   // Buffer a term in bufferedDeleteTerms, which records the
   // current number of documents buffered in ram so that the
   // delete term will be applied to those documents as well
   // as the disk segments.
   synchronized private void addDeleteTerm(Term term, int docCount) {
-    Num num = (Num) deletesInRAM.terms.get(term);
+    BufferedDeletes.Num num = (BufferedDeletes.Num) deletesInRAM.terms.get(term);
     final int docIDUpto = flushedDocCount + docCount;
     if (num == null)
-      deletesInRAM.terms.put(term, new Num(docIDUpto));
+      deletesInRAM.terms.put(term, new BufferedDeletes.Num(docIDUpto));
     else
       num.setNum(docIDUpto);
     deletesInRAM.numTerms++;
@@ -2896,7 +1278,7 @@ final class DocumentsWriter {
 
   /** Does the synchronized work to finish/flush the
    * inverted document. */
-  private synchronized void finishDocument(ThreadState state) throws IOException, AbortException {
+  private synchronized void finishDocument(DocumentsWriterThreadState state) throws IOException, AbortException {
     if (abortCount > 0) {
       // Forcefully idle this threadstate -- its state will
       // be reset by abort()
@@ -2924,7 +1306,7 @@ final class DocumentsWriter {
         while(any) {
           any = false;
           for(int i=0;i<numWaiting;) {
-            final ThreadState s = waitingThreadStates[i];
+            final DocumentsWriterThreadState s = waitingThreadStates[i];
             if (s.docID == nextWriteDocID) {
               s.writeDocument();
               s.isIdle = true;
@@ -2988,337 +1370,6 @@ final class DocumentsWriter {
       srcIn.readBytes(copyByteBuffer, 0, chunk);
       destIn.writeBytes(copyByteBuffer, 0, chunk);
       numBytes -= chunk;
-    }
-  }
-
-  /* Stores norms, buffered in RAM, until they are flushed
-   * to a partial segment. */
-  private static class BufferedNorms {
-
-    RAMOutputStream out;
-    int upto;
-
-    BufferedNorms() {
-      out = new RAMOutputStream();
-    }
-
-    void add(float norm) throws IOException {
-      byte b = Similarity.encodeNorm(norm);
-      out.writeByte(b);
-      upto++;
-    }
-
-    void reset() {
-      out.reset();
-      upto = 0;
-    }
-
-    void fill(int docID) throws IOException {
-      // Must now fill in docs that didn't have this
-      // field.  Note that this is how norms can consume
-      // tremendous storage when the docs have widely
-      // varying different fields, because we are not
-      // storing the norms sparsely (see LUCENE-830)
-      if (upto < docID) {
-        fillBytes(out, defaultNorm, docID-upto);
-        upto = docID;
-      }
-    }
-  }
-
-  /* Simple StringReader that can be reset to a new string;
-   * we use this when tokenizing the string value from a
-   * Field. */
-  private final static class ReusableStringReader extends Reader {
-    int upto;
-    int left;
-    String s;
-    void init(String s) {
-      this.s = s;
-      left = s.length();
-      this.upto = 0;
-    }
-    public int read(char[] c) {
-      return read(c, 0, c.length);
-    }
-    public int read(char[] c, int off, int len) {
-      if (left > len) {
-        s.getChars(upto, upto+len, c, off);
-        upto += len;
-        left -= len;
-        return len;
-      } else if (0 == left) {
-        return -1;
-      } else {
-        s.getChars(upto, upto+left, c, off);
-        int r = left;
-        left = 0;
-        upto = s.length();
-        return r;
-      }
-    }
-    public void close() {};
-  }
-
-  /* IndexInput that knows how to read the byte slices written
-   * by Posting and PostingVector.  We read the bytes in
-   * each slice until we hit the end of that slice at which
-   * point we read the forwarding address of the next slice
-   * and then jump to it.*/
-  private final static class ByteSliceReader extends IndexInput {
-    ByteBlockPool pool;
-    int bufferUpto;
-    byte[] buffer;
-    public int upto;
-    int limit;
-    int level;
-    public int bufferOffset;
-
-    public int endIndex;
-
-    public void init(ByteBlockPool pool, int startIndex, int endIndex) {
-
-      assert endIndex-startIndex > 0;
-
-      this.pool = pool;
-      this.endIndex = endIndex;
-
-      level = 0;
-      bufferUpto = startIndex / BYTE_BLOCK_SIZE;
-      bufferOffset = bufferUpto * BYTE_BLOCK_SIZE;
-      buffer = pool.buffers[bufferUpto];
-      upto = startIndex & BYTE_BLOCK_MASK;
-
-      final int firstSize = levelSizeArray[0];
-
-      if (startIndex+firstSize >= endIndex) {
-        // There is only this one slice to read
-        limit = endIndex & BYTE_BLOCK_MASK;
-      } else
-        limit = upto+firstSize-4;
-    }
-
-    public byte readByte() {
-      // Assert that we are not @ EOF
-      assert upto + bufferOffset < endIndex;
-      if (upto == limit)
-        nextSlice();
-      return buffer[upto++];
-    }
-
-    public long writeTo(IndexOutput out) throws IOException {
-      long size = 0;
-      while(true) {
-        if (limit + bufferOffset == endIndex) {
-          assert endIndex - bufferOffset >= upto;
-          out.writeBytes(buffer, upto, limit-upto);
-          size += limit-upto;
-          break;
-        } else {
-          out.writeBytes(buffer, upto, limit-upto);
-          size += limit-upto;
-          nextSlice();
-        }
-      }
-
-      return size;
-    }
-
-    public void nextSlice() {
-
-      // Skip to our next slice
-      final int nextIndex = ((buffer[limit]&0xff)<<24) + ((buffer[1+limit]&0xff)<<16) + ((buffer[2+limit]&0xff)<<8) + (buffer[3+limit]&0xff);
-
-      level = nextLevelArray[level];
-      final int newSize = levelSizeArray[level];
-
-      bufferUpto = nextIndex / BYTE_BLOCK_SIZE;
-      bufferOffset = bufferUpto * BYTE_BLOCK_SIZE;
-
-      buffer = pool.buffers[bufferUpto];
-      upto = nextIndex & BYTE_BLOCK_MASK;
-
-      if (nextIndex + newSize >= endIndex) {
-        // We are advancing to the final slice
-        assert endIndex - nextIndex > 0;
-        limit = endIndex - bufferOffset;
-      } else {
-        // This is not the final slice (subtract 4 for the
-        // forwarding address at the end of this new slice)
-        limit = upto+newSize-4;
-      }
-    }
-
-    public void readBytes(byte[] b, int offset, int len) {
-      while(len > 0) {
-        final int numLeft = limit-upto;
-        if (numLeft < len) {
-          // Read entire slice
-          System.arraycopy(buffer, upto, b, offset, numLeft);
-          offset += numLeft;
-          len -= numLeft;
-          nextSlice();
-        } else {
-          // This slice is the last one
-          System.arraycopy(buffer, upto, b, offset, len);
-          upto += len;
-          break;
-        }
-      }
-    }
-
-    public long getFilePointer() {throw new RuntimeException("not implemented");}
-    public long length() {throw new RuntimeException("not implemented");}
-    public void seek(long pos) {throw new RuntimeException("not implemented");}
-    public void close() {throw new RuntimeException("not implemented");}
-  }
-
-  // Size of each slice.  These arrays should be at most 16
-  // elements.  First array is just a compact way to encode
-  // X+1 with a max.  Second array is the length of each
-  // slice, ie first slice is 5 bytes, next slice is 14
-  // bytes, etc.
-  final static int[] nextLevelArray = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
-  final static int[] levelSizeArray = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
-
-  /* Class that Posting and PostingVector use to write byte
-   * streams into shared fixed-size byte[] arrays.  The idea
-   * is to allocate slices of increasing lengths For
-   * example, the first slice is 5 bytes, the next slice is
-   * 14, etc.  We start by writing our bytes into the first
-   * 5 bytes.  When we hit the end of the slice, we allocate
-   * the next slice and then write the address of the new
-   * slice into the last 4 bytes of the previous slice (the
-   * "forwarding address").
-   *
-   * Each slice is filled with 0's initially, and we mark
-   * the end with a non-zero byte.  This way the methods
-   * that are writing into the slice don't need to record
-   * its length and instead allocate a new slice once they
-   * hit a non-zero byte. */
-  private final class ByteBlockPool {
-
-    public byte[][] buffers = new byte[10][];
-
-    int bufferUpto = -1;                        // Which buffer we are upto
-    public int byteUpto = BYTE_BLOCK_SIZE;             // Where we are in head buffer
-
-    public byte[] buffer;                              // Current head buffer
-    public int byteOffset = -BYTE_BLOCK_SIZE;          // Current head offset
-
-    private boolean trackAllocations;
-
-    public ByteBlockPool(boolean trackAllocations) {
-      this.trackAllocations = trackAllocations;
-    }
-
-    public void reset() {
-      if (bufferUpto != -1) {
-        // We allocated at least one buffer
-
-        for(int i=0;i<bufferUpto;i++)
-          // Fully zero fill buffers that we fully used
-          Arrays.fill(buffers[i], (byte) 0);
-
-        // Partial zero fill the final buffer
-        Arrays.fill(buffers[bufferUpto], 0, byteUpto, (byte) 0);
-          
-        if (bufferUpto > 0)
-          // Recycle all but the first buffer
-          recycleByteBlocks(buffers, 1, 1+bufferUpto);
-
-        // Re-use the first buffer
-        bufferUpto = 0;
-        byteUpto = 0;
-        byteOffset = 0;
-        buffer = buffers[0];
-      }
-    }
-
-    public void nextBuffer() {
-      if (1+bufferUpto == buffers.length) {
-        byte[][] newBuffers = new byte[(int) (buffers.length*1.5)][];
-        System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
-        buffers = newBuffers;
-      }
-      buffer = buffers[1+bufferUpto] = getByteBlock(trackAllocations);
-      bufferUpto++;
-
-      byteUpto = 0;
-      byteOffset += BYTE_BLOCK_SIZE;
-    }
-
-    public int newSlice(final int size) {
-      if (byteUpto > BYTE_BLOCK_SIZE-size)
-        nextBuffer();
-      final int upto = byteUpto;
-      byteUpto += size;
-      buffer[byteUpto-1] = 16;
-      return upto;
-    }
-
-    public int allocSlice(final byte[] slice, final int upto) {
-
-      final int level = slice[upto] & 15;
-      final int newLevel = nextLevelArray[level];
-      final int newSize = levelSizeArray[newLevel];
-
-      // Maybe allocate another block
-      if (byteUpto > BYTE_BLOCK_SIZE-newSize)
-        nextBuffer();
-
-      final int newUpto = byteUpto;
-      final int offset = newUpto + byteOffset;
-      byteUpto += newSize;
-
-      // Copy forward the past 3 bytes (which we are about
-      // to overwrite with the forwarding address):
-      buffer[newUpto] = slice[upto-3];
-      buffer[newUpto+1] = slice[upto-2];
-      buffer[newUpto+2] = slice[upto-1];
-
-      // Write forwarding address at end of last slice:
-      slice[upto-3] = (byte) (offset >>> 24);
-      slice[upto-2] = (byte) (offset >>> 16);
-      slice[upto-1] = (byte) (offset >>> 8);
-      slice[upto] = (byte) offset;
-        
-      // Write new level:
-      buffer[byteUpto-1] = (byte) (16|newLevel);
-
-      return newUpto+3;
-    }
-  }
-
-  private final class CharBlockPool {
-
-    public char[][] buffers = new char[10][];
-    int numBuffer;
-
-    int bufferUpto = -1;                        // Which buffer we are upto
-    public int byteUpto = CHAR_BLOCK_SIZE;             // Where we are in head buffer
-
-    public char[] buffer;                              // Current head buffer
-    public int byteOffset = -CHAR_BLOCK_SIZE;          // Current head offset
-
-    public void reset() {
-      recycleCharBlocks(buffers, 1+bufferUpto);
-      bufferUpto = -1;
-      byteUpto = CHAR_BLOCK_SIZE;
-      byteOffset = -CHAR_BLOCK_SIZE;
-    }
-
-    public void nextBuffer() {
-      if (1+bufferUpto == buffers.length) {
-        char[][] newBuffers = new char[(int) (buffers.length*1.5)][];
-        System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
-        buffers = newBuffers;
-      }
-      buffer = buffers[1+bufferUpto] = getCharBlock();
-      bufferUpto++;
-
-      byteUpto = 0;
-      byteOffset += CHAR_BLOCK_SIZE;
     }
   }
 
@@ -3559,41 +1610,5 @@ final class DocumentsWriter {
         bufferIsFull = true;
       }
     }
-  }
-
-  /* Used to track postings for a single term.  One of these
-   * exists per unique term seen since the last flush. */
-  private final static class Posting {
-    int textStart;                                  // Address into char[] blocks where our text is stored
-    int docFreq;                                    // # times this term occurs in the current doc
-    int freqStart;                                  // Address of first byte[] slice for freq
-    int freqUpto;                                   // Next write address for freq
-    int proxStart;                                  // Address of first byte[] slice
-    int proxUpto;                                   // Next write address for prox
-    int lastDocID;                                  // Last docID where this term occurred
-    int lastDocCode;                                // Code for prior doc
-    int lastPosition;                               // Last position where this term occurred
-    PostingVector vector;                           // Corresponding PostingVector instance
-  }
-
-  /* Used to track data for term vectors.  One of these
-   * exists per unique term seen in each field in the
-   * document. */
-  private final static class PostingVector {
-    Posting p;                                      // Corresponding Posting instance for this term
-    int lastOffset;                                 // Last offset we saw
-    int offsetStart;                                // Address of first slice for offsets
-    int offsetUpto;                                 // Next write address for offsets
-    int posStart;                                   // Address of first slice for positions
-    int posUpto;                                    // Next write address for positions
-  }
-}
-
-// Used only internally to DW to call abort "up the stack"
-class AbortException extends IOException {
-  public AbortException(Throwable cause, DocumentsWriter docWriter) {
-    super();
-    initCause(cause);
-    docWriter.setAborting();
   }
 }
