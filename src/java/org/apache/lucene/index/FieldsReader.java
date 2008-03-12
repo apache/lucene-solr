@@ -235,15 +235,15 @@ final class FieldsReader {
   }
 
   private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
-    if (binary == true) {
+    if (binary) {
       int toRead = fieldsStream.readVInt();
       long pointer = fieldsStream.getFilePointer();
       if (compressed) {
         //was: doc.add(new Fieldable(fi.name, uncompress(b), Fieldable.Store.COMPRESS));
-        doc.add(new LazyField(fi.name, Field.Store.COMPRESS, toRead, pointer));
+        doc.add(new LazyField(fi.name, Field.Store.COMPRESS, toRead, pointer, binary));
       } else {
         //was: doc.add(new Fieldable(fi.name, b, Fieldable.Store.YES));
-        doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer));
+        doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary));
       }
       //Need to move the pointer ahead by toRead positions
       fieldsStream.seek(pointer + toRead);
@@ -257,7 +257,7 @@ final class FieldsReader {
         store = Field.Store.COMPRESS;
         int toRead = fieldsStream.readVInt();
         long pointer = fieldsStream.getFilePointer();
-        f = new LazyField(fi.name, store, toRead, pointer);
+        f = new LazyField(fi.name, store, toRead, pointer, binary);
         //skip over the part that we aren't loading
         fieldsStream.seek(pointer + toRead);
         f.setOmitNorms(fi.omitNorms);
@@ -266,7 +266,7 @@ final class FieldsReader {
         long pointer = fieldsStream.getFilePointer();
         //Skip ahead of where we are by the length of what is stored
         fieldsStream.skipChars(length);
-        f = new LazyField(fi.name, store, index, termVector, length, pointer);
+        f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
         f.setOmitNorms(fi.omitNorms);
       }
       doc.add(f);
@@ -385,17 +385,19 @@ final class FieldsReader {
     private int toRead;
     private long pointer;
 
-    public LazyField(String name, Field.Store store, int toRead, long pointer) {
+    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary) {
       super(name, store, Field.Index.NO, Field.TermVector.NO);
       this.toRead = toRead;
       this.pointer = pointer;
+      this.isBinary = isBinary;
       lazy = true;
     }
 
-    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer) {
+    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary) {
       super(name, store, index, termVector);
       this.toRead = toRead;
       this.pointer = pointer;
+      this.isBinary = isBinary;
       lazy = true;
     }
 
@@ -413,25 +415,27 @@ final class FieldsReader {
      * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public byte[] binaryValue() {
       ensureOpen();
-      if (fieldsData == null) {
-        final byte[] b = new byte[toRead];
-        IndexInput localFieldsStream = getFieldStream();
-        //Throw this IO Exception since IndexReader.document does so anyway, so probably not that big of a change for people
-        //since they are already handling this exception when getting the document
-        try {
-          localFieldsStream.seek(pointer);
-          localFieldsStream.readBytes(b, 0, b.length);
-          if (isCompressed == true) {
-            fieldsData = uncompress(b);
-          } else {
-            fieldsData = b;
+      if (isBinary) {
+        if (fieldsData == null) {
+          final byte[] b = new byte[toRead];
+          IndexInput localFieldsStream = getFieldStream();
+          //Throw this IO Exception since IndexReader.document does so anyway, so probably not that big of a change for people
+          //since they are already handling this exception when getting the document
+          try {
+            localFieldsStream.seek(pointer);
+            localFieldsStream.readBytes(b, 0, b.length);
+            if (isCompressed == true) {
+              fieldsData = uncompress(b);
+            } else {
+              fieldsData = b;
+            }
+          } catch (IOException e) {
+            throw new FieldReaderException(e);
           }
-          isBinary = true;
-        } catch (IOException e) {
-          throw new FieldReaderException(e);
         }
-      }
-      return isBinary ? (byte[]) fieldsData : null;
+        return (byte[]) fieldsData;
+      } else
+        return null;
     }
 
     /** The value of the field as a Reader, or null.  If null, the String value,
@@ -439,42 +443,45 @@ final class FieldsReader {
      * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public Reader readerValue() {
       ensureOpen();
-      return fieldsData instanceof Reader ? (Reader) fieldsData : null;
+      return null;
     }
 
-    /** The value of the field as a TokesStream, or null.  If null, the Reader value,
+    /** The value of the field as a TokenStream, or null.  If null, the Reader value,
      * String value, or binary value is used. Exactly one of stringValue(), 
      * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public TokenStream tokenStreamValue() {
       ensureOpen();
-      return fieldsData instanceof TokenStream ? (TokenStream) fieldsData : null;
+      return null;
     }
 
-    
     /** The value of the field as a String, or null.  If null, the Reader value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
      * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public String stringValue() {
       ensureOpen();
-      if (fieldsData == null) {
-        IndexInput localFieldsStream = getFieldStream();
-        try {
-          localFieldsStream.seek(pointer);
-          if (isCompressed) {
-            final byte[] b = new byte[toRead];
-            localFieldsStream.readBytes(b, 0, b.length);
-            fieldsData = new String(uncompress(b), "UTF-8");
-          } else {
-            //read in chars b/c we already know the length we need to read
-            char[] chars = new char[toRead];
-            localFieldsStream.readChars(chars, 0, toRead);
-            fieldsData = new String(chars);
+      if (isBinary)
+        return null;
+      else {
+        if (fieldsData == null) {
+          IndexInput localFieldsStream = getFieldStream();
+          try {
+            localFieldsStream.seek(pointer);
+            if (isCompressed) {
+              final byte[] b = new byte[toRead];
+              localFieldsStream.readBytes(b, 0, b.length);
+              fieldsData = new String(uncompress(b), "UTF-8");
+            } else {
+              //read in chars b/c we already know the length we need to read
+              char[] chars = new char[toRead];
+              localFieldsStream.readChars(chars, 0, toRead);
+              fieldsData = new String(chars);
+            }
+          } catch (IOException e) {
+            throw new FieldReaderException(e);
           }
-        } catch (IOException e) {
-          throw new FieldReaderException(e);
         }
+        return (String) fieldsData;
       }
-      return fieldsData instanceof String ? (String) fieldsData : null;
     }
 
     public long getPointer() {

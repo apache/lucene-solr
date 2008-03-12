@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -110,6 +109,7 @@ public class TestFieldsReader extends LuceneTestCase {
     field = doc.getFieldable(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("field is not lazy and it should be", field.isLazy());
+    assertTrue("binaryValue isn't null for lazy string field", field.binaryValue() == null);
     value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.FIELD_2_COMPRESSED_TEXT, value.equals(DocHelper.FIELD_2_COMPRESSED_TEXT) == true);
@@ -128,6 +128,8 @@ public class TestFieldsReader extends LuceneTestCase {
 
     field = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
+
     byte [] bytes = field.binaryValue();
     assertTrue("bytes is null and it shouldn't be", bytes != null);
     assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
@@ -160,7 +162,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue("field is not lazy and it should be", field.isLazy());
     reader.close();
     try {
-      String value = field.stringValue();
+      field.stringValue();
       fail("did not hit AlreadyClosedException as expected");
     } catch (AlreadyClosedException e) {
       // expected
