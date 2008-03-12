@@ -382,7 +382,7 @@ public class SolrQuery extends ModifiableSolrParams
 
   public Integer getRows()
   {
-    return this.getFieldInt(CommonParams.ROWS, null);
+    return this.getInt(CommonParams.ROWS);
   }
 
   public void setShowDebugInfo(boolean showDebugInfo) {
@@ -405,7 +405,7 @@ public class SolrQuery extends ModifiableSolrParams
   
   public Integer getStart()
   {
-    return this.getFieldInt(CommonParams.START, null);
+    return this.getInt(CommonParams.START);
   }
 
   public void setQueryType(String qt) {
