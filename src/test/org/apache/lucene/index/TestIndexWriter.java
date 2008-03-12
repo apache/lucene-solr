@@ -3268,4 +3268,54 @@ public class TestIndexWriter extends LuceneTestCase
 
     dir.close();
   }
+
+  private static class FailOnlyInCommit extends MockRAMDirectory.Failure {
+
+    boolean fail1, fail2;
+
+    public void eval(MockRAMDirectory dir)  throws IOException {
+      StackTraceElement[] trace = new Exception().getStackTrace();
+      boolean isCommit = false;
+      boolean isDelete = false;
+      for (int i = 0; i < trace.length; i++) {
+        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "commit".equals(trace[i].getMethodName()))
+          isCommit = true;
+        if ("org.apache.lucene.store.MockRAMDirectory".equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
+          isDelete = true;
+      }
+
+      if (isCommit) {
+        if (!isDelete) {
+          fail1 = true;
+          throw new RuntimeException("now fail first");
+        } else {
+          fail2 = true;
+          throw new IOException("now fail during delete");
+        }
+      }
+    }
+  }
+
+  // LUCENE-1214
+  public void testExceptionsDuringCommit() throws Throwable {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    FailOnlyInCommit failure = new FailOnlyInCommit();
+    IndexWriter w = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a field", Field.Store.YES,
+                      Field.Index.TOKENIZED));
+    w.addDocument(doc);
+    dir.failOn(failure);
+    try {
+      w.close();
+      fail();
+    } catch (IOException ioe) {
+      fail("expected only RuntimeException");
+    } catch (RuntimeException re) {
+      // Expected
+    }
+    assertTrue(failure.fail1 && failure.fail2);
+    w.abort();
+    dir.close();
+  }
 }

@@ -300,13 +300,29 @@ final class SegmentInfos extends Vector {
     } finally {
       boolean success2 = false;
       try {
-        output.close();
-        success2 = true;
+        if (!success) {
+          // We hit an exception above; try to close the file
+          // but suppress any exception:
+          try {
+            output.close();
+            success2 = true;
+          } catch (Throwable t) {
+            // Suppress so we keep throwing the original exception
+          }
+        } else {
+          output.close();
+          success2 = true;
+        }
       } finally {
-        if (!success || !success2)
-          // Try not to leave a truncated segments_N file in
-          // the index:
-          directory.deleteFile(segmentFileName);
+        if (!success || !success2) {
+          try {
+            // Try not to leave a truncated segments_N file in
+            // the index:
+            directory.deleteFile(segmentFileName);
+          } catch (Throwable t) {
+            // Suppress so we keep throwing the original exception
+          }
+        }
       }
     }
 
@@ -738,7 +754,11 @@ final class SegmentInfos extends Vector {
         final String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                              "",
                                                                              generation);
-        dir.deleteFile(segmentFileName);
+        try {
+          dir.deleteFile(segmentFileName);
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
+        }
       }
     }
 
@@ -758,8 +778,13 @@ final class SegmentInfos extends Vector {
       dir.sync(fileName);
       success = true;
     } finally {
-      if (!success)
-        dir.deleteFile(fileName);
+      if (!success) {
+        try {
+          dir.deleteFile(fileName);
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
+        }
+      }
     }
   }
 }

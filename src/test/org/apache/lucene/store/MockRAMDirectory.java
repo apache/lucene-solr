@@ -186,6 +186,9 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   private synchronized void deleteFile(String name, boolean forced) throws IOException {
+
+    maybeThrowDeterministicException();
+
     if (crashed && !forced)
       throw new IOException("cannot delete after crash");
 
