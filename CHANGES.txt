@@ -27,6 +27,9 @@ Bug fixes
 
  8. LUCENE-1222: Fix IndexWriter.doAfterFlush to always be called on
     flush (Mark Ferguson via Mike McCandless)
+	
+ 9. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
+    successfully created compound files. (Michael Busch)
 
 ======================= Release 2.3.1 2008-02-22 =======================
 

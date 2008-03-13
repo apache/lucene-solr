@@ -2451,6 +2451,9 @@ public class IndexWriter {
           synchronized(this) {
             info.setUseCompoundFile(true);
           }
+		  
+		  success = true;
+		  
         } finally {
           if (!success) {
             if (infoStream != null)
