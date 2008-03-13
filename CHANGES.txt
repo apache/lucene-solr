@@ -71,6 +71,9 @@ Bug fixes
  4. LUCENE-1213: MultiFieldQueryParser was ignoring slop in case
     of a single field phrase. (Trejkaz via Doron Cohen)
 
+ 5. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
+    successfully created compound files. (Michael Busch)
+	
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
