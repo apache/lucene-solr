@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><umlet_diagram><help_text>//Uncomment the following line to change the fontsize:
+//fontsize=14
+
+//Welcome to UMLet!
+
+// *Double-click on UML elements to add them to the diagram.
+// *Edit element properties by modifying the text in this panel.
+// *Edit the files in the 'palettes' directory to store your own element palettes.
+// *Press Del or Backspace to remove elements from the diagram.
+// *Hold down Ctrl key to select multiple elements.
+// *Press c to copy the UML diagram to the system clipboard.
+// * This text will be stored with each diagram. Feel free to use the area for notes.
+</help_text><element><type>com.umlet.element.base.Class</type><coordinates><x>310</x><y>540</y><w>310</w><h>110</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000000
+InstantiatedTermDocumentInformation
+--
++payloads:byte[][]
++termPositions:int[]
++termOffsets:TermVectorOffsetInfo[]
++indexFromTerm:int
+--</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>460</x><y>380</y><w>40</w><h>180</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>20;20;20;160</additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>460</x><y>40</y><w>61</w><h>160</h></coordinates><panel_attributes>lt=&lt;-
+q2=field
+m1=0..1</panel_attributes><additional_attributes>30;20;30;140</additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>430</x><y>30</y><w>120</w><h>30</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000099
+_norm: byte[][]_</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>80</x><y>390</y><w>100</w><h>30</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000099
+Term</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>770</x><y>380</y><w>120</w><h>40</h></coordinates><panel_attributes>lt=-&gt;
+m2=1</panel_attributes><additional_attributes>20;20;100;20</additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>870</x><y>390</y><w>100</w><h>30</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000099
+Document</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>590</x><y>370</y><w>200</w><h>60</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000000
+InstantiatedDocument
+--
++documentNumber:int
+--</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>520</x><y>190</y><w>170</w><h>200</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..*
+&lt;&lt;ordered&gt;&gt;</panel_attributes><additional_attributes>150;180;20;20</additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>290</x><y>190</y><w>140</w><h>220</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..*
+&lt;&lt;ordered&gt;&gt;</panel_attributes><additional_attributes>20;200;120;20</additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>380</x><y>180</y><w>200</w><h>30</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000000
+InstantiatedIndex</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>160</x><y>380</y><w>110</w><h>40</h></coordinates><panel_attributes>lt=-&gt;
+m2=1</panel_attributes><additional_attributes>90;20;20;20</additional_attributes></element><element><type>com.umlet.element.base.Class</type><coordinates><x>250</x><y>390</y><w>160</w><h>30</h></coordinates><panel_attributes>bg=#eeeeee
+fg=#000000
+InstantiatedTerm
+</panel_attributes><additional_attributes></additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>380</x><y>190</y><w>146</w><h>220</h></coordinates><panel_attributes>lt=&lt;-
+q2=field, term
+m1=0..1</panel_attributes><additional_attributes>20;200;100;20</additional_attributes></element><element><type>com.umlet.element.base.Relation</type><coordinates><x>390</x><y>380</y><w>220</w><h>40</h></coordinates><panel_attributes>lt=-
+q2=field
+m2=0..*
+m1=0..*</panel_attributes><additional_attributes>20;20;200;20</additional_attributes></element></umlet_diagram>
