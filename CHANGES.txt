@@ -31,6 +31,10 @@ Bug fixes
  9. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
     successfully created compound files. (Michael Busch)
 
+Build
+
+ 1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
+	
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
