@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,22 +27,27 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 import junit.framework.TestCase;
 
 public class TestIndexReaderReopen extends TestCase {
     
+  private File indexDir;
+
   public void testReopen() throws Exception {
     final Directory dir1 = new RAMDirectory();
     
@@ -119,6 +125,68 @@ public class TestIndexReaderReopen extends TestCase {
     });
   }
 
+  // LUCENE-1228: IndexWriter.commit() does not update the index version
+  // populate an index in iterations.
+  // at the end of every iteration, commit the index and reopen/recreate the reader.
+  // in each iteration verify the work of previous iteration. 
+  // try this once with reopen once recreate, on both RAMDir and FSDir.
+  public void testCommitReopenFS () throws IOException {
+    Directory dir = FSDirectory.getDirectory(indexDir);
+    doTestReopenWithCommit(dir, true);
+  }
+  public void testCommitRecreateFS () throws IOException {
+    Directory dir = FSDirectory.getDirectory(indexDir);
+    doTestReopenWithCommit(dir, false);
+  }
+  public void testCommitReopenRAM () throws IOException {
+    Directory dir = new RAMDirectory();
+    doTestReopenWithCommit(dir, true);
+  }
+  public void testCommitRecreateRAM () throws IOException {
+    Directory dir = new RAMDirectory();
+    doTestReopenWithCommit(dir, false);
+  }
+
+  private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
+    IndexWriter iwriter = new IndexWriter(dir, new KeywordAnalyzer(), true, MaxFieldLength.LIMITED);
+    iwriter.setMergeScheduler(new SerialMergeScheduler());
+    IndexReader reader = IndexReader.open(dir);
+    try {
+      int M = 3;
+      for (int i=0; i<4; i++) {
+        for (int j=0; j<M; j++) {
+          Document doc = new Document();
+          doc.add(new Field("id", i+"_"+j, Store.YES, Index.UN_TOKENIZED));
+          iwriter.addDocument(doc);
+          if (i>0) {
+            int k = i-1;
+            int n = j + k*M;
+            Document prevItereationDoc = reader.document(n);
+            assertNotNull(prevItereationDoc);
+            String id = prevItereationDoc.get("id");
+            assertEquals(k+"_"+j, id);
+          }
+        }
+        iwriter.commit();
+        if (withReopen) {
+          // reopen
+          IndexReader r2 = reader.reopen();
+          if (reader != r2) {
+            reader.close();
+            reader = r2;
+          }
+        } else {
+          // recreate
+          reader.close();
+          reader = IndexReader.open(dir);
+        }
+      }
+    } finally {
+      iwriter.close();
+      reader.close();
+    }
+  }
+  
   public void testMultiReaderReopen() throws Exception {
     final Directory dir1 = new RAMDirectory();
     createIndex(dir1, true);
@@ -914,6 +982,16 @@ public class TestIndexReaderReopen extends TestCase {
   private abstract static class TestReopen {
     protected abstract IndexReader openReader() throws IOException;
     protected abstract void modifyIndex(int i) throws IOException;
+  }
+
+
+  protected void setUp() throws Exception {
+    // TODO Auto-generated method stub
+    super.setUp();
+    String tempDir = System.getProperty("java.io.tmpdir");
+    if (tempDir == null)
+      throw new IOException("java.io.tmpdir undefined, cannot run test");
+    indexDir = new File(tempDir, "IndexReaderReopen");
   }
   
 }

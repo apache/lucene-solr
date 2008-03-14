@@ -738,6 +738,7 @@ final class SegmentInfos extends Vector {
     assert other.generation > generation;
     lastGeneration = other.lastGeneration;
     generation = other.generation;
+    version = other.version;
   }
 
   /** Writes & syncs to the Directory dir, taking care to

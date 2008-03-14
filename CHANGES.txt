@@ -73,6 +73,9 @@ Bug fixes
 
  5. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
     successfully created compound files. (Michael Busch)
+    
+ 6. LUCENE-1228: IndexWriter.commit() was not updating the index version and as
+    result IndexReader.reopen() failed to sense index changes. (Doron Cohen)
 	
 New features
 
