@@ -57,7 +57,7 @@
   </path>
 
   <patternset id="src.dist.patterns"
-              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,"
+              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*"
               excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/*,contrib/benchmark/work/*"
   />
   <patternset id="binary.build.dist.patterns"
