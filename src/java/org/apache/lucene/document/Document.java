@@ -17,10 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.Searcher;
-
 import java.util.*;             // for javadoc
 
 /** Documents are the unit of indexing and search.
@@ -196,9 +192,10 @@ public final class Document implements java.io.Serializable {
     return fields;
   }
 
+  private final static Field[] NO_FIELDS = new Field[0];
+  
   /**
    * Returns an array of {@link Field}s with the given name.
-   * This method can return <code>null</code>.
    * Do not use with lazy loaded fields.
    *
    * @param name the name of the field
@@ -214,15 +211,16 @@ public final class Document implements java.io.Serializable {
      }
 
      if (result.size() == 0)
-       return null;
+       return NO_FIELDS;
 
      return (Field[])result.toArray(new Field[result.size()]);
    }
 
 
-  /**
+   private final static Fieldable[] NO_FIELDABLES = new Fieldable[0];
+
+   /**
    * Returns an array of {@link Fieldable}s with the given name.
-   * This method can return <code>null</code>.
    *
    * @param name the name of the field
    * @return a <code>Fieldable[]</code> array or <code>null</code>
@@ -237,15 +235,16 @@ public final class Document implements java.io.Serializable {
      }
 
      if (result.size() == 0)
-       return null;
+       return NO_FIELDABLES;
 
      return (Fieldable[])result.toArray(new Fieldable[result.size()]);
    }
 
 
+   private final static String[] NO_STRINGS = new String[0];
+
   /**
    * Returns an array of values of the field specified as the method parameter.
-   * This method can return <code>null</code>.
    *
    * @param name the name of the field
    * @return a <code>String[]</code> of field values or <code>null</code>
@@ -259,15 +258,16 @@ public final class Document implements java.io.Serializable {
     }
     
     if (result.size() == 0)
-      return null;
+      return NO_STRINGS;
     
     return (String[])result.toArray(new String[result.size()]);
   }
 
+  private final static byte[][] NO_BYTES = new byte[0][];
+
   /**
   * Returns an array of byte arrays for of the fields that have the name specified
-  * as the method parameter. This method will return <code>null</code> if no
-  * binary fields with the specified name are available.
+  * as the method parameter.
   *
   * @param name the name of the field
   * @return a  <code>byte[][]</code> of binary field values or <code>null</code>
@@ -281,7 +281,7 @@ public final class Document implements java.io.Serializable {
     }
   
     if (result.size() == 0)
-      return null;
+      return NO_BYTES;
   
     return (byte[][])result.toArray(new byte[result.size()][]);
   }

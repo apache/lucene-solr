@@ -54,6 +54,10 @@ API Changes
     deletes from the index.  This should be a somewhat lower cost
     operation than optimize.  (John Wang via Mike McCandless)
 
+ 6. LUCENE-1233: Return empty array instead of null when no fields
+    match the specified name in these methods in Document:
+    getFieldables, getFields, getValues, getBinaryValues.  (Stefan
+    Trcek vai Mike McCandless)
 
 Bug fixes
     
