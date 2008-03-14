@@ -25,7 +25,7 @@
 
   <target name="get-je-jar" unless="je.jar.exists">
     <mkdir dir="lib" />
-    <get src="http://downloads.sleepycat.com/je-${je.version}.zip"
+    <get src="http://download.oracle.com/berkeley-db/je-${je.version}.zip"
          dest="lib/je-${je.version}.zip" />
     <unzip src="lib/je-${je.version}.zip" dest="lib">
       <patternset>
