@@ -17,6 +17,22 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
@@ -28,6 +44,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.analysis.TokenFilterFactory;
+import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
@@ -44,13 +63,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -259,12 +271,11 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
     return finfo;
   }
-
+  
   @SuppressWarnings("unchecked")
   private static SimpleOrderedMap<Object> getIndexedFieldsInfo( 
     final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms ) 
-    throws Exception
-  { 
+    throws Exception {
     Query matchAllDocs = new MatchAllDocsQuery();
     SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
@@ -290,6 +301,9 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
+      if (schema.getDynamicPattern(sfield.getName()) != null) {
+    	  f.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
+      }
 
       // If numTerms==0, the call is just asking for a quick field list
       if( ttinfo != null && sfield != null && sfield.indexed() ) {
@@ -337,12 +351,68 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Return info from the index
    */
-  private static SimpleOrderedMap<Object> getSchemaInfo( IndexSchema schema ) 
-  { 
+  private static SimpleOrderedMap<Object> getSchemaInfo( IndexSchema schema ) {
     Map<String, List<String>> typeusemap = new HashMap<String, List<String>>();
     SimpleOrderedMap<Object> fields = new SimpleOrderedMap<Object>();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for( SchemaField f : schema.getFields().values() ) {
+      populateFieldInfo(schema, typeusemap, fields, uniqueField, f);
+    }
+    
+    SimpleOrderedMap<Object> dynamicFields = new SimpleOrderedMap<Object>();
+    for (SchemaField f : schema.getDynamicFieldPrototypes()) {
+    	populateFieldInfo(schema, typeusemap, dynamicFields, uniqueField, f);
+    }
+    SimpleOrderedMap<Object> types = new SimpleOrderedMap<Object>();
+    for( FieldType ft : schema.getFieldTypes().values() ) {
+      SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
+      field.add("fields", typeusemap.get( ft.getTypeName() ) );
+      field.add("tokenized", ft.isTokenized() );
+      field.add("className", ft.getClass().getName());
+      field.add("indexAnalyzer", getAnalyzerInfo(ft.getAnalyzer()));
+      field.add("queryAnalyzer", getAnalyzerInfo(ft.getQueryAnalyzer()));
+      types.add( ft.getTypeName(), field );
+    }
+
+    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+    finfo.add("fields", fields);
+    finfo.add("dynamicFields", dynamicFields);
+    finfo.add("uniqueKeyField", uniqueField.getName());
+    finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
+    finfo.add("types", types);
+    return finfo;
+  }
+
+  
+  private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
+	  SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<Object>();
+	  aninfo.add("className", analyzer.getClass().getName());
+	  if (analyzer instanceof TokenizerChain) {
+		   SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<Object>();
+	       TokenizerChain tchain = (TokenizerChain)analyzer;
+	       TokenizerFactory tfac = tchain.getTokenizerFactory();
+	       tokenizer.add("className", tfac.getClass().getName());
+	       tokenizer.add("args", tfac.getArgs());
+	       aninfo.add("tokenizer", tokenizer);
+	       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
+	       
+	       List<Map<String, Object>> filters = new ArrayList<Map<String, Object>>();
+	       for (TokenFilterFactory filtfac : filtfacs) {
+	    	   Map<String, Object> tok = new HashMap<String, Object>();
+	    	   tok.put("className", filtfac.getClass().getName());
+	    	   tok.put("args", filtfac.getArgs());
+	    	   filters.add(tok);
+	       }
+	       if (!filters.isEmpty()) {
+	    	   aninfo.add("filters", filters);
+	       }
+	  }
+	  return aninfo;
+  }
+
+  private static void populateFieldInfo(IndexSchema schema,
+		Map<String, List<String>> typeusemap, SimpleOrderedMap<Object> fields,
+		SchemaField uniqueField, SchemaField f) {
       FieldType ft = f.getType();
       SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
       field.add( "type", ft.getTypeName() );
@@ -356,6 +426,13 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (f == uniqueField){
         field.add("uniqueKey", true);
       }
+      if (ft.getAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
+    	  field.add("positionIncrementGap", ft.getAnalyzer().getPositionIncrementGap(f.getName()));
+      }
+      field.add("copyDests", schema.getCopyFields(f.getName()));
+      field.add("copySources", schema.getCopySources(f.getName()));
+
+      
       fields.add( f.getName(), field );
       
       List<String> v = typeusemap.get( ft.getTypeName() );
@@ -364,29 +441,12 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
       v.add( f.getName() );
       typeusemap.put( ft.getTypeName(), v );
-    }
-
-    SimpleOrderedMap<Object> types = new SimpleOrderedMap<Object>();
-    for( FieldType ft : schema.getFieldTypes().values() ) {
-      SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
-      field.add( "fields", typeusemap.get( ft.getTypeName() ) );
-      field.add( "tokenized", ft.isTokenized() );
-      field.add("className", ft.getClass().getName());
-      field.add( "analyzer", ft.getAnalyzer().getClass().getName());
-      types.add( ft.getTypeName(), field );
-    }
-
-    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
-    finfo.add("fields", fields);
-    finfo.add("uniqueKeyField", uniqueField.getName());
-    finfo.add("types", types);
-    return finfo;
   }
   
-  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException
-  {
+  public static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException {
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();
+    
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     

@@ -829,8 +829,21 @@ public final class IndexSchema {
   }
 
   private DynamicField[] dynamicFields;
+  public SchemaField[] getDynamicFieldPrototypes() {
+	  SchemaField[] df = new SchemaField[dynamicFields.length];
+	  for (int i=0;i<dynamicFields.length;i++) {
+		  df[i] = dynamicFields[i].prototype;
+	  }
+	  return df;
+  }
 
-
+  public String getDynamicPattern(String fieldName) {
+	 for (DynamicField df : dynamicFields) {
+		 if (df.matches(fieldName)) return df.regex;
+	 }
+	 return  null; 
+  }
+  
   /**
    * Does the schema have the specified field defined explicitly, i.e.
    * not as a result of a copyField declaration with a wildcard?  We
@@ -965,6 +978,28 @@ public final class IndexSchema {
   private DynamicCopy[] dynamicCopyFields;
   private final Set<SchemaField> copyFieldTarget = new HashSet<SchemaField>();
 
+
+  /**
+   * Get all copy fields, both the static and the dynamic ones.
+   * @param destField
+   * @return Array of fields copied into this field
+   */
+
+  public SchemaField[] getCopySources(String destField) {
+	  SchemaField f = getField(destField);
+	  if (!isCopyFieldTarget(f)) {
+		  return new SchemaField[0];
+	  }
+	  List<SchemaField> sf = new ArrayList<SchemaField>();
+	  for (Map.Entry<String, SchemaField[]> cfs : copyFields.entrySet()) {
+		  for (SchemaField cf : cfs.getValue()) {
+			  if (cf.getName().equals(destField)) {
+				  sf.add(getField(cfs.getKey()));
+			  }
+		  }
+	  }
+	  return sf.toArray(new SchemaField[1]);
+  }
   /**
    * Get all copy fields, both the static and the dynamic ones.
    * @param sourceField

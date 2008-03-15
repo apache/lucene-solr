@@ -211,6 +211,9 @@ New Features
 41. SOLR-356: Pluggable functions (value sources) that allow 
     registration of new functions via solrconfig.xml
     (Doug Daniels via yonik)
+
+42. SOLR-494: Added cool admin Ajaxed schema explorer.
+    (Greg Ludington via ehatcher)
     
 Changes in runtime behavior
 

@@ -75,7 +75,6 @@ table {
    border-collapse: collapse
 }
 
-
 tr > td:first-child {
    width: 30%;
 }
@@ -138,3 +137,70 @@ table.analysis th, table.analysis td {
 border-right:1px solid black;
 }
 
+/**
+  * styles for the schema browser
+  */
+
+table.topTerms {
+  width: 450px;
+}
+
+table.histogram {
+   vertical-align: bottom;
+}
+
+table.histogram td, table.histogram th {
+   text-align: center;
+   vertical-align: bottom;
+   border-bottom: 1px solid #ff9933;
+   width: auto;
+}
+
+#menu {
+  background-color: #FAF7E4;
+  height:100%;
+  min-height:100%;
+  width:140px;
+  float:left;
+  margin-right:20px
+}
+#menu h3 {
+  padding-left:10px;
+}
+#menu ul {
+  list-style: none;
+  text-align: right;
+  margin: 0;
+  padding: 0
+}
+#menu li.header {
+  text-align: left;
+}
+#menu li {
+  border: 1px solid #ff9933;
+  margin: 0
+}
+#menu li a {
+  display:block;
+}
+#menu li.selected a {
+  background-color: #ccccff
+}
+#menu a:hover {
+  background: #ccccff
+}
+
+#schemaTop {
+  border-bottom:1px black solid;
+}
+
+#content {
+  margin-left: 160px;
+}
+#topTerms {
+  float:left;
+  margin-right:40px;
+}
+div.analyzer {
+  margin-left:20px;
+}
