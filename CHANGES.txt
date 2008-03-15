@@ -59,7 +59,7 @@ API Changes
     getFieldables, getFields, getValues, getBinaryValues.  (Stefan
     Trcek vai Mike McCandless)
 
- 7. LUCENE-1234: Make BoostingSpanScorer protected.  (Andi Vadja via Grant Ingersoll)
+ 7. LUCENE-1234: Make BoostingSpanScorer protected.  (Andi Vajda via Grant Ingersoll)
 
 Bug fixes
     
