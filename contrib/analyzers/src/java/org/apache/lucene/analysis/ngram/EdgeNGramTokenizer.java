@@ -25,8 +25,10 @@ import java.io.Reader;
 
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
- * @author Otis Gospodnetic
- * @author Adam Hiatt
+ *
+ * This tokenizer create n-grams from the beginning edge or ending edge of a input token.
+ * MaxGram can't be larger than 1024 because of limitation.
+ *
  */
 public class EdgeNGramTokenizer extends Tokenizer {
   public static final Side DEFAULT_SIDE = Side.FRONT;

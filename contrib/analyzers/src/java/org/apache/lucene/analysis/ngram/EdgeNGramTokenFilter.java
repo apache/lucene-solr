@@ -26,7 +26,9 @@ import java.util.LinkedList;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
- * @author Otis Gospodnetic
+ *
+ * This filter create n-grams from the beginning edge or ending edge of a input token.
+ * 
  */
 public class EdgeNGramTokenFilter extends TokenFilter {
   public static final Side DEFAULT_SIDE = Side.FRONT;
