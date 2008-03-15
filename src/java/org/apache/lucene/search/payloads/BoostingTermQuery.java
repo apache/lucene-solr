@@ -66,7 +66,7 @@ public class BoostingTermQuery extends SpanTermQuery{
               reader.norms(query.getField()));
     }
 
-    class BoostingSpanScorer extends SpanScorer {
+    protected class BoostingSpanScorer extends SpanScorer {
 
       //TODO: is this the best way to allocate this?
       byte[] payload = new byte[256];
