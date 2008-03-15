@@ -92,8 +92,8 @@
      <equals arg1="1.5" arg2="${ant.java.version}" />
   </condition>
   
-  <property name="clover.db.dir" location="${build.dir}/test/clover/db"/>
-  <property name="clover.report.dir" location="${build.dir}/test/clover/reports"/>
+  <property name="clover.db.dir" location="${common.dir}/build/test/clover/db"/>
+  <property name="clover.report.dir" location="${common.dir}/build/test/clover/reports"/>
 
     <available
             property="clover.present"
@@ -391,13 +391,20 @@
 
      See http://issues.apache.org/jira/browse/LUCENE-721
      -->
-  <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover 1.3.2 license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
 
   <target name="clover.setup" if="clover.enabled">
     <taskdef resource="clovertasks"/>
     <mkdir dir="${clover.db.dir}"/>
     <clover-setup initString="${clover.db.dir}/lucene_coverage.db">
-      <fileset dir="src/java"/>
+      <fileset dir="src/java">
+        <!-- see https://svn.apache.org/repos/private/committers/donated-licenses/clover/1.3.2/README.txt -->
+        <include name="org/apache/**" />
+        <include name="javax/**" />
+        <include name="org/xml/**" />
+        <include name="org/w3c/**" />
+        <include name="com/example/**" />
+      </fileset>
     </clover-setup>
   </target>
 

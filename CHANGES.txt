@@ -161,6 +161,11 @@ Build
   
   2. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
 
+  3. LUCENE-1202: Small fixes to the way Clover is used to work better
+     with contribs.  Of particular note: a single clover db is used
+     regardless of whether tests are run globally or in the specific
+     contrib directories. 
+
 Test Cases
 
 ======================= Release 2.3.1 2008-02-22 =======================
