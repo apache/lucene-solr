@@ -432,6 +432,9 @@
        <current outfile="${clover.report.dir}" title="${final.name}">
           <format type="html"/>
        </current>
+       <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
+          <format type="xml"/>
+       </current>
     </clover-report>
   </target>
 
