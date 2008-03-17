@@ -197,6 +197,8 @@ public final class Document implements java.io.Serializable {
   /**
    * Returns an array of {@link Field}s with the given name.
    * Do not use with lazy loaded fields.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
    *
    * @param name the name of the field
    * @return a <code>Field[]</code> array
@@ -221,9 +223,11 @@ public final class Document implements java.io.Serializable {
 
    /**
    * Returns an array of {@link Fieldable}s with the given name.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
    *
    * @param name the name of the field
-   * @return a <code>Fieldable[]</code> array or <code>null</code>
+   * @return a <code>Fieldable[]</code> array
    */
    public Fieldable[] getFieldables(String name) {
      List result = new ArrayList();
@@ -245,9 +249,10 @@ public final class Document implements java.io.Serializable {
 
   /**
    * Returns an array of values of the field specified as the method parameter.
-   *
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
    * @param name the name of the field
-   * @return a <code>String[]</code> of field values or <code>null</code>
+   * @return a <code>String[]</code> of field values
    */
   public final String[] getValues(String name) {
     List result = new ArrayList();
@@ -267,10 +272,12 @@ public final class Document implements java.io.Serializable {
 
   /**
   * Returns an array of byte arrays for of the fields that have the name specified
-  * as the method parameter.
+  * as the method parameter.  This method returns an empty
+  * array when there are no matching fields.  It never
+  * returns null.
   *
   * @param name the name of the field
-  * @return a  <code>byte[][]</code> of binary field values or <code>null</code>
+  * @return a <code>byte[][]</code> of binary field values
   */
   public final byte[][] getBinaryValues(String name) {
     List result = new ArrayList();
