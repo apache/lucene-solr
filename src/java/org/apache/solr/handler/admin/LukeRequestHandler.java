@@ -396,14 +396,15 @@ public class LukeRequestHandler extends RequestHandlerBase
 	       aninfo.add("tokenizer", tokenizer);
 	       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
 	       
-	       List<Map<String, Object>> filters = new ArrayList<Map<String, Object>>();
-	       for (TokenFilterFactory filtfac : filtfacs) {
+        SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<Map<String, Object>>();
+        for (TokenFilterFactory filtfac : filtfacs) {
 	    	   Map<String, Object> tok = new HashMap<String, Object>();
-	    	   tok.put("className", filtfac.getClass().getName());
+           String className = filtfac.getClass().getName();
+           tok.put("className", className);
 	    	   tok.put("args", filtfac.getArgs());
-	    	   filters.add(tok);
+	    	   filters.add(className.substring(className.lastIndexOf('.')+1), tok);
 	       }
-	       if (!filters.isEmpty()) {
+	       if (filters.size() > 0) {
 	    	   aninfo.add("filters", filters);
 	       }
 	  }
