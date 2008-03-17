@@ -128,8 +128,9 @@ New features
 10. LUCENE-1201: Add IndexReader.getIndexCommit() method. (Tim Brennan
     via Mike McCandless)
 
-11. LUCENE-550:  Added InstantiatedIndex implementation.  Experimental Index store similar to MemoryIndex but allows
-for multiple documents in memory.  (Karl Wettin via Grant Ingersoll)
+11. LUCENE-550:  Added InstantiatedIndex implementation.  Experimental 
+    Index store similar to MemoryIndex but allows for multiple documents 
+    in memory.  (Karl Wettin via Grant Ingersoll)
 
 
 Optimizations
