@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -37,12 +37,12 @@ import java.util.BitSet;
  */
 public class TestTimeLimitedCollector extends LuceneTestCase {
   private static final int SLOW_DOWN = 47;
-  private static final int TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
+  private static final long TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
   
   // max time allowed is relaxed for multithreading tests. 
   // the multithread case fails when setting this to 1 (no slack) and launching many threads (>2000).  
   // but this is not a real failure, just noise.
-  private static final double MULTI_THREAD_SLACK = 3;      
+  private static final double MULTI_THREAD_SLACK = 7;      
             
   private static final int N_DOCS = 3000;
   private static final int N_THREADS = 50;
@@ -60,6 +60,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
    */
   protected void setUp() throws Exception {
     final String docText[] = {
+        "docThatNeverMatchesSoWeCanRequireLastDocCollectedToBeGreaterThanZero",
         "one blah three",
         "one foo three multiOne",
         "one foobar three multiThree",
@@ -69,7 +70,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
         "blueberry pizza",
     };
     Directory directory = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(directory, new StandardAnalyzer(), true, MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(directory, new WhitespaceAnalyzer(), true, MaxFieldLength.UNLIMITED);
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
@@ -81,7 +82,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     for (int i = 0; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+    QueryParser queryParser = new QueryParser(FIELD_NAME, new WhitespaceAnalyzer());
     query = queryParser.parse(qtxt);
     
     // warm the searcher
@@ -119,7 +120,8 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
       totalResults = myHc.hitCount();
       
       myHc = new MyHitCollector();
-      HitCollector tlCollector = new TimeLimitedCollector(myHc, 3600000); // 1 hour
+      long oneHour = 3600000;
+      HitCollector tlCollector = createTimedCollector(myHc, oneHour, false);
       search(tlCollector);
       totalTLCResults = myHc.hitCount();
     } catch (Exception e) {
@@ -128,37 +130,67 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     assertEquals( "Wrong number of results!", totalResults, totalTLCResults );
   }
 
+  private HitCollector createTimedCollector(MyHitCollector hc, long timeAllowed, boolean greedy) {
+    TimeLimitedCollector res = new TimeLimitedCollector(hc, timeAllowed);
+    res.setGreedy(greedy); // set to true to make sure at least one doc is collected.
+    return res;
+  }
+
   /**
    * Test that timeout is obtained, and soon enough!
    */
-  public void testTimeout() {
-    doTestTimeout(false);
+  public void testTimeoutGreedy() {
+    doTestTimeout(false, true);
   }
   
-  private void doTestTimeout(boolean multiThreaded) {
+  /**
+   * Test that timeout is obtained, and soon enough!
+   */
+  public void testTimeoutNotGreedy() {
+    doTestTimeout(false, false);
+  }
+
+  private void doTestTimeout(boolean multiThreaded, boolean greedy) {
+    // setup
     MyHitCollector myHc = new MyHitCollector();
     myHc.setSlowDown(SLOW_DOWN);
-    HitCollector tlCollector = new TimeLimitedCollector(myHc, TIME_ALLOWED);
+    HitCollector tlCollector = createTimedCollector(myHc, TIME_ALLOWED, greedy);
 
-    TimeLimitedCollector.TimeExceededException exception = null;
+    // search
+    TimeLimitedCollector.TimeExceededException timoutException = null;
     try {
       search(tlCollector);
     } catch (TimeLimitedCollector.TimeExceededException x) {
-      exception = x;
+      timoutException = x;
     } catch (Exception e) {
       assertTrue("Unexpected exception: "+e, false); //==fail
     }
-    assertNotNull( "Timeout expected!", exception );
-    assertTrue( "no hits found!", myHc.hitCount() > 0 );
-    assertTrue( "last doc collected cannot be 0!", exception.getLastDocCollected() > 0 );
-    assertEquals( exception.getTimeAllowed(), TIME_ALLOWED);
-    assertTrue ( "elapsed="+exception.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-TimeLimitedCollector.getResolution()),
-        exception.getTimeElapsed() > TIME_ALLOWED-TimeLimitedCollector.getResolution());
-    assertTrue ( "lastDoc="+exception.getLastDocCollected()+
-        " ,&& allowed="+exception.getTimeAllowed() +
-        " ,&& elapsed="+exception.getTimeElapsed() +
+    
+    // must get exception
+    assertNotNull( "Timeout expected!", timoutException );
+
+    // greediness affect last doc collected
+    int exceptionDoc = timoutException.getLastDocCollected();
+    int lastCollected = myHc.getLastDocCollected(); 
+    assertTrue( "doc collected at timeout must be > 0!", exceptionDoc > 0 );
+    if (greedy) {
+      assertTrue("greedy="+greedy+" exceptionDoc="+exceptionDoc+" != lastCollected="+lastCollected, exceptionDoc==lastCollected);
+      assertTrue("greedy, but no hits found!", myHc.hitCount() > 0 );
+    } else {
+      assertTrue("greedy="+greedy+" exceptionDoc="+exceptionDoc+" not > lastCollected="+lastCollected, exceptionDoc>lastCollected);
+    }
+
+    // verify that elapsed time at exception is within valid limits
+    assertEquals( timoutException.getTimeAllowed(), TIME_ALLOWED);
+    // a) Not too early
+    assertTrue ( "elapsed="+timoutException.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-TimeLimitedCollector.getResolution()),
+        timoutException.getTimeElapsed() > TIME_ALLOWED-TimeLimitedCollector.getResolution());
+    // b) Not too late  (this part might be problematic in a busy system, consider removing it if it raises false test failures. 
+    assertTrue ( "lastDoc="+exceptionDoc+
+        " ,&& allowed="+timoutException.getTimeAllowed() +
+        " ,&& elapsed="+timoutException.getTimeElapsed() +
         " >= " + maxTimeStr(multiThreaded),
-        exception.getTimeElapsed() < maxTime(multiThreaded));
+        timoutException.getTimeElapsed() < maxTime(multiThreaded));
   }
 
   private long maxTime(boolean multiThreaded) {
@@ -190,17 +222,17 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
       long resolution = 20 * TimeLimitedCollector.DEFAULT_RESOLUTION; //400
       TimeLimitedCollector.setResolution(resolution);
       assertEquals(resolution, TimeLimitedCollector.getResolution());
-      doTestTimeout(false);
+      doTestTimeout(false,true);
       // decrease much and test
       resolution = 5;
       TimeLimitedCollector.setResolution(resolution);
       assertEquals(resolution, TimeLimitedCollector.getResolution());
-      doTestTimeout(false);
+      doTestTimeout(false,true);
       // return to default and test
       resolution = TimeLimitedCollector.DEFAULT_RESOLUTION;
       TimeLimitedCollector.setResolution(resolution);
       assertEquals(resolution, TimeLimitedCollector.getResolution());
-      doTestTimeout(false);
+      doTestTimeout(false,true);
     } finally {
       TimeLimitedCollector.setResolution(TimeLimitedCollector.DEFAULT_RESOLUTION);
     }
@@ -228,7 +260,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
       threadArray[num] = new Thread() {
           public void run() {
             if (withTimeout) {
-              doTestTimeout(true);
+              doTestTimeout(true,true);
             } else {
               doTestSearch();
             }
@@ -260,6 +292,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
   {
     private final BitSet bits = new BitSet();
     private int slowdown = 0;
+    private int lastDocCollected = -1;
 
     /**
      * amount of time to wait on each collect to simulate a long iteration
@@ -278,10 +311,15 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
         }
       }
       bits.set( doc );
+      lastDocCollected = doc;
     }
     
     public int hitCount() {
       return bits.cardinality();
+    }
+
+    public int getLastDocCollected() {
+      return lastDocCollected;
     }
     
   }

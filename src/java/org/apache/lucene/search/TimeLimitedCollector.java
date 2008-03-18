@@ -31,7 +31,15 @@ public class TimeLimitedCollector extends HitCollector {
    */
   public static final int DEFAULT_RESOLUTION = 20;
 
-  private static long resolution = DEFAULT_RESOLUTION; 
+  /**
+   * Default for {@link #isGreedy()}.
+   * @see #isGreedy()
+   */
+  public boolean DEFAULT_GREEDY = false; 
+
+  private static long resolution = DEFAULT_RESOLUTION;
+  
+  private boolean greedy = DEFAULT_GREEDY ;
 
   private static class TimerThread extends Thread  {
 
@@ -132,6 +140,11 @@ public class TimeLimitedCollector extends HitCollector {
   private final long timeout;
   private final HitCollector hc;
 
+  /**
+   * Create a TimeLimitedCollector wrapper over another HitCollector with a specified timeout.
+   * @param hc the wrapped HitCollector
+   * @param timeAllowed max time allowed for collecting hits after which {@link TimeExceededException} is thrown
+   */
   public TimeLimitedCollector( final HitCollector hc, final long timeAllowed ) {
     this.hc = hc;
     t0 = TIMER_THREAD.getMilliseconds();
@@ -146,6 +159,10 @@ public class TimeLimitedCollector extends HitCollector {
   public void collect( final int doc, final float score ) {
     long time = TIMER_THREAD.getMilliseconds();
     if( timeout < time) {
+      if (greedy) {
+        //System.out.println(this+"  greedy: before failing, collecting doc: "+doc+"  "+(time-t0));
+        hc.collect( doc, score );
+      }
       //System.out.println(this+"  failing on:  "+doc+"  "+(time-t0));
       throw new TimeExceededException( timeout-t0, time-t0, doc );
     }
@@ -177,5 +194,26 @@ public class TimeLimitedCollector extends HitCollector {
    */
   public static void setResolution(long newResolution) {
     resolution = Math.max(newResolution,5); // 5 milliseconds is about the minimum reasonable time for a Object.wait(long) call.
+  }
+
+  /**
+   * Checks if this time limited collector is greedy in collecting the last hit.
+   * A non greedy collector, upon a timeout, would throw a {@link TimeExceededException} 
+   * without allowing the wrapped collector to collect current doc. A greedy one would 
+   * first allow the wrapped hit collector to collect current doc and only then 
+   * throw a {@link TimeExceededException}.
+   * @see #setGreedy(boolean)
+   */
+  public boolean isGreedy() {
+    return greedy;
+  }
+
+  /**
+   * Sets whether this time limited collector is greedy.
+   * @param greedy true to make this time limited greedy
+   * @see #isGreedy()
+   */
+  public void setGreedy(boolean greedy) {
+    this.greedy = greedy;
   }
 }

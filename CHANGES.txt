@@ -171,6 +171,10 @@ Build
 
 Test Cases
 
+ 1. LUCENE-1238: Fixed intermittent failures of TestTimeLimitedCollector.testTimeoutMultiThreaded.
+    Within this fix, "greedy" flag was added to TimeLimitedCollector, to allow the wrapped 
+    collector to collect also the last doc, after allowed-tTime passed. (Doron Cohen)   
+
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
