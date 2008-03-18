@@ -37,6 +37,7 @@
     [<a href="file/?file=<%=core.getSchemaFile()%>">Schema</a>]
     [<a href="file/?file=<%=core.getConfigFile()%>">Config</a>]
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
+    [<a href="schema.jsp">Schema Browser</a>]
     <br>
     [<a href="stats.jsp">Statistics</a>]
     [<a href="registry.jsp">Info</a>]
