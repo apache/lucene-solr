@@ -214,6 +214,8 @@ New Features
 
 42. SOLR-494: Added cool admin Ajaxed schema explorer.
     (Greg Ludington via ehatcher)
+
+43. SOLR-497: Added date faceting to the QueryResponse in SolrJ and QueryResponseTest (Shalin Shekhar Mangar via gsingers)
     
 Changes in runtime behavior
 

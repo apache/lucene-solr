@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class QueryResponse extends SolrResponseBase
   private Map<String,Integer> _facetQuery = null;
   private List<FacetField> _facetFields = null;
   private List<FacetField> _limitingFacets = null;
+  private List<FacetField> _facetDates = null;
   
   // Highlight Info
   private Map<String,Map<String,List<String>>> _highlighting = null;
@@ -143,6 +145,30 @@ public class QueryResponse extends SolrResponseBase
         }
       }
     }
+    
+    //Parse date facets
+    NamedList<NamedList<Object>> df = (NamedList<NamedList<Object>>) info.get("facet_dates");
+    if (df != null) {
+      // System.out.println(df);
+      _facetDates = new ArrayList<FacetField>( df.size() );
+      for (Map.Entry<String, NamedList<Object>> facet : df) {
+        // System.out.println("Key: " + facet.getKey() + " Value: " + facet.getValue());
+        NamedList<Object> values = facet.getValue();
+        String gap = (String) values.get("gap");
+        Date end = (Date) values.get("end");
+        FacetField f = new FacetField(facet.getKey(), gap, end);
+        
+        for (Map.Entry<String, Object> entry : values)   {
+          try {
+            f.add(entry.getKey(), Long.parseLong(entry.getValue().toString()));
+          } catch (NumberFormatException e) {
+            //Ignore for non-number responses which are already handled above
+          }
+        }
+        
+        _facetDates.add(f);
+      }
+    }
   }
 
   //------------------------------------------------------
@@ -186,6 +212,10 @@ public class QueryResponse extends SolrResponseBase
     return _facetFields;
   }
   
+  public List<FacetField> getFacetDates()   {
+    return _facetDates;
+  }
+  
   /** get 
    * 
    * @param name the name of the 
@@ -196,6 +226,15 @@ public class QueryResponse extends SolrResponseBase
     for (FacetField f : _facetFields) {
       if (f.getName().equals(name)) return f;
     }
+    return null;
+  }
+  
+  public FacetField getFacetDate(String name)   {
+    if (_facetDates == null)
+      return null;
+    for (FacetField f : _facetDates)
+      if (f.getName().equals(name))
+        return f;
     return null;
   }
   
