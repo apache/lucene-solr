@@ -18,9 +18,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -37,7 +38,7 @@ import org.apache.lucene.index.TermDocs;
  */
 public class TermsFilter extends Filter
 {
-	ArrayList termsList=new ArrayList();
+	Set terms=new TreeSet();
 	
 	/**
 	 * Adds a term to the list of acceptable terms   
@@ -45,7 +46,7 @@ public class TermsFilter extends Filter
 	 */
 	public void addTerm(Term term)
 	{
-		termsList.add(term);
+		terms.add(term);
 	}
 
 	/* (non-Javadoc)
@@ -54,16 +55,24 @@ public class TermsFilter extends Filter
 	public BitSet bits(IndexReader reader) throws IOException
 	{
 		BitSet result=new BitSet(reader.maxDoc());
-		for (Iterator iter = termsList.iterator(); iter.hasNext();)
-		{
-			Term term = (Term) iter.next();
-			TermDocs td=reader.termDocs(term);
-	        while (td.next())
-	        {
-	            result.set(td.doc());
-	        }						
-		}
-		return result;
+        TermDocs td = reader.termDocs();
+        try
+        {
+            for (Iterator iter = terms.iterator(); iter.hasNext();)
+            {
+                Term term = (Term) iter.next();
+                td.seek(term);
+                while (td.next())
+                {
+                    result.set(td.doc());
+                }
+            }
+        }
+        finally
+        {
+            td.close();
+        }
+        return result;
 	}
 	
 	public boolean equals(Object obj)
@@ -73,14 +82,14 @@ public class TermsFilter extends Filter
 		if((obj == null) || (obj.getClass() != this.getClass()))
 				return false;
 		TermsFilter test = (TermsFilter)obj;
-		return (termsList == test.termsList|| 
-					 (termsList!= null && termsList.equals(test.termsList)));
+		return (terms == test.terms ||
+					 (terms != null && terms.equals(test.terms)));
 	}
 
 	public int hashCode()
 	{
 		int hash=9;
-		for (Iterator iter = termsList.iterator(); iter.hasNext();)
+		for (Iterator iter = terms.iterator(); iter.hasNext();)
 		{
 			Term term = (Term) iter.next();
 			hash = 31 * hash + term.hashCode();			
