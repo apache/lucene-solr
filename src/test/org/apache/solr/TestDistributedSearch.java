@@ -20,6 +20,7 @@ package org.apache.solr;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -65,6 +66,9 @@ public class TestDistributedSearch extends TestCase {
   String id="id";
   String t1="a_t";
   String i1="a_i";
+  String oddField="oddField_s";
+  String missingField="missing_but_valid_field_t";
+  String invalidField="invalid_field_not_in_schema";
 
 
   @Override public void setUp() throws Exception
@@ -434,6 +438,7 @@ public class TestDistributedSearch extends TestCase {
     index(id,10, i1, 4321 ,t1,"this too shal pass");
     index(id,11, i1, -987 ,t1,"An eye for eye only ends up making the whole world blind.");
     index(id,12, i1, 379 ,t1,"Great works are performed, not by strength, but by perseverance.");
+    index(id,13, i1, 232 ,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
 
     commit();
 
@@ -476,9 +481,20 @@ public class TestDistributedSearch extends TestCase {
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
     query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field","missing_field_t","facet.mincount",2);
+    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2);
 
+    // test field that is valid in schema but missing in all shards
+    query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
+    // test field that is valid in schema and missing in some shards
+    query("q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2);
+
+    try {
+      // test error produced for field that is invalid for schema
+      query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
+      fail("SolrServerException expected for invalid field that is not in schema");
+    } catch (SolrServerException ex) {
+      // expected
+    }
 
     // index the same document to two servers and make sure things
     // don't blow up.

@@ -40,10 +40,7 @@ import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.QueryResponseWriter;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.*;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 
@@ -285,12 +282,19 @@ public class SolrDispatchFilter implements Filter
                   // Now write it out
                   QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
                   response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
-                        if (Method.HEAD != Method.getMethod(req.getMethod())) {
-                  PrintWriter out = response.getWriter();
-                  responseWriter.write(out, solrReq, solrRsp);
+                  if (Method.HEAD != Method.getMethod(req.getMethod())) {
+                    if (responseWriter instanceof BinaryQueryResponseWriter) {
+                      BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+                      binWriter.write(response.getOutputStream(), solrReq, solrRsp);
+                    } else {
+                      PrintWriter out = response.getWriter();
+                      responseWriter.write(out, solrReq, solrRsp);
+
+                    }
+
+                  }
+                  //else http HEAD request, nothing to write out, waited this long just to get ContentType
                 }
-                //else http HEAD request, nothing to write out, waited this long just to get ContentType
-              }
             }
             return; // we are done with a valid handler
           }
