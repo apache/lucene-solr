@@ -477,6 +477,7 @@ public class TestDistributedSearch extends TestCase {
     query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.mincount",2);
+    query("q","*:*", "rows",100, "facet","true", "facet.field","missing_field_t","facet.mincount",2);
 
 
     // index the same document to two servers and make sure things

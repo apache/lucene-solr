@@ -233,7 +233,7 @@ public class FacetComponent extends SearchComponent
     for (DistribFieldFacet dff : fi.topFacets.values()) {
       ShardFacetCount[] counts = dff.getSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
-      long smallestCount = counts[ntop-1].count;
+      long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
 
       for (int i=0; i<counts.length; i++) {
         ShardFacetCount sfc = counts[i];
