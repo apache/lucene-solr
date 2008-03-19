@@ -29,9 +29,10 @@ Upgrading from Solr 1.2
 Solr now recognizes HTTP Request headers related to HTTP Caching (see
 RFC 2616 sec13) and will by default respond with "304 Not Modified"
 when appropriate.  This should only affect users who access Solr via
-an HTTP Cache, but if you wish to supress this behavior an
-'<httpCaching never304="true" />' can be added to your solrconfig.xml.
-See the wiki (or the example solrconfig.xml) for more details... 
+an HTTP Cache, or via a Web-browser that has an internal cache, but if
+you wish to supress this behavior an '<httpCaching never304="true"/>'
+option can be added to your solrconfig.xml.  See the wiki (or the
+example solrconfig.xml) for more details...  
    http://wiki.apache.org/solr/SolrConfigXml#HTTPCaching
 
 
