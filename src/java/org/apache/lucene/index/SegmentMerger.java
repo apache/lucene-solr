@@ -338,6 +338,9 @@ final class SegmentMerger {
         fieldsWriter.close();
       }
 
+      assert docCount*8 == directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) :
+        "after mergeFields: fdx size mismatch: " + docCount + " docs vs " + directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) + " length in bytes of " + segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
+
     } else
       // If we are skipping the doc stores, that means there
       // are no deletions in any of these segments, so we
@@ -402,6 +405,9 @@ final class SegmentMerger {
     } finally {
       termVectorsWriter.close();
     }
+
+    assert 4+mergedDocs*16 == directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION) :
+      "after mergeVectors: tvx size mismatch: " + mergedDocs + " docs vs " + directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION) + " length in bytes of " + segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION;
   }
 
   private IndexOutput freqOutput = null;
