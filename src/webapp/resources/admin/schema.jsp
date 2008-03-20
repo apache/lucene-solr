@@ -125,13 +125,17 @@
             //Attach this field to its dynamicField
             var base = field.dynamicBase;
             var dynField = solr.schemaDynamicFields[base];
-            var synFields = dynField['fields'];
-            
-            if (synFields== undefined) {
-              synFields= new Array();
+
+            //Some fields in a multicore setting have no dynamic base, either
+            // the name of the core is a field that has no type or flags
+            if (dynField != undefined) {
+            	var synFields = dynField['fields'];
+	            if (synFields== undefined) {
+    	          synFields= new Array();
+        	    }
+            	synFields.push(i);
+            	dynField['fields'] = synFields;
             }
-            synFields.push(i);
-            dynField['fields'] = synFields;
             solr.schemaFields[i] = item;
           }
           //Populate other data in this field that would not have been loaded in
@@ -326,6 +330,8 @@
       var ft;
       var ftName;
       $('#mainInfo').html('');  
+      $('#topTerms').html('');
+      $('#histogram').html('');
       $('#mainInfo').append(solr.createSimpleText('Field: ' + fieldName));
       
       //For regular fields, we take their properties; for dynamicFields,
@@ -377,7 +383,7 @@
       if (field.topTerms != undefined) {
         solr.displayTopTerms(field.topTerms, fieldName);
       }
-      $('#histogram').html('');
+
       if (field.histogram != undefined) {
         solr.drawHistogram(field.histogram);
       }
