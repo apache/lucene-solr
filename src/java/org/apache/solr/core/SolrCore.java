@@ -49,6 +49,7 @@ import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.MoreLikeThisComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
@@ -305,7 +306,10 @@ public final class SolrCore {
   private UpdateHandler createUpdateHandler(String className) {
     return createInstance(className, UpdateHandler.class, "Update Handler");
   }
-
+  
+  private SolrHighlighter createHighlighter(String className) {
+	return createInstance(className, SolrHighlighter.class, "Highlighter");
+  }
   
   /** 
    * @return the last core initialized.  If you are using multiple cores, 
@@ -379,8 +383,9 @@ public final class SolrCore {
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig( solrConfig );
   
-      // TODO? could select the highlighter implementation
-      highlighter = new SolrHighlighter();
+      highlighter = createHighlighter(
+    		  solrConfig.get("highlighting/@class", DefaultSolrHighlighter.class.getName())
+      );
       highlighter.initalize( solrConfig );
       
       try {

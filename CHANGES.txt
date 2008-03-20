@@ -557,6 +557,11 @@ New Features
 35. SOLR-249: Deprecated SolrException( int, ... ) constructors in favor 
     of constructors that takes an ErrorCode enum.  This will ensure that
     all SolrExceptions use a valid HTTP status code. (ryan)
+    
+36. SOLR-386: Abstracted SolrHighlighter and moved existing implementation
+    to DefaultSolrHighlighter.  Adjusted SolrCore and solrconfig.xml so 
+    that highlighter is configurable via a class attribute.  Allows users 
+    to use their own highlighter implementation. (Tricia Williams via klaas) 
         
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
