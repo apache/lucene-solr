@@ -20,16 +20,21 @@ package org.apache.solr.handler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.commons.csv.CSVStrategy;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 
+import javax.xml.stream.XMLStreamReader;
 import java.util.regex.Pattern;
 import java.util.List;
 import java.io.*;
@@ -41,28 +46,41 @@ import java.io.*;
 public class CSVRequestHandler extends RequestHandlerBase {
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    CSVLoader loader = new SingleThreadedCSVLoader(req);
+    SolrParams params = req.getParams();
+    UpdateRequestProcessorFactory processorFactory =
+            req.getCore().getUpdateProcessorFactory( params.get( UpdateParams.UPDATE_PROCESSOR ) );
 
-    Iterable<ContentStream> streams = req.getContentStreams();
-    if (streams == null) {
-      if(!RequestHandlerUtils.handleCommit(req, rsp, false)) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
+    UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+
+    try {
+      CSVLoader loader = new SingleThreadedCSVLoader(req, processor);
+
+
+      Iterable<ContentStream> streams = req.getContentStreams();
+      if( streams == null ) {
+        if( !RequestHandlerUtils.handleCommit(processor, params, false) ) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
+        }
       }
-      return;
-    }
+      else {
 
-    for(ContentStream stream : streams) {
-      Reader reader = stream.getReader();
-      try {
-        loader.errHeader = "CSVLoader: input=" + stream.getSourceInfo(); 
-        loader.load(reader);
-      } finally {
-        IOUtils.closeQuietly(reader);
+        for(ContentStream stream : streams) {
+          Reader reader = stream.getReader();
+          try {
+            loader.errHeader = "CSVLoader: input=" + stream.getSourceInfo();
+            loader.load(reader);
+          } finally {
+            IOUtils.closeQuietly(reader);
+          }
+        }
+
+        // Perhaps commit from the parameters
+        RequestHandlerUtils.handleCommit( processor, params, false );
       }
+    } finally {
+      // finish the request
+      processor.finish();
     }
-
-    // perhaps commit when we are done
-    RequestHandlerUtils.handleCommit(req, rsp, false);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -107,8 +125,9 @@ abstract class CSVLoader {
 
   final IndexSchema schema;
   final SolrParams params;
-  final UpdateHandler handler;
   final CSVStrategy strategy;
+  final UpdateRequestProcessor processor;
+
 
   String[] fieldnames;
   SchemaField[] fields;
@@ -126,17 +145,17 @@ abstract class CSVLoader {
    * MT-safe!
    */
   private class FieldAdder {
-    void add(DocumentBuilder builder, int line, int column, String val) {
+    void add(SolrInputDocument doc, int line, int column, String val) {
       if (val.length() > 0) {
-        builder.addField(fields[column].getName(),val,1.0f);
+        doc.addField(fields[column].getName(),val,1.0f);
       }
     }
   }
 
   /** add zero length fields */
   private class FieldAdderEmpty extends CSVLoader.FieldAdder {
-    void add(DocumentBuilder builder, int line, int column, String val) {
-      builder.addField(fields[column].getName(),val,1.0f);
+    void add(SolrInputDocument doc, int line, int column, String val) {
+      doc.addField(fields[column].getName(),val,1.0f);
     }
   }
 
@@ -144,8 +163,8 @@ abstract class CSVLoader {
   private class FieldTrimmer extends CSVLoader.FieldAdder {
     private final CSVLoader.FieldAdder base;
     FieldTrimmer(CSVLoader.FieldAdder base) { this.base=base; }
-    void add(DocumentBuilder builder, int line, int column, String val) {
-      base.add(builder, line, column, val.trim());
+    void add(SolrInputDocument doc, int line, int column, String val) {
+      base.add(doc, line, column, val.trim());
     }
   }
 
@@ -162,9 +181,9 @@ abstract class CSVLoader {
      this.to=to;
      this.base=base;
    }
-    void add(DocumentBuilder builder, int line, int column, String val) {
+    void add(SolrInputDocument doc, int line, int column, String val) {
       if (from.equals(val)) val=to;
-      base.add(builder,line,column,val);
+      base.add(doc,line,column,val);
     }
  }
 
@@ -179,14 +198,14 @@ abstract class CSVLoader {
       this.base = base;
     }
 
-    void add(DocumentBuilder builder, int line, int column, String val) {
+    void add(SolrInputDocument doc, int line, int column, String val) {
       CSVParser parser = new CSVParser(new StringReader(val), strategy);
       try {
         String[] vals = parser.getLine();
         if (vals!=null) {
-          for (String v: vals) base.add(builder,line,column,v);
+          for (String v: vals) base.add(doc,line,column,v);
         } else {
-          base.add(builder,line,column,val);
+          base.add(doc,line,column,val);
         }
       } catch (IOException e) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,e);
@@ -197,9 +216,9 @@ abstract class CSVLoader {
 
   String errHeader="CSVLoader:";
 
-  CSVLoader(SolrQueryRequest req) {
+  CSVLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
+    this.processor = processor;
     this.params = req.getParams();
-    handler = req.getCore().getUpdateHandler();
     schema = req.getSchema();
 
     templateAdd = new AddUpdateCommand();
@@ -382,35 +401,31 @@ abstract class CSVLoader {
   abstract void addDoc(int line, String[] vals) throws IOException;
 
   /** this must be MT safe... may be called concurrently from multiple threads. */
-  void doAdd(int line, String[] vals, DocumentBuilder builder, AddUpdateCommand template) throws IOException {
+  void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
     // the line number is passed simply for error reporting in MT mode.
     // first, create the lucene document
-    builder.startDoc();
     for (int i=0; i<vals.length; i++) {
       if (fields[i]==null) continue;  // ignore this field
       String val = vals[i];
-      adders[i].add(builder, line, i, val);
+      adders[i].add(doc, line, i, val);
     }
-    builder.endDoc();
 
-    template.doc = builder.getDoc();
-    handler.addDoc(template);
+    template.solrDoc = doc;
+    processor.processAdd(template);
   }
 
 }
 
 
 class SingleThreadedCSVLoader extends CSVLoader {
-  protected DocumentBuilder builder;
-
-  SingleThreadedCSVLoader(SolrQueryRequest req) {
-    super(req);
-    builder = new DocumentBuilder(schema);
+  SingleThreadedCSVLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
+    super(req, processor);
   }
 
   void addDoc(int line, String[] vals) throws IOException {
     templateAdd.indexedId = null;
-    doAdd(line, vals, builder, templateAdd);
+    SolrInputDocument doc = new SolrInputDocument();
+    doAdd(line, vals, doc, templateAdd);
   }
 }
 
