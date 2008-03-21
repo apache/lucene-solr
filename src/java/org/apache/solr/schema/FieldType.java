@@ -73,7 +73,7 @@ public abstract class FieldType extends FieldProperties {
   protected String getArg(String n, Map<String,String> args) {
     String s = args.remove(n);
     if (s == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Mising parameter '"+n+"' for FieldType=" + typeName +args);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing parameter '"+n+"' for FieldType=" + typeName +args);
     }
     return s;
   }
