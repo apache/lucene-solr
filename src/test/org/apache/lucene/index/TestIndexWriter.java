@@ -2257,6 +2257,7 @@ public class TestIndexWriter extends LuceneTestCase
     AlreadyClosedException ace;
     IndexWriter writer;
     boolean noErrors;
+    volatile int addCount;
 
     public IndexerThread(IndexWriter writer, boolean noErrors) {
       this.writer = writer;
@@ -2275,6 +2276,7 @@ public class TestIndexWriter extends LuceneTestCase
       while(System.currentTimeMillis() < stopTime) {
         try {
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
+          addCount++;
         } catch (IOException ioe) {
           //ioe.printStackTrace(System.out);
           if (ioe.getMessage().startsWith("fake disk full at") ||
@@ -2332,10 +2334,19 @@ public class TestIndexWriter extends LuceneTestCase
       for(int i=0;i<NUM_THREADS;i++)
         threads[i].start();
 
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
+      boolean done = false;
+      while(!done) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+        for(int i=0;i<NUM_THREADS;i++)
+          // only stop when at least one thread has added a doc
+          if (threads[i].addCount > 0) {
+            done = true;
+            break;
+          }
       }
 
       writer.close(false);
