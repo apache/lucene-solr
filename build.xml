@@ -371,7 +371,7 @@
     
     <!-- jetty -->
     <fileset dir="example/lib">
-      <include name="*.jar" />
+      <include name="**/*.jar" />
     </fileset>
   </path>
     
@@ -618,7 +618,7 @@
           depends="compile, make-manifest, dist-jar">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
-         webxml="${src}/webapp/WEB-INF/web.xml"
+         webxml="${src}/webapp/web/WEB-INF/web.xml"
          filesetmanifest="skip"
          manifest="${dest}/META-INF/MANIFEST.MF">
        <lib dir="${lib}">
@@ -630,7 +630,7 @@
          <include name="${fullname}-common-${version}.jar" />
        </lib>
        <lib dir="client/java/solrj/lib"/>
-       <fileset dir="${src}/webapp/resources" />
+       <fileset dir="${src}/webapp/web" />
        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
     </war>
   </target>
