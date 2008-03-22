@@ -266,25 +266,23 @@
          and there is a current searcher handling requests (aka registered). -->
     <!-- QuerySenderListener takes an array of NamedList and executes a
          local query request for each NamedList in sequence. -->
-    <!--
     <listener event="newSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
         <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>
         <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst><str name="q">static newSearcher warming query from solrconfig.xml</str></lst>
       </arr>
     </listener>
-    -->
 
     <!-- a firstSearcher event is fired whenever a new searcher is being
          prepared but there is no current registered searcher to handle
          requests or to gain autowarming data from. -->
-    <!--
     <listener event="firstSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
         <lst> <str name="q">fast_warm</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst><str name="q">static firstSearcher warming query from solrconfig.xml</str></lst>
       </arr>
     </listener>
-    -->
 
     <!-- If a search request comes in and there is no current registered searcher,
          then immediately register the still warming searcher and use it.  If
