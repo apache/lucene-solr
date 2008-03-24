@@ -304,7 +304,7 @@ public class SolrDispatchFilter implements Filter
             req.setAttribute("org.apache.solr.SolrCore", core);
               // Modify the request so each core gets its own /admin
             if( singlecore == null && path.startsWith( "/admin" ) ) {
-              req.getRequestDispatcher( path ).forward( request, response );
+              req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
               return; 
             }
           }
