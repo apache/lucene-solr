@@ -246,7 +246,7 @@ public class MultiCore
    * While the new core is loading, requests will continue to be dispatched to
    * and processed by the old core
    * 
-   * @param core the SolrCore to reload
+   * @param dcore the SolrCore to reload
    * @throws ParserConfigurationException
    * @throws IOException
    * @throws SAXException
