@@ -300,14 +300,19 @@ final class SegmentMerger {
           final IndexReader reader = (IndexReader) readers.elementAt(i);
           final SegmentReader matchingSegmentReader = matchingSegmentReaders[i];
           final FieldsReader matchingFieldsReader;
-          if (matchingSegmentReader != null)
+          final boolean hasMatchingReader;
+          if (matchingSegmentReader != null) {
+            hasMatchingReader = true;
             matchingFieldsReader = matchingSegmentReader.getFieldsReader();
-          else
+          } else {
+            hasMatchingReader = false;
             matchingFieldsReader = null;
+          }
           final int maxDoc = reader.maxDoc();
+          final boolean hasDeletions = reader.hasDeletions();
           for (int j = 0; j < maxDoc;) {
-            if (!reader.isDeleted(j)) { // skip deleted docs
-              if (matchingSegmentReader != null) {
+            if (!hasDeletions || !reader.isDeleted(j)) { // skip deleted docs
+              if (hasMatchingReader) {
                 // We can optimize this case (doing a bulk
                 // byte copy) since the field numbers are
                 // identical
@@ -316,7 +321,13 @@ final class SegmentMerger {
                 do {
                   j++;
                   numDocs++;
-                } while(j < maxDoc && !matchingSegmentReader.isDeleted(j) && numDocs < MAX_RAW_MERGE_DOCS);
+                  if (j >= maxDoc)
+                    break;
+                  if (hasDeletions && matchingSegmentReader.isDeleted(j)) {
+                    j++;
+                    break;
+                  }
+                } while(numDocs < MAX_RAW_MERGE_DOCS);
 
                 IndexInput stream = matchingFieldsReader.rawDocs(rawDocLengths, start, numDocs);
                 fieldsWriter.addRawDocuments(stream, rawDocLengths, numDocs);
@@ -363,21 +374,29 @@ final class SegmentMerger {
       for (int r = 0; r < readers.size(); r++) {
         final SegmentReader matchingSegmentReader = matchingSegmentReaders[r];
         TermVectorsReader matchingVectorsReader;
+        final boolean hasMatchingReader;
         if (matchingSegmentReader != null) {
           matchingVectorsReader = matchingSegmentReader.termVectorsReaderOrig;
 
           // If the TV* files are an older format then they
           // cannot read raw docs:
-          if (matchingVectorsReader != null && !matchingVectorsReader.canReadRawDocs())
+          if (matchingVectorsReader != null && !matchingVectorsReader.canReadRawDocs()) {
             matchingVectorsReader = null;
-        } else
+            hasMatchingReader = false;
+          } else
+            hasMatchingReader = matchingVectorsReader != null;
+
+        } else {
+          hasMatchingReader = false;
           matchingVectorsReader = null;
+        }
         IndexReader reader = (IndexReader) readers.elementAt(r);
+        final boolean hasDeletions = reader.hasDeletions();
         int maxDoc = reader.maxDoc();
         for (int docNum = 0; docNum < maxDoc;) {
           // skip deleted docs
-          if (!reader.isDeleted(docNum)) {
-            if (matchingVectorsReader != null) {
+          if (!hasDeletions || !reader.isDeleted(docNum)) {
+            if (hasMatchingReader) {
               // We can optimize this case (doing a bulk
               // byte copy) since the field numbers are
               // identical
@@ -386,7 +405,13 @@ final class SegmentMerger {
               do {
                 docNum++;
                 numDocs++;
-              } while(docNum < maxDoc && !matchingSegmentReader.isDeleted(docNum) && numDocs < MAX_RAW_MERGE_DOCS);
+                if (docNum >= maxDoc)
+                  break;
+                if (hasDeletions && matchingSegmentReader.isDeleted(docNum)) {
+                  docNum++;
+                  break;
+                }
+              } while(numDocs < MAX_RAW_MERGE_DOCS);
 
               matchingVectorsReader.rawDocs(rawDocLengths, rawDocLengths2, start, numDocs);
               termVectorsWriter.addRawDocuments(matchingVectorsReader, rawDocLengths, rawDocLengths2, numDocs);

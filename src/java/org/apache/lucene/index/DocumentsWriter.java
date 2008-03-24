@@ -271,7 +271,7 @@ final class DocumentsWriter {
     List flushedFiles = files();
 
     if (infoStream != null)
-      infoStream.println("\ncloseDocStore: " + flushedFiles.size() + " files to flush to segment " + docStoreSegment + " numDocs=" + numDocsInStore);
+      message("closeDocStore: " + flushedFiles.size() + " files to flush to segment " + docStoreSegment + " numDocs=" + numDocsInStore);
 
     if (flushedFiles.size() > 0) {
       files = null;
@@ -310,6 +310,10 @@ final class DocumentsWriter {
 
   List abortedFiles() {
     return abortedFiles;
+  }
+
+  void message(String message) {
+    writer.message("DW: " + message);
   }
 
   /* Returns list of files in use by this instance,
@@ -360,7 +364,7 @@ final class DocumentsWriter {
     try {
 
       if (infoStream != null)
-        infoStream.println("docWriter: now abort");
+        message("docWriter: now abort");
 
       // Forcefully remove waiting ThreadStates from line
       for(int i=0;i<numWaiting;i++)
@@ -539,7 +543,7 @@ final class DocumentsWriter {
     assert numDocsInRAM > 0;
 
     if (infoStream != null)
-      infoStream.println("\nflush postings as segment " + segment + " numDocs=" + numDocsInRAM);
+      message("flush postings as segment " + segment + " numDocs=" + numDocsInRAM);
     
     boolean success = false;
 
@@ -721,7 +725,7 @@ final class DocumentsWriter {
     if (infoStream != null) {
       final long newSegmentSize = segmentSize(segmentName);
       String message = "  oldRAMSize=" + numBytesUsed + " newFlushedSize=" + newSegmentSize + " docs/MB=" + nf.format(numDocsInRAM/(newSegmentSize/1024./1024.)) + " new/old=" + nf.format(100.0*newSegmentSize/numBytesUsed) + "%";
-      infoStream.println(message);
+      message(message);
     }
 
     resetPostingsData();
@@ -1161,10 +1165,10 @@ final class DocumentsWriter {
       return false;
 
     if (infoStream != null)
-      infoStream.println("apply " + deletesFlushed.numTerms + " buffered deleted terms and " +
-                         deletesFlushed.docIDs.size() + " deleted docIDs and " +
-                         deletesFlushed.queries.size() + " deleted queries on " +
-                         + infos.size() + " segments.");
+      message("apply " + deletesFlushed.numTerms + " buffered deleted terms and " +
+              deletesFlushed.docIDs.size() + " deleted docIDs and " +
+              deletesFlushed.queries.size() + " deleted queries on " +
+              + infos.size() + " segments.");
 
     final int infosEnd = infos.size();
 
@@ -1541,13 +1545,13 @@ final class DocumentsWriter {
 
     if (numBytesAlloc > freeTrigger) {
       if (infoStream != null)
-        infoStream.println("  RAM: now balance allocations: usedMB=" + toMB(numBytesUsed) +
-                           " vs trigger=" + toMB(flushTrigger) +
-                           " allocMB=" + toMB(numBytesAlloc) +
-                           " vs trigger=" + toMB(freeTrigger) +
-                           " postingsFree=" + toMB(postingsFreeCount*POSTING_NUM_BYTE) +
-                           " byteBlockFree=" + toMB(freeByteBlocks.size()*BYTE_BLOCK_SIZE) +
-                           " charBlockFree=" + toMB(freeCharBlocks.size()*CHAR_BLOCK_SIZE*CHAR_NUM_BYTE));
+        message("  RAM: now balance allocations: usedMB=" + toMB(numBytesUsed) +
+                " vs trigger=" + toMB(flushTrigger) +
+                " allocMB=" + toMB(numBytesAlloc) +
+                " vs trigger=" + toMB(freeTrigger) +
+                " postingsFree=" + toMB(postingsFreeCount*POSTING_NUM_BYTE) +
+                " byteBlockFree=" + toMB(freeByteBlocks.size()*BYTE_BLOCK_SIZE) +
+                " charBlockFree=" + toMB(freeCharBlocks.size()*CHAR_BLOCK_SIZE*CHAR_NUM_BYTE));
 
       // When we've crossed 100% of our target Postings
       // RAM usage, try to free up until we're back down
@@ -1567,7 +1571,7 @@ final class DocumentsWriter {
           // Nothing else to free -- must flush now.
           bufferIsFull = true;
           if (infoStream != null)
-            infoStream.println("    nothing to free; now set bufferIsFull");
+            message("    nothing to free; now set bufferIsFull");
           break;
         }
 
@@ -1597,7 +1601,7 @@ final class DocumentsWriter {
       }
       
       if (infoStream != null)
-        infoStream.println("    after free: freedMB=" + nf.format((startBytesAlloc-numBytesAlloc)/1024./1024.) + " usedMB=" + nf.format(numBytesUsed/1024./1024.) + " allocMB=" + nf.format(numBytesAlloc/1024./1024.));
+        message("    after free: freedMB=" + nf.format((startBytesAlloc-numBytesAlloc)/1024./1024.) + " usedMB=" + nf.format(numBytesUsed/1024./1024.) + " allocMB=" + nf.format(numBytesAlloc/1024./1024.));
       
     } else {
       // If we have not crossed the 100% mark, but have
@@ -1607,9 +1611,9 @@ final class DocumentsWriter {
       // flush.
       if (numBytesUsed > flushTrigger) {
         if (infoStream != null)
-          infoStream.println("  RAM: now flush @ usedMB=" + nf.format(numBytesUsed/1024./1024.) +
-                             " allocMB=" + nf.format(numBytesAlloc/1024./1024.) +
-                             " triggerMB=" + nf.format(flushTrigger/1024./1024.));
+          message("  RAM: now flush @ usedMB=" + nf.format(numBytesUsed/1024./1024.) +
+                  " allocMB=" + nf.format(numBytesAlloc/1024./1024.) +
+                  " triggerMB=" + nf.format(flushTrigger/1024./1024.));
 
         bufferIsFull = true;
       }

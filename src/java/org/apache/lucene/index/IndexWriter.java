@@ -1509,7 +1509,7 @@ public class IndexWriter {
             " mergePolicy=" + mergePolicy +
             " mergeScheduler=" + mergeScheduler +
             " ramBufferSizeMB=" + docWriter.getRAMBufferSizeMB() +
-            " maxBuffereDocs=" + docWriter.getMaxBufferedDocs() +
+            " maxBufferedDocs=" + docWriter.getMaxBufferedDocs() +
             " maxBuffereDeleteTerms=" + docWriter.getMaxBufferedDeleteTerms() +
             " maxFieldLength=" + maxFieldLength +
             " index=" + segString());
@@ -1585,8 +1585,8 @@ public class IndexWriter {
    * try {
    *   writer.close();
    * } finally {
-   *   if (IndexReader.isLocked(directory)) {
-   *     IndexReader.unlock(directory);
+   *   if (IndexWriter.isLocked(directory)) {
+   *     IndexWriter.unlock(directory);
    *   }
    * }
    * </pre>

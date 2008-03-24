@@ -19,7 +19,9 @@ package org.apache.lucene.index;
 
 /* Used by DocumentsWriter to track postings for a single
  * term.  One of these exists per unique term seen since the
- * last flush. */
+ * last flush.  If you alter this class you must also fix
+ * DocumentWriter.POSTING_NUM_BYTE to reflect the change as
+ * this is how RAM usage is measured. */
 final class Posting {
   int textStart;                                  // Address into char[] blocks where our text is stored
   int docFreq;                                    // # times this term occurs in the current doc
