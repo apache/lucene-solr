@@ -18,6 +18,9 @@ package org.apache.lucene.document;
  */
 
 import java.util.*;             // for javadoc
+import org.apache.lucene.search.Hits; // for javadoc
+import org.apache.lucene.search.Searcher; // for javadoc
+import org.apache.lucene.index.IndexReader; // for javadoc
 
 /** Documents are the unit of indexing and search.
  *

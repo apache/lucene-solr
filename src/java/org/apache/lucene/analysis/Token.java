@@ -18,7 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.TermPositions;     // for javadoc
 
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
@@ -226,8 +226,12 @@ public class Token implements Cloneable {
 
   /** Returns the Token's term text.
    * 
-   * @deprecated Use {@link #termBuffer()} and {@link
-   * #termLength()} instead. */
+   * @deprecated This method now has a performance penalty
+   * because the text is stored internally in a char[].  If
+   * possible, use {@link #termBuffer()} and {@link
+   * #termLength()} directly instead.  If you really need a
+   * String, use <b>new String(token.termBuffer(), 0, token.termLength())</b>
+   */
   public final String termText() {
     if (termText == null && termBuffer != null)
       termText = new String(termBuffer, 0, termLength);

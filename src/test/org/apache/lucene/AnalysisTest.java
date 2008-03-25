@@ -31,15 +31,17 @@ import java.io.InputStreamReader;
 import java.util.Date;
 
 class AnalysisTest {
+  static File tmpFile;
   public static void main(String[] args) {
     try {
       test("This is a test", true);
-      // FIXME: OG: what's with this hard-coded file name??
-      test(new File("words.txt"), false);
+      tmpFile = File.createTempFile("words", ".txt");
+      test(tmpFile, false);
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +
 			 "\n with message: " + e.getMessage());
     }
+    tmpFile.deleteOnExit();
   }
 
   static void test(File file, boolean verbose)
@@ -70,7 +72,7 @@ class AnalysisTest {
     int count = 0;
     for (Token t = stream.next(); t!=null; t = stream.next()) {
       if (verbose) {
-	System.out.println("Text=" + t.termText()
+	System.out.println("Text=" + new String(t.termBuffer(), 0, t.termLength())
 			   + " start=" + t.startOffset()
 			   + " end=" + t.endOffset());
       }
