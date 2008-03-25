@@ -63,6 +63,21 @@ public class MultiCore
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   
   public MultiCore() {
+    
+  }
+
+  /**
+   * Initalize MultiCore directly from the constructor
+   * 
+   * @param dir
+   * @param configFile
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws SAXException
+   */
+  public MultiCore(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException 
+  {
+    this.load(dir, configFile);
   }
   
   //-------------------------------------------------------------------

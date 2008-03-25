@@ -34,8 +34,7 @@ import org.apache.solr.core.MultiCore;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  @SuppressWarnings("deprecation")
-  protected static final MultiCore multicore =  org.apache.solr.core.SolrMultiCore.getInstance();
+  protected static final MultiCore multicore = new MultiCore();
   
   @Override public String getSolrHome() { return "../../../example/multicore/"; }
   

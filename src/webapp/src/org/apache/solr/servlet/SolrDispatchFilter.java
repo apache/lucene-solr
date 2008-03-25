@@ -74,7 +74,7 @@ public class SolrDispatchFilter implements Filter
       this.multicore = initMultiCore(config);
       
       if(multicore != null && multicore.isEnabled() ) {
-      abortOnConfigurationError = false;
+        abortOnConfigurationError = false;
         singlecore = null;
         // if any core aborts on startup, then abort
         for( SolrCore c : multicore.getCores() ) {
@@ -132,24 +132,18 @@ public class SolrDispatchFilter implements Filter
   }
 
   /**
-   * Initializes the multicore instance.
+   * Initialize the multicore instance.
    * @param config the filter configuration
    * @return the multicore instance or null
    * @throws java.lang.Exception
    */
   protected MultiCore initMultiCore(FilterConfig config) throws Exception {
-    @SuppressWarnings("deprecation") // since SolrDispatchFilter can be derived & initMultiCore can be overriden
-    MultiCore mcore = org.apache.solr.core.SolrMultiCore.getInstance();
-    if (mcore.isEnabled()) {
-      log.info("Using existing multicore configuration");
-    } else {
-      // multicore load
-      String instanceDir = SolrResourceLoader.locateInstanceDir();
-      File fconf = new File(instanceDir, "multicore.xml");
-      log.info("looking for multicore.xml: " + fconf.getAbsolutePath());
-      if (fconf.exists()) {
-        mcore.load(instanceDir, fconf);
-      }
+    MultiCore mcore = new MultiCore();
+    String instanceDir = SolrResourceLoader.locateInstanceDir();
+    File fconf = new File(instanceDir, "multicore.xml");
+    log.info("looking for multicore.xml: " + fconf.getAbsolutePath());
+    if (fconf.exists()) {
+      mcore.load(instanceDir, fconf);
     }
     return mcore;
   }
@@ -302,6 +296,7 @@ public class SolrDispatchFilter implements Filter
           // a servlet/jsp can retrieve it
           else {
             req.setAttribute("org.apache.solr.SolrCore", core);
+            req.setAttribute("org.apache.solr.MultiCore", multicore);
               // Modify the request so each core gets its own /admin
             if( singlecore == null && path.startsWith( "/admin" ) ) {
               req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
