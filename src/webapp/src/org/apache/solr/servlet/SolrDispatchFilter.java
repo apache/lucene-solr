@@ -358,8 +358,9 @@ public class SolrDispatchFilter implements Filter
   //---------------------------------------------------------------------
 
   /**
-   * set the prefix for all paths.  This is useful if you want to apply the
-   * filter to something other then *.  
+   * Set the prefix for all paths.  This is useful if you want to apply the
+   * filter to something other then /*, perhaps because you are merging this
+   * filter into a larger web application.
    * 
    * For example, if web.xml specifies:
    * 
@@ -369,7 +370,7 @@ public class SolrDispatchFilter implements Filter
    * </filter-mapping>
    * 
    * Make sure to set the PathPrefix to "/xxx" either with this function
-   * or in web.xml
+   * or in web.xml.
    * 
    * <init-param>
    *  <param-name>path-prefix</param-name>

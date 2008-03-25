@@ -34,14 +34,30 @@
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
-    <!--
+    <!-- If you are wiring Solr into a larger web application which controls
+         the web context root, you will probably want to mount Solr under
+         a path prefix (app.war with /app/solr mounted into it, for example).
+         You will need to put this prefix in front of the SolrDispatchFilter
+         url-pattern mapping too (/solr/*), and also on any paths for
+         legacy Solr servlet mappings you may be using.
     <init-param>
       <param-name>path-prefix</param-name>
       <param-value>/xxx</param-value>
     </init-param>
     -->
   </filter>
+
   <filter-mapping>
+    <!--
+      NOTE: When using multicore, /admin JSP URLs with a core specified
+      such as /solr/coreName/admin/stats.jsp get forwarded by a
+      RequestDispatcher to /solr/admin/stats.jsp with the specified core
+      put into request scope keyed as "org.apache.solr.SolrCore".
+
+      It is unnecessary, and potentially problematic, to have the SolrDispatchFilter
+      configured to also filter on forwards.  Do not configure
+      this dispatcher as <dispatcher>FORWARD</dispatcher>.
+    -->
     <filter-name>SolrRequestFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
