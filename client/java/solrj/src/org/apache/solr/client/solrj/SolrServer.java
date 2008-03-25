@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -34,7 +35,7 @@ import org.apache.solr.common.util.NamedList;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class SolrServer 
+public abstract class SolrServer implements Serializable
 {
   public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
