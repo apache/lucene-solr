@@ -47,16 +47,16 @@ public class UpdateRequest extends SolrRequest
     OPTIMIZE
   };
   
-  private boolean waitFlush = true;
-  private boolean waitSearcher = true;
+
   private boolean allowDups = false;
   private boolean overwriteCommitted = true;
   private boolean overwritePending = true;
-  private ACTION action = null;
   
   private List<SolrInputDocument> documents = null;
   private List<String> deleteById = null;
   private List<String> deleteQuery = null;
+
+  private ModifiableSolrParams params;
   
   public UpdateRequest()
   {
@@ -121,11 +121,31 @@ public class UpdateRequest extends SolrRequest
     return this;
   }
 
+  /** Sets appropriate parameters for the given ACTION */
   public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher ) {
-    this.action = action;
-    this.waitFlush = waitFlush;
-    this.waitSearcher = waitSearcher;
+    if (params == null)
+      params = new ModifiableSolrParams();
+
+    if( action == ACTION.OPTIMIZE ) {
+      params.set( UpdateParams.OPTIMIZE, "true" );
+    }
+    else if( action == ACTION.COMMIT ) {
+      params.set( UpdateParams.COMMIT, "true" );
+    }
+    params.set( UpdateParams.WAIT_FLUSH, waitFlush+"" );
+    params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
     return this;
+  }
+
+  public void setParam(String param, String value) {
+    if (params == null)
+      params = new ModifiableSolrParams();
+    params.set(param, value);
+  }
+
+  /** Sets the parameters for this update request, overwriting any previous */
+  public void setParams(ModifiableSolrParams params) {
+    this.params = params;
   }
 
   //--------------------------------------------------------------------------
@@ -180,24 +200,13 @@ public class UpdateRequest extends SolrRequest
     return (xml.length() > 0) ? xml : null;
   }
 
+
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
   @Override
-  public SolrParams getParams() {
-    if( action != null ) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      if( action == ACTION.OPTIMIZE ) {
-        params.set( UpdateParams.OPTIMIZE, "true" );
-      }
-      else if( action == ACTION.COMMIT ) {
-        params.set( UpdateParams.COMMIT, "true" );
-      }
-      params.set( UpdateParams.WAIT_FLUSH, waitFlush+"" );
-      params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
-      return params;
-    }
-    return null; 
+  public ModifiableSolrParams getParams() {
+    return params;
   }
   
   @Override
@@ -225,15 +234,18 @@ public class UpdateRequest extends SolrRequest
   //--------------------------------------------------------------------------
 
   public boolean isWaitFlush() {
-    return waitFlush;
+    return params != null && params.getBool(UpdateParams.WAIT_FLUSH, false);
   }
 
   public boolean isWaitSearcher() {
-    return waitSearcher;
+    return params != null && params.getBool(UpdateParams.WAIT_SEARCHER, false);
   }
 
   public ACTION getAction() {
-    return action;
+    if (params==null) return null;
+    if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT; 
+    if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
+    return null;
   }
 
   public boolean isAllowDups() {
@@ -275,10 +287,10 @@ public class UpdateRequest extends SolrRequest
   }
 
   public void setWaitFlush(boolean waitFlush) {
-    this.waitFlush = waitFlush;
+    setParam( UpdateParams.WAIT_FLUSH, waitFlush+"" );
   }
 
   public void setWaitSearcher(boolean waitSearcher) {
-    this.waitSearcher = waitSearcher;
+    setParam( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
   }
 }
