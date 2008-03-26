@@ -100,14 +100,15 @@ public final class StopFilter extends TokenFilter {
     
   /**
    * 
-    * @param stopWords
+   * @param stopWords
    * @param ignoreCase If true, all words are lower cased first.  
    * @return a Set containing the words
    */    
   public static final Set makeStopSet(String[] stopWords, boolean ignoreCase) {
     CharArraySet stopSet = new CharArraySet(stopWords.length, ignoreCase);
     stopSet.addAll(Arrays.asList(stopWords));
-    return stopSet;  }
+    return stopSet;
+  }
 
   /**
    * Returns the next input Token whose termText() is not a stop word.
