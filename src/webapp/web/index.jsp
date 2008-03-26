@@ -29,9 +29,9 @@
 
 <% 
   org.apache.solr.core.MultiCore multicore = (org.apache.solr.core.MultiCore)request.getAttribute("org.apache.solr.MultiCore");
-  if( multicore.isEnabled() ) { 
+  if(multicore != null && multicore.isEnabled() ) { 
     for( org.apache.solr.core.SolrCore core : multicore.getCores() ) {%>
-<a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %> </a><br/>
+<a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %></a><br/>
 <% }} else { %>
 <a href="admin/">Solr Admin</a>
 <% } %>

@@ -191,6 +191,8 @@ public class SolrDispatchFilter implements Filter
         // By default use the single core.  If multicore is enabled, look for one.
         final SolrCore core;
         if (multicore != null && multicore.isEnabled()) {
+          req.setAttribute("org.apache.solr.MultiCore", multicore);
+          
           // if this is the multi-core admin page, it will handle it
           if( path.equals( multicore.getAdminPath() ) ) {
             handler = multicore.getMultiCoreHandler();
@@ -296,8 +298,7 @@ public class SolrDispatchFilter implements Filter
           // a servlet/jsp can retrieve it
           else {
             req.setAttribute("org.apache.solr.SolrCore", core);
-            req.setAttribute("org.apache.solr.MultiCore", multicore);
-              // Modify the request so each core gets its own /admin
+            // Modify the request so each core gets its own /admin
             if( singlecore == null && path.startsWith( "/admin" ) ) {
               req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
               return; 
