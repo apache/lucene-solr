@@ -1237,16 +1237,14 @@ document.write("Last Published: " + document.lastModified);
 <h3 class="boxed">Chars</h3>
 <p>
                     Lucene writes unicode
-                    character sequences using Java's
-                    <a href="http://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">"modified
-                        UTF-8 encoding"</a>
-                    .
+                    character sequences as UTF-8 encoded bytes.
                 </p>
-<a name="N10433"></a><a name="String"></a>
+<a name="N1042F"></a><a name="String"></a>
 <h3 class="boxed">String</h3>
 <p>
-                    Lucene writes strings as a VInt representing the length, followed by
-                    the character data.
+		    Lucene writes strings as UTF-8 encoded bytes.
+                    First the length, in bytes, is written as a VInt,
+                    followed by the bytes.
                 </p>
 <p>
                     String --&gt; VInt, Chars
@@ -1254,13 +1252,13 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10440"></a><a name="Per-Index Files"></a>
+<a name="N1043C"></a><a name="Per-Index Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>
                 The files in this section exist one-per-index.
             </p>
-<a name="N10448"></a><a name="Segments File"></a>
+<a name="N10444"></a><a name="Segments File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>
                     The active segments in the index are stored in the
@@ -1421,7 +1419,7 @@ document.write("Last Published: " + document.lastModified);
 		    This is used to verify integrity of the file on
 		    opening the index.
 		</p>
-<a name="N104DC"></a><a name="Lock File"></a>
+<a name="N104D8"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1439,7 +1437,7 @@ document.write("Last Published: " + document.lastModified);
                     Note that prior to version 2.1, Lucene also used a
                     commit lock. This was removed in 2.1.
                 </p>
-<a name="N104E8"></a><a name="Deletable File"></a>
+<a name="N104E4"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     Prior to Lucene 2.1 there was a file "deletable"
@@ -1448,7 +1446,7 @@ document.write("Last Published: " + document.lastModified);
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N104F1"></a><a name="Compound Files"></a>
+<a name="N104ED"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1475,14 +1473,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10519"></a><a name="Per-Segment Files"></a>
+<a name="N10515"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N10521"></a><a name="Fields"></a>
+<a name="N1051D"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1701,7 +1699,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N105DC"></a><a name="Term Dictionary"></a>
+<a name="N105D8"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1764,10 +1762,12 @@ document.write("Last Published: " + document.lastModified);
                             --&gt; VInt
                         </p>
                         
-<p>This
-                            file is sorted by Term. Terms are ordered first lexicographically
-                            by the term's field name, and within that lexicographically by the
-                            term's text.
+<p>
+			    This file is sorted by Term. Terms are
+                            ordered first lexicographically (by UTF16
+                            character code) by the term's field name,
+                            and within that lexicographically (by
+                            UTF16 character code) by the term's text.
                         </p>
                         
 <p>TIVersion names the version of the format
@@ -1887,7 +1887,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1065C"></a><a name="Frequencies"></a>
+<a name="N10658"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2005,7 +2005,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N106DE"></a><a name="Positions"></a>
+<a name="N106DA"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2071,7 +2071,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N1071A"></a><a name="Normalization Factors"></a>
+<a name="N10716"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2175,7 +2175,7 @@ document.write("Last Published: " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10783"></a><a name="Term Vectors"></a>
+<a name="N1077F"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2308,7 +2308,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10819"></a><a name="Deleted Documents"></a>
+<a name="N10815"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2380,7 +2380,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N1085C"></a><a name="Limitations"></a>
+<a name="N10858"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There

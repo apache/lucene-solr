@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Enumeration;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
@@ -39,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.util._TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -131,7 +133,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
-      searchIndex(oldNames[i]);
+      searchIndex(oldNames[i], oldNames[i]);
       rmDir(oldNames[i]);
     }
   }
@@ -171,7 +173,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     }
   }
 
-  public void searchIndex(String dirName) throws IOException {
+  public void searchIndex(String dirName, String oldName) throws IOException {
     //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer());
     //Query query = parser.parse("handle:1");
 
@@ -179,6 +181,29 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     Directory dir = FSDirectory.getDirectory(dirName);
     IndexSearcher searcher = new IndexSearcher(dir);
+    IndexReader reader = searcher.getIndexReader();
+
+    _TestUtil.checkIndex(dir);
+
+    for(int i=0;i<35;i++) {
+      if (!reader.isDeleted(i)) {
+        Document d = reader.document(i);
+        List fields = d.getFields();
+        if (oldName.startsWith("23.")) {
+          assertEquals(3, fields.size());
+          Field f = (Field) d.getField("id");
+          assertEquals(""+i, f.stringValue());
+
+          f = (Field) d.getField("utf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+        
+          f = (Field) d.getField("content2");
+          assertEquals("here is more content with aaa aaa aaa", f.stringValue());
+        }        
+      } else
+        // Only ID 7 is deleted
+        assertEquals(7, i);
+    }
     
     Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
 
@@ -188,6 +213,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
     testHits(hits, 34, searcher.getIndexReader());
+
+    if (oldName.startsWith("23.")) {
+      hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")));
+      assertEquals(34, hits.length());
+      hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")));
+      assertEquals(34, hits.length());
+      hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")));
+      assertEquals(34, hits.length());
+    }
 
     searcher.close();
     dir.close();
@@ -421,6 +455,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
     doc.add(new Field("id", Integer.toString(id), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
   }

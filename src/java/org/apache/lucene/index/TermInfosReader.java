@@ -58,12 +58,12 @@ final class TermInfosReader {
       segment = seg;
       fieldInfos = fis;
 
-      origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis",
+      origEnum = new SegmentTermEnum(directory.openInput(segment + "." + IndexFileNames.TERMS_EXTENSION,
           readBufferSize), fieldInfos, false);
       size = origEnum.size;
       totalIndexInterval = origEnum.indexInterval;
 
-      indexEnum = new SegmentTermEnum(directory.openInput(segment + ".tii",
+      indexEnum = new SegmentTermEnum(directory.openInput(segment + "." + IndexFileNames.TERMS_INDEX_EXTENSION,
           readBufferSize), fieldInfos, true);
 
       success = true;

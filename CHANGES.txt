@@ -61,6 +61,13 @@ API Changes
 
  7. LUCENE-1234: Make BoostingSpanScorer protected.  (Andi Vajda via Grant Ingersoll)
 
+ 8. LUCENE-510: The index now stores strings as true UTF-8 bytes
+    (previously it was Java's modified UTF-8).  If any text, either
+    stored fields or a token, has illegal UTF-16 surrogate characters,
+    these characters are now silently replaced with the Unicode
+    replacement character U+FFFD.  This is a change to the index file
+    format.  (Marvin Humphrey via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -291,7 +292,7 @@ final class DocumentsWriter {
         assert docStoreSegment != null;
         fieldsWriter.close();
         fieldsWriter = null;
-        assert numDocsInStore*8 == directory.fileLength(docStoreSegment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION):
+        assert 4+numDocsInStore*8 == directory.fileLength(docStoreSegment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION):
           "after flush: fdx size mismatch: " + numDocsInStore + " docs vs " + directory.fileLength(docStoreSegment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) + " length in bytes of " + docStoreSegment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
       }
 
@@ -754,26 +755,25 @@ final class DocumentsWriter {
     return segment + "." + extension;
   }
 
-  static int compareText(final char[] text1, int pos1, final char[] text2, int pos2) {
+  private static int compareText(final char[] text1, int pos1, final char[] text2, int pos2) {
     while(true) {
       final char c1 = text1[pos1++];
       final char c2 = text2[pos2++];
-      if (c1 < c2)
+      if (c1 != c2) {
         if (0xffff == c2)
           return 1;
-        else
-          return -1;
-      else if (c2 < c1)
-        if (0xffff == c1)
+        else if (0xffff == c1)
           return -1;
         else
-          return 1;
-      else if (0xffff == c1)
+          return c1-c2;
+      } else if (0xffff == c1)
         return 0;
     }
   }
 
   private final TermInfo termInfo = new TermInfo(); // minimize consing
+
+  final UnicodeUtil.UTF8Result termsUTF8 = new UnicodeUtil.UTF8Result();
 
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
@@ -831,9 +831,6 @@ final class DocumentsWriter {
 
       final char[] text = termStates[0].text;
       final int start = termStates[0].textOffset;
-      int pos = start;
-      while(text[pos] != 0xffff)
-        pos++;
 
       long freqPointer = freqOut.getFilePointer();
       long proxPointer = proxOut.getFilePointer();
@@ -932,7 +929,17 @@ final class DocumentsWriter {
 
       // Write term
       termInfo.set(df, freqPointer, proxPointer, (int) (skipPointer - freqPointer));
-      termsOut.add(fieldNumber, text, start, pos-start, termInfo);
+
+      // TODO: we could do this incrementally
+      UnicodeUtil.UTF16toUTF8(text, start, termsUTF8);
+
+      // TODO: we could save O(n) re-scan of the term by
+      // computing the shared prefix with the last term
+      // while during the UTF8 encoding
+      termsOut.add(fieldNumber,
+                   termsUTF8.result,
+                   termsUTF8.length,
+                   termInfo);
     }
   }
 
@@ -1048,7 +1055,12 @@ final class DocumentsWriter {
           // This call is not synchronized and does all the work
           state.processDocument(analyzer);
         } finally {
-          // This call is synchronized but fast
+          // Note that we must call finishDocument even on
+          // exception, because for a non-aborting
+          // exception, a portion of the document has been
+          // indexed (and its ID is marked for deletion), so
+          // all index files must be updated to record this
+          // document.  This call is synchronized but fast.
           finishDocument(state);
         }
         success = true;

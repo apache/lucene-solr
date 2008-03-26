@@ -61,8 +61,8 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
       format = firstInt;
 
       // check that it is a format we can understand
-      if (format < TermInfosWriter.FORMAT)
-        throw new CorruptIndexException("Unknown format version:" + format);
+      if (format < TermInfosWriter.FORMAT_CURRENT)
+        throw new CorruptIndexException("Unknown format version:" + format + " expected " + TermInfosWriter.FORMAT_CURRENT + " or higher");
 
       size = input.readLong();                    // read the size
       
@@ -77,13 +77,17 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
       } else {
         indexInterval = input.readInt();
         skipInterval = input.readInt();
-        if (format == -3) {
+        if (format <= TermInfosWriter.FORMAT) {
           // this new format introduces multi-level skipping
           maxSkipLevels = input.readInt();
         }
       }
     }
-
+    if (format > TermInfosWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
+      termBuffer.setPreUTF8Strings();
+      scanBuffer.setPreUTF8Strings();
+      prevBuffer.setPreUTF8Strings();
+    }
   }
 
   protected Object clone() {

@@ -51,6 +51,8 @@ final class FieldsReader {
   private int numTotalDocs;
   private int size;
   private boolean closed;
+  private final int format;
+  private final int formatSize;
 
   // The docID offset where our docs begin in the index
   // file.  This will be 0 if we have our own private file.
@@ -72,9 +74,33 @@ final class FieldsReader {
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(segment + ".fdt", readBufferSize);
+      cloneableFieldsStream = d.openInput(segment + "." + IndexFileNames.FIELDS_EXTENSION, readBufferSize);
+      indexStream = d.openInput(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION, readBufferSize);
+
+      // First version of fdx did not include a format
+      // header, but, the first int will always be 0 in that
+      // case
+      int firstInt = indexStream.readInt();
+      if (firstInt == 0)
+        format = 0;
+      else
+        format = firstInt;
+
+      if (format > FieldsWriter.FORMAT_CURRENT)
+        throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
+                                        + FieldsWriter.FORMAT_CURRENT + " or lower");
+
+      if (format > FieldsWriter.FORMAT)
+        formatSize = 4;
+      else
+        formatSize = 0;
+
+      if (format < FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES)
+        cloneableFieldsStream.setModifiedUTF8StringsMode();
+
       fieldsStream = (IndexInput) cloneableFieldsStream.clone();
-      indexStream = d.openInput(segment + ".fdx", readBufferSize);
+
+      final long indexSize = indexStream.length()-formatSize;
 
       if (docStoreOffset != -1) {
         // We read only a slice out of this shared fields file
@@ -83,13 +109,13 @@ final class FieldsReader {
 
         // Verify the file is long enough to hold all of our
         // docs
-        assert ((int) (indexStream.length() / 8)) >= size + this.docStoreOffset;
+        assert ((int) (indexSize / 8)) >= size + this.docStoreOffset;
       } else {
         this.docStoreOffset = 0;
-        this.size = (int) (indexStream.length() >> 3);
+        this.size = (int) (indexSize >> 3);
       }
 
-      numTotalDocs = (int) (indexStream.length() >> 3);
+      numTotalDocs = (int) (indexSize >> 3);
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -142,8 +168,12 @@ final class FieldsReader {
     return size;
   }
 
+  private final void seekIndex(int docID) throws IOException {
+    indexStream.seek(formatSize + (docID + docStoreOffset) * 8L);
+  }
+
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
-    indexStream.seek((n + docStoreOffset) * 8L);
+    seekIndex(n);
     long position = indexStream.readLong();
     fieldsStream.seek(position);
 
@@ -195,7 +225,7 @@ final class FieldsReader {
    *  startDocID.  Returns the IndexInput (the fieldStream),
    *  already seeked to the starting point for startDocID.*/
   final IndexInput rawDocs(int[] lengths, int startDocID, int numDocs) throws IOException {
-    indexStream.seek((docStoreOffset+startDocID) * 8L);
+    seekIndex(startDocID);
     long startOffset = indexStream.readLong();
     long lastOffset = startOffset;
     int count = 0;
@@ -225,13 +255,12 @@ final class FieldsReader {
   }
   
   private void skipField(boolean binary, boolean compressed, int toRead) throws IOException {
-    if (binary || compressed) {
-      long pointer = fieldsStream.getFilePointer();
-      fieldsStream.seek(pointer + toRead);
-    } else {
-      //We need to skip chars.  This will slow us down, but still better
-      fieldsStream.skipChars(toRead);
-    }
+   if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES || binary || compressed) {
+     fieldsStream.seek(fieldsStream.getFilePointer() + toRead);
+   } else {
+     // We need to skip chars.  This will slow us down, but still better
+     fieldsStream.skipChars(toRead);
+   }
   }
 
   private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
@@ -265,7 +294,10 @@ final class FieldsReader {
         int length = fieldsStream.readVInt();
         long pointer = fieldsStream.getFilePointer();
         //Skip ahead of where we are by the length of what is stored
-        fieldsStream.skipChars(length);
+        if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES)
+          fieldsStream.seek(pointer+length);
+        else
+          fieldsStream.skipChars(length);
         f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
         f.setOmitNorms(fi.omitNorms);
       }
@@ -471,10 +503,16 @@ final class FieldsReader {
               localFieldsStream.readBytes(b, 0, b.length);
               fieldsData = new String(uncompress(b), "UTF-8");
             } else {
-              //read in chars b/c we already know the length we need to read
-              char[] chars = new char[toRead];
-              localFieldsStream.readChars(chars, 0, toRead);
-              fieldsData = new String(chars);
+              if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
+                byte[] bytes = new byte[toRead];
+                localFieldsStream.readBytes(bytes, 0, toRead);
+                fieldsData = new String(bytes, "UTF-8");
+              } else {
+                //read in chars b/c we already know the length we need to read
+                char[] chars = new char[toRead];
+                localFieldsStream.readChars(chars, 0, toRead);
+                fieldsData = new String(chars);
+              }
             }
           } catch (IOException e) {
             throw new FieldReaderException(e);

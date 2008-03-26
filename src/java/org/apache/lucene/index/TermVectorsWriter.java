@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 
@@ -27,17 +28,19 @@ final class TermVectorsWriter {
   
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private FieldInfos fieldInfos;
+  final UnicodeUtil.UTF8Result[] utf8Results = new UnicodeUtil.UTF8Result[] {new UnicodeUtil.UTF8Result(),
+                                                                             new UnicodeUtil.UTF8Result()};
 
   public TermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos)
     throws IOException {
     // Open files for TermVector storage
     tvx = directory.createOutput(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-    tvx.writeInt(TermVectorsReader.FORMAT_VERSION2);
+    tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
     tvd = directory.createOutput(segment + "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-    tvd.writeInt(TermVectorsReader.FORMAT_VERSION2);
+    tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
     tvf = directory.createOutput(segment + "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-    tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
+    tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
 
     this.fieldInfos = fieldInfos;
   }
@@ -97,15 +100,22 @@ final class TermVectorsWriter {
         final String[] terms = vectors[i].getTerms();
         final int[] freqs = vectors[i].getTermFrequencies();
 
-        String lastTermText = "";
+        int utf8Upto = 0;
+        utf8Results[1].length = 0;
+
         for (int j=0; j<numTerms; j++) {
-          final String termText = terms[j];
-          int start = StringHelper.stringDifference(lastTermText, termText);
-          int length = termText.length() - start;
+
+          UnicodeUtil.UTF16toUTF8(terms[j], 0, terms[j].length(), utf8Results[utf8Upto]);
+          
+          int start = StringHelper.bytesDifference(utf8Results[1-utf8Upto].result,
+                                                   utf8Results[1-utf8Upto].length,
+                                                   utf8Results[utf8Upto].result,
+                                                   utf8Results[utf8Upto].length);
+          int length = utf8Results[utf8Upto].length - start;
           tvf.writeVInt(start);       // write shared prefix length
           tvf.writeVInt(length);        // write delta length
-          tvf.writeChars(termText, start, length);  // write delta chars
-          lastTermText = termText;
+          tvf.writeBytes(utf8Results[utf8Upto].result, start, length);  // write delta bytes
+          utf8Upto = 1-utf8Upto;
 
           final int termFreq = freqs[j];
 

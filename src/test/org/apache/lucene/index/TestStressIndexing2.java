@@ -415,8 +415,56 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return r.nextInt(lim);
     }
 
+    // start is inclusive and end is exclusive
+    public int nextInt(int start, int end) {
+      return start + r.nextInt(end-start);
+    }
+
+    char[] buffer = new char[100];
+
+    private int addUTF8Token(int start) {
+      final int end = start + nextInt(20);
+      if (buffer.length < 1+end) {
+        char[] newBuffer = new char[(int) ((1+end)*1.25)];
+        System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+        buffer = newBuffer;
+      }
+
+      for(int i=start;i<end;i++) {
+        int t = nextInt(6);
+        if (0 == t && i < end-1) {
+          // Make a surrogate pair
+          // High surrogate
+          buffer[i++] = (char) nextInt(0xd800, 0xdc00);
+          // Low surrogate
+          buffer[i] = (char) nextInt(0xdc00, 0xe000);
+        } else if (t <= 1)
+          buffer[i] = (char) nextInt(0x80);
+        else if (2 == t)
+          buffer[i] = (char) nextInt(0x80, 0x800);
+        else if (3 == t)
+          buffer[i] = (char) nextInt(0x800, 0xd800);
+        else if (4 == t)
+          buffer[i] = (char) nextInt(0xe000, 0xffff);
+        else if (5 == t) {
+          // Illegal unpaired surrogate
+          if (r.nextBoolean())
+            buffer[i] = (char) nextInt(0xd800, 0xdc00);
+          else
+            buffer[i] = (char) nextInt(0xdc00, 0xe000);
+        }
+      }
+      buffer[end] = ' ';
+      return 1+end;
+    }
+
     public String getString(int nTokens) {
       nTokens = nTokens!=0 ? nTokens : r.nextInt(4)+1;
+
+      // Half the time make a random UTF8 string
+      if (r.nextBoolean())
+        return getUTF8String(nTokens);
+
       // avoid StringBuffer because it adds extra synchronization.
       char[] arr = new char[nTokens*2];
       for (int i=0; i<nTokens; i++) {
@@ -424,6 +472,14 @@ public class TestStressIndexing2 extends LuceneTestCase {
         arr[i*2+1] = ' ';
       }
       return new String(arr);
+    }
+    
+    public String getUTF8String(int nTokens) {
+      int upto = 0;
+      Arrays.fill(buffer, (char) 0);
+      for(int i=0;i<nTokens;i++)
+        upto = addUTF8Token(upto);
+      return new String(buffer, 0, upto);
     }
 
     public String getIdString() {

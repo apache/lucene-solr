@@ -33,6 +33,17 @@ final class FieldsWriter
   static final byte FIELD_IS_TOKENIZED = 0x1;
   static final byte FIELD_IS_BINARY = 0x2;
   static final byte FIELD_IS_COMPRESSED = 0x4;
+
+  // Original format
+  static final int FORMAT = 0;
+
+  // Changed strings to UTF8
+  static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = 1;
+
+  // NOTE: if you introduce a new format, make it 1 higher
+  // than the current one, and always change this if you
+  // switch to a new format!
+  static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
   
     private FieldInfos fieldInfos;
 
@@ -44,8 +55,34 @@ final class FieldsWriter
 
     FieldsWriter(Directory d, String segment, FieldInfos fn) throws IOException {
         fieldInfos = fn;
-        fieldsStream = d.createOutput(segment + ".fdt");
-        indexStream = d.createOutput(segment + ".fdx");
+        
+        boolean success = false;
+        final String fieldsName = segment + "." + IndexFileNames.FIELDS_EXTENSION;
+        try {
+          fieldsStream = d.createOutput(fieldsName);
+          fieldsStream.writeInt(FORMAT_CURRENT);
+          success = true;
+        } finally {
+          if (!success) {
+            close();
+            d.deleteFile(fieldsName);
+          }
+        }
+
+        success = false;
+        final String indexName = segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
+        try {
+          indexStream = d.createOutput(indexName);
+          indexStream.writeInt(FORMAT_CURRENT);
+          success = true;
+        } finally {
+          if (!success) {
+            close();
+            d.deleteFile(fieldsName);
+            d.deleteFile(indexName);
+          }
+        }
+
         doClose = true;
     }
 
@@ -73,8 +110,10 @@ final class FieldsWriter
 
     final void close() throws IOException {
       if (doClose) {
-        fieldsStream.close();
-        indexStream.close();
+        if (fieldsStream != null)
+          fieldsStream.close();
+        if (indexStream != null)
+          indexStream.close();
       }
     }
 

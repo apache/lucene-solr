@@ -32,7 +32,15 @@ class TermVectorsReader implements Cloneable {
   // NOTE: if you make a new format, it must be larger than
   // the current format
   static final int FORMAT_VERSION = 2;
+
+  // Changes to speed up bulk merging of term vectors:
   static final int FORMAT_VERSION2 = 3;
+
+  // Changed strings to UTF8 with length-in-bytes not length-in-chars
+  static final int FORMAT_UTF8_LENGTH_IN_BYTES = 4;
+
+  // NOTE: always change this if you switch to a new format!
+  static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
 
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
@@ -134,7 +142,7 @@ class TermVectorsReader implements Cloneable {
   }
 
   boolean canReadRawDocs() {
-    return format >= FORMAT_VERSION2;
+    return format >= FORMAT_UTF8_LENGTH_IN_BYTES;
   }
 
   /** Retrieve the length (in bytes) of the tvd and tvf
@@ -190,9 +198,9 @@ class TermVectorsReader implements Cloneable {
   private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
-    if (format > FORMAT_VERSION2) {
+    if (format > FORMAT_CURRENT) {
       throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                      + FORMAT_VERSION2 + " or less");
+                                      + FORMAT_CURRENT + " or less");
     }
     return format;
   }
@@ -434,24 +442,45 @@ class TermVectorsReader implements Cloneable {
     int start = 0;
     int deltaLength = 0;
     int totalLength = 0;
-    char [] buffer = new char[10];    // init the buffer with a length of 10 character
-    char[] previousBuffer = {};
-    
+    byte[] byteBuffer;
+    char[] charBuffer;
+    final boolean preUTF8 = format < FORMAT_UTF8_LENGTH_IN_BYTES;
+
+    // init the buffers
+    if (preUTF8) {
+      charBuffer = new char[10];
+      byteBuffer = null;
+    } else {
+      charBuffer = null;
+      byteBuffer = new byte[20];
+    }
+
     for (int i = 0; i < numTerms; i++) {
       start = tvf.readVInt();
       deltaLength = tvf.readVInt();
       totalLength = start + deltaLength;
-      if (buffer.length < totalLength) {  // increase buffer
-        buffer = null;    // give a hint to garbage collector
-        buffer = new char[totalLength];
-        
-        if (start > 0)  // just copy if necessary
-          System.arraycopy(previousBuffer, 0, buffer, 0, start);
-      }
+
+      final String term;
       
-      tvf.readChars(buffer, start, deltaLength);
-      String term = new String(buffer, 0, totalLength);
-      previousBuffer = buffer;
+      if (preUTF8) {
+        // Term stored as java chars
+        if (charBuffer.length < totalLength) {
+          char[] newCharBuffer = new char[(int) (1.5*totalLength)];
+          System.arraycopy(charBuffer, 0, newCharBuffer, 0, start);
+          charBuffer = newCharBuffer;
+        }
+        tvf.readChars(charBuffer, start, deltaLength);
+        term = new String(charBuffer, 0, totalLength);
+      } else {
+        // Term stored as utf8 bytes
+        if (byteBuffer.length < totalLength) {
+          byte[] newByteBuffer = new byte[(int) (1.5*totalLength)];
+          System.arraycopy(byteBuffer, 0, newByteBuffer, 0, start);
+          byteBuffer = newByteBuffer;
+        }
+        tvf.readBytes(byteBuffer, start, deltaLength);
+        term = new String(byteBuffer, 0, totalLength, "UTF-8");
+      }
       int freq = tvf.readVInt();
       int [] positions = null;
       if (storePositions) { //read in the positions

@@ -24,7 +24,9 @@ import java.io.IOException;
  * @see Directory
  */
 public abstract class IndexInput implements Cloneable {
-  private char[] chars;                           // used by readString()
+  private byte[] bytes;                           // used by readString()
+  private char[] chars;                           // used by readModifiedUTF8String()
+  private boolean preUTF8Strings;                 // true if we are reading old (modified UTF8) string format
 
   /** Reads and returns a single byte.
    * @see IndexOutput#writeByte(byte)
@@ -102,10 +104,28 @@ public abstract class IndexInput implements Cloneable {
     return i;
   }
 
+  /** Call this if readString should read characters stored
+   *  in the old modified UTF8 format (length in java chars
+   *  and java's modified UTF8 encoding).  This is used for
+   *  indices written pre-2.4 See LUCENE-510 for details. */
+  public void setModifiedUTF8StringsMode() {
+    preUTF8Strings = true;
+  }
+
   /** Reads a string.
    * @see IndexOutput#writeString(String)
    */
   public String readString() throws IOException {
+    if (preUTF8Strings)
+      return readModifiedUTF8String();
+    int length = readVInt();
+    if (bytes == null || length > bytes.length)
+      bytes = new byte[(int) (length*1.25)];
+    readBytes(bytes, 0, length);
+    return new String(bytes, 0, length, "UTF-8");
+  }
+
+  private String readModifiedUTF8String() throws IOException {
     int length = readVInt();
     if (chars == null || length > chars.length)
       chars = new char[length];
@@ -113,11 +133,15 @@ public abstract class IndexInput implements Cloneable {
     return new String(chars, 0, length);
   }
 
-  /** Reads UTF-8 encoded characters into an array.
+  /** Reads Lucene's old "modified UTF-8" encoded
+   *  characters into an array.
    * @param buffer the array to read characters into
    * @param start the offset in the array to start storing characters
    * @param length the number of characters to read
    * @see IndexOutput#writeChars(String,int,int)
+   * @deprecated -- please use readString or readBytes
+   *                instead, and construct the string
+   *                from those utf8 bytes
    */
   public void readChars(char[] buffer, int start, int length)
        throws IOException {
@@ -144,6 +168,8 @@ public abstract class IndexInput implements Cloneable {
    * and it does not have to do any of the bitwise operations, since we don't actually care what is in the byte except to determine
    * how many more bytes to read
    * @param length The number of chars to read
+   * @deprecated this method operates on old "modified utf8" encoded
+   *             strings
    */
   public void skipChars(int length) throws IOException{
     for (int i = 0; i < length; i++) {
@@ -194,6 +220,7 @@ public abstract class IndexInput implements Cloneable {
       clone = (IndexInput)super.clone();
     } catch (CloneNotSupportedException e) {}
 
+    clone.bytes = null;
     clone.chars = null;
 
     return clone;

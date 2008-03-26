@@ -24,6 +24,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.UnicodeUtil;
 
 /** Used by DocumentsWriter to maintain per-thread state.
  *  We keep a separate Posting hash and other state for each
@@ -311,6 +312,7 @@ final class DocumentsWriterThreadState {
       if (docWriter.fieldsWriter == null) {
         assert docWriter.docStoreSegment == null;
         assert docWriter.segment != null;
+        docWriter.files = null;
         docWriter.docStoreSegment = docWriter.segment;
         // If we hit an exception while init'ing the
         // fieldsWriter, we must abort this segment
@@ -321,7 +323,6 @@ final class DocumentsWriterThreadState {
         } catch (Throwable t) {
           throw new AbortException(t, docWriter);
         }
-        docWriter.files = null;
       }
       localFieldsWriter = new FieldsWriter(null, fdtLocal, docWriter.fieldInfos);
     }
@@ -331,17 +332,18 @@ final class DocumentsWriterThreadState {
     if (docHasVectors) {
       if (docWriter.tvx == null) {
         assert docWriter.docStoreSegment != null;
+        docWriter.files = null;
         // If we hit an exception while init'ing the term
         // vector output files, we must abort this segment
         // because those files will be in an unknown
         // state:
         try {
           docWriter.tvx = docWriter.directory.createOutput(docWriter.docStoreSegment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
-          docWriter.tvx.writeInt(TermVectorsReader.FORMAT_VERSION2);
+          docWriter.tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
           docWriter.tvd = docWriter.directory.createOutput(docWriter.docStoreSegment +  "." + IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-          docWriter.tvd.writeInt(TermVectorsReader.FORMAT_VERSION2);
+          docWriter.tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
           docWriter.tvf = docWriter.directory.createOutput(docWriter.docStoreSegment +  "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
-          docWriter.tvf.writeInt(TermVectorsReader.FORMAT_VERSION2);
+          docWriter.tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
 
           // We must "catch up" for all docs before us
           // that had no vectors:
@@ -353,7 +355,6 @@ final class DocumentsWriterThreadState {
         } catch (Throwable t) {
           throw new AbortException(t, docWriter);
         }
-        docWriter.files = null;
       }
       numVectorFields = 0;
     }
@@ -672,21 +673,23 @@ final class DocumentsWriterThreadState {
     int pos1 = p1.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
     final char[] text2 = charPool.buffers[p2.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
     int pos2 = p2.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+
+    assert text1 != text2 || pos1 != pos2;
+
     while(true) {
       final char c1 = text1[pos1++];
       final char c2 = text2[pos2++];
-      if (c1 < c2)
+      if (c1 != c2) {
         if (0xffff == c2)
           return 1;
-        else
-          return -1;
-      else if (c2 < c1)
-        if (0xffff == c1)
+        else if (0xffff == c1)
           return -1;
         else
-          return 1;
-      else if (0xffff == c1)
-        return 0;
+          return c1-c2;
+      } else
+        // This method should never compare equal postings
+        // unless p1==p2
+        assert c1 != 0xffff;
     }
   }
 
@@ -715,5 +718,8 @@ final class DocumentsWriterThreadState {
 
   // Used to read a string value for a field
   ReusableStringReader stringReader = new ReusableStringReader();
+
+  final UnicodeUtil.UTF8Result utf8Results[] = {new UnicodeUtil.UTF8Result(),
+                                                new UnicodeUtil.UTF8Result()};
 }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import org.apache.lucene.util.UnicodeUtil;
 
 /** Abstract base class for output to a file in a Directory.  A random-access
  * output stream.  Used for all Lucene index output operations.
@@ -25,6 +26,8 @@ import java.io.IOException;
  * @see IndexInput
  */
 public abstract class IndexOutput {
+
+  private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
 
   /** Writes a single byte.
    * @see IndexInput#readByte()
@@ -96,16 +99,18 @@ public abstract class IndexOutput {
    * @see IndexInput#readString()
    */
   public void writeString(String s) throws IOException {
-    int length = s.length();
-    writeVInt(length);
-    writeChars(s, 0, length);
+    UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
+    writeVInt(utf8Result.length);
+    writeBytes(utf8Result.result, 0, utf8Result.length);
   }
 
-  /** Writes a sequence of UTF-8 encoded characters from a string.
+  /** Writes a sub sequence of characters from s as the old
+   *  format (modified UTF-8 encoded bytes).
    * @param s the source of the characters
    * @param start the first character in the sequence
    * @param length the number of characters in the sequence
-   * @see IndexInput#readChars(char[],int,int)
+   * @deprecated -- please pre-convert to utf8 bytes
+   * instead or use {@link #writeString}
    */
   public void writeChars(String s, int start, int length)
        throws IOException {
@@ -125,11 +130,12 @@ public abstract class IndexOutput {
     }
   }
 
-  /** Writes a sequence of UTF-8 encoded characters from a char[].
+  /** Writes a sub sequence of characters from char[] as
+   *  the old format (modified UTF-8 encoded bytes).
    * @param s the source of the characters
    * @param start the first character in the sequence
    * @param length the number of characters in the sequence
-   * @see IndexInput#readChars(char[],int,int)
+   * @deprecated -- please pre-convert to utf8 bytes instead or use {@link #writeString}
    */
   public void writeChars(char[] s, int start, int length)
     throws IOException {

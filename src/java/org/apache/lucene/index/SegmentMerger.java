@@ -349,7 +349,7 @@ final class SegmentMerger {
         fieldsWriter.close();
       }
 
-      assert docCount*8 == directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) :
+      assert 4+docCount*8 == directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) :
         "after mergeFields: fdx size mismatch: " + docCount + " docs vs " + directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) + " length in bytes of " + segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
 
     } else

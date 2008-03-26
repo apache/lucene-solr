@@ -67,6 +67,7 @@ import java.util.Iterator;
   (which just deletes and then adds the entire document).
   When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
 
+  <a name="flush"></a>
   <p>These changes are buffered in memory and periodically
   flushed to the {@link Directory} (during the above method
   calls).  A flush is triggered when there are enough
@@ -1843,25 +1844,29 @@ public class IndexWriter {
    * partially succeeded).</p>
    *
    * <p> This method periodically flushes pending documents
-   * to the Directory (every {@link #setMaxBufferedDocs}),
-   * and also periodically merges segments in the index
-   * (every {@link #setMergeFactor} flushes).  When this
-   * occurs, the method will take more time to run (possibly
-   * a long time if the index is large), and will require
-   * free temporary space in the Directory to do the
-   * merging.</p>
+   * to the Directory (see <a href="#flush">above</a>), and
+   * also periodically triggers segment merges in the index
+   * according to the {@link MergePolicy} in use.</p>
    *
-   * <p>The amount of free space required when a merge is triggered is
-   * up to 1X the size of all segments being merged, when no
-   * readers/searchers are open against the index, and up to 2X the
-   * size of all segments being merged when readers/searchers are open
-   * against the index (see {@link #optimize()} for details). The
-   * sequence of primitive merge operations performed is governed by
-   * the merge policy.
+   * <p>Merges temporarily consume space in the
+   * directory. The amount of space required is up to 1X the
+   * size of all segments being merged, when no
+   * readers/searchers are open against the index, and up to
+   * 2X the size of all segments being merged when
+   * readers/searchers are open against the index (see
+   * {@link #optimize()} for details). The sequence of
+   * primitive merge operations performed is governed by the
+   * merge policy.
    *
    * <p>Note that each term in the document can be no longer
    * than 16383 characters, otherwise an
    * IllegalArgumentException will be thrown.</p>
+   *
+   * <p>Note that it's possible to create an invalid Unicode
+   * string in java if a UTF16 surrogate pair is malformed.
+   * In this case, the invalid characters are silently
+   * replaced with the Unicode replacement character
+   * U+FFFD.</p>
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

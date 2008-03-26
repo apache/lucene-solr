@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.UnicodeUtil;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
@@ -337,12 +338,36 @@ final class DocumentsWriterFieldData implements Comparable {
 
     int code = 0;
 
-    // Compute hashcode
+    // Compute hashcode & replace any invalid UTF16 sequences
     int downto = tokenTextLen;
-    while (downto > 0)
-      code = (code*31) + tokenText[--downto];
+    while (downto > 0) {
+      char ch = tokenText[--downto];
 
-    // System.out.println("  addPosition: buffer=" + new String(tokenText, 0, tokenTextLen) + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset + token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
+      if (ch >= UnicodeUtil.UNI_SUR_LOW_START && ch <= UnicodeUtil.UNI_SUR_LOW_END) {
+        if (0 == downto) {
+          // Unpaired
+          ch = tokenText[downto] = UnicodeUtil.UNI_REPLACEMENT_CHAR;
+        } else {
+          final char ch2 = tokenText[downto-1];
+          if (ch2 >= UnicodeUtil.UNI_SUR_HIGH_START && ch2 <= UnicodeUtil.UNI_SUR_HIGH_END) {
+            // OK: high followed by low.  This is a valid
+            // surrogate pair.
+            code = ((code*31) + ch)*31+ch2;
+            downto--;
+            continue;
+          } else {
+            // Unpaired
+            ch = tokenText[downto] = UnicodeUtil.UNI_REPLACEMENT_CHAR;
+          }            
+        }
+      } else if (ch >= UnicodeUtil.UNI_SUR_HIGH_START && ch <= UnicodeUtil.UNI_SUR_HIGH_END)
+        // Unpaired
+        ch = tokenText[downto] = UnicodeUtil.UNI_REPLACEMENT_CHAR;
+
+      code = (code*31) + ch;
+    }
+
+    // System.out.println("  addPosition: field=" + fieldInfo.name + " buffer=" + new String(tokenText, 0, tokenTextLen) + " pos=" + position + " offsetStart=" + (offset+token.startOffset()) + " offsetEnd=" + (offset + token.endOffset()) + " docID=" + docID + " doPos=" + doVectorPositions + " doOffset=" + doVectorOffsets);
 
     int hashPos = code & postingsHashMask;
 
@@ -713,7 +738,8 @@ final class DocumentsWriterFieldData implements Comparable {
 
     threadState.doVectorSort(postingsVectors, numPostingsVectors);
 
-    Posting lastPosting = null;
+    int encoderUpto = 0;
+    int lastTermBytesCount = 0;
 
     final ByteSliceReader reader = vectorSliceReader;
     final char[][] charBuffers = threadState.charPool.buffers;
@@ -723,40 +749,37 @@ final class DocumentsWriterFieldData implements Comparable {
       Posting posting = vector.p;
       final int freq = posting.docFreq;
           
-      final int prefix;
       final char[] text2 = charBuffers[posting.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
       final int start2 = posting.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
-      int pos2 = start2;
 
+      // We swap between two encoders to save copying
+      // last Term's byte array
+      final UnicodeUtil.UTF8Result utf8Result = threadState.utf8Results[encoderUpto];
+
+      // TODO: we could do this incrementally
+      UnicodeUtil.UTF16toUTF8(text2, start2, utf8Result);
+      final int termBytesCount = utf8Result.length;
+
+      // TODO: UTF16toUTF8 could tell us this prefix
       // Compute common prefix between last term and
       // this term
-      if (lastPosting == null)
-        prefix = 0;
-      else {
-        final char[] text1 = charBuffers[lastPosting.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-        final int start1 = lastPosting.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
-        int pos1 = start1;
-        while(true) {
-          final char c1 = text1[pos1];
-          final char c2 = text2[pos2];
-          if (c1 != c2 || c1 == 0xffff) {
-            prefix = pos1-start1;
+      int prefix = 0;
+      if (j > 0) {
+        final byte[] lastTermBytes = threadState.utf8Results[1-encoderUpto].result;
+        final byte[] termBytes = threadState.utf8Results[encoderUpto].result;
+        while(prefix < lastTermBytesCount && prefix < termBytesCount) {
+          if (lastTermBytes[prefix] != termBytes[prefix])
             break;
-          }
-          pos1++;
-          pos2++;
+          prefix++;
         }
       }
-      lastPosting = posting;
+      encoderUpto = 1-encoderUpto;
+      lastTermBytesCount = termBytesCount;
 
-      // Compute length
-      while(text2[pos2] != 0xffff)
-        pos2++;
-
-      final int suffix = pos2 - start2 - prefix;
+      final int suffix = termBytesCount - prefix;
       tvfLocal.writeVInt(prefix);
       tvfLocal.writeVInt(suffix);
-      tvfLocal.writeChars(text2, start2 + prefix, suffix);
+      tvfLocal.writeBytes(utf8Result.result, prefix, suffix);
       tvfLocal.writeVInt(freq);
 
       if (doVectorPositions) {

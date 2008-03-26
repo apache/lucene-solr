@@ -19,28 +19,31 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.UnicodeUtil;
 
 final class TermBuffer implements Cloneable {
-  private static final char[] NO_CHARS = new char[0];
 
   private String field;
-  private char[] text = NO_CHARS;
-  private int textLength;
   private Term term;                            // cached
+  private boolean preUTF8Strings;                // true if strings are stored in modified UTF8 encoding (LUCENE-510)
+  private boolean dirty;                          // true if text was set externally (ie not read via UTF8 bytes)
+
+  private UnicodeUtil.UTF16Result text = new UnicodeUtil.UTF16Result();
+  private UnicodeUtil.UTF8Result bytes = new UnicodeUtil.UTF8Result();
 
   public final int compareTo(TermBuffer other) {
-    if (field == other.field)			  // fields are interned
-      return compareChars(text, textLength, other.text, other.textLength);
+    if (field == other.field) 	  // fields are interned
+      return compareChars(text.result, text.length, other.text.result, other.text.length);
     else
       return field.compareTo(other.field);
   }
 
-  private static final int compareChars(char[] v1, int len1,
-                                        char[] v2, int len2) {
-    int end = Math.min(len1, len2);
+  private static final int compareChars(char[] chars1, int len1,
+                                        char[] chars2, int len2) {
+    final int end = len1 < len2 ? len1:len2;
     for (int k = 0; k < end; k++) {
-      char c1 = v1[k];
-      char c2 = v2[k];
+      char c1 = chars1[k];
+      char c2 = chars2[k];
       if (c1 != c2) {
         return c1 - c2;
       }
@@ -48,13 +51,11 @@ final class TermBuffer implements Cloneable {
     return len1 - len2;
   }
 
-  private final void setTextLength(int newLength) {
-    if (text.length < newLength) {
-      char[] newText = new char[newLength];
-      System.arraycopy(text, 0, newText, 0, textLength);
-      text = newText;
-    }
-    textLength = newLength;
+  /** Call this if the IndexInput passed to {@link #read}
+   *  stores terms in the "modified UTF8" (pre LUCENE-510)
+   *  format. */
+  void setPreUTF8Strings() {
+    preUTF8Strings = true;
   }
 
   public final void read(IndexInput input, FieldInfos fieldInfos)
@@ -63,8 +64,25 @@ final class TermBuffer implements Cloneable {
     int start = input.readVInt();
     int length = input.readVInt();
     int totalLength = start + length;
-    setTextLength(totalLength);
-    input.readChars(this.text, start, length);
+    if (preUTF8Strings) {
+      text.setLength(totalLength);
+      input.readChars(text.result, start, length);
+    } else {
+
+      if (dirty) {
+        // Fully convert all bytes since bytes is dirty
+        UnicodeUtil.UTF16toUTF8(text.result, 0, text.length, bytes);
+        bytes.setLength(totalLength);
+        input.readBytes(bytes.result, start, length);
+        UnicodeUtil.UTF8toUTF16(bytes.result, 0, totalLength, text);
+        dirty = false;
+      } else {
+        // Incrementally convert only the UTF8 bytes that are new:
+        bytes.setLength(totalLength);
+        input.readBytes(bytes.result, start, length);
+        UnicodeUtil.UTF8toUTF16(bytes.result, start, length, text);
+      }
+    }
     this.field = fieldInfos.fieldName(input.readVInt());
   }
 
@@ -73,27 +91,27 @@ final class TermBuffer implements Cloneable {
       reset();
       return;
     }
-
-    // copy text into the buffer
-    setTextLength(term.text().length());
-    term.text().getChars(0, term.text().length(), text, 0);
-
-    this.field = term.field();
+    final String termText = term.text();
+    final int termLen = termText.length();
+    text.setLength(termLen);
+    termText.getChars(0, termLen, text.result, 0);
+    dirty = true;
+    field = term.field();
     this.term = term;
   }
 
   public final void set(TermBuffer other) {
-    setTextLength(other.textLength);
-    System.arraycopy(other.text, 0, text, 0, textLength);
-
-    this.field = other.field;
-    this.term = other.term;
+    text.copyText(other.text);
+    dirty = true;
+    field = other.field;
+    term = other.term;
   }
 
   public void reset() {
-    this.field = null;
-    this.textLength = 0;
-    this.term = null;
+    field = null;
+    text.setLength(0);
+    term = null;
+    dirty = true;
   }
 
   public Term toTerm() {
@@ -101,7 +119,7 @@ final class TermBuffer implements Cloneable {
       return null;
 
     if (term == null)
-      term = new Term(field, new String(text, 0, textLength), false);
+      term = new Term(field, new String(text.result, 0, text.length), false);
 
     return term;
   }
@@ -112,9 +130,10 @@ final class TermBuffer implements Cloneable {
       clone = (TermBuffer)super.clone();
     } catch (CloneNotSupportedException e) {}
 
-    clone.text = new char[text.length];
-    System.arraycopy(text, 0, clone.text, 0, textLength);
-
+    clone.dirty = true;
+    clone.bytes = new UnicodeUtil.UTF8Result();
+    clone.text = new UnicodeUtil.UTF16Result();
+    clone.text.copyText(text);
     return clone;
   }
 }

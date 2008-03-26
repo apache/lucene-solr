@@ -736,10 +736,7 @@
 
                 <p>
                     Lucene writes unicode
-                    character sequences using Java's
-                    <a href="http://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">"modified
-                        UTF-8 encoding"</a>
-                    .
+                    character sequences as UTF-8 encoded bytes.
                 </p>
 
 
@@ -748,8 +745,9 @@
             <section id="String"><title>String</title>
 
                 <p>
-                    Lucene writes strings as a VInt representing the length, followed by
-                    the character data.
+		    Lucene writes strings as UTF-8 encoded bytes.
+                    First the length, in bytes, is written as a VInt,
+                    followed by the bytes.
                 </p>
 
                 <p>
@@ -1233,10 +1231,12 @@
                             <br/>
                             --&gt; VInt
                         </p>
-                        <p>This
-                            file is sorted by Term. Terms are ordered first lexicographically
-                            by the term's field name, and within that lexicographically by the
-                            term's text.
+                        <p>
+			    This file is sorted by Term. Terms are
+                            ordered first lexicographically (by UTF16
+                            character code) by the term's field name,
+                            and within that lexicographically (by
+                            UTF16 character code) by the term's text.
                         </p>
                         <p>TIVersion names the version of the format
                             of this file and is -2 in Lucene 1.4.
