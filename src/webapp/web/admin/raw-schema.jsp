@@ -20,6 +20,7 @@
 <%@ page import="java.io.Reader"%>
 <%@ page import="java.util.logging.Logger"%>
 <%@ page contentType="text/plain;charset=UTF-8" language="java" %>
+<%@include file="_info.jsp" %>
 <%!
   static Logger log = Logger.getLogger(SolrCore.class.getName());
 %>
@@ -27,15 +28,6 @@
   // NOTE -- this file will be removed in a future release
   log.warning("Using deprecated JSP: " + request.getRequestURL().append("?").append(request.getQueryString()) + " -- check the ShowFileRequestHandler"  );
 
-  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
-  if (core == null) {
-    String coreParam = request.getParameter("core");
-    core = coreParam != null? org.apache.solr.core.SolrMultiCore.getInstance().getCore(coreParam) : null;
-  }
-  if (core == null)
-    core = SolrCore.getSolrCore();
-    
-  IndexSchema schema = core.getSchema();
   Reader input = new InputStreamReader(schema.getInputStream());
   char[] buf = new char[4096];
   while (true) {

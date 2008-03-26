@@ -26,16 +26,9 @@
 <%@ page import="java.util.logging.Logger"%>
 
 <?xml-stylesheet type="text/xsl" href="logging.xsl"?>
+<%@include file="_info.jsp" %>
 
 <%
-  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
-  if (core == null) {
-    String coreParam = request.getParameter("core");
-    core = coreParam != null? org.apache.solr.core.SolrMultiCore.getInstance().getCore(coreParam) : null;
-  }
-  if (core == null)
-    core = SolrCore.getSolrCore();
-    
   Logger log = SolrCore.log;
   Logger parent = log.getParent();
   while(parent != null) {

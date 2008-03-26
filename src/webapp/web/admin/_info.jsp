@@ -24,8 +24,6 @@
 <%@ page import="org.apache.solr.util.XML"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
 <%@ page import="java.net.UnknownHostException" %>
-
-
 <%
   // 
   SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");

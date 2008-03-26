@@ -24,15 +24,7 @@
 <%@ page import="org.apache.solr.request.ServletSolrParams"%>
 <%@ page import="org.apache.solr.request.SolrQueryRequest"%>
 
-<%
-  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
-  if (core == null) {
-    String coreParam = request.getParameter("core");
-    core = coreParam != null? org.apache.solr.core.SolrMultiCore.getInstance().getCore(coreParam) : null;
-  }
-  if (core == null)
-    core = SolrCore.getSolrCore();
-%>
+<%@include file="_info.jsp" %>
 <?xml-stylesheet type="text/xsl" href="ping.xsl"?>
 
 <solr>
