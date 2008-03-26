@@ -21,22 +21,15 @@
                  java.lang.management.ThreadInfo,
                  java.io.IOException,
                  org.apache.solr.util.XML"%>
+<%@include file="_info.jsp" %>
+
 
 <?xml-stylesheet type="text/xsl" href="threaddump.xsl"?>
-<%
-  SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
-  if (core == null) {
-    String coreParam = request.getParameter("core");
-    core = coreParam != null? org.apache.solr.core.SolrMultiCore.getInstance().getCore(coreParam) : null;
-  }
-  if (core == null)
-    core = SolrCore.getSolrCore();
-%>
 <%!
   static ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
 %>
 <solr>
-  <core><%=core.getName()%></core>
+  <core><%= collectionName %></core>
   <system>
   <jvm>
     <version><%=System.getProperty("java.vm.version")%></version>

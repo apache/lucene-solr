@@ -70,8 +70,11 @@ public class JettyWebappTest extends TestCase
     // Currently not an extensive test, but it does fire up the JSP pages and make 
     // sure they compile ok
     
-    String adminPath = "http://localhost:"+port+context+"/admin/";
+    String adminPath = "http://localhost:"+port+context+"/";
     String html = IOUtils.toString( new URL(adminPath).openStream() );
+    assertNotNull( html ); // real error will be an exception
+
+    adminPath += "admin/";
     assertNotNull( html ); // real error will be an exception
 
     // analysis
@@ -80,6 +83,10 @@ public class JettyWebappTest extends TestCase
 
     // schema browser
     html = IOUtils.toString( new URL(adminPath+"schema.jsp").openStream() );
+    assertNotNull( html ); // real error will be an exception
+
+    // schema browser
+    html = IOUtils.toString( new URL(adminPath+"threaddump.jsp").openStream() );
     assertNotNull( html ); // real error will be an exception
   }
 }
