@@ -54,13 +54,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   protected static Logger log = Logger.getLogger(SearchHandler.class.getName());
 
   protected List<SearchComponent> components = null;
-  protected NamedList initArgs = null;
-
-  @Override
-  public void init(NamedList args) {
-    super.init( args );
-    initArgs = args;
-  }
 
   protected List<String> getDefaultComponets()
   {

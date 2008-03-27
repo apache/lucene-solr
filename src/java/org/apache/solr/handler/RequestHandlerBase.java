@@ -41,6 +41,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   // acceptable every million requests or so?
   long numRequests;
   long numErrors;
+  protected NamedList initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
@@ -92,6 +93,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
   public void init(NamedList args) {
+    initArgs = args;
+
     // Copied from StandardRequestHandler 
     if( args != null ) {
       Object o = args.get("defaults");
@@ -107,6 +110,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         invariants = SolrParams.toSolrParams((NamedList)o);
       }
     }
+  }
+
+  public NamedList getInitArgs() {
+    return initArgs;
   }
   
   public abstract void handleRequestBody( SolrQueryRequest req, SolrQueryResponse rsp ) throws Exception;
