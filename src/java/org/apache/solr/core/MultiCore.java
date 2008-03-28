@@ -150,7 +150,8 @@ public class MultiCore
         try { cfgis.close(); } catch (Exception xany) {}
       }
     }
-    enabled = true;
+
+    setEnabled(true);
   }
   
   /**
@@ -190,8 +191,11 @@ public class MultiCore
         name.indexOf( '\\' ) >= 0 ){
       throw new RuntimeException( "Invalid core name: "+name );
     }
-    
-    CoreDescriptor old = cores.put(name, descr);
+
+    CoreDescriptor old = null;    
+    synchronized (cores) {
+      old = cores.put(name, descr);
+    }
     if( old == null ) {
       log.info( "registering core: "+name );
       return null;
@@ -291,15 +295,21 @@ public class MultiCore
    */
   public Collection<SolrCore> getCores() {
     java.util.List<SolrCore> l = new java.util.ArrayList<SolrCore>();
-    for(CoreDescriptor descr : this.cores.values()) {
-      if (descr.getCore() != null)
-        l.add(descr.getCore());
+    synchronized (cores) {
+      for(CoreDescriptor descr : this.cores.values()) {
+        if (descr.getCore() != null)
+          l.add(descr.getCore());
+      }
     }
     return l;
   }
   
   public Collection<CoreDescriptor> getDescriptors() {
-    return cores.values();
+   java.util.List<CoreDescriptor> l = new java.util.ArrayList<CoreDescriptor>();
+   synchronized (cores) {
+     l.addAll(cores.values());
+   }
+   return l;
   }
   
   public SolrCore getCore(String name) {
@@ -312,13 +322,17 @@ public class MultiCore
       return cores.get( name );
     }
   }
-  
+
+  // all of the following properties aren't synchronized
+  // but this should be OK since they normally won't be changed rapidly
   public boolean isEnabled() {
     return enabled;
   }
   
   public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
+    synchronized(this) {
+      this.enabled = enabled;
+    }
   }
   
   public boolean isPersistent() {
@@ -326,7 +340,9 @@ public class MultiCore
   }
   
   public void setPersistent(boolean persistent) {
-    this.persistent = persistent;
+    synchronized(this) {
+      this.persistent = persistent;
+    }
   }
   
   public String getAdminPath() {
@@ -334,7 +350,9 @@ public class MultiCore
   }
   
   public void setAdminPath(String adminPath) {
-    this.adminPath = adminPath;
+    synchronized (this) {
+      this.adminPath = adminPath;
+    }
   }
   
   /**
@@ -344,7 +362,9 @@ public class MultiCore
    * This however can be useful implementing a "metacore" (a core of cores).
    */
   public void setAdminCore(SolrCore core) {
-    adminCore = new java.lang.ref.WeakReference<SolrCore>(core);
+    synchronized (cores) {
+      adminCore = new java.lang.ref.WeakReference<SolrCore>(core);
+    }
   }
 
   /**
@@ -352,19 +372,21 @@ public class MultiCore
    * This makes the best attempt to reuse the same opened SolrCore accross calls.
    */
   public SolrCore getAdminCore() {
-    SolrCore core = adminCore != null ? adminCore.get() : null;
-    if (core == null || core.isClosed()) {
-      for (CoreDescriptor descr : this.cores.values()) {
-        core = descr.getCore();
-        if (core == null || core.isClosed()) {
-          core = null;
-        } else {
-          break;
+    synchronized (cores) {
+      SolrCore core = adminCore != null ? adminCore.get() : null;
+      if (core == null || core.isClosed()) {
+        for (CoreDescriptor descr : this.cores.values()) {
+          core = descr.getCore();
+          if (core == null || core.isClosed()) {
+            core = null;
+          } else {
+            break;
+          }
         }
+        setAdminCore(core);
       }
-      setAdminCore(core);
+      return core;
     }
-    return core;
   }
 
   /** 
@@ -442,10 +464,11 @@ public class MultiCore
       writer.write("false'");
     }
     writer.write(">\n");
-    
-    // for all cores...(synchronized on cores by caller)
-    for (Map.Entry<String, CoreDescriptor> entry : cores.entrySet()) {
-      persist(writer, entry.getValue());
+
+    synchronized(cores) {
+      for (Map.Entry<String, CoreDescriptor> entry : cores.entrySet()) {
+        persist(writer, entry.getValue());
+      }
     }
     writer.write("</multicore>\n");
   }
