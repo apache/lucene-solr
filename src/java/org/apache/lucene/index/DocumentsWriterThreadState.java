@@ -573,7 +573,6 @@ final class DocumentsWriterThreadState {
           last = fp0;
           fp0 = fp0.next;
         }
-        assert fp0 != null;
 
         if (last == null)
           fieldDataHash[hashPos] = fp.next;
