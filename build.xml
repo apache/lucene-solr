@@ -242,6 +242,7 @@
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
+          <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/lucli/src/java"/>
           <packageset dir="contrib/memory/src/java"/>
           <packageset dir="contrib/miscellaneous/src/java"/>
@@ -270,6 +271,7 @@
           <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
+          <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Lucli" packages="lucli*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
