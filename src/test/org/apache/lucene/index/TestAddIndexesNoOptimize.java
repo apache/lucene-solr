@@ -150,20 +150,6 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.close();
 
     writer = newWriter(dir, false);
-    int maxMergeDocs = writer.getMaxMergeDocs();
-    writer.setMaxMergeDocs(99);
-
-    try {
-      // upper bound cannot exceed maxMergeDocs
-      writer.addIndexesNoOptimize(new Directory[] { aux });
-      assertTrue(false);
-    }
-    catch (IllegalArgumentException e) {
-      assertEquals(100, writer.docCount());
-      assertEquals(1, writer.getSegmentCount());
-    }
-
-    writer.setMaxMergeDocs(maxMergeDocs);
     try {
       // cannot add self
       writer.addIndexesNoOptimize(new Directory[] { aux, dir });

@@ -269,13 +269,6 @@ public abstract class LogMergePolicy extends MergePolicy {
       final SegmentInfo info = infos.info(i);
       long size = size(info);
 
-      // Refuse to import a segment that's too large
-      if (info.docCount > maxMergeDocs && info.dir != directory)
-        throw new IllegalArgumentException("Segment is too large (" + info.docCount + " docs vs max docs " + maxMergeDocs + ")");
-
-      if (size >= maxMergeSize && info.dir != directory)
-        throw new IllegalArgumentException("Segment is too large (" + size + " vs max size " + maxMergeSize + ")");
-
       // Floor tiny segments
       if (size < 1)
         size = 1;
