@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.util.ArraysUtils;
 
 import java.io.IOException;
 
@@ -30,23 +31,27 @@ public class RemoveDuplicatesTokenFilter extends BufferedTokenStream {
   public RemoveDuplicatesTokenFilter(TokenStream input) {super(input);}
   protected Token process(Token t) throws IOException {
     Token tok = read();
-    OUT: while (tok != null && tok.getPositionIncrement()==0) {
+    while (tok != null && tok.getPositionIncrement()==0) {
       if (null != t) {
         write(t);
         t = null;
       }
       boolean dup=false;
-      IN: for (Token outTok : output()) {
-        if (outTok.termText().equals(tok.termText())) {
+      for (Token outTok : output()) {
+        int tokLen = tok.termLength();
+        if (outTok.termLength() == tokLen && ArraysUtils.equals(outTok.termBuffer(), 0, tok.termBuffer(), 0, tokLen)) {
           dup=true;
-          break IN;
+          //continue;;
         }
       }
-      if (!dup)
+      if (!dup){
         write(tok);
+      }
       tok = read();
     }
-    if (tok != null) pushBack(tok);
+    if (tok != null) {
+      pushBack(tok);
+    }
     return t;
   }
 } 

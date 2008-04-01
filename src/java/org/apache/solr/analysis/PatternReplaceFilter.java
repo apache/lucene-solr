@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Token;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.IOException;
+import java.nio.CharBuffer;
 
 /**
  * A TokenFilter which applies a Pattern to each token in the stream,
@@ -64,12 +65,12 @@ public final class PatternReplaceFilter extends TokenFilter {
     this.all=all;
   }
   
-  public final Token next() throws IOException {
-    Token t = input.next();
+  public final Token next(Token in) throws IOException {
+    Token t = input.next(in);
     if (t == null)
       return null;
-
-    Matcher m = p.matcher(t.termText());
+    CharSequence text = CharBuffer.wrap(t.termBuffer(), 0, t.termLength());
+    Matcher m = p.matcher(text);
     if (all) {
       t.setTermText(m.replaceAll(replacement));
     } else {

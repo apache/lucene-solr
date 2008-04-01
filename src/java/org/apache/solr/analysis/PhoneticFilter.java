@@ -46,29 +46,27 @@ public class PhoneticFilter extends TokenFilter
   }
 
   @Override
-  public final Token next() throws IOException {
+  public final Token next(Token in) throws IOException {
     if( save != null ) {
       Token temp = save;
       save = null;
       return temp;
     }
     
-    Token t = input.next();
+    Token t = input.next(in);
     if( t != null ) {
-      String value = t.termText();
+      String value = new String(t.termBuffer(), 0, t.termLength());
       try {
-        value = encoder.encode(t.termText()).toString();
+        value = encoder.encode(value).toString();
       } 
       catch (Exception ignored) {} // just use the direct text
-
-      Token m = new Token(value, t.startOffset(), t.endOffset(), name );
+      //Token m = new Token(value, t.startOffset(), t.endOffset(), name );
       if( inject ) {
-        m.setPositionIncrement(0);
-        save = m;
-      }
-      else {
-        // replace the token rather then add it too the stream
-        return m;
+        save = (Token) t.clone();
+        save.setPositionIncrement(0);
+        save.setTermBuffer(value.toCharArray(), 0, value.length());
+      } else {
+        t.setTermBuffer(value.toCharArray(), 0, value.length());
       }
     }
     return t;

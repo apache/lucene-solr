@@ -28,25 +28,26 @@ import org.apache.lucene.analysis.*;
  * This filter should be used on indexing time only.
  * Example field definition in schema.xml:
  * <pre>
- * <fieldtype name="text" class="solr.TextField" positionIncrementGap="100">
- * 	<analyzer type="index">
- * 		<tokenizer class="solr.WhitespaceTokenizerFactory"/>
- *      <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
- *      <filter class="solr.StopFilterFactory" ignoreCase="true"/>
- *      <filter class="solr.HyphenatedWordsFilterFactory"/>
- *      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
- *      <filter class="solr.LowerCaseFilterFactory"/>
- *      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
- *  </analyzer>
- *  <analyzer type="query">
- *      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
- *      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
- *      <filter class="solr.StopFilterFactory" ignoreCase="true"/>
- *      <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
- *      <filter class="solr.LowerCaseFilterFactory"/>
- *      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
- *  </analyzer>
- * </fieldtype>
+ * &lt;fieldtype name="text" class="solr.TextField" positionIncrementGap="100"&gt;
+ * 	&lt;analyzer type="index"&gt;
+ * 		&lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *      &lt;filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/&gt;
+ *      &lt;filter class="solr.StopFilterFactory" ignoreCase="true"/&gt;
+ *      &lt;filter class="solr.HyphenatedWordsFilterFactory"/&gt;
+ *      &lt;filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/&gt;
+ *      &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *      &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
+ *  &lt;/analyzer&gt;
+ *  &lt;analyzer type="query"&gt;
+ *      &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *      &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/&gt;
+ *      &lt;filter class="solr.StopFilterFactory" ignoreCase="true"/&gt;
+ *      &lt;filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/&gt;
+ *      &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
+ *      &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
+ *  &lt;/analyzer&gt;
+ * &lt;/fieldtype&gt;
+ * </pre>
  * 
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
@@ -55,16 +56,18 @@ public final class HyphenatedWordsFilter extends TokenFilter {
 		super(in);
 	}
 
-	/**
+
+
+  /**
 	 * @inheritDoc
 	 * @see org.apache.lucene.analysis.TokenStream#next()
 	 */
-	public final Token next() throws IOException {
-		StringBuffer termText = new StringBuffer(25);
+	public final Token next(Token in) throws IOException {
+		StringBuilder termText = new StringBuilder(25);
 		int startOffset = -1, firstPositionIncrement = -1, wordsMerged = 0;
 		Token lastToken = null;
-		for (Token token = input.next(); token != null; token = input.next()) {
-			termText.append(token.termText());
+		for (Token token = input.next(in); token != null; token = input.next()) {
+			termText.append(token.termBuffer(), 0, token.termLength());
 			//current token ends with hyphen -> grab the next token and glue them together
 			if (termText.charAt(termText.length() - 1) == '-') {
 				wordsMerged++;

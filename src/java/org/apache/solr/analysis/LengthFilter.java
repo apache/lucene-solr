@@ -36,8 +36,8 @@ public final class LengthFilter extends TokenFilter {
     //System.out.println("min="+min+" max="+max);
   }
 
-  public final Token next() throws IOException {
-    for (Token token=input.next(); token!=null; token=input.next()) {
+  public final Token next(Token in) throws IOException {
+    for (Token token=input.next(in); token!=null; token=input.next(in)) {
       final int len = token.endOffset() - token.startOffset();
       if (len<min || len>max) continue;
       return token;

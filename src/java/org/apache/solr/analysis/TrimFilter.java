@@ -17,9 +17,9 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 
 import java.io.IOException;
 
@@ -29,50 +29,54 @@ import java.io.IOException;
  * @version $Id:$
  */
 public final class TrimFilter extends TokenFilter {
-  
+
   final boolean updateOffsets;
 
-  public TrimFilter(TokenStream in, boolean updateOffsets ) {
+  public TrimFilter(TokenStream in, boolean updateOffsets) {
     super(in);
     this.updateOffsets = updateOffsets;
   }
 
   @Override
-  public final Token next() throws IOException {
-    Token t = input.next();
-    if (null == t || null == t.termText())
+  public final Token next(Token in) throws IOException {
+    Token t = input.next(in);
+    if (null == t || null == t.termBuffer() || t.termLength() == 0){
       return t;
+    }
+    char[] termBuffer = t.termBuffer();
+    int len = t.termLength();
+    int start = 0;
+    int end = 0;
+    int endOff = 0;
 
-    if( updateOffsets ) {
-      String txt = t.termText();
-      int start = 0;
-      int end = txt.length();
-      int endOff = 0;
-      
-      // eat the first characters
-      while ((start < end) && (txt.charAt(start) <= ' ')) {
-        start++;
-      }
-      
-      // eat the end characters
-      while ((start < end) && (txt.charAt(end-1) <= ' ')) {
-        end--;
-        endOff++;
-      }
-      
-      if( start > 0 || end < txt.length() ) {
-        int incr = t.getPositionIncrement();
-        t = new Token( t.termText().substring( start, end ),
-             t.startOffset()+start,
-             t.endOffset()-endOff,
-             t.type() );
-        
-        t.setPositionIncrement( incr ); //+ start ); TODO? what should happen with the offset
-      }
+    // eat the first characters
+    //QUESTION: Should we use Character.isWhitespace() instead?
+    for (start = 0; start < len && termBuffer[start] <= ' '; start++) {
     }
-    else {
-      t.setTermText( t.termText().trim() );
+    // eat the end characters
+    for (end = len; end >= start && termBuffer[end - 1] <= ' '; end--) {
+      endOff++;
     }
+    if (start > 0 || end < len) {
+      if (start < end) {
+        t.setTermBuffer(t.termBuffer(), start, (end - start));
+      } else {
+        t.setTermLength(0);
+      }
+      if (updateOffsets) {
+        t.setStartOffset(t.startOffset() + start);
+        if (start < end) {
+          t.setEndOffset(t.endOffset() - endOff);
+        } //else if end is less than, start, then the term length is 0, so, no need to bother w/ the end offset
+      }
+      /*t = new Token( t.termText().substring( start, end ),
+     t.startOffset()+start,
+     t.endOffset()-endOff,
+     t.type() );*/
+
+
+    }
+
     return t;
   }
 }

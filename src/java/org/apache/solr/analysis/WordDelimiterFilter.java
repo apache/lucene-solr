@@ -192,7 +192,7 @@ final class WordDelimiterFilter extends TokenFilter {
   // use the type of the first char as the type
   // of the token.
   private int tokType(Token t) {
-    return charType(t.termText().charAt(0));
+    return charType(t.termBuffer()[0]);
   }
 
   // There isn't really an efficient queue class, so we will
@@ -207,23 +207,22 @@ final class WordDelimiterFilter extends TokenFilter {
   private Token newTok(Token orig, int start, int end) {
     int startOff = orig.startOffset();
     int endOff = orig.endOffset();
-    String origStr = orig.termText();
-
     // if length by start + end offsets doesn't match the term text then assume
     // this is a synonym and don't adjust the offsets.
-    if (origStr.length() == endOff-startOff) {
+    if (orig.termLength() == endOff-startOff) {
       endOff = startOff + end;
       startOff += start;     
     }
 
-    return new Token(orig.termText().substring(start,end),
-            startOff,
+    Token newTok = new Token(startOff,
             endOff,
             orig.type());
+    newTok.setTermBuffer(orig.termBuffer(), start, (end - start));
+    return newTok;
   }
 
 
-  public final Token next() throws IOException {
+  public final Token next(Token in) throws IOException {
 
     // check the queue first
     if (queuePos<queue.size()) {
@@ -248,25 +247,25 @@ final class WordDelimiterFilter extends TokenFilter {
       Token t = input.next();
       if (t == null) return null;
 
-      String s = t.termText();
+      char [] termBuffer = t.termBuffer();
+      int len = t.termLength();
       int start=0;
-      int end=s.length();
-      if (end==0) continue;
+      if (len ==0) continue;
 
       origPosIncrement = t.getPositionIncrement();
 
       // Avoid calling charType more than once for each char (basically
       // avoid any backtracking).
       // makes code slightly more difficult, but faster.
-      int ch=s.charAt(start);
+      int ch=termBuffer[start];
       int type=charType(ch);
 
       int numWords=0;
 
-      while (start<end) {
+      while (start< len) {
         // first eat delimiters at the start of this subword
-        while ((type & SUBWORD_DELIM)!=0 && ++start<end) {
-          ch=s.charAt(start);
+        while ((type & SUBWORD_DELIM)!=0 && ++start< len) {
+          ch=termBuffer[start];
           type=charType(ch);
         }
 
@@ -278,23 +277,23 @@ final class WordDelimiterFilter extends TokenFilter {
         int lastType=type;  // type of the previously read char
 
 
-        while (pos<end) {
+        while (pos< len) {
 
           if (type!=lastType) {
             // check and remove "'s" from the end of a token.
             // the pattern to check for is
             //   ALPHA "'" ("s"|"S") (SUBWORD_DELIM | END)
             if ((lastType & ALPHA)!=0) {
-              if (ch=='\'' && pos+1<end
-                      && (s.charAt(pos+1)=='s' || s.charAt(pos+1)=='S'))
+              if (ch=='\'' && pos+1< len
+                      && (termBuffer[pos+1]=='s' || termBuffer[pos+1]=='S'))
               {
                 int subWordEnd=pos;
-                if (pos+2>=end) {
+                if (pos+2>= len) {
                   // end of string detected after "'s"
                   pos+=2;
                 } else {
                   // make sure that a delimiter follows "'s"
-                  int ch2 = s.charAt(pos+2);
+                  int ch2 = termBuffer[pos+2];
                   int type2 = charType(ch2);
                   if ((type2 & SUBWORD_DELIM)!=0) {
                     // if delimiter, move position pointer
@@ -340,7 +339,7 @@ final class WordDelimiterFilter extends TokenFilter {
             }
           }
 
-          if (++pos >= end) {
+          if (++pos >= len) {
             if (start==0) {
               // the subword is the whole original token, so
               // return it unchanged.
@@ -362,7 +361,7 @@ final class WordDelimiterFilter extends TokenFilter {
           }
 
           lastType = type;
-          ch = s.charAt(pos);
+          ch = termBuffer[pos];
           type = charType(ch);
         }
 
@@ -482,7 +481,7 @@ final class WordDelimiterFilter extends TokenFilter {
       tok = lst.get(i);
       if (catenateSubwords) {
         if (i==start) firstTok=tok;
-        sb.append(tok.termText());
+        sb.append(tok.termBuffer(), 0, tok.termLength());
       }
       if (generateSubwords) {
         queue.add(tok);

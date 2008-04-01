@@ -17,97 +17,92 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.Token;
 
-import java.util.List;
-import java.util.Set;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @version $Id$
  */
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
-  
+  public static final String PROTECTED_TOKENS = "protected";
+
   public void inform(ResourceLoader loader) {
-    String wordFile = args.get("protected");
+    String wordFile = args.get(PROTECTED_TOKENS);
     if (wordFile != null) {
       try {
         List<String> wlist = loader.getLines(wordFile);
-         protectedWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]));
+        //This cast is safe in Lucene
+        protectedWords = new CharArraySet(wlist, false);//No need to go through StopFilter as before, since it just uses a List internally
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
-  private Set protectedWords = null;
+  private CharArraySet protectedWords = null;
 
   public EnglishPorterFilter create(TokenStream input) {
-    return new EnglishPorterFilter(input,protectedWords);
+    return new EnglishPorterFilter(input, protectedWords);
   }
 
 }
 
 
-/** English Porter2 filter that doesn't use reflection to
-/*  adapt lucene to the snowball stemmer code.
+/**
+ * English Porter2 filter that doesn't use reflection to
+ * adapt lucene to the snowball stemmer code.
  */
 class EnglishPorterFilter extends TokenFilter {
-  private final Set protWords;
+  private final CharArraySet protWords;
   private net.sf.snowball.ext.EnglishStemmer stemmer;
 
-  public EnglishPorterFilter(TokenStream source, Set protWords) {
+  public EnglishPorterFilter(TokenStream source, CharArraySet protWords) {
     super(source);
-    this.protWords=protWords;
+    this.protWords = protWords;
     stemmer = new net.sf.snowball.ext.EnglishStemmer();
   }
 
 
-  /** the original code from lucene sandbox
-  public final Token next() throws IOException {
-    Token token = input.next();
-    if (token == null)
-      return null;
-    stemmer.setCurrent(token.termText());
-    try {
-      stemMethod.invoke(stemmer, EMPTY_ARGS);
-    } catch (Exception e) {
-      throw new RuntimeException(e.toString());
-    }
-    return new Token(stemmer.getCurrent(),
-                     token.startOffset(), token.endOffset(), token.type());
-  }
-  **/
+  /**
+   * the original code from lucene sandbox
+   * public final Token next() throws IOException {
+   * Token token = input.next();
+   * if (token == null)
+   * return null;
+   * stemmer.setCurrent(token.termText());
+   * try {
+   * stemMethod.invoke(stemmer, EMPTY_ARGS);
+   * } catch (Exception e) {
+   * throw new RuntimeException(e.toString());
+   * }
+   * return new Token(stemmer.getCurrent(),
+   * token.startOffset(), token.endOffset(), token.type());
+   * }
+   */
 
   @Override
-  public Token next() throws IOException {
-    Token tok = input.next();
-    if (tok==null) return null;
-    String tokstr = tok.termText();
-
-    // if protected, don't stem.  use this to avoid stemming collisions.
-    if (protWords != null && protWords.contains(tokstr)) {
-      return tok;
+  public Token next(Token token) throws IOException {
+    Token result = input.next(token);
+    if (result != null) {
+      char[] termBuffer = result.termBuffer();
+      int len = result.termLength();
+      // if protected, don't stem.  use this to avoid stemming collisions.
+      if (protWords != null && protWords.contains(termBuffer, 0, len)) {
+        return result;
+      }
+      stemmer.setCurrent(new String(termBuffer, 0, len));//ugh, wish the Stemmer took a char array
+      stemmer.stem();
+      String newstr = stemmer.getCurrent();
+      result.setTermBuffer(newstr.toCharArray(), 0, newstr.length());
     }
-
-    stemmer.setCurrent(tokstr);
-    stemmer.stem();
-    String newstr = stemmer.getCurrent();
-    if (tokstr.equals(newstr)) {
-      return tok;
-    } else {
-      // TODO: it would be nice if I could just set termText directly like
-      // lucene packages can.
-      Token newtok = new Token(newstr, tok.startOffset(), tok.endOffset(), tok.type());
-      newtok.setPositionIncrement(tok.getPositionIncrement());
-      return newtok;
-    }
-
+    return result;
   }
 }
 

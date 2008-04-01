@@ -867,6 +867,7 @@ Optimizations
     a single token per document (not multiValued & not tokenized) by using the
     Lucene FieldCache entry for that field to tally term counts.  The first request
     utilizing the FieldCache will take longer than subsequent ones.
+ 7. Converted TokenStreams to use Lucene's new char array based capabilities. (SOLR-330, gsingers)
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different

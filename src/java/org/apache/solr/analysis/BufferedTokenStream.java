@@ -55,7 +55,7 @@ import java.util.LinkedList;
  * @version $Id$
  */
 public abstract class BufferedTokenStream extends TokenStream {
-  // in the futute, might be faster if we implemented as an array based CircularQueue
+  // in the future, might be faster if we implemented as an array based CircularQueue
   private final LinkedList<Token> inQueue = new LinkedList<Token>();
   private final LinkedList<Token> outQueue = new LinkedList<Token>();
   private final TokenStream input;

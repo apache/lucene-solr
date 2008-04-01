@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.CharArraySet;
 
 import java.io.IOException;
 import java.util.Set;
@@ -32,23 +33,18 @@ import java.util.Set;
  * @since solr 1.3
  */
 public final class KeepWordFilter extends TokenFilter {
-  final Set<String> words;
-  final boolean ignoreCase;
+  final CharArraySet words;
+
   
   public KeepWordFilter(TokenStream in, Set<String> words, boolean ignoreCase ) {
     super(in);
-    this.words=words;
-    this.ignoreCase=ignoreCase;
+    this.words = new CharArraySet(words, ignoreCase);
   }
 
   @Override
-  public final Token next() throws IOException {
-    for (Token token=input.next(); token!=null; token=input.next()) {
-      String txt = ignoreCase
-        ? token.termText().toLowerCase()
-        : token.termText();
-     
-      if( words.contains( txt ) ) {
+  public final Token next(Token in) throws IOException {
+    for (Token token=input.next(in); token!=null; token=input.next()) {
+      if( words.contains( token.termBuffer(), 0, token.termLength() ) ) {
         return token;
       }
     }

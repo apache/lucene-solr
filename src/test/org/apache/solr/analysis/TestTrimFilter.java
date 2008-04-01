@@ -35,11 +35,16 @@ public class TestTrimFilter extends BaseTokenTestCase {
                            new Token("cCc",11,15),
                            new Token("   ",16,20)), false );
 
-    assertEquals("a", ts.next().termText());
-    assertEquals("b", ts.next().termText());
-    assertEquals("cCc", ts.next().termText());
-    assertEquals("", ts.next().termText());
-    assertNull(ts.next());
+    Token token = ts.next();
+    assertEquals("a", new String(token.termBuffer(), 0, token.termLength()));
+    token = ts.next();
+    assertEquals("b", new String(token.termBuffer(), 0, token.termLength()));
+    token = ts.next();
+    assertEquals("cCc", new String(token.termBuffer(), 0, token.termLength()));
+    token = ts.next();
+    assertEquals("", new String(token.termBuffer(), 0, token.termLength()));
+    token = ts.next();
+    assertNull(token);
     
     ts = new TrimFilter( new IterTokenStream(
            new Token(" a", 0,2),
