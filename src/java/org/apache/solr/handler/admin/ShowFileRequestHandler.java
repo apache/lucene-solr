@@ -18,10 +18,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,7 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -177,34 +175,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       rsp.add( "files", files );
     }
     else {
-      // Check if they want the file as text
-      final String contentType = req.getParams().get( USE_CONTENT_TYPE );
-      
-      final File file = adminFile;
-      //final URLConnection conn = adminFile.toURI().toURL().openConnection();
-      
-      ContentStream stream = new ContentStream() {
-        public String getName() { return file.getName(); }
-        public Long getSize() { return file.length(); }
-        public String getSourceInfo() { return null; }
-
-        public String getContentType() { 
-          if( contentType != null ) {
-            return contentType;
-          }
-          return null; //conn.getContentType(); 
-        }
-        
-        public InputStream getStream() throws IOException {
-          return loader.openResource( file.getPath() ); //conn.getInputStream();
-        }
-        
-        public Reader getReader() throws IOException {
-          return new FileReader( file );
-        }
-      };
-      
-      rsp.add( RawResponseWriter.CONTENT, stream );
+      // Include the file contents
+      ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
+      content.setContentType( req.getParams().get( USE_CONTENT_TYPE ) );
+  
+      rsp.add( RawResponseWriter.CONTENT, content );
     }
   }
   
