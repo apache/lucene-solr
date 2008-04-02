@@ -107,7 +107,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "A14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForCommit(20000));
 
     req.setContentStreams( toContentStreams(
         adoc("id", "A15", "subject", "info" ), null ) );
@@ -117,33 +117,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should find one", req("id:A14") ,"//result[@numFound=1]" );
     assertEquals( 1, tracker.getCommitCount());
     // But not the one added afterward
-    assertQ("should find one", req("id:A15") ,"//result[@numFound=0]" );
+    assertQ("should not find one", req("id:A15") ,"//result[@numFound=0]" );
     assertEquals( 1, tracker.getCommitCount());
     
-    // Now add some more
-    for( int i=0; i<14; i++ ) {
-      req.setContentStreams( toContentStreams(
-        adoc("id", "B"+i, "subject", "info" ), null ) );
-      handler.handleRequest( req, rsp );
-    }
-    // It should not be there right away
-    assertQ("shouldn't find any", req("id:B1") ,"//result[@numFound=0]" );
-    assertEquals( 1, tracker.getCommitCount() );
-    
-    req.setContentStreams( toContentStreams(
-        adoc("id", "B14", "subject", "info" ), null ) );
-    handler.handleRequest( req, rsp );
-    assertTrue(trigger.waitForCommit(10000));
-
-    // add request will block if commit has already started or completed
-    req.setContentStreams( toContentStreams(
-        adoc("id", "B15", "subject", "info" ), null ) );
-    handler.handleRequest( req, rsp );
-    
-    assertQ("should find one", req("id:B14") ,"//result[@numFound=1]" );
-    assertEquals( 2, tracker.getCommitCount() );
-    assertQ("should find none", req("id:B15") ,"//result[@numFound=0]" );
-    assertEquals( 2, tracker.getCommitCount());
   }
 
   public void testMaxTime() throws Exception {
