@@ -69,9 +69,7 @@ public class RawResponseWriter implements QueryResponseWriter
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Object obj = response.getValues().get( CONTENT );
     if( obj != null && (obj instanceof ContentStream ) ) {
-      // copy the contents to the writer...
-      ContentStream content = (ContentStream)obj;
-      return content.getContentType();
+      return ((ContentStream)obj).getContentType();
     }
     return getBaseWriter( request ).getContentType( request, response );
   }
