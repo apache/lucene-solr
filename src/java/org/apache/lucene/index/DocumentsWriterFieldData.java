@@ -239,11 +239,13 @@ final class DocumentsWriterFieldData implements Comparable {
 
       try {
         offsetEnd = offset-1;
-        Token token;
         for(;;) {
-          token = stream.next(localToken);
+          Token token = stream.next(localToken);
           if (token == null) break;
           position += (token.getPositionIncrement() - 1);
+          // LUCENE-1255: don't allow negative positon
+          if (position < 0)
+            position = 0;
           addPosition(token);
           if (++length >= maxFieldLength) {
             if (threadState.docWriter.infoStream != null)

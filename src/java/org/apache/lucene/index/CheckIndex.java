@@ -223,7 +223,7 @@ public class CheckIndex {
               final int pos = termPositions.nextPosition();
               if (pos < 0)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
-              if (pos <= lastPos)
+              if (pos < lastPos)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
             }
           }
