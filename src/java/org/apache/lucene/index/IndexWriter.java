@@ -1260,8 +1260,11 @@ public class IndexWriter {
       throw oom;
     } finally {
       synchronized(this) {
-        if (!closed)
+        if (!closed) {
           closing = false;
+          if (infoStream != null)
+            message("hit exception while closing");
+        }
         notifyAll();
       }
     }

@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SinkTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -39,6 +40,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -2989,5 +2993,46 @@ public class TestIndexWriter extends LuceneTestCase
     assertEquals(1, ir.maxDoc());
     assertEquals(0, ir.numDocs());
     ir.close();
+  }
+
+  // LUCENE-1255
+  public void testNegativePositions() throws Throwable {
+    SinkTokenizer tokens = new SinkTokenizer();
+    Token t = new Token();
+    t.setTermText("a");
+    t.setPositionIncrement(0);
+    tokens.add(t);
+    t.setTermText("b");
+    t.setPositionIncrement(1);
+    tokens.add(t);
+    t.setTermText("c");
+    tokens.add(t);
+
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true);
+    Document doc = new Document();
+    doc.add(new Field("field", tokens));
+    w.addDocument(doc);
+    w.close();
+
+    IndexSearcher s = new IndexSearcher(dir);
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(new Term("field", "a"));
+    pq.add(new Term("field", "b"));
+    pq.add(new Term("field", "c"));
+    Hits hits = s.search(pq);
+    assertEquals(1, hits.length());
+
+    Query q = new SpanTermQuery(new Term("field", "a"));
+    hits = s.search(q);
+    assertEquals(1, hits.length());
+    TermPositions tps = s.getIndexReader().termPositions(new Term("field", "a"));
+    assertTrue(tps.next());
+    assertEquals(1, tps.freq());
+    assertEquals(0, tps.nextPosition());
+
+    assertTrue(_TestUtil.checkIndex(dir));
+    s.close();
+    dir.close();
   }
 }
