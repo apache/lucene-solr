@@ -271,7 +271,7 @@
           }
           return p;
         }));
-      $('#mainInfo').append(solr.createNameValueText('Tokenzied', ft.tokenized));
+      $('#mainInfo').append(solr.createNameValueText('Tokenized', ft.tokenized));
       $('#mainInfo').append(solr.createNameValueText('Class Name', ft.className));
 
       solr.displayAnalyzer(ft.indexAnalyzer, 'Index Analyzer');
