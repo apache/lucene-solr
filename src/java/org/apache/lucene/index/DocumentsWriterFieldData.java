@@ -243,7 +243,7 @@ final class DocumentsWriterFieldData implements Comparable {
           Token token = stream.next(localToken);
           if (token == null) break;
           position += (token.getPositionIncrement() - 1);
-          // LUCENE-1255: don't allow negative positon
+          // LUCENE-1255: don't allow negative position
           if (position < 0)
             position = 0;
           addPosition(token);
