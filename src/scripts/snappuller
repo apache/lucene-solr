@@ -164,7 +164,7 @@ logMessage command: $0 $@
 if [[ ! -f ${solr_root}/logs/snappuller-enabled ]]
 then
     logMessage snappuller disabled
-    exit 1
+    exit 2
 fi
 
 # make sure we can ssh to master
