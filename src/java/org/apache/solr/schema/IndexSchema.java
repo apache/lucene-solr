@@ -511,7 +511,13 @@ public final class IndexSchema {
     } else {
       defaultSearchFieldName=node.getNodeValue().trim();
       // throw exception if specified, but not found or not indexed
-      if (defaultSearchFieldName!=null) getIndexedField(defaultSearchFieldName);
+      if (defaultSearchFieldName!=null) {
+        SchemaField defaultSearchField = getFields().get(defaultSearchFieldName);
+        if ((defaultSearchField == null) || !defaultSearchField.indexed()) {
+          String msg =  "default search field '" + defaultSearchFieldName + "' not defined or not indexed" ;
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+        }
+      }
       log.info("default search field is "+defaultSearchFieldName);
     }
 
