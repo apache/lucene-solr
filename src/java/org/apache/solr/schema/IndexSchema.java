@@ -425,7 +425,7 @@ public final class IndexSchema {
 
         FieldType ft = fieldTypes.get(type);
         if (ft==null) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "'",false);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "' specified on field " + name,false);
         }
 
         Map<String,String> args = DOMUtil.toMapExcept(attrs, "name", "type");
@@ -594,9 +594,18 @@ public final class IndexSchema {
             destArr = (SchemaField[])append(destArr,d);
           }
           copyFields.put(source,destArr);
-          copyFieldTarget.add( d );
+
+          copyFieldTargetCounts.put(d, (copyFieldTargetCounts.containsKey(d) ? copyFieldTargetCounts.get(d) + 1 : 1));
         }
      }
+      
+      for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet())    {
+        if (entry.getValue() > 1 && !entry.getKey().multiValued())  {
+          log.warning("Field " + entry.getKey().name + " is not multivalued "+
+                      "and destination for multiple copyFields ("+
+                      entry.getValue()+")");
+        }
+      }
 
       log.finest("Dynamic Copied Fields:" + dCopies);
 
@@ -976,8 +985,12 @@ public final class IndexSchema {
 
   private final Map<String, SchemaField[]> copyFields = new HashMap<String,SchemaField[]>();
   private DynamicCopy[] dynamicCopyFields;
-  private final Set<SchemaField> copyFieldTarget = new HashSet<SchemaField>();
-
+  /**
+   * keys are all fields copied to, count is num of copyField
+   * directives that target them.
+   */
+  private Map<SchemaField, Integer> copyFieldTargetCounts
+    = new HashMap<SchemaField, Integer>();
 
   /**
    * Get all copy fields, both the static and the dynamic ones.
@@ -1040,7 +1053,7 @@ public final class IndexSchema {
    */
   public boolean isCopyFieldTarget( SchemaField f )
   {
-    return copyFieldTarget.contains( f );
+    return copyFieldTargetCounts.containsKey( f );
   }
 
   /**
