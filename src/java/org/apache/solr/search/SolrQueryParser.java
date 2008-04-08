@@ -22,6 +22,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 
@@ -51,6 +52,7 @@ import org.apache.solr.schema.IndexSchema;
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
   protected final QParser parser;
+  protected final String defaultField;
 
   /**
    * Constructs a SolrQueryParser using the schema to understand the
@@ -66,6 +68,7 @@ public class SolrQueryParser extends QueryParser {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
     this.parser  = null;
+    this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
   }
 
@@ -73,11 +76,20 @@ public class SolrQueryParser extends QueryParser {
     super(defaultField, parser.getReq().getSchema().getQueryAnalyzer());
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
+    this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
   }
 
+  private void checkNullField(String field) throws SolrException {
+    if (field == null && defaultField == null) {
+      throw new SolrException
+        (SolrException.ErrorCode.BAD_REQUEST,
+         "no field name specified in query and no defaultSearchField defined in schema.xml");
+    }
+  }
 
   protected Query getFieldQuery(String field, String queryText) throws ParseException {
+    checkNullField(field);
     // intercept magic field name of "_" to use as a hook for our
     // own functions.
     if (field.charAt(0) == '_') {
@@ -98,6 +110,7 @@ public class SolrQueryParser extends QueryParser {
   }
 
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
+    checkNullField(field);
     FieldType ft = schema.getFieldType(field);
     return new ConstantScoreRangeQuery(
       field,
@@ -107,6 +120,7 @@ public class SolrQueryParser extends QueryParser {
   }
 
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
+    checkNullField(field);
     if (getLowercaseExpandedTerms()) {
       termStr = termStr.toLowerCase();
     }

@@ -323,6 +323,10 @@ Bug Fixes
 
 20. SOLR-535: Fixed typo (Tokenzied -> Tokenized) in schema.jsp (Thomas Peuss via billa)
 
+21. SOLR-529: Better error messages from SolrQueryParser when field isn't
+    specified and there is no defaultSearchField in schema.xml
+    (Lars Kotthoff via hossman)
+
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
     build scripts to make two jars: apache-solr-1.3.jar and 
