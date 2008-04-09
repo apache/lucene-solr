@@ -492,6 +492,7 @@
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>
+        <fileset dir="${solrj-dir}/test/" includes="**/${testcase}.java" />
       </batchtest>
     </junit>
 
