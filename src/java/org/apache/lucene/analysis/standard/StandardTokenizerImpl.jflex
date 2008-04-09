@@ -30,20 +30,20 @@ import org.apache.lucene.analysis.Token;
 
 %{
 
-public static final int ALPHANUM          = 0;
-public static final int APOSTROPHE        = 1;
-public static final int ACRONYM           = 2;
-public static final int COMPANY           = 3;
-public static final int EMAIL             = 4;
-public static final int HOST              = 5;
-public static final int NUM               = 6;
-public static final int CJ                = 7;
+public static final int ALPHANUM          = StandardTokenizer.ALPHANUM;
+public static final int APOSTROPHE        = StandardTokenizer.APOSTROPHE;
+public static final int ACRONYM           = StandardTokenizer.ACRONYM;
+public static final int COMPANY           = StandardTokenizer.COMPANY;
+public static final int EMAIL             = StandardTokenizer.EMAIL;
+public static final int HOST              = StandardTokenizer.HOST;
+public static final int NUM               = StandardTokenizer.NUM;
+public static final int CJ                = StandardTokenizer.CJ;
 /**
  * @deprecated this solves a bug where HOSTs that end with '.' are identified
  *             as ACRONYMs. It is deprecated and will be removed in the next
  *             release.
  */
-public static final int ACRONYM_DEP       = 8;
+public static final int ACRONYM_DEP       = StandardTokenizer.ACRONYM_DEP;
 
 public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",

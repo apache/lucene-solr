@@ -23,6 +23,7 @@ import java.util.LinkedList;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 public class TestAnalyzers extends LuceneTestCase {
 
@@ -118,6 +119,18 @@ public class TestAnalyzers extends LuceneTestCase {
     verifyPayload(ts);
   }
 
+  // Just a compile time test, to ensure the
+  // StandardAnalyzer constants remain publicly accessible
+  public void _testStandardConstants() {
+    int x = StandardTokenizer.ALPHANUM;
+    x = StandardTokenizer.APOSTROPHE;
+    x = StandardTokenizer.ACRONYM;
+    x = StandardTokenizer.COMPANY;
+    x = StandardTokenizer.EMAIL;
+    x = StandardTokenizer.HOST;
+    x = StandardTokenizer.NUM;
+    x = StandardTokenizer.CJ;
+  }
 }
 
 class BuffTokenFilter extends TokenFilter {

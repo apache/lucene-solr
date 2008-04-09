@@ -31,6 +31,10 @@ Bug fixes
  9. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
     successfully created compound files. (Michael Busch)
 
+10. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
+     this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
+     Mike McCandless)
+
 Build
 
  1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
