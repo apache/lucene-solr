@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
@@ -273,9 +274,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter
            if (summaries == null || summaries.length == 0) {
               String alternateField = req.getParams().getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
               if (alternateField != null && alternateField.length() > 0) {
-                 String[] altTexts = doc.getValues(alternateField);
-                    if (altTexts != null && altTexts.length > 0)
-                       docSummaries.add(fieldName, altTexts);
+                String[] altTexts = doc.getValues(alternateField);
+                if (altTexts != null && altTexts.length > 0){
+                  int alternateFieldLen = req.getParams().getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
+                  if( alternateFieldLen <= 0 ){
+                    docSummaries.add(fieldName, altTexts);
+                  }
+                  else{
+                    List<String> altList = new ArrayList<String>();
+                    int len = 0;
+                    for( String altText: altTexts ){
+                      altList.add( len + altText.length() > alternateFieldLen ?
+                                   altText.substring( 0, alternateFieldLen - len ) : altText );
+                      len += altText.length();
+                      if( len >= alternateFieldLen ) break;
+                    }
+                    docSummaries.add(fieldName, altList);
+                  }
+                }
               }
            }
  

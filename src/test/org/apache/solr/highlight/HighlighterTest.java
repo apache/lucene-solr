@@ -470,5 +470,15 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
             "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='1']"
             );
+
+    // with an alternate + max length
+    args.put("hl.alternateField", "t_text");
+    args.put("hl.maxAlternateFieldLength", "15");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("Alternate summarization",
+            sumLRF.makeRequest("tv_text:keyword"),
+            "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='a piece of text']"
+            );
   }
 }
