@@ -441,7 +441,7 @@ public class HTMLStripReader extends Reader {
     // We only get to this point after we have read the
     // entire tag.  Now let's see if it's a special tag.
     String name=sb.toString();
-    if (name.equals("script") || name.equals("style")) {
+    if (name.equalsIgnoreCase("script") || name.equalsIgnoreCase("style")) {
      // The content of script and style elements is
      //  CDATA in HTML 4 but PCDATA in XHTML.
 
