@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.log.Logger;
@@ -96,6 +97,18 @@ public class JettySolrRunner
       server.stop();
       server.join();
     }
+  }
+
+  /**
+   * Returns the Local Port of the first Connector found for the jetty Server.
+   * @exception RuntimeException if there is no Connector
+   */
+  public int getLocalPort() {
+    Connector[] conns = server.getConnectors();
+    if (0 == conns.length) {
+      throw new RuntimeException("Jetty Server has no Connectors");
+    }
+    return conns[0].getLocalPort();
   }
   
   //--------------------------------------------------------------

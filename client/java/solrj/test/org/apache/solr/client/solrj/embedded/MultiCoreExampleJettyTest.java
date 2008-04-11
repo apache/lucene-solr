@@ -33,15 +33,16 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
 
   JettySolrRunner jetty;
 
-  static final int port = 8984; // not 8983
+  int port = 0;
   static final String context = "/example";
   
   @Override public void setUp() throws Exception 
   {    
     super.setUp();
     
-    jetty = new JettySolrRunner( context, port );
+    jetty = new JettySolrRunner( context, 0 );
     jetty.start();
+    port = jetty.getLocalPort();
     
   }
 

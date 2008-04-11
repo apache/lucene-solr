@@ -52,13 +52,11 @@ public class TestDistributedSearch extends TestCase {
   Random r = new Random(0);
   File testDir;
   
-  int controlPort = 8985;
   SolrServer controlClient;
   JettySolrRunner controlJetty;
 
-  int[] ports = new int[] {7574, 7576};
-  List<SolrServer> clients = new ArrayList<SolrServer>();
-  List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
+  private List<SolrServer> clients = new ArrayList<SolrServer>();
+  private List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
   String context = "/solr";
   String shards;
 
@@ -88,16 +86,17 @@ public class TestDistributedSearch extends TestCase {
   }
 
 
-  private void createServers() throws Exception {
-    controlJetty = createJetty(controlPort);
-    controlClient = createNewSolrServer(controlPort);
+  private void createServers(int numShards) throws Exception {
+    controlJetty = createJetty("control");
+    controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
-    for (int port : ports) {
+    for (int i = 1; i <= numShards; i++) {
       if (sb.length()>0) sb.append(',');
-      sb.append("localhost:"+port+context);
-      jettys.add(createJetty(port));
-      clients.add(createNewSolrServer(port));
+      JettySolrRunner j = createJetty("shard"+i);
+      jettys.add(j);
+      clients.add(createNewSolrServer(j.getLocalPort()));
+      sb.append("localhost:"+j.getLocalPort()+context);
     }
 
     shards = sb.toString();
@@ -110,12 +109,13 @@ public class TestDistributedSearch extends TestCase {
     jettys.clear();    
   }
 
-  private JettySolrRunner createJetty(int port) throws Exception {
-    File subDir = new File(testDir, ""+port);
+  private JettySolrRunner createJetty(String dataDirName) throws Exception {
+    File subDir = new File(testDir, dataDirName);
     subDir.mkdirs();
     System.setProperty("solr.data.dir", subDir.toString());
+    
+    JettySolrRunner jetty = new JettySolrRunner("/solr", 0);
 
-    JettySolrRunner jetty = new JettySolrRunner("/solr", port);
     jetty.start();
     return jetty;
   }
@@ -415,16 +415,12 @@ public class TestDistributedSearch extends TestCase {
 
   public void testDistribSearch() throws Exception {
     for (int nServers=1; nServers<4; nServers++) {
-      ports = new int[nServers];
-      for (int i=0; i<nServers; i++) {
-        ports[i] = 7574 + i*2;
-      }
+      createServers(nServers);
       doTest();
     }
   }
 
   public void doTest() throws Exception {
-    createServers();
     del("*:*");
     index(id,1, i1, 100,t1,"now is the time for all good men");
     index(id,2, i1, 50 ,t1,"to come to the aid of their country.");

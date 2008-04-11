@@ -30,7 +30,7 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   SolrServer server;
   JettySolrRunner jetty;
 
-  static final int port = 8984; // not 8983
+  int port = 0;
   static final String context = "/example";
 
   
@@ -38,8 +38,9 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   {
     super.setUp();
     
-    jetty = new JettySolrRunner( context, port );
+    jetty = new JettySolrRunner( context, 0 );
     jetty.start();
+    port = jetty.getLocalPort();
     
     server = this.createNewSolrServer();
   }

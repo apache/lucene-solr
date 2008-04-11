@@ -38,7 +38,7 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
 
   JettySolrRunner jetty;
 
-  static final int port = 8985; // not 8983
+  int port = 0;
 
   static final String context = "/example";
 
@@ -46,8 +46,9 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
   public void setUp() throws Exception {
     super.setUp();
     
-    jetty = new JettySolrRunner(context, port, getSolrConfigFilename());
+    jetty = new JettySolrRunner(context, 0, getSolrConfigFilename());
     jetty.start();
+    port = jetty.getLocalPort();
 
     server = this.createNewSolrServer();
   }

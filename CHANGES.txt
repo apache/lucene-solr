@@ -333,6 +333,9 @@ Bug Fixes
 
 23. SOLR-528: Better error message when defaultSearchField is bogus or not
     indexed.  (Lars Kotthoff via hossman)
+
+24. SOLR-533: Fixed tests so they don't use hardcoded port numbers. 
+    (hossman)
     
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

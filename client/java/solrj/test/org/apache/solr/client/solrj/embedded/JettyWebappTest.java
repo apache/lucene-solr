@@ -33,7 +33,7 @@ import org.mortbay.jetty.webapp.WebAppContext;
  */
 public class JettyWebappTest extends TestCase 
 {
-  static final int port = 8985; // not 8983
+  int port = 0;
   static final String context = "/test";
   
   Server server;
@@ -50,11 +50,12 @@ public class JettyWebappTest extends TestCase
     SocketConnector connector = new SocketConnector();
     connector.setMaxIdleTime(1000 * 60 * 60);
     connector.setSoLingerTime(-1);
-    connector.setPort(port);
+    connector.setPort(0);
     server.setConnectors(new Connector[]{connector});
     server.setStopAtShutdown( true );
     
     server.start();
+    port = connector.getLocalPort();
   }
 
   @Override
