@@ -102,7 +102,8 @@ abstract class DirectoryIndexReader extends IndexReader {
     ensureOpen();
 
     if (this.hasChanges || this.isCurrent()) {
-      // the index hasn't changed - nothing to do here
+      // this has changes, therefore we have the lock and don't need to reopen
+      // OR: the index in the directory hasn't changed - nothing to do here
       return this;
     }
 
