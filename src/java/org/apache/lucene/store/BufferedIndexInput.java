@@ -141,16 +141,16 @@ public abstract class BufferedIndexInput extends IndexInput {
     long end = start + bufferSize;
     if (end > length())				  // don't read past EOF
       end = length();
-    bufferLength = (int)(end - start);
-    if (bufferLength <= 0)
+    int newLength = (int)(end - start);
+    if (newLength <= 0)
       throw new IOException("read past EOF");
 
     if (buffer == null) {
       buffer = new byte[bufferSize];		  // allocate buffer lazily
       seekInternal(bufferStart);
     }
-    readInternal(buffer, 0, bufferLength);
-
+    readInternal(buffer, 0, newLength);
+    bufferLength = newLength;
     bufferStart = start;
     bufferPosition = 0;
   }

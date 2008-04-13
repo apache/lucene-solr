@@ -35,6 +35,11 @@ Bug fixes
      this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
      Mike McCandless)
 
+11. LUCENE-1262: Fixed bug in BufferedIndexReader.refill whereby on
+    hitting an exception in readInternal, the buffer is incorrectly
+    filled with stale bytes such that subsequent calls to readByte()
+    return incorrect results.  (Trejkaz via Mike McCandless)
+	
 Build
 
  1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
