@@ -50,10 +50,11 @@ public class TestSynonymFilter extends BaseTokenTestCase {
 
     SynonymFilter sf = new SynonymFilter(ts, dict);
 
+    Token target = new Token();  // test with token reuse
     while(true) {
-      Token t = sf.next();
+      Token t = sf.next(target);
       if (t==null) return lst;
-      lst.add(t);
+      lst.add((Token)t.clone());
     }
   }
 

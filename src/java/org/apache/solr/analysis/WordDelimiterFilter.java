@@ -244,7 +244,9 @@ final class WordDelimiterFilter extends TokenFilter {
 
     int origPosIncrement;
     while(true) {
-      Token t = input.next();
+      // t is either returned, or a new token is made from it, so it should
+      // be safe to use the next(Token) method.
+      Token t = input.next(in);
       if (t == null) return null;
 
       char [] termBuffer = t.termBuffer();
