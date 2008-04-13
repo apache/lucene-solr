@@ -21,6 +21,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util._TestUtil;
@@ -298,4 +302,114 @@ public class TestFieldsReader extends LuceneTestCase {
     assertEquals((byte)  size      , sizebytes[3]);
   }
 
+  public static class FaultyFSDirectory extends Directory {
+
+    FSDirectory fsDir;
+    public FaultyFSDirectory(File dir) throws IOException {
+      fsDir = FSDirectory.getDirectory(dir);
+      lockFactory = fsDir.getLockFactory();
+    }
+    public IndexInput openInput(String name) throws IOException {
+      return new FaultyIndexInput(fsDir.openInput(name));
+    }
+    public String[] list() throws IOException {
+      return fsDir.list();
+    }
+    public boolean fileExists(String name) throws IOException {
+      return fsDir.fileExists(name);
+    }
+    public long fileModified(String name) throws IOException {
+      return fsDir.fileModified(name);
+    }
+    public void touchFile(String name) throws IOException {
+      fsDir.touchFile(name);
+    }
+    public void deleteFile(String name) throws IOException {
+      fsDir.deleteFile(name);
+    }
+    public void renameFile(String name, String newName) throws IOException {
+      fsDir.renameFile(name, newName);
+    }
+    public long fileLength(String name) throws IOException {
+      return fsDir.fileLength(name);
+    }
+    public IndexOutput createOutput(String name) throws IOException {
+      return fsDir.createOutput(name);
+    }
+    public void close() throws IOException {
+      fsDir.close();
+    }
+  }
+
+  private static class FaultyIndexInput extends BufferedIndexInput {
+    IndexInput delegate;
+    static boolean doFail;
+    int count;
+    private FaultyIndexInput(IndexInput delegate) {
+      this.delegate = delegate;
+    }
+    private void simOutage() throws IOException {
+      if (doFail && count++ % 2 == 1) {
+        throw new IOException("Simulated network outage");
+      }
+    }
+    public void readInternal(byte[] b, int offset, int length) throws IOException {
+      simOutage();
+      delegate.readBytes(b, offset, length);
+    }
+    public void seekInternal(long pos) throws IOException {
+      //simOutage();
+      delegate.seek(pos);
+    }
+    public long length() {
+      return delegate.length();
+    }
+    public void close() throws IOException {
+      delegate.close();
+    }
+  }
+
+  // LUCENE-1262
+  public void testExceptions() throws Throwable {
+    String tempDir = System.getProperty("java.io.tmpdir");
+    if (tempDir == null)
+      throw new IOException("java.io.tmpdir undefined, cannot run test");
+    File indexDir = new File(tempDir, "testfieldswriterexceptions");
+
+    try {
+      Directory dir = new FaultyFSDirectory(indexDir);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      for(int i=0;i<2;i++)
+        writer.addDocument(testDoc);
+      writer.optimize();
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+
+      FaultyIndexInput.doFail = true;
+
+      boolean exc = false;
+
+      for(int i=0;i<2;i++) {
+        try {
+          reader.document(i);
+        } catch (IOException ioe) {
+          // expected
+          exc = true;
+        }
+        try {
+          reader.document(i);
+        } catch (IOException ioe) {
+          // expected
+          exc = true;
+        }
+      }
+      assertTrue(exc);
+      reader.close();
+      dir.close();
+    } finally {
+      _TestUtil.rmDir(indexDir);
+    }
+
+  }
 }

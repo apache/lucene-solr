@@ -89,6 +89,11 @@ Bug fixes
     
  6. LUCENE-1228: IndexWriter.commit() was not updating the index version and as
     result IndexReader.reopen() failed to sense index changes. (Doron Cohen)
+
+ 7. LUCENE-1262: Fixed bug in BufferedIndexReader.refill whereby on
+    hitting an exception in readInternal, the buffer is incorrectly
+    filled with stale bytes such that subsequent calls to readByte()
+    return incorrect results.  (Trejkaz via Mike McCandless)
 	
 New features
 
