@@ -247,6 +247,9 @@ New Features
     BinaryResponseParser for utilizing the binary format via SolrJ.
     (Noble Paul, yonik)
 
+45. SOLR-521: StopFilterFactory support for "enablePositionIncrements"
+    (Walter Ferrara via hossman)
+    
 Changes in runtime behavior
 
 Optimizations

@@ -35,6 +35,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
   public void inform(ResourceLoader loader) {
     String stopWordFile = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
+    enablePositionIncrements = getBoolean("enablePositionIncrements",false);
 
     if (stopWordFile != null) {
       try {
@@ -50,8 +51,11 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
 
   private Set stopWords;
   private boolean ignoreCase;
+  private boolean enablePositionIncrements;
 
   public StopFilter create(TokenStream input) {
-    return new StopFilter(input,stopWords,ignoreCase);
+    StopFilter stopFilter = new StopFilter(input,stopWords,ignoreCase);
+    stopFilter.setEnablePositionIncrements(enablePositionIncrements);
+    return stopFilter;
   }
 }
