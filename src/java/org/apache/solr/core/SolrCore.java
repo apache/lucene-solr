@@ -51,15 +51,7 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.request.JSONResponseWriter;
-import org.apache.solr.request.PythonResponseWriter;
-import org.apache.solr.request.QueryResponseWriter;
-import org.apache.solr.request.RawResponseWriter;
-import org.apache.solr.request.RubyResponseWriter;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.request.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QParserPlugin;
@@ -1037,6 +1029,9 @@ public final class SolrCore {
     }
     if (responseWriters.get("raw")==null) {
       responseWriters.put("raw", new RawResponseWriter());
+    }
+    if (responseWriters.get("javabin") == null) {
+      responseWriters.put("javabin", new BinaryResponseWriter());
     }
   }
   

@@ -55,7 +55,7 @@ public class SortableDoubleField extends FieldType {
 
   @Override
   public Double toObject(Fieldable f) {
-    return Double.valueOf( toExternal(f) );
+    return NumberUtils.SortableStr2double(f.stringValue());
   }
   
   public String indexedToReadable(String indexedForm) {

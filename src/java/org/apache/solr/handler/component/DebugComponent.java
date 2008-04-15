@@ -129,7 +129,7 @@ public class DebugComponent extends SearchComponent
         }
       }
 
-      explain = HighlightComponent.removeNulls(new NamedList(Arrays.asList(arr)));
+      explain = HighlightComponent.removeNulls(new SimpleOrderedMap(Arrays.asList(arr)));
       int idx = info.indexOf("explain",0);
       if (idx>=0) {
         info.setVal(idx, explain);

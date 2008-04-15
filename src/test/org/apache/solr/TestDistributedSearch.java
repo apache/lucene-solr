@@ -48,7 +48,6 @@ import junit.framework.TestCase;
  * @since solr 1.3
  */
 public class TestDistributedSearch extends TestCase {
-
   Random r = new Random(0);
   File testDir;
   
@@ -388,6 +387,18 @@ public class TestDistributedSearch extends TestCase {
       return compare((Object[])a, (Object[])b, flags, handle);
     }
 
+    if (a instanceof byte[] && b instanceof byte[]) {
+      if (!Arrays.equals((byte[])a, (byte[])b)) {
+        return ":" + a + "!=" + b;
+      }
+      return null;
+    }
+
+    if (a instanceof List && b instanceof List) {
+      return compare(((List)a).toArray(), ((List)b).toArray(), flags, handle);
+
+    }
+
     if (!(a.equals(b))) {
       return ":" + a + "!=" + b;
     }
@@ -397,10 +408,7 @@ public class TestDistributedSearch extends TestCase {
 
 
   void compareResponses(QueryResponse a, QueryResponse b) {
-    String cmp;
-       System.out.println(a);
-      System.out.println(b);
-    
+    String cmp;    
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
       System.out.println(a);
@@ -422,7 +430,8 @@ public class TestDistributedSearch extends TestCase {
 
   public void doTest() throws Exception {
     del("*:*");
-    index(id,1, i1, 100,t1,"now is the time for all good men");
+    index(id,1, i1, 100,t1,"now is the time for all good men"
+            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     index(id,2, i1, 50 ,t1,"to come to the aid of their country.");
     index(id,3, i1, 2 ,t1,"how now brown cow");
     index(id,4, i1, -100 ,t1,"the quick fox jumped over the lazy dog");
@@ -431,7 +440,7 @@ public class TestDistributedSearch extends TestCase {
     index(id,7, i1, 123 ,t1,"humpty dumpy had a great fall");
     index(id,8, i1, 876 ,t1,"all the kings horses and all the kings men");
     index(id,9, i1, 7 ,t1,"couldn't put humpty together again");
-    index(id,10, i1, 4321 ,t1,"this too shal pass");
+    index(id,10, i1, 4321 ,t1,"this too shall pass");
     index(id,11, i1, -987 ,t1,"An eye for eye only ends up making the whole world blind.");
     index(id,12, i1, 379 ,t1,"Great works are performed, not by strength, but by perseverance.");
     index(id,13, i1, 232 ,t1,"no eggs on wall, lesson learned", oddField, "odd man out");

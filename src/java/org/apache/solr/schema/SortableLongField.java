@@ -59,7 +59,7 @@ public class SortableLongField extends FieldType {
 
   @Override
   public Long toObject(Fieldable f) {
-    return Long.valueOf( toExternal(f) );
+    return NumberUtils.SortableStr2long(f.stringValue(),0,5);
   }
   
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {

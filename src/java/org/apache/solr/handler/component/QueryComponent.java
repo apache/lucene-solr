@@ -172,7 +172,7 @@ public class QueryComponent extends SearchComponent
       Sort sort = rb.getSortSpec().getSort();
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       ScoreDoc sd = new ScoreDoc(0,1.0f); // won't work for comparators that look at the score
-      NamedList sortVals = new NamedList();
+      NamedList sortVals = new NamedList(); // order is important for the sort fields
       StringFieldable field = new StringFieldable();
 
       for (SortField sortField: sortFields) {

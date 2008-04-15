@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -89,7 +90,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     // TODO: make log level configurable as well, or is that overkill?
     // (ryan) maybe?  I added it mostly to show that it *can* be configurable
 
-    this.toLog = new NamedList<Object>();
+    this.toLog = new SimpleOrderedMap<Object>();
   }
   
   @Override

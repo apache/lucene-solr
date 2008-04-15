@@ -62,7 +62,7 @@ public class SortableIntField extends FieldType {
 
   @Override
   public Integer toObject(Fieldable f) {
-    return Integer.valueOf( toExternal(f) );
+    return NumberUtils.SortableStr2int(f.stringValue(), 0, 3);    
   }
   
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {

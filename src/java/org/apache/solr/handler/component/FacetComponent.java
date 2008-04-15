@@ -323,18 +323,18 @@ System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + cou
 
     FacetInfo fi = rb._facetInfo;
 
-    NamedList facet_counts = new NamedList();
-    NamedList facet_queries = new NamedList();
+    NamedList facet_counts = new SimpleOrderedMap();
+    NamedList facet_queries = new SimpleOrderedMap();
     facet_counts.add("facet_queries",facet_queries);
     for (Map.Entry<String,Long> entry : fi.queryFacets.entrySet()) {
       facet_queries.add(entry.getKey(), num(entry.getValue()));
     }
 
-    NamedList facet_fields = new NamedList();
+    NamedList facet_fields = new SimpleOrderedMap();
     facet_counts.add("facet_fields", facet_fields);
 
     for (DistribFieldFacet dff : fi.topFacets.values()) {
-      SimpleOrderedMap fieldCounts = new SimpleOrderedMap();
+      NamedList fieldCounts = new NamedList(); // order is more important for facets
       facet_fields.add(dff.field, fieldCounts);
 
       ShardFacetCount[] counts = dff.countSorted;
@@ -355,7 +355,7 @@ System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + cou
 
     // TODO: list facets (sorted by natural order)
     // TODO: facet dates
-    facet_counts.add("facet_dates", new NamedList());
+    facet_counts.add("facet_dates", new SimpleOrderedMap());
 
     rb.rsp.add("facet_counts", facet_counts);
 

@@ -239,8 +239,14 @@ New Features
 42. SOLR-494: Added cool admin Ajaxed schema explorer.
     (Greg Ludington via ehatcher)
 
-43. SOLR-497: Added date faceting to the QueryResponse in SolrJ and QueryResponseTest (Shalin Shekhar Mangar via gsingers)
-    
+43. SOLR-497: Added date faceting to the QueryResponse in SolrJ
+    and QueryResponseTest (Shalin Shekhar Mangar via gsingers)
+
+44. SOLR-486: Binary response format, faster and smaller
+    than XML and  JSON response formats (use wt=javabin).
+    BinaryResponseParser for utilizing the binary format via SolrJ.
+    (Noble Paul, yonik)
+
 Changes in runtime behavior
 
 Optimizations

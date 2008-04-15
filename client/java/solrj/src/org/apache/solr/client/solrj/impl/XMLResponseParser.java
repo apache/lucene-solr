@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * 
@@ -123,7 +124,7 @@ public class XMLResponseParser extends ResponseParser
               response = readNamedList( parser );
             }
             else if( name.equals( "solr" ) ) {
-              return new NamedList<Object>();
+              return new SimpleOrderedMap<Object>();
             }
             else {
               throw new Exception( "really needs to be response or result.  " +
@@ -200,7 +201,7 @@ public class XMLResponseParser extends ResponseParser
     }
 
     StringBuilder builder = new StringBuilder();
-    NamedList<Object> nl = new NamedList<Object>();
+    NamedList<Object> nl = new SimpleOrderedMap<Object>();
     KnownType type = null;
     String name = null;
     

@@ -28,8 +28,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.SolrCore;
 import org.apache.lucene.queryParser.ParseException;
@@ -316,6 +318,18 @@ class HttpCommComponent {
   HttpCommComponent() {
   }
 
+  private static class SimpleSolrResponse extends SolrResponse {
+    long elapsedTime;
+    NamedList<Object> nl;
+    public long getElapsedTime() {
+      return elapsedTime;
+    }
+
+    public NamedList<Object> getResponse() {
+      return nl;
+    }
+  }
+
   void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
@@ -323,6 +337,9 @@ class HttpCommComponent {
         ShardResponse srsp = new ShardResponse();
         srsp.req = sreq;
         srsp.shard = shard;
+        SimpleSolrResponse ssr = new SimpleSolrResponse();
+        srsp.rsp = ssr;
+        long startTime = System.currentTimeMillis();
 
         try {
           // String url = "http://" + shard + "/select";
@@ -332,11 +349,15 @@ class HttpCommComponent {
           params.remove("version");
 
           SolrServer server = new CommonsHttpSolrServer(url, client);
-          // SolrRequest req = new SolrRequest(SolrRequest.METHOD.GET, "/select");
+          // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
           // use generic request to avoid extra processing of queries
-          // QueryRequest req = new QueryRequest(sreq.params);
+          QueryRequest req = new QueryRequest(sreq.params);
+          req.setMethod(SolrRequest.METHOD.POST);
+          req.setResponseParser(new BinaryResponseParser());  // this sets the wt param
           // srsp.rsp = server.request(req);
-          srsp.rsp = server.query(sreq.params);
+          // srsp.rsp = server.query(sreq.params);
+
+          ssr.nl = server.request(req);
         } catch (Throwable th) {
           srsp.exception = th;
           if (th instanceof SolrException) {
@@ -345,6 +366,8 @@ class HttpCommComponent {
             srsp.rspCode = -1;
           }
         }
+
+        ssr.elapsedTime = System.currentTimeMillis() - startTime;
 
         return srsp;
       }

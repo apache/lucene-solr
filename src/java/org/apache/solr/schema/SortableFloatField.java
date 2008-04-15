@@ -55,7 +55,7 @@ public class SortableFloatField extends FieldType {
 
   @Override
   public Float toObject(Fieldable f) {
-    return Float.valueOf( toExternal(f) );
+    return NumberUtils.SortableStr2float(f.stringValue());
   }
   
   public String indexedToReadable(String indexedForm) {

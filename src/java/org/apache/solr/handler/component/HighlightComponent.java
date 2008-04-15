@@ -126,7 +126,7 @@ public class HighlightComponent extends SearchComponent
       }
 
       // remove nulls in case not all docs were able to be retrieved
-      rb.rsp.add("highlighting", removeNulls(new NamedList(Arrays.asList(arr))));      
+      rb.rsp.add("highlighting", removeNulls(new SimpleOrderedMap(Arrays.asList(arr))));      
     }
   }
 
@@ -134,7 +134,7 @@ public class HighlightComponent extends SearchComponent
   static NamedList removeNulls(NamedList nl) {
     for (int i=0; i<nl.size(); i++) {
       if (nl.getName(i)==null) {
-        NamedList newList = new NamedList();
+        NamedList newList = nl instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
         for (int j=0; j<nl.size(); j++) {
           String n = nl.getName(j);
           if (n != null) {

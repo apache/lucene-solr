@@ -56,4 +56,12 @@ public class SolrDocumentList extends ArrayList<SolrDocument>
   public void setStart(long start) {
     this.start = start;
   }
+
+  public String toString() {
+    return "{numFound="+numFound
+            +",start="+start
+            + (maxScore!=null ? ""+maxScore : "")
+            +",docs="+super.toString()
+            +"}";
+  }
 }

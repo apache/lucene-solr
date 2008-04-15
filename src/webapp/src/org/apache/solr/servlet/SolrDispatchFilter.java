@@ -148,7 +148,7 @@ public class SolrDispatchFilter implements Filter
     return mcore;
   }
 
-  
+
   public void destroy() {
     if (multicore != null) {
     multicore.shutdown();

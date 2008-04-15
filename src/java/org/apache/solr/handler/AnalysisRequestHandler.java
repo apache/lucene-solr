@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
@@ -96,7 +97,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
 
   NamedList<Object> processContent(XMLStreamReader parser,
                                    IndexSchema schema) throws XMLStreamException, IOException {
-    NamedList<Object> result = new NamedList<Object>();
+    NamedList<Object> result = new SimpleOrderedMap<Object>();
     while (true) {
       int event = parser.next();
       switch (event) {
@@ -111,7 +112,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
 
             SolrInputDocument doc = readDoc(parser);
             SchemaField uniq = schema.getUniqueKeyField();
-            NamedList<NamedList<NamedList<Object>>> theTokens = new NamedList<NamedList<NamedList<Object>>>();
+            NamedList<NamedList<NamedList<Object>>> theTokens = new SimpleOrderedMap<NamedList<NamedList<Object>>>();
             result.add(doc.getFieldValue(uniq.getName()).toString(), theTokens);
             for (String name : doc.getFieldNames()) {
               FieldType ft = schema.getFieldType(name);
@@ -132,10 +133,11 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
   }
 
   static NamedList<NamedList<Object>> getTokens(TokenStream tstream) throws IOException {
+    // outer is namedList since order of tokens is important
     NamedList<NamedList<Object>> tokens = new NamedList<NamedList<Object>>();
     Token t = null;
     while (((t = tstream.next()) != null)) {
-      NamedList<Object> token = new NamedList<Object>();
+      NamedList<Object> token = new SimpleOrderedMap<Object>();
       tokens.add("token", token);
       token.add("value", new String(t.termBuffer(), 0, t.termLength()));
       token.add("start", t.startOffset());
