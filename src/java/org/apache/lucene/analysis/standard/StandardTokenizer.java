@@ -59,7 +59,23 @@ public class StandardTokenizer extends Tokenizer {
    *             release.
    */
   public static final int ACRONYM_DEP       = 8;
-    
+
+  /** String token types that correspond to token type int constants */
+  public static final String [] TOKEN_TYPES = new String [] {
+    "<ALPHANUM>",
+    "<APOSTROPHE>",
+    "<ACRONYM>",
+    "<COMPANY>",
+    "<EMAIL>",
+    "<HOST>",
+    "<NUM>",
+    "<CJ>",
+    "<ACRONYM_DEP>"
+  };
+
+  /** @deprecated Please use {@link #TOKEN_TYPES} instead */
+  public static final String [] tokenImage = TOKEN_TYPES;
+
   /**
    * Specifies whether deprecated acronyms should be replaced with HOST type.
    * This is false by default to support backward compatibility.

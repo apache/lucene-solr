@@ -63,6 +63,31 @@ public class WikipediaTokenizer extends Tokenizer {
   public static final int SUB_HEADING_ID       = 16;
   public static final int EXTERNAL_LINK_URL_ID = 17;
 
+  /** String token types that correspond to token type int constants */
+  public static final String [] TOKEN_TYPES = new String [] {
+    "<ALPHANUM>",
+    "<APOSTROPHE>",
+    "<ACRONYM>",
+    "<COMPANY>",
+    "<EMAIL>",
+    "<HOST>",
+    "<NUM>",
+    "<CJ>",
+    INTERNAL_LINK,
+    EXTERNAL_LINK,
+    CITATION,
+    CATEGORY,
+    BOLD,
+    ITALICS,
+    BOLD_ITALICS,
+    HEADING,
+    SUB_HEADING,
+    EXTERNAL_LINK_URL
+  };
+
+  /** @deprecated Please use {@link #TOKEN_TYPES} instead */
+  public static final String [] tokenImage = TOKEN_TYPES;
+
   public static final int TOKENS_ONLY = 0;
   public static final int UNTOKENIZED_ONLY = 1;
   public static final int BOTH = 2;

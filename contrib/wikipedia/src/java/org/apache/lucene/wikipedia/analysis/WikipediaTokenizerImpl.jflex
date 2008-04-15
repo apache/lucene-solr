@@ -55,26 +55,7 @@ private int numBalanced = 0;
 private int positionInc = 1;
 private int numLinkToks = 0;
 
-public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    WikipediaTokenizer.INTERNAL_LINK,
-    WikipediaTokenizer.EXTERNAL_LINK,
-    WikipediaTokenizer.CITATION,
-    WikipediaTokenizer.CATEGORY,
-    WikipediaTokenizer.BOLD,
-    WikipediaTokenizer.ITALICS,
-    WikipediaTokenizer.BOLD_ITALICS,
-    WikipediaTokenizer.HEADING,
-    WikipediaTokenizer.SUB_HEADING,
-    WikipediaTokenizer.EXTERNAL_LINK_URL
-};
+public static final String [] TOKEN_TYPES = WikipediaTokenizer.TOKEN_TYPES;
 
 public final int yychar()
 {

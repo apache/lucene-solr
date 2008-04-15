@@ -45,17 +45,7 @@ public static final int CJ                = StandardTokenizer.CJ;
  */
 public static final int ACRONYM_DEP       = StandardTokenizer.ACRONYM_DEP;
 
-public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    "<ACRONYM_DEP>"
-};
+public static final String [] TOKEN_TYPES = StandardTokenizer.TOKEN_TYPES;
 
 public final int yychar()
 {
