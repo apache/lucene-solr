@@ -59,26 +59,7 @@ private int numLinkToks = 0;
 //see https://issues.apache.org/jira/browse/LUCENE-1133
 private int numWikiTokensSeen = 0;
 
-public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    WikipediaTokenizer.INTERNAL_LINK,
-    WikipediaTokenizer.EXTERNAL_LINK,
-    WikipediaTokenizer.CITATION,
-    WikipediaTokenizer.CATEGORY,
-    WikipediaTokenizer.BOLD,
-    WikipediaTokenizer.ITALICS,
-    WikipediaTokenizer.BOLD_ITALICS,
-    WikipediaTokenizer.HEADING,
-    WikipediaTokenizer.SUB_HEADING,
-    WikipediaTokenizer.EXTERNAL_LINK_URL
-};
+public static final String [] TOKEN_TYPES = WikipediaTokenizer.TOKEN_TYPES;
 
 /**
 Returns the number of tokens seen inside a category or link, etc.

@@ -119,7 +119,7 @@ public class TestAnalyzers extends LuceneTestCase {
     verifyPayload(ts);
   }
 
-  // Just a compile time test, to ensure the
+  // LUCENE-1150: Just a compile time test, to ensure the
   // StandardAnalyzer constants remain publicly accessible
   public void _testStandardConstants() {
     int x = StandardTokenizer.ALPHANUM;
@@ -130,6 +130,7 @@ public class TestAnalyzers extends LuceneTestCase {
     x = StandardTokenizer.HOST;
     x = StandardTokenizer.NUM;
     x = StandardTokenizer.CJ;
+    String[] y = StandardTokenizer.TOKEN_TYPES;
   }
 }
 
