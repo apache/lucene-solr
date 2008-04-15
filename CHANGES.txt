@@ -276,6 +276,9 @@ Optimizations
     depends on the types of documents in use.  32 should be a good starting point, but reports have shown up to 48 MB provides
     good results. Note, it is acceptable to set both ramBufferSizeMB and maxBufferedDocs, and Lucene will flush based on whichever
     limit is reached first. (gsingers)
+    
+ 7. SOLR-330: Converted TokenStreams to use Lucene's new char array based
+    capabilities. (gsingers)
 
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
@@ -894,7 +897,6 @@ Optimizations
     a single token per document (not multiValued & not tokenized) by using the
     Lucene FieldCache entry for that field to tally term counts.  The first request
     utilizing the FieldCache will take longer than subsequent ones.
- 7. Converted TokenStreams to use Lucene's new char array based capabilities. (SOLR-330, gsingers)
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different
