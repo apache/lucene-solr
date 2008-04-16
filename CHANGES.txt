@@ -348,6 +348,8 @@ Bug Fixes
 
 24. SOLR-533: Fixed tests so they don't use hardcoded port numbers. 
     (hossman)
+
+25. SOLR-400: SolrExceptionTest should now handle using OpenDNS as a DNS provider (gsingers)
     
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

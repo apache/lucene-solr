@@ -22,6 +22,8 @@ import java.net.UnknownHostException;
 import junit.framework.TestCase;
 
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 
 /**
  * 
@@ -41,7 +43,9 @@ public class SolrExceptionTest extends TestCase {
       client.query(query);
     } catch (SolrServerException sse) {
       gotExpectedError = true;
-      assertTrue(UnknownHostException.class == sse.getRootCause().getClass());
+      assertTrue(UnknownHostException.class == sse.getRootCause().getClass()
+              //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
+              || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
     }
     assertTrue(gotExpectedError);
   }
