@@ -552,6 +552,10 @@
   <target name="generate-clover-reports" depends="clover.check, clover">
     <mkdir dir="${clover.report.dir}"/>
     <clover-report>
+       <current outfile="${clover.report.dir}/clover.xml"
+                title="${fullnamever}">
+          <format type="xml"/>
+       </current>
        <current outfile="${clover.report.dir}" title="${fullnamever}">
           <format type="html"/>
        </current>
