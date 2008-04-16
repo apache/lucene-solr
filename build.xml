@@ -196,7 +196,11 @@
 
   <target name="clean-dest"
           description="Cleans out ${dest} but leaves ${dist} alone.  This allows us to run nightly and clover together in Hudson">
-    <delete dir="${dest}" />
+    <delete includeemptydirs="true" >
+      <fileset dir="${dest}">
+        <exclude name="docs/"/>
+      </fileset>
+    </delete>
   </target>
 
   <!-- Prepares an entity file for use in Forrest documentation -->
