@@ -71,7 +71,7 @@ public class SearchHandlerTest extends AbstractSolrTestCase
     handler.inform( core );
     
     List<SearchComponent> comps = handler.getComponents();
-    assertEquals( 2+handler.getDefaultComponets().size(), comps.size() );
+    assertEquals( 2+handler.getDefaultComponents().size(), comps.size() );
     assertEquals( core.getSearchComponent( MoreLikeThisComponent.COMPONENT_NAME ), comps.get( 0 ) );
     assertEquals( core.getSearchComponent( FacetComponent.COMPONENT_NAME ), comps.get( comps.size()-1 ) );
   }

@@ -57,7 +57,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
   protected List<SearchComponent> components = null;
 
-  protected List<String> getDefaultComponets()
+  protected List<String> getDefaultComponents()
   {
     ArrayList<String> names = new ArrayList<String>(5);
     names.add( QueryComponent.COMPONENT_NAME );
@@ -81,7 +81,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     List<String> list = null;
     if( declaredComponents == null ) {
       // Use the default component list
-      list = getDefaultComponets();
+      list = getDefaultComponents();
 
       if( first != null ) {
         List<String> clist = first;
