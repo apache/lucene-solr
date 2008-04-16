@@ -389,6 +389,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     } 
     catch (Exception ex) {
       try {
+        SolrException.logOnce(log, "Error processing \"legacy\" update command", ex);
         XML.writeXML(output, "result", SolrException.toStr(ex), "status", "1");
       } catch (Exception ee) {
         log.severe("Error writing to output stream: " + ee);
