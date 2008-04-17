@@ -100,6 +100,6 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
       processor = factory[i].getInstance(req, rsp, last);
       last = processor == null ? last : processor;
     }
-    return processor;
+    return last;
   }
 }
