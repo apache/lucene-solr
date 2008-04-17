@@ -396,6 +396,29 @@ public final class SolrCore {
       // Finally tell anyone who wants to know
       loader.inform( loader );
       loader.inform( this );
+      
+      // execute firstSearcher event
+      //TODO: It may not always be the case that this is the only time the first searcher event needs to fire.
+      doFirstSearcherEvent(getSearcher().get());
+    }
+  }
+  
+  private void doFirstSearcherEvent(final SolrIndexSearcher firstSearcher){
+    if (firstSearcherListeners.size() > 0) {
+      searcherExecutor.submit(
+              new Callable() {
+                public Object call() throws Exception {
+                  try {
+                    for (SolrEventListener listener : firstSearcherListeners) {
+                      listener.newSearcher(firstSearcher,null);
+                    }
+                  } catch (Throwable e) {
+                    SolrException.logOnce(log,null,e);
+                  }
+                  return null;
+                }
+              }
+      );
     }
   }
 
@@ -771,23 +794,6 @@ public final class SolrCore {
                   public Object call() throws Exception {
                     try {
                       newSearcher.warm(currSearcher);
-                    } catch (Throwable e) {
-                      SolrException.logOnce(log,null,e);
-                    }
-                    return null;
-                  }
-                }
-        );
-      }
-
-      if (currSearcher==null && firstSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-                new Callable() {
-                  public Object call() throws Exception {
-                    try {
-                      for (SolrEventListener listener : firstSearcherListeners) {
-                        listener.newSearcher(newSearcher,null);
-                      }
                     } catch (Throwable e) {
                       SolrException.logOnce(log,null,e);
                     }
