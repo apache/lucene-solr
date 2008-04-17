@@ -95,8 +95,10 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) 
   {
     UpdateRequestProcessor processor = null;
+    UpdateRequestProcessor last = null;
     for (int i = factory.length-1; i>=0; i--) {
-      processor = factory[i].getInstance(req, rsp, processor);
+      processor = factory[i].getInstance(req, rsp, last);
+      last = processor == null ? last : processor;
     }
     return processor;
   }
