@@ -128,7 +128,7 @@ public final class SolrCore {
   
   /**
    * Gets the configuration resource name used by this core instance.
-   * @see getConfigResource
+   * @see #getConfigResource()
    */
   @Deprecated
   public String getConfigFile() {
@@ -151,7 +151,7 @@ public final class SolrCore {
 
   /**
    * Gets the schema resource name used by this core instance.
-   * @see getSchemaResource
+   * @see #getSchemaResource() 
    */
   @Deprecated
   public String getSchemaFile() {
@@ -396,7 +396,7 @@ public final class SolrCore {
       // Finally tell anyone who wants to know
       loader.inform( loader );
       loader.inform( this );
-      
+
       // execute firstSearcher event
       //TODO: It may not always be the case that this is the only time the first searcher event needs to fire.
       doFirstSearcherEvent(getSearcher().get());
@@ -498,7 +498,7 @@ public final class SolrCore {
    * Returns a Request object based on the admin/pingQuery section
    * of the Solr config file.
    * 
-   * @use {@link PingRequestHandler} instead 
+   * @use {@link org.apache.solr.handler.PingRequestHandler} instead
    */
   @Deprecated
   public SolrQueryRequest getPingQueryRequest() {
@@ -948,12 +948,23 @@ public final class SolrCore {
     // setup response header and handle request
     final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
     rsp.add("responseHeader", responseHeader);
+    NamedList toLog = rsp.getToLog();
+    //toLog.add("core", getName());
+    toLog.add("webapp", req.getContext().get("webapp"));
+    toLog.add("path", req.getContext().get("path"));
+    toLog.add("params", "{" + req.getParamString() + "}");
     handler.handleRequest(req,rsp);
-    setResponseHeaderValues(handler,responseHeader,req,rsp);
-
-    log.info(logid+"" + req.getContext().get("path") + " "
+    setResponseHeaderValues(handler,req,rsp);
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<toLog.size(); i++) {
+     	String name = toLog.getName(i);
+     	Object val = toLog.getVal(i);
+     	sb.append(name).append("=").append(val).append(" ");
+    }
+    log.info(logid +  sb.toString());
+    /*log.info(logid+"" + req.getContext().get("path") + " "
             + req.getParamString()+ " 0 "+
-       (int)(rsp.getEndTime() - req.getStartTime()));
+       (int)(rsp.getEndTime() - req.getStartTime()));*/
   }
 
   @Deprecated
@@ -966,13 +977,15 @@ public final class SolrCore {
     execute(handler, req, rsp);
   }
   
-  protected void setResponseHeaderValues(SolrRequestHandler handler, NamedList<Object> responseHeader,SolrQueryRequest req, SolrQueryResponse rsp) {
+  protected void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
-    
+	NamedList responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
     responseHeader.add("status",rsp.getException()==null ? 0 : 500);
     responseHeader.add("QTime",qtime);
-        
+    rsp.getToLog().add("status",rsp.getException()==null ? 0 : 500);
+    rsp.getToLog().add("QTime",qtime);
+    
     SolrParams params = req.getParams();
     if( params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
       responseHeader.add("handler", handler.getName() );

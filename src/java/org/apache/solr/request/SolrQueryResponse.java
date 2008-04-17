@@ -60,7 +60,12 @@ public class SolrQueryResponse {
    * @see #setAllValues
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  protected  NamedList values = new SimpleOrderedMap();
+  protected NamedList values = new SimpleOrderedMap();
+
+  /**
+   * Container for storing information that should be logged by Solr before returning.
+   */
+  protected NamedList toLog = new SimpleOrderedMap();
 
   protected Set<String> defaultReturnFields;
 
@@ -73,6 +78,11 @@ public class SolrQueryResponse {
   String errMsg;
   ***/
 
+  public SolrQueryResponse() {
+	  add("responseHeader", new SimpleOrderedMap<Object>());
+  }
+  
+  
   /**
    * Gets data to be returned in this response
    * @see <a href="#returnable_data">Note on Returnable Data</a>
@@ -167,6 +177,28 @@ public class SolrQueryResponse {
     }
     return this.endtime;
   }
-
-
+  
+  /** Repsonse header to be logged */ 
+  public NamedList getResponseHeader() {
+	  SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");
+	  return header;
+  }
+  
+  /** Add a value to be logged.
+   * 
+   * @param name name of the thing to log
+   * @param val value of the thing to log
+   */
+  public void addToLog(String name, Object val) {
+	  toLog.add(name, val);
+  }
+  
+  /** Get loggable items.
+   * 
+   * @return things to log
+   */
+  public NamedList getToLog() {
+	  return toLog;
+  }
+    
 }

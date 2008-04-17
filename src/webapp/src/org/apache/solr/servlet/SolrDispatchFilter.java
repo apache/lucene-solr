@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrConfig;
@@ -46,21 +47,21 @@ import org.apache.solr.servlet.cache.Method;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
- * 
+ *
  * @since solr 1.2
  */
-public class SolrDispatchFilter implements Filter 
+public class SolrDispatchFilter implements Filter
 {
   final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
-  
+
   protected SolrCore singlecore;
   protected MultiCore multicore;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
   protected String solrConfigFilename = null;
-  
-  public void init(FilterConfig config) throws ServletException 
+
+  public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init()");
 
@@ -69,10 +70,10 @@ public class SolrDispatchFilter implements Filter
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       this.solrConfigFilename = config.getInitParameter("solrconfig-filename");
-      
+
       // multicore instantiation
       this.multicore = initMultiCore(config);
-      
+
       if(multicore != null && multicore.isEnabled() ) {
         abortOnConfigurationError = false;
         singlecore = null;
@@ -98,7 +99,7 @@ public class SolrDispatchFilter implements Filter
       SolrConfig.severeErrors.add( t );
       SolrCore.log( t );
     }
-    
+
     // Optionally abort if we found a sever error
     if( abortOnConfigurationError && SolrConfig.severeErrors.size() > 0 ) {
       StringWriter sw = new StringWriter();
@@ -112,13 +113,13 @@ public class SolrDispatchFilter implements Filter
       } else {
         out.println( "in solrconfig.xml\n" );
       }
-      
+
       for( Throwable t : SolrConfig.severeErrors ) {
         out.println( "-------------------------------------------------------------" );
         t.printStackTrace( out );
       }
       out.flush();
-      
+
       // Servlet containers behave slightly differently if you throw an exception during 
       // initialization.  Resin will display that error for every page, jetty prints it in
       // the logs, but continues normally.  (We will see a 404 rather then the real error)
@@ -127,7 +128,7 @@ public class SolrDispatchFilter implements Filter
       abortErrorMessage = sw.toString();
       //throw new ServletException( abortErrorMessage );
     }
-    
+
     log.info("SolrDispatchFilter.init() done");
   }
 
@@ -159,13 +160,13 @@ public class SolrDispatchFilter implements Filter
       singlecore = null;
     }
   }
-  
+
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     if( abortErrorMessage != null ) {
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
       return;
     }
-    
+
     if( request instanceof HttpServletRequest) {
       HttpServletRequest req = (HttpServletRequest)request;
       HttpServletResponse resp = (HttpServletResponse)response;
@@ -173,26 +174,26 @@ public class SolrDispatchFilter implements Filter
       SolrQueryRequest solrReq = null;
 
       try {
-        String path = req.getServletPath();    
+        String path = req.getServletPath();
         if( req.getPathInfo() != null ) {
           // this lets you handle /update/commit when /update is a servlet
-          path += req.getPathInfo(); 
+          path += req.getPathInfo();
         }
         if( pathPrefix != null && path.startsWith( pathPrefix ) ) {
           path = path.substring( pathPrefix.length() );
         }
-        
+
         int idx = path.indexOf( ':' );
         if( idx > 0 ) {
           // save the portion after the ':' for a 'handler' path parameter
           path = path.substring( 0, idx );
         }
-        
+
         // By default use the single core.  If multicore is enabled, look for one.
         final SolrCore core;
         if (multicore != null && multicore.isEnabled()) {
           req.setAttribute("org.apache.solr.MultiCore", multicore);
-          
+
           // if this is the multi-core admin page, it will handle it
           if( path.equals( multicore.getAdminPath() ) ) {
             handler = multicore.getMultiCoreHandler();
@@ -217,7 +218,7 @@ public class SolrDispatchFilter implements Filter
         else {
           core = singlecore;
         }
-        
+
         // With a valid core...
         if( core != null ) {
           final SolrConfig config = core.getSolrConfig();
@@ -228,7 +229,7 @@ public class SolrDispatchFilter implements Filter
             parser = new SolrRequestParsers(config);
             parsers.put( core, parser );
           }
-          
+
           // Determine the handler from the url path if not set
           // (we might already have selected the multicore handler)
           if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
@@ -244,18 +245,18 @@ public class SolrDispatchFilter implements Filter
                 handler = core.getRequestHandler( qt );
                 if( handler == null ) {
                   throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
-                }      
+                }
               }
             }
           }
-          
+
             // With a valid handler and a valid core...
-          if( handler != null ) {          
+          if( handler != null ) {
             // if not a /select, create the request
             if( solrReq == null ) {
               solrReq = parser.parse( core, path, req );
             }
-            
+
             final Method reqMethod = Method.getMethod(req.getMethod());
             if (Method.POST != reqMethod) {
               HttpCacheHeaderUtil.setCacheControlHeader(config, resp);
@@ -266,11 +267,20 @@ public class SolrDispatchFilter implements Filter
                 !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, resp)) {
                 SolrQueryResponse solrRsp = new SolrQueryResponse();
                 /* even for HEAD requests, we need to execute the handler to
-                 * ensure we don't get an error (and to make sure the correct 
+                 * ensure we don't get an error (and to make sure the correct
                  * QueryResponseWriter is selectedand we get the correct
                  * Content-Type)
                  */
                 this.execute( req, handler, solrReq, solrRsp );
+              // add info to http headers
+                try {
+                  NamedList solrRspHeader = solrRsp.getResponseHeader();
+                 for (int i=0; i<solrRspHeader.size(); i++) {
+                   ((javax.servlet.http.HttpServletResponse) response).addHeader(("Solr-" + solrRspHeader.getName(i)), String.valueOf(solrRspHeader.getVal(i)));
+                 }
+                } catch (ClassCastException cce) {
+                  log.log(Level.WARNING, "exception adding response header log information", cce);
+                }
                 if( solrRsp.getException() != null ) {
                   sendError( (HttpServletResponse)response, solrRsp.getException() );
                 }
@@ -301,7 +311,7 @@ public class SolrDispatchFilter implements Filter
             // Modify the request so each core gets its own /admin
             if( singlecore == null && path.startsWith( "/admin" ) ) {
               req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
-              return; 
+              return;
             }
           }
         }
@@ -315,7 +325,7 @@ public class SolrDispatchFilter implements Filter
         }
       }
     }
-    
+
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
   }
@@ -323,24 +333,26 @@ public class SolrDispatchFilter implements Filter
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
     // a custom filter could add more stuff to the request before passing it on.
     // for example: sreq.getContext().put( "HttpServletRequest", req );
+    // used for logging query stats in SolrCore.execute()
+    sreq.getContext().put( "webapp", req.getContextPath() );
     sreq.getCore().execute( handler, sreq, rsp );
   }
-  
+
   protected void sendError(HttpServletResponse res, Throwable ex) throws IOException {
     int code=500;
     String trace = "";
     if( ex instanceof SolrException ) {
       code = ((SolrException)ex).code();
     }
-    
+
     // For any regular code, don't include the stack trace
-    if( code == 500 || code < 100 ) {  
+    if( code == 500 || code < 100 ) {
       StringWriter sw = new StringWriter();
       ex.printStackTrace(new PrintWriter(sw));
       trace = "\n\n"+sw.toString();
-      
+
       SolrException.logOnce(log,null,ex );
-      
+
       // non standard codes have undefined results with various servers
       if( code < 100 ) {
         log.warning( "invalid return code: "+code );
@@ -348,7 +360,7 @@ public class SolrDispatchFilter implements Filter
       }
     }
     res.sendError( code, ex.getMessage() + trace );
-  }    
+  }
 
   //---------------------------------------------------------------------
   //---------------------------------------------------------------------
@@ -357,22 +369,22 @@ public class SolrDispatchFilter implements Filter
    * Set the prefix for all paths.  This is useful if you want to apply the
    * filter to something other then /*, perhaps because you are merging this
    * filter into a larger web application.
-   * 
+   *
    * For example, if web.xml specifies:
-   * 
+   *
    * <filter-mapping>
    *  <filter-name>SolrRequestFilter</filter-name>
    *  <url-pattern>/xxx/*</url-pattern>
    * </filter-mapping>
-   * 
+   *
    * Make sure to set the PathPrefix to "/xxx" either with this function
    * or in web.xml.
-   * 
+   *
    * <init-param>
    *  <param-name>path-prefix</param-name>
    *  <param-value>/xxx</param-value>
    * </init-param>
-   * 
+   *
    */
   public void setPathPrefix(String pathPrefix) {
     this.pathPrefix = pathPrefix;
