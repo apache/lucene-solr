@@ -42,12 +42,12 @@ public class JSONWriterTest extends AbstractSolrTestCase {
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{'responseHeader':{},'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
+    assertEquals(buf.toString(), "{'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
 
     w = new RubyResponseWriter();
     buf = new StringWriter();
     w.write(buf, req, rsp);
-    assertEquals(buf.toString(), "{'responseHeader'=>{},'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
+    assertEquals(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
 
   }
   

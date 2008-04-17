@@ -357,6 +357,7 @@ Bug Fixes
 
 27. SOLR-267: Changed logging to report number of hits, and also provide a mechanism to add log messages to be output by the SolrCore via a NamedList toLog
     member variable.  (Will Johnson, yseeley, gsingers)
+   SOLR-267: Removed adding values to the HTTP headers in SolrDispatchFilter (gsingers)
 
 28. SOLR-509: Moved firstSearcher event notification to the end of the SolrCore constructor (Koji Sekiguchi via gsingers)
 

@@ -273,14 +273,15 @@ public class SolrDispatchFilter implements Filter
                  */
                 this.execute( req, handler, solrReq, solrRsp );
               // add info to http headers
-                try {
+              //TODO: See SOLR-232 and SOLR-267.  
+                /*try {
                   NamedList solrRspHeader = solrRsp.getResponseHeader();
                  for (int i=0; i<solrRspHeader.size(); i++) {
                    ((javax.servlet.http.HttpServletResponse) response).addHeader(("Solr-" + solrRspHeader.getName(i)), String.valueOf(solrRspHeader.getVal(i)));
                  }
                 } catch (ClassCastException cce) {
                   log.log(Level.WARNING, "exception adding response header log information", cce);
-                }
+                }*/
                 if( solrRsp.getException() != null ) {
                   sendError( (HttpServletResponse)response, solrRsp.getException() );
                 }

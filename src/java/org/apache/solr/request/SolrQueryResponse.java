@@ -79,7 +79,6 @@ public class SolrQueryResponse {
   ***/
 
   public SolrQueryResponse() {
-	  add("responseHeader", new SimpleOrderedMap<Object>());
   }
   
   
