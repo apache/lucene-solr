@@ -338,9 +338,12 @@ public class IndexModifier {
 
 
   /**
-   * Returns the number of documents currently in this index.
-   * @see IndexWriter#docCount()
-   * @see IndexReader#numDocs()
+   * Returns the number of documents currently in this
+   * index.  If the writer is currently open, this returns
+   * {@link IndexWriter#docCount()}, else {@link
+   * IndexReader#numDocs()}.  But, note that {@link
+   * IndexWriter#docCount()} does not take deletions into
+   * account, unlike {@link IndexReader#numDocs}.
    * @throws IllegalStateException if the index is closed
    */
   public int docCount() {
