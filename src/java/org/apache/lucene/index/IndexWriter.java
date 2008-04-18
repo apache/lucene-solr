@@ -1719,7 +1719,7 @@ public class IndexWriter {
    *  {@link MergeScheduler} that is able to run merges in
    *  background threads. */
   public void optimize(boolean doWait) throws CorruptIndexException, IOException {
-    optimize(1, true);
+    optimize(1, doWait);
   }
 
   /** Just like {@link #optimize(int)}, except you can
