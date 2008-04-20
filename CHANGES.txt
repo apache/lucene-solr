@@ -172,6 +172,10 @@ Optimizations
 Documentation
 
   1. LUCENE-1236:  Added some clarifying remarks to EdgeNGram*.java (Hiroaki Kawai via Grant Ingersoll)
+  
+  2. LUCENE-1157 and LUCENE-1256: HTML changes log, created automatically 
+     from CHANGES.txt. This HTML file is curretly visible only via developers page.     
+     (Steven Rowe via Doron Cohen)
 
 Build
 

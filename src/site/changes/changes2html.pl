@@ -115,7 +115,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     # List item boundary is another numbered item or an unindented line
     my $line;
     my $item = $_;
-    $item =~ s/^(\s{0,2}\d+\.\s*)//;       # Trim the leading item number
+    $item =~ s/^(\s{0,2}\d+\.\d?\s*)//;    # Trim the leading item number
     my $leading_ws_width = length($1);
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
@@ -197,29 +197,111 @@ print<<"__HTML_HEADER__";
   <title>$title</title>
   <link rel="stylesheet" href="ChangesFancyStyle.css" title="Fancy">
   <link rel="alternate stylesheet" href="ChangesSimpleStyle.css" title="Simple">
+  <link rel="alternate stylesheet" href="ChangesFixedWidthStyle.css" title="Fixed Width">
   <META http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <SCRIPT>
-    function toggleList(e) {
-      element = document.getElementById(e).style;
-      element.display == 'none' ? element.display = 'block' : element.display='none';
+    function toggleList(id) {
+      listStyle = document.getElementById(id + '.list').style;
+      anchor = document.getElementById(id);
+      if (listStyle.display == 'none') {
+        listStyle.display = 'block';
+        anchor.title = 'Click to collapse';
+        location.href = '#' + id;
+      } else {
+        listStyle.display = 'none';
+        anchor.title = 'Click to expand';
+      }
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = false;
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = false;
     }
+
+    function collapseAll() {
+      var unorderedLists = document.getElementsByTagName("ul");
+      for (var i = 0; i < unorderedLists.length; i++)
+        unorderedLists[i].style.display = "none";
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++)
+        orderedLists[i].style.display = "none"; 
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        if (anchors[i].id != '')
+          anchors[i].title = 'Click to expand';
+      }
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = true;
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = false;
+    }
+
+    function expandAll() {
+      var unorderedLists = document.getElementsByTagName("ul");
+      for (var i = 0; i < unorderedLists.length; i++)
+        unorderedLists[i].style.display = "block";
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++)
+        orderedLists[i].style.display = "block"; 
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        if (anchors[i].id != '')
+          anchors[i].title = 'Click to collapse';
+      }
+      var expandButton = document.getElementById('expand.button');
+      expandButton.disabled = true;
+      var collapseButton = document.getElementById('collapse.button');
+      collapseButton.disabled = false;
+
+    }
+
     function collapse() {
-      for (var i = 0; i < document.getElementsByTagName("ul").length; i++) {
-        var list = document.getElementsByTagName("ul")[i];
-        if (list.id != '$first_relid' && list.id != '$second_relid') {
+      /* Collapse all but the first and second releases. */
+      var unorderedLists = document.getElementsByTagName("ul");
+      for (var i = 0; i < unorderedLists.length; i++) {
+        var list = unorderedLists[i];
+        if (list.id != '$first_relid.list' && list.id != '$second_relid.list') {
           list.style.display = "none";
         }
       }
-      for (var i = 0; i < document.getElementsByTagName("ol").length; i++) {
-        document.getElementsByTagName("ol")[i].style.display = "none"; 
+      var orderedLists = document.getElementsByTagName("ol");
+      for (var i = 0; i < orderedLists.length; i++) {
+        orderedLists[i].style.display = "none"; 
       }
+      /* Add "Click to collapse/expand" tooltips to the release/section headings */
+      var anchors = document.getElementsByTagName("a");
+      for (var i = 0 ; i < anchors.length; i++) {
+        var anchor = anchors[i];
+        if (anchor.id != '') {
+          if (anchor.id == '$first_relid' || anchor.id == '$second_relid') {
+            anchor.title = 'Click to collapse';
+          } else {
+            anchor.title = 'Click to expand';
+          }
+        }
+      }
+
+      /* Insert "Expand All" and "Collapse All" buttons */
+      var buttonsParent = document.getElementById('buttons.parent');
+      var expandButton = document.createElement('button');
+      expandButton.appendChild(document.createTextNode('Expand All'));
+      expandButton.onclick = function() { expandAll(); }
+      expandButton.id = 'expand.button';
+      buttonsParent.appendChild(expandButton);
+      var collapseButton = document.createElement('button');
+      collapseButton.appendChild(document.createTextNode('Collapse All'));
+      collapseButton.onclick = function() { collapseAll(); }
+      collapseButton.id = 'collapse.button';
+      buttonsParent.appendChild(collapseButton);
     }
+
     window.onload = collapse;
   </SCRIPT>
 </head>
 <body>
 
 <h1>$title</h1>
+
+<div id="buttons.parent"></div>
 
 __HTML_HEADER__
 
@@ -229,10 +311,10 @@ my $header = 'h2';
 for my $rel (@releases) {
   if (++$relcnt == 3) {
     $header = 'h3';
-    print "<h2><a href=\"javascript:toggleList('older')\">";
+    print "<h2><a id=\"older\" href=\"javascript:toggleList('older')\">";
     print "Older Releases";
     print "</a></h2>\n";
-    print "<ul id=\"older\">\n"
+    print "<ul id=\"older.list\">\n"
   }
       
   ($release, $reldate, $relinfo, $sections) = @$rel;
@@ -241,12 +323,12 @@ for my $rel (@releases) {
   my $has_release_sections = $sections->[0][0];
 
   (my $relid = lc($release)) =~ s/\s+/_/g;
-  print "<$header><a href=\"javascript:toggleList('$relid')\">";
+  print "<$header><a id=\"$relid\" href=\"javascript:toggleList('$relid')\">";
   print "Release " unless ($release =~ /^trunk$/i);
   print "$release $relinfo";
   print " [$reldate]" unless ($reldate eq 'unknown');
   print "</a></$header>\n";
-  print "<ul id=\"$relid\">\n"
+  print "<ul id=\"$relid.list\">\n"
     if ($has_release_sections);
 
   for my $section (@$sections) {
@@ -254,14 +336,15 @@ for my $rel (@releases) {
     (my $sectid = lc($heading)) =~ s/\s+/_/g;
     my $numItemsStr = $#{$items} > 0 ? "($#{$items})" : "(none)";  
 
-    print "  <li><a href=\"javascript:toggleList('$relid.$sectid')\">",
+    print "  <li><a id=\"$relid.$sectid\"",
+          " href=\"javascript:toggleList('$relid.$sectid')\">",
           ($heading || ''), "</a>&nbsp;&nbsp;&nbsp;$numItemsStr\n"
       if ($has_release_sections);
 
     my $list_type = $items->[0] || '';
     my $list = ($has_release_sections || $list_type eq 'numbered' ? 'ol' : 'ul');
     my $listid = $sectid ? "$relid.$sectid" : $relid;
-    print "    <$list id=\"$listid\">\n";
+    print "    <$list id=\"$listid.list\">\n";
 
     for my $itemnum (1..$#{$items}) {
       my $item = $items->[$itemnum];
@@ -269,17 +352,44 @@ for my $rel (@releases) {
       $item =~ s:<:&lt;:g; 
       $item =~ s:>:&gt;:g;
 
-      $item =~ s:\s*(\([^)"]+?\))\s*$:<br />$1:;       # Separate attribution
+      # Put attributions on their own lines.
+      # Check for trailing parenthesized attribution with no following period.
+      # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)" 
+      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^)"]+?\))\s*$:<br /><span class="attrib">$1</span>:) {
+        # If attribution is not found, then look for attribution with a
+        # trailing period, but try not to include trailing parenthesized things
+        # that are not attributions.
+        #
+        # Rule of thumb: if a trailing parenthesized expression with a following
+        # period does not contain "LUCENE-XXX", and it either has three or 
+        # fewer words or it includes the word "via", then it is considered to
+        # be an attribution.
+
+        $item =~ s{(\s*(\((?!see #|use the bug number)[^)"]+?\))\.\s*)$}
+                  { 
+                    my $subst = $1;  # default: no change
+                    my $parenthetical = $2;
+                    if ($parenthetical !~ /LUCENE-\d+/) {
+                      my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
+                      my @words = grep {/\S/} split /\s+/, $no_parens;
+                      if ($no_parens =~ /\svia\s/i || scalar(@words) <= 3) { 
+                        $subst = "<br /><span class=\"attrib\">$parenthetical</span>";
+                      }
+                    }
+                    $subst
+                  }e;
+      }
       $item =~ s:\n{2,}:\n<p/>\n:g;                    # Keep paragraph breaks
       $item =~ s{(?:${jira_url_prefix})?(LUCENE-\d+)}  # Link to JIRA
                 {<a href="${jira_url_prefix}$1">$1</a>}g;
-      $item =~ s~((?i:bug|patch)\s*\#?\s*(\d+))        # Link to Bugzilla
-                ~  my $jira_issue = "LUCENE-$bugzilla_jira_map{$2}";
-                   qq!<a href="${bugzilla_url_prefix}$2">$1</a>!
-                 . ( exists($bugzilla_jira_map{$2})    # Link to JIRA copy
-                   ?   qq!&nbsp;[<a href="${jira_url_prefix}$jira_issue">!
-                     . qq!$jira_issue</a>]!
-                   : '')~gex;
+      $item =~ s~((?i:bug|patch)\s*\#?\s*(\d+))        # Find Bugzilla issues
+                ~ my $issue = $1;
+                  my $jira_issue_num = $bugzilla_jira_map{$2}; # Link to JIRA copies
+                  $issue = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_num">!
+                         . qq!$issue&nbsp;[LUCENE-$jira_issue_num]</a>!
+                    if (defined($jira_issue_num));
+                  $issue;
+                ~gex;
       print "      <li>$item</li>\n";
     }
     print "    </$list>\n";
