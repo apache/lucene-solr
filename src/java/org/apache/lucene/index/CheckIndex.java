@@ -104,6 +104,7 @@ public class CheckIndex {
 
     String sFormat = "";
     boolean skip = false;
+    boolean allowMinusOnePosition = true;
 
     if (format == SegmentInfos.FORMAT)
       sFormat = "FORMAT [Lucene Pre-2.1]";
@@ -113,13 +114,19 @@ public class CheckIndex {
       sFormat = "FORMAT_SINGLE_NORM_FILE [Lucene 2.2]";
     else if (format == SegmentInfos.FORMAT_SHARED_DOC_STORE)
       sFormat = "FORMAT_SHARED_DOC_STORE [Lucene 2.3]";
-    else if (format == SegmentInfos.FORMAT_CHECKSUM) {
-      sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
-    } else if (format < SegmentInfos.FORMAT_CHECKSUM) {
-      sFormat = "int=" + format + " [newer version of Lucene than this tool]";
-      skip = true;
-    } else {
-      sFormat = format + " [Lucene 1.3 or prior]";
+    else {
+      // LUCENE-1255: All versions before 2.3.2/2.4 were
+      // able to create position=-1 when the very first
+      // Token has positionIncrement 0
+      allowMinusOnePosition = false;
+      if (format == SegmentInfos.FORMAT_CHECKSUM) {
+        sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
+      } else if (format < SegmentInfos.FORMAT_CHECKSUM) {
+        sFormat = "int=" + format + " [newer version of Lucene than this tool]";
+        skip = true;
+      } else {
+        sFormat = format + " [Lucene 1.3 or prior]";
+      }
     }
 
     out.println("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat);
@@ -221,7 +228,7 @@ public class CheckIndex {
             totPos += freq;
             for(int j=0;j<freq;j++) {
               final int pos = termPositions.nextPosition();
-              if (pos < 0)
+              if (pos < -1 || (pos == -1 && !allowMinusOnePosition))
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               if (pos < lastPos)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
@@ -338,6 +345,13 @@ public class CheckIndex {
     return false;
   }
 
+  static boolean assertsOn;
+
+  private static boolean testAsserts() {
+    assertsOn = true;
+    return true;
+  }
+
   public static void main(String[] args) throws Throwable {
 
     boolean doFix = false;
@@ -396,6 +410,10 @@ public class CheckIndex {
       out.println("ERROR: cannot specify both -fix and -segment");
       System.exit(1);
     }
+
+    assert testAsserts();
+    if (!assertsOn)
+      out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene', so assertions are enabled");
 
     out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
