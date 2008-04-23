@@ -1658,6 +1658,11 @@ public class IndexWriter {
       // going to wait for merges:
       flush(waitForMerges, true, true);
 
+      if (waitForMerges)
+        // Give merge scheduler last chance to run, in case
+        // any pending merges are waiting:
+        mergeScheduler.merge(this);
+
       mergePolicy.close();
 
       finishMerges(waitForMerges);
@@ -2889,6 +2894,9 @@ public class IndexWriter {
    * then copy them over.  Currently this is only used by
    * addIndexesNoOptimize(). */
   private void copyExternalSegments() throws CorruptIndexException, IOException {
+
+    boolean any = false;
+
     while(true) {
       SegmentInfo info = null;
       MergePolicy.OneMerge merge = null;
@@ -2907,6 +2915,7 @@ public class IndexWriter {
         if (registerMerge(merge)) {
           pendingMerges.remove(merge);
           runningMerges.add(merge);
+          any = true;
           merge(merge);
         } else
           // This means there is a bug in the
@@ -2923,6 +2932,11 @@ public class IndexWriter {
         // No more external segments
         break;
     }
+
+    if (any)
+      // Sometimes, on copying an external segment over,
+      // more merges may become necessary:
+      mergeScheduler.merge(this);
   }
 
   /** Merges the provided indexes into this index.
