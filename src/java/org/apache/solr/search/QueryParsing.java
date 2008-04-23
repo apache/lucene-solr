@@ -41,7 +41,7 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 /**
- * Collection of static utilities usefull for query parsing.
+ * Collection of static utilities useful for query parsing.
  *
  * @version $Id$
  */
