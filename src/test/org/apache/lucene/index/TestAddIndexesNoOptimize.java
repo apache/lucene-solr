@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestAddIndexesNoOptimize extends LuceneTestCase {
   public void testSimpleCase() throws IOException {
@@ -320,9 +321,8 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc
-          .add(new Field("content", "aaa", Field.Store.NO,
-              Field.Index.TOKENIZED));
+      doc.add(new Field("content", "aaa", Field.Store.NO,
+                        Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
   }
@@ -330,9 +330,8 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc
-          .add(new Field("content", "bbb", Field.Store.NO,
-              Field.Index.TOKENIZED));
+      doc.add(new Field("content", "bbb", Field.Store.NO,
+                        Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
   }
@@ -382,5 +381,48 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     assertEquals(30, writer.docCount());
     assertEquals(3, writer.getSegmentCount());
     writer.close();
+  }
+
+  // LUCENE-1270
+  public void testHangOnClose() throws IOException {
+
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true);
+    writer.setMergePolicy(new LogByteSizeMergePolicy());
+    writer.setMaxBufferedDocs(5);
+    writer.setUseCompoundFile(false);
+    writer.setMergeFactor(100);
+
+    Document doc = new Document();
+    doc.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    for(int i=0;i<60;i++)
+      writer.addDocument(doc);
+    writer.setMaxBufferedDocs(200);
+    Document doc2 = new Document();
+    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.NO));
+    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.NO));
+    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.NO));
+    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.NO));
+    for(int i=0;i<10;i++)
+      writer.addDocument(doc2);
+    writer.close();
+
+    Directory dir2 = new MockRAMDirectory();
+    writer = new IndexWriter(dir2, false, new WhitespaceAnalyzer(), true);
+    LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
+    lmp.setMinMergeMB(0.0001);
+    writer.setMergePolicy(lmp);
+    writer.setMergeFactor(4);
+    writer.setUseCompoundFile(false);
+    writer.setMergeScheduler(new SerialMergeScheduler());
+    writer.addIndexesNoOptimize(new Directory[] {dir});
+    writer.close();
+    dir.close();
+    dir2.close();
   }
 }

@@ -32,13 +32,17 @@ Bug fixes
     successfully created compound files. (Michael Busch)
 
 10. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
-     this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
-     Mike McCandless)
+    this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
+    Mike McCandless)
 
 11. LUCENE-1262: Fixed bug in BufferedIndexReader.refill whereby on
     hitting an exception in readInternal, the buffer is incorrectly
     filled with stale bytes such that subsequent calls to readByte()
     return incorrect results.  (Trejkaz via Mike McCandless)
+
+12. LUCENE-1270: Fixed intermittant case where IndexWriter.close()
+    would hang after IndexWriter.addIndexesNoOptimize had been
+    called.  (Stu Hood via Mike McCandless)
 	
 Build
 
