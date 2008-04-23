@@ -201,7 +201,7 @@ public class CheckIndex {
             totPos += freq;
             for(int j=0;j<freq;j++) {
               final int pos = termPositions.nextPosition();
-              if (pos < 0)
+              if (pos < -1)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               if (pos < lastPos)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
@@ -318,6 +318,13 @@ public class CheckIndex {
     return false;
   }
 
+  static boolean assertsOn;
+
+  private static boolean testAsserts() {
+    assertsOn = true;
+    return true;
+  }
+
   public static void main(String[] args) throws Throwable {
 
     boolean doFix = false;
@@ -347,6 +354,10 @@ public class CheckIndex {
                          "corruption, else 0.\n");
       System.exit(1);
     }
+
+    assert testAsserts();
+    if (!assertsOn)
+      out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene', so assertions are enabled");
 
     final String dirName = args[0];
     out.println("\nOpening index @ " + dirName + "\n");
