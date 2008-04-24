@@ -102,4 +102,8 @@ public class ChainedUpdateProcessorFactory extends UpdateRequestProcessorFactory
     }
     return last;
   }
+
+  public UpdateRequestProcessorFactory[] getFactories() {
+    return factory;
+  }
 }
