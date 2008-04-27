@@ -94,6 +94,9 @@ Bug fixes
     hitting an exception in readInternal, the buffer is incorrectly
     filled with stale bytes such that subsequent calls to readByte()
     return incorrect results.  (Trejkaz via Mike McCandless)
+
+ 8. LUCENE-1267: Added numDocs() and maxDoc() to IndexWriter;
+    deprecated docCount().  (Mike McCandless)
 	
 New features
 

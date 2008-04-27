@@ -119,9 +119,11 @@ public class CheckIndex {
       // able to create position=-1 when the very first
       // Token has positionIncrement 0
       allowMinusOnePosition = false;
-      if (format == SegmentInfos.FORMAT_CHECKSUM) {
+      if (format == SegmentInfos.FORMAT_CHECKSUM)
         sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
-      } else if (format < SegmentInfos.FORMAT_CHECKSUM) {
+      else if (format == SegmentInfos.FORMAT_DEL_COUNT)
+          sFormat = "FORMAT_DEL_COUNT [Lucene 2.4]";
+      else if (format < SegmentInfos.CURRENT_FORMAT) {
         sFormat = "int=" + format + " [newer version of Lucene than this tool]";
         skip = true;
       } else {
@@ -178,10 +180,15 @@ public class CheckIndex {
         reader = SegmentReader.get(info);
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
-        if (reader.hasDeletions())
+        if (reader.hasDeletions()) {
+          if (info.docCount - numDocs != info.getDelCount())
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           out.println("OK [" + (info.docCount - numDocs) + " deleted docs]");
-        else
+        } else {
+          if (info.getDelCount() != 0)
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           out.println("OK");
+        }
 
         out.print("    test: fields, norms.......");
         Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);

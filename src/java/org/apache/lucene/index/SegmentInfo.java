@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BitVector;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
@@ -73,6 +74,9 @@ final class SegmentInfo {
                                                   // other segments
   private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
+  private int delCount;                           // How many deleted docs in this segment, or -1 if not yet known
+                                                  // (if it's an older index)
+
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -84,6 +88,7 @@ final class SegmentInfo {
     docStoreOffset = -1;
     docStoreSegment = name;
     docStoreIsCompoundFile = false;
+    delCount = 0;
   }
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
@@ -99,6 +104,7 @@ final class SegmentInfo {
     this.docStoreOffset = docStoreOffset;
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    delCount = 0;
     assert docStoreOffset == -1 || docStoreSegment != null;
   }
 
@@ -122,6 +128,7 @@ final class SegmentInfo {
     }
     isCompoundFile = src.isCompoundFile;
     hasSingleNormFile = src.hasSingleNormFile;
+    delCount = src.delCount;
   }
 
   /**
@@ -168,6 +175,11 @@ final class SegmentInfo {
       }
       isCompoundFile = input.readByte();
       preLockless = (isCompoundFile == CHECK_DIR);
+      if (format <= SegmentInfos.FORMAT_DEL_COUNT) {
+        delCount = input.readInt();
+        assert delCount <= docCount;
+      } else
+        delCount = -1;
     } else {
       delGen = CHECK_DIR;
       normGen = null;
@@ -177,6 +189,7 @@ final class SegmentInfo {
       docStoreOffset = -1;
       docStoreIsCompoundFile = false;
       docStoreSegment = null;
+      delCount = -1;
     }
   }
   
@@ -263,6 +276,7 @@ final class SegmentInfo {
     SegmentInfo si = new SegmentInfo(name, docCount, dir);
     si.isCompoundFile = isCompoundFile;
     si.delGen = delGen;
+    si.delCount = delCount;
     si.preLockless = preLockless;
     si.hasSingleNormFile = hasSingleNormFile;
     if (normGen != null) {
@@ -429,6 +443,23 @@ final class SegmentInfo {
     }
   }
 
+  int getDelCount() throws IOException {
+    if (delCount == -1) {
+      if (hasDeletions()) {
+        final String delFileName = getDelFileName();
+        delCount = new BitVector(dir, delFileName).count();
+      } else
+        delCount = 0;
+    }
+    assert delCount <= docCount;
+    return delCount;
+  }
+
+  void setDelCount(int delCount) {
+    this.delCount = delCount;
+    assert delCount <= docCount;
+  }
+
   int getDocStoreOffset() {
     return docStoreOffset;
   }
@@ -475,6 +506,7 @@ final class SegmentInfo {
       }
     }
     output.writeByte(isCompoundFile);
+    output.writeInt(delCount);
   }
 
   private void addIfExists(List files, String fileName) throws IOException {

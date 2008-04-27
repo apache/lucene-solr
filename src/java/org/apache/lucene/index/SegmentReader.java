@@ -55,10 +55,12 @@ class SegmentReader extends DirectoryIndexReader {
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
   private boolean undeleteAll = false;
+  private int pendingDeleteCount;
 
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
   private boolean rollbackUndeleteAll = false;
+  private int rollbackPendingDeleteCount;
 
   IndexInput freqStream;
   IndexInput proxStream;
@@ -351,11 +353,16 @@ class SegmentReader extends DirectoryIndexReader {
     if (hasDeletions(si)) {
       deletedDocs = new BitVector(directory(), si.getDelFileName());
      
-      // Verify # deletes does not exceed maxDoc for this segment:
-      if (deletedDocs.count() > maxDoc()) {
-        throw new CorruptIndexException("number of deletes (" + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name);
-      }
-    }
+      assert si.getDelCount() == deletedDocs.count() : 
+        "delete count mismatch: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
+
+      // Verify # deletes does not exceed maxDoc for this
+      // segment:
+      assert si.getDelCount() <= maxDoc() : 
+        "delete count mismatch: " + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name;
+
+    } else
+      assert si.getDelCount() == 0;
   }
   
   protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException {
@@ -525,9 +532,12 @@ class SegmentReader extends DirectoryIndexReader {
       // .tmp & renaming it) because the file is not live
       // until segments file is written:
       deletedDocs.write(directory(), si.getDelFileName());
+      
+      si.setDelCount(si.getDelCount()+pendingDeleteCount);
     }
     if (undeleteAll && si.hasDeletions()) {
       si.clearDelGen();
+      si.setDelCount(0);
     }
     if (normsDirty) {               // re-write norms
       si.setNumFields(fieldInfos.size());
@@ -620,7 +630,8 @@ class SegmentReader extends DirectoryIndexReader {
       deletedDocs = new BitVector(maxDoc());
     deletedDocsDirty = true;
     undeleteAll = false;
-    deletedDocs.set(docNum);
+    if (!deletedDocs.getAndSet(docNum))
+      pendingDeleteCount++;
   }
 
   protected void doUndeleteAll() {
@@ -1009,6 +1020,7 @@ class SegmentReader extends DirectoryIndexReader {
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
     rollbackUndeleteAll = undeleteAll;
+    rollbackPendingDeleteCount = pendingDeleteCount;
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {
       Norm norm = (Norm) it.next();
@@ -1021,6 +1033,7 @@ class SegmentReader extends DirectoryIndexReader {
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
     undeleteAll = rollbackUndeleteAll;
+    pendingDeleteCount = rollbackPendingDeleteCount;
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {
       Norm norm = (Norm) it.next();

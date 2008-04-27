@@ -56,6 +56,25 @@ public final class BitVector {
     count = -1;
   }
 
+  /** Sets the value of <code>bit</code> to true, and
+   *  returns true if bit was already set */
+  public final boolean getAndSet(int bit) {
+    if (bit >= size) {
+      throw new ArrayIndexOutOfBoundsException(bit);
+    }
+    final int pos = bit >> 3;
+    final int v = bits[pos];
+    final int flag = 1 << (bit & 7);
+    if ((flag & v) != 0)
+      return true;
+    else {
+      bits[pos] = (byte) (v | flag);
+      if (count != -1)
+        count++;
+      return false;
+    }
+  }
+
   /** Sets the value of <code>bit</code> to zero. */
   public final void clear(int bit) {
     if (bit >= size) {

@@ -1798,17 +1798,48 @@ public class IndexWriter {
     return analyzer;
   }
 
-  /** Returns the number of documents currently in this index. */
+  /** Returns the number of documents currently in this
+   *  index, not counting deletions.
+   * @deprecated Please use {@link #maxDoc()} (same as this
+   * method) or {@link #numDocs()} (also takes deletions
+   * into account), instead. */
   public synchronized int docCount() {
     ensureOpen();
+    return maxDoc();
+  }
+
+  /** Returns total number of docs in this index, including
+   *  docs not yet flushed (still in the RAM buffer),
+   *  not counting deletions.
+   *  @see #numDocs */
+  public synchronized int maxDoc() {
     int count;
     if (docWriter != null)
       count = docWriter.getNumDocsInRAM();
     else
       count = 0;
+
+    for (int i = 0; i < segmentInfos.size(); i++)
+      count += segmentInfos.info(i).docCount;
+    return count;
+  }
+
+  /** Returns total number of docs in this index, including
+   *  docs not yet flushed (still in the RAM buffer), and
+   *  including deletions.  <b>NOTE:</b> buffered deletions
+   *  are not counted.  If you really need these to be
+   *  counted you should call {@link #commit()} first.
+   *  @see #numDocs */
+  public synchronized int numDocs() throws IOException {
+    int count;
+    if (docWriter != null)
+      count = docWriter.getNumDocsInRAM();
+    else
+      count = 0;
+
     for (int i = 0; i < segmentInfos.size(); i++) {
-      SegmentInfo si = segmentInfos.info(i);
-      count += si.docCount;
+      final SegmentInfo info = segmentInfos.info(i);
+      count += info.docCount - info.getDelCount();
     }
     return count;
   }
@@ -3354,6 +3385,7 @@ public class IndexWriter {
 
     BitVector deletes = null;
     int docUpto = 0;
+    int delCount = 0;
 
     final int numSegmentsToMerge = sourceSegments.size();
     for(int i=0;i<numSegmentsToMerge;i++) {
@@ -3390,8 +3422,10 @@ public class IndexWriter {
             if (previousDeletes.get(j))
               assert currentDeletes.get(j);
             else {
-              if (currentDeletes.get(j))
+              if (currentDeletes.get(j)) {
                 deletes.set(docUpto);
+                delCount++;
+              }
               docUpto++;
             }
           }
@@ -3406,8 +3440,10 @@ public class IndexWriter {
         BitVector currentDeletes = new BitVector(directory, currentInfo.getDelFileName());
 
         for(int j=0;j<docCount;j++) {
-          if (currentDeletes.get(j))
+          if (currentDeletes.get(j)) {
             deletes.set(docUpto);
+            delCount++;
+          }
           docUpto++;
         }
             
@@ -3420,6 +3456,8 @@ public class IndexWriter {
       merge.info.advanceDelGen();
       message("commit merge deletes to " + merge.info.getDelFileName());
       deletes.write(directory, merge.info.getDelFileName());
+      merge.info.setDelCount(delCount);
+      assert delCount == deletes.count();
     }
   }
 

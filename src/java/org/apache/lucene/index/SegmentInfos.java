@@ -61,8 +61,12 @@ final class SegmentInfos extends Vector {
    *  ensure all bytes were successfully written. */
   public static final int FORMAT_CHECKSUM = -5;
 
+  /** This format adds the deletion count for each segment.
+   *  This way IndexWriter can efficiently report numDocs(). */
+  public static final int FORMAT_DEL_COUNT = -6;
+
   /* This must always point to the most recent file format. */
-  private static final int CURRENT_FORMAT = FORMAT_CHECKSUM;
+  static final int CURRENT_FORMAT = FORMAT_DEL_COUNT;
   
   public int counter = 0;    // used to name new segments
   /**

@@ -104,8 +104,11 @@ public class TestIndexWriter extends LuceneTestCase
 
         // optimize the index and check that the new doc count is correct
         writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+        assertEquals(100, writer.maxDoc());
+        assertEquals(60, writer.numDocs());
         writer.optimize();
-        assertEquals(60, writer.docCount());
+        assertEquals(60, writer.maxDoc());
+        assertEquals(60, writer.numDocs());
         writer.close();
 
         // check that the index reader gives the same numbers.
@@ -117,7 +120,8 @@ public class TestIndexWriter extends LuceneTestCase
         // make sure opening a new index for create over
         // this existing one works correctly:
         writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-        assertEquals(0, writer.docCount());
+        assertEquals(0, writer.maxDoc());
+        assertEquals(0, writer.numDocs());
         writer.close();
     }
 
@@ -3030,7 +3034,10 @@ public class TestIndexWriter extends LuceneTestCase
     writer = new IndexWriter(dir,
                              false, new StandardAnalyzer(),
                              IndexWriter.MaxFieldLength.LIMITED);
+    assertEquals(8, writer.numDocs());
+    assertEquals(10, writer.maxDoc());
     writer.expungeDeletes();
+    assertEquals(8, writer.numDocs());
     writer.close();
     ir = IndexReader.open(dir);
     assertEquals(8, ir.maxDoc());
@@ -3075,6 +3082,7 @@ public class TestIndexWriter extends LuceneTestCase
                              false, new StandardAnalyzer(),
                              IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergeFactor(3);
+    assertEquals(49, writer.numDocs());
     writer.expungeDeletes();
     writer.close();
     ir = IndexReader.open(dir);
