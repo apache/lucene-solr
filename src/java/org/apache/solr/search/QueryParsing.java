@@ -52,6 +52,8 @@ public class QueryParsing {
   public static final String F = "f";      // field that a query or command pertains to
   public static final String TYPE = "type";// type of this query or command
   public static final String DEFTYPE = "defType"; // default type for any direct subqueries
+  public static final String LOCALPARAM_START = "{!";
+  public static final char LOCALPARAM_END = '}';
 
   /** 
    * Helper utility for parsing a query using the Lucene QueryParser syntax. 
@@ -116,31 +118,31 @@ public class QueryParsing {
   // note to self: something needs to detect infinite recursion when parsing queries
   static int parseLocalParams(String txt, int start, Map<String,String> target, SolrParams params) throws ParseException {
     int off=start;
-    if (!txt.startsWith("<!",off)) return start;
+    if (!txt.startsWith(LOCALPARAM_START,off)) return start;
     StrParser p = new StrParser(txt,start,txt.length());
-    p.pos+=2; // skip over "<!"
+    p.pos+=2; // skip over "{!"
 
     for(;;) {
       /*
       if (p.pos>=txt.length()) {
-        throw new ParseException("Missing '>' parsing local params '" + txt + '"');
+        throw new ParseException("Missing '}' parsing local params '" + txt + '"');
       }
       */
       char ch = p.peek();
-      if (ch=='>') {
+      if (ch==LOCALPARAM_END) {
         return p.pos+1;
       }
 
       String id = p.getId();
       if (id.length()==0) {
-        throw new ParseException("Expected identifier '>' parsing local params '" + txt + '"');
+        throw new ParseException("Expected identifier '}' parsing local params '" + txt + '"');
 
       }
       String val=null;
 
       ch = p.peek();
       if (ch!='=') {
-        // single word... treat <!func> as ""=func for easy lookup
+        // single word... treat {!func} as type=func for easy lookup
         val = id;
         id = TYPE;
       } else {
@@ -157,7 +159,7 @@ public class QueryParsing {
             val = params.get(pname);
           }
         } else {
-          // read unquoted literal ended by whitespace or '>'
+          // read unquoted literal ended by whitespace or '}'
           // there is no escaping.
           int valStart = p.pos;
           for (;;) {
@@ -165,7 +167,7 @@ public class QueryParsing {
               throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt +"'");
             }
             char c = p.val.charAt(p.pos);
-            if (c=='>' || Character.isWhitespace(c)) {
+            if (c==LOCALPARAM_END || Character.isWhitespace(c)) {
               val = p.val.substring(valStart, p.pos);
               break;
             }
@@ -179,11 +181,11 @@ public class QueryParsing {
 
   /**
    *  "foo" returns null
-   *  "<!prefix f=myfield>yes" returns type="prefix",f="myfield",v="yes"
-   *  "<!prefix f=myfield v=$p>" returns type="prefix",f="myfield",v=params.get("p")
+   *  "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"
+   *  "{!prefix f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
    */
   public static SolrParams getLocalParams(String txt, SolrParams params) throws ParseException {
-    if (txt==null || !txt.startsWith("<!")) {
+    if (txt==null || !txt.startsWith(LOCALPARAM_START)) {
       return null;      
     }
     Map<String,String> localParams = new HashMap<String,String>();

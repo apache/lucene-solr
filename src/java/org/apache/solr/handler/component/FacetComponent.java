@@ -292,7 +292,7 @@ public class FacetComponent extends SearchComponent
           String facet_q = (String)facet_queries.getName(i);
           long count = ((Number)facet_queries.getVal(i)).longValue();
 
-          // expect <!field f=field>value style params
+          // expect {!field f=field}value style params
           SolrParams qparams = QueryParsing.getLocalParams(facet_q,null);
           String field = qparams.get(QueryParsing.F);
           String val = qparams.get(QueryParsing.V);
@@ -302,7 +302,7 @@ public class FacetComponent extends SearchComponent
           // Find the right constraint count for this value
           ShardFacetCount sfc = dff.counts.get(val);
 // TODO REMOVE
-System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + count);
+// System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + count);
 
           sfc.count += count;
 
@@ -490,7 +490,7 @@ class DistribFieldFacet extends FieldFacet {
     sf = rb.req.getSchema().getField(field);
     missingMax = new long[rb.shards.length];
     counted = new OpenBitSet[rb.shards.length];
-    queryPrefix = "<!field f=" + field + '>';
+    queryPrefix = "{!field f=" + field + '}';
   }
 
   void add(int shardNum, NamedList shardCounts, int numRequested) {

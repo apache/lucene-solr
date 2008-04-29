@@ -155,7 +155,7 @@ public class FunctionQParser extends QParser {
           throw new ParseException("Nested local params must have value in v parameter.  got '" + qs + "'");
         }
       } else {
-        throw new ParseException("Nested function query must use $param or <!v=value> forms. got '" + qs + "'");
+        throw new ParseException("Nested function query must use $param or {!v=value} forms. got '" + qs + "'");
       }
   
       sp.pos += end-start;  // advance past nested query

@@ -24,6 +24,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   public String getCoreName() { return "basic"; }
 
+
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
@@ -39,7 +40,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
   public void testQueryTypes() {
     assertU(adoc("id","1", "v_t","Hello Dude"));
     assertU(adoc("id","2", "v_t","Hello Yonik"));
-    assertU(adoc("id","3", "v_s","<!literal>"));
+    assertU(adoc("id","3", "v_s","{!literal}"));
     assertU(adoc("id","4", "v_s","other stuff"));
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983"));
@@ -49,105 +50,105 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
     // Some basic tests to ensure that parsing local params is working
     assertQ("test prefix query",
-            req("q","<!prefix f=v_t>hel")
+            req("q","{!prefix f=v_t}hel")
             ,"//result[@numFound='2']"
             );
 
     assertQ("test raw query",
-            req("q","<!raw f=v_t>hello")
+            req("q","{!raw f=v_t}hello")
             ,"//result[@numFound='2']"
             );
     assertQ("test raw query",
-            req("q","<!raw f=v_t>Hello")
+            req("q","{!raw f=v_t}Hello")
             ,"//result[@numFound='0']"
             );
     assertQ("test raw query",
-            req("q","<!raw f=v_f>1.5")
+            req("q","{!raw f=v_f}1.5")
             ,"//result[@numFound='0']"
             );
 
 
     assertQ("test custom plugin query",
-            req("q","<!foo f=v_t>hello")
+            req("q","{!foo f=v_t}hello")
             ,"//result[@numFound='2']"
             );
 
 
     assertQ("test single term field query on text type",
-            req("q","<!field f=v_t>HELLO")
+            req("q","{!field f=v_t}HELLO")
             ,"//result[@numFound='2']"
             );
 
     assertQ("test single term field query on type with diff internal rep",
-            req("q","<!field f=v_f>1.5")
+            req("q","{!field f=v_f}1.5")
             ,"//result[@numFound='1']"
             );    
 
      assertQ("test multi term field query on text type",
-            req("q","<!field f=v_t>Hello  DUDE")
+            req("q","{!field f=v_t}Hello  DUDE")
             ,"//result[@numFound='1']"
             );
 
 
     assertQ("test prefix query with value in local params",
-            req("q","<!prefix f=v_t v=hel>")
+            req("q","{!prefix f=v_t v=hel}")
             ,"//result[@numFound='2']"
     );
 
     assertQ("test optional quotes",
-            req("q","<!prefix f='v_t' v=\"hel\">")
+            req("q","{!prefix f='v_t' v=\"hel\"}")
             ,"//result[@numFound='2']"
     );
 
     assertQ("test extra whitespace",
-            req("q","<!prefix   f=v_t   v=hel   >")
+            req("q","{!prefix   f=v_t   v=hel   }")
             ,"//result[@numFound='2']"
     );
 
-    assertQ("test literal with <! in it",
-            req("q","<!prefix f=v_s><!lit")
+    assertQ("test literal with {! in it",
+            req("q","{!prefix f=v_s}{!lit")
             ,"//result[@numFound='1']"
     );
 
     assertQ("test param subst",
-            req("q","<!prefix f=$myf v=$my.v>"
+            req("q","{!prefix f=$myf v=$my.v}"
                 ,"myf","v_t", "my.v", "hel"
             )
             ,"//result[@numFound='2']"
     );
 
     assertQ("test param subst with literal",
-            req("q","<!prefix f=$myf v=$my.v>"
-                ,"myf","v_s", "my.v", "<!lit"
+            req("q","{!prefix f=$myf v=$my.v}"
+                ,"myf","v_s", "my.v", "{!lit"
             )
             ,"//result[@numFound='1']"
     );
 
    // lucene queries
    assertQ("test lucene query",
-            req("q","<!lucene>v_t:hel*")
+            req("q","{!lucene}v_t:hel*")
             ,"//result[@numFound='2']"
             );
 
    // lucene queries
    assertQ("test lucene default field",
-            req("q","<!df=v_t>hel*")
+            req("q","{!df=v_t}hel*")
             ,"//result[@numFound='2']"
             );
 
    // lucene operator
    assertQ("test lucene operator",
-            req("q","<!q.op=OR df=v_t>Hello Yonik")
+            req("q","{!q.op=OR df=v_t}Hello Yonik")
             ,"//result[@numFound='2']"
             );
    assertQ("test lucene operator",
-            req("q","<!q.op=AND df=v_t>Hello Yonik")
+            req("q","{!q.op=AND df=v_t}Hello Yonik")
             ,"//result[@numFound='1']"
             );
 
     // test boost queries
     assertQ("test boost",
-            req("q","<!boost b=sum(v_f,1)>id:[5 TO 6]"
+            req("q","{!boost b=sum(v_f,1)}id:[5 TO 6]"
                 ,"fl","*,score"
             )
             ,"//result[@numFound='2']"
@@ -155,8 +156,8 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     );
 
     assertQ("test boost and default type of func",
-            req("q","<!boost v=$q1 b=$q2>"
-                ,"q1", "<!func>v_f", "q2","v_f"
+            req("q","{!boost v=$q1 b=$q2}"
+                ,"q1", "{!func}v_f", "q2","v_f"
                 ,"fl","*,score"
             )
             ,"//doc[./float[@name='v_f']='1.5' and ./float[@name='score']='2.25']"
@@ -165,10 +166,10 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
     // dismax query from std request handler
     assertQ("test dismax query",
-             req("q","<!dismax>hello"
+             req("q","{!dismax}hello"
                 ,"qf","v_t"
                 ,"bf","sqrt(v_f)^100 log(sum(v_f,1))^50"
-                ,"bq","<!prefix f=v_t>he"
+                ,"bq","{!prefix f=v_t}he"
                 ,"debugQuery","on"
              )
              ,"//result[@numFound='2']"
@@ -176,19 +177,19 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
     // dismax query from std request handler, using local params
     assertQ("test dismax query w/ local params",
-             req("q","<!dismax qf=v_t>hello"
+             req("q","{!dismax qf=v_t}hello"
                 ,"qf","v_f"
              )
              ,"//result[@numFound='2']"
              );
 
     assertQ("test nested query",
-            req("q","_query_:\"<!query v=$q1>\"", "q1","<!prefix f=v_t>hel")
+            req("q","_query_:\"{!query v=$q1}\"", "q1","{!prefix f=v_t}hel")
             ,"//result[@numFound='2']"
             );
 
     assertQ("test nested nested query",
-            req("q","_query_:\"<!query defType=query v=$q1>\"", "q1","<!v=$q2>","q2","<!prefix f=v_t v=$qqq>","qqq","hel")
+            req("q","_query_:\"{!query defType=query v=$q1}\"", "q1","{!v=$q2}","q2","{!prefix f=v_t v=$qqq}","qqq","hel")
             ,"//result[@numFound='2']"
             );
 

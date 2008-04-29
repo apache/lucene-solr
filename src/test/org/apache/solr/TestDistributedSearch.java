@@ -453,8 +453,8 @@ public class TestDistributedSearch extends TestCase {
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
-    query("q","<!func>"+i1);
-    query("q","<!func>"+i1, "fl","*,score");  // even scores should match exactly here
+    query("q","{!func}"+i1);
+    query("q","{!func}"+i1, "fl","*,score");  // even scores should match exactly here
 
     handle.put("highlighting", UNORDERED);
     handle.put("response", UNORDERED);
