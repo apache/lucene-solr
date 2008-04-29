@@ -3029,7 +3029,7 @@ public class TestIndexWriter extends LuceneTestCase
     TermPositions tps = s.getIndexReader().termPositions(new Term("field", "a"));
     assertTrue(tps.next());
     assertEquals(1, tps.freq());
-    assertEquals(0, tps.nextPosition());
+    assertEquals(-1, tps.nextPosition());
 
     assertTrue(_TestUtil.checkIndex(dir));
     s.close();

@@ -1522,9 +1522,6 @@ final class DocumentsWriter {
               Token token = stream.next(localToken);
               if (token == null) break;
               position += (token.getPositionIncrement() - 1);
-              // LUCENE-1255: don't allow negative positon
-              if (position < 0)
-                position = 0;
               addPosition(token);
               if (++length >= maxFieldLength) {
                 if (infoStream != null)
