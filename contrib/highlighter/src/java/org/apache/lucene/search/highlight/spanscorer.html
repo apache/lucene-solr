@@ -1,0 +1,54 @@
+<html>
+<body>
+<p>
+The spanscorer classes provide the Highlighter with the ability
+to only highlight the Tokens that contributed to a query match.
+The SpanScorer class is the central component and it will attempt to score Terms
+based on whether they actually participated in scoring the Query.
+</p>
+<p>
+The implementation is very similar to QueryScorer in that WeightedSpanTerms are extracted
+from the given Query and then placed in a Map. During Token scoring, Terms found in 
+the Map return a score equal to their weight. The added wrinkle is that when terms are
+extracted, the sub-queries that make up the Query are converted to SpanQuery's and 
+SpanQuery.getSpans() is applied to a MemoryIndex containing the TokenStream of the text to 
+be highlighted if the sub-query is position sensitive. The start and end positions of the 
+matching Spans are recorded with the respective WeightedSpanTerms and these positions are 
+then used to filter possible Token matches during scoring.
+</p>
+<h2>Example Usage</h2>
+
+<pre>
+	IndexSearcher searcher = new IndexSearcher(ramDir);
+	Query query = QueryParser.parse("Kenne*", FIELD_NAME, analyzer);
+	query = query.rewrite(reader); //required to expand search terms
+	Hits hits = searcher.search(query);
+
+	for (int i = 0; i &lt; hits.length(); i++)
+	{
+		String text = hits.doc(i).get(FIELD_NAME);
+		CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(
+                        FIELD_NAME, new StringReader(text)));
+        Highlighter highlighter = new Highlighter(new SpanScorer(query, FIELD_NAME, tokenStream));
+        tokenStream.reset();
+        
+        // Get 3 best fragments and seperate with a "..."
+		String result = highlighter.getBestFragments(tokenStream, text, 3, "...");
+		System.out.println(result);
+	}
+</pre>
+
+<p>
+If you make a call to any of the getBestFragments() methods more than once, you must call reset() on the SpanScorer
+between each call.
+</p>
+
+<p>The SpanScorer class has a constructor which can use an IndexReader to derive the IDF (inverse document frequency)
+for each term in order to influence the score. This is useful for helping to extracting the most significant sections
+of a document and in supplying scores used by the GradientFormatter to color significant words more strongly.
+The SpanScorer.getMaxWeight method is useful when passed to the GradientFormatter constructor to define the top score
+which is associated with the top color.</p>
+
+
+</body>
+</html>
