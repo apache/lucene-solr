@@ -104,7 +104,6 @@ public class CheckIndex {
 
     String sFormat = "";
     boolean skip = false;
-    boolean allowMinusOnePosition = true;
 
     if (format == SegmentInfos.FORMAT)
       sFormat = "FORMAT [Lucene Pre-2.1]";
@@ -118,7 +117,6 @@ public class CheckIndex {
       // LUCENE-1255: All versions before 2.3.2/2.4 were
       // able to create position=-1 when the very first
       // Token has positionIncrement 0
-      allowMinusOnePosition = false;
       if (format == SegmentInfos.FORMAT_CHECKSUM)
         sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
       else if (format == SegmentInfos.FORMAT_DEL_COUNT)
@@ -235,7 +233,7 @@ public class CheckIndex {
             totPos += freq;
             for(int j=0;j<freq;j++) {
               final int pos = termPositions.nextPosition();
-              if (pos < -1 || (pos == -1 && !allowMinusOnePosition))
+              if (pos < -1)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
               if (pos < lastPos)
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
