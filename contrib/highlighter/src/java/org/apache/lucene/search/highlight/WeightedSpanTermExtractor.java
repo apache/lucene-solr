@@ -199,10 +199,7 @@ public class WeightedSpanTermExtractor {
       } finally {
         fir.close();
       }
-    } else {
-      // NO-OP
-      System.out.println("found none");
-    }
+    } 
   }
 
   /**
