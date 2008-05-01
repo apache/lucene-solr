@@ -212,6 +212,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
               params.remove("indent");
               params.remove("echoParams");
               params.set("isShard", true);  // a sub (shard) request
+              String shardHandler = req.getParams().get("shards.qt");
+              if (shardHandler == null) {
+                params.remove("qt");
+              } else {
+                params.set("qt", shardHandler);
+              }
               comm.submit(sreq, shard, params);
             }
           }
