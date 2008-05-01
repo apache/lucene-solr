@@ -1,6 +1,8 @@
 Lucene Change Log
 $Id$
 
+======================= Release 2.3.2 2008-05-05 =======================
+
 Bug fixes
 
  1. LUCENE-1191: On hitting OutOfMemoryError in any index-modifying

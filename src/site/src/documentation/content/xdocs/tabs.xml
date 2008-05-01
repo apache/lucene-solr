@@ -39,7 +39,7 @@
 
   <tab id="" label="Main" href="http://lucene.apache.org/java/docs/"/>
   <tab id="wiki" label="Wiki" href="http://wiki.apache.org/lucene-java"/>
-  <tab label="Lucene 2.3.1 Documentation" dir=""/>
+  <tab label="Lucene 2.3.2 Documentation" dir=""/>
   
   <!--
   <tab id="samples" label="Samples" dir="samples" indexfile="sample.html">
