@@ -249,6 +249,8 @@ New Features
 
 45. SOLR-521: StopFilterFactory support for "enablePositionIncrements"
     (Walter Ferrara via hossman)
+
+46. SOLR-557: Added SolrCore.getSearchComponents() to return an unmodifiable Map. (gsingers)
     
 Changes in runtime behavior
 
