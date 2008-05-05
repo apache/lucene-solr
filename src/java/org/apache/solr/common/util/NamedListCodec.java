@@ -87,7 +87,7 @@ public class NamedListCodec {
   }
 
 
-  private SimpleOrderedMap readOrderedMap(FastInputStream dis) throws IOException {
+  public SimpleOrderedMap readOrderedMap(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
     SimpleOrderedMap nl = new SimpleOrderedMap();
     for (int i = 0; i < sz; i++) {
@@ -98,7 +98,7 @@ public class NamedListCodec {
     return nl;
   }
 
-  private NamedList readNamedList(FastInputStream dis) throws IOException {
+  public NamedList readNamedList(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
     NamedList nl = new NamedList();
     for (int i = 0; i < sz; i++) {
@@ -109,7 +109,7 @@ public class NamedListCodec {
     return nl;
   }
 
-  private void writeNamedList(NamedList nl) throws IOException {
+  public void writeNamedList(NamedList nl) throws IOException {
     writeTag(nl instanceof SimpleOrderedMap ? ORDERED_MAP : NAMED_LST, nl.size());
     for (int i = 0; i < nl.size(); i++) {
       String name = nl.getName(i);
@@ -135,7 +135,7 @@ public class NamedListCodec {
   }
 
   byte tagByte;
-  private Object readVal(FastInputStream dis) throws IOException {
+  public Object readVal(FastInputStream dis) throws IOException {
     tagByte = dis.readByte();
 
     // if ((tagByte & 0xe0) == 0) {
@@ -171,7 +171,7 @@ public class NamedListCodec {
     throw new RuntimeException("Unknown type " + tagByte);
   }
 
-  private boolean writeKnownType(Object val) throws IOException {
+  public boolean writeKnownType(Object val) throws IOException {
     if (writePrimitive(val)) return true;
     if (val instanceof NamedList) {
       writeNamedList((NamedList) val);
@@ -222,12 +222,12 @@ public class NamedListCodec {
     }
   }
 
-  private void writeByteArray(byte[] arr, int offset, int len) throws IOException {
+  public void writeByteArray(byte[] arr, int offset, int len) throws IOException {
     writeTag(BYTEARR, len);
     daos.write(arr, offset, len);
   }
 
-  private byte[] readByteArray(FastInputStream dis) throws IOException {
+  public byte[] readByteArray(FastInputStream dis) throws IOException {
     byte[] arr = new byte[readVInt(dis)];
     dis.readFully(arr);
     return arr;
@@ -244,7 +244,7 @@ public class NamedListCodec {
     }
   }
 
-   private SolrDocument readSolrDocument(FastInputStream dis) throws IOException {
+   public SolrDocument readSolrDocument(FastInputStream dis) throws IOException {
     NamedList nl = (NamedList) readVal(dis);
     SolrDocument doc = new SolrDocument();
     for (int i = 0; i < nl.size(); i++) {
@@ -255,7 +255,7 @@ public class NamedListCodec {
     return doc;
   }
 
-  private SolrDocumentList readSolrDocumentList(FastInputStream dis) throws IOException {
+  public SolrDocumentList readSolrDocumentList(FastInputStream dis) throws IOException {
     SolrDocumentList solrDocs = new SolrDocumentList();
     List list = (List) readVal(dis);
     solrDocs.setNumFound((Long) list.get(0));
@@ -267,7 +267,7 @@ public class NamedListCodec {
     return solrDocs;
   }
 
-   private void writeSolrDocumentList(SolrDocumentList docs)
+   public void writeSolrDocumentList(SolrDocumentList docs)
          throws IOException {
      writeTag(SOLRDOCLST);
      List l = new ArrayList(3);
@@ -278,7 +278,7 @@ public class NamedListCodec {
      writeArray(docs);
    }
 
-  private Map readMap(FastInputStream dis)
+  public Map readMap(FastInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
     Map m = new LinkedHashMap();
@@ -291,7 +291,7 @@ public class NamedListCodec {
     return m;
   }
 
-  private void writeIterator(Iterator iter) throws IOException {
+  public void writeIterator(Iterator iter) throws IOException {
     ArrayList l = new ArrayList();
     while (iter.hasNext()) l.add(iter.next());
     writeArray(l);
@@ -312,7 +312,7 @@ public class NamedListCodec {
     }
   }
 
-  private List readArray(FastInputStream dis) throws IOException {
+  public List readArray(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
     ArrayList l = new ArrayList(sz);
     for (int i = 0; i < sz; i++) {
@@ -324,9 +324,10 @@ public class NamedListCodec {
   /** write the string as tag+length, with length being the number of UTF-16 characters,
    * followed by the string encoded in modified-UTF8 
    */
-  private void writeStr(String s) throws IOException {
+  public void writeStr(String s) throws IOException {
     if (s==null) {
       writeTag(NULL);
+      return;
     }
     // Can't use string serialization or toUTF()... it's limited to 64K
     // plus it's bigger than it needs to be for small strings anyway
@@ -346,7 +347,7 @@ public class NamedListCodec {
     return new String(charArr, 0, sz);
   }
 
-  private void writeInt(int val) throws IOException {
+  public void writeInt(int val) throws IOException {
     if (val>0) {
       int b = SINT | (val & 0x0f);
 
@@ -364,7 +365,7 @@ public class NamedListCodec {
     }
   }
 
-  private int readSmallInt(FastInputStream dis) throws IOException {
+  public int readSmallInt(FastInputStream dis) throws IOException {
     int v = tagByte & 0x0F;
     if ((tagByte & 0x10) != 0)
       v = (readVInt(dis)<<4) | v;
@@ -372,7 +373,7 @@ public class NamedListCodec {
   }
 
 
-  private void writeLong(long val) throws IOException {
+  public void writeLong(long val) throws IOException {
     if ((val & 0xff00000000000000L) == 0) {
       int b = SLONG | ((int)val & 0x0f);
       if (val >= 0x0f) {
@@ -388,14 +389,14 @@ public class NamedListCodec {
     }
   }
 
-  private long readSmallLong(FastInputStream dis) throws IOException {
+  public long readSmallLong(FastInputStream dis) throws IOException {
     long v = tagByte & 0x0F;
     if ((tagByte & 0x10) != 0)
       v = (readVLong(dis)<<4) | v;
     return v;
   }
 
-  private boolean writePrimitive(Object val) throws IOException {
+  public boolean writePrimitive(Object val) throws IOException {
     if (val == null) {
       daos.writeByte(NULL);
       return true;
@@ -439,7 +440,7 @@ public class NamedListCodec {
     return false;
   }
 
-  private void writeMap( Map val)
+  public void writeMap( Map val)
           throws IOException {
     writeTag(MAP, val.size());
     for (Map.Entry entry : (Set<Map.Entry>) val.entrySet()) {
@@ -449,7 +450,7 @@ public class NamedListCodec {
   }
 
 
-  private int readSize(FastInputStream in) throws IOException {
+  public int readSize(FastInputStream in) throws IOException {
     int sz = tagByte & 0x1f;
     if (sz == 0x1f) sz += readVInt(in);
     return sz;
@@ -465,7 +466,7 @@ public class NamedListCodec {
    * @param out
    * @throws IOException
    */
-  private static void writeVInt(int i, FastOutputStream out) throws IOException {
+  public static void writeVInt(int i, FastOutputStream out) throws IOException {
     while ((i & ~0x7F) != 0) {
       out.writeByte((byte) ((i & 0x7f) | 0x80));
       i >>>= 7;
@@ -491,7 +492,7 @@ public class NamedListCodec {
   }
 
 
-  private static void writeVLong(long i, FastOutputStream out) throws IOException {
+  public static void writeVLong(long i, FastOutputStream out) throws IOException {
     while ((i & ~0x7F) != 0) {
       out.writeByte((byte)((i & 0x7f) | 0x80));
       i >>>= 7;
@@ -499,7 +500,7 @@ public class NamedListCodec {
     out.writeByte((byte) i);
   }
 
-  private static long readVLong(FastInputStream in) throws IOException {
+  public static long readVLong(FastInputStream in) throws IOException {
     byte b = in.readByte();
     long i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
