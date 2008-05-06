@@ -97,6 +97,12 @@ Bug fixes
 
  8. LUCENE-1267: Added numDocs() and maxDoc() to IndexWriter;
     deprecated docCount().  (Mike McCandless)
+
+ 9. LUCENE-1274: Added new prepareCommit() method to IndexWriter,
+    which does phase 1 of a 2-phase commit (commit() does phase 2).
+    This is needed when you want to update an index as part of a
+    transaction involving external resources (eg a database).  Also
+    deprecated abort(), renaming it to rollback().  (Mike McCandless)
 	
 New features
 

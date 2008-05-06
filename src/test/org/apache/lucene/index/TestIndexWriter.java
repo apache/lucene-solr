@@ -3302,7 +3302,7 @@ public class TestIndexWriter extends LuceneTestCase
       boolean isCommit = false;
       boolean isDelete = false;
       for (int i = 0; i < trace.length; i++) {
-        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "commit".equals(trace[i].getMethodName()))
+        if ("org.apache.lucene.index.SegmentInfos".equals(trace[i].getClassName()) && "prepareCommit".equals(trace[i].getMethodName()))
           isCommit = true;
         if ("org.apache.lucene.store.MockRAMDirectory".equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName()))
           isDelete = true;
@@ -3601,6 +3601,126 @@ public class TestIndexWriter extends LuceneTestCase
 
     assertTrue(_TestUtil.checkIndex(dir));
     s.close();
+    dir.close();
+  }
+
+  // LUCENE-1274: test writer.prepareCommit()
+  public void testPrepareCommit() throws IOException {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(5);
+
+    for (int i = 0; i < 23; i++)
+      addDoc(writer);
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+
+    writer.prepareCommit();
+
+    IndexReader reader2 = IndexReader.open(dir);
+    assertEquals(0, reader2.numDocs());
+
+    writer.commit();
+
+    IndexReader reader3 = reader.reopen();
+    assertEquals(0, reader.numDocs());
+    assertEquals(0, reader2.numDocs());
+    assertEquals(23, reader3.numDocs());
+    reader.close();
+    reader2.close();
+
+    for (int i = 0; i < 17; i++)
+      addDoc(writer);
+
+    assertEquals(23, reader3.numDocs());
+    reader3.close();
+    reader = IndexReader.open(dir);
+    assertEquals(23, reader.numDocs());
+    reader.close();
+
+    writer.prepareCommit();
+
+    reader = IndexReader.open(dir);
+    assertEquals(23, reader.numDocs());
+    reader.close();
+
+    writer.commit();
+    reader = IndexReader.open(dir);
+    assertEquals(40, reader.numDocs());
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  // LUCENE-1274: test writer.prepareCommit()
+  public void testPrepareCommitRollback() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    dir.setPreventDoubleWrite(false);
+
+    IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(5);
+
+    for (int i = 0; i < 23; i++)
+      addDoc(writer);
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+
+    writer.prepareCommit();
+
+    IndexReader reader2 = IndexReader.open(dir);
+    assertEquals(0, reader2.numDocs());
+
+    writer.rollback();
+
+    IndexReader reader3 = reader.reopen();
+    assertEquals(0, reader.numDocs());
+    assertEquals(0, reader2.numDocs());
+    assertEquals(0, reader3.numDocs());
+    reader.close();
+    reader2.close();
+
+    writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    for (int i = 0; i < 17; i++)
+      addDoc(writer);
+
+    assertEquals(0, reader3.numDocs());
+    reader3.close();
+    reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+    reader.close();
+
+    writer.prepareCommit();
+
+    reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+    reader.close();
+
+    writer.commit();
+    reader = IndexReader.open(dir);
+    assertEquals(17, reader.numDocs());
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  // LUCENE-1274
+  public void testPrepareCommitNoChanges() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer.prepareCommit();
+    writer.commit();
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(0, reader.numDocs());
+    reader.close();
     dir.close();
   }
 }

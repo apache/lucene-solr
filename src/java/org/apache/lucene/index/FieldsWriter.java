@@ -64,8 +64,16 @@ final class FieldsWriter
           success = true;
         } finally {
           if (!success) {
-            close();
-            d.deleteFile(fieldsName);
+            try {
+              close();
+            } catch (Throwable t) {
+              // Suppress so we keep throwing the original exception
+            }
+            try {
+              d.deleteFile(fieldsName);
+            } catch (Throwable t) {
+              // Suppress so we keep throwing the original exception
+            }
           }
         }
 
@@ -77,9 +85,20 @@ final class FieldsWriter
           success = true;
         } finally {
           if (!success) {
-            close();
-            d.deleteFile(fieldsName);
-            d.deleteFile(indexName);
+            try {
+              close();
+            } catch (IOException ioe) {
+            }
+            try {
+              d.deleteFile(fieldsName);
+            } catch (Throwable t) {
+              // Suppress so we keep throwing the original exception
+            }
+            try {
+              d.deleteFile(indexName);
+            } catch (Throwable t) {
+              // Suppress so we keep throwing the original exception
+            }
           }
         }
 

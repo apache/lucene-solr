@@ -306,6 +306,9 @@ public class IndexWriter {
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
   private HashMap rollbackSegments;
 
+  volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
+  volatile long pendingCommitChangeCount;
+
   private SegmentInfos localRollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
   private boolean localAutoCommit;                // saved autoCommit during local transaction
   private int localFlushedDocCount;               // saved docWriter.getFlushedDocCount during local transaction
@@ -364,12 +367,13 @@ public class IndexWriter {
       infoStream.println("IW " + messageID + " [" + Thread.currentThread().getName() + "]: " + message);
   }
 
-  private synchronized void setMessageID() {
+  private synchronized void setMessageID(PrintStream infoStream) {
     if (infoStream != null && messageID == -1) {
       synchronized(MESSAGE_ID_LOCK) {
         messageID = MESSAGE_ID++;
       }
     }
+    this.infoStream = infoStream;
   }
 
   /**
@@ -1082,9 +1086,8 @@ public class IndexWriter {
     this.closeDir = closeDir;
     directory = d;
     analyzer = a;
-    this.infoStream = defaultInfoStream;
+    setMessageID(defaultInfoStream);
     this.maxFieldLength = maxFieldLength;
-    setMessageID();
 
     if (create) {
       // Clear the write lock in case it's leftover:
@@ -1496,8 +1499,7 @@ public class IndexWriter {
    */
   public void setInfoStream(PrintStream infoStream) {
     ensureOpen();
-    this.infoStream = infoStream;
-    setMessageID();
+    setMessageID(infoStream);
     docWriter.setInfoStream(infoStream);
     deleter.setInfoStream(infoStream);
     if (infoStream != null)
@@ -1672,7 +1674,7 @@ public class IndexWriter {
       if (infoStream != null)
         message("now call final commit()");
 
-      commit(true, 0);
+      commit(0);
 
       if (infoStream != null)
         message("at close: " + segString());
@@ -2571,7 +2573,7 @@ public class IndexWriter {
     if (autoCommit) {
       boolean success = false;
       try {
-        commit(true, 0);
+        commit(0);
         success = true;
       } finally {
         if (!success) {
@@ -2588,24 +2590,40 @@ public class IndexWriter {
   }
 
   /**
+   * @deprecated Please use {@link #rollback} instead.
+   */
+  public void abort() throws IOException {
+    rollback();
+  }
+
+  /**
    * Close the <code>IndexWriter</code> without committing
    * any of the changes that have occurred since it was
    * opened. This removes any temporary files that had been
    * created, after which the state of the index will be the
    * same as it was when this writer was first opened.  This
    * can only be called when this IndexWriter was opened
-   * with <code>autoCommit=false</code>.
+   * with <code>autoCommit=false</code>.  This also clears a
+   * previous call to {@link #prepareCommit}.
    * @throws IllegalStateException if this is called when
    *  the writer was opened with <code>autoCommit=true</code>.
    * @throws IOException if there is a low-level IO error
    */
-  public void abort() throws IOException {
+  public void rollback() throws IOException {
     ensureOpen();
     if (autoCommit)
       throw new IllegalStateException("abort() can only be called when IndexWriter was opened with autoCommit=false");
 
     boolean doClose;
     synchronized(this) {
+
+      if (pendingCommit != null) {
+        pendingCommit.rollbackCommit(directory);
+        deleter.decRef(pendingCommit);
+        pendingCommit = null;
+        notifyAll();
+      }
+
       // Ensure that only one thread actually gets to do the closing:
       if (!closing) {
         doClose = true;
@@ -3113,10 +3131,54 @@ public class IndexWriter {
     flush(true, false, true);
   }
 
+  /** <p>Expert: prepare for commit.  This does the first
+   *  phase of 2-phase commit.  You can only call this when
+   *  autoCommit is false.  This method does all steps
+   *  necessary to commit changes since this writer was
+   *  opened: flushes pending added and deleted docs, syncs
+   *  the index files, writes most of next segments_N file.
+   *  After calling this you must call either {@link
+   *  #commit()} to finish the commit, or {@link
+   *  #rollback()} to revert the commit and undo all changes
+   *  done since the writer was opened.</p>
+   *
+   * You can also just call {@link #commit()} directly
+   * without prepareCommit first in which case that method
+   * will internally call prepareCommit.
+   */
+  public final void prepareCommit() throws CorruptIndexException, IOException {
+    prepareCommit(false);
+  }
+
+  private final void prepareCommit(boolean internal) throws CorruptIndexException, IOException {
+
+    if (hitOOM)
+      throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
+
+    if (autoCommit && !internal)
+      throw new IllegalStateException("this method can only be used when autoCommit is false");
+
+    if (!autoCommit && pendingCommit != null)
+      throw new IllegalStateException("prepareCommit was already called with no corresponding call to commit");
+
+    message("prepareCommit: flush");
+
+    flush(true, true, true);
+
+    startCommit(0);
+  }
+
+  private void commit(long sizeInBytes) throws IOException {
+    startCommit(sizeInBytes);
+    finishCommit();
+  }
+
   /**
-   * <p>Commits all pending updates (added & deleted documents)
-   * to the index, and syncs all referenced index files,
-   * such that a reader will see the changes.  Note that
+   * <p>Commits all pending updates (added & deleted
+   * documents) to the index, and syncs all referenced index
+   * files, such that a reader will see the changes and the
+   * index updates will survive an OS or machine crash or
+   * power loss (though, see the note below).  Note that
    * this does not wait for any running background merges to
    * finish.  This may be a costly operation, so you should
    * test the cost in your application and do it only when
@@ -3135,12 +3197,38 @@ public class IndexWriter {
    * consistency on such devices.  </p>
    */
   public final void commit() throws CorruptIndexException, IOException {
-    commit(true);
+
+    message("commit: start");
+
+    if (autoCommit || pendingCommit == null) {
+      message("commit: now prepare");
+      prepareCommit(true);
+    } else
+      message("commit: already prepared");
+
+    finishCommit();
   }
 
-  private final void commit(boolean triggerMerges) throws CorruptIndexException, IOException {
-    flush(triggerMerges, true, true);
-    commit(true, 0);
+  private synchronized final void finishCommit() throws CorruptIndexException, IOException {
+
+    if (pendingCommit != null) {
+      try {
+        message("commit: pendingCommit != null");
+        pendingCommit.finishCommit(directory);
+        lastCommitChangeCount = pendingCommitChangeCount;
+        segmentInfos.updateGeneration(pendingCommit);
+        setRollbackSegmentInfos();
+        deleter.checkpoint(pendingCommit, true);
+      } finally {
+        deleter.decRef(pendingCommit);
+        pendingCommit = null;
+        notifyAll();
+      }
+
+    } else
+      message("commit: pendingCommit == null; skip");
+
+    message("commit: done");
   }
 
   /**
@@ -3176,8 +3264,7 @@ public class IndexWriter {
     // when flushing a segment; otherwise deletes may become
     // visible before their corresponding added document
     // from an updateDocument call
-    if (autoCommit)
-      flushDeletes = true;
+    flushDeletes |= autoCommit;
 
     // Returns true if docWriter is currently aborting, in
     // which case we skip flushing this segment
@@ -3935,7 +4022,7 @@ public class IndexWriter {
         synchronized(this) {
           size = merge.info.sizeInBytes();
         }
-        commit(false, size);
+        commit(size);
       }
       
       success = false;
@@ -3988,7 +4075,7 @@ public class IndexWriter {
       synchronized(this) {
         size = merge.info.sizeInBytes();
       }
-      commit(false, size);
+      commit(size);
     }
 
     return mergedDocCount;
@@ -4151,13 +4238,13 @@ public class IndexWriter {
   }
 
   /** Walk through all files referenced by the current
-   *  segmentInfos, minus flushes, and ask the Directory to
-   *  sync each file, if it wasn't already.  If that
-   *  succeeds, then we write a new segments_N file & sync
-   *  that. */
-  private void commit(boolean skipWait, long sizeInBytes) throws IOException {
+   *  segmentInfos and ask the Directory to sync each file,
+   *  if it wasn't already.  If that succeeds, then we
+   *  prepare a new segments_N file but do not fully commit
+   *  it. */
+  private void startCommit(long sizeInBytes) throws IOException {
 
-    assert testPoint("startCommit");
+    assert testPoint("startStartCommit");
 
     if (hitOOM)
       return;
@@ -4165,9 +4252,9 @@ public class IndexWriter {
     try {
 
       if (infoStream != null)
-        message("start commit() skipWait=" + skipWait + " sizeInBytes=" + sizeInBytes);
+        message("startCommit(): start sizeInBytes=" + sizeInBytes);
 
-      if (!skipWait)
+      if (sizeInBytes > 0)
         syncPause(sizeInBytes);
 
       SegmentInfos toSync = null;
@@ -4179,7 +4266,7 @@ public class IndexWriter {
 
         if (changeCount == lastCommitChangeCount) {
           if (infoStream != null)
-            message("  skip commit(): no changes pending");
+            message("  skip startCommit(): no changes pending");
           return;
         }
 
@@ -4189,15 +4276,17 @@ public class IndexWriter {
         // threads can be doing this at once, if say a large
         // merge and a small merge finish at the same time:
 
+        if (infoStream != null)
+          message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
+
         toSync = (SegmentInfos) segmentInfos.clone();
         deleter.incRef(toSync, false);
         myChangeCount = changeCount;
       }
 
-      if (infoStream != null)
-        message("commit index=" + segString(toSync));
+      assert testPoint("midStartCommit");
 
-      assert testPoint("midCommit");
+      boolean setPending = false;
 
       try {
 
@@ -4237,54 +4326,72 @@ public class IndexWriter {
             break;
         }
 
-        assert testPoint("midCommit2");
-      
+        assert testPoint("midStartCommit2");
+
         synchronized(this) {
           // If someone saved a newer version of segments file
           // since I first started syncing my version, I can
           // safely skip saving myself since I've been
           // superseded:
-          if (myChangeCount > lastCommitChangeCount) {
-          
+          if (myChangeCount > lastCommitChangeCount && (pendingCommit == null || myChangeCount > pendingCommitChangeCount)) {
+
+            // Wait now for any current pending commit to complete:
+            while(pendingCommit != null) {
+              message("wait for existing pendingCommit to finish...");
+              try {
+                wait();
+              } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+              }
+            }
+
             if (segmentInfos.getGeneration() > toSync.getGeneration())
               toSync.updateGeneration(segmentInfos);
 
             boolean success = false;
             try {
-              toSync.commit(directory);
+
+              // Exception here means nothing is prepared
+              // (this method unwinds everything it did on
+              // an exception)
+              try {
+                toSync.prepareCommit(directory);
+              } finally {
+                // Have our master segmentInfos record the
+                // generations we just prepared.  We do this
+                // on error or success so we don't
+                // double-write a segments_N file.
+                segmentInfos.updateGeneration(toSync);
+              }
+
+              assert pendingCommit == null;
+              setPending = true;
+              pendingCommit = toSync;
+              pendingCommitChangeCount = myChangeCount;
               success = true;
             } finally {
-              // Have our master segmentInfos record the
-              // generations we just sync'd
-              segmentInfos.updateGeneration(toSync);
               if (!success)
                 message("hit exception committing segments file");
             }
-
-            message("commit complete");
-
-            lastCommitChangeCount = myChangeCount;
-
-            deleter.checkpoint(toSync, true);
-            setRollbackSegmentInfos();
           } else
             message("sync superseded by newer infos");
         }
 
         message("done all syncs");
 
-        assert testPoint("midCommitSuccess");
+        assert testPoint("midStartCommitSuccess");
 
       } finally {
         synchronized(this) {
-          deleter.decRef(toSync);
+          if (!setPending)
+            deleter.decRef(toSync);
         }
       }
     } catch (OutOfMemoryError oom) {
       hitOOM = true;
       throw oom;
     }
-    assert testPoint("finishCommit");
+    assert testPoint("finishStartCommit");
   }
 
   /**
@@ -4377,11 +4484,11 @@ public class IndexWriter {
   // Used only by assert for testing.  Current points:
   //   startDoFlush
   //   startCommitMerge
-  //   startCommit
-  //   midCommit
-  //   midCommit2
-  //   midCommitSuccess
-  //   finishCommit
+  //   startStartCommit
+  //   midStartCommit
+  //   midStartCommit2
+  //   midStartCommitSuccess
+  //   finishStartCommit
   //   startCommitMergeDeletes
   //   startMergeInit
   //   startApplyDeletes

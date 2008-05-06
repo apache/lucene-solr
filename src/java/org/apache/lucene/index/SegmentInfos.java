@@ -274,6 +274,10 @@ final class SegmentInfos extends Vector {
     }.run();
   }
 
+  // Only non-null after prepareCommit has been called and
+  // before finishCommit is called
+  ChecksumIndexOutput pendingOutput;
+
   private final void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
@@ -298,53 +302,27 @@ final class SegmentInfos extends Vector {
       for (int i = 0; i < size(); i++) {
         info(i).write(output);
       }
-      final long checksum = output.getChecksum();
-      output.writeLong(checksum);
+      output.prepareCommit();
       success = true;
+      pendingOutput = output;
     } finally {
-      boolean success2 = false;
-      try {
-        if (!success) {
-          // We hit an exception above; try to close the file
-          // but suppress any exception:
-          try {
-            output.close();
-            success2 = true;
-          } catch (Throwable t) {
-            // Suppress so we keep throwing the original exception
-          }
-        } else {
+      if (!success) {
+        // We hit an exception above; try to close the file
+        // but suppress any exception:
+        try {
           output.close();
-          success2 = true;
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
         }
-      } finally {
-        if (!success || !success2) {
-          try {
-            // Try not to leave a truncated segments_N file in
-            // the index:
-            directory.deleteFile(segmentFileName);
-          } catch (Throwable t) {
-            // Suppress so we keep throwing the original exception
-          }
+        try {
+          // Try not to leave a truncated segments_N file in
+          // the index:
+          directory.deleteFile(segmentFileName);
+        } catch (Throwable t) {
+          // Suppress so we keep throwing the original exception
         }
       }
     }
-
-    try {
-      IndexOutput genOutput = directory.createOutput(IndexFileNames.SEGMENTS_GEN);
-      try {
-        genOutput.writeInt(FORMAT_LOCKLESS);
-        genOutput.writeLong(generation);
-        genOutput.writeLong(generation);
-      } finally {
-        genOutput.close();
-      }
-    } catch (IOException e) {
-      // It's OK if we fail to write this file since it's
-      // used only as one of the retry fallbacks.
-    }
-    
-    lastGeneration = generation;
   }
 
   /**
@@ -355,7 +333,7 @@ final class SegmentInfos extends Vector {
   public Object clone() {
     SegmentInfos sis = (SegmentInfos) super.clone();
     for(int i=0;i<sis.size();i++) {
-      sis.setElementAt(((SegmentInfo) sis.elementAt(i)).clone(), i);
+      sis.setElementAt(sis.info(i).clone(), i);
     }
     return sis;
   }
@@ -739,45 +717,73 @@ final class SegmentInfos extends Vector {
 
   // Carry over generation numbers from another SegmentInfos
   void updateGeneration(SegmentInfos other) {
-    assert other.generation > generation;
     lastGeneration = other.lastGeneration;
     generation = other.generation;
     version = other.version;
   }
 
-  /** Writes & syncs to the Directory dir, taking care to
-   *  remove the segments file on exception */
-  public final void commit(Directory dir) throws IOException {
-    boolean success = false;
-    try {
-      write(dir);
-      success = true;
-    } finally {
-      if (!success) {
-        // Must carefully compute fileName from "generation"
-        // since lastGeneration isn't incremented:
+  public final void rollbackCommit(Directory dir) throws IOException {
+    if (pendingOutput != null) {
+      try {
+        pendingOutput.close();
+      } catch (Throwable t) {
+        // Suppress so we keep throwing the original exception
+        // in our caller
+      }
+
+      // Must carefully compute fileName from "generation"
+      // since lastGeneration isn't incremented:
+      try {
         final String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                              "",
                                                                              generation);
-        try {
-          dir.deleteFile(segmentFileName);
-        } catch (Throwable t) {
-          // Suppress so we keep throwing the original exception
-        }
+        dir.deleteFile(segmentFileName);
+      } catch (Throwable t) {
+        // Suppress so we keep throwing the original exception
+        // in our caller
       }
+      pendingOutput = null;
+    }
+  }
+
+  /** Call this to start a commit.  This writes the new
+   *  segments file, but writes an invalid checksum at the
+   *  end, so that it is not visible to readers.  Once this
+   *  is called you must call {@link #finishCommit} to complete
+   *  the commit or {@link #rollbackCommit} to abort it. */
+  public final void prepareCommit(Directory dir) throws IOException {
+    if (pendingOutput != null)
+      throw new IllegalStateException("prepareCommit was already called");
+    write(dir);
+  }
+
+  public final void finishCommit(Directory dir) throws IOException {
+    if (pendingOutput == null)
+      throw new IllegalStateException("prepareCommit was not called");
+    boolean success = false;
+    try {
+      pendingOutput.finishCommit();
+      pendingOutput.close();
+      pendingOutput = null;
+      success = true;
+    } finally {
+      if (!success)
+        rollbackCommit(dir);
     }
 
     // NOTE: if we crash here, we have left a segments_N
     // file in the directory in a possibly corrupt state (if
     // some bytes made it to stable storage and others
-    // didn't).  But, the segments_N file now includes
-    // checksum at the end, which should catch this case.
-    // So when a reader tries to read it, it will throw a
+    // didn't).  But, the segments_N file includes checksum
+    // at the end, which should catch this case.  So when a
+    // reader tries to read it, it will throw a
     // CorruptIndexException, which should cause the retry
     // logic in SegmentInfos to kick in and load the last
     // good (previous) segments_N-1 file.
 
-    final String fileName = getCurrentSegmentFileName();
+    final String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
+                                                                  "",
+                                                                  generation);
     success = false;
     try {
       dir.sync(fileName);
@@ -791,5 +797,28 @@ final class SegmentInfos extends Vector {
         }
       }
     }
+
+    lastGeneration = generation;
+
+    try {
+      IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN);
+      try {
+        genOutput.writeInt(FORMAT_LOCKLESS);
+        genOutput.writeLong(generation);
+        genOutput.writeLong(generation);
+      } finally {
+        genOutput.close();
+      }
+    } catch (Throwable t) {
+      // It's OK if we fail to write this file since it's
+      // used only as one of the retry fallbacks.
+    }
+  }
+
+  /** Writes & syncs to the Directory dir, taking care to
+   *  remove the segments file on exception */
+  public final void commit(Directory dir) throws IOException {
+    prepareCommit(dir);
+    finishCommit(dir);
   }
 }

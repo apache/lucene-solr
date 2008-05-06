@@ -53,6 +53,7 @@ public class TestStressIndexing extends LuceneTestCase {
           count++;
         }
       } catch (Throwable e) {
+        System.out.println(Thread.currentThread() + ": exc");
         e.printStackTrace(System.out);
         failed = true;
       }

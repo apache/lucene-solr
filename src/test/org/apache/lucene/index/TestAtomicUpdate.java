@@ -68,6 +68,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
           count++;
         }
       } catch (Throwable e) {
+        System.out.println(Thread.currentThread().getName() + ": exc");
         e.printStackTrace(System.out);
         failed = true;
       }
@@ -111,11 +112,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     public void doWork() throws Throwable {
       IndexReader r = IndexReader.open(directory);
-      try {
-        assertEquals(100, r.numDocs());
-      } catch (Throwable t) {
-        throw t;
-      }
+      assertEquals(100, r.numDocs());
       r.close();
     }
   }
@@ -140,6 +137,10 @@ public class TestAtomicUpdate extends LuceneTestCase {
       writer.addDocument(d);
     }
     writer.commit();
+
+    IndexReader r = IndexReader.open(directory);
+    assertEquals(100, r.numDocs());
+    r.close();
 
     IndexerThread indexerThread = new IndexerThread(writer, threads);
     threads[0] = indexerThread;
