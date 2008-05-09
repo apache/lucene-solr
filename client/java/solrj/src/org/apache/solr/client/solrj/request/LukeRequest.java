@@ -62,6 +62,11 @@ public class LukeRequest extends SolrRequest
     }
     fields.add( f );
   }
+
+  public void setFields( List<String> f )
+  {
+    fields = f;
+  }
   
   //---------------------------------------------------------------------------------
   //---------------------------------------------------------------------------------
@@ -74,6 +79,20 @@ public class LukeRequest extends SolrRequest
     this.showSchema = showSchema;
   }
 
+  public int getCount() {
+    return count;
+  }
+
+  /**
+   * the number of terms to return for a given field.  If the number is 0, it will not traverse the terms.  
+   */
+  public void setCount(int count) {
+    this.count = count;
+  }
+
+  //---------------------------------------------------------------------------------
+  //---------------------------------------------------------------------------------
+  
   @Override
   public Collection<ContentStream> getContentStreams() {
     return null;
