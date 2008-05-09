@@ -129,6 +129,22 @@ public class TestBackwardsCompatibility extends LuceneTestCase
                              "23.nocfs",
   };
 
+  public void testOptimizeOldIndex() throws IOException {
+    for(int i=0;i<oldNames.length;i++) {
+      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
+      unzip(dirName, oldNames[i]);
+      String fullPath = fullDir(oldNames[i]);
+      Directory dir = FSDirectory.getDirectory(fullPath);
+      IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+      w.optimize();
+      w.close();
+
+      _TestUtil.checkIndex(dir);
+      dir.close();
+      rmDir(oldNames[i]);
+    }
+  }
+
   public void testSearchOldIndex() throws IOException {
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
@@ -190,11 +206,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         Document d = reader.document(i);
         List fields = d.getFields();
         if (oldName.startsWith("23.")) {
-          assertEquals(3, fields.size());
+          assertEquals(4, fields.size());
           Field f = (Field) d.getField("id");
           assertEquals(""+i, f.stringValue());
 
           f = (Field) d.getField("utf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+
+          f = (Field) d.getField("autf8");
           assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
         
           f = (Field) d.getField("content2");
@@ -214,7 +233,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     testHits(hits, 34, searcher.getIndexReader());
 
-    if (oldName.startsWith("23.")) {
+    if (!oldName.startsWith("19.") &&
+        !oldName.startsWith("20.") &&
+        !oldName.startsWith("21.") &&
+        !oldName.startsWith("22.")) {
+      // Test on indices >= 2.3
       hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")));
       assertEquals(34, hits.length());
       hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")));
@@ -455,6 +478,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
     doc.add(new Field("id", Integer.toString(id), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);

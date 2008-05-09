@@ -172,6 +172,10 @@ final class FieldsReader {
     indexStream.seek(formatSize + (docID + docStoreOffset) * 8L);
   }
 
+  boolean canReadRawDocs() {
+    return format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
+  }
+
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     seekIndex(n);
     long position = indexStream.readLong();

@@ -54,13 +54,16 @@ public class _TestUtil {
       ((ConcurrentMergeScheduler) ms).sync();
   }
 
+  /** This runs the CheckIndex tool on the index in.  If any
+   *  issues are hit, a RuntimeException is thrown; else,
+   *  true is returned. */
   public static boolean checkIndex(Directory dir) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex.out = new PrintStream(bos);
     if (!CheckIndex.check(dir, false, null)) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());
-      return false;
+      throw new RuntimeException("CheckIndex failed");
     } else
       return true;
   }
