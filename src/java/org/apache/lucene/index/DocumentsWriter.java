@@ -1491,7 +1491,7 @@ final class DocumentsWriter {
     return b;
   }
 
-  /* Return a byte[] to the pool */
+  /* Return byte[]'s to the pool */
   synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
     for(int i=start;i<end;i++)
       freeByteBlocks.add(blocks[i]);
