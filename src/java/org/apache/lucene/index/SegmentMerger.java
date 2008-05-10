@@ -355,8 +355,15 @@ final class SegmentMerger {
         fieldsWriter.close();
       }
 
-      assert 4+docCount*8 == directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) :
-        "after mergeFields: fdx size mismatch: " + docCount + " docs vs " + directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) + " length in bytes of " + segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
+      final long fdxFileLength = directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
+
+      if (4+docCount*8 != fdxFileLength)
+        // This is most like a bug in Sun JRE 1.6.0_04/_05;
+        // we detect that the bug has struck, here, and
+        // throw an exception to prevent the corruption from
+        // entering the index.  See LUCENE-1282 for
+        // details.
+        throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + "; now aborting this merge to prevent index corruption");
 
     } else
       // If we are skipping the doc stores, that means there
