@@ -253,6 +253,11 @@ New Features
 46. SOLR-557: Added SolrCore.getSearchComponents() to return an unmodifiable Map. (gsingers)
     
 Changes in runtime behavior
+ 1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This
+   removes the maxBufferedDeletes parameter added by SOLR-310 as Lucene
+   now manages the deletes.  This provides slightly better indexing 
+   performance and makes overwrites atomic, eliminating the possibility of
+   a crash causing duplicates. (yonik)
 
 Optimizations
  1. SOLR-276: improve JSON writer speed. (yonik)

@@ -215,8 +215,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
         adoc("id", "A14", "subject", "info" ), null ) );
     handler.handleRequest( req, rsp );
 
-    assertEquals(updater.numDocsPending.get(), 0);
-    assertEquals(updater.commitCommands.get(), 0);
+    // Lucene now manages it's own deletes.
+    // assertEquals(updater.numDocsPending.get(), 0);
+    // assertEquals(updater.commitCommands.get(), 0);
   }
 
 }

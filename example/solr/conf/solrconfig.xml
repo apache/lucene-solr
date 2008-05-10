@@ -125,14 +125,7 @@
          org.apache.solr.(search|update|request|core|analysis)
      -->
 
-    <!-- Limit the number of deletions Solr will buffer during doc updating.
-        
-        Setting this lower can help bound memory use during indexing.
-    -->
-    <maxPendingDeletes>100000</maxPendingDeletes>
-
     <!-- Perform a <commit/> automatically under certain conditions:
-
          maxDocs - number of updates since last commit is greater than this
          maxTime - oldest uncommited update (in ms) is this long ago
     <autoCommit> 
