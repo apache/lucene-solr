@@ -29,18 +29,17 @@
   <available property="queries.jar.present" type="file" file="${queries.jar}"/>
 
   <path id="classpath">
-   <pathelement path="${lucene.jar}"/>
-   <pathelement path="${queries.jar}"/>
-   <pathelement path="${project.classpath}"/>
+    <pathelement path="${lucene.jar}"/>
+    <pathelement path="${queries.jar}"/>
+    <pathelement path="${project.classpath}"/>
   </path>
 
 
   <target name="compile-core" depends="build-queries, common.compile-core" />
 
   <target name="build-queries" unless="queries.jar.present">
-  	  <echo>XML Parser building dependency ${queries.jar}</echo>
-      <ant antfile="../queries/build.xml" target="default" inheritall="false"/>
+    <echo>XML Parser building dependency ${queries.jar}</echo>
+    <ant antfile="../queries/build.xml" target="default" inheritall="true" dir="../queries" />
   </target>
-
 
 </project>
