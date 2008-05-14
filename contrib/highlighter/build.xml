@@ -20,29 +20,25 @@
 <project name="highlighter" default="default">
 
   <description>
-	Hits highlighter
+    Hits highlighter
   </description>
 
   <import file="../contrib-build.xml"/>
 
   <property name="memory.jar" location="${common.dir}/build/contrib/memory/lucene-memory-${version}.jar"/>
+  <available property="memory.jar.present" type="file" file="${memory.jar}"/>
 
   <path id="classpath">
-   <pathelement path="${lucene.jar}"/>
-   <pathelement path="${memory.jar}"/>
-   <pathelement path="${project.classpath}"/>
+    <pathelement path="${lucene.jar}"/>
+    <pathelement path="${memory.jar}"/>
+    <pathelement path="${project.classpath}"/>
   </path>
 
-
-  <target name="buildHighlighter" depends="build-memory,default" />
-  <available property="memory.jar.present" type="file" file="${memory.jar}"/>
   <target name="compile-core" depends="build-memory, common.compile-core" />
 
   <target name="build-memory" unless="memory.jar.present">
     <echo>Highlighter building dependency ${memory.jar}</echo>
-    <ant antfile="../memory/build.xml" target="default" inheritall="false"/>
+    <ant antfile="../memory/build.xml" target="default" inheritall="true" dir="../memory" />
   </target>
 
-
 </project>
-
