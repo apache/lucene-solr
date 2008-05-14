@@ -103,7 +103,10 @@ Bug fixes
     This is needed when you want to update an index as part of a
     transaction involving external resources (eg a database).  Also
     deprecated abort(), renaming it to rollback().  (Mike McCandless)
-	
+
+10. LUCENE-1003: Stop RussianAnalyzer from removing numbers.
+    (TUSUR OpenTeam, Dmitry Lihachev via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

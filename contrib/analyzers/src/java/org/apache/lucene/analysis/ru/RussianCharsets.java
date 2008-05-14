@@ -94,7 +94,18 @@ public class RussianCharsets
         '\u042C',
         '\u042D',
         '\u042E',
-        '\u042F'
+        '\u042F',
+        // numbers
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9'
     };
 
     // KOI8 charset
@@ -163,7 +174,18 @@ public class RussianCharsets
         0xf8,
         0xfc,
         0xe0,
-        0xf1
+        0xf1,
+        // numbers
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9'
     };
 
     // CP1251 eharset
@@ -232,7 +254,18 @@ public class RussianCharsets
         0xDC,
         0xDD,
         0xDE,
-        0xDF
+        0xDF,
+        // numbers
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9'
     };
 
     public static char toLowerCase(char letter, char[] charset)

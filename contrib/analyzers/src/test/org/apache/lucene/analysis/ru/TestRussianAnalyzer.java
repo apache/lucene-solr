@@ -168,4 +168,21 @@ public class TestRussianAnalyzer extends TestCase
         inWords1251.close();
         sample1251.close();
     }
+    
+    public void testDigitsInRussianCharset() 
+    {
+        Reader reader = new StringReader("text 1000");
+        RussianAnalyzer ra = new RussianAnalyzer();
+        TokenStream stream = ra.tokenStream("", reader);
+
+        try {
+            assertEquals("text", stream.next().termText());
+            assertNotNull("RussianAnalyzer's tokenizer skips numbers from input text", stream.next());
+        }
+        catch (IOException e)
+        {
+            fail("unexpected IOException");
+        }
+    }
+
 }
