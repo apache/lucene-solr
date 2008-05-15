@@ -135,8 +135,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   // tracks when auto-commit should occur
   protected final CommitTracker tracker;
 
-  protected int maxPendingDeletes = -1;
-
   // iwCommit protects internal data and open/close of the IndexWriter and
   // is a mutex. Any use of the index writer should be protected by iwAccess, 
   // which admits multiple simultaneous acquisitions.  iwAccess is 
@@ -148,7 +146,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
-    maxPendingDeletes = core.getSolrConfig().getInt("updateHandler/maxPendingDeletes", -1);
 
     ReadWriteLock rwl = new ReentrantReadWriteLock();
     iwAccess = rwl.readLock();

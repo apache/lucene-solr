@@ -190,34 +190,4 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
   }
 
-  public void testMaxPending() throws Exception {
-    
-    DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
-    updater.maxPendingDeletes = 14;
-    
-    XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
-    handler.init( null );
-    
-    SolrCore core = SolrCore.getSolrCore();
-    MapSolrParams params = new MapSolrParams( new HashMap<String, String>() );
-    
-    // Add a single document
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
-    for( int i=0; i<14; i++ ) {
-      req.setContentStreams( toContentStreams(
-        adoc("id", "A"+i, "subject", "info" ), null ) );
-      handler.handleRequest( req, rsp );
-    }
-    assertEquals(updater.numDocsPending.get(), 14);
-
-    req.setContentStreams( toContentStreams(
-        adoc("id", "A14", "subject", "info" ), null ) );
-    handler.handleRequest( req, rsp );
-
-    // Lucene now manages it's own deletes.
-    // assertEquals(updater.numDocsPending.get(), 0);
-    // assertEquals(updater.commitCommands.get(), 0);
-  }
-
 }
