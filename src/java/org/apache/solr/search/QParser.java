@@ -180,7 +180,7 @@ public abstract class QParser {
    * string itself.  For example if defaultType=<code>"dismax"</code>
    * and qstr=<code>foo</code>, then the dismax query parser will be used
    * to parse and construct the query object.  However
-   * if qstr=<code>&lt;!prefix f=myfield&gt;foo</code>
+   * if qstr=<code>{!prefix f=myfield}foo</code>
    * then the prefix query parser will be used.
    */
   public static QParser getParser(String qstr, String defaultType, SolrQueryRequest req) throws ParseException {
@@ -202,4 +202,3 @@ public abstract class QParser {
   }                            
 
 }
-
