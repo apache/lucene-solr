@@ -159,6 +159,7 @@ New features
 12. LUCENE-400: Added word based n-gram filter (in contrib/analyzers) called ShingleFilter and an Analyzer wrapper
     that wraps another Analyzer's token stream with a ShingleFilter (Sebastian Kirsch, Steve Rowe via Grant Ingersoll) 
 
+13. LUCENE-1166: Decomposition tokenfilter for languages like German and Swedish (Thomas Peuss via Grant Ingersoll)
 
 Optimizations
 
