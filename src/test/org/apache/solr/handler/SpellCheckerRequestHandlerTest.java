@@ -23,8 +23,8 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * This is a test case to test the SpellCheckerRequestHandler class.
  * It tests: 
  * <ul>
- *   <li>The generation of the spell checkers list with a 10 words</li>
- *   <li>The identification of the word that was being spell checked</li>
+ *   <li>The generation of the spell checkers list with 10 words</li>
+ *   <li>The identification of the word that was being spell-checked</li>
  *   <li>The confirmation if the word exists or not in the index</li>
  *   <li>The suggested list of a correctly and incorrectly spelled words</li>
  *   <li>The suggestions for both correct and incorrect words</li>
