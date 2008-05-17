@@ -163,27 +163,26 @@ public class ShingleFilterTest extends TestCase {
                            TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES);
   }
 
-  protected void shingleFilterTest(int n, Token[] testToken, Token[] tokens,
+  protected void shingleFilterTest(int maxSize, Token[] tokensToShingle, Token[] tokensToCompare,
                                    int[] positionIncrements, String[] types)
     throws IOException {
 
-    TokenStream filter = new ShingleFilter(new TestTokenStream(testToken), n);
+    TokenStream filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
     Token token;
     int i = 0;
 
     while ((token = filter.next()) != null) {
       String termText = new String(token.termBuffer(), 0, token.termLength());
       String goldText
-        = new String(tokens[i].termBuffer(), 0, tokens[i].termLength());
+        = new String(tokensToCompare[i].termBuffer(), 0, tokensToCompare[i].termLength());
       assertEquals("Wrong termText", goldText, termText);
       assertEquals("Wrong startOffset for token \"" + termText + "\"",
-                   tokens[i].startOffset(), token.startOffset());
+          tokensToCompare[i].startOffset(), token.startOffset());
       assertEquals("Wrong endOffset for token \"" + termText + "\"",
-                   tokens[i].endOffset(), token.endOffset());
+          tokensToCompare[i].endOffset(), token.endOffset());
       assertEquals("Wrong positionIncrement for token \"" + termText + "\"",
-                   positionIncrements[i], token.getPositionIncrement());
-      assertEquals("Wrong type for token \"" + termText + "\"",
-                   types[i], token.type());
+          positionIncrements[i], token.getPositionIncrement());
+      assertEquals("Wrong type for token \"" + termText + "\"", types[i], token.type());
       i++;
     }
   }
