@@ -24,37 +24,41 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /**
- * A ShingleAnalyzerWrapper wraps a ShingleFilter around another analyzer.  A shingle is another term for a token based
- * n-gram.
+ * A ShingleAnalyzerWrapper wraps a ShingleFilter around another analyzer. A
+ * shingle is another namefor a token based n-gram.
  */
 public class ShingleAnalyzerWrapper extends Analyzer {
 
-	protected Analyzer defaultAnalyzer;
-	protected int maxShingleSize = 2;
-	protected boolean outputUnigrams = true;
+  protected Analyzer defaultAnalyzer;
+  protected int maxShingleSize = 2;
+  protected boolean outputUnigrams = true;
 
-	public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
-		super();
-		this.defaultAnalyzer = defaultAnalyzer;
-	}
+  public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
+    super();
+    this.defaultAnalyzer = defaultAnalyzer;
+  }
 
-	public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
-		this(defaultAnalyzer);
-		this.maxShingleSize = maxShingleSize;
-	}
+  public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
+    this(defaultAnalyzer);
+    this.maxShingleSize = maxShingleSize;
+  }
 
-	public ShingleAnalyzerWrapper() {
-		super();
-		this.defaultAnalyzer = new StandardAnalyzer();
-	}
+  /**
+   * Wraps {@link StandardAnalyzer}. 
+   */
+  public ShingleAnalyzerWrapper() {
+    super();
+    this.defaultAnalyzer = new StandardAnalyzer();
+  }
 
-	public ShingleAnalyzerWrapper(int nGramSize) {
-		this();
-		this.maxShingleSize = nGramSize;
-	}
+  public ShingleAnalyzerWrapper(int nGramSize) {
+    this();
+    this.maxShingleSize = nGramSize;
+  }
 
   /**
    * The max shingle (ngram) size
+   * 
    * @return The max shingle (ngram) size
    */
   public int getMaxShingleSize() {
@@ -62,14 +66,13 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   }
 
   /**
-   * Set the maximum size of output shingles (default: 2)
-   *
+   * Set the maximum size of output shingles
+   * 
    * @param maxShingleSize max shingle size
    */
-	public void setMaxShingleSize(int maxShingleSize) {
-		this.maxShingleSize = maxShingleSize;
-	}
-
+  public void setMaxShingleSize(int maxShingleSize) {
+    this.maxShingleSize = maxShingleSize;
+  }
 
   public boolean isOutputUnigrams() {
     return outputUnigrams;
@@ -77,20 +80,20 @@ public class ShingleAnalyzerWrapper extends Analyzer {
 
   /**
    * Shall the filter pass the original tokens (the "unigrams") to the output
-   * stream? (default: true)
-   *
+   * stream?
+   * 
    * @param outputUnigrams Whether or not the filter shall pass the original
-   *                       tokens to the output stream
+   *        tokens to the output stream
    */
-	public void setOutputUnigrams(boolean outputUnigrams) {
-		this.outputUnigrams = outputUnigrams;
-	}
+  public void setOutputUnigrams(boolean outputUnigrams) {
+    this.outputUnigrams = outputUnigrams;
+  }
 
-	public TokenStream tokenStream(String fieldName, Reader reader) {
-		ShingleFilter filter
-      = new ShingleFilter(defaultAnalyzer.tokenStream(fieldName, reader));
-		filter.setMaxShingleSize(maxShingleSize);
-	  filter.setOutputUnigrams(outputUnigrams);
+  public TokenStream tokenStream(String fieldName, Reader reader) {
+    ShingleFilter filter = new ShingleFilter(defaultAnalyzer.tokenStream(
+        fieldName, reader));
+    filter.setMaxShingleSize(maxShingleSize);
+    filter.setOutputUnigrams(outputUnigrams);
     return filter;
   }
 }
