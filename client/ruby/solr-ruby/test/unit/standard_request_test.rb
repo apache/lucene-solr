@@ -103,6 +103,8 @@ class StandardRequestTest < Test::Unit::TestCase
     request = Solr::Request::Standard.new(:query => 'query',
       :highlighting => {
         :field_list => ['title', 'author'],
+        :alternate_fields => {'title'=>'title', 'author'=>'author'},
+        :max_alternate_field_length => {'title'=>30, 'author'=>20},
         :max_snippets => 3,
         :require_field_match => true,
         :prefix => "<blink>",
@@ -114,6 +116,10 @@ class StandardRequestTest < Test::Unit::TestCase
     hash = request.to_hash
     assert_equal true, hash[:hl]
     assert_equal "title,author", hash["hl.fl"]
+    assert_equal "title", hash["f.title.hl.alternateField"]
+    assert_equal "author", hash["f.author.hl.alternateField"]
+    assert_equal 30, hash["f.title.hl.maxAlternateFieldLength"]
+    assert_equal 20, hash["f.author.hl.maxAlternateFieldLength"]
     assert_equal true, hash["hl.requireFieldMatch"]
     assert_equal "<blink>", hash["hl.simple.pre"]
     assert_equal "</blink>", hash["hl.simple.post"]

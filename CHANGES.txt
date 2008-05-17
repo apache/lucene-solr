@@ -251,6 +251,12 @@ New Features
     (Walter Ferrara via hossman)
 
 46. SOLR-557: Added SolrCore.getSearchComponents() to return an unmodifiable Map. (gsingers)
+
+47. SOLR-516: Added hl.maxAlternateFieldLength parameter, to set max length for hl.alternateField
+    (Koji Sekiguchi via klaas)
+
+48. SOLR-537: Use of hl.maxAlternateFieldLength parameter from solr-ruby
+    (koji)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

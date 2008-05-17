@@ -106,6 +106,11 @@ class Solr::Request::Standard < Solr::Request::Select
           hash["f.#{k}.hl.alternateField"] = v
         end
       end
+      if @params[:highlighting][:max_alternate_field_length]
+        @params[:highlighting][:max_alternate_field_length].each do |k,v|
+          hash["f.#{k}.hl.maxAlternateFieldLength"] = v
+        end
+      end
     end
     
     if @params[:mlt]
