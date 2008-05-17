@@ -112,45 +112,48 @@ public class TestStressIndexing2 extends LuceneTestCase {
   // everything.
 
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
-    IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
-    w.setUseCompoundFile(false);
-    /***
-    w.setMaxMergeDocs(Integer.MAX_VALUE);
-    w.setMaxFieldLength(10000);
-    w.setRAMBufferSizeMB(1);
-    w.setMergeFactor(10);
-    ***/
-
-    // force many merges
-    w.setMergeFactor(mergeFactor);
-    w.setRAMBufferSizeMB(.1);
-    w.setMaxBufferedDocs(maxBufferedDocs);
-
-    threads = new IndexingThread[nThreads];
-    for (int i=0; i<threads.length; i++) {
-      IndexingThread th = new IndexingThread();
-      th.w = w;
-      th.base = 1000000*i;
-      th.range = range;
-      th.iterations = iterations;
-      threads[i] = th;
-    }
-
-    for (int i=0; i<threads.length; i++) {
-      threads[i].start();
-    }
-    for (int i=0; i<threads.length; i++) {
-      threads[i].join();
-    }
-
-    // w.optimize();
-    w.close();    
-
     Map docs = new HashMap();
-    for (int i=0; i<threads.length; i++) {
-      IndexingThread th = threads[i];
-      synchronized(th) {
-        docs.putAll(th.docs);
+    for(int iter=0;iter<3;iter++) {
+      IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      w.setUseCompoundFile(false);
+
+      /***
+          w.setMaxMergeDocs(Integer.MAX_VALUE);
+          w.setMaxFieldLength(10000);
+          w.setRAMBufferSizeMB(1);
+          w.setMergeFactor(10);
+      ***/
+
+      // force many merges
+      w.setMergeFactor(mergeFactor);
+      w.setRAMBufferSizeMB(.1);
+      w.setMaxBufferedDocs(maxBufferedDocs);
+
+      threads = new IndexingThread[nThreads];
+      for (int i=0; i<threads.length; i++) {
+        IndexingThread th = new IndexingThread();
+        th.w = w;
+        th.base = 1000000*i;
+        th.range = range;
+        th.iterations = iterations;
+        threads[i] = th;
+      }
+
+      for (int i=0; i<threads.length; i++) {
+        threads[i].start();
+      }
+      for (int i=0; i<threads.length; i++) {
+        threads[i].join();
+      }
+
+      // w.optimize();
+      w.close();    
+
+      for (int i=0; i<threads.length; i++) {
+        IndexingThread th = threads[i];
+        synchronized(th) {
+          docs.putAll(th.docs);
+        }
       }
     }
 
@@ -515,16 +518,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
         
         switch (nextInt(4)) {
           case 0:
-            fields.add(new Field("f0", getString(1), Field.Store.YES, Field.Index.NO_NORMS, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NO_NORMS, tvVal));
             break;
           case 1:
-            fields.add(new Field("f1", getString(0), Field.Store.NO, Field.Index.TOKENIZED, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.TOKENIZED, tvVal));
             break;
           case 2:
-            fields.add(new Field("f2", getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
+            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
             break;
           case 3:
-            fields.add(new Field("f3", getString(bigFieldSize), Field.Store.YES, Field.Index.TOKENIZED, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.TOKENIZED, tvVal));
             break;          
         }
       }

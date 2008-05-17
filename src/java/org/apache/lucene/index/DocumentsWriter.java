@@ -1473,29 +1473,38 @@ final class DocumentsWriter {
   final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
-  private ArrayList freeByteBlocks = new ArrayList();
+  private class ByteBlockAllocator extends ByteBlockPool.Allocator {
 
-  /* Allocate another byte[] from the shared pool */
-  synchronized byte[] getByteBlock(boolean trackAllocations) {
-    final int size = freeByteBlocks.size();
-    final byte[] b;
-    if (0 == size) {
-      numBytesAlloc += BYTE_BLOCK_SIZE;
-      balanceRAM();
-      b = new byte[BYTE_BLOCK_SIZE];
-    } else
-      b = (byte[]) freeByteBlocks.remove(size-1);
-    if (trackAllocations)
-      numBytesUsed += BYTE_BLOCK_SIZE;
-    assert numBytesUsed <= numBytesAlloc;
-    return b;
+    ArrayList freeByteBlocks = new ArrayList();
+    
+    /* Allocate another byte[] from the shared pool */
+    byte[] getByteBlock(boolean trackAllocations) {
+      synchronized(DocumentsWriter.this) {
+        final int size = freeByteBlocks.size();
+        final byte[] b;
+        if (0 == size) {
+          numBytesAlloc += BYTE_BLOCK_SIZE;
+          balanceRAM();
+          b = new byte[BYTE_BLOCK_SIZE];
+        } else
+          b = (byte[]) freeByteBlocks.remove(size-1);
+        if (trackAllocations)
+          numBytesUsed += BYTE_BLOCK_SIZE;
+        assert numBytesUsed <= numBytesAlloc;
+        return b;
+      }
+    }
+
+    /* Return byte[]'s to the pool */
+    void recycleByteBlocks(byte[][] blocks, int start, int end) {
+      synchronized(DocumentsWriter.this) {
+        for(int i=start;i<end;i++)
+          freeByteBlocks.add(blocks[i]);
+      }
+    }
   }
 
-  /* Return byte[]'s to the pool */
-  synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
-    for(int i=start;i<end;i++)
-      freeByteBlocks.add(blocks[i]);
-  }
+  ByteBlockAllocator byteBlockAllocator = new ByteBlockAllocator();
 
   /* Initial chunk size of the shared char[] blocks used to
      store term text */
@@ -1563,7 +1572,7 @@ final class DocumentsWriter {
                 " allocMB=" + toMB(numBytesAlloc) +
                 " vs trigger=" + toMB(freeTrigger) +
                 " postingsFree=" + toMB(postingsFreeCount*POSTING_NUM_BYTE) +
-                " byteBlockFree=" + toMB(freeByteBlocks.size()*BYTE_BLOCK_SIZE) +
+                " byteBlockFree=" + toMB(byteBlockAllocator.freeByteBlocks.size()*BYTE_BLOCK_SIZE) +
                 " charBlockFree=" + toMB(freeCharBlocks.size()*CHAR_BLOCK_SIZE*CHAR_NUM_BYTE));
 
       // When we've crossed 100% of our target Postings
@@ -1580,7 +1589,7 @@ final class DocumentsWriter {
       // (freeLevel)
 
       while(numBytesAlloc > freeLevel) {
-        if (0 == freeByteBlocks.size() && 0 == freeCharBlocks.size() && 0 == postingsFreeCount) {
+        if (0 == byteBlockAllocator.freeByteBlocks.size() && 0 == freeCharBlocks.size() && 0 == postingsFreeCount) {
           // Nothing else to free -- must flush now.
           bufferIsFull = true;
           if (infoStream != null)
@@ -1588,8 +1597,8 @@ final class DocumentsWriter {
           break;
         }
 
-        if ((0 == iter % 3) && freeByteBlocks.size() > 0) {
-          freeByteBlocks.remove(freeByteBlocks.size()-1);
+        if ((0 == iter % 3) && byteBlockAllocator.freeByteBlocks.size() > 0) {
+          byteBlockAllocator.freeByteBlocks.remove(byteBlockAllocator.freeByteBlocks.size()-1);
           numBytesAlloc -= BYTE_BLOCK_SIZE;
         }
 

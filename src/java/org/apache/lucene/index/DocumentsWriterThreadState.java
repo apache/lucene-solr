@@ -80,8 +80,8 @@ final class DocumentsWriterThreadState {
     postingsFreeList = new Posting[256];
     postingsFreeCount = 0;
 
-    postingsPool = new ByteBlockPool(docWriter ,true);
-    vectorsPool = new ByteBlockPool(docWriter, false);
+    postingsPool = new ByteBlockPool(docWriter.byteBlockAllocator, true);
+    vectorsPool = new ByteBlockPool(docWriter.byteBlockAllocator, false);
     charPool = new CharBlockPool(docWriter);
   }
 

@@ -64,9 +64,14 @@ final class DocumentsWriterFieldData implements Comparable {
   float boost;
   int postingsVectorsUpto;
 
+  final ByteSliceWriter sliceWriter;
+  final ByteSliceWriter vectorsSliceWriter;
+
   public DocumentsWriterFieldData(DocumentsWriterThreadState threadState, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     this.threadState = threadState;
+    sliceWriter = new ByteSliceWriter(threadState.postingsPool);
+    vectorsSliceWriter = new ByteSliceWriter(threadState.vectorsPool);
   }
 
   void resetPostingArrays() {
@@ -406,15 +411,15 @@ final class DocumentsWriterFieldData implements Comparable {
 
           // Now that we know doc freq for previous doc,
           // write it & lastDocCode
-          freqUpto = p.freqUpto & DocumentsWriter.BYTE_BLOCK_MASK;
-          freq = threadState.postingsPool.buffers[p.freqUpto >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+          sliceWriter.init(p.freqUpto);
+
           if (1 == p.docFreq)
-            writeFreqVInt(p.lastDocCode|1);
+            sliceWriter.writeVInt(p.lastDocCode|1);
           else {
-            writeFreqVInt(p.lastDocCode);
-            writeFreqVInt(p.docFreq);
+            sliceWriter.writeVInt(p.lastDocCode);
+            sliceWriter.writeVInt(p.docFreq);
           }
-          p.freqUpto = freqUpto + (p.freqUpto & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
+          p.freqUpto = sliceWriter.getAddress();
 
           if (doVectors) {
             vector = addNewVector();
@@ -520,153 +525,35 @@ final class DocumentsWriterFieldData implements Comparable {
         proxCode = position;
       }
 
-      proxUpto = p.proxUpto & DocumentsWriter.BYTE_BLOCK_MASK;
-      prox = threadState.postingsPool.buffers[p.proxUpto >> DocumentsWriter.BYTE_BLOCK_SHIFT];
-      assert prox != null;
+      sliceWriter.init(p.proxUpto);
 
       if (payload != null && payload.length > 0) {
-        writeProxVInt((proxCode<<1)|1);
-        writeProxVInt(payload.length);
-        writeProxBytes(payload.data, payload.offset, payload.length);
+        sliceWriter.writeVInt((proxCode<<1)|1);
+        sliceWriter.writeVInt(payload.length);
+        sliceWriter.writeBytes(payload.data, payload.offset, payload.length);
         fieldInfo.storePayloads = true;
       } else
-        writeProxVInt(proxCode<<1);
+        sliceWriter.writeVInt(proxCode<<1);
 
-      p.proxUpto = proxUpto + (p.proxUpto & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
-
+      p.proxUpto = sliceWriter.getAddress();
       p.lastPosition = position++;
 
       if (doVectorPositions) {
-        posUpto = vector.posUpto & DocumentsWriter.BYTE_BLOCK_MASK;
-        pos = threadState.vectorsPool.buffers[vector.posUpto >> DocumentsWriter.BYTE_BLOCK_SHIFT];
-        writePosVInt(proxCode);
-        vector.posUpto = posUpto + (vector.posUpto & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
+        vectorsSliceWriter.init(vector.posUpto);
+        vectorsSliceWriter.writeVInt(proxCode);
+        vector.posUpto = vectorsSliceWriter.getAddress();
       }
 
       if (doVectorOffsets) {
-        offsetUpto = vector.offsetUpto & DocumentsWriter.BYTE_BLOCK_MASK;
-        offsets = threadState.vectorsPool.buffers[vector.offsetUpto >> DocumentsWriter.BYTE_BLOCK_SHIFT];
-        writeOffsetVInt(offsetStartCode);
-        writeOffsetVInt(offsetEnd-offsetStart);
+        vectorsSliceWriter.init(vector.offsetUpto);
+        vectorsSliceWriter.writeVInt(offsetStartCode);
+        vectorsSliceWriter.writeVInt(offsetEnd-offsetStart);
         vector.lastOffset = offsetEnd;
-        vector.offsetUpto = offsetUpto + (vector.offsetUpto & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
+        vector.offsetUpto = vectorsSliceWriter.getAddress();
       }
     } catch (Throwable t) {
       throw new AbortException(t, threadState.docWriter);
     }
-  }
-
-  /** Write vInt into freq stream of current Posting */
-  public void writeFreqVInt(int i) {
-    while ((i & ~0x7F) != 0) {
-      writeFreqByte((byte)((i & 0x7f) | 0x80));
-      i >>>= 7;
-    }
-    writeFreqByte((byte) i);
-  }
-
-  /** Write vInt into prox stream of current Posting */
-  public void writeProxVInt(int i) {
-    while ((i & ~0x7F) != 0) {
-      writeProxByte((byte)((i & 0x7f) | 0x80));
-      i >>>= 7;
-    }
-    writeProxByte((byte) i);
-  }
-
-  /** Write byte into freq stream of current Posting */
-  byte[] freq;
-  int freqUpto;
-  public void writeFreqByte(byte b) {
-    assert freq != null;
-    if (freq[freqUpto] != 0) {
-      freqUpto = threadState.postingsPool.allocSlice(freq, freqUpto);
-      freq = threadState.postingsPool.buffer;
-      p.freqUpto = threadState.postingsPool.byteOffset;
-    }
-    freq[freqUpto++] = b;
-  }
-
-  /** Write byte into prox stream of current Posting */
-  byte[] prox;
-  int proxUpto;
-  public void writeProxByte(byte b) {
-    assert prox != null;
-    if (prox[proxUpto] != 0) {
-      proxUpto = threadState.postingsPool.allocSlice(prox, proxUpto);
-      prox = threadState.postingsPool.buffer;
-      p.proxUpto = threadState.postingsPool.byteOffset;
-      assert prox != null;
-    }
-    prox[proxUpto++] = b;
-    assert proxUpto != prox.length;
-  }
-
-  /** Currently only used to copy a payload into the prox
-   *  stream. */
-  public void writeProxBytes(byte[] b, int offset, int len) {
-    final int offsetEnd = offset + len;
-    while(offset < offsetEnd) {
-      if (prox[proxUpto] != 0) {
-        // End marker
-        proxUpto = threadState.postingsPool.allocSlice(prox, proxUpto);
-        prox = threadState.postingsPool.buffer;
-        p.proxUpto = threadState.postingsPool.byteOffset;
-      }
-
-      prox[proxUpto++] = b[offset++];
-      assert proxUpto != prox.length;
-    }
-  }
-
-  /** Write vInt into offsets stream of current
-   *  PostingVector */
-  public void writeOffsetVInt(int i) {
-    while ((i & ~0x7F) != 0) {
-      writeOffsetByte((byte)((i & 0x7f) | 0x80));
-      i >>>= 7;
-    }
-    writeOffsetByte((byte) i);
-  }
-
-  byte[] offsets;
-  int offsetUpto;
-
-  /** Write byte into offsets stream of current
-   *  PostingVector */
-  public void writeOffsetByte(byte b) {
-    assert offsets != null;
-    if (offsets[offsetUpto] != 0) {
-      offsetUpto = threadState.vectorsPool.allocSlice(offsets, offsetUpto);
-      offsets = threadState.vectorsPool.buffer;
-      vector.offsetUpto = threadState.vectorsPool.byteOffset;
-    }
-    offsets[offsetUpto++] = b;
-  }
-
-  /** Write vInt into pos stream of current
-   *  PostingVector */
-  public void writePosVInt(int i) {
-    while ((i & ~0x7F) != 0) {
-      writePosByte((byte)((i & 0x7f) | 0x80));
-      i >>>= 7;
-    }
-    writePosByte((byte) i);
-  }
-
-  byte[] pos;
-  int posUpto;
-
-  /** Write byte into pos stream of current
-   *  PostingVector */
-  public void writePosByte(byte b) {
-    assert pos != null;
-    if (pos[posUpto] != 0) {
-      posUpto = threadState.vectorsPool.allocSlice(pos, posUpto);
-      pos = threadState.vectorsPool.buffer;
-      vector.posUpto = threadState.vectorsPool.byteOffset;
-    }
-    pos[posUpto++] = b;
   }
 
   /** Called when postings hash is too small (> 50%

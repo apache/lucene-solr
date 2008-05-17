@@ -37,6 +37,11 @@ import java.util.Arrays;
 
 final class ByteBlockPool {
 
+  abstract static class Allocator {
+    abstract void recycleByteBlocks(byte[][] blocks, int start, int end);
+    abstract byte[] getByteBlock(boolean trackAllocations);
+  }
+
   public byte[][] buffers = new byte[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
@@ -45,11 +50,11 @@ final class ByteBlockPool {
   public byte[] buffer;                              // Current head buffer
   public int byteOffset = -DocumentsWriter.BYTE_BLOCK_SIZE;          // Current head offset
 
-  private boolean trackAllocations;
-  DocumentsWriter docWriter;
+  private final boolean trackAllocations;
+  private final Allocator allocator;
 
-  public ByteBlockPool(DocumentsWriter docWriter, boolean trackAllocations) {
-    this.docWriter = docWriter;
+  public ByteBlockPool(Allocator allocator, boolean trackAllocations) {
+    this.allocator = allocator;
     this.trackAllocations = trackAllocations;
   }
 
@@ -66,7 +71,7 @@ final class ByteBlockPool {
           
       if (bufferUpto > 0)
         // Recycle all but the first buffer
-        docWriter.recycleByteBlocks(buffers, 1, 1+bufferUpto);
+        allocator.recycleByteBlocks(buffers, 1, 1+bufferUpto);
 
       // Re-use the first buffer
       bufferUpto = 0;
@@ -82,7 +87,7 @@ final class ByteBlockPool {
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }
-    buffer = buffers[1+bufferUpto] = docWriter.getByteBlock(trackAllocations);
+    buffer = buffers[1+bufferUpto] = allocator.getByteBlock(trackAllocations);
     bufferUpto++;
 
     byteUpto = 0;
