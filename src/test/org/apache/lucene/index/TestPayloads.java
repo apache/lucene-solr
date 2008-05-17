@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.UnicodeUtil;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
@@ -510,8 +512,7 @@ public class TestPayloads extends LuceneTestCase {
                 int freq = tp.freq();
                 for (int i = 0; i < freq; i++) {
                     tp.nextPosition();
-                    String s = new String(tp.getPayload(new byte[5], 0));
-                    assertEquals(s, terms.term().text);
+                    assertEquals(pool.bytesToString(tp.getPayload(new byte[5], 0)), terms.term().text);
                 }
             }
             tp.close();
@@ -526,17 +527,18 @@ public class TestPayloads extends LuceneTestCase {
         private byte[] payload;
         private boolean first;
         private ByteArrayPool pool;
-        
+        private String term;
         PoolingPayloadTokenStream(ByteArrayPool pool) {
             this.pool = pool;
             payload = pool.get();
             generateRandomData(payload);
+            term = pool.bytesToString(payload);
             first = true;
         }
         
         public Token next() throws IOException {
             if (!first) return null;            
-            Token t = new Token(new String(payload), 0, 0);
+            Token t = new Token(term, 0, 0);
             t.setPayload(new Payload(payload));
             return t;        
         }
@@ -557,6 +559,18 @@ public class TestPayloads extends LuceneTestCase {
             }
         }
         
+        private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
+
+        synchronized String bytesToString(byte[] bytes) {
+            String s = new String(bytes);
+            UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
+            try {
+                return new String(utf8Result.result, 0, utf8Result.length, "UTF-8");
+            } catch (UnsupportedEncodingException uee) {
+                return null;
+            }
+        }
+    
         synchronized byte[] get() {
             return (byte[]) pool.remove(0);
         }
