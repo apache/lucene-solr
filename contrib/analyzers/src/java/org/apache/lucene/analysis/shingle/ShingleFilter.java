@@ -26,11 +26,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
 
 /**
- * <p>A ShingleFilter constructs shingles (token n-grams) from a token stream,
- * that is, combinations of tokens that are indexed as one token.
+ * <p>A ShingleFilter constructs shingles (token n-grams) from a token stream.
+ * In other words, it creates combinations of tokens as a single token.
  *
  * <p>For example, the sentence "please divide this sentence into shingles"
- * would be tokenized into the tokens "please divide", "divide this",
+ * might be tokenized into shingles "please divide", "divide this",
  * "this sentence", "sentence into", and "into shingles".
  *
  * <p>This filter handles position increments > 1 by inserting filler tokens
@@ -72,7 +72,7 @@ public class ShingleFilter extends TokenFilter {
   private int maxShingleSize;
 
   /**
-   * Construct a ShingleFilter with the specified single size from the
+   * Constructs a ShingleFilter with the specified single size from the
    * TokenStream <code>input</code>
    *
    * @param input input stream
