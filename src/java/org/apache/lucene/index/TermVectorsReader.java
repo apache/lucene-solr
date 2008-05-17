@@ -408,9 +408,7 @@ class TermVectorsReader implements Cloneable {
    * @param field The field to read in
    * @param tvfPointer The pointer within the tvf file where we should start reading
    * @param mapper The mapper used to map the TermVector
-   * @return The TermVector located at that position
    * @throws IOException
-
    */ 
   private void readTermVector(String field, long tvfPointer, TermVectorMapper mapper)
           throws IOException {

@@ -79,7 +79,7 @@ public class Token implements Cloneable {
 
   private static int MIN_BUFFER_SIZE = 10;
 
-  /** @deprecated: we will remove this when we remove the
+  /** @deprecated We will remove this when we remove the
    * deprecated APIs */
   private String termText;
 
