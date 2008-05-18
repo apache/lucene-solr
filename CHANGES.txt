@@ -33,35 +33,31 @@ API Changes
     pre-existing constructors; these will be removed in release 3.0.
     (Steven Rowe via Mike McCandless)
 
- 2. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
-    this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
-    Mike McCandless)
-	
- 3. LUCENE-584: Changed Filter API to return a DocIdSet instead of a
+ 2. LUCENE-584: Changed Filter API to return a DocIdSet instead of a
     java.util.BitSet. This allows using more efficient data structures
     for Filters and makes them more flexible. This deprecates
     Filter.bits(), so all filters that implement this outside
     the Lucene code base will need to be adapted. See also the javadocs
     of the Filter class. (Paul Elschot, Michael Busch)
 
- 4. LUCENE-1044: Added IndexWriter.commit() which flushes any buffered
+ 3. LUCENE-1044: Added IndexWriter.commit() which flushes any buffered
     adds/deletes and then commits a new segments file so readers will
     see the changes.  Deprecate IndexWriter.flush() in favor of
     IndexWriter.commit().  (Mike McCandless)
 
- 5. LUCENE-325: Added IndexWriter.expungeDeletes methods, which
+ 4. LUCENE-325: Added IndexWriter.expungeDeletes methods, which
     consult the MergePolicy to find merges necessary to merge away all
     deletes from the index.  This should be a somewhat lower cost
     operation than optimize.  (John Wang via Mike McCandless)
 
- 6. LUCENE-1233: Return empty array instead of null when no fields
+ 5. LUCENE-1233: Return empty array instead of null when no fields
     match the specified name in these methods in Document:
     getFieldables, getFields, getValues, getBinaryValues.  (Stefan
     Trcek vai Mike McCandless)
 
- 7. LUCENE-1234: Make BoostingSpanScorer protected.  (Andi Vajda via Grant Ingersoll)
+ 6. LUCENE-1234: Make BoostingSpanScorer protected.  (Andi Vajda via Grant Ingersoll)
 
- 8. LUCENE-510: The index now stores strings as true UTF-8 bytes
+ 7. LUCENE-510: The index now stores strings as true UTF-8 bytes
     (previously it was Java's modified UTF-8).  If any text, either
     stored fields or a token, has illegal UTF-16 surrogate characters,
     these characters are now silently replaced with the Unicode
@@ -84,27 +80,19 @@ Bug fixes
  4. LUCENE-1213: MultiFieldQueryParser was ignoring slop in case
     of a single field phrase. (Trejkaz via Doron Cohen)
 
- 5. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
-    successfully created compound files. (Michael Busch)
-    
- 6. LUCENE-1228: IndexWriter.commit() was not updating the index version and as
+ 5. LUCENE-1228: IndexWriter.commit() was not updating the index version and as
     result IndexReader.reopen() failed to sense index changes. (Doron Cohen)
 
- 7. LUCENE-1262: Fixed bug in BufferedIndexReader.refill whereby on
-    hitting an exception in readInternal, the buffer is incorrectly
-    filled with stale bytes such that subsequent calls to readByte()
-    return incorrect results.  (Trejkaz via Mike McCandless)
-
- 8. LUCENE-1267: Added numDocs() and maxDoc() to IndexWriter;
+ 6. LUCENE-1267: Added numDocs() and maxDoc() to IndexWriter;
     deprecated docCount().  (Mike McCandless)
 
- 9. LUCENE-1274: Added new prepareCommit() method to IndexWriter,
+ 7. LUCENE-1274: Added new prepareCommit() method to IndexWriter,
     which does phase 1 of a 2-phase commit (commit() does phase 2).
     This is needed when you want to update an index as part of a
     transaction involving external resources (eg a database).  Also
     deprecated abort(), renaming it to rollback().  (Mike McCandless)
 
-10. LUCENE-1003: Stop RussianAnalyzer from removing numbers.
+ 8. LUCENE-1003: Stop RussianAnalyzer from removing numbers.
     (TUSUR OpenTeam, Dmitry Lihachev via Otis Gospodnetic)
 
 New features
@@ -194,9 +182,7 @@ Build
 
   1. LUCENE-1153: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
   
-  2. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
-
-  3. LUCENE-1202: Small fixes to the way Clover is used to work better
+  2. LUCENE-1202: Small fixes to the way Clover is used to work better
      with contribs.  Of particular note: a single clover db is used
      regardless of whether tests are run globally or in the specific
      contrib directories. 
@@ -206,7 +192,58 @@ Test Cases
  1. LUCENE-1238: Fixed intermittent failures of TestTimeLimitedCollector.testTimeoutMultiThreaded.
     Within this fix, "greedy" flag was added to TimeLimitedCollector, to allow the wrapped 
     collector to collect also the last doc, after allowed-tTime passed. (Doron Cohen)   
+	
+	
+======================= Release 2.3.2 2008-05-05 =======================
 
+Bug fixes
+
+ 1. LUCENE-1191: On hitting OutOfMemoryError in any index-modifying
+    methods in IndexWriter, do not commit any further changes to the
+    index to prevent risk of possible corruption.  (Mike McCandless)
+
+ 2. LUCENE-1197: Fixed issue whereby IndexWriter would flush by RAM
+    too early when TermVectors were in use.  (Mike McCandless)
+
+ 3. LUCENE-1198: Don't corrupt index if an exception happens inside
+    DocumentsWriter.init (Mike McCandless)
+
+ 4. LUCENE-1199: Added defensive check for null indexReader before
+    calling close in IndexModifier.close() (Mike McCandless)
+
+ 5. LUCENE-1200: Fix rare deadlock case in addIndexes* when
+    ConcurrentMergeScheduler is in use (Mike McCandless)
+
+ 6. LUCENE-1208: Fix deadlock case on hitting an exception while
+    processing a document that had triggered a flush (Mike McCandless)
+
+ 7. LUCENE-1210: Fix deadlock case on hitting an exception while
+    starting a merge when using ConcurrentMergeScheduler (Mike McCandless)
+
+ 8. LUCENE-1222: Fix IndexWriter.doAfterFlush to always be called on
+    flush (Mark Ferguson via Mike McCandless)
+	
+ 9. LUCENE-1226: Fixed IndexWriter.addIndexes(IndexReader[]) to commit
+    successfully created compound files. (Michael Busch)
+
+10. LUCENE-1150: Re-expose StandardTokenizer's constants publicly;
+    this was accidentally lost with LUCENE-966.  (Nicolas Lalevée via
+    Mike McCandless)
+
+11. LUCENE-1262: Fixed bug in BufferedIndexReader.refill whereby on
+    hitting an exception in readInternal, the buffer is incorrectly
+    filled with stale bytes such that subsequent calls to readByte()
+    return incorrect results.  (Trejkaz via Mike McCandless)
+
+12. LUCENE-1270: Fixed intermittant case where IndexWriter.close()
+    would hang after IndexWriter.addIndexesNoOptimize had been
+    called.  (Stu Hood via Mike McCandless)
+	
+Build
+
+ 1. LUCENE-1230: Include *pom.xml* in source release files. (Michael Busch)
+
+ 
 ======================= Release 2.3.1 2008-02-22 =======================
 
 Bug fixes
