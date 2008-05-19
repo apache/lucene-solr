@@ -257,6 +257,15 @@ New Features
 
 48. SOLR-537: Use of hl.maxAlternateFieldLength parameter from solr-ruby
     (koji)
+
+49. SOLR-319: Changed SynonymFilterFactory to "tokenize" synonyms file.
+    To use a tokenizer, specify "tokenizerFactory" attribute in <filter>.
+    For example:
+    <tokenizer class="solr.CJKTokenizerFactory"/>
+    <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"
+      ignoreCase="true" tokenizerFactory="solr.CJKTokenizerFactory"/>
+    (koji)
+
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

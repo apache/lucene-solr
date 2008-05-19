@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
@@ -24,8 +25,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @version $Id$
@@ -38,6 +42,12 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     boolean ignoreCase = getBoolean("ignoreCase", false);
     boolean expand = getBoolean("expand", true);
 
+    String tf = args.get("tokenizerFactory");
+    TokenizerFactory tokFactory = null;
+    if( tf != null ){
+      tokFactory = loadTokenizerFactory( loader, tf, args );
+    }
+
     if (synonyms != null) {
       List<String> wlist=null;
       try {
@@ -46,7 +56,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
         throw new RuntimeException(e);
       }
       synMap = new SynonymMap(ignoreCase);
-      parseRules(wlist, synMap, "=>", ",", expand);
+      parseRules(wlist, synMap, "=>", ",", expand,tokFactory);
       if (wlist.size()<=20) {
         SolrCore.log.fine("SynonymMap "+synonyms +":"+synMap);
       }
@@ -55,7 +65,8 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
 
   private SynonymMap synMap;
 
-  private static void parseRules(List<String> rules, SynonymMap map, String mappingSep, String synSep, boolean expansion) {
+  static void parseRules(List<String> rules, SynonymMap map, String mappingSep,
+    String synSep, boolean expansion, TokenizerFactory tokFactory) {
     int count=0;
     for (String rule : rules) {
       // To use regexes, we need an expression that specifies an odd number of chars.
@@ -71,10 +82,10 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       if (mapping.size() > 2) {
         throw new RuntimeException("Invalid Synonym Rule:" + rule);
       } else if (mapping.size()==2) {
-        source = getSynList(mapping.get(0), synSep);
-        target = getSynList(mapping.get(1), synSep);
+        source = getSynList(mapping.get(0), synSep, tokFactory);
+        target = getSynList(mapping.get(1), synSep, tokFactory);
       } else {
-        source = getSynList(mapping.get(0), synSep);
+        source = getSynList(mapping.get(0), synSep, tokFactory);
         if (expansion) {
           // expand to all arguments
           target = source;
@@ -100,21 +111,48 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
   }
 
   // a , b c , d e f => [[a],[b,c],[d,e,f]]
-  private static List<List<String>> getSynList(String str, String separator) {
+  private static List<List<String>> getSynList(String str, String separator, TokenizerFactory tokFactory) {
     List<String> strList = StrUtils.splitSmart(str, separator, false);
     // now split on whitespace to get a list of token strings
     List<List<String>> synList = new ArrayList<List<String>>();
     for (String toks : strList) {
-      List<String> tokList = StrUtils.splitWS(toks, true);
+      List<String> tokList = tokFactory == null ?
+        StrUtils.splitWS(toks, true) : splitByTokenizer(toks, tokFactory);
       synList.add(tokList);
     }
     return synList;
   }
+  
+  private static List<String> splitByTokenizer(String source, TokenizerFactory tokFactory){
+    StringReader reader = new StringReader( source );
+    TokenStream ts = loadTokenizer(tokFactory, reader);
+    List<String> tokList = new ArrayList<String>();
+    try {
+      for( Token token = ts.next(); token != null; token = ts.next() ){
+        String text = token.termText();
+        if( text.length() > 0 )
+          tokList.add( text );
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    finally{
+      reader.close();
+    }
+    return tokList;
+  }
 
+  private static TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname, Map<String,String> args){
+    TokenizerFactory tokFactory = (TokenizerFactory)loader.newInstance( cname );
+    tokFactory.init( args );
+    return tokFactory;
+  }
+  
+  private static TokenStream loadTokenizer(TokenizerFactory tokFactory, Reader reader){
+    return tokFactory.create( reader );
+  }
 
   public SynonymFilter create(TokenStream input) {
     return new SynonymFilter(input,synMap);
   }
-
-
 }
