@@ -33,7 +33,11 @@ import java.util.TimeZone;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
+import java.text.NumberFormat;
+import java.text.DecimalFormat;
+import java.text.ParsePosition;
 import java.text.ParseException;
+import java.text.FieldPosition;
 
 // TODO: make a FlexibleDateField that can accept dates in multiple
 // formats, better for human entered dates.
@@ -42,21 +46,45 @@ import java.text.ParseException;
 
 
 /**
- * FieldType that can represent any Date/Time with millisecond precisison.
+ * FieldType that can represent any Date/Time with millisecond precision.
  * <p>
  * Date Format for the XML, incoming and outgoing:
  * </p>
  * <blockquote>
  * A date field shall be of the form 1995-12-31T23:59:59Z
- * The trailing "Z" designates UTC time and is mandatory.
- * Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
+ * The trailing "Z" designates UTC time and is mandatory
+ * (See below for an explanation of UTC).
+ * Optional fractional seconds are allowed, as long as they do not end
+ * in a trailing 0 (but any precision beyond milliseconds will be ignored).
  * All other parts are mandatory.
  * </blockquote>
  * <p>
  * This format was derived to be standards compliant (ISO 8601) and is a more
- * restricted form of the canonical representation of dateTime from XML
- * schema part 2.
- * http://www.w3.org/TR/xmlschema-2/#dateTime
+ * restricted form of the
+ * <a href="http://www.w3.org/TR/xmlschema-2/#dateTime-canonical-representation">canonical
+ * representation of dateTime</a> from XML schema part 2.  Examples...
+ * </p>
+ * <ul>
+ *   <li>1995-12-31T23:59:59Z</li>
+ *   <li>1995-12-31T23:59:59.9Z</li>
+ *   <li>1995-12-31T23:59:59.99Z</li>
+ *   <li>1995-12-31T23:59:59.999Z</li>
+ * </ul>
+ * <p>
+ * Note that DateField is lenient with regards to parsing fractional
+ * seconds that end in trailing zeros and will ensure that those values
+ * are indexed in the correct canonical format.
+ * </p>
+ * <p>
+ * This FieldType also supports incoming "Date Math" strings for computing
+ * values by adding/rounding internals of time relative either an explicit
+ * datetime (in the format specified above) or the literal string "NOW",
+ * ie: "NOW+1YEAR", "NOW/DAY", "1995-12-31T23:59:59.999Z+5MINUTES", etc...
+ * -- see {@link DateMathParser} for more examples.
+ * </p>
+ *
+ * <p>
+ * Explanation of "UTC"...
  * </p>
  * <blockquote>
  * "In 1970 the Coordinated Universal Time system was devised by an
@@ -67,14 +95,6 @@ import java.text.ParseException;
  * either the English word order, CUT, or the French word order, TUC, the
  * acronym UTC was chosen as a compromise."
  * </blockquote>
- *
- * <p>
- * This FieldType also supports incoming "Date Math" strings for computing
- * values by adding/rounding internals of time relative either an explicit
- * datetime (in theformat specified above) or the literal string "NOW",
- * ie: "NOW+1YEAR", "NOW/DAY", 1995-12-31T23:59:59.999Z+5MINUTES, etc...
- * -- see {@link DateMathParser} for more examples.
- * </p>
  *
  * @version $Id$
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
@@ -96,12 +116,6 @@ public class DateField extends FieldType {
   protected static char Z = 'Z';
   
   public String toInternal(String val) {
-    final int len=val.length();
-    if (val.charAt(len-1) == Z) {
-      // check common case first, simple datetime
-      // NOTE: not parsed to ensure correctness
-      return val.substring(0,len-1);
-    }
     return toInternal(parseMath(null, val));
   }
 
@@ -150,7 +164,7 @@ public class DateField extends FieldType {
   }
   
   public String toInternal(Date val) {
-    return getThreadLocalDateFormat().format(val);
+    return formatDate(val);
   }
 
   public String indexedToReadable(String indexedForm) {
@@ -161,13 +175,13 @@ public class DateField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
   public Date toObject(String indexedForm) throws java.text.ParseException {
-    return getThreadLocalDateFormat().parse(indexedToReadable(indexedForm));
+    return parseDate(indexedToReadable(indexedForm));
   }
 
   @Override
   public Date toObject(Fieldable f) {
     try {
-      return getThreadLocalDateFormat().parse( toExternal(f) );
+      return parseDate( toExternal(f) );
     }
     catch( ParseException ex ) {
       throw new RuntimeException( ex );
@@ -193,25 +207,105 @@ public class DateField extends FieldType {
   /**
    * Returns a formatter that can be use by the current thread if needed to
    * convert Date objects to the Internal representation.
+   *
+   * Only the <tt>format(Date)</tt> can be used safely.
+   * 
+   * @deprecated - use formatDate(Date) instead
    */
   protected DateFormat getThreadLocalDateFormat() {
-  
     return fmtThreadLocal.get();
   }
 
-  private static ThreadLocalDateFormat fmtThreadLocal
-    = new ThreadLocalDateFormat();
+  /**
+   * Thread safe method that can be used by subclasses to format a Date
+   * using the Internal representation.
+   */
+  protected String formatDate(Date d) {
+    return fmtThreadLocal.get().format(d);
+  }
+
+  /**
+   * Thread safe method that can be used by subclasses to parse a Date
+   * that is already in the internal representation
+   */
+   protected Date parseDate(String s) throws ParseException {
+     return fmtThreadLocal.get().parse(s);
+   }
+  
+  /**
+   * Thread safe DateFormat that can <b>format</b> in the canonical
+   * ISO8601 date format, not including the trailing "Z" (since it is
+   * left off in the internal indexed values)
+   */
+  private final static ThreadLocalDateFormat fmtThreadLocal
+    = new ThreadLocalDateFormat(new ISO8601CanonicalDateFormat());
+  
+  private static class ISO8601CanonicalDateFormat extends SimpleDateFormat {
+    
+    protected NumberFormat millisParser
+      = NumberFormat.getIntegerInstance(Locale.US);
+
+    protected NumberFormat millisFormat = new DecimalFormat(".###");
+
+    public ISO8601CanonicalDateFormat() {
+      super("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+      this.setTimeZone(UTC);
+    }
+
+    public Date parse(String i, ParsePosition p) {
+      /* delegate to SimpleDateFormat for easy stuff */
+      Date d = super.parse(i, p);
+      int milliIndex = p.getIndex();
+      /* worry aboutthe milliseconds ourselves */
+      if (null != d &&
+          -1 == p.getErrorIndex() &&
+          milliIndex + 1 < i.length() &&
+          '.' == i.charAt(milliIndex)) {
+        p.setIndex( ++milliIndex ); // NOTE: ++ to chomp '.'
+        Number millis = millisParser.parse(i, p);
+        if (-1 == p.getErrorIndex()) {
+          int endIndex = p.getIndex();
+            d = new Date(d.getTime()
+                         + (long)(millis.doubleValue() *
+                                  Math.pow(10, (3-endIndex+milliIndex))));
+        }
+      }
+      return d;
+    }
+
+    public StringBuffer format(Date d, StringBuffer toAppendTo,
+                               FieldPosition pos) {
+      /* delegate to SimpleDateFormat for easy stuff */
+      super.format(d, toAppendTo, pos);
+      /* worry aboutthe milliseconds ourselves */
+      long millis = d.getTime() % 1000l;
+      if (0l == millis) {
+        return toAppendTo;
+      }
+      int posBegin = toAppendTo.length();
+      toAppendTo.append(millisFormat.format(millis / 1000d));
+      if (DateFormat.MILLISECOND_FIELD == pos.getField()) {
+        pos.setBeginIndex(posBegin);
+        pos.setEndIndex(toAppendTo.length());
+      }
+      return toAppendTo;
+    }
+
+    public Object clone() {
+      ISO8601CanonicalDateFormat c
+        = (ISO8601CanonicalDateFormat) super.clone();
+      c.millisParser = NumberFormat.getIntegerInstance(Locale.US);
+      c.millisFormat = new DecimalFormat(".###");
+      return c;
+    }
+  }
   
   private static class ThreadLocalDateFormat extends ThreadLocal<DateFormat> {
     DateFormat proto;
-    public ThreadLocalDateFormat() {
+    public ThreadLocalDateFormat(DateFormat d) {
       super();
-      SimpleDateFormat tmp =
-        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US);
-      tmp.setTimeZone(UTC);
-      proto = tmp;
+      proto = d;
     }
-    
     protected DateFormat initialValue() {
       return (DateFormat) proto.clone();
     }

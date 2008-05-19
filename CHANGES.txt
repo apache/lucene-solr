@@ -48,7 +48,22 @@ option can be added to your solrconfig.xml.  See the wiki (or the
 example solrconfig.xml) for more details...  
    http://wiki.apache.org/solr/SolrConfigXml#HTTPCaching
 
+In Solr 1.2, DateField did not enforce the canonical representation of
+the ISO 8601 format when parsing incoming data, and did not generation
+the canonical format when generating dates from "Date Math" strings
+(particularly as it pertains to milliseconds ending in trailing zeros)
+-- As a result equivalent dates could not always be compared properly.
+This problem is corrected in Solr 1.3, but DateField users that might
+have been affected by indexing inconsistent formats of equivilent
+dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want
+to consider reindexing to correct these inconsistencies.  Users who
+depend on some of the the "broken" behavior of DateField in Solr 1.2
+(specificly: accepting any input that ends in a 'Z') should consider
+using the LegacyDateField class as a possible alternative.  Users that
+desire 100% backwards compatibility should consider using the Solr 1.2
+version of DateField.
 
+   
 Detailed Change List
 --------------------
 
@@ -382,6 +397,12 @@ Bug Fixes
    SOLR-267: Removed adding values to the HTTP headers in SolrDispatchFilter (gsingers)
 
 28. SOLR-509: Moved firstSearcher event notification to the end of the SolrCore constructor (Koji Sekiguchi via gsingers)
+
+29. SOLR-470, SOLR-552, and SOLR-544: Multiple fixes to DateField
+    regarding lenient parsing of optional milliseconds, and correct
+    formating using the canonical representation.  LegacyDateField has
+    been added for people who have come to depend on the existing
+    broken behavior. (hossman)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
