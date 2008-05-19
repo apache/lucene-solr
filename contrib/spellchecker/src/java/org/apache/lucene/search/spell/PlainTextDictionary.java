@@ -29,8 +29,6 @@ import java.io.*;
  * word1<br/>
  * word2<br/>
  * word3<br/>
- *
- *
  */
 public class PlainTextDictionary implements Dictionary {
 
@@ -47,16 +45,15 @@ public class PlainTextDictionary implements Dictionary {
   }
 
   /**
-   * Create a dictionary based on a reader. Used by the test case.
+   * Creates a dictionary based on a reader.
    */
-  protected PlainTextDictionary(Reader reader) {
+  public PlainTextDictionary(Reader reader) {
     in = new BufferedReader(reader);
   }
 
   public Iterator getWordsIterator() {
     return new fileIterator();
   }
-
 
   final class fileIterator implements Iterator {
     public Object next() {
@@ -76,7 +73,6 @@ public class PlainTextDictionary implements Dictionary {
       }
       return (line != null) ? true : false;
     }
-
 
     public void remove() {
       throw new UnsupportedOperationException();
