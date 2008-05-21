@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.io.IOException;
 
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
@@ -341,7 +342,12 @@ final class SegmentMerger {
                 if (checkAbort != null)
                   checkAbort.work(300*numDocs);
               } else {
-                fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
+                // NOTE: it's very important to first assign
+                // to doc then pass it to
+                // termVectorsWriter.addAllDocVectors; see
+                // LUCENE-1282
+                Document doc = reader.document(j, fieldSelectorMerge);
+                fieldsWriter.addDocument(doc);
                 j++;
                 docCount++;
                 if (checkAbort != null)
@@ -358,7 +364,7 @@ final class SegmentMerger {
       final long fdxFileLength = directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
 
       if (4+docCount*8 != fdxFileLength)
-        // This is most like a bug in Sun JRE 1.6.0_04/_05;
+        // This is most likely a bug in Sun JRE 1.6.0_04/_05;
         // we detect that the bug has struck, here, and
         // throw an exception to prevent the corruption from
         // entering the index.  See LUCENE-1282 for
@@ -431,7 +437,12 @@ final class SegmentMerger {
               if (checkAbort != null)
                 checkAbort.work(300*numDocs);
             } else {
-              termVectorsWriter.addAllDocVectors(reader.getTermFreqVectors(docNum));
+              // NOTE: it's very important to first assign
+              // to vectors then pass it to
+              // termVectorsWriter.addAllDocVectors; see
+              // LUCENE-1282
+              TermFreqVector[] vectors = reader.getTermFreqVectors(docNum);
+              termVectorsWriter.addAllDocVectors(vectors);
               docNum++;
               if (checkAbort != null)
                 checkAbort.work(300);
@@ -444,8 +455,15 @@ final class SegmentMerger {
       termVectorsWriter.close();
     }
 
-    assert 4+mergedDocs*16 == directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION) :
-      "after mergeVectors: tvx size mismatch: " + mergedDocs + " docs vs " + directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION) + " length in bytes of " + segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION;
+    final long tvxSize = directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
+
+    if (4+mergedDocs*16 != tvxSize)
+      // This is most likely a bug in Sun JRE 1.6.0_04/_05;
+      // we detect that the bug has struck, here, and
+      // throw an exception to prevent the corruption from
+      // entering the index.  See LUCENE-1282 for
+      // details.
+      throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + mergedDocs + " but tvx size is " + tvxSize + "; now aborting this merge to prevent index corruption");
   }
 
   private IndexOutput freqOutput = null;
