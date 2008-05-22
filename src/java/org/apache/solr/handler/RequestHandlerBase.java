@@ -39,13 +39,13 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   // statistics
   // TODO: should we bother synchronizing these, or is an off-by-one error
   // acceptable every million requests or so?
-  long numRequests;
-  long numErrors;
+  volatile long numRequests;
+  volatile long numErrors;
   protected NamedList initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
-  long totalTime = 0;
+  volatile long totalTime = 0;
   long handlerStart = System.currentTimeMillis();
 
   /** shorten the class references for utilities */
@@ -159,7 +159,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     lst.add("requests", numRequests);
     lst.add("errors", numErrors);
     lst.add("avgTimePerRequest", (float) totalTime / (float) this.numRequests);
-    lst.add("avgRequestsPerSecond", (float) numRequests*1000 / ((float)System.currentTimeMillis()-handlerStart));   
+    lst.add("avgRequestsPerSecond", (float) numRequests*1000 / (float)(System.currentTimeMillis()-handlerStart));   
     return lst;
   }
   
