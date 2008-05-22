@@ -20,12 +20,15 @@
 <!-- 
   Display the luke request handler with graphs
  -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg" version="1.0">
+<xsl:stylesheet
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns="http://www.w3.org/1999/xhtml"
+    version="1.0"
+    >
     <xsl:output
-        method="xml"
+        method="html"
         encoding="UTF-8"
-        media-type="text/xml; charset=UTF-8"
+        media-type="text/html; charset=UTF-8"
         doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"
     />
@@ -35,12 +38,14 @@
     <xsl:template match="/">
         <html xmlns="http://www.w3.org/1999/xhtml">
             <head>
+                <link rel="stylesheet" type="text/css" href="solr-admin.css"/>
+                <link rel="icon" href="favicon.ico" type="image/ico"/>
+                <link rel="shortcut icon" href="favicon.ico" type="image/ico"/>
                 <title>
                     <xsl:value-of select="$title"/>
                 </title>
-                <!-- <xsl:call-template name="svg_ie_workaround"/> -->
                 <xsl:call-template name="css"/>
-                <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+
             </head>
             <body>
                 <h1>
@@ -56,8 +61,6 @@
                         <xsl:if test="response/lst[@name='fields']">
                             <li>
                                 <a href="#fields">Field Statistics</a>
-                            </li>
-                            <li>
                                 <ul>
                                     <xsl:for-each select="response/lst[@name='fields']/lst">
                                         <li>
@@ -77,11 +80,11 @@
                     </ul>
                 </div>
                 <xsl:if test="response/lst[@name='index']">
-                    <h2><a name="index"/>Index statistics</h2>
+                    <h2><a name="index"/>Index Statistics</h2>
                     <xsl:apply-templates select="response/lst[@name='index']"/>
                 </xsl:if>
                 <xsl:if test="response/lst[@name='fields']">
-                    <h2><a name="fields"/>Field statistics</h2>
+                    <h2><a name="fields"/>Field Statistics</h2>
                     <xsl:apply-templates select="response/lst[@name='fields']"/>
                 </xsl:if>
                 <xsl:if test="response/lst[@name='doc']">
@@ -125,7 +128,7 @@
                 <tbody>
                     <xsl:choose>
                         <xsl:when
-                            test="@name='histogram' and not(system-property('xsl:vendor')='Microsoft')">
+                            test="@name='histogram'">
                             <tr>
                                 <td colspan="2">
                                     <xsl:call-template name="histogram"/>
@@ -144,67 +147,61 @@
     <xsl:template name="histogram">
         <div class="doc">
             <xsl:call-template name="barchart">
-                <xsl:with-param name="xoffset">5</xsl:with-param>
-                <xsl:with-param name="yoffset">5</xsl:with-param>
+                <xsl:with-param name="max_bar_width">50</xsl:with-param>
                 <xsl:with-param name="iwidth">800</xsl:with-param>
-                <xsl:with-param name="iheight">600</xsl:with-param>
+                <xsl:with-param name="iheight">160</xsl:with-param>
                 <xsl:with-param name="fill">blue</xsl:with-param>
             </xsl:call-template>
         </div>
     </xsl:template>
 
     <xsl:template name="barchart">
-        <xsl:param name="xoffset"/>
-        <xsl:param name="yoffset"/>
+        <xsl:param name="max_bar_width"/>
         <xsl:param name="iwidth"/>
         <xsl:param name="iheight"/>
         <xsl:param name="fill"/>
-        <svg:svg viewBox="0 0 {$iwidth} {$iheight}">
-            <xsl:if test="system-property('xsl:vendor')='Opera' or system-property('xsl:vendor')='libxslt'">
-                <xsl:attribute name="width"><xsl:value-of select="$iwidth"/></xsl:attribute>
-                <xsl:attribute name="height"><xsl:value-of select="$iwidth"/></xsl:attribute>
-            </xsl:if>
-            <xsl:variable name="x" select="$xoffset + 5"/>
-            <xsl:variable name="y" select="$yoffset + 5"/>
-            <xsl:variable name="width" select="$iwidth - 10"/>
-            <xsl:variable name="height" select="$iheight - 30"/>
-            <xsl:variable name="max">
+        <xsl:variable name="max">
+            <xsl:for-each select="int">
+                <xsl:sort data-type="number" order="descending"/>
+                <xsl:if test="position()=1">
+                    <xsl:value-of select="."/>
+                </xsl:if>
+            </xsl:for-each>
+        </xsl:variable>
+        <xsl:variable name="bars">
+           <xsl:value-of select="count(int)"/>
+        </xsl:variable>
+        <xsl:variable name="bar_width">
+           <xsl:choose>
+             <xsl:when test="$max_bar_width &lt; ($iwidth div $bars)">
+               <xsl:value-of select="$max_bar_width"/>
+             </xsl:when>
+             <xsl:otherwise>
+               <xsl:value-of select="$iwidth div $bars"/>
+             </xsl:otherwise>
+           </xsl:choose>
+        </xsl:variable>
+        <table class="histogram">
+           <tbody>
+              <tr>
                 <xsl:for-each select="int">
-                    <xsl:sort data-type="number" order="descending"/>
-                    <xsl:if test="position()=1">
-                        <xsl:value-of select="."/>
-                    </xsl:if>
+                   <td>
+                 <xsl:value-of select="."/>
+                 <div class="histogram">
+                  <xsl:attribute name="style">background-color: <xsl:value-of select="$fill"/>; width: <xsl:value-of select="$bar_width"/>px; height: <xsl:value-of select="($iheight*number(.)) div $max"/>px;</xsl:attribute>
+                 </div>
+                   </td> 
                 </xsl:for-each>
-            </xsl:variable>
-            <xsl:variable name="yRatio" select="$height div $max"/>
-            <xsl:variable name="xRatio" select="$width div count(int)"/>
-            <svg:g>
+              </tr>
+              <tr>
                 <xsl:for-each select="int">
-                    <svg:rect stroke="none" x="{$x + (position() - 1) * $xRatio + 0.1 * $xRatio}"
-                        y="{($y + $height) - number(.) * $yRatio}" width="{0.8 * $xRatio}"
-                        height="{number(.) * $yRatio}" fill="{$fill}"/>
-                    <xsl:variable name="yboost">
-                        <xsl:choose>
-                            <xsl:when
-                                test="($y + $height) - number(.) * $yRatio +40 &gt; $iheight"
-                                >-25</xsl:when>
-                            <xsl:otherwise>0</xsl:otherwise>
-                        </xsl:choose>
-                    </xsl:variable>
-                    <svg:text
-                        x="{$x + (position() - 1) * $xRatio + 0.1 * $xRatio + (($xRatio * 0.8) div 2)}"
-                        y="{($y + $height) - number(.) * $yRatio +20 + number($yboost)}"
-                        text-anchor="middle" style="fill: red; font-size: 8px;">
-                        <xsl:value-of select="."/>
-                    </svg:text>
-                    <svg:text
-                        x="{$x + (position() - 1) * $xRatio + 0.1 * $xRatio + (($xRatio * 0.8) div 2)}"
-                        y="{$y + $height + 20}" text-anchor="middle" style="fill: black; font-size: 8px;">
-                        <xsl:value-of select="@name"/>
-                    </svg:text>
+                   <td>
+                       <xsl:value-of select="@name"/>
+                   </td>
                 </xsl:for-each>
-            </svg:g>
-        </svg:svg>
+              </tr>
+           </tbody>
+        </table>
     </xsl:template>
 
     <xsl:template name="keyvalue">
@@ -328,23 +325,13 @@
     <xsl:template name="css">
         <style type="text/css">
             <![CDATA[
-            body { font-family: "Lucida Grande", sans-serif }
             td.name {font-style: italic; font-size:80%; }
-            th { font-style: italic; font-size: 80%; background-color: lightgrey; }
-            td { vertical-align: top; }
-            ul { margin: 0px; margin-left: 1em; padding: 0px; }
-            table { width: 100%; border-collapse: collapse; }
-            .note { font-size:80%; }
             .doc { margin: 0.5em; border: solid grey 1px; }
             .exp { display: none; font-family: monospace; white-space: pre; }
+            div.histogram { background: none repeat scroll 0%; -moz-background-clip: -moz-initial; -moz-background-origin: -moz-initial; -moz-background-inline-policy: -moz-initial;}
+            table.histogram { width: auto; vertical-align: bottom; }
+            table.histogram td, table.histogram th { text-align: center; vertical-align: bottom; border-bottom: 1px solid #ff9933; width: auto; }
             ]]>
         </style>
-    </xsl:template>
-    <xsl:template name="svg_ie_workaround">
-        <xsl:if test="system-property('xsl:vendor')='Microsoft'">
-            <object id="AdobeSVG" classid="clsid:78156a80-c6a1-4bbf-8e6a-3cd390eeb4e2"/>
-            <xsl:processing-instruction name="import">namespace="svg"
-            implementation="#AdobeSVG"</xsl:processing-instruction>
-        </xsl:if>
     </xsl:template>
 </xsl:stylesheet>
