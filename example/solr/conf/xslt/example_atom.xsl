@@ -24,7 +24,11 @@
 <xsl:stylesheet version='1.0'
     xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
 
-  <xsl:output method="xml" encoding="utf-8" />
+  <xsl:output
+       method="xml"
+       encoding="utf-8"
+       media-type="text/xml; charset=UTF-8"
+  />
 
   <xsl:template match='/'>
     <xsl:variable name="query" select="response/lst[@name='responseHeader']/lst[@name='params']/str[@name='q']"/>

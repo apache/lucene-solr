@@ -22,8 +22,13 @@
  -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg" version="1.0">
-    <xsl:output method="xml" doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN"
-        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd" encoding="UTF-8"/>
+    <xsl:output
+        method="xml"
+        encoding="UTF-8"
+        media-type="text/xml; charset=UTF-8"
+        doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"
+    />
 
     <xsl:variable name="title">Solr Luke Request Handler Response</xsl:variable>
 
