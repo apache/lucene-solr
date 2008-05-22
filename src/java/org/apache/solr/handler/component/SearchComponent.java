@@ -36,7 +36,21 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class SearchComponent implements SolrInfoMBean, NamedListInitializedPlugin
 {
+  /**
+   * Prepare the response.  Guaranteed to be called before any SearchComponent {@link #process(org.apache.solr.handler.component.ResponseBuilder)} method.
+   * Called for every incoming request.
+   *
+   * The place to do initialization that is request dependent.
+   * @param rb The {@link org.apache.solr.handler.component.ResponseBuilder}
+   * @throws IOException
+   */
   public abstract void prepare(ResponseBuilder rb) throws IOException;
+
+  /**
+   * Process the request for this component 
+   * @param rb The {@link ResponseBuilder}
+   * @throws IOException
+   */
   public abstract void process(ResponseBuilder rb) throws IOException;
 
   /** Process for a distributed search.
