@@ -64,6 +64,9 @@ API Changes
     replacement character U+FFFD.  This is a change to the index file
     format.  (Marvin Humphrey via Mike McCandless)
 
+ 8. LUCENE-852: Let the SpellChecker caller specify IndexWriter mergeFactor
+    and RAM buffer size.  (Otis Gospodnetic)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

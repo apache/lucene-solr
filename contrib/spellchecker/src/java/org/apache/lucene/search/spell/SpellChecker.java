@@ -303,14 +303,16 @@ public class SpellChecker {
   }
 
   /**
-   * Index a Dictionary
-   * @param dict the dictionary to index
+   * Indexes the data from the given {@link Dictionary}.
+   * @param dict Dictionary to index
+   * @param mergeFactor mergeFactor to use when indexing
+   * @param ramMB the max amount or memory in MB to use
    * @throws IOException
    */
-  public void indexDictionary(Dictionary dict) throws IOException {
+  public void indexDictionary(Dictionary dict, int mergeFactor, int ramMB) throws IOException {
     IndexWriter writer = new IndexWriter(spellIndex, true, new WhitespaceAnalyzer());
-    writer.setMergeFactor(300);
-    writer.setMaxBufferedDocs(150);
+    writer.setMergeFactor(mergeFactor);
+    writer.setRAMBufferSizeMB(ramMB);
 
     Iterator iter = dict.getWordsIterator();
     while (iter.hasNext()) {
@@ -336,6 +338,15 @@ public class SpellChecker {
     // is fetched:
     searcher.close();
     searcher = new IndexSearcher(this.spellIndex);
+  }
+
+  /**
+   * Indexes the data from the given {@link Dictionary}.
+   * @param dict the dictionary to index
+   * @throws IOException
+   */
+  public void indexDictionary(Dictionary dict) throws IOException {
+    indexDictionary(dict, 300, 10);
   }
 
   private int getMin(int l) {
