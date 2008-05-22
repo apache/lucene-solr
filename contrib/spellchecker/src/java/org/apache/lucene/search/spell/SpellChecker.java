@@ -152,7 +152,7 @@ public class SpellChecker {
    * @param ir the indexReader of the user index (can be null see field param)
    * @param field the field of the user index: if field is not null, the suggested
    * words are restricted to the words present in this field.
-   * @param morePopular return only the suggest words that are more frequent than the searched word
+   * @param morePopular return only the suggest words that are as frequent or more frequent than the searched word
    * (only if restricted mode = (indexReader!=null and field!=null)
    * @throws IOException
    * @return String[] the sorted list of the suggest words with these 2 criteria:
@@ -166,9 +166,10 @@ public class SpellChecker {
     final TRStringDistance sd = new TRStringDistance(word);
     final int lengthWord = word.length();
 
-    final int goalFreq = (morePopular && ir != null) ? ir.docFreq(new Term(field, word)) : 0;
+    final int freq = (ir != null && field != null) ? ir.docFreq(new Term(field, word)) : 0;
+    final int goalFreq = (morePopular && ir != null && field != null) ? freq : 0;
     // if the word exists in the real index and we don't care for word frequency, return the word itself
-    if (!morePopular && goalFreq > 0) {
+    if (!morePopular && freq > 0) {
       return new String[] { word };
     }
 
