@@ -1,6 +1,5 @@
 package org.apache.lucene.search.spell;
 
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,13 +18,16 @@ package org.apache.lucene.search.spell;
  */
 
 /**
- * Edit distance  class
+ * Edit distance class.
+ * Note: this class is not thread-safe.
  */
 final class TRStringDistance {
 
     final char[] sa;
     final int n;
-    final int[][][] cache=new int[30][][];
+    int p[]; //'previous' cost array, horizontally
+    int d[]; // cost array, horizontally
+    int _d[]; //placeholder to assist in swapping p and d
 
 
     /**
@@ -33,101 +35,73 @@ final class TRStringDistance {
      * In one benchmark times were 5.3sec using ctr vs 8.5sec w/ static method, thus 37% faster.
      */
     public TRStringDistance (String target) {
-        sa=target.toCharArray();
-        n=sa.length;
+        sa = target.toCharArray();
+        n = sa.length;
+        p = new int[n+1]; //'previous' cost array, horizontally
+        d = new int[n+1]; // cost array, horizontally
     }
 
 
     //*****************************
-     // Compute Levenshtein distance
-     //*****************************
-      public final int getDistance (String other) {
-          int d[][]; // matrix
-          int cost; // cost
+    // Compute Levenshtein distance: see org.apache.commons.lang.StringUtils#getLevenshteinDistance(String, String)
+    //*****************************
+    public final int getDistance (String other) {
+        /*
+           The difference between this impl. and the previous is that, rather
+           than creating and retaining a matrix of size s.length()+1 by t.length()+1,
+           we maintain two single-dimensional arrays of length s.length()+1.  The first, d,
+           is the 'current working' distance array that maintains the newest distance cost
+           counts as we iterate through the characters of String s.  Each time we increment
+           the index of String t we are comparing, d is copied to p, the second int[].  Doing so
+           allows us to retain the previous cost counts as required by the algorithm (taking
+           the minimum of the cost count to the left, up one, and diagonally up and to the left
+           of the current cost count being calculated).  (Note that the arrays aren't really
+           copied anymore, just switched...this is clearly much better than cloning an array
+           or doing a System.arraycopy() each time  through the outer loop.)
 
-          // Step 1
-          final char[] ta=other.toCharArray();
-          final int m=ta.length;
-          if (n==0) {
-              return m;
-          }
-          if (m==0) {
-              return n;
-          }
+           Effectively, the difference between the two implementations is this one does not
+           cause an out of memory condition when calculating the LD over two very large strings.
+         */
 
-          if (m>=cache.length) {
-              d=form(n, m);
-          }
-          else if (cache[m]!=null) {
-              d=cache[m];
-          }
-          else {
-              d=cache[m]=form(n, m);
+        final int m = other.length();
 
-              // Step 3
-
-          }
-          for (int i=1; i<=n; i++) {
-              final char s_i=sa[i-1];
-
-              // Step 4
-
-              for (int j=1; j<=m; j++) {
-                  final char t_j=ta[j-1];
-
-                  // Step 5
-
-                  if (s_i==t_j) { // same
-                      cost=0;
-                  }
-                  else { // not a match
-                      cost=1;
-
-                      // Step 6
-
-                  }
-                  d[i][j]=min3(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost);
-
-              }
-
-          }
-
-          // Step 7
-          return d[n][m];
-
-      }
-
-
-    /**
-     *
-     */
-    private static int[][] form (int n, int m) {
-        int[][] d=new int[n+1][m+1];
-        // Step 2
-
-        for (int i=0; i<=n; i++) {
-            d[i][0]=i;
-
+        if (n == 0) {
+            return m;
+        } else if (m == 0) {
+            return n;
         }
-        for (int j=0; j<=m; j++) {
-            d[0][j]=j;
+
+        // indexes into strings s and t
+        int i; // iterates through s
+        int j; // iterates through t
+
+        char t_j; // jth character of t
+
+        int cost; // cost
+
+        for (i = 0; i<=n; i++) {
+            p[i] = i;
         }
-        return d;
+
+        for (j = 1; j<=m; j++) {
+            t_j = other.charAt(j-1);
+            d[0] = j;
+
+            for (i=1; i<=n; i++) {
+                cost = sa[i-1]==t_j ? 0 : 1;
+                // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
+                d[i] = Math.min(Math.min(d[i-1]+1, p[i]+1),  p[i-1]+cost);
+            }
+
+            // copy current distance counts to 'previous row' distance counts
+            _d = p;
+            p = d;
+            d = _d;
+        }
+
+        // our last action in the above loop was to switch d and p, so p now
+        // actually has the most recent cost counts
+        return p[n];
     }
 
-
-    //****************************
-     // Get minimum of three values
-     //****************************
-      private static int min3 (int a, int b, int c) {
-          int mi=a;
-          if (b<mi) {
-              mi=b;
-          }
-          if (c<mi) {
-              mi=c;
-          }
-          return mi;
-
-      }
 }
