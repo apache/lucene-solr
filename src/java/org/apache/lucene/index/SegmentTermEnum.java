@@ -150,10 +150,15 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     return true;
   }
 
-  /** Optimized scan, without allocating new terms. */
-  final void scanTo(Term term) throws IOException {
+  /** Optimized scan, without allocating new terms. 
+   *  Return number of invocations to next(). */
+  final int scanTo(Term term) throws IOException {
     scanBuffer.set(term);
-    while (scanBuffer.compareTo(termBuffer) > 0 && next()) {}
+    int count = 0;
+    while (scanBuffer.compareTo(termBuffer) > 0 && next()) {
+      count++;
+    }
+    return count;
   }
 
   /** Returns the current Term in the enumeration.

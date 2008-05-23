@@ -183,6 +183,11 @@ Optimizations
  5. LUCENE-1183: Optimized TRStringDistance class (in contrib/spell) that uses
     less memory than the previous version.  (Cédrik LIME via Otis Gospodnetic)
 
+ 6. LUCENE-1195: Improve term lookup performance by adding a LRU cache to the
+    TermInfosReader. In performance experiments the speedup was about 25% on 
+    average on mid-size indexes with ~500,000 documents for queries with 3 
+    terms and about 7% on larger indexes with ~4.3M documents. (Michael Busch)
+
 Documentation
 
   1. LUCENE-1236:  Added some clarifying remarks to EdgeNGram*.java (Hiroaki Kawai via Grant Ingersoll)
