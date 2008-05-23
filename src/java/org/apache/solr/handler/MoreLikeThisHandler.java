@@ -266,7 +266,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       Document doc = reader.document(id);
       mltquery = mlt.like(id);
       if( terms != null ) {
-        fillInteristingTermsFromMLTQuery( mltquery, terms );
+        fillInterestingTermsFromMLTQuery( mltquery, terms );
       }
 
       // exclude current document from results
@@ -289,7 +289,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     {
       mltquery = mlt.like(reader);
       if( terms != null ) {
-        fillInteristingTermsFromMLTQuery( mltquery, terms );
+        fillInterestingTermsFromMLTQuery( mltquery, terms );
       }
       DocListAndSet results = new DocListAndSet();
       if (this.needDocSet) {
@@ -316,7 +316,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       return mlt;
     }
     
-    private void fillInteristingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
+    private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
     { 
       List clauses = ((BooleanQuery)mltquery).clauses();
       for( Object o : clauses ) {
