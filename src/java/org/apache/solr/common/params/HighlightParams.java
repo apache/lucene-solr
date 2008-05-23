@@ -33,6 +33,8 @@ public interface HighlightParams {
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength";
+  
+  public static final String USE_PHRASE_HIGHLIGHTER = HIGHLIGHT+".usePhraseHighlighter";
 
   public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous";
   // Formatter

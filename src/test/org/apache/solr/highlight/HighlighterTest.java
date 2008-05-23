@@ -481,4 +481,59 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='a piece of text']"
             );
   }
+  
+  public void testPhraseHighlighter() {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "t_text");
+    args.put("hl.fragsize", "40");
+    args.put("hl.snippets", "10");
+
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+
+    // String borrowed from Lucene's HighlighterTest
+    String t = "This piece of text refers to Kennedy at the beginning then has a longer piece of text that is very long in the middle and finally ends with another reference to Kennedy";
+    
+    assertU(adoc("t_text", t, "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    
+    String oldHighlight1 = "//lst[@name='1']/arr[@name='t_text']/str[.='This piece of <em>text</em> <em>refers</em> to Kennedy']";
+    String oldHighlight2 = "//lst[@name='1']/arr[@name='t_text']/str[.=' at the beginning then has a longer piece of <em>text</em>']";
+    String oldHighlight3 = "//lst[@name='1']/arr[@name='t_text']/str[.=' with another <em>reference</em> to Kennedy']";
+    String newHighlight1 = "//lst[@name='1']/arr[@name='t_text']/str[.='This piece of <em>text</em> <em>refers</em> to Kennedy']";
+  
+    // check if old functionality is still the same
+    assertQ("Phrase highlighting - old",
+        sumLRF.makeRequest("t_text:\"text refers\""),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        oldHighlight1, oldHighlight2, oldHighlight3
+        );
+
+    assertQ("Phrase highlighting - old",
+        sumLRF.makeRequest("t_text:text refers"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        oldHighlight1, oldHighlight2, oldHighlight3
+        );
+    
+    // now check if Lucene-794 highlighting works as expected
+    args.put("hl.usePhraseHighlighter", "true");
+
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    
+    // check phrase highlighting
+    assertQ("Phrase highlighting - Lucene-794",
+        sumLRF.makeRequest("t_text:\"text refers\""),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        newHighlight1
+        );
+
+    // non phrase queries should be highlighted as they were before this fix
+    assertQ("Phrase highlighting - Lucene-794",
+        sumLRF.makeRequest("t_text:text refers"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        oldHighlight1, oldHighlight2, oldHighlight3
+        );
+  }
 }

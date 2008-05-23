@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.highlight.Formatter;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SpanScorer;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.solr.common.SolrException;
@@ -55,7 +57,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.w3c.dom.NodeList;
 
@@ -92,6 +93,27 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     formatters.put( null, fmt );
   }
   
+  /**
+   * Return a phrase Highlighter appropriate for this field.
+   * @param query The current Query
+   * @param fieldName The name of the field
+   * @param request The current SolrQueryRequest
+   * @param tokenStream document text CachingTokenStream
+   * @throws IOException 
+   */
+  protected Highlighter getPhraseHighlighter(Query query, String fieldName, SolrQueryRequest request, CachingTokenFilter tokenStream) throws IOException {
+    SolrParams params = request.getParams();
+    Highlighter highlighter = null;
+    
+    highlighter = new Highlighter(getFormatter(fieldName, params), getSpanQueryScorer(query, fieldName, tokenStream, request));
+    
+    highlighter.setTextFragmenter(getFragmenter(fieldName, params));
+    highlighter.setMaxDocBytesToAnalyze(params.getFieldInt(
+        fieldName, HighlightParams.MAX_CHARS, 
+        Highlighter.DEFAULT_MAX_DOC_BYTES_TO_ANALYZE));
+
+    return highlighter;
+  }
   
   /**
    * Return a Highlighter appropriate for this field.
@@ -111,6 +133,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter
        return highlighter;
   }
   
+  /**
+   * Return a SpanScorer suitable for this Query and field.
+   * @param query The current query
+   * @param tokenStream document text CachingTokenStream
+   * @param fieldName The name of the field
+   * @param request The SolrQueryRequest
+   * @throws IOException 
+   */
+  private SpanScorer getSpanQueryScorer(Query query, String fieldName, CachingTokenFilter tokenStream, SolrQueryRequest request) throws IOException {
+    boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
+    if (reqFieldMatch) {
+      return new SpanScorer(query, fieldName, tokenStream);
+    }
+    else {
+      return new SpanScorer(query, null, tokenStream);
+    }
+  }
+
   /**
    * Return a QueryScorer suitable for this Query and field.
    * @param query The current query
@@ -230,32 +270,59 @@ public class DefaultSolrHighlighter extends SolrHighlighter
           fieldName = fieldName.trim();
           String[] docTexts = doc.getValues(fieldName);
           if (docTexts == null) continue;
+          
+          TokenStream tstream = null;
 
-          // get highlighter, and number of fragments for this field
-          Highlighter highlighter = getHighlighter(query, fieldName, req);
+          // create TokenStream
+          if (docTexts.length == 1) {
+            // single-valued field
+            try {
+              // attempt term vectors
+              tstream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+            }
+            catch (IllegalArgumentException e) {
+              // fall back to anaylzer
+              tstream = new TokenOrderingFilter(schema.getAnalyzer().tokenStream(fieldName, new StringReader(docTexts[0])), 10);
+            }
+          }
+          else {
+            // multi-valued field
+            tstream = new MultiValueTokenStream(fieldName, docTexts, schema.getAnalyzer(), true);
+          }
+          
+          Highlighter highlighter;
+          
+          if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER))) {
+            // wrap CachingTokenFilter around TokenStream for reuse
+            tstream = new CachingTokenFilter(tstream);
+            
+            // get highlighter
+            highlighter = getPhraseHighlighter(query, fieldName, req, (CachingTokenFilter) tstream);
+            
+            // after highlighter initialization, reset tstream since construction of highlighter already used it
+            tstream.reset();
+          }
+          else {
+            // use "the old way"
+            highlighter = getHighlighter(query, fieldName, req);
+          }
+
           int numFragments = getMaxSnippets(fieldName, params);
           boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
 
            String[] summaries = null;
            TextFragment[] frag;
            if (docTexts.length == 1) {
-              // single-valued field
-              TokenStream tstream;
-              try {
-                 // attempt term vectors
-                 tstream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
-              }
-              catch (IllegalArgumentException e) {
-                 // fall back to analyzer
-                 tstream = new TokenOrderingFilter(schema.getAnalyzer().tokenStream(fieldName, new StringReader(docTexts[0])), 10);
-              }
               frag = highlighter.getBestTextFragments(tstream, docTexts[0], mergeContiguousFragments, numFragments);
            }
            else {
-              // multi-valued field
-              MultiValueTokenStream tstream;
-              tstream = new MultiValueTokenStream(fieldName, docTexts, schema.getAnalyzer(), true);
-              frag = highlighter.getBestTextFragments(tstream, tstream.asSingleValue(), false, numFragments);
+               StringBuilder singleValue = new StringBuilder();
+               
+               for (String txt:docTexts) {
+             	  singleValue.append(txt);
+               }
+             
+              frag = highlighter.getBestTextFragments(tstream, singleValue.toString(), false, numFragments);
            }
            // convert fragments back into text
            // TODO: we can include score and position information in output as snippet attributes
@@ -303,12 +370,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter
   }
 }
 
-
-
-
 /** 
- * Helper class which creates a single TokenStream out of values from a 
- * multi-valued field.
+ * Creates a single TokenStream out multi-value field values.
  */
 class MultiValueTokenStream extends TokenStream {
   private String fieldName;
@@ -378,7 +441,6 @@ class MultiValueTokenStream extends TokenStream {
       sb.append(str);
     return sb.toString();
   }
-
 }
 
 
@@ -424,5 +486,3 @@ class TokenOrderingFilter extends TokenFilter {
     return queue.isEmpty() ? null : queue.removeFirst();
   }
 }
-
-
