@@ -258,13 +258,11 @@ public class SolrDispatchFilter implements Filter
             }
 
             final Method reqMethod = Method.getMethod(req.getMethod());
-            if (Method.POST != reqMethod) {
-              HttpCacheHeaderUtil.setCacheControlHeader(config, resp);
-            }
+            HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
             // unless we have been explicitly told not to, do cache validation
             // if we fail cache validation, execute the query
             if (config.getHttpCachingConfig().isNever304() ||
-                !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, resp)) {
+                !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
                 SolrQueryResponse solrRsp = new SolrQueryResponse();
                 /* even for HEAD requests, we need to execute the handler to
                  * ensure we don't get an error (and to make sure the correct
@@ -272,6 +270,7 @@ public class SolrDispatchFilter implements Filter
                  * Content-Type)
                  */
                 this.execute( req, handler, solrReq, solrRsp );
+                HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
               // add info to http headers
               //TODO: See SOLR-232 and SOLR-267.  
                 /*try {
@@ -289,7 +288,7 @@ public class SolrDispatchFilter implements Filter
                   // Now write it out
                   QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
                   response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
-                  if (Method.HEAD != Method.getMethod(req.getMethod())) {
+                  if (Method.HEAD != reqMethod) {
                     if (responseWriter instanceof BinaryQueryResponseWriter) {
                       BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
                       binWriter.write(response.getOutputStream(), solrReq, solrRsp);

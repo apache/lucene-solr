@@ -72,6 +72,11 @@ public class SolrQueryResponse {
   // error if this is set...
   protected Exception err;
 
+  /**
+   * Should this response be tagged with HTTP caching headers?
+   */
+  protected boolean httpCaching=false;
+  
   /***
    // another way of returning an error
   int errCode;
@@ -199,5 +204,20 @@ public class SolrQueryResponse {
   public NamedList getToLog() {
 	  return toLog;
   }
-    
+  
+  /**
+   * Enables or disables the emission of HTTP caching headers for this response.
+   * @param httpCaching true=emit caching headers, false otherwise
+   */
+  public void setHttpCaching(boolean httpCaching) {
+    this.httpCaching=httpCaching;
+  }
+  
+  /**
+   * Should this response emit HTTP caching headers?
+   * @return true=yes emit headers, false otherwise
+   */
+  public boolean isHttpCaching() {
+    return this.httpCaching;
+  }
 }

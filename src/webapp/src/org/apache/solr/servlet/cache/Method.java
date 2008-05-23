@@ -18,24 +18,13 @@
 package org.apache.solr.servlet.cache;
 
 public enum Method {
-  GET("GET"), POST("POST"), HEAD("HEAD"), OTHER("");
-
-  private final String method;
-
-  Method(String method) {
-    this.method = method.intern();
-  }
+  GET, POST, HEAD, OTHER;
 
   public static Method getMethod(String method) {
-    method = method.toUpperCase().intern();
-
-    for (Method m : Method.values()) {
-      // we can use == because we interned the String objects
-      if (m.method==method) {
-        return m;
-      }
+    try {
+      return Method.valueOf(method.toUpperCase());
+    } catch (Exception e) {
+      return OTHER;
     }
-
-    return OTHER;
   }
 }

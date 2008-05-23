@@ -126,6 +126,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
     final RTimer timer = rb.isDebug() ? new RTimer() : null;
 
+    rsp.setHttpCaching(true);
+    
     if (timer == null) {
       // non-debugging prepare phase
       for( SearchComponent c : components ) {

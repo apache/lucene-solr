@@ -16,18 +16,68 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Date;
 
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethodBase;
+import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.util.DateUtil;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-  @Override public String getSolrConfigFilename() { return "solrconfig.xml";  }
+  @Override
+  public String getSolrConfigFilename() {
+    return "solrconfig.xml";
+  }
+
+  protected static final String FILENAME = "cacheheadertest.csv";
+
+  protected static final String CHARSET = "UTF-8";
+
+  protected static final String CONTENTS = "id\n100\n101\n102";
+
+  public void testCacheVetoHandler() throws Exception {
+    File f=makeFile(CONTENTS);
+    HttpMethodBase m=getUpdateMethod("GET");
+    m.setQueryString(new NameValuePair[] { new NameValuePair("stream.file",f.getCanonicalPath())});
+    getClient().executeMethod(m);
+    assertEquals(200, m.getStatusCode());
+    checkVetoHeaders(m);
+  }
   
+  public void testCacheVetoException() throws Exception {
+    HttpMethodBase m = getSelectMethod("GET");
+    // We force an exception from Solr. This should emit "no-cache" HTTP headers
+    m.setQueryString(new NameValuePair[] { new NameValuePair("q", "xyz:solr"),
+        new NameValuePair("qt", "standard") });
+    getClient().executeMethod(m);
+    assertFalse(m.getStatusCode() == 200);
+    checkVetoHeaders(m);
+  }
+
+  protected void checkVetoHeaders(HttpMethodBase m) throws Exception {
+    Header head = m.getResponseHeader("Cache-Control");
+    assertNotNull("We got no Cache-Control header", head);
+    assertEquals("no-cache, no-store", head.getValue());
+
+    head = m.getResponseHeader("Pragma");
+    assertNotNull("We got no Pragma header", head);
+    assertEquals("no-cache", head.getValue());
+
+    head = m.getResponseHeader("Expires");
+    assertNotNull("We got no Expires header", head);
+    Date d = DateUtil.parseDate(head.getValue());
+    assertTrue("We got no Expires header far in the past", System
+        .currentTimeMillis()
+        - d.getTime() > 100000);
+  }
+
   protected void doLastModified(String method) throws Exception {
     // We do a first request to get the last modified
     // This must result in a 200 OK response
@@ -162,8 +212,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
       Header head = m.getResponseHeader("Cache-Control");
       assertNull("We got a cache-control header in response to POST", head);
-      
-      head=m.getResponseHeader("Expires");
+
+      head = m.getResponseHeader("Expires");
       assertNull("We got an Expires  header in response to POST", head);
     } else {
       HttpMethodBase m = getSelectMethod(method);
@@ -172,9 +222,26 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
       Header head = m.getResponseHeader("Cache-Control");
       assertNotNull("We got no cache-control header", head);
-      
-      head=m.getResponseHeader("Expires");
-      assertNotNull("We got no Expires header in response",head);
+
+      head = m.getResponseHeader("Expires");
+      assertNotNull("We got no Expires header in response", head);
+    }
+  }
+
+  protected File makeFile(String contents) {
+    return makeFile(contents, CHARSET);
+  }
+
+  protected File makeFile(String contents, String charset) {
+    try {
+      File f=new File(FILENAME);
+      Writer out = new OutputStreamWriter(new FileOutputStream(f),
+          charset);
+      out.write(contents);
+      out.close();
+      return f;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }

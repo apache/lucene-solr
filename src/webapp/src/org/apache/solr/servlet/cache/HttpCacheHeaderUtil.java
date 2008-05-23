@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 
 import org.apache.commons.codec.binary.Base64;
@@ -167,10 +168,16 @@ public final class HttpCacheHeaderUtil {
   /**
    * Set the Cache-Control HTTP header (and Expires if needed)
    * based on the SolrConfig.
+   * @param conf The config of the SolrCore handling this request
+   * @param resp The servlet response object to modify
+   * @param method The request method (GET, POST, ...) used by this request
    */
   public static void setCacheControlHeader(final SolrConfig conf,
-                                           final HttpServletResponse resp) {
-
+                                           final HttpServletResponse resp, final Method method) {
+    // We do not emit HTTP header for POST and OTHER request types
+    if (Method.POST==method || Method.OTHER==method) {
+      return;
+    }
     final String cc = conf.getHttpCachingConfig().getCacheControlHeader();
     if (null != cc) {
       resp.setHeader("Cache-Control", cc);
@@ -202,10 +209,13 @@ public final class HttpCacheHeaderUtil {
    */
   public static boolean doCacheHeaderValidation(final SolrQueryRequest solrReq,
                                                 final HttpServletRequest req,
+                                                final Method reqMethod,
                                                 final HttpServletResponse resp)
     throws IOException {
-
-    final Method reqMethod=Method.getMethod(req.getMethod());
+    
+    if (Method.POST==reqMethod || Method.OTHER==reqMethod) {
+      return false;
+    }
     
     final long lastMod = HttpCacheHeaderUtil.calcLastModified(solrReq);
     final String etag = HttpCacheHeaderUtil.calcEtag(solrReq);
@@ -295,4 +305,42 @@ public final class HttpCacheHeaderUtil {
     }
     return false;
   }
+
+   /**
+   * Checks if the downstream request handler wants to avoid HTTP caching of
+   * the response.
+   * 
+   * @param solrRsp The Solr response object
+   * @param resp The HTTP servlet response object
+   * @param reqMethod The HTTP request type
+   */
+  public static void checkHttpCachingVeto(final SolrQueryResponse solrRsp,
+      HttpServletResponse resp, final Method reqMethod) {
+    // For POST we do nothing. They never get cached
+    if (Method.POST == reqMethod || Method.OTHER == reqMethod) {
+      return;
+    }
+    // If the request handler has not vetoed and there is no
+    // exception silently return
+    if (solrRsp.isHttpCaching() && solrRsp.getException() == null) {
+      return;
+    }
+    
+    // Otherwise we tell the caches that we don't want to cache the response
+    resp.setHeader("Cache-Control", "no-cache, no-store");
+
+    // For HTTP/1.0 proxy caches
+    resp.setHeader("Pragma", "no-cache");
+
+    // This sets the expiry date to a date in the past
+    // As long as no time machines get invented this is safe
+    resp.setHeader("Expires", "Sat, 01 Jan 2000 01:00:00 GMT");
+
+    // We signal "just modified" just in case some broken
+    // proxy cache does not follow the above headers
+    resp.setDateHeader("Last-Modified", System.currentTimeMillis());
+    
+    // We override the ETag with something different
+    resp.setHeader("ETag", '"'+Long.toHexString(System.currentTimeMillis())+'"');
+  } 
 }

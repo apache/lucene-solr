@@ -93,6 +93,20 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
     return m;
   }
 
+  protected HttpMethodBase getUpdateMethod(String method) {
+    HttpMethodBase m = null;
+    
+    if ("GET".equals(method)) {
+      m=new GetMethod(server.getBaseURL()+"/update/csv");
+    } else if ("POST".equals(method)) {
+      m=new PostMethod(server.getBaseURL()+"/update/csv");      
+    } else if ("HEAD".equals(method)) {
+      m=new HeadMethod(server.getBaseURL()+"/update/csv");      
+    }
+    
+    return m;
+  }
+  
   protected HttpClient getClient() {
     return server.getHttpClient();
   }
