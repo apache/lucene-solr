@@ -41,10 +41,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 import junit.framework.TestCase;
 
-public class TestIndexReaderReopen extends TestCase {
+public class TestIndexReaderReopen extends LuceneTestCase {
     
   private File indexDir;
 
@@ -753,8 +754,9 @@ public class TestIndexReaderReopen extends TestCase {
       if (threads[i] != null) {
         try {
           threads[i].join();
-          if (threads[i].exception != null) {
-            throw threads[i].exception;
+          if (threads[i].error != null) {
+            String msg = "Error occurred in thread " + threads[i].getId() + ":\n" + threads[i].error.getMessage();
+            fail(msg);
           }
         } catch (InterruptedException e) {}
       }
@@ -799,7 +801,7 @@ public class TestIndexReaderReopen extends TestCase {
   
   private static class ReaderThread extends Thread {
     private ReaderThreadTask task;
-    private Exception exception;
+    private Throwable error;
     
     
     ReaderThread(ReaderThreadTask task) {
@@ -813,8 +815,8 @@ public class TestIndexReaderReopen extends TestCase {
     public void run() {
       try {
         this.task.run();
-      } catch (Exception e) {
-        this.exception = e;
+      } catch (Throwable r) {
+        this.error = r;
       }
     }
   }
