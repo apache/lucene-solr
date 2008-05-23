@@ -19,11 +19,17 @@ package org.apache.lucene.misc;
 
 import junit.framework.TestCase;
 import java.util.*;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -80,76 +86,149 @@ public class ChainedFilterTest extends TestCase {
         new TermQuery(new Term("owner", "sue")));
   }
 
+  private Filter[] getChainWithOldFilters(Filter[] chain) {
+    Filter[] oldFilters = new Filter[chain.length];
+    for (int i = 0; i < chain.length; i++) {
+      oldFilters[i] = new OldBitSetFilterWrapper(chain[i]);
+    }
+    return oldFilters;
+  }
+  
+  private ChainedFilter getChainedFilter(Filter[] chain, int[] logic, boolean old) {
+    if (old) {
+      chain = getChainWithOldFilters(chain);
+    }
+    
+    if (logic == null) {
+      return new ChainedFilter(chain);
+    } else {
+      return new ChainedFilter(chain, logic);
+    }
+  }
+
+  private ChainedFilter getChainedFilter(Filter[] chain, int logic, boolean old) {
+    if (old) {
+      chain = getChainWithOldFilters(chain);
+    }
+    
+    return new ChainedFilter(chain, logic);
+  }
+
+  
   public void testSingleFilter() throws Exception {
-    ChainedFilter chain = new ChainedFilter(
-        new Filter[] {dateFilter});
-
-    Hits hits = searcher.search(query, chain);
-    assertEquals(MAX, hits.length());
-
-    chain = new ChainedFilter(new Filter[] {bobFilter});
-    hits = searcher.search(query, chain);
-    assertEquals(MAX / 2, hits.length());
-    
-    chain = new ChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND});
-    hits = searcher.search(query, chain);
-    assertEquals(MAX / 2, hits.length());
-    assertEquals("bob", hits.doc(0).get("owner"));
-    
-    chain = new ChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT});
-    hits = searcher.search(query, chain);
-    assertEquals(MAX / 2, hits.length());
-    assertEquals("sue", hits.doc(0).get("owner"));
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      
+      ChainedFilter chain = getChainedFilter(new Filter[] {dateFilter}, null, old);
+  
+      Hits hits = searcher.search(query, chain);
+      assertEquals(MAX, hits.length());
+  
+      chain = new ChainedFilter(new Filter[] {bobFilter});
+      hits = searcher.search(query, chain);
+      assertEquals(MAX / 2, hits.length());
+      
+      chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND}, old);
+      hits = searcher.search(query, chain);
+      assertEquals(MAX / 2, hits.length());
+      assertEquals("bob", hits.doc(0).get("owner"));
+      
+      chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT}, old);
+      hits = searcher.search(query, chain);
+      assertEquals(MAX / 2, hits.length());
+      assertEquals("sue", hits.doc(0).get("owner"));
+    }
   }
 
   public void testOR() throws Exception {
-    ChainedFilter chain = new ChainedFilter(
-      new Filter[] {sueFilter, bobFilter});
-
-    Hits hits = searcher.search(query, chain);
-    assertEquals("OR matches all", MAX, hits.length());
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      ChainedFilter chain = getChainedFilter(
+        new Filter[] {sueFilter, bobFilter}, null, old);
+  
+      Hits hits = searcher.search(query, chain);
+      assertEquals("OR matches all", MAX, hits.length());
+    }
   }
 
   public void testAND() throws Exception {
-    ChainedFilter chain = new ChainedFilter(
-      new Filter[] {dateFilter, bobFilter}, ChainedFilter.AND);
-
-    Hits hits = searcher.search(query, chain);
-    assertEquals("AND matches just bob", MAX / 2, hits.length());
-    assertEquals("bob", hits.doc(0).get("owner"));
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      ChainedFilter chain = getChainedFilter(
+        new Filter[] {dateFilter, bobFilter}, ChainedFilter.AND, old);
+  
+      Hits hits = searcher.search(query, chain);
+      assertEquals("AND matches just bob", MAX / 2, hits.length());
+      assertEquals("bob", hits.doc(0).get("owner"));
+    }
   }
 
   public void testXOR() throws Exception {
-    ChainedFilter chain = new ChainedFilter(
-      new Filter[]{dateFilter, bobFilter}, ChainedFilter.XOR);
-
-    Hits hits = searcher.search(query, chain);
-    assertEquals("XOR matches sue", MAX / 2, hits.length());
-    assertEquals("sue", hits.doc(0).get("owner"));
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      ChainedFilter chain = getChainedFilter(
+        new Filter[]{dateFilter, bobFilter}, ChainedFilter.XOR, old);
+  
+      Hits hits = searcher.search(query, chain);
+      assertEquals("XOR matches sue", MAX / 2, hits.length());
+      assertEquals("sue", hits.doc(0).get("owner"));
+    }
   }
 
   public void testANDNOT() throws Exception {
-    ChainedFilter chain = new ChainedFilter(
-      new Filter[]{dateFilter, sueFilter},
-        new int[] {ChainedFilter.AND, ChainedFilter.ANDNOT});
-
-    Hits hits = searcher.search(query, chain);
-    assertEquals("ANDNOT matches just bob",
-        MAX / 2, hits.length());
-    assertEquals("bob", hits.doc(0).get("owner"));
-    
-    chain = new ChainedFilter(
-        new Filter[]{bobFilter, bobFilter},
-          new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT});
-
-      hits = searcher.search(query, chain);
-      assertEquals("ANDNOT bob ANDNOT bob matches all sues",
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      ChainedFilter chain = getChainedFilter(
+        new Filter[]{dateFilter, sueFilter},
+          new int[] {ChainedFilter.AND, ChainedFilter.ANDNOT}, old);
+  
+      Hits hits = searcher.search(query, chain);
+      assertEquals("ANDNOT matches just bob",
           MAX / 2, hits.length());
-      assertEquals("sue", hits.doc(0).get("owner"));
+      assertEquals("bob", hits.doc(0).get("owner"));
+      
+      chain = getChainedFilter(
+          new Filter[]{bobFilter, bobFilter},
+            new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT}, old);
+  
+        hits = searcher.search(query, chain);
+        assertEquals("ANDNOT bob ANDNOT bob matches all sues",
+            MAX / 2, hits.length());
+        assertEquals("sue", hits.doc(0).get("owner"));
+    }
   }
 
   private Date parseDate(String s) throws ParseException {
     return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
+  }
+  
+  public void testWithCachingFilter() throws Exception {
+    for (int mode = 0; mode < 2; mode++) {
+      boolean old = (mode==0);
+      Directory dir = new RAMDirectory();
+      Analyzer analyzer = new WhitespaceAnalyzer();
+  
+      IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
+      writer.close();
+  
+      Searcher searcher = new IndexSearcher(dir);
+  
+      Query query = new TermQuery(new Term("none", "none"));
+  
+      QueryWrapperFilter queryFilter = new QueryWrapperFilter(query);
+      CachingWrapperFilter cachingFilter = new CachingWrapperFilter(queryFilter);
+  
+      searcher.search(query, cachingFilter, 1);
+  
+      CachingWrapperFilter cachingFilter2 = new CachingWrapperFilter(queryFilter);
+      Filter[] chain = new Filter[2];
+      chain[0] = cachingFilter;
+      chain[1] = cachingFilter2;
+      ChainedFilter cf = new ChainedFilter(chain);
+  
+      // throws java.lang.ClassCastException: org.apache.lucene.util.OpenBitSet cannot be cast to java.util.BitSet
+      searcher.search(new MatchAllDocsQuery(), cf, 1);
+    }
   }
 
 }

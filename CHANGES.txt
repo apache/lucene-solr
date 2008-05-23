@@ -163,6 +163,10 @@ New features
 
 13. LUCENE-1166: Decomposition tokenfilter for languages like German and Swedish (Thomas Peuss via Grant Ingersoll)
 
+14. LUCENE-1187: ChainedFilter and BooleanFilter now work with new Filter API
+    and DocIdSetIterator-based filters. Backwards-compatibility with old 
+    BitSet-based filters is ensured. (Paul Elschot via Michael Busch)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

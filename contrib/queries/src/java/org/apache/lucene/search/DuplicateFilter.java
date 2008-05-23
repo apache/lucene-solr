@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.OpenBitSet;
 
 public class DuplicateFilter extends Filter
 {
@@ -66,7 +67,7 @@ public class DuplicateFilter extends Filter
 		this.processingMode = processingMode;
 	}
 
-	public BitSet bits(IndexReader reader) throws IOException
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException
 	{
 		if(processingMode==PM_FAST_INVALIDATION)
 		{
@@ -78,10 +79,10 @@ public class DuplicateFilter extends Filter
 		}
 	}
 	
-	private BitSet correctBits(IndexReader reader) throws IOException
+  private OpenBitSet correctBits(IndexReader reader) throws IOException
 	{
 		
-		BitSet bits=new BitSet(reader.maxDoc()); //assume all are INvalid
+    OpenBitSet bits=new OpenBitSet(reader.maxDoc()); //assume all are INvalid
 		Term startTerm=new Term(fieldName,"");
 		TermEnum te = reader.terms(startTerm);
 		if(te!=null)
@@ -117,10 +118,10 @@ public class DuplicateFilter extends Filter
 		return bits;
 	}
 	
-	private BitSet fastBits(IndexReader reader) throws IOException
+  private OpenBitSet fastBits(IndexReader reader) throws IOException
 	{
 		
-		BitSet bits=new BitSet(reader.maxDoc());
+    OpenBitSet bits=new OpenBitSet(reader.maxDoc());
 		bits.set(0,reader.maxDoc()); //assume all are valid
 		Term startTerm=new Term(fieldName,"");
 		TermEnum te = reader.terms(startTerm);
@@ -143,7 +144,7 @@ public class DuplicateFilter extends Filter
 					do
 					{
 						lastDoc=td.doc();
-						bits.set(lastDoc,false);
+            bits.clear(lastDoc);
 					}while(td.next());
 					if(keepMode==KM_USE_LAST_OCCURRENCE)
 					{

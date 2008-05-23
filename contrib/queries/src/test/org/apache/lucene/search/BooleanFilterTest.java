@@ -32,6 +32,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterClause;
 import org.apache.lucene.search.RangeFilter;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.DocIdBitSet;
 
 import junit.framework.TestCase;
 
@@ -66,100 +67,141 @@ public class BooleanFilterTest extends TestCase
 		writer.addDocument(doc);
 	}
 	
-	private Filter getRangeFilter(String field,String lowerPrice, String upperPrice)
+  private Filter getRangeFilter(String field,String lowerPrice, String upperPrice, boolean old)
 	{
-		return new RangeFilter(field,lowerPrice,upperPrice,true,true);
+    Filter f = new RangeFilter(field,lowerPrice,upperPrice,true,true);
+    if (old) {
+      return new OldBitSetFilterWrapper(f);
+    }
+    
+    return f;
 	}
-	private TermsFilter getTermsFilter(String field,String text)
+  private Filter getTermsFilter(String field,String text, boolean old)
 	{
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(field,text));
+    if (old) {
+      return new OldBitSetFilterWrapper(tf);
+    }
+    
 		return tf;
 	}
+        
+        private void tstFilterCard(String mes, int expected, Filter filt)
+        throws Throwable
+        {
+          DocIdSetIterator disi = filt.getDocIdSet(reader).iterator();
+          int actual = 0;
+          while (disi.next()) {
+            actual++;
+          }
+          assertEquals(mes, expected, actual);
+        }
+          
 		
 	public void testShould() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getTermsFilter("price","030"),BooleanClause.Occur.SHOULD));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Should retrieves only 1 doc",1,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getTermsFilter("price","030", old),BooleanClause.Occur.SHOULD));
+      tstFilterCard("Should retrieves only 1 doc",1,booleanFilter);
+    }
 	}
 	
 	public void testShoulds() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds are Ored together",5,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
+      tstFilterCard("Shoulds are Ored together",5,booleanFilter);
+    }
 	}
 	public void testShouldsAndMustNot() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getTermsFilter("inStock", "N"),BooleanClause.Occur.MUST_NOT));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds Ored but AndNot",4,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
 
-		booleanFilter.add(new FilterClause(getTermsFilter("inStock", "Maybe"),BooleanClause.Occur.MUST_NOT));
-		bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds Ored but AndNots",3,bits.cardinality());
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getTermsFilter("inStock", "N", old),BooleanClause.Occur.MUST_NOT));
+      tstFilterCard("Shoulds Ored but AndNot",4,booleanFilter);
+  
+      booleanFilter.add(new FilterClause(getTermsFilter("inStock", "Maybe", old),BooleanClause.Occur.MUST_NOT));
+      tstFilterCard("Shoulds Ored but AndNots",3,booleanFilter);
+    }
 		
 	}
 	public void testShouldsAndMust() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds Ored but MUST",3,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
+      tstFilterCard("Shoulds Ored but MUST",3,booleanFilter);
+    }
 	}
 	public void testShouldsAndMusts() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
-		booleanFilter.add(new FilterClause(getRangeFilter("date","20040101", "20041231"),BooleanClause.Occur.MUST));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds Ored but MUSTs ANDED",1,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
+      booleanFilter.add(new FilterClause(getRangeFilter("date","20040101", "20041231", old),BooleanClause.Occur.MUST));
+      tstFilterCard("Shoulds Ored but MUSTs ANDED",1,booleanFilter);
+    }
 	}
 	public void testShouldsAndMustsAndMustNot() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getRangeFilter("price","030", "040"),BooleanClause.Occur.SHOULD));
-		booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
-		booleanFilter.add(new FilterClause(getRangeFilter("date","20050101", "20051231"),BooleanClause.Occur.MUST));
-		booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST_NOT));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("Shoulds Ored but MUSTs ANDED and MustNot",0,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getRangeFilter("price","030", "040", old),BooleanClause.Occur.SHOULD));
+      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
+      booleanFilter.add(new FilterClause(getRangeFilter("date","20050101", "20051231", old),BooleanClause.Occur.MUST));
+      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST_NOT));
+      tstFilterCard("Shoulds Ored but MUSTs ANDED and MustNot",0,booleanFilter);
+    }
 	}
 	
 	public void testJustMust() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("MUST",3,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
+      tstFilterCard("MUST",3,booleanFilter);
+    }
 	}
 	public void testJustMustNot() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST_NOT));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("MUST_NOT",4,bits.cardinality());
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
+
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST_NOT));
+      tstFilterCard("MUST_NOT",4,booleanFilter);
+    }
 	}
 	public void testMustAndMustNot() throws Throwable
 	{
-		BooleanFilter booleanFilter = new BooleanFilter();
-		booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST));
-		booleanFilter.add(new FilterClause(getTermsFilter("price","030"),BooleanClause.Occur.MUST_NOT));
-		BitSet bits = booleanFilter.bits(reader);
-		assertEquals("MUST_NOT wins over MUST for same docs",0,bits.cardinality());
-	}
+    for (int i = 0; i < 2; i++) {
+      boolean old = (i==0);
 
-	
-	
+      BooleanFilter booleanFilter = new BooleanFilter();
+      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST));
+      booleanFilter.add(new FilterClause(getTermsFilter("price","030", old),BooleanClause.Occur.MUST_NOT));
+      tstFilterCard("MUST_NOT wins over MUST for same docs",0,booleanFilter);
+    }
+	}
 }

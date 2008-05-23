@@ -33,7 +33,7 @@ import java.io.IOException;       // for javadoc
  *
  * <p>Queries, filters and sort criteria are designed to be compact so that
  * they may be efficiently passed to a remote index, with only the top-scoring
- * hits being returned, rather than every non-zero scoring hit.
+ * hits being returned, rather than every matching hit.
  */
 public interface Searchable extends java.rmi.Remote {
   /** Lower-level search API.

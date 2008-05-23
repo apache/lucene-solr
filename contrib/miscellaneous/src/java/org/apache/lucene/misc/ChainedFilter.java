@@ -58,7 +58,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Filter;
 
 import java.io.IOException;
-import java.util.BitSet;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.SortedVIntList;
 
 /**
  * <p>
@@ -79,29 +83,13 @@ import java.util.BitSet;
  */
 public class ChainedFilter extends Filter
 {
-    /**
-     * {@link BitSet#or}.
-     */
     public static final int OR = 0;
-
-    /**
-     * {@link BitSet#and}.
-     */
     public static final int AND = 1;
-
-    /**
-     * {@link BitSet#andNot}.
-     */
     public static final int ANDNOT = 2;
-
-    /**
-     * {@link BitSet#xor}.
-     */
     public static final int XOR = 3;
-
     /**
      * Logical operation when none is declared. Defaults to
-     * {@link BitSet#or}.
+     * OR.
      */
     public static int DEFAULT = OR;
 
@@ -144,96 +132,95 @@ public class ChainedFilter extends Filter
     }
 
     /**
-     * {@link Filter#bits}.
+     * {@link Filter#getDocIdSet}.
      */
-    public BitSet bits(IndexReader reader) throws IOException
+    public DocIdSet getDocIdSet(IndexReader reader) throws IOException
     {
+        int[] index = new int[1]; // use array as reference to modifiable int; 
+        index[0] = 0;             // an object attribute would not be thread safe.
         if (logic != -1)
-            return bits(reader, logic);
+            return getDocIdSet(reader, logic, index);
         else if (logicArray != null)
-            return bits(reader, logicArray);
+            return getDocIdSet(reader, logicArray, index);
         else
-            return bits(reader, DEFAULT);
+            return getDocIdSet(reader, DEFAULT, index);
     }
 
-    /**
-     * Delegates to each filter in the chain.
-     * @param reader IndexReader
-     * @param logic Logical operation
-     * @return BitSet
-     */
-    private BitSet bits(IndexReader reader, int logic) throws IOException
+    private DocIdSetIterator getDISI(Filter filter, IndexReader reader)
+    throws IOException
     {
-        BitSet result;
-        int i = 0;
+        return filter.getDocIdSet(reader).iterator();
+    }
 
+    private OpenBitSetDISI initialResult(IndexReader reader, int logic, int[] index)
+    throws IOException
+    {
+        OpenBitSetDISI result;
         /**
          * First AND operation takes place against a completely false
-         * bitset and will always return zero results. Thanks to
-         * Daniel Armbrust for pointing this out and suggesting workaround.
+         * bitset and will always return zero results.
          */
         if (logic == AND)
         {
-            result = (BitSet) chain[i].bits(reader).clone();
-            ++i;
+            result = new OpenBitSetDISI(getDISI(chain[index[0]], reader), reader.maxDoc());
+            ++index[0];
         }
         else if (logic == ANDNOT)
         {
-            result = (BitSet) chain[i].bits(reader).clone();
-            result.flip(0,reader.maxDoc());
-            ++i;
+            result = new OpenBitSetDISI(getDISI(chain[index[0]], reader), reader.maxDoc());
+            result.flip(0,reader.maxDoc()); // NOTE: may set bits for deleted docs.
+            ++index[0];
         }
         else
         {
-            result = new BitSet(reader.maxDoc());
-        }
-
-        for (; i < chain.length; i++)
-        {
-            doChain(result, reader, logic, chain[i]);
+            result = new OpenBitSetDISI(reader.maxDoc());
         }
         return result;
+    }
+    
+    /** Provide a SortedVIntList when it is definitely smaller than an OpenBitSet */
+    protected DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
+        return (result.cardinality() < (maxDocs / 9))
+              ? (DocIdSet) new SortedVIntList(result)
+              : (DocIdSet) result;
+    }
+        
+
+    /**
+     * Delegates to each filter in the chain.
+     * @param reader IndexReader
+     * @param logic Logical operation
+     * @return DocIdSet
+     */
+    private DocIdSet getDocIdSet(IndexReader reader, int logic, int[] index)
+    throws IOException
+    {
+        OpenBitSetDISI result = initialResult(reader, logic, index);
+        for (; index[0] < chain.length; index[0]++)
+        {
+            doChain(result, logic, chain[index[0]].getDocIdSet(reader));
+        }
+        return finalResult(result, reader.maxDoc());
     }
 
     /**
      * Delegates to each filter in the chain.
      * @param reader IndexReader
      * @param logic Logical operation
-     * @return BitSet
+     * @return DocIdSet
      */
-    private BitSet bits(IndexReader reader, int[] logic) throws IOException
+    private DocIdSet getDocIdSet(IndexReader reader, int[] logic, int[] index)
+    throws IOException
     {
         if (logic.length != chain.length)
             throw new IllegalArgumentException("Invalid number of elements in logic array");
-        BitSet result;
-        int i = 0;
 
-        /**
-         * First AND operation takes place against a completely false
-         * bitset and will always return zero results. Thanks to
-         * Daniel Armbrust for pointing this out and suggesting workaround.
-         */
-        if (logic[0] == AND)
+        OpenBitSetDISI result = initialResult(reader, logic[0], index);
+        for (; index[0] < chain.length; index[0]++)
         {
-            result = (BitSet) chain[i].bits(reader).clone();
-            ++i;
+            doChain(result, logic[index[0]], chain[index[0]].getDocIdSet(reader));
         }
-        else if (logic[0] == ANDNOT)
-        {
-            result = (BitSet) chain[i].bits(reader).clone();
-            result.flip(0,reader.maxDoc());
-            ++i;
-        }
-        else
-        {
-            result = new BitSet(reader.maxDoc());
-        }
-
-        for (; i < chain.length; i++)
-        {
-            doChain(result, reader, logic[i], chain[i]);
-        }
-        return result;
+        return finalResult(result, reader.maxDoc());
     }
 
     public String toString()
@@ -249,26 +236,51 @@ public class ChainedFilter extends Filter
         return sb.toString();
     }
 
-    private void doChain(BitSet result, IndexReader reader,
-                         int logic, Filter filter) throws IOException
+    private void doChain(OpenBitSetDISI result, int logic, DocIdSet dis)
+    throws IOException
     {
+      
+      if (dis instanceof OpenBitSet) {
+        // optimized case for OpenBitSets
         switch (logic)
         {
             case OR:
-                result.or(filter.bits(reader));
+                result.or((OpenBitSet) dis);
                 break;
             case AND:
-                result.and(filter.bits(reader));
+                result.and((OpenBitSet) dis);
                 break;
             case ANDNOT:
-                result.andNot(filter.bits(reader));
+                result.andNot((OpenBitSet) dis);
                 break;
             case XOR:
-                result.xor(filter.bits(reader));
+                result.xor((OpenBitSet) dis);
                 break;
             default:
-                doChain(result, reader, DEFAULT, filter);
+                doChain(result, DEFAULT, dis);
                 break;
         }
+      } else {
+        DocIdSetIterator disi = dis.iterator();      
+        switch (logic)
+        {
+            case OR:
+                result.inPlaceOr(disi);
+                break;
+            case AND:
+                result.inPlaceAnd(disi);
+                break;
+            case ANDNOT:
+                result.inPlaceNot(disi);
+                break;
+            case XOR:
+                result.inPlaceXor(disi);
+                break;
+            default:
+                doChain(result, DEFAULT, dis);
+                break;
+        }
+      }
     }
+
 }

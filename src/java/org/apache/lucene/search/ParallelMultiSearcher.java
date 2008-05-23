@@ -150,8 +150,8 @@ public class ParallelMultiSearcher extends MultiSearcher {
 
   /** Lower-level search API.
    *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
+   * <p>{@link HitCollector#collect(int,float)} is called for every matching
+   * document.
    *
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
