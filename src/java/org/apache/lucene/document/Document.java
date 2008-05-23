@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.util.*;             // for javadoc
-import org.apache.lucene.search.Hits;  // for javadoc
+import org.apache.lucene.search.ScoreDoc; // for javadoc
 import org.apache.lucene.search.Searcher;  // for javadoc
 import org.apache.lucene.index.IndexReader;  // for javadoc
 
@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  *
  * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
  * <i>not</i> available in documents retrieved from the index, e.g. with {@link
- * Hits#doc(int)}, {@link Searcher#doc(int)} or {@link
+ * ScoreDoc#doc}, {@link Searcher#doc(int)} or {@link
  * IndexReader#document(int)}.
  */
 

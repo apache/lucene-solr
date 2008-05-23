@@ -43,27 +43,27 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     iw.close();
     
     IndexSearcher is = new IndexSearcher(dir);
-    Hits hits = is.search(new MatchAllDocsQuery());
-    assertEquals(3, hits.length());
+    ScoreDoc[] hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
+    assertEquals(3, hits.length);
 
     // some artificial queries to trigger the use of skipTo():
     
     BooleanQuery bq = new BooleanQuery();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-    hits = is.search(bq);
-    assertEquals(3, hits.length());
+    hits = is.search(bq, null, 1000).scoreDocs;
+    assertEquals(3, hits.length);
 
     bq = new BooleanQuery();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bq.add(new TermQuery(new Term("key", "three")), BooleanClause.Occur.MUST);
-    hits = is.search(bq);
-    assertEquals(1, hits.length());
+    hits = is.search(bq, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     // delete a document:
     is.getIndexReader().deleteDocument(0);
-    hits = is.search(new MatchAllDocsQuery());
-    assertEquals(2, hits.length());
+    hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
     
     is.close();
   }

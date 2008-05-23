@@ -108,7 +108,7 @@ public class TestSearch extends LuceneTestCase {
         "\"a c\"",
         "\"a c e\"",
       };
-      Hits hits = null;
+      ScoreDoc[] hits = null;
 
       QueryParser parser = new QueryParser("contents", analyzer);
       parser.setPhraseSlop(4);
@@ -121,12 +121,12 @@ public class TestSearch extends LuceneTestCase {
       //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
       //System.out.println(filter);
 
-        hits = searcher.search(query);
+        hits = searcher.search(query, null, 1000).scoreDocs;
 
-        out.println(hits.length() + " total results");
-        for (int i = 0 ; i < hits.length() && i < 10; i++) {
-          Document d = hits.doc(i);
-          out.println(i + " " + hits.score(i)
+        out.println(hits.length + " total results");
+        for (int i = 0 ; i < hits.length && i < 10; i++) {
+          Document d = searcher.doc(hits[i].doc);
+          out.println(i + " " + hits[i].score
 // 			   + " " + DateField.stringToDate(d.get("modified"))
                              + " " + d.get("contents"));
         }

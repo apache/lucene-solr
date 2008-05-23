@@ -18,24 +18,34 @@ package org.apache.lucene.index;
  */
 
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
+
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.*;
 
 public class TestIndexReader extends LuceneTestCase
 {
@@ -910,14 +920,14 @@ public class TestIndexReader extends LuceneTestCase
           */
 
           IndexSearcher searcher = new IndexSearcher(newReader);
-          Hits hits = null;
+          ScoreDoc[] hits = null;
           try {
-            hits = searcher.search(new TermQuery(searchTerm));
+            hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
           } catch (IOException e) {
             e.printStackTrace();
             fail(testName + ": exception when searching: " + e);
           }
-          int result2 = hits.length();
+          int result2 = hits.length;
           if (success) {
             if (result2 != END_COUNT) {
               fail(testName + ": method did not throw exception but hits.length for search on term 'aaa' is " + result2 + " instead of expected " + END_COUNT);

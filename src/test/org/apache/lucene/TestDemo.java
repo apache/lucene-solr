@@ -17,7 +17,8 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -25,13 +26,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.IOException;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -64,11 +64,11 @@ public class TestDemo extends LuceneTestCase {
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
-    Hits hits = isearcher.search(query);
-    assertEquals(1, hits.length());
+    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
     // Iterate through the results:
-    for (int i = 0; i < hits.length(); i++) {
-      Document hitDoc = hits.doc(i);
+    for (int i = 0; i < hits.length; i++) {
+      Document hitDoc = isearcher.doc(hits[i].doc);
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }
     isearcher.close();

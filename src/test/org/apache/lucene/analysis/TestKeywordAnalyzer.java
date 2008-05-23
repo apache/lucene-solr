@@ -17,18 +17,18 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestKeywordAnalyzer extends LuceneTestCase {
   
@@ -59,10 +59,10 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
     QueryParser queryParser = new QueryParser("description", analyzer);
     Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
-    Hits hits = searcher.search(query);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("Q36 kept as-is",
               "+partnum:Q36 +space", query.toString("description"));
-    assertEquals("doc found!", 1, hits.length());
+    assertEquals("doc found!", 1, hits.length);
   }
 
   public void testMutipleDocument() throws Exception {

@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -35,15 +37,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import junit.framework.TestCase;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -687,9 +687,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 
                 
                 IndexSearcher searcher = new IndexSearcher(refreshed);
-                Hits hits = searcher.search(new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))));
-                if (hits.length() > 0) {
-                  hits.doc(0);
+                ScoreDoc[] hits = searcher.search(
+                    new TermQuery(new Term("field1", "a" + rnd.nextInt(refreshed.maxDoc()))),
+                    null, 1000).scoreDocs;
+                if (hits.length > 0) {
+                  searcher.doc(hits[0].doc);
                 }
                 
                 // r might have changed because this is not a 

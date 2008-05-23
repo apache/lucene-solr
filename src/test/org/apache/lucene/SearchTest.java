@@ -59,7 +59,6 @@ class SearchTest {
 // 	"\"a c\"",
 	    "\"a c e\"",
       };
-      Hits hits = null;
 
       QueryParser parser = new QueryParser("contents", analyzer);
       parser.setPhraseSlop(4);
@@ -72,12 +71,12 @@ class SearchTest {
       //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
       //System.out.println(filter);
 
-        hits = searcher.search(query);
+        ScoreDoc[] hits = searcher.search(query, null, docs.length).scoreDocs;
 
-        System.out.println(hits.length() + " total results");
-        for (int i = 0 ; i < hits.length() && i < 10; i++) {
-          Document d = hits.doc(i);
-          System.out.println(i + " " + hits.score(i)
+        System.out.println(hits.length + " total results");
+        for (int i = 0 ; i < hits.length && i < 10; i++) {
+          Document d = searcher.doc(hits[i].doc);
+          System.out.println(i + " " + hits[i].score
 // 			   + " " + DateField.stringToDate(d.get("modified"))
             + " " + d.get("contents"));
         }

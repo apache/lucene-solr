@@ -21,22 +21,21 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestParallelReader extends LuceneTestCase {
 
@@ -197,13 +196,13 @@ public class TestParallelReader extends LuceneTestCase {
 
   
   private void queryTest(Query query) throws IOException {
-    Hits parallelHits = parallel.search(query);
-    Hits singleHits = single.search(query);
-    assertEquals(parallelHits.length(), singleHits.length());
-    for(int i = 0; i < parallelHits.length(); i++) {
-      assertEquals(parallelHits.score(i), singleHits.score(i), 0.001f);
-      Document docParallel = parallelHits.doc(i);
-      Document docSingle = singleHits.doc(i);
+    ScoreDoc[] parallelHits = parallel.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] singleHits = single.search(query, null, 1000).scoreDocs;
+    assertEquals(parallelHits.length, singleHits.length);
+    for(int i = 0; i < parallelHits.length; i++) {
+      assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
+      Document docParallel = parallel.doc(parallelHits[i].doc);
+      Document docSingle = single.doc(singleHits[i].doc);
       assertEquals(docParallel.get("f1"), docSingle.get("f1"));
       assertEquals(docParallel.get("f2"), docSingle.get("f2"));
       assertEquals(docParallel.get("f3"), docSingle.get("f3"));

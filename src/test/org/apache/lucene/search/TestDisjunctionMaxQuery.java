@@ -166,19 +166,19 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         q.add(tq("hed","elephant"));
         QueryUtils.check(q,s);
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("all docs should match " + q.toString(),
-                         4, h.length());
+                         4, h.length);
 
-            float score = h.score(0);
-            for (int i = 1; i < h.length(); i++) {
+            float score = h[0].score;
+            for (int i = 1; i < h.length; i++) {
                 assertEquals("score #" + i + " is not the same",
-                             score, h.score(i), SCORE_COMP_THRESH);
+                             score, h[i].score, SCORE_COMP_THRESH);
             }
         } catch (Error e) {
-            printHits("testSimpleEqualScores1",h);
+            printHits("testSimpleEqualScores1",h,s);
             throw e;
         }
 
@@ -193,18 +193,18 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("3 docs should match " + q.toString(),
-                         3, h.length());
-            float score = h.score(0);
-            for (int i = 1; i < h.length(); i++) {
+                         3, h.length);
+            float score = h[0].score;
+            for (int i = 1; i < h.length; i++) {
                 assertEquals("score #" + i + " is not the same",
-                             score, h.score(i), SCORE_COMP_THRESH);
+                             score, h[i].score, SCORE_COMP_THRESH);
             }
         } catch (Error e) {
-            printHits("testSimpleEqualScores2",h);
+            printHits("testSimpleEqualScores2",h, s);
             throw e;
         }
 
@@ -220,18 +220,18 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("all docs should match " + q.toString(),
-                         4, h.length());
-            float score = h.score(0);
-            for (int i = 1; i < h.length(); i++) {
+                         4, h.length);
+            float score = h[0].score;
+            for (int i = 1; i < h.length; i++) {
                 assertEquals("score #" + i + " is not the same",
-                             score, h.score(i), SCORE_COMP_THRESH);
+                             score, h[i].score, SCORE_COMP_THRESH);
             }
         } catch (Error e) {
-            printHits("testSimpleEqualScores3",h);
+            printHits("testSimpleEqualScores3",h, s);
             throw e;
         }
 
@@ -245,22 +245,22 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("3 docs should match " + q.toString(),
-                         3, h.length());
-            assertEquals("wrong first",  "d2", h.doc(0).get("id"));
-            float score0 = h.score(0);
-            float score1 = h.score(1);
-            float score2 = h.score(2);
+                         3, h.length);
+            assertEquals("wrong first",  "d2", s.doc(h[0].doc).get("id"));
+            float score0 = h[0].score;
+            float score1 = h[1].score;
+            float score2 = h[2].score;
             assertTrue("d2 does not have better score then others: " +
                        score0 + " >? " + score1,
                        score0 > score1);
             assertEquals("d4 and d1 don't have equal scores",
                          score1, score2, SCORE_COMP_THRESH);
         } catch (Error e) {
-            printHits("testSimpleTiebreaker",h);
+            printHits("testSimpleTiebreaker",h, s);
             throw e;
         }
     }
@@ -286,18 +286,18 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
 
         QueryUtils.check(q,s);
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("3 docs should match " + q.toString(),
-                         3, h.length());
-            float score = h.score(0);
-            for (int i = 1; i < h.length(); i++) {
+                         3, h.length);
+            float score = h[0].score;
+            for (int i = 1; i < h.length; i++) {
                 assertEquals("score #" + i + " is not the same",
-                             score, h.score(i), SCORE_COMP_THRESH);
+                             score, h[i].score, SCORE_COMP_THRESH);
             }
         } catch (Error e) {
-            printHits("testBooleanRequiredEqualScores1",h);
+            printHits("testBooleanRequiredEqualScores1",h, s);
             throw e;
         }
     }
@@ -321,23 +321,23 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
             assertEquals("4 docs should match " + q.toString(),
-                         4, h.length());
-            float score = h.score(0);
-            for (int i = 1; i < h.length()-1; i++) { /* note: -1 */
+                         4, h.length);
+            float score = h[0].score;
+            for (int i = 1; i < h.length-1; i++) { /* note: -1 */
                 assertEquals("score #" + i + " is not the same",
-                             score, h.score(i), SCORE_COMP_THRESH);
+                             score, h[i].score, SCORE_COMP_THRESH);
             }
-            assertEquals("wrong last", "d1", h.doc(h.length()-1).get("id"));
-            float score1 = h.score(h.length()-1);
+            assertEquals("wrong last", "d1", s.doc(h[h.length-1].doc).get("id"));
+            float score1 = h[h.length-1].score;
             assertTrue("d1 does not have worse score then others: " +
                        score + " >? " + score1,
                        score > score1);
         } catch (Error e) {
-            printHits("testBooleanOptionalNoTiebreaker",h);
+            printHits("testBooleanOptionalNoTiebreaker",h, s);
             throw e;
         }
     }
@@ -361,22 +361,22 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
 
             assertEquals("4 docs should match " + q.toString(),
-                         4, h.length());
+                         4, h.length);
 
-            float score0 = h.score(0);
-            float score1 = h.score(1);
-            float score2 = h.score(2);
-            float score3 = h.score(3);
+            float score0 = h[0].score;
+            float score1 = h[1].score;
+            float score2 = h[2].score;
+            float score3 = h[3].score;
 
-            String doc0 = h.doc(0).get("id");
-            String doc1 = h.doc(1).get("id");
-            String doc2 = h.doc(2).get("id");
-            String doc3 = h.doc(3).get("id");
+            String doc0 = s.doc(h[0].doc).get("id");
+            String doc1 = s.doc(h[1].doc).get("id");
+            String doc2 = s.doc(h[2].doc).get("id");
+            String doc3 = s.doc(h[3].doc).get("id");            
 
             assertTrue("doc0 should be d2 or d4: " + doc0,
                        doc0.equals("d2") || doc0.equals("d4"));
@@ -395,7 +395,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
                        score2 > score3);
 
         } catch (Error e) {
-            printHits("testBooleanOptionalWithTiebreaker",h);
+            printHits("testBooleanOptionalWithTiebreaker",h, s);
             throw e;
         }
 
@@ -420,22 +420,22 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         QueryUtils.check(q,s);
 
 
-        Hits h = s.search(q);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
         try {
 
             assertEquals("4 docs should match " + q.toString(),
-                         4, h.length());
+                         4, h.length);
 
-            float score0 = h.score(0);
-            float score1 = h.score(1);
-            float score2 = h.score(2);
-            float score3 = h.score(3);
+            float score0 = h[0].score;
+            float score1 = h[1].score;
+            float score2 = h[2].score;
+            float score3 = h[3].score;
 
-            String doc0 = h.doc(0).get("id");
-            String doc1 = h.doc(1).get("id");
-            String doc2 = h.doc(2).get("id");
-            String doc3 = h.doc(3).get("id");
+            String doc0 = s.doc(h[0].doc).get("id");
+            String doc1 = s.doc(h[1].doc).get("id");
+            String doc2 = s.doc(h[2].doc).get("id");
+            String doc3 = s.doc(h[3].doc).get("id");            
 
             assertEquals("doc0 should be d4: ", "d4", doc0);
             assertEquals("doc1 should be d3: ", "d3", doc1);
@@ -453,7 +453,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
                        score2 > score3);
 
         } catch (Error e) {
-            printHits("testBooleanOptionalWithTiebreakerAndBoost",h);
+            printHits("testBooleanOptionalWithTiebreakerAndBoost",h, s);
             throw e;
         }
     }
@@ -476,15 +476,15 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
     }
 
 
-    protected void printHits(String test, Hits h) throws Exception {
+    protected void printHits(String test, ScoreDoc[] h, Searcher searcher) throws Exception {
 
         System.err.println("------- " + test + " -------");
 
         DecimalFormat f = new DecimalFormat("0.000000000");
 
-        for (int i = 0; i < h.length(); i++) {
-            Document d = h.doc(i);
-            float score = h.score(i);
+        for (int i = 0; i < h.length; i++) {
+            Document d = searcher.doc(h[i].doc);
+            float score = h[i].score;
             System.err.println("#" + i + ": " + f.format(score) + " - " +
                                d.get("id"));
         }

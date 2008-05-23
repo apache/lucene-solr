@@ -27,7 +27,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -81,9 +80,9 @@ public class TestDateSort extends TestCase {
 
     // Execute the search and process the search results.
     String[] actualOrder = new String[5];
-    Hits hits = searcher.search(query, sort);
-    for (int i = 0; i < hits.length(); i++) {
-      Document document = hits.doc(i);
+    ScoreDoc[] hits = searcher.search(query, null, 1000, sort).scoreDocs;
+    for (int i = 0; i < hits.length; i++) {
+      Document document = searcher.doc(hits[i].doc);
       String text = document.get(TEXT_FIELD);
       actualOrder[i] = text;
     }

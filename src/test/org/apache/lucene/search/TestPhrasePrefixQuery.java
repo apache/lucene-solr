@@ -95,11 +95,11 @@ public class TestPhrasePrefixQuery
         query1.add((Term[])termsWithPrefix.toArray(new Term[0]));
         query2.add((Term[])termsWithPrefix.toArray(new Term[0]));
 
-        Hits result;
-        result = searcher.search(query1);
-        assertEquals(2, result.length());
+        ScoreDoc[] result;
+        result = searcher.search(query1, null, 1000).scoreDocs;
+        assertEquals(2, result.length);
 
-        result = searcher.search(query2);
-        assertEquals(0, result.length());
+        result = searcher.search(query2, null, 1000).scoreDocs;
+        assertEquals(0, result.length);
     }
 }

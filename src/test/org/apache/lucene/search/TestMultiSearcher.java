@@ -114,13 +114,13 @@ public class TestMultiSearcher extends LuceneTestCase
         // creating the multiSearcher
         Searcher mSearcher = getMultiSearcherInstance(searchers);
         // performing the search
-        Hits hits = mSearcher.search(query);
+        ScoreDoc[] hits = mSearcher.search(query, null, 1000).scoreDocs;
 
-        assertEquals(3, hits.length());
+        assertEquals(3, hits.length);
 
         // iterating over the hit documents
-        for (int i = 0; i < hits.length(); i++) {
-            Document d = hits.doc(i);
+        for (int i = 0; i < hits.length; i++) {
+            Document d = mSearcher.doc(hits[i].doc);
         }
         mSearcher.close();
 
@@ -143,26 +143,26 @@ public class TestMultiSearcher extends LuceneTestCase
         // creating the mulitSearcher
         MultiSearcher mSearcher2 = getMultiSearcherInstance(searchers2);
         // performing the same search
-        Hits hits2 = mSearcher2.search(query);
+        ScoreDoc[] hits2 = mSearcher2.search(query, null, 1000).scoreDocs;
 
-        assertEquals(4, hits2.length());
+        assertEquals(4, hits2.length);
 
         // iterating over the hit documents
-        for (int i = 0; i < hits2.length(); i++) {
+        for (int i = 0; i < hits2.length; i++) {
             // no exception should happen at this point
-            Document d = hits2.doc(i);
+            Document d = mSearcher2.doc(hits2[i].doc);
         }
 
         // test the subSearcher() method:
         Query subSearcherQuery = parser.parse("id:doc1");
-        hits2 = mSearcher2.search(subSearcherQuery);
-        assertEquals(2, hits2.length());
-        assertEquals(0, mSearcher2.subSearcher(hits2.id(0)));   // hit from searchers2[0]
-        assertEquals(1, mSearcher2.subSearcher(hits2.id(1)));   // hit from searchers2[1]
+        hits2 = mSearcher2.search(subSearcherQuery, null, 1000).scoreDocs;
+        assertEquals(2, hits2.length);
+        assertEquals(0, mSearcher2.subSearcher(hits2[0].doc));   // hit from searchers2[0]
+        assertEquals(1, mSearcher2.subSearcher(hits2[1].doc));   // hit from searchers2[1]
         subSearcherQuery = parser.parse("id:doc2");
-        hits2 = mSearcher2.search(subSearcherQuery);
-        assertEquals(1, hits2.length());
-        assertEquals(1, mSearcher2.subSearcher(hits2.id(0)));   // hit from searchers2[1]
+        hits2 = mSearcher2.search(subSearcherQuery, null, 1000).scoreDocs;
+        assertEquals(1, hits2.length);
+        assertEquals(1, mSearcher2.subSearcher(hits2[0].doc));   // hit from searchers2[1]
         mSearcher2.close();
 
         //--------------------------------------------------------------------
@@ -188,13 +188,13 @@ public class TestMultiSearcher extends LuceneTestCase
         // creating the mulitSearcher
         Searcher mSearcher3 = getMultiSearcherInstance(searchers3);
         // performing the same search
-        Hits hits3 = mSearcher3.search(query);
+        ScoreDoc[] hits3 = mSearcher3.search(query, null, 1000).scoreDocs;
 
-        assertEquals(3, hits3.length());
+        assertEquals(3, hits3.length);
 
         // iterating over the hit documents
-        for (int i = 0; i < hits3.length(); i++) {
-            Document d = hits3.doc(i);
+        for (int i = 0; i < hits3.length; i++) {
+            Document d = mSearcher3.doc(hits3[i].doc);
         }
         mSearcher3.close();
         indexStoreA.close();
@@ -246,10 +246,10 @@ public class TestMultiSearcher extends LuceneTestCase
 
     MultiSearcher searcher = getMultiSearcherInstance(new Searcher[]{indexSearcher1, indexSearcher2});
     assertTrue("searcher is null and it shouldn't be", searcher != null);
-    Hits hits = searcher.search(query);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue(hits.length() + " does not equal: " + 2, hits.length() == 2);
-    Document document = searcher.doc(hits.id(0));
+    assertTrue(hits.length + " does not equal: " + 2, hits.length == 2);
+    Document document = searcher.doc(hits[0].doc);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
     //Should be one document from each directory
@@ -257,7 +257,7 @@ public class TestMultiSearcher extends LuceneTestCase
     Set ftl = new HashSet();
     ftl.add("other");
     SetBasedFieldSelector fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
-    document = searcher.doc(hits.id(0), fs);
+    document = searcher.doc(hits[0].doc, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
     String value = document.get("contents");
@@ -267,7 +267,7 @@ public class TestMultiSearcher extends LuceneTestCase
     ftl.clear();
     ftl.add("contents");
     fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
-    document = searcher.doc(hits.id(1), fs);
+    document = searcher.doc(hits[1].doc, fs);
     value = document.get("contents");
     assertTrue("value is null and it shouldn't be", value != null);    
     value = document.get("other");
@@ -289,7 +289,7 @@ public class TestMultiSearcher extends LuceneTestCase
         
         RAMDirectory ramDirectory1;
         IndexSearcher indexSearcher1;
-        Hits hits;
+        ScoreDoc[] hits;
         
         ramDirectory1=new MockRAMDirectory();
         
@@ -299,14 +299,12 @@ public class TestMultiSearcher extends LuceneTestCase
         
         indexSearcher1=new IndexSearcher(ramDirectory1);
         
-        hits=indexSearcher1.search(query);
+        hits=indexSearcher1.search(query, null, 1000).scoreDocs;
         
-        assertEquals(message, 2, hits.length());
-        
-        assertEquals(message, 1, hits.score(0), 1e-6); // hits.score(0) is 0.594535 if only a single document is in first index
+        assertEquals(message, 2, hits.length);
         
         // Store the scores for use later
-        float[] scores={ hits.score(0), hits.score(1) };
+        float[] scores={ hits[0].score, hits[1].score };
         
         assertTrue(message, scores[0] > scores[1]);
         
@@ -331,23 +329,23 @@ public class TestMultiSearcher extends LuceneTestCase
         
         Searcher searcher=getMultiSearcherInstance(new Searcher[] { indexSearcher1, indexSearcher2 });
         
-        hits=searcher.search(query);
+        hits=searcher.search(query, null, 1000).scoreDocs;
         
-        assertEquals(message, 2, hits.length());
+        assertEquals(message, 2, hits.length);
         
         // The scores should be the same (within reason)
-        assertEquals(message, scores[0], hits.score(0), 1e-6); // This will a document from ramDirectory1
-        assertEquals(message, scores[1], hits.score(1), 1e-6); // This will a document from ramDirectory2
+        assertEquals(message, scores[0], hits[0].score, 1e-6); // This will a document from ramDirectory1
+        assertEquals(message, scores[1], hits[1].score, 1e-6); // This will a document from ramDirectory2
         
         
         
         // Adding a Sort.RELEVANCE object should not change anything
-        hits=searcher.search(query, Sort.RELEVANCE);
+        hits=searcher.search(query, null, 1000, Sort.RELEVANCE).scoreDocs;
         
-        assertEquals(message, 2, hits.length());
+        assertEquals(message, 2, hits.length);
         
-        assertEquals(message, scores[0], hits.score(0), 1e-6); // This will a document from ramDirectory1
-        assertEquals(message, scores[1], hits.score(1), 1e-6); // This will a document from ramDirectory2
+        assertEquals(message, scores[0], hits[0].score, 1e-6); // This will a document from ramDirectory1
+        assertEquals(message, scores[1], hits[1].score, 1e-6); // This will a document from ramDirectory2
         
         searcher.close();
         

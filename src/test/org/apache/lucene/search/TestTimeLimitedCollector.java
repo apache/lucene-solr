@@ -86,7 +86,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     query = queryParser.parse(qtxt);
     
     // warm the searcher
-    searcher.search(query);
+    searcher.search(query, null, 1000);
 
   }
 

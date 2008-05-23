@@ -207,9 +207,9 @@
                     , beginning the scoring process.
                 </p>
                 <p>Once inside the Searcher, a
-                    <a href="api/org/apache/lucene/search/Hits.html">Hits</a>
-                    object is constructed, which handles the scoring and caching of the search results.
-                    The Hits constructor stores references to three or four important objects:
+                    <a href="api/org/apache/lucene/search/HitCollector.html">HitCollector</a>
+                    is used for the scoring and sorting of the search results.
+                    These important objects are involved in a search:
                     <ol>
                         <li>The
                             <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
@@ -228,12 +228,11 @@
                         </li>
                     </ol>
                 </p>
-                <p>Now that the Hits object has been initialized, it begins the process of identifying documents that
-                    match the query by calling getMoreDocs method. Assuming we are not sorting (since sorting doesn't
+                <p> Assuming we are not sorting (since sorting doesn't
                     effect the raw Lucene score),
-                    we call on the "expert" search method of the Searcher, passing in our
+                    we call one of the search method of the Searcher, passing in the
                     <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
-                    object,
+                    object created by Searcher.createWeight(Query),
                     <a href="api/org/apache/lucene/search/Filter.html">Filter</a>
                     and the number of results we want. This method
                     returns a

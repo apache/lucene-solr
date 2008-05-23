@@ -64,8 +64,8 @@ public class TestBooleanScorer extends LuceneTestCase
       query.add(new TermQuery(new Term(FIELD, "9")), BooleanClause.Occur.MUST_NOT);
 
       IndexSearcher indexSearcher = new IndexSearcher(directory);
-      Hits hits = indexSearcher.search(query);
-      assertEquals("Number of matched documents", 2, hits.length());
+      ScoreDoc[] hits = indexSearcher.search(query, null, 1000).scoreDocs;
+      assertEquals("Number of matched documents", 2, hits.length);
 
     }
     catch (IOException e) {

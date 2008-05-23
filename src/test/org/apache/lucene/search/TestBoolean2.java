@@ -74,11 +74,11 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
       Query query1 = makeQuery(queryText);
       BooleanQuery.setAllowDocsOutOfOrder(true);
-      Hits hits1 = searcher.search(query1);
+      ScoreDoc[] hits1 = searcher.search(query1, null, 1000).scoreDocs;
 
       Query query2 = makeQuery(queryText); // there should be no need to parse again...
       BooleanQuery.setAllowDocsOutOfOrder(false);
-      Hits hits2 = searcher.search(query2);
+      ScoreDoc[] hits2 = searcher.search(query2, null, 1000).scoreDocs;
 
       CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
     } finally { // even when a test fails.
@@ -173,13 +173,11 @@ public class TestBoolean2 extends LuceneTestCase {
 
         QueryUtils.check(q1,searcher);
 
-        Hits hits1 = searcher.search(q1,sort);
-        if (hits1.length()>0) hits1.id(hits1.length()-1);
+        ScoreDoc[] hits1 = searcher.search(q1,null, 1000, sort).scoreDocs;
 
         BooleanQuery.setAllowDocsOutOfOrder(true);
-        Hits hits2 = searcher.search(q1,sort);
-        if (hits2.length()>0) hits2.id(hits1.length()-1);
-        tot+=hits2.length();
+        ScoreDoc[] hits2 = searcher.search(q1,null, 1000, sort).scoreDocs;
+        tot+=hits2.length;
         CheckHits.checkEqual(q1, hits1, hits2);
       }
 

@@ -73,10 +73,10 @@ public class TestRemoteSearchable extends LuceneTestCase {
     // try to search the published index
     Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
-    Hits result = searcher.search(query);
+    ScoreDoc[] result = searcher.search(query, null, 1000).scoreDocs;
 
-    assertEquals(1, result.length());
-    Document document = result.doc(0);
+    assertEquals(1, result.length);
+    Document document = searcher.doc(result[0].doc);
     assertTrue("document is null and it shouldn't be", document != null);
     assertEquals("test text", document.get("test"));
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
@@ -114,23 +114,23 @@ public class TestRemoteSearchable extends LuceneTestCase {
     // try to search the published index
     Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
-    Hits hits = searcher.search(
+    ScoreDoc[] hits = searcher.search(
           new TermQuery(new Term("test", "text")),
-          new QueryWrapperFilter(new TermQuery(new Term("test", "test"))));
-    assertEquals(1, hits.length());
-    Hits nohits = searcher.search(
+          new QueryWrapperFilter(new TermQuery(new Term("test", "test"))), 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    ScoreDoc[] nohits = searcher.search(
           new TermQuery(new Term("test", "text")),
-          new QueryWrapperFilter(new TermQuery(new Term("test", "non-existent-term"))));
-    assertEquals(0, nohits.length());
+          new QueryWrapperFilter(new TermQuery(new Term("test", "non-existent-term"))), 1000).scoreDocs;
+    assertEquals(0, nohits.length);
   }
 
   public void testConstantScoreQuery() throws Exception {
     // try to search the published index
     Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
-    Hits hits = searcher.search(
+    ScoreDoc[] hits = searcher.search(
           new ConstantScoreQuery(new QueryWrapperFilter(
-                                   new TermQuery(new Term("test", "test")))));
-    assertEquals(1, hits.length());
+                                   new TermQuery(new Term("test", "test")))), null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
   }
 }

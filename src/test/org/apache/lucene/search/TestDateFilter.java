@@ -79,28 +79,28 @@ public class TestDateFilter
 	// search for something that does exists
 	Query query2 = new TermQuery(new Term("body", "sunny"));
 
-	Hits result;
+  ScoreDoc[] result;
 
 	// ensure that queries return expected results without DateFilter first
-	result = searcher.search(query1);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, null, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
-	result = searcher.search(query2);
-	assertEquals(1, result.length());
+  result = searcher.search(query2, null, 1000).scoreDocs;
+  assertEquals(1, result.length);
 
 
 	// run queries with DateFilter
-	result = searcher.search(query1, df1);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, df1, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
-	result = searcher.search(query1, df2);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, df2, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
- 	result = searcher.search(query2, df1);
- 	assertEquals(1, result.length());
+   result = searcher.search(query2, df1, 1000).scoreDocs;
+   assertEquals(1, result.length);
 
-	result = searcher.search(query2, df2);
-	assertEquals(0, result.length());
+  result = searcher.search(query2, df2, 1000).scoreDocs;
+  assertEquals(0, result.length);
     }
 
     /**
@@ -140,27 +140,27 @@ public class TestDateFilter
 	// search for something that does exists
 	Query query2 = new TermQuery(new Term("body", "sunny"));
 
-	Hits result;
+  ScoreDoc[] result;
 
 	// ensure that queries return expected results without DateFilter first
-	result = searcher.search(query1);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, null, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
-	result = searcher.search(query2);
-	assertEquals(1, result.length());
+  result = searcher.search(query2, null, 1000).scoreDocs;
+  assertEquals(1, result.length);
 
 
 	// run queries with DateFilter
-	result = searcher.search(query1, df1);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, df1, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
-	result = searcher.search(query1, df2);
-	assertEquals(0, result.length());
+  result = searcher.search(query1, df2, 1000).scoreDocs;
+  assertEquals(0, result.length);
 
- 	result = searcher.search(query2, df1);
- 	assertEquals(1, result.length());
+   result = searcher.search(query2, df1, 1000).scoreDocs;
+   assertEquals(1, result.length);
 
-	result = searcher.search(query2, df2);
-	assertEquals(0, result.length());
+  result = searcher.search(query2, df2, 1000).scoreDocs;
+  assertEquals(0, result.length);
     }
 }

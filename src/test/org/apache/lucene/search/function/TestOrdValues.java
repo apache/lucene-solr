@@ -18,7 +18,6 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -77,16 +76,16 @@ public class TestOrdValues extends FunctionTestSetup {
     Query q = new ValueSourceQuery(vs);
     log("test: "+q);
     QueryUtils.check(q,s);
-    Hits h = s.search(q);
-    assertEquals("All docs should be matched!",N_DOCS,h.length());
+    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    assertEquals("All docs should be matched!",N_DOCS,h.length);
     String prevID = inOrder
       ? "IE"   // greater than all ids of docs in this test ("ID0001", etc.)
       : "IC";  // smaller than all ids of docs in this test ("ID0001", etc.)
           
-    for (int i=0; i<h.length(); i++) {
-      String resID = h.doc(i).get(ID_FIELD);
-      log(i+".   score="+h.score(i)+"  -  "+resID);
-      log(s.explain(q,h.id(i)));
+    for (int i=0; i<h.length; i++) {
+      String resID = s.doc(h[i].doc).get(ID_FIELD);
+      log(i+".   score="+h[i].score+"  -  "+resID);
+      log(s.explain(q,h[i].doc));
       if (inOrder) {
         assertTrue("res id "+resID+" should be < prev res id "+prevID, resID.compareTo(prevID)<0);
       } else {
@@ -159,9 +158,9 @@ public class TestOrdValues extends FunctionTestSetup {
         vs = new ReverseOrdFieldSource(field);
       }
       ValueSourceQuery q = new ValueSourceQuery(vs);
-      Hits h = s.search(q);
+      ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
       try {
-        assertEquals("All docs should be matched!",N_DOCS,h.length());
+        assertEquals("All docs should be matched!",N_DOCS,h.length);
         if (i==0) {
           innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
         } else {
@@ -178,7 +177,7 @@ public class TestOrdValues extends FunctionTestSetup {
     
     ValueSource vs;
     ValueSourceQuery q;
-    Hits h;
+    ScoreDoc[] h;
     
     // verify that different values are loaded for a different field
     String field2 = INT_FIELD;
@@ -189,8 +188,8 @@ public class TestOrdValues extends FunctionTestSetup {
       vs = new ReverseOrdFieldSource(field2);
     }
     q = new ValueSourceQuery(vs);
-    h = s.search(q);
-    assertEquals("All docs should be matched!",N_DOCS,h.length());
+    h = s.search(q, null, 1000).scoreDocs;
+    assertEquals("All docs should be matched!",N_DOCS,h.length);
     try {
       log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
       assertNotSame("different values shuold be loaded for a different field!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
@@ -209,8 +208,8 @@ public class TestOrdValues extends FunctionTestSetup {
       vs = new ReverseOrdFieldSource(field);
     }
     q = new ValueSourceQuery(vs);
-    h = s.search(q);
-    assertEquals("All docs should be matched!",N_DOCS,h.length());
+    h = s.search(q, null, 1000).scoreDocs;
+    assertEquals("All docs should be matched!",N_DOCS,h.length);
     try {
       log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
       assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());

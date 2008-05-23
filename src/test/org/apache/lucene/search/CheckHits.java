@@ -123,7 +123,7 @@ public class CheckHits {
       QueryUtils.check(query,(IndexSearcher)searcher);
     }
 
-    Hits hits = searcher.search(query);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
 
     Set correct = new TreeSet();
     for (int i = 0; i < results.length; i++) {
@@ -131,8 +131,8 @@ public class CheckHits {
     }
 
     Set actual = new TreeSet();
-    for (int i = 0; i < hits.length(); i++) {
-      actual.add(new Integer(hits.id(i)));
+    for (int i = 0; i < hits.length; i++) {
+      actual.add(new Integer(hits[i].doc));
     }
 
     TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
@@ -141,11 +141,11 @@ public class CheckHits {
   }
 
   /** Tests that a Hits has an expected order of documents */
-  public static void checkDocIds(String mes, int[] results, Hits hits)
+  public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits)
   throws IOException {
-    TestCase.assertEquals(mes + " nr of hits", results.length, hits.length());
+    TestCase.assertEquals(mes + " nr of hits", results.length, hits.length);
     for (int i = 0; i < results.length; i++) {
-      TestCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits.id(i));
+      TestCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
     }
   }
 
@@ -154,8 +154,8 @@ public class CheckHits {
    */
   public static void checkHitsQuery(
         Query query,
-        Hits hits1,
-        Hits hits2,
+        ScoreDoc[] hits1,
+        ScoreDoc[] hits2,
         int[] results)
           throws IOException {
 
@@ -164,33 +164,33 @@ public class CheckHits {
     checkEqual(query, hits1, hits2);
   }
 
-  public static void checkEqual(Query query, Hits hits1, Hits hits2) throws IOException {
+  public static void checkEqual(Query query, ScoreDoc[] hits1, ScoreDoc[] hits2) throws IOException {
      final float scoreTolerance = 1.0e-6f;
-     if (hits1.length() != hits2.length()) {
-       TestCase.fail("Unequal lengths: hits1="+hits1.length()+",hits2="+hits2.length());
+     if (hits1.length != hits2.length) {
+       TestCase.fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
      }
-    for (int i = 0; i < hits1.length(); i++) {
-      if (hits1.id(i) != hits2.id(i)) {
+    for (int i = 0; i < hits1.length; i++) {
+      if (hits1[i].doc != hits2[i].doc) {
         TestCase.fail("Hit " + i + " docnumbers don't match\n"
                 + hits2str(hits1, hits2,0,0)
                 + "for query:" + query.toString());
       }
 
-      if ((hits1.id(i) != hits2.id(i))
-          || Math.abs(hits1.score(i) -  hits2.score(i)) > scoreTolerance)
+      if ((hits1[i].doc != hits2[i].doc)
+          || Math.abs(hits1[i].score -  hits2[i].score) > scoreTolerance)
       {
-        TestCase.fail("Hit " + i + ", doc nrs " + hits1.id(i) + " and " + hits2.id(i)
-                      + "\nunequal       : " + hits1.score(i)
-                      + "\n           and: " + hits2.score(i)
+        TestCase.fail("Hit " + i + ", doc nrs " + hits1[i].doc + " and " + hits2[i].doc
+                      + "\nunequal       : " + hits1[i].score
+                      + "\n           and: " + hits2[i].score
                       + "\nfor query:" + query.toString());
       }
     }
   }
 
-  public static String hits2str(Hits hits1, Hits hits2, int start, int end) throws IOException {
+  public static String hits2str(ScoreDoc[] hits1, ScoreDoc[] hits2, int start, int end) throws IOException {
     StringBuffer sb = new StringBuffer();
-    int len1=hits1==null ? 0 : hits1.length();
-    int len2=hits2==null ? 0 : hits2.length();
+    int len1=hits1==null ? 0 : hits1.length;
+    int len2=hits2==null ? 0 : hits2.length;
     if (end<=0) {
       end = Math.max(len1,len2);
     }
@@ -201,13 +201,13 @@ public class CheckHits {
     for (int i=start; i<end; i++) {
         sb.append("hit=").append(i).append(':');
       if (i<len1) {
-          sb.append(" doc").append(hits1.id(i)).append('=').append(hits1.score(i));
+          sb.append(" doc").append(hits1[i].doc).append('=').append(hits1[i].score);
       } else {
         sb.append("               ");
       }
       sb.append(",\t");
       if (i<len2) {
-        sb.append(" doc").append(hits2.id(i)).append('=').append(hits2.score(i));
+        sb.append(" doc").append(hits2[i].doc).append('=').append(hits2[i].score);
       }
       sb.append('\n');
     }
@@ -377,19 +377,6 @@ public class CheckHits {
                    new ExplanationAsserter
                    (q, null, this));
     }
-    public Hits search(Query query, Filter filter) throws IOException {
-      checkExplanations(query);
-      return super.search(query,filter);
-    }
-    public Hits search(Query query, Sort sort) throws IOException {
-      checkExplanations(query);
-      return super.search(query,sort);
-    }
-    public Hits search(Query query, Filter filter,
-                       Sort sort) throws IOException {
-      checkExplanations(query);
-      return super.search(query,filter,sort);
-    }
     public TopFieldDocs search(Query query,
                                Filter filter,
                                int n,
@@ -466,4 +453,5 @@ public class CheckHits {
   }
 
 }
+
 

@@ -39,7 +39,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -188,8 +188,8 @@ public class TestIndexWriter extends LuceneTestCase
       assertEquals("first docFreq", 57, reader.docFreq(searchTerm));
 
       IndexSearcher searcher = new IndexSearcher(reader);
-      Hits hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("first number of hits", 57, hits.length());
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("first number of hits", 57, hits.length);
       searcher.close();
       reader.close();
 
@@ -392,12 +392,12 @@ public class TestIndexWriter extends LuceneTestCase
 
             searcher = new IndexSearcher(reader);
             try {
-              hits = searcher.search(new TermQuery(searchTerm));
+              hits = searcher.search(new TermQuery(searchTerm), null, END_COUNT).scoreDocs;
             } catch (IOException e) {
               e.printStackTrace(System.out);
               fail(testName + ": exception when searching: " + e);
             }
-            int result2 = hits.length();
+            int result2 = hits.length;
             if (success) {
               if (result2 != result) {
                 fail(testName + ": method did not throw exception but hits.length for search on term 'aaa' is " + result2 + " instead of expected " + result);
@@ -1016,8 +1016,8 @@ public class TestIndexWriter extends LuceneTestCase
 
         Term searchTerm = new Term("content", "aaa");        
         IndexSearcher searcher = new IndexSearcher(dir);
-        Hits hits = searcher.search(new TermQuery(searchTerm));
-        assertEquals("first number of hits", 14, hits.length());
+        ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        assertEquals("first number of hits", 14, hits.length);
         searcher.close();
 
         IndexReader reader = IndexReader.open(dir);
@@ -1028,8 +1028,8 @@ public class TestIndexWriter extends LuceneTestCase
             addDoc(writer);
           }
           searcher = new IndexSearcher(dir);
-          hits = searcher.search(new TermQuery(searchTerm));
-          assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+          hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+          assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
           searcher.close();
           assertTrue("reader should have still been current", reader.isCurrent());
         }
@@ -1039,8 +1039,8 @@ public class TestIndexWriter extends LuceneTestCase
         assertFalse("reader should not be current now", reader.isCurrent());
 
         searcher = new IndexSearcher(dir);
-        hits = searcher.search(new TermQuery(searchTerm));
-        assertEquals("reader did not see changes after writer was closed", 47, hits.length());
+        hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        assertEquals("reader did not see changes after writer was closed", 47, hits.length);
         searcher.close();
     }
 
@@ -1064,8 +1064,8 @@ public class TestIndexWriter extends LuceneTestCase
 
       Term searchTerm = new Term("content", "aaa");        
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("first number of hits", 14, hits.length());
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("first number of hits", 14, hits.length);
       searcher.close();
 
       writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
@@ -1077,8 +1077,8 @@ public class TestIndexWriter extends LuceneTestCase
       writer.deleteDocuments(searchTerm);
 
       searcher = new IndexSearcher(dir);
-      hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
       searcher.close();
 
       // Now, close the writer:
@@ -1087,8 +1087,8 @@ public class TestIndexWriter extends LuceneTestCase
       assertNoUnreferencedFiles(dir, "unreferenced files remain after abort()");
 
       searcher = new IndexSearcher(dir);
-      hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("saw changes after writer.abort", 14, hits.length());
+      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("saw changes after writer.abort", 14, hits.length);
       searcher.close();
           
       // Now make sure we can re-open the index, add docs,
@@ -1105,15 +1105,15 @@ public class TestIndexWriter extends LuceneTestCase
           addDoc(writer);
         }
         searcher = new IndexSearcher(dir);
-        hits = searcher.search(new TermQuery(searchTerm));
-        assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+        hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+        assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
         searcher.close();
       }
 
       writer.close();
       searcher = new IndexSearcher(dir);
-      hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("didn't see changes after close", 218, hits.length());
+      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("didn't see changes after close", 218, hits.length);
       searcher.close();
 
       dir.close();
@@ -1437,8 +1437,8 @@ public class TestIndexWriter extends LuceneTestCase
       writer.close();
 
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(new TermQuery(new Term("field", "aaa")));
-      assertEquals(300, hits.length());
+      ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
+      assertEquals(300, hits.length);
       searcher.close();
 
       dir.close();
@@ -1463,8 +1463,8 @@ public class TestIndexWriter extends LuceneTestCase
       Term searchTerm = new Term("field", "aaa");
 
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals(10, hits.length());
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals(10, hits.length);
       searcher.close();
 
       writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -1481,8 +1481,8 @@ public class TestIndexWriter extends LuceneTestCase
       }
       writer.close();
       searcher = new IndexSearcher(dir);
-      hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals(27, hits.length());
+      hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals(27, hits.length);
       searcher.close();
 
       IndexReader reader = IndexReader.open(dir);
@@ -1546,8 +1546,8 @@ public class TestIndexWriter extends LuceneTestCase
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(new TermQuery(searchTerm));
-      assertEquals("did not get right number of hits", 100, hits.length());
+      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
+      assertEquals("did not get right number of hits", 100, hits.length);
       writer.close();
 
       writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -3587,12 +3587,12 @@ public class TestIndexWriter extends LuceneTestCase
     pq.add(new Term("field", "a"));
     pq.add(new Term("field", "b"));
     pq.add(new Term("field", "c"));
-    Hits hits = s.search(pq);
-    assertEquals(1, hits.length());
+    ScoreDoc[] hits = s.search(pq, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     Query q = new SpanTermQuery(new Term("field", "a"));
-    hits = s.search(q);
-    assertEquals(1, hits.length());
+    hits = s.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
     TermPositions tps = s.getIndexReader().termPositions(new Term("field", "a"));
     assertTrue(tps.next());
     assertEquals(1, tps.freq());

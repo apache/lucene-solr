@@ -22,14 +22,13 @@ import java.io.IOException;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -82,20 +81,20 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         this.searcher = new IndexSearcher(reader);        
     }
     
-    private Hits search() throws IOException {
+    private ScoreDoc[] search() throws IOException {
         // create PhraseQuery "term1 term2" and search
         PhraseQuery pq = new PhraseQuery();
         pq.add(new Term(this.field, this.term1));
         pq.add(new Term(this.field, this.term2));
-        return this.searcher.search(pq);        
+        return this.searcher.search(pq, null, 1000).scoreDocs;        
     }
     
     private void performTest(int numHits) throws IOException {
         createIndex(numHits);
         this.seeksCounter = 0;
-        Hits hits = search();
+        ScoreDoc[] hits = search();
         // verify that the right number of docs was found
-        assertEquals(numHits, hits.length());
+        assertEquals(numHits, hits.length);
         
         // check if the number of calls of seek() does not exceed the number of hits
         assertTrue(this.seeksCounter <= numHits + 1);

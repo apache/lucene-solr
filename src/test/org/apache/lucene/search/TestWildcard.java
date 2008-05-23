@@ -153,8 +153,8 @@ public class TestWildcard
 
   private void assertMatches(IndexSearcher searcher, Query q, int expectedMatches)
       throws IOException {
-    Hits result = searcher.search(q);
-    assertEquals(expectedMatches, result.length());
+    ScoreDoc[] result = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(expectedMatches, result.length);
   }
 
   /**
@@ -212,8 +212,8 @@ public class TestWildcard
       String qtxt = matchAll[i];
       Query q = qp.parse(qtxt);
       if (dbg) System.out.println("matchAll: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
-      Hits hits = searcher.search(q);
-      assertEquals(docs.length,hits.length());
+      ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+      assertEquals(docs.length,hits.length);
     }
     
     // test queries that must find none
@@ -221,8 +221,8 @@ public class TestWildcard
       String qtxt = matchNone[i];
       Query q = qp.parse(qtxt);
       if (dbg) System.out.println("matchNone: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
-      Hits hits = searcher.search(q);
-      assertEquals(0,hits.length());
+      ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+      assertEquals(0,hits.length);
     }
 
     // test queries that must be prefix queries and must find only one doc
@@ -232,9 +232,9 @@ public class TestWildcard
         Query q = qp.parse(qtxt);
         if (dbg) System.out.println("match 1 prefix: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
         assertEquals(PrefixQuery.class, q.getClass());
-        Hits hits = searcher.search(q);
-        assertEquals(1,hits.length());
-        assertEquals(i,hits.id(0));
+        ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+        assertEquals(1,hits.length);
+        assertEquals(i,hits[0].doc);
       }
     }
 
@@ -245,9 +245,9 @@ public class TestWildcard
         Query q = qp.parse(qtxt);
         if (dbg) System.out.println("match 1 wild: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
         assertEquals(WildcardQuery.class, q.getClass());
-        Hits hits = searcher.search(q);
-        assertEquals(1,hits.length());
-        assertEquals(i,hits.id(0));
+        ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+        assertEquals(1,hits.length);
+        assertEquals(i,hits[0].doc);
       }
     }
 

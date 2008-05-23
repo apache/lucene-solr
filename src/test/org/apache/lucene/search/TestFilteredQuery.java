@@ -101,29 +101,29 @@ extends LuceneTestCase {
   public void testFilteredQuery()
   throws Exception {
     Query filteredquery = new FilteredQuery (query, filter);
-    Hits hits = searcher.search (filteredquery);
-    assertEquals (1, hits.length());
-    assertEquals (1, hits.id(0));
+    ScoreDoc[] hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    assertEquals (1, hits.length);
+    assertEquals (1, hits[0].doc);
     QueryUtils.check(filteredquery,searcher);
 
-    hits = searcher.search (filteredquery, new Sort("sorter"));
-    assertEquals (1, hits.length());
-    assertEquals (1, hits.id(0));
+    hits = searcher.search (filteredquery, null, 1000, new Sort("sorter")).scoreDocs;
+    assertEquals (1, hits.length);
+    assertEquals (1, hits[0].doc);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "one")), filter);
-    hits = searcher.search (filteredquery);
-    assertEquals (2, hits.length());
+    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    assertEquals (2, hits.length);
     QueryUtils.check(filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "x")), filter);
-    hits = searcher.search (filteredquery);
-    assertEquals (1, hits.length());
-    assertEquals (3, hits.id(0));
+    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    assertEquals (1, hits.length);
+    assertEquals (3, hits[0].doc);
     QueryUtils.check(filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
-    hits = searcher.search (filteredquery);
-    assertEquals (0, hits.length());
+    hits = searcher.search (filteredquery, null, 1000).scoreDocs;
+    assertEquals (0, hits.length);
     QueryUtils.check(filteredquery,searcher);
     
     // test boost
@@ -163,13 +163,13 @@ extends LuceneTestCase {
    * Tests whether the scores of the two queries are the same.
    */
   public void assertScoreEquals(Query q1, Query q2) throws Exception {
-    Hits hits1 = searcher.search (q1);
-    Hits hits2 = searcher.search (q2);
+    ScoreDoc[] hits1 = searcher.search (q1, null, 1000).scoreDocs;
+    ScoreDoc[] hits2 = searcher.search (q2, null, 1000).scoreDocs;
       
-    assertEquals(hits1.length(), hits2.length());
+    assertEquals(hits1.length, hits2.length);
     
-    for (int i = 0; i < hits1.length(); i++) {
-      assertEquals(hits1.score(i), hits2.score(i), 0.0000001f);
+    for (int i = 0; i < hits1.length; i++) {
+      assertEquals(hits1[i].score, hits2[i].score, 0.0000001f);
     }
   }
 
@@ -181,8 +181,8 @@ extends LuceneTestCase {
         new Term("sorter", "b"), new Term("sorter", "d"), true);
 
     Query filteredquery = new FilteredQuery(rq, filter);
-    Hits hits = searcher.search(filteredquery);
-    assertEquals(2, hits.length());
+    ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
     QueryUtils.check(filteredquery,searcher);
   }
 
@@ -194,11 +194,12 @@ extends LuceneTestCase {
     query = new FilteredQuery(new MatchAllDocsQuery(),
         new SingleDocTestFilter(1));
     bq.add(query, BooleanClause.Occur.MUST);
-    Hits hits = searcher.search(bq);
-    assertEquals(0, hits.length());
+    ScoreDoc[] hits = searcher.search(bq, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
     QueryUtils.check(query,searcher);    
   }
 }
+
 
 
 

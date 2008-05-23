@@ -19,12 +19,18 @@ package org.apache.lucene;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.queryParser.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 class SearchTestForDuplicates {
 
@@ -52,15 +58,15 @@ class SearchTestForDuplicates {
 
       // try a search without OR
       Searcher searcher = new IndexSearcher(directory);
-      Hits hits = null;
+      ScoreDoc[] hits = null;
 
       QueryParser parser = new QueryParser(PRIORITY_FIELD, analyzer);
 
       Query query = parser.parse(HIGH_PRIORITY);
       System.out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query);
-      printHits(hits);
+      hits = searcher.search(query, null, 1000).scoreDocs;
+      printHits(hits, searcher);
 
       searcher.close();
 
@@ -73,8 +79,8 @@ class SearchTestForDuplicates {
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       System.out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query);
-      printHits(hits);
+      hits = searcher.search(query, null, 1000).scoreDocs;
+      printHits(hits, searcher);
 
       searcher.close();
 
@@ -84,11 +90,11 @@ class SearchTestForDuplicates {
     }
   }
 
-  private static void printHits( Hits hits ) throws IOException {
-    System.out.println(hits.length() + " total results\n");
-    for (int i = 0 ; i < hits.length(); i++) {
+  private static void printHits( ScoreDoc[] hits, Searcher searcher) throws IOException {
+    System.out.println(hits.length + " total results\n");
+    for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-        Document d = hits.doc(i);
+        Document d = searcher.doc(hits[i].doc);
         System.out.println(i + " " + d.get(ID_FIELD));
       }
     }

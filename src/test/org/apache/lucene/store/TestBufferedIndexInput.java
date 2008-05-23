@@ -17,24 +17,24 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.File;
-import java.util.List;
-import java.util.Random;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
+import java.util.List;
+import java.util.Random;
+
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util._TestUtil;
-
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
 	// Call readByte() repeatedly, past the buffer boundary, and see that it
@@ -184,16 +184,16 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir.tweakBufferSizes();
 
         IndexSearcher searcher = new IndexSearcher(reader);
-        Hits hits = searcher.search(new TermQuery(bbb));
+        ScoreDoc[] hits = searcher.search(new TermQuery(bbb), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
-        assertEquals(35, hits.length());
+        assertEquals(35, hits.length);
         dir.tweakBufferSizes();
-        hits = searcher.search(new TermQuery(new Term("id", "33")));
+        hits = searcher.search(new TermQuery(new Term("id", "33")), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
-        assertEquals(1, hits.length());
-        hits = searcher.search(new TermQuery(aaa));
+        assertEquals(1, hits.length);
+        hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
-        assertEquals(35, hits.length());
+        assertEquals(35, hits.length);
         searcher.close();
         reader.close();
       } finally {

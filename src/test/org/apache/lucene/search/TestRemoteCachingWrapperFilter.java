@@ -81,9 +81,9 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
   private static void search(Query query, Filter filter, int hitNumber, String typeValue) throws Exception {
     Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
-    Hits result = searcher.search(query,filter);
-    assertEquals(1, result.length());
-    Document document = result.doc(hitNumber);
+    ScoreDoc[] result = searcher.search(query,filter, 1000).scoreDocs;
+    assertEquals(1, result.length);
+    Document document = searcher.doc(result[hitNumber].doc);
     assertTrue("document is null and it shouldn't be", document != null);
     assertEquals(typeValue, document.get("type"));
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 3, document.getFields().size() == 3);

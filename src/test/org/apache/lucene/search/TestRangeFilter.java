@@ -55,70 +55,70 @@ public class TestRangeFilter extends BaseTestRangeFilter {
         
         assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
-	Hits result;
+  ScoreDoc[] result;
         Query q = new TermQuery(new Term("body","body"));
 
         // test id, bounded on both ends
         
-	result = search.search(q,new RangeFilter("id",minIP,maxIP,T,T));
-	assertEquals("find all", numDocs, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,maxIP,T,T), numDocs).scoreDocs;
+  assertEquals("find all", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("id",minIP,maxIP,T,F));
-	assertEquals("all but last", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,maxIP,T,F), numDocs).scoreDocs;
+  assertEquals("all but last", numDocs-1, result.length);
 
-	result = search.search(q,new RangeFilter("id",minIP,maxIP,F,T));
-	assertEquals("all but first", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,maxIP,F,T), numDocs).scoreDocs;
+  assertEquals("all but first", numDocs-1, result.length);
         
-	result = search.search(q,new RangeFilter("id",minIP,maxIP,F,F));
-        assertEquals("all but ends", numDocs-2, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,maxIP,F,F), numDocs).scoreDocs;
+        assertEquals("all but ends", numDocs-2, result.length);
     
-        result = search.search(q,new RangeFilter("id",medIP,maxIP,T,T));
-        assertEquals("med and up", 1+ maxId-medId, result.length());
+        result = search.search(q,new RangeFilter("id",medIP,maxIP,T,T), numDocs).scoreDocs;
+        assertEquals("med and up", 1+ maxId-medId, result.length);
         
-        result = search.search(q,new RangeFilter("id",minIP,medIP,T,T));
-        assertEquals("up to med", 1+ medId-minId, result.length());
+        result = search.search(q,new RangeFilter("id",minIP,medIP,T,T), numDocs).scoreDocs;
+        assertEquals("up to med", 1+ medId-minId, result.length);
 
         // unbounded id
 
-	result = search.search(q,new RangeFilter("id",minIP,null,T,F));
-	assertEquals("min and up", numDocs, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,null,T,F), numDocs).scoreDocs;
+  assertEquals("min and up", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("id",null,maxIP,F,T));
-	assertEquals("max and down", numDocs, result.length());
+  result = search.search(q,new RangeFilter("id",null,maxIP,F,T), numDocs).scoreDocs;
+  assertEquals("max and down", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("id",minIP,null,F,F));
-	assertEquals("not min, but up", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,null,F,F), numDocs).scoreDocs;
+  assertEquals("not min, but up", numDocs-1, result.length);
         
-	result = search.search(q,new RangeFilter("id",null,maxIP,F,F));
-	assertEquals("not max, but down", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("id",null,maxIP,F,F), numDocs).scoreDocs;
+  assertEquals("not max, but down", numDocs-1, result.length);
         
-        result = search.search(q,new RangeFilter("id",medIP,maxIP,T,F));
-        assertEquals("med and up, not max", maxId-medId, result.length());
+        result = search.search(q,new RangeFilter("id",medIP,maxIP,T,F), numDocs).scoreDocs;
+        assertEquals("med and up, not max", maxId-medId, result.length);
         
-        result = search.search(q,new RangeFilter("id",minIP,medIP,F,T));
-        assertEquals("not min, up to med", medId-minId, result.length());
+        result = search.search(q,new RangeFilter("id",minIP,medIP,F,T), numDocs).scoreDocs;
+        assertEquals("not min, up to med", medId-minId, result.length);
 
         // very small sets
 
-	result = search.search(q,new RangeFilter("id",minIP,minIP,F,F));
-	assertEquals("min,min,F,F", 0, result.length());
-	result = search.search(q,new RangeFilter("id",medIP,medIP,F,F));
-	assertEquals("med,med,F,F", 0, result.length());
-	result = search.search(q,new RangeFilter("id",maxIP,maxIP,F,F));
-	assertEquals("max,max,F,F", 0, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,minIP,F,F), numDocs).scoreDocs;
+  assertEquals("min,min,F,F", 0, result.length);
+  result = search.search(q,new RangeFilter("id",medIP,medIP,F,F), numDocs).scoreDocs;
+  assertEquals("med,med,F,F", 0, result.length);
+  result = search.search(q,new RangeFilter("id",maxIP,maxIP,F,F), numDocs).scoreDocs;
+  assertEquals("max,max,F,F", 0, result.length);
                      
-	result = search.search(q,new RangeFilter("id",minIP,minIP,T,T));
-	assertEquals("min,min,T,T", 1, result.length());
-	result = search.search(q,new RangeFilter("id",null,minIP,F,T));
-	assertEquals("nul,min,F,T", 1, result.length());
+  result = search.search(q,new RangeFilter("id",minIP,minIP,T,T), numDocs).scoreDocs;
+  assertEquals("min,min,T,T", 1, result.length);
+  result = search.search(q,new RangeFilter("id",null,minIP,F,T), numDocs).scoreDocs;
+  assertEquals("nul,min,F,T", 1, result.length);
 
-	result = search.search(q,new RangeFilter("id",maxIP,maxIP,T,T));
-	assertEquals("max,max,T,T", 1, result.length());
-	result = search.search(q,new RangeFilter("id",maxIP,null,T,F));
-	assertEquals("max,nul,T,T", 1, result.length());
+  result = search.search(q,new RangeFilter("id",maxIP,maxIP,T,T), numDocs).scoreDocs;
+  assertEquals("max,max,T,T", 1, result.length);
+  result = search.search(q,new RangeFilter("id",maxIP,null,T,F), numDocs).scoreDocs;
+  assertEquals("max,nul,T,T", 1, result.length);
 
-	result = search.search(q,new RangeFilter("id",medIP,medIP,T,T));
-	assertEquals("med,med,T,T", 1, result.length());
+  result = search.search(q,new RangeFilter("id",medIP,medIP,T,T), numDocs).scoreDocs;
+  assertEquals("med,med,T,T", 1, result.length);
         
     }
 
@@ -134,53 +134,53 @@ public class TestRangeFilter extends BaseTestRangeFilter {
         
         assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
-	Hits result;
+  ScoreDoc[] result;
         Query q = new TermQuery(new Term("body","body"));
 
         // test extremes, bounded on both ends
         
-	result = search.search(q,new RangeFilter("rand",minRP,maxRP,T,T));
-	assertEquals("find all", numDocs, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,maxRP,T,T), numDocs).scoreDocs;
+  assertEquals("find all", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("rand",minRP,maxRP,T,F));
-	assertEquals("all but biggest", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,maxRP,T,F), numDocs).scoreDocs;
+  assertEquals("all but biggest", numDocs-1, result.length);
 
-	result = search.search(q,new RangeFilter("rand",minRP,maxRP,F,T));
-	assertEquals("all but smallest", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,maxRP,F,T), numDocs).scoreDocs;
+  assertEquals("all but smallest", numDocs-1, result.length);
         
-	result = search.search(q,new RangeFilter("rand",minRP,maxRP,F,F));
-        assertEquals("all but extremes", numDocs-2, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,maxRP,F,F), numDocs).scoreDocs;
+        assertEquals("all but extremes", numDocs-2, result.length);
     
         // unbounded
 
-	result = search.search(q,new RangeFilter("rand",minRP,null,T,F));
-	assertEquals("smallest and up", numDocs, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,null,T,F), numDocs).scoreDocs;
+  assertEquals("smallest and up", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("rand",null,maxRP,F,T));
-	assertEquals("biggest and down", numDocs, result.length());
+  result = search.search(q,new RangeFilter("rand",null,maxRP,F,T), numDocs).scoreDocs;
+  assertEquals("biggest and down", numDocs, result.length);
 
-	result = search.search(q,new RangeFilter("rand",minRP,null,F,F));
-	assertEquals("not smallest, but up", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,null,F,F), numDocs).scoreDocs;
+  assertEquals("not smallest, but up", numDocs-1, result.length);
         
-	result = search.search(q,new RangeFilter("rand",null,maxRP,F,F));
-	assertEquals("not biggest, but down", numDocs-1, result.length());
+  result = search.search(q,new RangeFilter("rand",null,maxRP,F,F), numDocs).scoreDocs;
+  assertEquals("not biggest, but down", numDocs-1, result.length);
         
         // very small sets
 
-	result = search.search(q,new RangeFilter("rand",minRP,minRP,F,F));
-	assertEquals("min,min,F,F", 0, result.length());
-	result = search.search(q,new RangeFilter("rand",maxRP,maxRP,F,F));
-	assertEquals("max,max,F,F", 0, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,minRP,F,F), numDocs).scoreDocs;
+  assertEquals("min,min,F,F", 0, result.length);
+  result = search.search(q,new RangeFilter("rand",maxRP,maxRP,F,F), numDocs).scoreDocs;
+  assertEquals("max,max,F,F", 0, result.length);
                      
-	result = search.search(q,new RangeFilter("rand",minRP,minRP,T,T));
-	assertEquals("min,min,T,T", 1, result.length());
-	result = search.search(q,new RangeFilter("rand",null,minRP,F,T));
-	assertEquals("nul,min,F,T", 1, result.length());
+  result = search.search(q,new RangeFilter("rand",minRP,minRP,T,T), numDocs).scoreDocs;
+  assertEquals("min,min,T,T", 1, result.length);
+  result = search.search(q,new RangeFilter("rand",null,minRP,F,T), numDocs).scoreDocs;
+  assertEquals("nul,min,F,T", 1, result.length);
 
-	result = search.search(q,new RangeFilter("rand",maxRP,maxRP,T,T));
-	assertEquals("max,max,T,T", 1, result.length());
-	result = search.search(q,new RangeFilter("rand",maxRP,null,T,F));
-	assertEquals("max,nul,T,T", 1, result.length());
+  result = search.search(q,new RangeFilter("rand",maxRP,maxRP,T,T), numDocs).scoreDocs;
+  assertEquals("max,max,T,T", 1, result.length);
+  result = search.search(q,new RangeFilter("rand",maxRP,null,T,F), numDocs).scoreDocs;
+  assertEquals("max,nul,T,T", 1, result.length);
         
     }
 

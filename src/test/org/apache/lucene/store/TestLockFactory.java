@@ -17,24 +17,21 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.Hashtable;
-import java.util.Enumeration;
-
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLockFactory extends LuceneTestCase {
 
@@ -498,9 +495,9 @@ public class TestLockFactory extends LuceneTestCase {
                     break;
                 }
                 if (searcher != null) {
-                    Hits hits = null;
+                    ScoreDoc[] hits = null;
                     try {
-                        hits = searcher.search(query);
+                        hits = searcher.search(query, null, 1000).scoreDocs;
                     } catch (IOException e) {
                         hitException = true;
                         System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());

@@ -101,16 +101,15 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       // try a search without OR
       Searcher searcher = new IndexSearcher(directory);
-      Hits hits = null;
 
       QueryParser parser = new QueryParser(PRIORITY_FIELD, analyzer);
 
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query);
-      printHits(out, hits);
-      checkHits(hits, MAX_DOCS);
+      ScoreDoc[] hits = searcher.search(query, null, MAX_DOCS).scoreDocs;
+      printHits(out, hits, searcher);
+      checkHits(hits, MAX_DOCS, searcher);
 
       searcher.close();
 
@@ -123,29 +122,29 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query);
-      printHits(out, hits);
-      checkHits(hits, MAX_DOCS);
+      hits = searcher.search(query, null, MAX_DOCS).scoreDocs;
+      printHits(out, hits, searcher);
+      checkHits(hits, MAX_DOCS, searcher);
 
       searcher.close();
   }
 
 
-  private void printHits(PrintWriter out, Hits hits ) throws IOException {
-    out.println(hits.length() + " total results\n");
-    for (int i = 0 ; i < hits.length(); i++) {
+  private void printHits(PrintWriter out, ScoreDoc[] hits, Searcher searcher ) throws IOException {
+    out.println(hits.length + " total results\n");
+    for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-        Document d = hits.doc(i);
+        Document d = searcher.doc(hits[i].doc);
         out.println(i + " " + d.get(ID_FIELD));
       }
     }
   }
 
-  private void checkHits(Hits hits, int expectedCount) throws IOException {
-    assertEquals("total results", expectedCount, hits.length());
-    for (int i = 0 ; i < hits.length(); i++) {
+  private void checkHits(ScoreDoc[] hits, int expectedCount, Searcher searcher) throws IOException {
+    assertEquals("total results", expectedCount, hits.length);
+    for (int i = 0 ; i < hits.length; i++) {
       if ( i < 10 || (i > 94 && i < 105) ) {
-        Document d = hits.doc(i);
+      Document d = searcher.doc(hits[i].doc);
         assertEquals("check " + i, String.valueOf(i), d.get(ID_FIELD));
       }
     }

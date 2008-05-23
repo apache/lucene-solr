@@ -35,6 +35,8 @@ import java.util.NoSuchElementException;
 /**
  * This test intentionally not put in the search package in order
  * to test HitIterator and Hit package protection.
+ * 
+ * @deprecated Hits will be removed in Lucene 3.0 
  */
 public class TestHitIterator extends LuceneTestCase {
   public void testIterator() throws Exception {

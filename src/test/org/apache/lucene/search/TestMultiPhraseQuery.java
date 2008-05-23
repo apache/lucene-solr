@@ -85,11 +85,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         query2.add((Term[])termsWithPrefix.toArray(new Term[0]));
         assertEquals("body:\"strawberry (piccadilly pie pizza)\"", query2.toString());
 
-        Hits result;
-        result = searcher.search(query1);
-        assertEquals(2, result.length());
-        result = searcher.search(query2);
-        assertEquals(0, result.length());
+        ScoreDoc[] result;
+        result = searcher.search(query1, null, 1000).scoreDocs;
+        assertEquals(2, result.length);
+        result = searcher.search(query2, null, 1000).scoreDocs;
+        assertEquals(0, result.length);
 
         // search for "blue* pizza":
         MultiPhraseQuery query3 = new MultiPhraseQuery();
@@ -105,14 +105,14 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         query3.add((Term[])termsWithPrefix.toArray(new Term[0]));
         query3.add(new Term("body", "pizza"));
 
-        result = searcher.search(query3);
-        assertEquals(2, result.length()); // blueberry pizza, bluebird pizza
+        result = searcher.search(query3, null, 1000).scoreDocs;
+        assertEquals(2, result.length); // blueberry pizza, bluebird pizza
         assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
 
         // test slop:
         query3.setSlop(1);
-        result = searcher.search(query3);
-        assertEquals(3, result.length()); // blueberry pizza, bluebird pizza, bluebird foobar pizza
+        result = searcher.search(query3, null, 1000).scoreDocs;
+        assertEquals(3, result.length); // blueberry pizza, bluebird pizza, bluebird foobar pizza
 
         MultiPhraseQuery query4 = new MultiPhraseQuery();
         try {
@@ -161,9 +161,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       q.add(trouble, BooleanClause.Occur.MUST);
 
       // exception will be thrown here without fix
-      Hits hits = searcher.search(q);
+      ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
 
-      assertEquals("Wrong number of hits", 2, hits.length());
+      assertEquals("Wrong number of hits", 2, hits.length);
       searcher.close();
   }
     
@@ -186,8 +186,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     q.add(trouble, BooleanClause.Occur.MUST);
 
     // exception will be thrown here without fix for #35626:
-    Hits hits = searcher.search(q);
-    assertEquals("Wrong number of hits", 0, hits.length());
+    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals("Wrong number of hits", 0, hits.length);
     searcher.close();
   }
   

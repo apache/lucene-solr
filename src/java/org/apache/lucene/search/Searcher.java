@@ -33,6 +33,8 @@ public abstract class Searcher implements Searchable {
 
   /** Returns the documents matching <code>query</code>. 
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated Hits will be removed in Lucene 3.0. Use
+   * {@link #search(Query, Filter, int))} instead.
    */
   public final Hits search(Query query) throws IOException {
     return search(query, (Filter)null);
@@ -41,6 +43,8 @@ public abstract class Searcher implements Searchable {
   /** Returns the documents matching <code>query</code> and
    * <code>filter</code>.
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated Hits will be removed in Lucene 3.0. Use
+   * {@link #search(Query, Filter, int))} instead.
    */
   public Hits search(Query query, Filter filter) throws IOException {
     return new Hits(this, query, filter);
@@ -49,6 +53,8 @@ public abstract class Searcher implements Searchable {
   /** Returns documents matching <code>query</code> sorted by
    * <code>sort</code>.
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated Hits will be removed in Lucene 3.0. Use 
+   * {@link #search(Query, Filter, int, Sort))} instead.
    */
   public Hits search(Query query, Sort sort)
     throws IOException {
@@ -58,13 +64,15 @@ public abstract class Searcher implements Searchable {
   /** Returns documents matching <code>query</code> and <code>filter</code>,
    * sorted by <code>sort</code>.
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated Hits will be removed in Lucene 3.0. Use 
+   * {@link #search(Query, Filter, int, Sort))} instead.
    */
   public Hits search(Query query, Filter filter, Sort sort)
     throws IOException {
     return new Hits(this, query, filter, sort);
   }
 
-  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
+  /** Search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in
    * <code>sort</code>.
@@ -105,7 +113,7 @@ public abstract class Searcher implements Searchable {
    *
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
+   * Searcher#search(Query, Filter, int))}) is usually more efficient, as it skips
    * non-high-scoring hits.
    *
    * @param query to match documents
@@ -118,13 +126,9 @@ public abstract class Searcher implements Searchable {
     search(createWeight(query), filter, results);
   }
 
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
+  /** Finds the top <code>n</code>
    * hits for <code>query</code>, applying <code>filter</code> if non-null.
    *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link Searcher#search(Query)} or
-   * {@link Searcher#search(Query,Filter)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
   public TopDocs search(Query query, Filter filter, int n)

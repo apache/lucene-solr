@@ -459,9 +459,9 @@ implements Serializable {
 	public void testNormalizedScores() throws Exception {
 
 		// capture relevancy scores
-		HashMap scoresX = getScores (full.search (queryX));
-		HashMap scoresY = getScores (full.search (queryY));
-		HashMap scoresA = getScores (full.search (queryA));
+    HashMap scoresX = getScores (full.search (queryX, null, 1000).scoreDocs, full);
+    HashMap scoresY = getScores (full.search (queryY, null, 1000).scoreDocs, full);
+    HashMap scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
 		// we'll test searching locally, remote and multi
 		MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
@@ -470,92 +470,92 @@ implements Serializable {
 		// change sorting and make sure relevancy stays the same
 
 		sort = new Sort();
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort(SortField.FIELD_DOC);
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort ("int");
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort ("float");
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort ("string");
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort (new String[] {"int","float"});
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 		sort.setSort (new String[] {"float","string"});
-		assertSameValues (scoresX, getScores(full.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(remote.search(queryX,sort)));
-		assertSameValues (scoresX, getScores(multi.search(queryX,sort)));
-		assertSameValues (scoresY, getScores(full.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(remote.search(queryY,sort)));
-		assertSameValues (scoresY, getScores(multi.search(queryY,sort)));
-		assertSameValues (scoresA, getScores(full.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(remote.search(queryA,sort)));
-		assertSameValues (scoresA, getScores(multi.search(queryA,sort)));
+    assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
+    assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
+    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
+    assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
 	}
 
@@ -648,11 +648,11 @@ implements Serializable {
 	// make sure the documents returned by the search match the expected list
 	private void assertMatches (Searcher searcher, Query query, Sort sort, String expectedResult)
 	throws IOException {
-		Hits result = searcher.search (query, sort);
+    ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
 		StringBuffer buff = new StringBuffer(10);
-		int n = result.length();
+    int n = result.length;
 		for (int i=0; i<n; ++i) {
-			Document doc = result.doc(i);
+      Document doc = searcher.doc(result[i].doc);
 			String[] v = doc.getValues("tracer");
 			for (int j=0; j<v.length; ++j) {
 				buff.append (v[j]);
@@ -664,11 +664,11 @@ implements Serializable {
 	// make sure the documents returned by the search match the expected list pattern
 	private void assertMatchesPattern (Searcher searcher, Query query, Sort sort, String pattern)
 	throws IOException {
-		Hits result = searcher.search (query, sort);
+    ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
 		StringBuffer buff = new StringBuffer(10);
-		int n = result.length();
+    int n = result.length;
 		for (int i=0; i<n; ++i) {
-			Document doc = result.doc(i);
+      Document doc = searcher.doc(result[i].doc);
 			String[] v = doc.getValues("tracer");
 			for (int j=0; j<v.length; ++j) {
 				buff.append (v[j]);
@@ -678,15 +678,15 @@ implements Serializable {
 		assertTrue (Pattern.compile(pattern).matcher(buff.toString()).matches());
 	}
 
-	private HashMap getScores (Hits hits)
+  private HashMap getScores (ScoreDoc[] hits, Searcher searcher)
 	throws IOException {
 		HashMap scoreMap = new HashMap();
-		int n = hits.length();
+    int n = hits.length;
 		for (int i=0; i<n; ++i) {
-			Document doc = hits.doc(i);
+      Document doc = searcher.doc(hits[i].doc);
 			String[] v = doc.getValues("tracer");
 			assertEquals (v.length, 1);
-			scoreMap.put (v[0], new Float(hits.score(i)));
+      scoreMap.put (v[0], new Float(hits[i].score));
 		}
 		return scoreMap;
 	}

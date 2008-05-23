@@ -339,14 +339,23 @@ documents are interpreted: finding the end of words and removing useless words l
 the results from the <span class="codefrag">QueryParser</span> which is passed to
 the searcher.  Note that it's also possible to programmatically construct a rich <span class="codefrag">Query</span> object without using the query
 parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
-syntax</a> into the corresponding <span class="codefrag">Query</span> object.  The searcher results are
-returned in a collection of Documents called <span class="codefrag">Hits</span> which is then iterated through and
-displayed to the user.
+syntax</a> into the corresponding <span class="codefrag">Query</span> object. Search can be executed in 
+two different ways: 
+<ul>
+
+<li>Streaming: A <span class="codefrag">HitCollector</span> subclass
+simply prints out the document ID and score for each matching document.</li>
+
+<li>Paging: Using a <span class="codefrag">TopDocCollector</span> 
+the search results are printed in pages, sorted by score (i. e. relevance).</li>
+
+</ul>  
+
 </p>
 </div>
 
 
-<a name="N100ED"></a><a name="The Web example..."></a>
+<a name="N100FB"></a><a name="The Web example..."></a>
 <h2 class="boxed">The Web example...</h2>
 <div class="section">
 <p>

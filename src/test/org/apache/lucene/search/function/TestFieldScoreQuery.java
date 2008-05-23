@@ -17,11 +17,9 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 
-import java.io.ObjectInputStream.GetField;
 import java.util.HashMap;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -88,13 +86,13 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     Query q = new FieldScoreQuery(field,tp);
     log("test: "+q);
     QueryUtils.check(q,s);
-    Hits h = s.search(q);
-    assertEquals("All docs should be matched!",N_DOCS,h.length());
+    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    assertEquals("All docs should be matched!",N_DOCS,h.length);
     String prevID = "ID"+(N_DOCS+1); // greater than all ids of docs in this test
-    for (int i=0; i<h.length(); i++) {
-      String resID = h.doc(i).get(ID_FIELD);
-      log(i+".   score="+h.score(i)+"  -  "+resID);
-      log(s.explain(q,h.id(i)));
+    for (int i=0; i<h.length; i++) {
+      String resID = s.doc(h[i].doc).get(ID_FIELD);
+      log(i+".   score="+h[i].score+"  -  "+resID);
+      log(s.explain(q,h[i].doc));
       assertTrue("res id "+resID+" should be < prev res id "+prevID, resID.compareTo(prevID)<0);
       prevID = resID;
     }
@@ -181,8 +179,8 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     boolean warned = false; // print warning once.
     for (int i=0; i<10; i++) {
       FieldScoreQuery q = new FieldScoreQuery(field,tp);
-      Hits h = s.search(q);
-      assertEquals("All docs should be matched!",N_DOCS,h.length());
+      ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+      assertEquals("All docs should be matched!",N_DOCS,h.length);
       try {
         if (i==0) {
           innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
@@ -203,8 +201,8 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     // verify new values are reloaded (not reused) for a new reader
     s = new IndexSearcher(dir);
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
-    Hits h = s.search(q);
-    assertEquals("All docs should be matched!",N_DOCS,h.length());
+    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+    assertEquals("All docs should be matched!",N_DOCS,h.length);
     try {
       log("compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
       assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());

@@ -17,25 +17,20 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.RAMDirectory;
+import java.io.Reader;
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import java.io.Reader;
-import java.io.StringReader;
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -76,85 +71,85 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(store);
     PhraseQuery q;
-    Hits hits;
+    ScoreDoc[] hits;
 
     q = new PhraseQuery();
     q.add(new Term("field", "1"));
     q.add(new Term("field", "2"));
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // same as previous, just specify positions explicitely.
     q = new PhraseQuery(); 
     q.add(new Term("field", "1"),0);
     q.add(new Term("field", "2"),1);
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // specifying correct positions should find the phrase.
     q = new PhraseQuery();
     q.add(new Term("field", "1"),0);
     q.add(new Term("field", "2"),2);
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "3"));
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "3"));
     q.add(new Term("field", "4"));
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // phrase query would find it when correct positions are specified. 
     q = new PhraseQuery();
     q.add(new Term("field", "3"),0);
     q.add(new Term("field", "4"),0);
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     // phrase query should fail for non existing searched term 
     // even if there exist another searched terms in the same searched position. 
     q = new PhraseQuery();
     q.add(new Term("field", "3"),0);
     q.add(new Term("field", "9"),0);
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // multi-phrase query should succed for non existing searched term
     // because there exist another searched terms in the same searched position. 
     MultiPhraseQuery mq = new MultiPhraseQuery();
     mq.add(new Term[]{new Term("field", "3"),new Term("field", "9")},0);
-    hits = searcher.search(mq);
-    assertEquals(1, hits.length());
+    hits = searcher.search(mq, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "4"));
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "3"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "4"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q);
-    assertEquals(1, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
     q = new PhraseQuery();
     q.add(new Term("field", "2"));
     q.add(new Term("field", "5"));
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // analyzer to introduce stopwords and increment gaps 
     Analyzer stpa = new Analyzer() {
@@ -168,19 +163,19 @@ public class TestPositionIncrement extends LuceneTestCase {
     // should not find "1 2" because there is a gap of 1 in the index
     QueryParser qp = new QueryParser("field",stpa);
     q = (PhraseQuery) qp.parse("\"1 2\"");
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // omitted stop word cannot help because stop filter swallows the increments. 
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     // query parser alone won't help, because stop filter swallows the increments. 
     qp.setEnablePositionIncrements(true);
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-    hits = searcher.search(q);
-    assertEquals(0, hits.length());
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
 
     boolean dflt = StopFilter.getEnablePositionIncrementsDefault();
     try {
@@ -188,14 +183,14 @@ public class TestPositionIncrement extends LuceneTestCase {
       qp.setEnablePositionIncrements(false);
       StopFilter.setEnablePositionIncrementsDefault(true);
       q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-      hits = searcher.search(q);
-      assertEquals(0, hits.length());
+      hits = searcher.search(q, null, 1000).scoreDocs;
+      assertEquals(0, hits.length);
       
       // when both qp qnd stopFilter propagate increments, we should find the doc.
       qp.setEnablePositionIncrements(true);
       q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-      hits = searcher.search(q);
-      assertEquals(1, hits.length());
+      hits = searcher.search(q, null, 1000).scoreDocs;
+      assertEquals(1, hits.length);
     } finally {
       StopFilter.setEnablePositionIncrementsDefault(dflt);
     }

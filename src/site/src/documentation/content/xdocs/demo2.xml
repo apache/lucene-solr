@@ -118,10 +118,14 @@ the searcher.  Note that it's also possible to programmatically construct a rich
 href="api/org/apache/lucene/search/Query.html">Query</a></code> object without using the query
 parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
 syntax</a> into the corresponding <code><a
-href="api/org/apache/lucene/search/Query.html">Query</a></code> object.  The searcher results are
-returned in a collection of Documents called <code><a
-href="api/org/apache/lucene/search/Hits.html">Hits</a></code> which is then iterated through and
-displayed to the user.
+href="api/org/apache/lucene/search/Query.html">Query</a></code> object. Search can be executed in 
+two different ways: 
+<ul>
+<li>Streaming: A <code><a href="api/org/apache/lucene/search/HitCollector.html">HitCollector</a></code> subclass
+simply prints out the document ID and score for each matching document.</li>
+<li>Paging: Using a <code><a href="api/org/apache/lucene/search/TopDocCollector.html">TopDocCollector</a></code> 
+the search results are printed in pages, sorted by score (i. e. relevance).</li>
+</ul>  
 </p>
 
 </section>
@@ -136,4 +140,5 @@ displayed to the user.
 
 </body>
 </document>
+
 

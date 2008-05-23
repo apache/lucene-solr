@@ -46,20 +46,20 @@ public class TestRangeQuery extends LuceneTestCase {
                                  false);
     initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
-    Hits hits = searcher.search(query);
-    assertEquals("A,B,C,D, only B in range", 1, hits.length());
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D, only B in range", 1, hits.length);
     searcher.close();
 
     initializeIndex(new String[] {"A", "B", "D"});
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(query);
-    assertEquals("A,B,D, only B in range", 1, hits.length());
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,D, only B in range", 1, hits.length);
     searcher.close();
 
     addDoc("C");
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(query);
-    assertEquals("C added, still only B in range", 1, hits.length());
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("C added, still only B in range", 1, hits.length);
     searcher.close();
   }
 
@@ -70,20 +70,20 @@ public class TestRangeQuery extends LuceneTestCase {
 
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
-    Hits hits = searcher.search(query);
-    assertEquals("A,B,C,D - A,B,C in range", 3, hits.length());
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D - A,B,C in range", 3, hits.length);
     searcher.close();
 
     initializeIndex(new String[]{"A", "B", "D"});
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(query);
-    assertEquals("A,B,D - A and B in range", 2, hits.length());
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,D - A and B in range", 2, hits.length);
     searcher.close();
 
     addDoc("C");
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(query);
-    assertEquals("C added - A, B, C in range", 3, hits.length());
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("C added - A, B, C in range", 3, hits.length);
     searcher.close();
   }
 
@@ -156,5 +156,6 @@ public class TestRangeQuery extends LuceneTestCase {
     docCount++;
   }
 }
+
 
 

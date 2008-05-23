@@ -17,29 +17,27 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Enumeration;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipEntry;
-
-import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /*
@@ -180,12 +178,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     }
   }
 
-  private void testHits(Hits hits, int expectedCount, IndexReader reader) throws IOException {
-    final int hitCount = hits.length();
+  private void testHits(ScoreDoc[] hits, int expectedCount, IndexReader reader) throws IOException {
+    final int hitCount = hits.length;
     assertEquals("wrong number of hits", expectedCount, hitCount);
     for(int i=0;i<hitCount;i++) {
-      hits.doc(i);
-      reader.getTermFreqVectors(hits.id(i));
+      reader.document(hits[i].doc);
+      reader.getTermFreqVectors(hits[i].doc);
     }
   }
 
@@ -224,11 +222,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         assertEquals(7, i);
     }
     
-    Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
+    ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
 
     // First document should be #21 since it's norm was
     // increased:
-    Document d = hits.doc(0);
+    Document d = searcher.doc(hits[0].doc);
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
     testHits(hits, 34, searcher.getIndexReader());
@@ -238,12 +236,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         !oldName.startsWith("21.") &&
         !oldName.startsWith("22.")) {
       // Test on indices >= 2.3
-      hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")));
-      assertEquals(34, hits.length());
-      hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")));
-      assertEquals(34, hits.length());
-      hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")));
-      assertEquals(34, hits.length());
+      hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
+      assertEquals(34, hits.length);
+      hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
+      assertEquals(34, hits.length);
+      hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
+      assertEquals(34, hits.length);
     }
 
     searcher.close();
@@ -272,8 +270,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir);
-    Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    Document d = hits.doc(0);
+    ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     testHits(hits, 44, searcher.getIndexReader());
     searcher.close();
@@ -289,9 +287,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure they "took":
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    assertEquals("wrong number of hits", 43, hits.length());
-    d = hits.doc(0);
+    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    assertEquals("wrong number of hits", 43, hits.length);
+    d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
     testHits(hits, 43, searcher.getIndexReader());
     searcher.close();
@@ -302,9 +300,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     writer.close();
 
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    assertEquals("wrong number of hits", 43, hits.length());
-    d = hits.doc(0);
+    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    assertEquals("wrong number of hits", 43, hits.length);
+    d = searcher.doc(hits[0].doc);
     testHits(hits, 43, searcher.getIndexReader());
     assertEquals("wrong first document", "22", d.get("id"));
     searcher.close();
@@ -322,9 +320,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir);
-    Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    assertEquals("wrong number of hits", 34, hits.length());
-    Document d = hits.doc(0);
+    ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    assertEquals("wrong number of hits", 34, hits.length);
+    Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
     searcher.close();
 
@@ -339,9 +337,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure they "took":
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    assertEquals("wrong number of hits", 33, hits.length());
-    d = hits.doc(0);
+    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    assertEquals("wrong number of hits", 33, hits.length);
+    d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
     testHits(hits, 33, searcher.getIndexReader());
     searcher.close();
@@ -352,9 +350,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     writer.close();
 
     searcher = new IndexSearcher(dir);
-    hits = searcher.search(new TermQuery(new Term("content", "aaa")));
-    assertEquals("wrong number of hits", 33, hits.length());
-    d = hits.doc(0);
+    hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
+    assertEquals("wrong number of hits", 33, hits.length);
+    d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
     testHits(hits, 33, searcher.getIndexReader());
     searcher.close();

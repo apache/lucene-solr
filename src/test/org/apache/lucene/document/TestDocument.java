@@ -1,18 +1,15 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -170,10 +167,10 @@ public class TestDocument extends LuceneTestCase
 	Query query = new TermQuery(new Term("keyword", "test1"));
 
 	// ensure that queries return expected results without DateFilter first
-        Hits hits = searcher.search(query);
-	assertEquals(1, hits.length());
+        ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+  assertEquals(1, hits.length);
 
-         doAssert(hits.doc(0), true);
+         doAssert(searcher.doc(hits[0].doc), true);
          searcher.close();
     }
 
@@ -244,11 +241,11 @@ public class TestDocument extends LuceneTestCase
       Query query = new TermQuery(new Term("keyword", "test"));
 
       // ensure that queries return expected results without DateFilter first
-      Hits hits = searcher.search(query);
-      assertEquals(3, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(3, hits.length);
       int result = 0;
       for(int i=0;i<3;i++) {
-        Document doc2 = hits.doc(i);
+        Document doc2 = searcher.doc(hits[i].doc);
         Field f = doc2.getField("id");
         if (f.stringValue().equals("id1"))
           result |= 1;

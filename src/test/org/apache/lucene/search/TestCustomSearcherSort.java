@@ -151,24 +151,24 @@ implements Serializable {
 	private void matchHits (Searcher searcher, Sort sort)
 	throws IOException {
 	    // make a query without sorting first
-		Hits hitsByRank = searcher.search(query);
+    ScoreDoc[] hitsByRank = searcher.search(query, null, 1000).scoreDocs;
 		checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
         Map resultMap = new TreeMap();
         // store hits in TreeMap - TreeMap does not allow duplicates; existing entries are silently overwritten
-        for(int hitid=0;hitid<hitsByRank.length(); ++hitid) {
+        for(int hitid=0;hitid<hitsByRank.length; ++hitid) {
             resultMap.put(
-                    new Integer(hitsByRank.id(hitid)),  // Key:   Lucene Document ID
+                    new Integer(hitsByRank[hitid].doc),  // Key:   Lucene Document ID
                     new Integer(hitid));				// Value: Hits-Objekt Index
         }
         
         // now make a query using the sort criteria
-		Hits resultSort = searcher.search (query, sort);
+    ScoreDoc[] resultSort = searcher.search (query, null, 1000, sort).scoreDocs;
 		checkHits(resultSort, "Sort by custom criteria: "); // check for duplicates
 		
         String lf = System.getProperty("line.separator", "\n");
         // besides the sorting both sets of hits must be identical
-        for(int hitid=0;hitid<resultSort.length(); ++hitid) {
-            Integer idHitDate = new Integer(resultSort.id(hitid)); // document ID from sorted search
+        for(int hitid=0;hitid<resultSort.length; ++hitid) {
+            Integer idHitDate = new Integer(resultSort[hitid].doc); // document ID from sorted search
             if(!resultMap.containsKey(idHitDate)) {
                 log("ID "+idHitDate+" not found. Possibliy a duplicate.");
             }
@@ -189,33 +189,24 @@ implements Serializable {
 	 * Check the hits for duplicates.
 	 * @param hits
 	 */
-    private void checkHits(Hits hits, String prefix) {
+    private void checkHits(ScoreDoc[] hits, String prefix) {
         if(hits!=null) {
             Map idMap = new TreeMap();
-            for(int docnum=0;docnum<hits.length();++docnum) {
+            for(int docnum=0;docnum<hits.length;++docnum) {
                 Integer luceneId = null;
-                try {
-                    luceneId = new Integer(hits.id(docnum));
-                    if(idMap.containsKey(luceneId)) {
-                        StringBuffer message = new StringBuffer(prefix);
-                        message.append("Duplicate key for hit index = ");
-                        message.append(docnum);
-                        message.append(", previous index = ");
-                        message.append(((Integer)idMap.get(luceneId)).toString());
-                        message.append(", Lucene ID = ");
-                        message.append(luceneId);
-                        log(message.toString());
-                    } else { 
-                        idMap.put(luceneId, new Integer(docnum));
-                    }
-                } catch(IOException ioe) {
+
+                luceneId = new Integer(hits[docnum].doc);
+                if(idMap.containsKey(luceneId)) {
                     StringBuffer message = new StringBuffer(prefix);
-                    message.append("Error occurred for hit index = ");
+                    message.append("Duplicate key for hit index = ");
                     message.append(docnum);
-                    message.append(" (");
-                    message.append(ioe.getMessage());
-                    message.append(")");
+                    message.append(", previous index = ");
+                    message.append(((Integer)idMap.get(luceneId)).toString());
+                    message.append(", Lucene ID = ");
+                    message.append(luceneId);
                     log(message.toString());
+                } else { 
+                    idMap.put(luceneId, new Integer(docnum));
                 }
             }
         }

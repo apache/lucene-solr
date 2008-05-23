@@ -83,11 +83,11 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
 
     public void verifyNrHits(Query q, int expected) throws Exception {
-        Hits h = s.search(q);
-        if (expected != h.length()) {
-            printHits(getName(), h);
+        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
+        if (expected != h.length) {
+            printHits(getName(), h, s);
         }
-        assertEquals("result count", expected, h.length());
+        assertEquals("result count", expected, h.length);
         QueryUtils.check(q,s);
     }
 
@@ -375,15 +375,15 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
 
-    protected void printHits(String test, Hits h) throws Exception {
+    protected void printHits(String test, ScoreDoc[] h, Searcher searcher) throws Exception {
 
         System.err.println("------- " + test + " -------");
 
         DecimalFormat f = new DecimalFormat("0.000000");
 
-        for (int i = 0; i < h.length(); i++) {
-            Document d = h.doc(i);
-            float score = h.score(i);
+        for (int i = 0; i < h.length; i++) {
+            Document d = searcher.doc(h[i].doc);
+            float score = h[i].score;
             System.err.println("#" + i + ": " + f.format(score) + " - " +
                                d.get("id") + " - " + d.get("data"));
         }

@@ -17,23 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import java.util.List;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.HashSet;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -440,8 +439,8 @@ public class TestDeletionPolicy extends LuceneTestCase
         reader.deleteDocument(3*i+1);
         reader.setNorm(4*i+1, "content", 2.0F);
         IndexSearcher searcher = new IndexSearcher(reader);
-        Hits hits = searcher.search(query);
-        assertEquals(16*(1+i), hits.length());
+        ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+        assertEquals(16*(1+i), hits.length);
         // this is a commit when autoCommit=false:
         reader.close();
         searcher.close();
@@ -457,8 +456,8 @@ public class TestDeletionPolicy extends LuceneTestCase
         assertEquals(2*(N+2)-1, policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(query);
-      assertEquals(176, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(176, hits.length);
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
@@ -476,7 +475,7 @@ public class TestDeletionPolicy extends LuceneTestCase
           // autoCommit false case:
           if (!autoCommit) {
             searcher = new IndexSearcher(reader);
-            hits = searcher.search(query);
+            hits = searcher.search(query, null, 1000).scoreDocs;
             if (i > 1) {
               if (i % 2 == 0) {
                 expectedCount += 1;
@@ -484,7 +483,7 @@ public class TestDeletionPolicy extends LuceneTestCase
                 expectedCount -= 17;
               }
             }
-            assertEquals(expectedCount, hits.length());
+            assertEquals(expectedCount, hits.length);
             searcher.close();
           }
           reader.close();
@@ -543,8 +542,8 @@ public class TestDeletionPolicy extends LuceneTestCase
         reader.deleteDocument(3);
         reader.setNorm(5, "content", 2.0F);
         IndexSearcher searcher = new IndexSearcher(reader);
-        Hits hits = searcher.search(query);
-        assertEquals(16, hits.length());
+        ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+        assertEquals(16, hits.length);
         // this is a commit when autoCommit=false:
         reader.close();
         searcher.close();
@@ -560,8 +559,8 @@ public class TestDeletionPolicy extends LuceneTestCase
         assertEquals(2*(N+1), policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir);
-      Hits hits = searcher.search(query);
-      assertEquals(0, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(0, hits.length);
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
@@ -579,8 +578,8 @@ public class TestDeletionPolicy extends LuceneTestCase
           // autoCommit false case:
           if (!autoCommit) {
             searcher = new IndexSearcher(reader);
-            hits = searcher.search(query);
-            assertEquals(expectedCount, hits.length());
+            hits = searcher.search(query, null, 1000).scoreDocs;
+            assertEquals(expectedCount, hits.length);
             searcher.close();
             if (expectedCount == 0) {
               expectedCount = 16;

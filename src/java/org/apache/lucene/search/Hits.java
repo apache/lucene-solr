@@ -38,6 +38,19 @@ import org.apache.lucene.index.CorruptIndexException;
  * {@link java.util.ConcurrentModificationException ConcurrentModificationException}
  * is thrown when accessing hit <code>n</code> &ge; current_{@link #length()} 
  * (but <code>n</code> &lt; {@link #length()}_at_start). 
+ * 
+ * @deprecated Hits will be removed in Lucene 3.0. <p>
+ * Instead e. g. {@link TopDocCollector} and {@link TopDocs} can be used:<br>
+ * <pre>
+ *   TopDocCollector collector = new TopDocCollector(hitsPerPage);
+ *   searcher.search(query, collector);
+ *   ScoreDoc[] hits = collector.topDocs().scoreDocs;
+ *   for (int i = 0; i < hits.length; i++) {
+ *     int docId = hits[i].doc;
+ *     Document d = searcher.doc(docId);
+ *     // do something with current hit
+ *     ...
+ * </pre>
  */
 public final class Hits {
   private Weight weight;

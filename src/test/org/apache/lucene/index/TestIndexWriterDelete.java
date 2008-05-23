@@ -20,16 +20,15 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
 
@@ -278,7 +277,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   private int getHitCount(Directory dir, Term term) throws IOException {
     IndexSearcher searcher = new IndexSearcher(dir);
-    int hitCount = searcher.search(new TermQuery(term)).length();
+    int hitCount = searcher.search(new TermQuery(term), null, 1000).totalHits;
     searcher.close();
     return hitCount;
   }
@@ -434,15 +433,15 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
 
           IndexSearcher searcher = new IndexSearcher(newReader);
-          Hits hits = null;
+          ScoreDoc[] hits = null;
           try {
-            hits = searcher.search(new TermQuery(searchTerm));
+            hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
           }
           catch (IOException e) {
             e.printStackTrace();
             fail(testName + ": exception when searching: " + e);
           }
-          int result2 = hits.length();
+          int result2 = hits.length;
           if (success) {
             if (x == 0 && result2 != END_COUNT) {
               fail(testName

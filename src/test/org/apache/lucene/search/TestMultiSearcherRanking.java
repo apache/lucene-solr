@@ -90,17 +90,17 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     if(verbose) System.out.println("Query: " + queryStr);
       QueryParser queryParser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
     Query query = queryParser.parse(queryStr);
-    Hits multiSearcherHits = multiSearcher.search(query);
-    Hits singleSearcherHits = singleSearcher.search(query);
-    assertEquals(multiSearcherHits.length(), singleSearcherHits.length());
-    for (int i = 0; i < multiSearcherHits.length(); i++) {
-      Document docMulti = multiSearcherHits.doc(i);
-      Document docSingle = singleSearcherHits.doc(i);
+    ScoreDoc[] multiSearcherHits = multiSearcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] singleSearcherHits = singleSearcher.search(query, null, 1000).scoreDocs;
+    assertEquals(multiSearcherHits.length, singleSearcherHits.length);
+    for (int i = 0; i < multiSearcherHits.length; i++) {
+      Document docMulti = multiSearcher.doc(multiSearcherHits[i].doc);
+      Document docSingle = singleSearcher.doc(singleSearcherHits[i].doc);
       if(verbose) System.out.println("Multi:  " + docMulti.get(FIELD_NAME) + " score="
-          + multiSearcherHits.score(i));
+          + multiSearcherHits[i].score);
       if(verbose) System.out.println("Single: " + docSingle.get(FIELD_NAME) + " score="
-          + singleSearcherHits.score(i));
-      assertEquals(multiSearcherHits.score(i), singleSearcherHits.score(i),
+          + singleSearcherHits[i].score);
+      assertEquals(multiSearcherHits[i].score, singleSearcherHits[i].score,
           0.001f);
       assertEquals(docMulti.get(FIELD_NAME), docSingle.get(FIELD_NAME));
     }

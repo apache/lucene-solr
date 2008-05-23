@@ -51,7 +51,7 @@ public class TestNot extends LuceneTestCase {
       QueryParser parser = new QueryParser("field", new SimpleAnalyzer());
     Query query = parser.parse("a NOT b");
     //System.out.println(query);
-    Hits hits = searcher.search(query);
-    assertEquals(0, hits.length());
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
   }
 }

@@ -66,6 +66,10 @@ API Changes
 
  8. LUCENE-852: Let the SpellChecker caller specify IndexWriter mergeFactor
     and RAM buffer size.  (Otis Gospodnetic)
+	
+ 9. LUCENE-1290: Deprecate org.apache.lucene.search.Hits, Hit and HitIterator
+    and remove all references to these classes from the core. Also update demos
+    and tutorials. (Michael Busch)
 
 Bug fixes
     

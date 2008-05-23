@@ -17,9 +17,23 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
@@ -27,15 +41,20 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.text.DateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests QueryParser.
@@ -887,8 +906,8 @@ public class TestQueryParser extends LuceneTestCase {
     QueryParser qp = new QueryParser("date", new WhitespaceAnalyzer());
     qp.setLocale(Locale.ENGLISH);
     Query q = qp.parse(query);
-    Hits hits = is.search(q);
-    assertEquals(expected, hits.length());
+    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
+    assertEquals(expected, hits.length);
   }
 
   private static void addDateDoc(String content, int year, int month,

@@ -77,12 +77,12 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermVectors() {
     Query query = new TermQuery(new Term("field", "seventy"));
     try {
-      Hits hits = searcher.search(query);
-      assertEquals(100, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(100, hits.length);
       
-      for (int i = 0; i < hits.length(); i++)
+      for (int i = 0; i < hits.length; i++)
       {
-        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
       }
@@ -125,19 +125,19 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermPositionVectors() {
     Query query = new TermQuery(new Term("field", "zero"));
     try {
-      Hits hits = searcher.search(query);
-      assertEquals(1, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(1, hits.length);
       
-      for (int i = 0; i < hits.length(); i++)
+      for (int i = 0; i < hits.length; i++)
       {
-        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
         
-        boolean shouldBePosVector = (hits.id(i) % 2 == 0) ? true : false;
+        boolean shouldBePosVector = (hits[i].doc % 2 == 0) ? true : false;
         assertTrue((shouldBePosVector == false) || (shouldBePosVector == true && (vector[0] instanceof TermPositionVector == true)));
        
-        boolean shouldBeOffVector = (hits.id(i) % 3 == 0) ? true : false;
+        boolean shouldBeOffVector = (hits[i].doc % 3 == 0) ? true : false;
         assertTrue((shouldBeOffVector == false) || (shouldBeOffVector == true && (vector[0] instanceof TermPositionVector == true)));
         
         if(shouldBePosVector || shouldBeOffVector){
@@ -186,12 +186,12 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermOffsetVectors() {
     Query query = new TermQuery(new Term("field", "fifty"));
     try {
-      Hits hits = searcher.search(query);
-      assertEquals(100, hits.length());
+      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals(100, hits.length);
       
-      for (int i = 0; i < hits.length(); i++)
+      for (int i = 0; i < hits.length; i++)
       {
-        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
         
@@ -279,20 +279,20 @@ public class TestTermVectors extends LuceneTestCase {
         //System.out.println("--------");
       }
       Query query = new TermQuery(new Term("field", "chocolate"));
-      Hits hits = knownSearcher.search(query);
+      ScoreDoc[] hits = knownSearcher.search(query, null, 1000).scoreDocs;
       //doc 3 should be the first hit b/c it is the shortest match
-      assertTrue(hits.length() == 3);
-      float score = hits.score(0);
+      assertTrue(hits.length == 3);
+      float score = hits[0].score;
       /*System.out.println("Hit 0: " + hits.id(0) + " Score: " + hits.score(0) + " String: " + hits.doc(0).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(0)));
       System.out.println("Hit 1: " + hits.id(1) + " Score: " + hits.score(1) + " String: " + hits.doc(1).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(1)));
       System.out.println("Hit 2: " + hits.id(2) + " Score: " + hits.score(2) + " String: " +  hits.doc(2).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(2)));*/
-      assertTrue(hits.id(0) == 2);
-      assertTrue(hits.id(1) == 3);
-      assertTrue(hits.id(2) == 0);
-      TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits.id(1), "field");
+      assertTrue(hits[0].doc == 2);
+      assertTrue(hits[1].doc == 3);
+      assertTrue(hits[2].doc == 0);
+      TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits[1].doc, "field");
       assertTrue(vector != null);
       //System.out.println("Vector: " + vector);
       String[] terms = vector.getTerms();
@@ -308,7 +308,7 @@ public class TestTermVectors extends LuceneTestCase {
         assertTrue(freqInt.intValue() == freq);        
       }
       SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-      knownSearcher.reader.getTermFreqVector(hits.id(1), mapper);
+      knownSearcher.reader.getTermFreqVector(hits[1].doc, mapper);
       SortedSet vectorEntrySet = mapper.getTermVectorEntrySet();
       assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
       TermVectorEntry last = null;
@@ -326,7 +326,7 @@ public class TestTermVectors extends LuceneTestCase {
       }
 
       FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-      knownSearcher.reader.getTermFreqVector(hits.id(1), fieldMapper);
+      knownSearcher.reader.getTermFreqVector(hits[1].doc, fieldMapper);
       Map map = fieldMapper.getFieldToTerms();
       assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
       vectorEntrySet = (SortedSet) map.get("field");
@@ -369,10 +369,10 @@ public class TestTermVectors extends LuceneTestCase {
     searcher = new IndexSearcher(directory);
 
     Query query = new TermQuery(new Term("field", "hundred"));
-    Hits hits = searcher.search(query);
-    assertEquals(10, hits.length());
-    for (int i = 0; i < hits.length(); i++) {
-      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(10, hits.length);
+    for (int i = 0; i < hits.length; i++) {
+      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
       assertTrue(vector != null);
       assertTrue(vector.length == 1);
     }
@@ -401,10 +401,10 @@ public class TestTermVectors extends LuceneTestCase {
     searcher = new IndexSearcher(directory);
 
     Query query = new TermQuery(new Term("field", "one"));
-    Hits hits = searcher.search(query);
-    assertEquals(1, hits.length());
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
 
-    TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(0));
+    TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[0].doc);
     assertTrue(vector != null);
     assertTrue(vector.length == 1);
     TermPositionVector tfv = (TermPositionVector) vector[0];

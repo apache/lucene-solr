@@ -17,7 +17,10 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -26,17 +29,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.Reader;
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests QueryParser.
@@ -297,8 +296,8 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
     IndexSearcher is = new IndexSearcher(ramDir);
-    Hits hits = is.search(q);
-    assertEquals(1, hits.length());
+    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
     is.close();
   }
   
