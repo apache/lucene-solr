@@ -22,6 +22,8 @@ import java.util.*;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
@@ -89,7 +91,18 @@ public class ChainedFilterTest extends TestCase {
   private Filter[] getChainWithOldFilters(Filter[] chain) {
     Filter[] oldFilters = new Filter[chain.length];
     for (int i = 0; i < chain.length; i++) {
-      oldFilters[i] = new OldBitSetFilterWrapper(chain[i]);
+      final Filter f = chain[i];
+    // create old BitSet-based Filter as wrapper
+      oldFilters[i] = new Filter() {
+        public BitSet bits(IndexReader reader) throws IOException {
+          BitSet bits = new BitSet(reader.maxDoc());
+        DocIdSetIterator it = f.getDocIdSet(reader).iterator();          
+          while(it.next()) {
+            bits.set(it.doc());
+          }
+          return bits;
+        }
+    };
     }
     return oldFilters;
   }

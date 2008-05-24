@@ -67,11 +67,26 @@ public class BooleanFilterTest extends TestCase
 		writer.addDocument(doc);
 	}
 	
+  private Filter getOldBitSetFilter(final Filter filter) {
+    
+    return new Filter() {
+      public BitSet bits(IndexReader reader) throws IOException {
+        BitSet bits = new BitSet(reader.maxDoc());
+        DocIdSetIterator it = filter.getDocIdSet(reader).iterator();
+        while(it.next()) {
+          bits.set(it.doc());
+        }
+        return bits;
+      }
+    };
+  }
+
+	
   private Filter getRangeFilter(String field,String lowerPrice, String upperPrice, boolean old)
 	{
     Filter f = new RangeFilter(field,lowerPrice,upperPrice,true,true);
     if (old) {
-      return new OldBitSetFilterWrapper(f);
+      return getOldBitSetFilter(f);
     }
     
     return f;
@@ -81,7 +96,7 @@ public class BooleanFilterTest extends TestCase
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(field,text));
     if (old) {
-      return new OldBitSetFilterWrapper(tf);
+      return getOldBitSetFilter(tf);
     }
     
 		return tf;

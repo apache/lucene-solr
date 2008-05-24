@@ -51,19 +51,19 @@ public class TermsFilterTest extends TestCase
 		
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(fieldName,"19"));
-		BitSet bits = tf.bits(reader);
+		OpenBitSet bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match nothing", 0, bits.cardinality());
 
 		tf.addTerm(new Term(fieldName,"20"));
-		bits=tf.bits(reader);
+		bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 1", 1, bits.cardinality());
 		
 		tf.addTerm(new Term(fieldName,"10"));
-		bits=tf.bits(reader);
+		bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 		
 		tf.addTerm(new Term(fieldName,"00"));
-		bits=tf.bits(reader);
+		bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 				
 	}
