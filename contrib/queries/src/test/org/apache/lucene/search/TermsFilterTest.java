@@ -1,6 +1,5 @@
 package org.apache.lucene.search;
 
-import java.util.BitSet;
 import java.util.HashSet;
 
 import junit.framework.TestCase;
@@ -13,6 +12,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.OpenBitSet;
 
 public class TermsFilterTest extends TestCase
 {
