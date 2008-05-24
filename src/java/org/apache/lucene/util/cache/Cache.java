@@ -62,6 +62,11 @@ public abstract class Cache {
     }
   }
   
+  /**
+   * Returns a thread-safe cache backed by the specified cache. 
+   * In order to guarantee thread-safety, all access to the backed cache must
+   * be accomplished through the returned cache.
+   */
   public static Cache synchronizedCache(Cache cache) {
     return cache.getSynchronizedCache();
   }
