@@ -95,7 +95,7 @@ public class WeightedSpanTermExtractor {
   private void extract(Query query, Map terms) throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
-      Map booleanTerms = new HashMap();
+      Map booleanTerms = new PositionCheckingMap();
       for (int i = 0; i < queryClauses.length; i++) {
         if (!queryClauses[i].isProhibited()) {
           extract(queryClauses[i].getQuery(), booleanTerms);
@@ -126,7 +126,7 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof FilteredQuery) {
       extract(((FilteredQuery) query).getQuery(), terms);
     } else if (query instanceof DisjunctionMaxQuery) {
-      Map disjunctTerms = new HashMap();
+      Map disjunctTerms = new PositionCheckingMap();
       for (Iterator iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
         extract((Query) iterator.next(), disjunctTerms);
       }
@@ -268,7 +268,6 @@ public class WeightedSpanTermExtractor {
         } else {
           if (spanPositions.size() > 0) {
             weightedSpanTerm.addPositionSpans(spanPositions);
-            weightedSpanTerm.positionSensitive = true;
           }
         }
       }
@@ -336,7 +335,7 @@ public class WeightedSpanTermExtractor {
     this.fieldName = null;
     this.cachedTokenFilter = cachingTokenFilter;
 
-    Map terms = new HashMap();
+    Map terms = new PositionCheckingMap();
     try {
       extract(query, terms);
     } finally {
@@ -366,7 +365,7 @@ public class WeightedSpanTermExtractor {
       this.fieldName = fieldName.intern();
     }
 
-    Map terms = new HashMap();
+    Map terms = new PositionCheckingMap();
     this.cachedTokenFilter = cachingTokenFilter;
     try {
       extract(query, terms);
@@ -399,7 +398,7 @@ public class WeightedSpanTermExtractor {
     this.fieldName = fieldName;
     this.cachedTokenFilter = new CachingTokenFilter(tokenStream);
 
-    Map terms = new HashMap();
+    Map terms = new PositionCheckingMap();
     extract(query, terms);
 
     int totalNumDocs = reader.numDocs();
@@ -429,5 +428,33 @@ public class WeightedSpanTermExtractor {
 
   public void setHighlightCnstScrRngQuery(boolean highlightCnstScrRngQuery) {
     this.highlightCnstScrRngQuery = highlightCnstScrRngQuery;
+  }
+  
+  /**
+   * This class makes sure that if both position sensitive and insensitive
+   * versions of the same term are added, the position insensitive one wins.
+   */
+  private class PositionCheckingMap extends HashMap {
+
+    public void putAll(Map m) {
+      Iterator it = m.keySet().iterator();
+      while (it.hasNext()) {
+        Object key = it.next();
+        Object val = m.get(key);
+        this.put(key, val);
+      }
+    }
+
+    public Object put(Object key, Object value) {
+      Object prev = super.put(key, value);
+      if (prev == null) return prev;
+      WeightedSpanTerm prevTerm = (WeightedSpanTerm)prev;
+      WeightedSpanTerm newTerm = (WeightedSpanTerm)value;
+      if (!prevTerm.positionSensitive) {
+        newTerm.positionSensitive = false;
+      }
+      return prev;
+    }
+    
   }
 }

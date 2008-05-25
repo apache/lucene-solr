@@ -235,6 +235,30 @@ public class HighlighterTest extends TestCase implements Formatter {
           numHighlights == 3);
     }
   }
+  
+  // position sensitive query added after position insensitive query
+  public void testPosTermStdTerm() throws Exception {
+    doSearching("y \"x y z\"");
+
+    int maxNumFragmentsRequired = 2;
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(FIELD_NAME);
+      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
+          new StringReader(text)));
+      Highlighter highlighter = new Highlighter(this,
+          new SpanScorer(query, FIELD_NAME, tokenStream));
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+      tokenStream.reset();
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      System.out.println("\t" + result);
+
+      assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+          numHighlights == 4);
+    }
+  }
 
   public void testSpanMultiPhraseQueryHighlighting() throws Exception {
     MultiPhraseQuery mpq = new MultiPhraseQuery();
