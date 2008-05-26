@@ -37,13 +37,15 @@ import java.net.URL;
 public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean {
 
   // statistics
+  // TODO: should we bother synchronizing these, or is an off-by-one error
+  // acceptable every million requests or so?
   volatile long numRequests;
   volatile long numErrors;
-  volatile long totalTime = 0;
   protected NamedList initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
+  volatile long totalTime = 0;
   long handlerStart = System.currentTimeMillis();
 
   /** shorten the class references for utilities */
@@ -106,7 +108,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       o = args.get("invariants");
       if (o != null && o instanceof NamedList) {
         invariants = SolrParams.toSolrParams((NamedList)o);
-      } 
+      }
     }
   }
 
