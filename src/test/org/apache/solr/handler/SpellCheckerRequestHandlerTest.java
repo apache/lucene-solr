@@ -231,7 +231,7 @@ public class SpellCheckerRequestHandlerTest
             ,"//int[@name='numDocs'][.=10]"
             ,"//lst[@name='cat']"
             ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions' and count(lst)=0]"
+            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cat']/int[@name='frequency'][.>0]"
             );
     
  
@@ -256,24 +256,26 @@ public class SpellCheckerRequestHandlerTest
 
     lrf.args.put("sp.query.accuracy",".2");
     assertQ("Failed to spell check",
-            req("cat")
+            req("cap")
             ,"//int[@name='numDocs'][.=10]"
-            ,"//lst[@name='cat']"
-            ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cart']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cot']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cod']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='carp']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']"
+            ,"//lst[@name='cap']/int[@name='frequency'][.=0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cat']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cart']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='carp']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cot']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cod']/int[@name='frequency'][.>0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cant']/int[@name='frequency'][.>0]"
             );
 
     lrf.args.put("sp.query.suggestionCount", "2");
     lrf.args.put("sp.query.accuracy",".2");
     assertQ("Failed to spell check",
-            req("cat")
-            ,"//lst[@name='cat']"
-            ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cart']"
-            ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cot']"
+            req("cap")
+            ,"//lst[@name='cap']"
+            ,"//lst[@name='cap']/int[@name='frequency'][.=0]"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='carp']"
+            ,"//lst[@name='cap']/lst[@name='suggestions']/lst[@name='cat']"
             );
 
     /* The following is the generated XML response for the next query with three words:
@@ -309,21 +311,20 @@ public class SpellCheckerRequestHandlerTest
     lrf.args.put("sp.query.suggestionCount", "2");
     lrf.args.put("sp.query.accuracy",".2");
     assertQ("Failed to spell check",
-        req("cat cart carp")
-        ,"//lst[@name='cat']"
-        ,"//lst[@name='cat']/int[@name='frequency'][.>0]"
-        ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cart']"
-        ,"//lst[@name='cat']/lst[@name='suggestions']/lst[@name='cot']"
+        req("cad cart carm")
+        ,"//lst[@name='cad']"
+        ,"//lst[@name='cad']/int[@name='frequency'][.=0]"
+        ,"//lst[@name='cad']/lst[@name='suggestions']/lst[@name='cat']"
+        ,"//lst[@name='cad']/lst[@name='suggestions']/lst[@name='cod']"
 
         ,"//lst[@name='cart']"
         ,"//lst[@name='cart']/int[@name='frequency'][.>0]"
-        ,"//lst[@name='cart']/lst/lst[1]"
-        ,"//lst[@name='cart']/lst/lst[2]"
+        
 
-        ,"//lst[@name='carp']"
-        ,"//lst[@name='carp']/int[@name='frequency'][.>0]"
-        ,"//lst[@name='carp']/lst[@name='suggestions']/lst[@name='cart']"
-        ,"//lst[@name='carp']/lst[@name='suggestions']/lst[@name='corn']"
+        ,"//lst[@name='carm']"
+        ,"//lst[@name='carm']/int[@name='frequency'][.=0]"
+        ,"//lst[@name='carm']/lst[@name='suggestions']/lst[@name='cart']"
+        ,"//lst[@name='carm']/lst[@name='suggestions']/lst[@name='carp']"
 
     );
 
