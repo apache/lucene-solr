@@ -19,10 +19,13 @@ package org.apache.solr.search;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.analysis.Token;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+
+import java.util.Collection;
 
 public abstract class QParser {
   String qstr;
@@ -81,6 +84,7 @@ public abstract class QParser {
     }
     return query;
   }
+
 
   private void checkRecurse() throws ParseException {
     if (recurseCount++ >= 100) {
