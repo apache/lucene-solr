@@ -63,6 +63,10 @@ public class UpdateRequest extends SolrRequest
     super( METHOD.POST, "/update" );
   }
 
+  public UpdateRequest(String url) {
+    super(METHOD.POST, url);
+  }
+
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   
