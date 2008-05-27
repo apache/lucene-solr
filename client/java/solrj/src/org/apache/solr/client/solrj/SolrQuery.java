@@ -54,7 +54,7 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** add a field for facet computation
    * 
-   * @param f the field name from the IndexSchema
+   * @param fields the field name from the IndexSchema
    */
   public void addFacetField(String ... fields) {
     for( String f : fields ) {
