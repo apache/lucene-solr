@@ -614,6 +614,9 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("\\\\", a, "\\");  // escaped backslash
     
     assertParseException("\\"); // a backslash must always be escaped
+    
+    // LUCENE-1189
+    assertQueryEquals("(\"a\\\\\") or (\"b\")", a ,"a\\ or b");
   }
 
   public void testQueryStringEscaping() throws Exception {

@@ -108,6 +108,9 @@ Bug fixes
 
 10. LUCENE-1046: Removed dead code in SpellChecker
     (Daniel Naber via Otis Gospodnetic)
+	
+11. LUCENE-1189: Fixed the QueryParser to handle escaped characters within 
+    quoted terms correctly. (Tomer Gabel via Michael Busch)
 
 New features
 

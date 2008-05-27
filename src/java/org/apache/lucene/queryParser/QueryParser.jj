@@ -908,6 +908,7 @@ PARSER_END(QueryParser)
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r") >
+| <#_QUOTED_CHAR: ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
 }
 
 <DEFAULT, RangeIn, RangeEx> SKIP : {
@@ -925,7 +926,7 @@ PARSER_END(QueryParser)
 | <COLON:     ":" >
 | <STAR:      "*" >
 | <CARAT:     "^" > : Boost
-| <QUOTED:     "\"" (~["\""] | "\\\"")* "\"">
+| <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
