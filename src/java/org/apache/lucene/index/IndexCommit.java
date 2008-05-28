@@ -89,4 +89,17 @@ public abstract class IndexCommit implements IndexCommitPoint {
   public int hashCode() {
     return getDirectory().hashCode() + getSegmentsFileName().hashCode();
   }
+
+  /** Returns the version for this IndexCommit.  This is the
+      same value that {@link IndexReader#getVersion} would
+      return if it were opened on this commit. */
+  public long getVersion() {
+    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
+  }
+
+  /** Returns the generation (the _N in segments_N) for this
+      IndexCommit */
+  public long getGeneration() {
+    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
+  }
 }

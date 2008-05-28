@@ -109,6 +109,12 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
           cp.delete();
       }
     }
+    public long getVersion() {
+      return cp.getVersion();
+    }
+    public long getGeneration() {
+      return cp.getGeneration();
+    }
   }
 
   private List wrapCommits(List commits) {

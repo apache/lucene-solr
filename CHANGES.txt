@@ -71,6 +71,11 @@ API Changes
     and remove all references to these classes from the core. Also update demos
     and tutorials. (Michael Busch)
 
+10. LUCENE-1288: Add getVersion() and getGeneration() to IndexCommit.
+    getVersion() returns the same value that IndexReader.getVersion()
+    returns when the reader is opened on the same commit.  (Jason
+    Rutherglen via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

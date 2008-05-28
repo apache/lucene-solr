@@ -343,6 +343,8 @@ abstract class DirectoryIndexReader extends IndexReader {
     private String segmentsFileName;
     Collection files;
     Directory dir;
+    long generation;
+    long version;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
@@ -355,6 +357,8 @@ abstract class DirectoryIndexReader extends IndexReader {
         if (info.dir == dir)
           files.addAll(info.files());
       }
+      version = infos.getVersion();
+      generation = infos.getGeneration();
     }
     public String getSegmentsFileName() {
       return segmentsFileName;
@@ -364,6 +368,12 @@ abstract class DirectoryIndexReader extends IndexReader {
     }
     public Directory getDirectory() {
       return dir;
+    }
+    public long getVersion() {
+      return version;
+    }
+    public long getGeneration() {
+      return generation;
     }
   }
 

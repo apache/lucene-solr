@@ -577,11 +577,15 @@ final class IndexFileDeleter {
     boolean deleted;
     Directory directory;
     Collection commitsToDelete;
+    long version;
+    long generation;
 
     public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
       this.commitsToDelete = commitsToDelete;
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
+      version = segmentInfos.getVersion();
+      generation = segmentInfos.getGeneration();
       int size = segmentInfos.size();
       files = new ArrayList(size);
       files.add(segmentsFileName);
@@ -604,6 +608,14 @@ final class IndexFileDeleter {
 
     public Directory getDirectory() {
       return directory;
+    }
+
+    public long getVersion() {
+      return version;
+    }
+
+    public long getGeneration() {
+      return generation;
     }
 
     /**

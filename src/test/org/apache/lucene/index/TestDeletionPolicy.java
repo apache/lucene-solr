@@ -42,10 +42,17 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestDeletionPolicy extends LuceneTestCase
 {
   private void verifyCommitOrder(List commits) {
-    long last = SegmentInfos.generationFromSegmentsFileName(((IndexCommit) commits.get(0)).getSegmentsFileName());
+    final IndexCommit firstCommit = ((IndexCommit) commits.get(0));
+    long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
+    assertEquals(last, firstCommit.getGeneration());
+    long lastVersion = firstCommit.getVersion();
     for(int i=1;i<commits.size();i++) {
-      long now = SegmentInfos.generationFromSegmentsFileName(((IndexCommit) commits.get(i)).getSegmentsFileName());
+      final IndexCommit commit = ((IndexCommit) commits.get(i));
+      long now = SegmentInfos.generationFromSegmentsFileName(commit.getSegmentsFileName());
+      long nowVersion = commit.getVersion();
       assertTrue("SegmentInfos commits are out-of-order", now > last);
+      assertTrue("SegmentInfos versions are out-of-order", nowVersion > lastVersion);
+      assertEquals(now, commit.getGeneration());
       last = now;
     }
   }
