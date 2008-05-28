@@ -22,6 +22,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -73,7 +74,11 @@ public class SolrQueryParser extends QueryParser {
   }
 
   public SolrQueryParser(QParser parser, String defaultField) {
-    super(defaultField, parser.getReq().getSchema().getQueryAnalyzer());
+    this(parser, defaultField, parser.getReq().getSchema().getQueryAnalyzer());
+  }
+
+  public SolrQueryParser(QParser parser, String defaultField, Analyzer analyzer) {
+    super(defaultField, analyzer);
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
     this.defaultField = defaultField;
