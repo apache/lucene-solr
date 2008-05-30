@@ -26,6 +26,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.lucene.search.Similarity;
 
 
 public class IndexSchemaTest extends AbstractSolrTestCase {
@@ -81,5 +82,12 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
+  }
+
+  public void testSimilarityFactory() {
+    SolrCore core = h.getCore();
+    Similarity similarity = core.getSchema().getSimilarity();
+    assertTrue("wrong class", similarity instanceof MockConfigurableSimilarity);
+    assertEquals("is there an echo?", ((MockConfigurableSimilarity)similarity).getPassthrough());
   }
 }

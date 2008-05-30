@@ -281,6 +281,10 @@ New Features
       ignoreCase="true" tokenizerFactory="solr.CJKTokenizerFactory"/>
     (koji)
 
+50. SOLR-515: Added SimilarityFactory capability to schema.xml,
+    making config file parameters usable in the construction of
+    the global Lucene Similarity implementation.
+    (ehatcher)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

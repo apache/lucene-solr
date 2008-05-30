@@ -20,11 +20,11 @@ package org.apache.solr.schema;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
@@ -34,10 +34,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -179,12 +176,17 @@ public final class IndexSchema {
    */
   public Collection<SchemaField> getRequiredFields() { return requiredFields; }
 
-  private Similarity similarity;
+  private SimilarityFactory similarityFactory;
 
   /**
    * Returns the Similarity used for this index
    */
-  public Similarity getSimilarity() { return similarity; }
+  public Similarity getSimilarity() { return similarityFactory.getSimilarity(); }
+
+  /**
+   * Returns the SimilarityFactory used for this index
+   */
+  public SimilarityFactory getSimilarityFactory() { return similarityFactory; }
 
   private Analyzer analyzer;
 
@@ -496,13 +498,30 @@ public final class IndexSchema {
     dynamicFields = (DynamicField[])dFields.toArray(new DynamicField[dFields.size()]);
 
 
-    Node node = (Node) xpath.evaluate("/schema/similarity/@class", document, XPathConstants.NODE);
+    Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
     if (node==null) {
-      similarity = new DefaultSimilarity();
+      similarityFactory = new SimilarityFactory() {
+        public Similarity getSimilarity() {
+          return Similarity.getDefault();
+        }
+      };
       log.fine("using default similarity");
     } else {
-      similarity = (Similarity)solrConfig.getResourceLoader().newInstance(node.getNodeValue().trim());
-      log.fine("using similarity " + similarity.getClass().getName());
+      final Object obj = solrConfig.getResourceLoader().newInstance(((Element) node).getAttribute("class"));
+      if (obj instanceof SimilarityFactory) {
+        // configure a factory, get a similarity back
+        SolrParams params = SolrParams.toSolrParams(DOMUtil.childNodesToNamedList(node));
+        similarityFactory = (SimilarityFactory)obj;
+        similarityFactory.init(params);
+      } else {
+        // just like always, assume it's a Similarlity and get an ClassCastException - reasonable error handling
+        similarityFactory = new SimilarityFactory() {
+          public Similarity getSimilarity() {
+            return (Similarity) obj;
+          }
+        };
+      }
+      log.fine("using similarity factory" + similarityFactory.getClass().getName());
     }
 
     node = (Node) xpath.evaluate("/schema/defaultSearchField/text()", document, XPathConstants.NODE);

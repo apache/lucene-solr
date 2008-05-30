@@ -446,6 +446,8 @@
       A custom similarity may be specified here, but the default is fine
       for most applications.
  -->
- <!-- <similarity class="org.apache.lucene.search.DefaultSimilarity"/> -->
+ <similarity class="org.apache.solr.schema.CustomSimilarityFactory">
+   <str name="echo">is there an echo?</str>
+ </similarity>
 
 </schema>
