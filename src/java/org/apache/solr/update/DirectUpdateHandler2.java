@@ -310,14 +310,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
        if (delAll) {
          deleteAll();
        } else {
-         closeWriter();
-         openSearcher();
-
-         // if we want to count the number of docs that were deleted, then
-         // we need a new instance of the DeleteHitCollector
-         final DeleteHitCollector deleter = new DeleteHitCollector(searcher);
-         searcher.search(q, null, deleter);
-         totDeleted = deleter.deleted;
+        closeSearcher();
+        openWriter();
+        writer.deleteDocuments(q);         
        }
      } finally {
        iwCommit.unlock();
@@ -341,7 +336,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         numErrorsCumulative.incrementAndGet();
       }
     }
-   }
+  }
 
 
 
