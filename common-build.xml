@@ -281,7 +281,7 @@
 		<attribute name="Implementation-Title" value="org.apache.lucene"/>
 		<!-- impl version can be any string -->
 		<attribute name="Implementation-Version"
-		           value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+		           value="${version} ${svnversion} - ${DSTAMP} ${TSTAMP}"/>
 		<attribute name="Implementation-Vendor"
 		           value="The Apache Software Foundation"/>
 		<attribute name="X-Compile-Source-JDK" 
