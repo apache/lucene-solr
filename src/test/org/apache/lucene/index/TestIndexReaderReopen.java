@@ -757,7 +757,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         try {
           threads[i].join();
           if (threads[i].error != null) {
-            String msg = "Error occurred in thread " + threads[i].getId() + ":\n" + threads[i].error.getMessage();
+            String msg = "Error occurred in thread " + threads[i].getName() + ":\n" + threads[i].error.getMessage();
             fail(msg);
           }
         } catch (InterruptedException e) {}
