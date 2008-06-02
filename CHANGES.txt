@@ -175,6 +175,8 @@ New features
     and DocIdSetIterator-based filters. Backwards-compatibility with old 
     BitSet-based filters is ensured. (Paul Elschot via Michael Busch)
 
+15. LUCENE-1295: Added new method to MoreLikeThis for retrieving interesting terms and made retrieveTerms(int) public. (Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

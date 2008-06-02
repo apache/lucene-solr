@@ -731,7 +731,7 @@ public final class MoreLikeThis {
      *
      * @param docNum the id of the lucene document from which to find terms
      */
-    private PriorityQueue retrieveTerms(int docNum) throws IOException {
+    public PriorityQueue retrieveTerms(int docNum) throws IOException {
         Map termFreqMap = new HashMap();
         for (int i = 0; i < fieldNames.length; i++) {
             String fieldName = fieldNames[i];
@@ -871,7 +871,24 @@ public final class MoreLikeThis {
         return createQueue(words);
     }
 
-	/**
+  /**
+   * @see #retrieveInterestingTerms(java.io.Reader) 
+   */
+  public String [] retrieveInterestingTerms(int docNum) throws IOException{
+    ArrayList al = new ArrayList( maxQueryTerms);
+		PriorityQueue pq = retrieveTerms(docNum);
+		Object cur;
+		int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
+		// we just want to return the top words
+		while (((cur = pq.pop()) != null) && lim-- > 0) {
+            Object[] ar = (Object[]) cur;
+			al.add( ar[ 0]); // the 1st entry is the interesting word
+		}
+		String[] res = new String[ al.size()];
+		return (String[]) al.toArray( res);
+  }
+
+  /**
 	 * Convenience routine to make it easy to return the most interesting words in a document.
 	 * More advanced users will call {@link #retrieveTerms(java.io.Reader) retrieveTerms()} directly.
 	 * @param r the source document
