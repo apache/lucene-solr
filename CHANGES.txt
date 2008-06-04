@@ -177,6 +177,8 @@ New features
 
 15. LUCENE-1295: Added new method to MoreLikeThis for retrieving interesting terms and made retrieveTerms(int) public. (Grant Ingersoll)
 
+16. LUCENE-1298: MoreLikeThis can now accept a custom Similarity (Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

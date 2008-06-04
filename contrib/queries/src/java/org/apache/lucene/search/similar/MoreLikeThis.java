@@ -276,7 +276,7 @@ public final class MoreLikeThis {
     /**
      * For idf() calculations.
      */
-    private Similarity similarity = new DefaultSimilarity();
+    private Similarity similarity;// = new DefaultSimilarity();
 
     /**
      * IndexReader to use
@@ -287,10 +287,24 @@ public final class MoreLikeThis {
      * Constructor requiring an IndexReader.
      */
     public MoreLikeThis(IndexReader ir) {
-        this.ir = ir;
+        this(ir, new DefaultSimilarity());
     }
 
-    /**
+    public MoreLikeThis(IndexReader ir, Similarity sim){
+      this.ir = ir;
+      this.similarity = sim;
+    }
+
+
+  public Similarity getSimilarity() {
+    return similarity;
+  }
+
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
+  }
+
+  /**
      * Returns an analyzer that will be used to parse source doc with. The default analyzer
      * is the {@link #DEFAULT_ANALYZER}.
      *
