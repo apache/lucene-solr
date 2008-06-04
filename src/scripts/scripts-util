@@ -49,7 +49,7 @@ function fixUser
 
     if [[ "${oldwhoami}" == "" ]]
     then
-        oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+        oldwhoami=`ps h -Hfp $(pgrep -f -g0 $0) | tail -1|cut -f1 -d" "`
     fi
 }
 
