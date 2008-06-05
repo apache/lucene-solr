@@ -117,6 +117,8 @@ Bug fixes
 11. LUCENE-1189: Fixed the QueryParser to handle escaped characters within 
     quoted terms correctly. (Tomer Gabel via Michael Busch)
 
+12. LUCENE-1299: Fixed NPE in SpellChecker when IndexReader is not null and field is (Grant Ingersoll)
+
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

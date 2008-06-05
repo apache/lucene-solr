@@ -109,6 +109,14 @@ public class TestSpellChecker extends TestCase {
 
     similar = spellChecker.suggestSimilar("tousand", 10, r, "field2", false);
     assertEquals(1, similar.length); // there is the term thousand in the field field2
+
+    try {
+      similar = spellChecker.suggestSimilar("tousand", 10, r, null, false);
+    } catch (NullPointerException e) {
+      assertTrue("threw an NPE, and it shouldn't have", false);
+    }
+
+
   }
 
   private void addwords(IndexReader r, String field) throws IOException {

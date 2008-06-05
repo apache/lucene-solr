@@ -224,7 +224,7 @@ public class SpellChecker {
         continue;
       }
 
-      if (ir != null) { // use the user index
+      if (ir != null && field != null) { // use the user index
         sugWord.freq = ir.docFreq(new Term(field, sugWord.string)); // freq in the index
         // don't suggest a word that is not present in the field
         if ((morePopular && goalFreq > sugWord.freq) || sugWord.freq < 1) {
