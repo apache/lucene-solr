@@ -19,6 +19,7 @@ package org.apache.solr.common;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -83,12 +84,17 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
   public void setField(String name, Object value) 
   {
     if( value instanceof Object[] ) {
-      Object[] arr = (Object[])value;
-      Collection<Object> c = new ArrayList<Object>( arr.length );
-      for( Object o : arr ) {
-        c.add( o );
+      value = Arrays.asList( (Object[])value );
+    }
+    else if( value instanceof Collection ) {
+      // nothing
+    }
+    else if( value instanceof Iterable ) {
+      ArrayList<Object> lst = new ArrayList<Object>();
+      for( Object o : (Iterable)value ) {
+        lst.add( o );
       }
-      value = c;
+      value = lst;
     }
     _fields.put(name, value);
   }
@@ -201,18 +207,6 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
         return getFieldValues( (String)key ); 
       }
       
-      /** Set the field Value */
-      public Collection<Object> put(String key, Collection<Object> value) {
-        setField( key, value );
-        return null;
-      }
-
-      /** Remove the field Value */
-      public Collection<Object> remove(Object key) {
-        removeFields( (String)key ); 
-        return null;
-      }
-      
       // Easily Supported methods
       public boolean containsKey(Object key) { return _fields.containsKey( key ); }
       public Set<String>  keySet()           { return _fields.keySet();  }
@@ -225,6 +219,8 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
       public Set<java.util.Map.Entry<String, Collection<Object>>> entrySet() {throw new UnsupportedOperationException();}
       public void putAll(Map<? extends String, ? extends Collection<Object>> t) {throw new UnsupportedOperationException();}
       public Collection<Collection<Object>> values() {throw new UnsupportedOperationException();}
+      public Collection<Object> put(String key, Collection<Object> value) {throw new UnsupportedOperationException();}
+      public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}      
     };
   }
 
@@ -236,18 +232,6 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
       /** Get the field Value */
       public Object get(Object key) { 
         return getFirstValue( (String)key ); 
-      }
-      
-      /** Set the field Value */
-      public Object put(String key, Object value) {
-        setField( key, value );
-        return null;
-      }
-
-      /** Remove the field Value */
-      public Object remove(Object key) {
-        removeFields( (String)key ); 
-        return null;
       }
       
       // Easily Supported methods
@@ -262,6 +246,8 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
       public Set<java.util.Map.Entry<String, Object>> entrySet() {throw new UnsupportedOperationException();}
       public void putAll(Map<? extends String, ? extends Object> t) {throw new UnsupportedOperationException();}
       public Collection<Object> values() {throw new UnsupportedOperationException();}
-    };
+      public Collection<Object> put(String key, Object value) {throw new UnsupportedOperationException();}
+      public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}      
+   };
   }
 }

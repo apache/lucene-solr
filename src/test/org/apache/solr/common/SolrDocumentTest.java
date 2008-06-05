@@ -20,6 +20,7 @@ package org.apache.solr.common;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
@@ -80,38 +81,83 @@ public class SolrDocumentTest extends TestCase
   public void testUnsupportedStuff()
   {
     SolrDocument doc = new SolrDocument();
+    
+    try { doc.getFieldValueMap().clear();               fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().containsValue( null ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().entrySet();            fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().putAll( null );        fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().values();              fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().remove( "key" );       fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().put( "key", "value" ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
 
-    try { doc.getFieldValueMap().clear();               fail( "should be unsupported!" ); } catch( Exception ex ){}
-    try { doc.getFieldValueMap().containsValue( null ); fail( "should be unsupported!" ); } catch( Exception ex ){}
-    try { doc.getFieldValueMap().entrySet();            fail( "should be unsupported!" ); } catch( Exception ex ){}
-    try { doc.getFieldValueMap().putAll( null );        fail( "should be unsupported!" ); } catch( Exception ex ){}
-    try { doc.getFieldValueMap().values();              fail( "should be unsupported!" ); } catch( Exception ex ){}
+    try { doc.getFieldValuesMap().clear();               fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValuesMap().containsValue( null ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValuesMap().entrySet();            fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValuesMap().putAll( null );        fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValuesMap().values();              fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValuesMap().remove( "key" );       fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
+    try { doc.getFieldValueMap().put( "key", Collections.EMPTY_LIST ); fail( "should be unsupported!" ); } catch( UnsupportedOperationException ex ){}
 
     assertEquals( null, doc.getFieldValueMap().get( "aaa" ) );
     doc.setField( "aaa", "bbb" );
     assertEquals( "bbb", doc.getFieldValueMap().get( "aaa" ) );
-    doc.getFieldValueMap().remove( "aaa" );
-    assertEquals( null, doc.getFieldValueMap().get( "aaa" ) );
   }
   
   public void testAddCollections()
   {
-    List<String> c0 = new ArrayList<String>();
+    final List<String> c0 = new ArrayList<String>();
     c0.add( "aaa" );
     c0.add( "aaa" );
     c0.add( "aaa" );
     c0.add( "bbb" );
     c0.add( "ccc" );
+    c0.add( "ddd" );
     
     SolrDocument doc = new SolrDocument();
     doc.addField( "v", c0 );
     assertEquals( c0.size(), doc.getFieldValues("v").size() );
+    assertEquals( c0.get(0), doc.getFirstValue( "v" ) );
     
     // Same thing with an array
     Object[] arr = new Object[] { "aaa", "aaa", "aaa", 10, 'b' };
     doc = new SolrDocument();
-    doc.addField( "v", c0 );
+    doc.addField( "v", arr );
     assertEquals( arr.length, doc.getFieldValues("v").size() );
+    // try the same thing with 'setField'
+    doc.setField( "v", arr );
+    assertEquals( arr.length, doc.getFieldValues("v").size() );
+    
+    doc.clear();
+    assertEquals( 0, doc.getFieldNames().size() );
+    
+    Iterable iter = new Iterable() {
+      public Iterator iterator() {
+        return c0.iterator();
+      }
+    };
+    doc.addField( "v", iter );
+    assertEquals( c0.size(), doc.getFieldValues("v").size() );
+    // do it again to get twice the size...
+    doc.addField( "v", iter );
+    assertEquals( c0.size()*2, doc.getFieldValues("v").size() );
+    
+    // An empty list:
+    doc.setField( "empty", new ArrayList<String>() );
+    assertNull( doc.getFirstValue( "empty" ) );
+
+    // Try the JSTL accessor functions...
+    assertFalse( doc.getFieldValueMap().isEmpty() );
+    assertFalse( doc.getFieldValuesMap().isEmpty() );
+    assertEquals( 2, doc.getFieldValueMap().size() );
+    assertEquals( 2, doc.getFieldValuesMap().size() );
+    assertTrue( doc.getFieldValueMap().containsKey( "v" ) );
+    assertTrue( doc.getFieldValuesMap().containsKey( "v" ) );
+    assertTrue( doc.getFieldValueMap().keySet().contains( "v" ) );
+    assertTrue( doc.getFieldValuesMap().keySet().contains( "v" ) );
+    assertFalse( doc.getFieldValueMap().containsKey( "g" ) );
+    assertFalse( doc.getFieldValuesMap().containsKey( "g" ) );
+    assertFalse( doc.getFieldValueMap().keySet().contains( "g" ) );
+    assertFalse( doc.getFieldValuesMap().keySet().contains( "g" ) );
   }
    
   public void testDuplicate() 
