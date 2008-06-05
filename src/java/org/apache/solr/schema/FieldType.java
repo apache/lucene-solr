@@ -407,6 +407,10 @@ public abstract class FieldType extends FieldProperties {
     return getValueSource(field);
   }
 
+
+  /**
+   * @deprecated use {@link #getValueSource(SchemaField, QParser)}
+   */
   @Deprecated
   public ValueSource getValueSource(SchemaField field) {
     return new OrdFieldSource(field.name);
