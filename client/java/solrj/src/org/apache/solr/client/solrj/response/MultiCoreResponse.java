@@ -20,7 +20,11 @@ package org.apache.solr.client.solrj.response;
 import java.util.Date;
 import org.apache.solr.common.util.NamedList;
 
-
+/**
+ * 
+ * @version $Id$
+ * @since solr 1.3
+ */
 public class MultiCoreResponse extends SolrResponseBase
 {
   public MultiCoreResponse(NamedList<Object> res) {

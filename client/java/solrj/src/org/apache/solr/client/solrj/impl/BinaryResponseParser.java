@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 
+/**
+ * @version $Id$
+ * @since solr 1.3
+ */
 public class BinaryResponseParser extends ResponseParser {
   public String getWriterType() {
     return "javabin";

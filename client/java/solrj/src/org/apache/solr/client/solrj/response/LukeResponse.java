@@ -25,7 +25,6 @@ import java.util.*;
 
 /**
  * This is an incomplete representation of the data returned from Luke
- * + *
  *
  * @version $Id$
  * @since solr 1.3
