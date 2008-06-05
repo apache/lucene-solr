@@ -19,9 +19,14 @@ package org.apache.solr.util;
 
 import junit.framework.TestCase;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.junit.Assert;
 
 /**
  * @version $Id$
@@ -59,6 +64,50 @@ public class TestUtils extends TestCase {
     assertEquals(" bar ",arr.get(1));
   }
 
+  public void testNamedLists()
+  {
+    SimpleOrderedMap<Integer> map = new SimpleOrderedMap<Integer>();
+    map.add( "test", 10 );
+    SimpleOrderedMap<Integer> clone = map.clone();
+    assertEquals( map.toString(), clone.toString() );
+    assertEquals( new Integer(10), clone.get( "test" ) );
+  
+    Map<String,Integer> realMap = new HashMap<String, Integer>();
+    realMap.put( "one", 1 );
+    realMap.put( "two", 2 );
+    realMap.put( "three", 3 );
+    map = new SimpleOrderedMap<Integer>();
+    map.addAll( realMap );
+    assertEquals( 3, map.size() );
+    map = new SimpleOrderedMap<Integer>();
+    map.add( "one", 1 );
+    map.add( "two", 2 );
+    map.add( "three", 3 );
+    map.add( "one", 100 );
+    map.add( null, null );
+    
+    assertEquals( "one", map.getName(0) );
+    map.setName( 0, "ONE" );
+    assertEquals( "ONE", map.getName(0) );
+    assertEquals( new Integer(100), map.get( "one", 1 ) );
+    assertEquals( 4, map.indexOf( null, 1 ) );
+    assertEquals( null, map.get( null, 1 ) );
 
-
+    map = new SimpleOrderedMap<Integer>();
+    map.add( "one", 1 );
+    map.add( "two", 2 );
+    Iterator<Map.Entry<String, Integer>> iter = map.iterator();
+    while( iter.hasNext() ) {
+      Map.Entry<String, Integer> v = iter.next();
+      v.toString(); // coverage
+      v.setValue( v.getValue()*10 );
+      try {
+        iter.remove();
+        Assert.fail( "should be unsupported..." );
+      } catch( UnsupportedOperationException ex ) {}
+    }
+    // the values should be bigger
+    assertEquals( new Integer(10), map.get( "one" ) );
+    assertEquals( new Integer(20), map.get( "two" ) );
+  }
 }
