@@ -109,11 +109,14 @@ public class CommonsHttpSolrServer extends SolrServer
 
 
   public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser) {
-    this._baseURL = baseURL.toExternalForm();
-    if( this._baseURL.endsWith( "/" ) ) {
-      this._baseURL = this._baseURL.substring( 0, this._baseURL.length()-1 );
+    _baseURL = baseURL.toExternalForm();
+    if( _baseURL.endsWith( "/" ) ) {
+      _baseURL = _baseURL.substring( 0, _baseURL.length()-1 );
     }
-
+    if( _baseURL.indexOf( '?' ) >=0 ) {
+      throw new RuntimeException( "Invalid base url for solrj.  The base URL must not contain parameters: "+_baseURL );
+    }
+ 
     _httpClient = (client == null) ? new HttpClient(new MultiThreadedHttpConnectionManager()) : client;
 
     if (client == null) {

@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
+import org.junit.Assert;
 
 /**
  * TODO? perhaps use:
@@ -77,6 +78,19 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     }
     catch( Exception ex ) {
       throw new RuntimeException( ex );
+    }
+  }
+  
+  public void testBadSetup()
+  {
+    try {
+      // setup the server...
+      String url = "http://localhost/?core=xxx";
+      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+      Assert.fail( "CommonsHttpSolrServer should not allow a path with a parameter: "+s.getBaseURL() );
+    }
+    catch( Exception ex ) {
+      // expected
     }
   }
 }
