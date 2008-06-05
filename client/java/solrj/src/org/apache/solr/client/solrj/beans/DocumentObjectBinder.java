@@ -24,6 +24,7 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A class to map objects to and from solr documents.
@@ -32,8 +33,7 @@ import java.util.*;
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
-  private final Map<Class, List<DocField>> infocache = 
-    Collections.synchronizedMap( new HashMap<Class, List<DocField>>() );
+  private final Map<Class, List<DocField>> infocache = new ConcurrentHashMap<Class, List<DocField>>();
 
   public DocumentObjectBinder() {
   }
