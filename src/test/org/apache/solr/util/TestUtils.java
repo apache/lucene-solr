@@ -110,4 +110,16 @@ public class TestUtils extends TestCase {
     assertEquals( new Integer(10), map.get( "one" ) );
     assertEquals( new Integer(20), map.get( "two" ) );
   }
+  
+  public void testNumberUtils()
+  {
+    double number = 1.234;
+    String sortable = NumberUtils.double2sortableStr( number );
+    assertEquals( number, NumberUtils.SortableStr2double(sortable) );
+    
+    long num = System.currentTimeMillis();
+    sortable = NumberUtils.long2sortableStr( num );
+    assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
+    assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
+  }
 }
