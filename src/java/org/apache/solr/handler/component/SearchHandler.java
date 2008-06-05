@@ -267,9 +267,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   public String getDescription() {
     StringBuilder sb = new StringBuilder();
     sb.append("Search using components: ");
-    for(SearchComponent c : components){
-      sb.append(c.getName());
-      sb.append(",");
+    if( components != null ) {
+      for(SearchComponent c : components){
+        sb.append(c.getName());
+        sb.append(",");
+      }
     }
     return sb.toString();
   }
