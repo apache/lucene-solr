@@ -135,10 +135,11 @@ public class TestUtils extends TestCase {
     assertEquals( 1, BitUtil.ntz2(num) );
     assertEquals( 1, BitUtil.ntz3(num) );
 
-    num = 234;
-   //?????  why 1?
-   // assertEquals( 0, BitUtil.ntz(num) );
-   // assertEquals( 0, BitUtil.ntz2(num) );
-   // assertEquals( 0, BitUtil.ntz3(num) );
+    for (int i=0; i<64; i++) {
+      num = 1L << i;
+      assertEquals( i, BitUtil.ntz(num) );
+      assertEquals( i, BitUtil.ntz2(num) );
+      assertEquals( i, BitUtil.ntz3(num) );
+    }
   }
 }
