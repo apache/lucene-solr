@@ -81,7 +81,7 @@ public abstract class IndexCommit implements IndexCommitPoint {
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {
       IndexCommit otherCommit = (IndexCommit) other;
-      return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getSegmentsFileName().equals(getSegmentsFileName());
+      return otherCommit.getDirectory().equals(getDirectory()) && otherCommit.getVersion() == getVersion();
     } else
       return false;
   }
