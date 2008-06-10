@@ -17,7 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/** Expert: Describes the score computation for document and query, andcan distinguish a match independent of a positive value. */
+/** Expert: Describes the score computation for document and query, and
+ * can distinguish a match independent of a positive value. */
 public class ComplexExplanation extends Explanation {
   private Boolean match;
   
@@ -43,10 +44,10 @@ public class ComplexExplanation extends Explanation {
    */
   public void setMatch(Boolean match) { this.match = match; }
   /**
-   * Indicates wether or not this Explanation models a good match.
+   * Indicates whether or not this Explanation models a good match.
    *
    * <p>
-   * If the match statis is explicitly set (ie: not null) this method
+   * If the match status is explicitly set (i.e.: not null) this method
    * uses it; otherwise it defers to the superclass.
    * </p>
    * @see #getMatch
