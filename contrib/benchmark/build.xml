@@ -6,7 +6,7 @@
     </description>
 
     <import file="../contrib-build.xml"/>
-    <property name="working.dir" value="work"/>
+    <property name="working.dir" location="work"/>
 
 
     <target name="check-files">
@@ -72,7 +72,8 @@
         <mkdir dir="${working.dir}/reuters-out"/>
         <java classname="org.apache.lucene.benchmark.utils.ExtractReuters" maxmemory="1024M" fork="true">
             <classpath refid="run.classpath"/>
-            <arg line="${working.dir}/reuters ${working.dir}/reuters-out"/>
+            <arg file="${working.dir}/reuters"/>
+            <arg file="${working.dir}/reuters-out"/>
         </java>
     </target>
     <target name="get-20news-18828" unless="20news-18828.exists">
@@ -110,12 +111,12 @@
         <pathelement path="${common.dir}/build/classes/java"/>
         <pathelement path="${common.dir}/build/classes/demo"/>
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
-        <pathelement path="${basedir}/lib/${digester.jar}"/>
-        <pathelement path="${basedir}/lib/${collections.jar}"/>
-        <pathelement path="${basedir}/lib/${logging.jar}"/>
-        <pathelement path="${basedir}/lib/${bean-utils.jar}"/>
-        <pathelement path="${basedir}/lib/${xercesImpl.jar}"/>
-        <pathelement path="${basedir}/lib/${xml-apis.jar}"/>
+        <pathelement path="lib/${digester.jar}"/>
+        <pathelement path="lib/${collections.jar}"/>
+        <pathelement path="lib/${logging.jar}"/>
+        <pathelement path="lib/${bean-utils.jar}"/>
+        <pathelement path="lib/${xercesImpl.jar}"/>
+        <pathelement path="lib/${xml-apis.jar}"/>
     </path>
     <path id="run.classpath">
         <path refid="classpath"/>
@@ -127,25 +128,28 @@
         <echo>Working Directory: ${working.dir}</echo>
         <java classname="org.apache.lucene.benchmark.Driver"  maxmemory="1024M" fork="true">
             <classpath refid="run.classpath"/>
-            <arg line="${working.dir} ${basedir}/conf/standard-config.xml"/>
+            <arg file="${working.dir}"/>
+            <arg file="conf/standard-config.xml"/>
         </java>
     </target>
     <target name="run-micro-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
         <echo>Working Directory: ${working.dir}</echo>
         <java classname="org.apache.lucene.benchmark.Driver" maxmemory="1024M" fork="true">
             <classpath refid="run.classpath"/>
-            <arg line="${working.dir} ${basedir}/conf/micro-standard-config.xml"/>
+            <arg file="${working.dir}"/>
+            <arg file="conf/micro-standard-config.xml"/>
         </java>
     </target>
 
-    <property name="task.alg" value="${basedir}/conf/micro-standard.alg"/>
+    <property name="task.alg" location="conf/micro-standard.alg"/>
     <property name="task.mem" value="140M"/>
 
-    <target name="run-task" depends="compile,check-files,get-files" description="Run compound penalty perf test">
+    <target name="run-task" depends="compile,check-files,get-files" 
+     description="Run compound penalty perf test (optional: -Dtask.alg=your-algorithm-file -Dtask.mem=java-max-mem)">
         <echo>Working Directory: ${working.dir}</echo>
         <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="${task.mem}" fork="true">
             <classpath refid="run.classpath"/>
-            <arg line="${task.alg}"/>
+            <arg file="${task.alg}"/>
         </java>
     </target>
 
@@ -156,7 +160,7 @@
               <enable/>
             </assertions>
             <classpath refid="run.classpath"/>
-            <arg line="conf/extractWikipedia.alg"/>
+            <arg file="conf/extractWikipedia.alg"/>
         </java>
     </target>
 

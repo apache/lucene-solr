@@ -3,6 +3,12 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+
+5/10/08
+  LUCENE-1090: remove relative paths assumptions from benchmark code.
+  Only build.xml was modified: work-dir definition must remain so  
+  benchmark tests can run from both trunk-home and benchmark-home.  
+  
 3/9/08
   LUCENE-1209: Fixed DocMaker settings by round. Prior to this fix, DocMaker settings of 
   first round were used in all rounds.  (E.g. term vectors.)
