@@ -209,7 +209,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
-              ModifiableSolrParams params = sreq.params;
+              ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
               params.remove("shards");      // not a top-level request
               params.remove("indent");
               params.remove("echoParams");
