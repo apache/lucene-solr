@@ -354,7 +354,7 @@
       <sysproperty key="tempDir" file="${build.dir}/test"/>
       <sysproperty key="java.io.tmpdir" file="${build.dir}/test"/>
 
-      <!-- set as a system property so contrib testss can have a fixed root
+      <!-- set as a system property so contrib tests can have a fixed root
            to reference file paths from, and "ant test" can work from
            anywhere.
        -->
