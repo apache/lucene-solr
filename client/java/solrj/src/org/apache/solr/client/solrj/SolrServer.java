@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -27,6 +28,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,11 +39,22 @@ import org.apache.solr.common.util.NamedList;
  */
 public abstract class SolrServer implements Serializable
 {
+  private DocumentObjectBinder binder;
+
   public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(docs);
     req.setOverwrite(overwrite);
     return req.process(this);
+  }
+
+  public UpdateResponse addBeans(Collection<Object> beans, boolean overwrite ) throws SolrServerException, IOException {
+    DocumentObjectBinder binder = this.getBinder();
+    ArrayList<SolrInputDocument> docs =  new ArrayList<SolrInputDocument>(beans.size());
+    for (Object bean : beans) {
+      docs.add(binder.toSolrInputDocument(bean));
+    }
+    return add(docs,overwrite);
   }
 
   public UpdateResponse add(SolrInputDocument doc, boolean overwrite ) throws SolrServerException, IOException {
@@ -51,12 +64,24 @@ public abstract class SolrServer implements Serializable
     return req.process(this);
   }
 
+  public UpdateResponse addBean(Object obj, boolean overwrite) throws IOException, SolrServerException {
+    return add(getBinder().toSolrInputDocument(obj), overwrite);
+  }
+
   public UpdateResponse add(SolrInputDocument doc) throws SolrServerException, IOException {
     return add(doc, true);
   }
 
+  public UpdateResponse addBean(Object obj) throws IOException, SolrServerException {
+    return add(getBinder().toSolrInputDocument(obj), true);
+  }
+
   public UpdateResponse add(Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
     return add(docs, true);
+  }
+
+  public UpdateResponse addBeans(Collection<Object> beans ) throws SolrServerException, IOException {
+    return addBeans(beans,true);
   }
 
   /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
@@ -100,5 +125,12 @@ public abstract class SolrServer implements Serializable
   /**
    * SolrServer implementations need to implement a how a request is actually processed
    */ 
-  public abstract NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException; 
+  public abstract NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException;
+
+  public DocumentObjectBinder getBinder() {
+    if(binder == null){
+      binder = new DocumentObjectBinder();
+    }
+    return binder;
+  }
 }
