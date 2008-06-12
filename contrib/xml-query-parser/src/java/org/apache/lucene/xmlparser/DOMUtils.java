@@ -186,7 +186,7 @@ public class DOMUtils
 		{
 			return deflt;
 		}
-		return Boolean.getBoolean(result);
+		return Boolean.valueOf(result).booleanValue();
 	}	
 
 	/* Returns text of node and all child nodes - without markup */
