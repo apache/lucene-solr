@@ -361,7 +361,7 @@ class HttpCommComponent {
           SolrServer server = new CommonsHttpSolrServer(url, client);
           // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
           // use generic request to avoid extra processing of queries
-          QueryRequest req = new QueryRequest(sreq.params);
+          QueryRequest req = new QueryRequest(params);
           req.setMethod(SolrRequest.METHOD.POST);
           req.setResponseParser(new BinaryResponseParser());  // this sets the wt param
           // srsp.rsp = server.request(req);
