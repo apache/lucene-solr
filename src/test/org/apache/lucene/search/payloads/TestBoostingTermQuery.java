@@ -92,7 +92,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       Field noPayloadField = new Field("noPayLoad", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED);
-      noPayloadField.setBoost(0);
+      //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
       doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
       doc.add(new Field("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
@@ -186,7 +186,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     query.add(c2);
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    //assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
+    assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
     CheckHits.checkHitCollector(query, "noPayLoad", searcher, results);

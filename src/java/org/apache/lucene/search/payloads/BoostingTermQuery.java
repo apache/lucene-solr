@@ -121,7 +121,7 @@ public class BoostingTermQuery extends SpanTermQuery{
 
 
       public Explanation explain(final int doc) throws IOException {
-        Explanation result = new Explanation();
+        ComplexExplanation result = new ComplexExplanation();
         Explanation nonPayloadExpl = super.explain(doc);
         result.addDetail(nonPayloadExpl);
         //QUESTION: Is there a wau to avoid this skipTo call?  We need to know whether to load the payload or not
@@ -140,6 +140,7 @@ public class BoostingTermQuery extends SpanTermQuery{
         payloadBoost.setDescription("scorePayload(...)");
         result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
         result.setDescription("btq, product of:");
+        result.setMatch(nonPayloadExpl.getValue()==0 ? Boolean.FALSE : Boolean.TRUE); // LUCENE-1303
         return result;
       }
     }

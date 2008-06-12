@@ -119,6 +119,11 @@ Bug fixes
 
 12. LUCENE-1299: Fixed NPE in SpellChecker when IndexReader is not null and field is (Grant Ingersoll)
 
+13. LUCENE-1303: Fixed BoostingTermQuery's explanation to be marked as a Match 
+    depending only upon the non-payload score part, regardless of the effect of 
+    the payload on the score. Prior to this, score of a query containing a BTQ 
+    differed from its explanation. (Doron Cohen)
+
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis
