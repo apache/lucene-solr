@@ -39,11 +39,11 @@ import org.apache.solr.request.SolrRequestHandler;
 public class SolrServlet extends HttpServlet {
     
   final Logger log = Logger.getLogger(SolrServlet.class.getName());
-  SolrCore core;
     
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
-    core = SolrCore.getSolrCore();
+    // we deliberately do not initialize a SolrCore because of SOLR-597
+    // https://issues.apache.org/jira/browse/SOLR-597
     log.info("SolrServlet.init() done");
   }
 
@@ -52,6 +52,7 @@ public class SolrServlet extends HttpServlet {
   }
 
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    final SolrCore core = SolrCore.getSolrCore();
     SolrServletRequest solrReq = new SolrServletRequest(core, request);;
     SolrQueryResponse solrRsp = new SolrQueryResponse();
     try {
