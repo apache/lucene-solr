@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -115,8 +116,8 @@ public class FacetComponent extends SearchComponent
           refine.shards = new String[]{rb.shards[shardNum]};
           refine.params = new ModifiableSolrParams(rb.req.getParams());
           // don't request any documents
-          refine.params.remove("start");
-          refine.params.set("rows","0");
+          refine.params.remove(CommonParams.START);
+          refine.params.set(CommonParams.ROWS,"0");
         }
 
         refine.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;

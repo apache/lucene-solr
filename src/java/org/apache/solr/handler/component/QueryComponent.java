@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -81,7 +82,7 @@ public class QueryComponent extends SearchComponent
       rb.setQuery( parser.getQuery() );
       rb.setSortSpec( parser.getSort(true) );
 
-      String[] fqs = req.getParams().getParams(org.apache.solr.common.params.CommonParams.FQ);
+      String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
         if (filters==null) {
@@ -100,7 +101,7 @@ public class QueryComponent extends SearchComponent
     }
 
     // TODO: temporary... this should go in a different component.
-    String shards = params.get("shards");
+    String shards = params.get(ShardParams.SHARDS);
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
       rb.shards = lst.toArray(new String[lst.size()]);
@@ -122,7 +123,7 @@ public class QueryComponent extends SearchComponent
     // a filter that lists the ids... that would be transparent to
     // the request handler, but would be more expensive (and would preserve score
     // too if desired).
-    String ids = params.get("ids");
+    String ids = params.get(ShardParams.IDS);
     if (ids != null) {
       SchemaField idField = req.getSchema().getUniqueKeyField();
       List<String> idArr = StrUtils.splitSmart(ids, ",", true);
@@ -235,7 +236,7 @@ public class QueryComponent extends SearchComponent
     }
 
     //pre-fetch returned documents
-    if (!req.getParams().getBool("isShard",false) && rb.getResults().docList != null && rb.getResults().docList.size()<=50) {
+    if (!req.getParams().getBool(ShardParams.IS_SHARD,false) && rb.getResults().docList != null && rb.getResults().docList.size()<=50) {
       // TODO: this may depend on the highlighter component (or other components?)
       SolrPluginUtils.optimizePreFetchDocs(rb.getResults().docList, rb.getQuery(), req, rsp);
     }
@@ -305,17 +306,17 @@ public class QueryComponent extends SearchComponent
     // TODO: base on current params or original params?
 
     // don't pass through any shards param
-    sreq.params.remove("shards");
+    sreq.params.remove(ShardParams.SHARDS);
 
     // set the start (offset) to 0 for each shard request so we can properly merge
     // results from the start.
-    sreq.params.set("start","0");
+    sreq.params.set(CommonParams.START, "0");
 
     // TODO: should we even use the SortSpec?  That's obtained from the QParser, and
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
-    sreq.params.set("rows", rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+    sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
 
 
     // in this first phase, request only the unique key field
@@ -323,9 +324,9 @@ public class QueryComponent extends SearchComponent
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
     if (rb.getSortSpec().includesScore()) {
-      sreq.params.set("fl",  rb.req.getSchema().getUniqueKeyField().getName() + ",score");
+      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
     } else {
-      sreq.params.set("fl",  rb.req.getSchema().getUniqueKeyField().getName());      
+      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());      
     }
 
     rb.addRequest(this, sreq);
@@ -472,15 +473,15 @@ public class QueryComponent extends SearchComponent
       sreq.params.add( rb.req.getParams());
 
       // no need for a sort, we already have order
-      sreq.params.remove("sort");
+      sreq.params.remove(CommonParams.SORT);
 
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
       // make sure that the id is returned for correlation
-      String fl = sreq.params.get("fl");
+      String fl = sreq.params.get(CommonParams.FL);
       if (fl != null) {
-       sreq.params.set("fl", fl+','+uniqueField.getName());
+       sreq.params.set(CommonParams.FL, fl+','+uniqueField.getName());
       }      
 
       ArrayList<String> ids = new ArrayList<String>(shardDocs.size());
@@ -488,7 +489,7 @@ public class QueryComponent extends SearchComponent
         // TODO: depending on the type, we may need more tha a simple toString()?
         ids.add(shardDoc.id.toString());
       }
-      sreq.params.add("ids", StrUtils.join(ids, ','));
+      sreq.params.add(ShardParams.IDS, StrUtils.join(ids, ','));
 
       rb.addRequest(this, sreq);
     }

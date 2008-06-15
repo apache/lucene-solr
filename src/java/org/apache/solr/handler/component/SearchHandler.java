@@ -23,6 +23,7 @@ import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -210,15 +211,15 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.remove("shards");      // not a top-level request
+              params.remove(ShardParams.SHARDS);      // not a top-level request
               params.remove("indent");
-              params.remove("echoParams");
-              params.set("isShard", true);  // a sub (shard) request
-              String shardHandler = req.getParams().get("shards.qt");
+              params.remove(CommonParams.HEADER_ECHO_PARAMS);
+              params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
+              String shardHandler = req.getParams().get(ShardParams.SHARDS_QT);
               if (shardHandler == null) {
-                params.remove("qt");
+                params.remove(CommonParams.QT);
               } else {
-                params.set("qt", shardHandler);
+                params.set(CommonParams.QT, shardHandler);
               }
               comm.submit(sreq, shard, params);
             }
@@ -355,8 +356,8 @@ class HttpCommComponent {
           // String url = "http://" + shard + "/select";
           String url = "http://" + shard;
 
-          params.remove("wt"); // use default (or should we explicitly set it?)
-          params.remove("version");
+          params.remove(CommonParams.WT); // use default (or should we explicitly set it?)
+          params.remove(CommonParams.VERSION);
 
           SolrServer server = new CommonsHttpSolrServer(url, client);
           // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
