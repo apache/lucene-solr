@@ -23,8 +23,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
@@ -37,6 +40,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similar.MoreLikeThis;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,7 +55,6 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryParsing;
@@ -131,7 +134,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       // Matching options
       boolean includeMatch = params.getBool( MoreLikeThisParams.MATCH_INCLUDE, true );
       int matchOffset = params.getInt( MoreLikeThisParams.MATCH_OFFSET, 0 );
-      
       // Find the base match  
       Query query = QueryParsing.parseQuery(q, params.get(CommonParams.DF), params, req.getSchema());
       DocList match = searcher.getDocList(query, null, null, matchOffset, 1, flags ); // only get the first one...
@@ -231,6 +233,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     final IndexReader reader;
     final SchemaField uniqueKeyField;
     final boolean needDocSet;
+    Map<String,Float> boostFields;
     
     Query mltquery;  // expose this for debugging
     
@@ -260,12 +263,27 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
       mlt.setMaxNumTokensParsed(params.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
       mlt.setBoost(            params.getBool(MoreLikeThisParams.BOOST, false ) );
+      boostFields = SolrPluginUtils.parseFieldBoosts(params.getParams(MoreLikeThisParams.QF));
+    }
+    
+    private void setBoosts(Query mltquery) {
+      if (boostFields.size() > 0) {
+        List clauses = ((BooleanQuery)mltquery).clauses();
+        for( Object o : clauses ) {
+          TermQuery q = (TermQuery)((BooleanClause)o).getQuery();
+          Float b = this.boostFields.get(q.getTerm().field());
+          if (b != null) {
+            q.setBoost(b*q.getBoost());
+          }
+        }
+      }
     }
     
     public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       Document doc = reader.document(id);
       mltquery = mlt.like(id);
+      setBoosts(mltquery);
       if( terms != null ) {
         fillInterestingTermsFromMLTQuery( mltquery, terms );
       }
@@ -289,6 +307,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public DocListAndSet getMoreLikeThis( Reader reader, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
       mltquery = mlt.like(reader);
+      setBoosts(mltquery);
       if( terms != null ) {
         fillInterestingTermsFromMLTQuery( mltquery, terms );
       }

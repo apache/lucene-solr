@@ -288,6 +288,8 @@ New Features
     
 51. SOLR-536: Add a DocumentObjectBinder to solrj that converts Objects to and
     from SolrDocuments.  (Noble Paul via ryan)
+
+52. SOLR-595: Add support for Field level boosting in the MoreLikeThis Handler.  (Tom Morton, gsingers)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -21,11 +21,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -42,6 +46,7 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
     super.setUp();
     lrf = h.getRequestFactory("standard", 0, 20 );
   }
+  
   
   public void testInterface()
   {
@@ -67,5 +72,35 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
       mlt.handleRequestBody( req, new SolrQueryResponse() );
     }
     catch( Exception ex ) {} // expected
+    
+    assertU(adoc(new String[]{"id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away"}));
+    assertU(adoc(new String[]{"id","43","name","Tom Hanks","subword","The Green Mile","subword","Forest Gump","subword","Philadelphia Story","subword","Big","subword","Cast Away"}));
+    assertU(adoc(new String[]{"id","44","name","Harrison Ford","subword","Star Wars","subword","Indiana Jones","subword","Patriot Games","subword","Regarding Henry"}));
+    assertU(adoc(new String[]{"id","45","name","George Harrison","subword","Yellow Submarine","subword","Help","subword","Magical Mystery Tour","subword","Sgt. Peppers Lonley Hearts Club Band"}));
+    assertU(adoc(new String[]{"id","46","name","Nicole Kidman","subword","Batman","subword","Days of Thunder","subword","Eyes Wide Shut","subword","Far and Away"}));
+    assertU(commit());
+
+    params.put(CommonParams.Q, new String[]{"id:42"});
+    params.put(MoreLikeThisParams.MLT, new String[]{"true"});
+    params.put(MoreLikeThisParams.SIMILARITY_FIELDS, new String[]{"name,subword"});
+    params.put(MoreLikeThisParams.INTERESTING_TERMS,new String[]{"details"});
+    params.put(MoreLikeThisParams.MIN_TERM_FREQ,new String[]{"1"});
+    params.put(MoreLikeThisParams.MIN_DOC_FREQ,new String[]{"1"});
+    
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, (SolrParams)mmparams);
+    assertQ("morelikethis - tom cruise",mltreq
+        ,"//result/doc[1]/int[@name='id'][.='46']"
+        ,"//result/doc[2]/int[@name='id'][.='43']");
+    
+    params.put(CommonParams.Q, new String[]{"id:44"});
+    assertQ("morelike this - harrison ford",mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+    
+    params.put(CommonParams.Q, new String[]{"id:42"}); 
+    params.put(MoreLikeThisParams.QF,new String[]{"name^5.0 subword^0.1"});
+    assertQ("morelikethis with weights",mltreq
+        ,"//result/doc[1]/int[@name='id'][.='43']"
+        ,"//result/doc[2]/int[@name='id'][.='46']");
+    
   }
 }

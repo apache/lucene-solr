@@ -35,6 +35,7 @@ public interface MoreLikeThisParams
   public final static String MAX_QUERY_TERMS       = PREFIX + "maxqt";
   public final static String MAX_NUM_TOKENS_PARSED = PREFIX + "maxntp";
   public final static String BOOST                 = PREFIX + "boost"; // boost or not?
+  public final static String QF                    = PREFIX + "qf"; //boosting applied to mlt fields
 
   // the /mlt request handler uses 'rows'
   public final static String DOC_COUNT = PREFIX + "count";
