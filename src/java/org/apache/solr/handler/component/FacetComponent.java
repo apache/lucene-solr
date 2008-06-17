@@ -159,13 +159,17 @@ public class FacetComponent extends SearchComponent
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
 
-          // set the initial limit higher in increase accuracy
-          dff.initialLimit = dff.offset + dff.limit;
-          dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
+          if(dff.limit > 0) {          
+            // set the initial limit higher in increase accuracy
+            dff.initialLimit = dff.offset + dff.limit;
+            dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
+          } else {
+            dff.initialLimit = dff.limit;
+          }
 
           // Uncomment the following line when testing to supress over-requesting facets and
           // thus cause more facet refinement queries.
-          // dff.initialLimit = dff.offset + dff.limit;
+          // if (dff.limit > 0) dff.initialLimit = dff.offset + dff.limit;
 
           sreq.params.set(paramStart + FacetParams.FACET_LIMIT,  dff.initialLimit);
       }
@@ -232,6 +236,7 @@ public class FacetComponent extends SearchComponent
 
 
     for (DistribFieldFacet dff : fi.topFacets.values()) {
+      if (dff.limit <= 0) continue; // no need to check these facets for refinement
       ShardFacetCount[] counts = dff.getSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
@@ -281,7 +286,7 @@ public class FacetComponent extends SearchComponent
     FacetInfo fi = rb._facetInfo;
 
     for (ShardResponse srsp: sreq.responses) {
-      int shardNum = rb.getShardNum(srsp.shard);
+      // int shardNum = rb.getShardNum(srsp.shard);
       NamedList facet_counts = (NamedList)srsp.rsp.getResponse().get("facet_counts");
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
 
@@ -339,7 +344,7 @@ public class FacetComponent extends SearchComponent
       facet_fields.add(dff.field, fieldCounts);
 
       ShardFacetCount[] counts = dff.countSorted;
-      if (dff.needRefinements) {
+      if (counts == null || dff.needRefinements) {
         counts = dff.getSorted();
       }
 
