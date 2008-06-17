@@ -104,7 +104,7 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   public CommonsHttpSolrServer(URL baseURL, HttpClient client){
-    this(baseURL, client, new XMLResponseParser());
+    this(baseURL, client, new BinaryResponseParser());
   }
 
 
