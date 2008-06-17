@@ -40,8 +40,10 @@ public abstract class QParser {
     this.req = req;
   }
 
-  /** create and return the <code>Query</code> object represented by <code>qstr</code> */
-  protected abstract Query parse() throws ParseException;
+  /** Create and return the <code>Query</code> object represented by <code>qstr</code>
+   * @see #getQuery()
+   **/
+  public abstract Query parse() throws ParseException;
 
   public SolrParams getLocalParams() {
     return localParams;
@@ -75,6 +77,11 @@ public abstract class QParser {
     this.qstr = s;
   }
 
+  /** Returns the resulting query from this QParser, calling parse() only the
+   * first time and caching the Query result.
+   * @return
+   * @throws ParseException
+   */
   public Query getQuery() throws ParseException {
     if (query==null) {
       query=parse();
