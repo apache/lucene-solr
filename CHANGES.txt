@@ -245,7 +245,7 @@ New Features
     query faceting, highlighting, and debug information are supported
     in distributed mode.
     (Sharad Agarwal, Patrick O'Leary, Sabyasachi Dalal, Stu Hood,
-     Jayson Minard, ryan, yonik)
+     Jayson Minard, Lars Kotthoff, ryan, yonik)
 
 41. SOLR-356: Pluggable functions (value sources) that allow 
     registration of new functions via solrconfig.xml
