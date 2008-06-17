@@ -40,7 +40,7 @@ class FooQParser extends QParser {
     super(qstr, localParams, params, req);
   }
 
-  protected Query parse() throws ParseException {
+  public Query parse() throws ParseException {
     return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
   }
 }
