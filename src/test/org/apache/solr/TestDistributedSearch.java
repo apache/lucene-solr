@@ -305,8 +305,8 @@ public class TestDistributedSearch extends TestCase {
       cmp = compare(a.getMaxScore(), b.getMaxScore(), 0, handle);
       if (cmp != null) return ".maxScore" + cmp;
     } else {
-      if (a.getMaxScore() != null) {
-        if (b.getMaxScore() == null) {
+      if (b.getMaxScore() != null) {
+        if (a.getMaxScore() == null) {
           return ".maxScore missing";
         }
       }
@@ -453,18 +453,21 @@ public class TestDistributedSearch extends TestCase {
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
-    query("q","{!func}"+i1);
+    handle.put("maxScore", SKIPVAL);
+    query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. NamedListCodec.writeSolrDocumentList()
+    //is agnostic of request params.
+    handle.remove("maxScore");
     query("q","{!func}"+i1, "fl","*,score");  // even scores should match exactly here
 
     handle.put("highlighting", UNORDERED);
     handle.put("response", UNORDERED);
 
+    handle.put("maxScore", SKIPVAL);
     query("q","quick");
     query("q","all","fl","id","start","0");
     query("q","all","fl","foofoofoo","start","0");  // no fields in returned docs
     query("q","all","fl","id","start","100");
 
-    handle.put("maxScore", SKIPVAL);
     handle.put("score", SKIPVAL);
     query("q","quick","fl","*,score");
     query("q","all","fl","*,score","start","1");

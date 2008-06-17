@@ -85,7 +85,7 @@ public class CommonsHttpSolrServer extends SolrServer
    * will use this SolrServer.
    */
   public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient) throws MalformedURLException {
-    this(new URL(solrServerUrl), httpClient, new XMLResponseParser());
+    this(new URL(solrServerUrl), httpClient, new BinaryResponseParser());
   }
 
   public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient, ResponseParser parser) throws MalformedURLException {
@@ -100,7 +100,7 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   public CommonsHttpSolrServer(URL baseURL) 
   {
-    this(baseURL, null, new XMLResponseParser());
+    this(baseURL, null, new BinaryResponseParser());
   }
 
   public CommonsHttpSolrServer(URL baseURL, HttpClient client){

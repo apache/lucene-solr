@@ -57,7 +57,7 @@ public class NamedListCodec {
           ARR =       (byte)(4 << 5), //
           ORDERED_MAP=(byte)(5 << 5), // SimpleOrderedMap (a NamedList subclass, and more common)
           NAMED_LST = (byte)(6 << 5), // NamedList
-          RESERVED2 = (byte)(7 << 5);
+          EXTERN_STRING = (byte)(7 << 5);
 
 
   private byte VERSION = 1;
@@ -149,6 +149,7 @@ public class NamedListCodec {
       case ARR >>> 5         : return readArray(dis);
       case ORDERED_MAP >>> 5 : return readOrderedMap(dis);
       case NAMED_LST >>> 5   : return readNamedList(dis);
+      case EXTERN_STRING >>> 5   : return readExternString(dis);
     }
 
     switch(tagByte){
@@ -190,7 +191,19 @@ public class NamedListCodec {
       return true;
     }
     if (val instanceof SolrDocument) {
-      writeSolrDocument((SolrDocument) val);
+      //this needs special treatment to know which fields are to be written
+      if(resolver == null){
+        writeSolrDocument((SolrDocument) val);
+      }else {
+        Object retVal = resolver.resolve(val, this);
+        if(retVal != null) {
+          if (retVal instanceof SolrDocument) {
+            writeSolrDocument((SolrDocument) retVal);
+          } else {
+            writeVal(retVal);
+          }
+        }
+      }
       return true;
     }
     if (val instanceof Iterator) {
@@ -234,13 +247,26 @@ public class NamedListCodec {
   }
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
+    writeSolrDocument(doc, null);
+  }
+  public void writeSolrDocument(SolrDocument doc, Set<String> fields) throws IOException {
+    int count = 0;
+    if (fields == null) {
+      count = doc.getFieldNames().size();
+    } else {
+      for (Map.Entry<String, Object> entry : doc) {
+        if (fields.contains(entry.getKey())) count++;
+      }
+    }
     writeTag(SOLRDOC);
-    writeTag(ORDERED_MAP, doc.getFieldNames().size());
+    writeTag(ORDERED_MAP, count);
     for (Map.Entry<String, Object> entry : doc) {
-      String name = entry.getKey();
-      writeStr(name);
-      Object val = entry.getValue();
-      writeVal(val);
+      if (fields == null || fields.contains(entry.getKey())) {
+        String name = entry.getKey();
+        writeExternString(name);
+        Object val = entry.getValue();
+        writeVal(val);
+      }
     }
   }
 
@@ -554,6 +580,36 @@ public class NamedListCodec {
 	buffer[i] = (char)(((b & 0x0F) << 12)
 		| ((in.read() & 0x3F) << 6)
 	        |  (in.read() & 0x3F));
+    }
+  }
+
+  private int stringsCount  =  0;
+  private Map<String,Integer> stringsMap;
+  private List<String > stringsList;
+  public void writeExternString(String s) throws IOException {
+    if(s == null) {
+      writeTag(NULL) ;
+      return;
+    }
+    Integer idx = stringsMap == null ? null : stringsMap.get(s);
+    if(idx == null) idx =0;
+    writeTag(EXTERN_STRING,idx);
+    if(idx == 0){
+      writeStr(s);
+      if(stringsMap == null) stringsMap = new HashMap<String, Integer>();
+      stringsMap.put(s,++stringsCount);
+    }
+
+  }
+  public String  readExternString(FastInputStream fis) throws IOException {
+    int idx = readSize(fis);
+    if (idx != 0) {// idx != 0 is the index of the extern string
+      return stringsList.get(idx-1);
+    } else {// idx == 0 means it has a string value
+      String s = (String) readVal(fis);
+      if(stringsList == null ) stringsList = new ArrayList<String>();
+      stringsList.add(s);
+      return s;
     }
   }
 

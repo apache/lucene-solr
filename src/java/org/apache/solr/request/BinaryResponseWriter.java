@@ -70,7 +70,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       this.schema = req.getSchema();
       this.searcher = req.getSearcher();
       this.includeScore = returnFields!=null && returnFields.contains("score");
-      
+
       if (returnFields != null) {
        if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
           returnFields = null;  // null means return all stored fields
@@ -84,7 +84,11 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         writeDocList((DocList) o, codec);
         return null; // null means we completely handled it
       }
-
+      if (o instanceof SolrDocument) {
+        SolrDocument solrDocument = (SolrDocument) o;
+        codec.writeSolrDocument(solrDocument,returnFields);
+        return null;
+      }
       if (o instanceof Document) {
         return getDoc((Document) o);
       }
