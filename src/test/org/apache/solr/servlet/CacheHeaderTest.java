@@ -36,8 +36,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     return "solrconfig.xml";
   }
 
-  protected static final String FILENAME = "cacheheadertest.csv";
-
   protected static final String CHARSET = "UTF-8";
 
   protected static final String CONTENTS = "id\n100\n101\n102";
@@ -234,7 +232,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f=new File(FILENAME);
+      File f = File.createTempFile(getClass().getName(),"csv");
+      f.deleteOnExit();
       Writer out = new OutputStreamWriter(new FileOutputStream(f),
           charset);
       out.write(contents);
