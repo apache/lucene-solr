@@ -18,34 +18,28 @@ package org.apache.lucene.search.spell;
  */
 
 /**
- * Edit distance class.
- * Note: this class is not thread-safe.
+ * Levenshtein edit distance class.
  */
-final class TRStringDistance {
-
-    final char[] sa;
-    final int n;
-    int p[]; //'previous' cost array, horizontally
-    int d[]; // cost array, horizontally
-    int _d[]; //placeholder to assist in swapping p and d
-
+final class TRStringDistance implements StringDistance {
 
     /**
      * Optimized to run a bit faster than the static getDistance().
      * In one benchmark times were 5.3sec using ctr vs 8.5sec w/ static method, thus 37% faster.
      */
-    public TRStringDistance (String target) {
-        sa = target.toCharArray();
-        n = sa.length;
-        p = new int[n+1]; //'previous' cost array, horizontally
-        d = new int[n+1]; // cost array, horizontally
+    public TRStringDistance () {
     }
 
 
     //*****************************
     // Compute Levenshtein distance: see org.apache.commons.lang.StringUtils#getLevenshteinDistance(String, String)
     //*****************************
-    public final int getDistance (String other) {
+    public float getDistance (String target, String other) {
+      char[] sa;
+      int n;
+      int p[]; //'previous' cost array, horizontally
+      int d[]; // cost array, horizontally
+      int _d[]; //placeholder to assist in swapping p and d
+      
         /*
            The difference between this impl. and the previous is that, rather
            than creating and retaining a matrix of size s.length()+1 by t.length()+1,
@@ -63,12 +57,17 @@ final class TRStringDistance {
            cause an out of memory condition when calculating the LD over two very large strings.
          */
 
+        sa = target.toCharArray();
+        n = sa.length;
+        p = new int[n+1]; 
+        d = new int[n+1]; 
+      
         final int m = other.length();
 
         if (n == 0) {
-            return m;
+            return 1;
         } else if (m == 0) {
-            return n;
+            return 1;
         }
 
         // indexes into strings s and t
@@ -101,7 +100,7 @@ final class TRStringDistance {
 
         // our last action in the above loop was to switch d and p, so p now
         // actually has the most recent cost counts
-        return p[n];
+        return 1.0f - ((float) p[n] / Math.min(other.length(), sa.length));
     }
 
 }

@@ -186,6 +186,9 @@ New features
 
 16. LUCENE-1298: MoreLikeThis can now accept a custom Similarity (Grant Ingersoll)
 
+17. LUCENE-1297: Allow other string distance measures for the SpellChecker
+    (Thomas Morton via Otis Gospodnetic)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use
