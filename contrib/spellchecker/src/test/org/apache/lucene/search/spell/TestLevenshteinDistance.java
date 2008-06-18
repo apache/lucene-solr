@@ -21,7 +21,7 @@ import junit.framework.TestCase;
 
 public class TestLevenshteinDistance extends TestCase {
 
-  private StringDistance sd = new TRStringDistance();
+  private StringDistance sd = new LevensteinDistance();
   
   public void testGetDistance() {
     float d = sd.getDistance("al", "al");

@@ -20,13 +20,13 @@ package org.apache.lucene.search.spell;
 /**
  * Levenshtein edit distance class.
  */
-final class TRStringDistance implements StringDistance {
+final class LevensteinDistance implements StringDistance {
 
     /**
      * Optimized to run a bit faster than the static getDistance().
      * In one benchmark times were 5.3sec using ctr vs 8.5sec w/ static method, thus 37% faster.
      */
-    public TRStringDistance () {
+    public LevensteinDistance () {
     }
 
 

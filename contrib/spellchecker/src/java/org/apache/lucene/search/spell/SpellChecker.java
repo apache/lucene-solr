@@ -92,7 +92,7 @@ public class SpellChecker {
   }
 
   public SpellChecker(Directory spellIndex) throws IOException {
-    this(spellIndex,new TRStringDistance());
+    this(spellIndex, new LevensteinDistance());
   }
   
   /**
