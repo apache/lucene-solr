@@ -334,6 +334,7 @@
       <str name="spellcheckIndexDir">./spellchecker</str>
 
     </lst>
+    <!-- Example of using different distance measure -->
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
       <str name="field">lowerfilt</str>
