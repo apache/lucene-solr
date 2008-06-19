@@ -17,9 +17,6 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Iterator;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,6 +30,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * <p>
@@ -119,7 +119,10 @@ public class SpellChecker {
   public void setStringDistance(StringDistance sd) {
     this.sd = sd;
   }
-  
+
+  public StringDistance getStringDistance() {
+    return sd;
+  }
 
   /**
    * Sets the accuracy 0 &lt; minScore &lt; 1; default 0.5
