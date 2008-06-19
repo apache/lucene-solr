@@ -136,7 +136,7 @@
     -->
     <maxBooleanClauses>1024</maxBooleanClauses>
 
-    
+
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
@@ -281,7 +281,7 @@
 
   <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
-  <!-- test query parameter defaults --> 
+  <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">
       <int name="rows">4</int>
@@ -289,8 +289,8 @@
       <str name="hl.fl">text,name,subject,title,whitetok</str>
     </lst>
   </requestHandler>
-  
-  <!-- test query parameter defaults --> 
+
+  <!-- test query parameter defaults -->
   <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
     <lst name="defaults">
       <int name="rows">4</int>
@@ -307,7 +307,7 @@
     <str name="queryFieldType">string</str>
     <str name="config-file">elevate.xml</str>
   </searchComponent>
- 
+
   <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -316,7 +316,51 @@
       <str>elevate</str>
     </arr>
   </requestHandler>
-  
+
+  <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
+    <lst name="defaults">
+      <!-- omp = Only More Popular -->
+      <str name="spellcheck.onlyMorePopular">false</str>
+      <!-- exr = Extended Results -->
+      <str name="spellcheck.extendedResults">false</str>
+      <!--  The number of suggestions to return -->
+      <str name="spellcheck.count">1</str>
+    </lst>
+    <str name="queryAnalyzerFieldType">lowerfilt</str>
+
+    <lst name="spellchecker">
+      <str name="name">default</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">./spellchecker</str>
+
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">jarowinkler</str>
+      <str name="field">lowerfilt</str>
+      <!-- Use a different Distance Measure -->
+      <str name="distanceMeasure">org.apache.lucene.search.spell.JaroWinklerDistance</str>
+      <str name="spellcheckIndexDir">./spellchecker</str>
+
+    </lst>
+    <lst name="spellchecker">
+      <str name="classname">solr.FileBasedSpellChecker</str>
+      <str name="name">external</str>
+      <str name="sourceLocation">spellings.txt</str>
+      <str name="characterEncoding">UTF-8</str>
+      <str name="spellcheckIndexDir">./spellchecker</str>
+    </lst>
+  </searchComponent>
+  <!--
+  The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
+   to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
+   -->
+  <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
+
+  <requestHandler name="spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+  </requestHandler>
 
   <highlighting>
    <!-- Configure the standard fragmenter -->
@@ -325,13 +369,13 @@
      <int name="hl.fragsize">100</int>
     </lst>
    </fragmenter>
-   
+
    <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
     <lst name="defaults">
      <int name="hl.fragsize">70</int>
     </lst>
    </fragmenter>
-   
+
    <!-- Configure the standard formatter -->
    <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
     <lst name="defaults">

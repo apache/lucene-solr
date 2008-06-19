@@ -22,10 +22,6 @@ import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.handler.component.MoreLikeThisComponent;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 

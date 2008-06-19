@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.nio.charset.Charset;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -48,6 +49,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.spelling.SpellingQueryConverter;
 
 /**
  * @since solr 1.3
@@ -58,13 +60,14 @@ public class SolrResourceLoader implements ResourceLoader
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util."};
+  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util.", "spelling."};
 
   private final ClassLoader classLoader;
   private final String instanceDir;
   
   private final List<SolrCoreAware> waitingForCore = new ArrayList<SolrCoreAware>();
   private final List<ResourceLoaderAware> waitingForResources = new ArrayList<ResourceLoaderAware>();
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
 
   /**
    * <p>
@@ -184,13 +187,33 @@ public class SolrResourceLoader implements ResourceLoader
    * @throws IOException
    */
   public List<String> getLines(String resource) throws IOException {
+    return getLines(resource, UTF_8);
+  }
+
+  /**
+   * Accesses a resource by name and returns the (non comment) lines containing
+   * data using the given character encoding.
+   *
+   * <p>
+   * A comment line is any line that starts with the character "#"
+   * </p>
+   *
+   * @param resource the file to be read
+   * @param encoding
+   * @return a list of non-blank non-comment lines with whitespace trimmed
+   * @throws IOException
+   */
+  public List<String> getLines(String resource,
+      String encoding) throws IOException {
+    return getLines(resource, Charset.forName(encoding));
+  }
+
+
+  public List<String> getLines(String resource, Charset charset) throws IOException{
     BufferedReader input = null;
-    try {
-      // TODO - allow configurable charset?
-      input = new BufferedReader(new InputStreamReader(openResource(resource), "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    input = new BufferedReader(new InputStreamReader(openResource(resource),
+        charset));
+
     ArrayList<String> lines = new ArrayList<String>();
     for (String word=null; (word=input.readLine())!=null;) {
       // skip comments

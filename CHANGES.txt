@@ -291,6 +291,11 @@ New Features
     from SolrDocuments.  (Noble Paul via ryan)
 
 52. SOLR-595: Add support for Field level boosting in the MoreLikeThis Handler.  (Tom Morton, gsingers)
+
+53. SOLR-572: Added SpellCheckComponent and org.apache.solr.spelling package to support more spell checking functionality.
+              Also includes ability to add your own SolrSpellChecker implementation that plugs in.
+              See http://wiki.apache.org/solr/SpellCheckComponent for more details
+              (Shalin Shekhar Mangar, Bojan Smid, gsingers)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

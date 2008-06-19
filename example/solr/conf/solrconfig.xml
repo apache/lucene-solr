@@ -489,6 +489,50 @@
      
    </requestHandler>
 
+
+  <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
+    <lst name="defaults">
+      <!-- omp = Only More Popular -->
+      <str name="spellcheck.onlyMorePopular">false</str>
+      <!-- exr = Extended Results -->
+      <str name="spellcheck.extendedResults">false</str>
+      <!--  The number of suggestions to return -->
+      <str name="spellcheck.count">1</str>
+    </lst>
+    <str name="queryAnalyzerFieldType">textSpell</str>
+
+    <lst name="spellchecker">
+      <str name="name">default</str>
+      <str name="field">spell</str>
+      <str name="spellcheckIndexDir">./spellchecker</str>
+
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">jarowinkler</str>
+      <str name="field">spell</str>
+      <!-- Use a different Distance Measure -->
+      <str name="distanceMeasure">org.apache.lucene.search.spell.JaroWinklerDistance</str>
+      <str name="spellcheckIndexDir">./spellchecker</str>
+
+    </lst>
+
+    <!--<lst name="spellchecker">
+      <str name="classname">solr.FileBasedSpellChecker</str>
+      <str name="name">external</str>
+      <str name="sourceLocation">spellings.txt</str>
+      <str name="characterEncoding">UTF-8</str>
+      <str name="indexDir">./spellchecker</str>
+    </lst>-->
+  </searchComponent>
+
+  <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
+
+  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+    <arr name="last-components">
+      <str>spellcheck</str>
+    </arr>
+  </requestHandler>
+
    <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
      <lst name="defaults">
        <str name="mlt.fl">manu,cat</str>

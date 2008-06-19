@@ -204,6 +204,18 @@
       </analyzer>
     </fieldType>
 
+
+    <!--
+     Setup simple analysis for spell checking
+     -->
+    <fieldType name="textSpell" class="solr.TextField" positionIncrementGap="100" >
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
     <!-- This is an example of using the KeywordTokenizer along
          With various TokenFilterFactories to produce a sortable field
          that does not include some properties of the source text
@@ -303,7 +315,7 @@
      -->
    <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
    
-
+   <field name="spell" type="textSpell" indexed="true" stored="true" multiValued="true"/>
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -356,6 +368,8 @@
    <copyField source="includes" dest="text"/>
 
    <copyField source="manu" dest="manu_exact"/>
+
+  <copyField source="name" dest="spell"/>
 
  <!-- Similarity is the scoring routine for each document vs. a query.
       A custom similarity may be specified here, but the default is fine
