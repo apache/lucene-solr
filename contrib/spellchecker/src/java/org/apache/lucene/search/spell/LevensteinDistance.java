@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 /**
  * Levenshtein edit distance class.
  */
-final class LevensteinDistance implements StringDistance {
+public final class LevensteinDistance implements StringDistance {
 
     /**
      * Optimized to run a bit faster than the static getDistance().
