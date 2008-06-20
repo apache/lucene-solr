@@ -19,7 +19,11 @@
 
 URL=http://localhost:8983/solr/select
 
-curl "$URL?q=hello&params=explicit&wt=python" 2> /dev/null | grep 'hello' > /dev/null 2>&1
+if [ ! -z $1 ]; then
+  URL=$1
+fi
+
+curl "$URL/select?q=hello&params=explicit&wt=python" 2> /dev/null | grep 'hello' > /dev/null 2>&1
 if [ $? = 0 ]; then
   echo "Solr server is up."
 else
@@ -27,17 +31,24 @@ else
   exit 1
 fi
 
-curl "$URL?q=h%C3%A9llo&echoParams=explicit&wt=python" 2> /dev/null | grep 'h\\u00e9llo' > /dev/null 2>&1
+curl "$URL/select?q=h%C3%A9llo&echoParams=explicit&wt=python" 2> /dev/null | grep 'h\\u00e9llo' > /dev/null 2>&1
 if [ $? = 0 ]; then
   echo "HTTP GET is accepting UTF-8"
 else
   echo "ERROR: HTTP GET is not accepting UTF-8"
 fi
 
-curl $URL --data-binary 'q=h%C3%A9llo&echoParams=explicit&wt=python' -H 'Content-type:application/x-www-form-urlencoded; charset=UTF-8' 2> /dev/null | grep 'h\\u00e9llo' > /dev/null 2>&1
+curl $URL/select --data-binary 'q=h%C3%A9llo&echoParams=explicit&wt=python' -H 'Content-type:application/x-www-form-urlencoded; charset=UTF-8' 2> /dev/null | grep 'h\\u00e9llo' > /dev/null 2>&1
 if [ $? = 0 ]; then
   echo "HTTP POST is accepting UTF-8"
 else
   echo "ERROR: HTTP POST is not accepting UTF-8"
+fi
+
+curl $URL/select --data-binary 'q=h%C3%A9llo&echoParams=explicit&wt=python' 2> /dev/null | grep 'h\\u00e9llo' > /dev/null 2>&1
+if [ $? = 0 ]; then
+  echo "HTTP POST defaults to UTF-8"
+else
+  echo "HTTP POST does not default to UTF-8"
 fi
 
