@@ -122,12 +122,16 @@
       try {
         field = schema.getField(name);
       } catch (Exception e) {
-        out.println("<strong>Unknown Field: " + name + "</strong>");
+        out.print("<strong>Unknown Field: ");
+        XML.escapeCharData(name, out);
+        out.println("</strong>");
       }
     } else {
        FieldType t = schema.getFieldTypes().get(name);
        if (null == t) {
-         out.println("<strong>Unknown Field Type: " + name + "</strong>");
+        out.print("<strong>Unknown Field Type: ");
+        XML.escapeCharData(name, out);
+        out.println("</strong>");
        } else {
          field = new SchemaField("fakefieldoftype:"+name, t);
        }
