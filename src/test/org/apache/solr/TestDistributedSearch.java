@@ -487,9 +487,14 @@ public class TestDistributedSearch extends TestCase {
             "debugQuery", "true");
 
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
+    query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1);
     query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2);
+
+    // test faceting multiple things at once
+    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
+    ,"facet.field",t1);
 
     // test field that is valid in schema but missing in all shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);

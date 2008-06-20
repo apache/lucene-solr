@@ -40,7 +40,7 @@ import org.apache.lucene.queryParser.ParseException;
  * @version $Id$
  * @since solr 1.3
  */
-public class FacetComponent extends SearchComponent
+public class  FacetComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "facet";
   
@@ -167,7 +167,7 @@ public class FacetComponent extends SearchComponent
             dff.initialLimit = dff.limit;
           }
 
-          // Uncomment the following line when testing to supress over-requesting facets and
+          // TEST: Uncomment the following line when testing to supress over-requesting facets and
           // thus cause more facet refinement queries.
           // if (dff.limit > 0) dff.initialLimit = dff.offset + dff.limit;
 
@@ -300,13 +300,24 @@ public class FacetComponent extends SearchComponent
 
           // expect {!field f=field}value style params
           SolrParams qparams = QueryParsing.getLocalParams(facet_q,null);
+          if (qparams == null) continue;  // not a refinement
           String field = qparams.get(QueryParsing.F);
           String val = qparams.get(QueryParsing.V);
 
           // Find the right field.facet for this field
           DistribFieldFacet dff = fi.topFacets.get(field);
+          if (dff == null) continue;  // maybe this wasn't for facet count refinement
+
           // Find the right constraint count for this value
           ShardFacetCount sfc = dff.counts.get(val);
+
+          if (sfc == null) {
+            continue;
+            // Just continue, since other components might have added
+            // this facet.query for other purposes.  But if there are charset
+            // issues then the values coming back may not match the values sent.
+          }
+
 // TODO REMOVE
 // System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + count);
 
