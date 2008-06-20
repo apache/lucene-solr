@@ -81,6 +81,7 @@ public class QueryComponent extends SearchComponent
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
       rb.setQuery( parser.getQuery() );
       rb.setSortSpec( parser.getSort(true) );
+      rb.setQparser(parser);
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
