@@ -504,7 +504,7 @@
     <lst name="spellchecker">
       <str name="name">default</str>
       <str name="field">spell</str>
-      <str name="spellcheckIndexDir">./spellchecker</str>
+      <str name="spellcheckIndexDir">./spellchecker1</str>
 
     </lst>
     <lst name="spellchecker">
@@ -512,17 +512,17 @@
       <str name="field">spell</str>
       <!-- Use a different Distance Measure -->
       <str name="distanceMeasure">org.apache.lucene.search.spell.JaroWinklerDistance</str>
-      <str name="spellcheckIndexDir">./spellchecker</str>
+      <str name="spellcheckIndexDir">./spellchecker2</str>
 
     </lst>
 
-    <!--<lst name="spellchecker">
+    <lst name="spellchecker">
       <str name="classname">solr.FileBasedSpellChecker</str>
-      <str name="name">external</str>
+      <str name="name">file</str>
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
-      <str name="indexDir">./spellchecker</str>
-    </lst>-->
+      <str name="indexDir">./spellcheckerFile</str>
+    </lst>
   </searchComponent>
 
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>

@@ -17,6 +17,11 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -27,12 +32,8 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * @since solr 1.3
@@ -140,8 +141,6 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
 
     idx = blue.indexOf("suggestion", idx + 1);
     assertTrue(idx + " does not equal: " + -1, idx == -1);
-
-
   }
 
   public void test() throws Exception {
@@ -280,6 +279,37 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     }
 
 
+  }
+  
+  @SuppressWarnings("unchecked")
+  public void testRelativeIndexDirLocation() throws Exception {
+    SolrCore core = h.getCore();
+    Map<String, String> args = new HashMap<String, String>();
+
+    args.put(CommonParams.Q, "test");
+    args.put(CommonParams.QT, "spellCheckCompRH");
+    args.put(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(
+        args));
+
+    File indexDir = new File(core.getDataDir() + File.separator
+        + "spellchecker1");
+    assertTrue(
+        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
+        indexDir.exists());
+    
+    indexDir = new File(core.getDataDir() + File.separator
+        + "spellchecker2");
+    assertTrue(
+        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
+        indexDir.exists());
+    
+    indexDir = new File(core.getDataDir() + File.separator
+        + "spellchecker3");
+    assertTrue(
+        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
+        indexDir.exists());
   }
 
   // TODO: add more tests for various spelling options

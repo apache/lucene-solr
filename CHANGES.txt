@@ -438,7 +438,9 @@ Bug Fixes
     problems in Resin, and could potentially cause problems for customized
     usages of SolrServlet.
 
-36. SOLR-585: Now sets the QParser on the ResponseBuilder (gsingers) 
+36. SOLR-585: Now sets the QParser on the ResponseBuilder (gsingers)
+
+37. SOLR-604: If the spellchecking path is relative, make it relative to the Solr Data Directory.  (Shalin Shekhar Mangar via gsingers)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

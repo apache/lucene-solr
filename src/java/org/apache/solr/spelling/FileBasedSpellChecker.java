@@ -115,7 +115,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
         analyzer = fieldType.getQueryAnalyzer();
       } else {
         log.warning("No fieldType: " + fieldTypeName
-                + " found for dictionary: " + name);
+                + " found for dictionary: " + name + ".  Using WhitespaceAnalzyer.");
         analyzer = new WhitespaceAnalyzer();
 
         // check if character encoding is defined

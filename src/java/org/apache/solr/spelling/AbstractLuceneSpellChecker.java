@@ -1,22 +1,23 @@
 package org.apache.solr.spelling;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
-import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 
 /**
@@ -51,6 +52,12 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public String init(NamedList config, SolrResourceLoader loader) {
     super.init(config, loader);
     indexDir = (String) config.get(INDEX_DIR);
+    //If indexDir is relative then create index inside core.getDataDir()
+    if (indexDir != null)   {
+      if (!new File(indexDir).isAbsolute()) {
+        indexDir = loader.getDataDir() + File.separator + indexDir;
+      }
+    }
     sourceLocation = (String) config.get(LOCATION);
     field = (String) config.get(FIELD);
     String strDistanceName = (String)config.get(STRING_DISTANCE);

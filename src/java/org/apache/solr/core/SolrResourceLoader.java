@@ -64,6 +64,7 @@ public class SolrResourceLoader implements ResourceLoader
 
   private final ClassLoader classLoader;
   private final String instanceDir;
+  private String dataDir;
   
   private final List<SolrCoreAware> waitingForCore = new ArrayList<SolrCoreAware>();
   private final List<ResourceLoaderAware> waitingForResources = new ArrayList<ResourceLoaderAware>();
@@ -121,6 +122,10 @@ public class SolrResourceLoader implements ResourceLoader
 
   public String getConfigDir() {
     return instanceDir + "conf/";
+  }
+  
+  public String getDataDir()    {
+    return dataDir;
   }
 
   /** Opens a schema resource by its name.
@@ -283,6 +288,7 @@ public class SolrResourceLoader implements ResourceLoader
    */
   public void inform(SolrCore core) 
   {
+    this.dataDir = core.getDataDir();
     for( SolrCoreAware aware : waitingForCore ) {
       aware.inform( core );
     }

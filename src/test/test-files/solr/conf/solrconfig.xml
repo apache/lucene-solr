@@ -331,8 +331,7 @@
     <lst name="spellchecker">
       <str name="name">default</str>
       <str name="field">lowerfilt</str>
-      <str name="spellcheckIndexDir">./spellchecker</str>
-
+      <str name="spellcheckIndexDir">spellchecker1</str>
     </lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
@@ -340,7 +339,7 @@
       <str name="field">lowerfilt</str>
       <!-- Use a different Distance Measure -->
       <str name="distanceMeasure">org.apache.lucene.search.spell.JaroWinklerDistance</str>
-      <str name="spellcheckIndexDir">./spellchecker</str>
+      <str name="spellcheckIndexDir">spellchecker2</str>
 
     </lst>
     <lst name="spellchecker">
@@ -348,7 +347,7 @@
       <str name="name">external</str>
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
-      <str name="spellcheckIndexDir">./spellchecker</str>
+      <str name="spellcheckIndexDir">spellchecker3</str>
     </lst>
   </searchComponent>
   <!--
