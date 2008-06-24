@@ -56,12 +56,7 @@ public class QueryResponse extends SolrResponseBase
   // Debug Info
   private Map<String,Object> _debugMap = null;
   private Map<String,String> _explainMap = null;
-  private SolrServer solrServer;
-  public QueryResponse( NamedList<Object> res , SolrServer solrServer){
-    this(res);
-    this.solrServer = solrServer;
-  }
-
+  
 
   public QueryResponse( NamedList<Object> res )
   {
@@ -248,12 +243,6 @@ public class QueryResponse extends SolrResponseBase
   
   public List<FacetField> getLimitingFacets() {
     return _limitingFacets;
-  }
-
-  public <T> List<T> getBeans(Class<T> type){
-    return solrServer == null ? 
-            new DocumentObjectBinder().getBeans(type,_results):
-            solrServer.getBinder().getBeans(type, _results);
   }
 }
 

@@ -81,7 +81,7 @@ public class QueryRequest extends SolrRequest
     try 
     {
       long startTime = System.currentTimeMillis();
-      QueryResponse res = new QueryResponse( server.request( this ), server);
+      QueryResponse res = new QueryResponse( server.request( this ) );
       res.setElapsedTime( System.currentTimeMillis()-startTime );
       return res;
     } 
