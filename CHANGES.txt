@@ -506,6 +506,9 @@ Build
 
  3. SOLR-510: Nightly release includes client sources. (koji)
 
+ 4. SOLR-563: Modified the build process to build contrib projects
+    (Shalin Shekhar Mangar via Otis Gospodnetic)
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1

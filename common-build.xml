@@ -1,0 +1,227 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+  <description>
+    This file is designed for importing into a main build file, and not intended
+    for standalone use.
+  </description>
+  
+  <!-- Initialize property values: allow easy customization via build.properties -->
+  <property file="build.properties" />
+
+  <property name="Name" value="Solr" />
+
+  <tstamp>
+    <format property="year" pattern="yyyy"/>
+    <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+    <format property="TSTAMP" pattern="HH:mm:ss"/>
+    <!-- datetime format that is safe to treat as part of a dotted version -->
+    <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
+  </tstamp>
+
+  <!-- Java Version we are compatible with -->
+  <property name="java.compat.version" value="1.5" />
+
+  <!-- Solr Implementation Version -->
+  <!--
+       This can be any string value that does not include spaces
+       This will be used when creating build artifact file names.
+
+       By default, this should be set to "X.Y.N-dev" where X.Y.N is
+       "1 greater" then the last version released (on this branch).
+    -->
+  <property name="version" value="1.3-dev" />
+  
+  <!-- Solr Specification Version -->
+  <!--
+       This will be used in the Manifest file, and therefore must
+       match the pattern "digit+{.digit+}*"
+       
+       By default, this should be set to "X.Y.M.${dateversion}"
+       where X.Y.M is the last version released (on this branch).
+    -->
+  <property name="specversion" value="1.2.${dateversion}" />
+  
+    <!-- Type of checksum to compute for distribution files -->
+  <property name="checksum.algorithm" value="md5" />
+  
+  <property name="fullname" value="apache-${ant.project.name}"/>
+  <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
+
+  <!-- Javadoc properties -->
+  <property name="javadoc.years" value="2006 - ${year}" />
+  <property name="javadoc.access" value="protected"/>
+  <property name="javadoc.link.java"
+            value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+  <property name="javadoc.link.junit"
+            value="http://junit.sourceforge.net/javadoc/"/>
+  <property name="javadoc.link.lucene"
+            value="http://lucene.apache.org/java/docs/api/"/>
+  <property name="javadoc.packages" value="org.apache.solr.*"/>
+  
+  <!-- JUnit properties -->
+  <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
+  
+  <available property="clover.present"
+            classname="com.cenqua.clover.tasks.CloverReportTask"
+            />
+   <condition property="clover.enabled">
+       <and>
+           <isset property="run.clover"/>
+           <isset property="clover.present"/>
+       </and>
+   </condition>
+   
+   
+  <!-- Macro for compilation -->
+  <macrodef name="solr-javac">
+    <attribute name="destdir" />
+    <attribute name="classpathref" />
+    <element name="nested" optional="true" implicit="true" />
+    <sequential>
+      <mkdir dir="@{destdir}" />
+      <javac destdir="@{destdir}"
+             target="${java.compat.version}"
+             source="${java.compat.version}"
+             debug="on"
+             encoding="utf8"
+             sourcepath=""
+             classpathref="@{classpathref}">
+         <nested />
+      </javac>
+    </sequential>
+  </macrodef>
+  
+  <!-- Macro for building checksum files
+       This is only needed until the "format" option is supported
+       by ant's built in checksum task
+   -->
+  <macrodef name="solr-checksum">
+    <attribute name="file"/>
+    <!-- NOTE: we use the value of @{file} in the names any properties
+         set because macro's don't have variables, and otherwise we
+         wouldn't be able to checksum more then one file per build
+      -->
+    <sequential>
+     <checksum file="@{file}"
+               property="@{file}.sum"
+               algorithm="${checksum.algorithm}" />
+     <basename file="@{file}" property="@{file}.base" />
+     <concat destfile="@{file}.${checksum.algorithm}"
+             force="yes"
+             append="false"
+             fixlastline="yes">
+       <header trimleading="yes">${@{file}.sum}  </header>
+       <!-- empty fileset to trick concat -->
+       <fileset dir="." excludes="**" />
+       <footer trimleading="yes">${@{file}.base}
+       </footer>
+     </concat>
+    </sequential>
+  </macrodef>
+  
+  
+  <macrodef name="contrib-crawl">
+    <attribute name="target" default=""/>
+    <attribute name="failonerror" default="true"/>
+    <sequential>
+      <subant target="@{target}" failonerror="@{failonerror}">
+        <fileset dir="."
+                 includes="contrib/*/build.xml"
+        />
+      </subant>
+    </sequential>
+  </macrodef>
+	
+  <target name="contrib-clean"
+	          description="Cleans all contrib modules and their tests">
+	<contrib-crawl target="clean"/>
+  </target>
+	
+  <target name="contrib-build"
+          description="Builds all contrib modules and their tests">
+    <contrib-crawl target="build"/>
+  </target>
+
+  <target name="contrib-test" depends="contrib-build">
+    <contrib-crawl target="test" failonerror="false"/>
+  </target>
+	
+  <target name="contrib-javadoc" description="Generate javadoc for contrib classes" depends="contrib-build">
+    <contrib-crawl target="javadoc"
+                   failonerror="false"/>
+  </target>
+	
+  <target name="dist-contrib" description="Make the contribs ready for distribution">
+  	<contrib-crawl target="dist" failonerror="false" />
+  </target>
+	
+  <!-- Creates a Manifest file for Jars and WARs -->
+  <target name="make-manifest">
+     <!-- If possible, include the svnversion -->
+     <exec dir="." executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
+      <arg line="."/>
+     </exec>
+     
+     <!-- no description, don't advertise -->
+     <mkdir dir="${dest}/META-INF/" />
+     <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
+        <!--
+        http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
+        http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+        http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
+        -->
+        <!-- Don't set 'Manifest-Version' it identifies the version of the
+             manifest file format, and should always be 1.0 (the default)
+
+             Don't set 'Created-by' attribute, its purpose is 
+             to identify the version of java used to build the jar,
+             which ant will do by default.
+
+             Ant will happily override these with bogus strings if you
+             tell it to, so don't.
+
+             NOTE: we don't use section info because all of our manifest data
+             applies to the entire jar/war ... no package specific info.
+        -->
+        <attribute name="Extension-Name" 
+                   value="org.apache.solr"/>
+        <attribute name="Specification-Title" 
+                   value="Apache Solr Search Server"/>
+        <!-- spec version must match "digit+{.digit+}*" -->
+        <attribute name="Specification-Version" 
+                   value="${specversion}"/>
+        <attribute name="Specification-Vendor" 
+                   value="The Apache Software Foundation"/>
+        <attribute name="Implementation-Title" 
+                   value="org.apache.solr"/>
+        <!-- impl version can be any string -->
+        <attribute name="Implementation-Version" 
+                   value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+        <attribute name="Implementation-Vendor" 
+                   value="The Apache Software Foundation"/>
+        <attribute name="X-Compile-Source-JDK" 
+                   value="${java.compat.version}"/>
+        <attribute name="X-Compile-Target-JDK" 
+                   value="${java.compat.version}"/>
+     </manifest>
+  </target>
+  
+</project>
