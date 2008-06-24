@@ -63,26 +63,29 @@ public class ModifiableSolrParams extends SolrParams
   /**
    * Replace any existing parameter with the given name.  if val==null remove key from params completely.
    */
-  public void set( String name, String ... val ) {
+  public ModifiableSolrParams set( String name, String ... val ) {
     if (val==null || (val.length==1 && val[0]==null)) {
       vals.remove(name);
     } else {
       vals.put( name, val );
     }
+    return this;
   }
   
-  public void set( String name, int val ) {
+  public ModifiableSolrParams set( String name, int val ) {
     set( name, String.valueOf(val) );
+    return this;
   }
   
-  public void set( String name, boolean val ) {
+  public ModifiableSolrParams set( String name, boolean val ) {
     set( name, String.valueOf(val) );
+    return this;
   }
 
   /**
    * Add the given values to any existing name
    */
-  public void add( String name, String ... val ) {
+  public ModifiableSolrParams add( String name, String ... val ) {
     String[] old = vals.put(name, val);
     if( old != null ) {
       int i =0;
@@ -105,6 +108,7 @@ public class ModifiableSolrParams extends SolrParams
         vals.put( name, both );
       }
     }
+    return this;
   }
 
   public void add(SolrParams params)

@@ -55,12 +55,14 @@ public class SolrQuery extends ModifiableSolrParams
   /** add a field for facet computation
    * 
    * @param fields the field name from the IndexSchema
+   * @return this
    */
-  public void addFacetField(String ... fields) {
+  public SolrQuery addFacetField(String ... fields) {
     for( String f : fields ) {
       this.add(FacetParams.FACET_FIELD, f);
     }
     this.set(FacetParams.FACET, true);
+    return this;
   }
 
   /** get the facet fields
@@ -85,8 +87,9 @@ public class SolrQuery extends ModifiableSolrParams
   /** enable/disable faceting.  
    * 
    * @param b flag to indicate faceting should be enabled.  if b==false removes all other faceting parameters
+   * @return this
    */
-  public void setFacet(boolean b) {
+  public SolrQuery setFacet(boolean b) {
     if (b) {
       this.set(FacetParams.FACET, true);
     } else {
@@ -102,24 +105,28 @@ public class SolrQuery extends ModifiableSolrParams
       this.remove(FacetParams.FACET_ZEROS);
       this.remove(FacetParams.FACET_PREFIX); // does not include the individual fields...
     }
+    return this;
   }
   
-  public void setFacetPrefix( String prefix )
+  public SolrQuery setFacetPrefix( String prefix )
   {
     this.set( FacetParams.FACET_PREFIX, prefix );
+    return this;
   }
 
-  public void setFacetPrefix( String field, String prefix )
+  public SolrQuery setFacetPrefix( String field, String prefix )
   {
     this.set( "f."+field+"."+FacetParams.FACET_PREFIX, prefix );
+    return this;
   }
 
   /** add a faceting query
    * 
    * @param f facet query
    */
-  public void addFacetQuery(String f) {
+  public SolrQuery addFacetQuery(String f) {
     this.add(FacetParams.FACET_QUERY, f);
+    return this;
   }
 
   /** get facet queries
@@ -147,8 +154,9 @@ public class SolrQuery extends ModifiableSolrParams
    * 
    * @param lim number facet items to return
    */
-  public void setFacetLimit(int lim) {
+  public SolrQuery setFacetLimit(int lim) {
     this.set(FacetParams.FACET_LIMIT, lim);
+    return this;
   }
 
   /** get current facet limit
@@ -163,8 +171,9 @@ public class SolrQuery extends ModifiableSolrParams
    * 
    * @param cnt facets having less that cnt hits will be excluded from teh facet list
    */
-  public void setFacetMinCount(int cnt) {
+  public SolrQuery setFacetMinCount(int cnt) {
     this.set(FacetParams.FACET_MINCOUNT, cnt);
+    return this;
   }
 
   /** get facet minimum count
@@ -175,8 +184,9 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(FacetParams.FACET_LIMIT, 1);
   }
 
-  public void setMissing(String fld) {
+  public SolrQuery setMissing(String fld) {
     this.set(FacetParams.FACET_MISSING, fld);
+    return this;
   }
 
   /** get facet sort
@@ -190,18 +200,21 @@ public class SolrQuery extends ModifiableSolrParams
   /** set facet sort
    * 
    * @param sort sort facets
+   * @return this
    */
-  public void setFacetSort(Boolean sort) {
+  public SolrQuery setFacetSort(Boolean sort) {
     this.set(FacetParams.FACET_SORT, sort);
+    return this;
   }
 
   /** add highlight field
    * 
    * @param f field to enable for highlighting
    */
-  public void addHighlightField(String f) {
+  public SolrQuery addHighlightField(String f) {
     this.add(HighlightParams.FIELDS, f);
     this.set(HighlightParams.HIGHLIGHT, true);
+    return this;
   }
 
   /** remove a field for highlighting
@@ -225,56 +238,62 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getParams(HighlightParams.FIELDS);
   }
 
-  public void setHighlightSnippets(int num) {
+  public SolrQuery setHighlightSnippets(int num) {
     this.set(HighlightParams.SNIPPETS, num);
+    return this;
   }
 
   public int getHighlightSnippets() {
     return this.getInt(HighlightParams.SNIPPETS, 1);
   }
 
-  public void setHighlightFragsize(int num) {
+  public SolrQuery setHighlightFragsize(int num) {
     this.set(HighlightParams.FRAGSIZE, num);
+    return this;
   }
 
   public int getHighlightFragsize() {
     return this.getInt(HighlightParams.FRAGSIZE, 100);
   }
 
-  public void setHighlightRequireFieldMatch(boolean flag) {
+  public SolrQuery setHighlightRequireFieldMatch(boolean flag) {
     this.set(HighlightParams.FIELD_MATCH, flag);
+    return this;
   }
 
   public boolean setHighlightRequireFieldMatch() {
     return this.getBool(HighlightParams.FIELD_MATCH, false);
   }
 
-  public void setHighlightSimplePre(String f) {
+  public SolrQuery setHighlightSimplePre(String f) {
     this.set(HighlightParams.SIMPLE_PRE, f);
+    return this;
   }
 
   public String getHighlightSimplePre() {
     return this.get(HighlightParams.SIMPLE_PRE, "");
   }
 
-  public void setHighlightSimplePost(String f) {
+  public SolrQuery setHighlightSimplePost(String f) {
     this.set(HighlightParams.SIMPLE_POST, f);
+    return this;
   }
 
   public String getHighlightSimplePost() {
     return this.get(HighlightParams.SIMPLE_POST, "");
   }
 
-  public void setSortField(String field, ORDER order) {
+  public SolrQuery setSortField(String field, ORDER order) {
     this.remove(CommonParams.SORT);
     addValueToParam(CommonParams.SORT, toSortString(field, order));
+    return this;
   }
   
-  public void addSortField(String field, ORDER order) {
-    addValueToParam(CommonParams.SORT, toSortString(field, order));
+  public SolrQuery addSortField(String field, ORDER order) {
+    return addValueToParam(CommonParams.SORT, toSortString(field, order));
   }
 
-  public void removeSortField(String field, ORDER order) {
+  public SolrQuery removeSortField(String field, ORDER order) {
     String s = this.get(CommonParams.SORT);
     String removeSort = toSortString(field, order);
     if (s != null) {
@@ -283,6 +302,7 @@ public class SolrQuery extends ModifiableSolrParams
       if (s.length()==0) s=null;
       this.set(CommonParams.SORT, s);
     }
+    return this;
   }
   
   public String[] getSortFields() {
@@ -295,12 +315,14 @@ public class SolrQuery extends ModifiableSolrParams
     return this.get(CommonParams.SORT);
   }
 
-  public void setFilterQueries(String ... fq) {
+  public SolrQuery setFilterQueries(String ... fq) {
     this.set(CommonParams.FQ, fq);
+    return this;
   }
 
-  public void addFilterQuery(String ... fq) {
+  public SolrQuery addFilterQuery(String ... fq) {
     this.add(CommonParams.FQ, fq);
+    return this;
   }
 
   public boolean removeFilterQuery(String fq) {
@@ -315,7 +337,7 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getBool(HighlightParams.HIGHLIGHT, false);
   }
   
-  public void setHighlight(boolean b) {
+  public SolrQuery setHighlight(boolean b) {
     if (b) {
       this.set(HighlightParams.HIGHLIGHT, true);
     } else {
@@ -328,9 +350,10 @@ public class SolrQuery extends ModifiableSolrParams
       this.remove(HighlightParams.SIMPLE_PRE);
       this.remove(HighlightParams.SNIPPETS);
     }
+    return this;
   }
 
-  public void setFields(String ... fields) {
+  public SolrQuery setFields(String ... fields) {
     if( fields == null || fields.length == 0 ) {
       this.remove( CommonParams.FL );
     }
@@ -341,10 +364,11 @@ public class SolrQuery extends ModifiableSolrParams
       sb.append( fields[i] );
     }
     this.set(CommonParams.FL, sb.toString() );
+    return this;
   }
     
-  public void addField(String field) {
-    addValueToParam(CommonParams.FL, field);
+  public SolrQuery addField(String field) {
+    return addValueToParam(CommonParams.FL, field);
   }
 
   public String getFields() {
@@ -355,29 +379,32 @@ public class SolrQuery extends ModifiableSolrParams
     return fields;
   }
 
-  public void setIncludeScore(boolean includeScore) {
+  public SolrQuery setIncludeScore(boolean includeScore) {
     if (includeScore) {
       this.add(CommonParams.FL, "score");
     } else {
       this.remove(CommonParams.FL, "score");
     }
+    return this;
   }
 
-  public void setQuery(String query) {
+  public SolrQuery setQuery(String query) {
     this.set(CommonParams.Q, query);
+    return this;
   }
 
   public String getQuery() {
     return this.get(CommonParams.Q);
   }
 
-  public void setRows(Integer rows) {
+  public SolrQuery setRows(Integer rows) {
     if( rows == null ) {
       this.remove( CommonParams.ROWS );
     }
     else {
       this.set(CommonParams.ROWS, rows);
     }
+    return this;
   }
 
   public Integer getRows()
@@ -394,13 +421,14 @@ public class SolrQuery extends ModifiableSolrParams
 //    this.set(CommonParams.SORT, sort);
 //  }
 
-  public void setStart(Integer start) {
+  public SolrQuery setStart(Integer start) {
     if( start == null ) {
       this.remove( CommonParams.START );
     }
     else {
       this.set(CommonParams.START, start);
     }
+    return this;
   }
   
   public Integer getStart()
@@ -408,20 +436,23 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(CommonParams.START);
   }
 
-  public void setQueryType(String qt) {
+  public SolrQuery setQueryType(String qt) {
     this.set(CommonParams.QT, qt);
+    return this;
   }
 
   public String getQueryType() {
     return this.get(CommonParams.QT);
   }
 
-  public void setParam(String name, String ... values) {
+  public SolrQuery setParam(String name, String ... values) {
     this.set(name, values);
+    return this;
   }
 
-  public void setParam(String name, boolean value) {
+  public SolrQuery setParam(String name, boolean value) {
     this.set(name, value);
+    return this;
   }
 
   /** get a deep copy of this object * */
@@ -453,10 +484,11 @@ public class SolrQuery extends ModifiableSolrParams
     return sb.toString().trim();
   }
   
-  private void addValueToParam(String name, String value) {
+  private SolrQuery addValueToParam(String name, String value) {
     String tmp = this.get(name);
     tmp = join(tmp, value, ",");
     this.set(name, tmp);
+    return this;
   }
    
   private String join(String[] vals, String sep, String removeVal) {
