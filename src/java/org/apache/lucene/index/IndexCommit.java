@@ -75,8 +75,7 @@ public abstract class IndexCommit implements IndexCommitPoint {
   }
 
   /**
-   * Two IndexCommits are equal if both their Directory and
-   * segmentsFileName are equal.
+   * Two IndexCommits are equal if both their Directory and versions are equal.
    */
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {

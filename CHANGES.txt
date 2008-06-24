@@ -76,6 +76,13 @@ API Changes
     returns when the reader is opened on the same commit.  (Jason
     Rutherglen via Mike McCandless)
 
+11. LUCENE-1311: Added IndexReader.listCommits(Directory) static
+    method to list all commits in a Directory, plus IndexReader.open
+    methods that accept an IndexCommit and open the index as of that
+    commit.  These methods are only useful if you implement a custom
+    DeletionPolicy that keeps more than the last commit around.
+    (Jason Rutherglen via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

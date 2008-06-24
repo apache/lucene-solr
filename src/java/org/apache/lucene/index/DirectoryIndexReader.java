@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 import java.util.HashSet;
 import java.util.Collection;
@@ -77,8 +78,12 @@ abstract class DirectoryIndexReader extends IndexReader {
   }
   
   static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
+    return open(directory, closeDirectory, deletionPolicy, null);
+  }
 
-    return (DirectoryIndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+  static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit) throws CorruptIndexException, IOException {
+
+    SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
 
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
 
@@ -95,7 +100,17 @@ abstract class DirectoryIndexReader extends IndexReader {
         reader.setDeletionPolicy(deletionPolicy);
         return reader;
       }
-    }.run();
+    };
+
+    if (commit == null)
+      return (DirectoryIndexReader) finder.run();
+    else {
+      if (directory != commit.getDirectory())
+        throw new IOException("the specified commit does not match the specified Directory");
+      // This can & will directly throw IOException if the
+      // specified commit point has been deleted:
+      return (DirectoryIndexReader) finder.doBody(commit.getSegmentsFileName());
+    }
   }
 
   public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
@@ -192,7 +207,7 @@ abstract class DirectoryIndexReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   protected void doCommit() throws IOException {
-    if(hasChanges){
+    if (hasChanges) {
       if (segmentInfos != null) {
 
         // Default deleter (for backwards compatibility) is
@@ -386,5 +401,52 @@ abstract class DirectoryIndexReader extends IndexReader {
    */
   public IndexCommit getIndexCommit() throws IOException {
     return new ReaderCommit(segmentInfos, directory);
+  }
+
+  /** @see IndexReader#listCommits */
+  public static Collection listCommits(Directory dir) throws IOException {
+
+    final String[] files = dir.list();
+    if (files == null)
+      throw new IOException("cannot read directory " + dir + ": list() returned null");
+
+    Collection commits = new ArrayList();
+
+    SegmentInfos latest = new SegmentInfos();
+    latest.read(dir);
+    final long currentGen = latest.getGeneration();
+
+    commits.add(new ReaderCommit(latest, dir));
+    
+    for(int i=0;i<files.length;i++) {
+
+      final String fileName = files[i];
+
+      if (fileName.startsWith(IndexFileNames.SEGMENTS) &&
+          !fileName.equals(IndexFileNames.SEGMENTS_GEN) &&
+          SegmentInfos.generationFromSegmentsFileName(fileName) < currentGen) {
+
+        SegmentInfos sis = new SegmentInfos();
+        try {
+          // IOException allowed to throw there, in case
+          // segments_N is corrupt
+          sis.read(dir, fileName);
+        } catch (FileNotFoundException fnfe) {
+          // LUCENE-948: on NFS (and maybe others), if
+          // you have writers switching back and forth
+          // between machines, it's very likely that the
+          // dir listing will be stale and will claim a
+          // file segments_X exists when in fact it
+          // doesn't.  So, we catch this and handle it
+          // as if the file does not exist
+          sis = null;
+        }
+
+        if (sis != null)
+          commits.add(new ReaderCommit(sis, dir));
+      }
+    }
+
+    return commits;
   }
 }

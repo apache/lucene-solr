@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Collection;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -258,6 +259,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       boolean autoCommit = pass < 2;
       boolean useCompoundFile = (pass % 2) > 0;
 
+      // Never deletes a commit
       KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
 
       Directory dir = new RAMDirectory();
@@ -267,6 +269,8 @@ public class TestDeletionPolicy extends LuceneTestCase
       writer.setUseCompoundFile(useCompoundFile);
       for(int i=0;i<107;i++) {
         addDoc(writer);
+        if (autoCommit && i%10 == 0)
+          writer.commit();
       }
       writer.close();
 
@@ -280,6 +284,24 @@ public class TestDeletionPolicy extends LuceneTestCase
         // If we are not auto committing then there should
         // be exactly 2 commits (one per close above):
         assertEquals(2, policy.numOnCommit);
+
+      // Test listCommits
+      Collection commits = IndexReader.listCommits(dir);
+      if (!autoCommit)
+        // 1 from opening writer + 2 from closing writer
+        assertEquals(3, commits.size());
+      else
+        // 1 from opening writer + 2 from closing writer +
+        // 11 from calling writer.commit() explicitly above
+        assertEquals(14, commits.size());
+
+      Iterator it = commits.iterator();
+      // Make sure we can open a reader on each commit:
+      while(it.hasNext()) {
+        IndexCommit commit = (IndexCommit) it.next();
+        IndexReader r = IndexReader.open(commit, null);
+        r.close();
+      }
 
       // Simplistic check: just verify all segments_N's still
       // exist, and, I can open a reader on each:

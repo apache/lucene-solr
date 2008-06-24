@@ -170,7 +170,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null);
+    return open(FSDirectory.getDirectory(path), true, null, null);
   }
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
@@ -180,7 +180,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null);
+    return open(FSDirectory.getDirectory(path), true, null, null);
   }
 
   /** Returns an IndexReader reading the index in the given Directory.
@@ -189,7 +189,17 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, false, null);
+    return open(directory, false, null, null);
+  }
+
+  /** Expert: returns an IndexReader reading the index in the given
+   * {@link IndexCommit}.
+   * @param commit the commit point to open
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), false, null, commit);
   }
 
   /** Expert: returns an IndexReader reading the index in the given
@@ -202,11 +212,26 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, false, deletionPolicy);
+    return open(directory, false, deletionPolicy, null);
   }
 
-  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy);
+  /** Expert: returns an IndexReader reading the index in the given
+   * Directory, using a specific commit and with a custom {@link IndexDeletionPolicy}.
+   * @param commit the specific {@link IndexCommit} to open;
+   * see {@link IndexReader#listCommits} to list all commits
+   * in a directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), false, deletionPolicy, commit);
+  }
+
+  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit) throws CorruptIndexException, IOException {
+    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy, commit);
   }
 
   /**
@@ -974,5 +999,21 @@ public abstract class IndexReader {
         ioe.printStackTrace();
       }
     }
+  }
+
+  /** Returns all commit points that exist in the Directory.
+   *  Normally, because the default is {@link
+   *  KeepOnlyLastCommitDeletionPolicy}, there would be only
+   *  one commit point.  But if you're using a custom {@link
+   *  DeletionPolicy} then there could be many commits.
+   *  Once you have a given commit, you can open a reader on
+   *  it by calling {@link IndexReader#open(Directory,
+   *  IndexCommit)}.  There must be at least one commit in
+   *  the Directory, else this method throws {@link
+   *  java.io.IOException}.  Note that if a commit is in
+   *  progress while this method is running, that commit
+   *  may or may not be returned array.  */
+  public static Collection listCommits(Directory dir) throws IOException {
+    return DirectoryIndexReader.listCommits(dir);
   }
 }
