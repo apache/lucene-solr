@@ -169,7 +169,7 @@ import org.apache.lucene.search.Similarity;
  * 
  * @author whoschek.AT.lbl.DOT.gov
  */
-public class MemoryIndex {
+public class MemoryIndex implements Serializable {
 
   /** info for each field: Map<String fieldName, Info field> */
   private final HashMap fields = new HashMap();
