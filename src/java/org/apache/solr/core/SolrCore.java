@@ -452,8 +452,14 @@ public final class SolrCore {
     return factory;
   }
 
+  /**
+   * Close all resources allocated by the core.
+   *  1. searcher
+   *  2. updateHandler
+   *  3. all CloseHooks will be notified
+   */
   public void close() {
-    log.info(logid+"CLOSING SolrCore!");
+    log.info(logid+" CLOSING SolrCore!");
     try {
       closeSearcher();
     } catch (Exception e) {
@@ -469,6 +475,11 @@ public final class SolrCore {
     } catch (Exception e) {
       SolrException.log(log,e);
     }
+    if( closeHooks != null ) {
+       for( CloseHook hook : closeHooks ) {
+         hook.close( this );
+       }
+     }
   }
 
   public boolean isClosed() {
@@ -477,6 +488,19 @@ public final class SolrCore {
   
   @Override
   protected void finalize() { close(); }
+
+  private List<CloseHook> closeHooks = null;
+
+   /**
+    * Add a close callback hook
+    */
+   public void addCloseHook( CloseHook hook )
+   {
+     if( closeHooks == null ) {
+       closeHooks = new ArrayList<CloseHook>();
+     }
+     closeHooks.add( hook );
+   }
 
   /**
    * Returns a Request object based on the admin/pingQuery section

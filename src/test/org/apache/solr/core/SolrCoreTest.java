@@ -22,6 +22,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 public class SolrCoreTest extends AbstractSolrTestCase {
 
@@ -34,17 +35,42 @@ public class SolrCoreTest extends AbstractSolrTestCase {
 
     EmptyRequestHandler handler1 = new EmptyRequestHandler();
     EmptyRequestHandler handler2 = new EmptyRequestHandler();
-    
+
     String path = "/this/is A path /that won't be registered!";
     SolrRequestHandler old = core.registerRequestHandler( path, handler1 );
     assertNull( old ); // should not be anything...
-    assertEquals( core.getRequestHandlers().get( path ), handler1 ); 
+    assertEquals( core.getRequestHandlers().get( path ), handler1 );
     old = core.registerRequestHandler( path, handler2 );
     assertEquals( old, handler1 ); // should pop out the old one
-    assertEquals( core.getRequestHandlers().get( path ), handler2 ); 
+    assertEquals( core.getRequestHandlers().get( path ), handler2 );
+  }
+
+  public void testClose() throws Exception {
+    SolrCore core = h.getCore();
+
+    ClosingRequestHandler handler1 = new ClosingRequestHandler();
+    handler1.inform( core );
+
+    String path = "/this/is A path /that won't be registered!";
+    SolrRequestHandler old = core.registerRequestHandler( path, handler1 );
+    assertNull( old ); // should not be anything...
+    assertEquals( core.getRequestHandlers().get( path ), handler1 );
+    core.close();
+    assertTrue("Handler not closed", handler1.closed == true);
   }
 }
 
+class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware {
+  boolean closed = false;
+
+  public void inform(SolrCore core) {
+    core.addCloseHook( new CloseHook() {
+      public void close(SolrCore core) {
+        closed = true;
+      }
+    });
+  }
+}
 
 /**
  * An empty handler for testing
@@ -55,9 +81,9 @@ class EmptyRequestHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // nothing!
   }
-  
+
   @Override public String getDescription() { return null; }
   @Override public String getSource() { return null; }
   @Override public String getSourceId() { return null; }
-  @Override public String getVersion() { return null; } 
+  @Override public String getVersion() { return null; }
 }
