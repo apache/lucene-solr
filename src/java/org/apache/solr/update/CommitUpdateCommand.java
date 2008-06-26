@@ -24,6 +24,13 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean waitFlush;
   public boolean waitSearcher=true;
 
+  /**
+   * During optimize, optimize down to <= this many segments.  Must be >= 1
+   *
+   * @see {@link org.apache.lucene.index.IndexWriter#optimize(int)}
+   */
+  public int maxOptimizeSegments = 1;
+
   public CommitUpdateCommand(boolean optimize) {
     super("commit");
     this.optimize=optimize;

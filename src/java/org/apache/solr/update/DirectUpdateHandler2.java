@@ -360,8 +360,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
       if (cmd.optimize) {
         closeSearcher();
-        openWriter(); 
-        writer.optimize();
+        openWriter();
+        writer.optimize(cmd.maxOptimizeSegments);
       }
 
       closeSearcher();
@@ -402,8 +402,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         SolrException.log(log,e);
       }
     }
-
-    return;
   }
 
 
@@ -521,7 +519,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       try {
         CommitUpdateCommand command = new CommitUpdateCommand( false );
         command.waitFlush = true;
-        command.waitSearcher = true; 
+        command.waitSearcher = true;
+        //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
         commit( command );
         autoCommitCount++;
       } 

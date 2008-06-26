@@ -67,6 +67,7 @@ public class RequestHandlerUtils
       CommitUpdateCommand cmd = new CommitUpdateCommand( optimize );
       cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
+      cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
       req.getCore().getUpdateHandler().commit( cmd );
       
       // Lets wait till after solr1.2 to define consistent output format
@@ -99,6 +100,7 @@ public class RequestHandlerUtils
       CommitUpdateCommand cmd = new CommitUpdateCommand( optimize );
       cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
+      cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
       processor.processCommit( cmd );
       return true;
     }

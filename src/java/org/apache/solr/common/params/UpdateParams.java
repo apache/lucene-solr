@@ -42,4 +42,8 @@ public interface UpdateParams
 
   /** Select the update processor to use.  A RequestHandler may or may not respect this parameter */
   public static final String UPDATE_PROCESSOR = "update.processor";
+  /**
+   * If optimizing, set the maximum number of segments left in the index after optimization.  1 is the default (and is equivalent to calling IndexWriter.optimize() in Lucene).
+   */
+  public static final String MAX_OPTIMIZE_SEGMENTS = "maxSegments";
 }

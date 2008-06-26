@@ -95,7 +95,7 @@ public abstract class SolrServer implements Serializable
    * @throws IOException 
    */
   public UpdateResponse optimize( ) throws SolrServerException, IOException {
-    return optimize(true, true);
+    return optimize(true, true, 1);
   }
   
   public UpdateResponse commit( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
@@ -103,7 +103,11 @@ public abstract class SolrServer implements Serializable
   }
 
   public UpdateResponse optimize( boolean waitFlush, boolean waitSearcher ) throws SolrServerException, IOException {
-    return new UpdateRequest().setAction( UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher ).process( this );
+    return optimize(waitFlush, waitSearcher, 1);
+  }
+
+  public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher, int maxSegments ) throws SolrServerException, IOException {
+    return new UpdateRequest().setAction( UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher, maxSegments ).process( this );
   }
 
   public UpdateResponse deleteById(String id) throws SolrServerException, IOException {

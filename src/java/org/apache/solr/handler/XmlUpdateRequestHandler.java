@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.io.File;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -75,7 +76,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String ALLOW_DUPS = "allowDups"; 
 
   XMLInputFactory inputFactory;
-  
+
+
   @Override
   public void init(NamedList args)
   {
@@ -210,7 +212,10 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
               } else if (WAIT_SEARCHER.equals(attrName)) {
                 cmd.waitSearcher = StrUtils.parseBoolean(attrVal);
                 sawWaitSearcher = true;
-              } else {
+              } else if (UpdateParams.MAX_OPTIMIZE_SEGMENTS.equals(attrName)){
+                cmd.maxOptimizeSegments = Integer.parseInt(attrVal);
+              }
+                else {
                 log.warning("unexpected attribute commit/@" + attrName);
               }
             }

@@ -49,6 +49,8 @@ import org.apache.solr.core.SolrCore;
  *
  * @version $Id$
  * @since solr 0.9
+ *
+ * @deprecated Use {@link DirectUpdateHandler2} instead.  This is only kept around for back-compatibility (way back).
  */
 
 public class DirectUpdateHandler extends UpdateHandler {
@@ -236,7 +238,7 @@ public class DirectUpdateHandler extends UpdateHandler {
       closeSearcher();  // flush any deletes
       if (cmd.optimize) {
         openWriter();  // writer needs to be open to optimize
-        writer.optimize();
+        writer.optimize(cmd.maxOptimizeSegments);
       }
       closeWriter();
 

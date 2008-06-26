@@ -127,11 +127,16 @@ public class UpdateRequest extends SolrRequest
 
   /** Sets appropriate parameters for the given ACTION */
   public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher ) {
+    return setAction(action, waitFlush, waitSearcher, 1);
+  }
+
+  public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments ) {
     if (params == null)
       params = new ModifiableSolrParams();
 
     if( action == ACTION.OPTIMIZE ) {
       params.set( UpdateParams.OPTIMIZE, "true" );
+      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, maxSegments);
     }
     else if( action == ACTION.COMMIT ) {
       params.set( UpdateParams.COMMIT, "true" );
@@ -140,6 +145,7 @@ public class UpdateRequest extends SolrRequest
     params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
     return this;
   }
+  
 
   public void setParam(String param, String value) {
     if (params == null)
