@@ -127,7 +127,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong deleteByQueryCommandsCumulative= new AtomicLong();
   AtomicLong commitCommands= new AtomicLong();
   AtomicLong optimizeCommands= new AtomicLong();
-  AtomicLong numDocsDeleted= new AtomicLong();
   AtomicLong numDocsPending= new AtomicLong();
   AtomicLong numErrors = new AtomicLong();
   AtomicLong numErrorsCumulative = new AtomicLong();
@@ -304,7 +303,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      Query q = QueryParsing.parseQuery(cmd.query, schema);
      delAll = MatchAllDocsQuery.class == q.getClass();
 
-     int totDeleted = 0;
      iwCommit.lock();
      try {
        if (delAll) {
@@ -317,13 +315,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      } finally {
        iwCommit.unlock();
      }
-
-      if (!delAll) {
-        if (core.log.isLoggable(Level.FINE)) {
-          core.log.fine(core.getLogId()+"docs deleted by query:" + totDeleted);
-        }
-        numDocsDeleted.getAndAdd(totDeleted);
-      }
 
      madeIt=true;
 
@@ -613,7 +604,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     lst.add("cumulative_deletesById", deleteByIdCommandsCumulative.get());
     lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.get());
     lst.add("cumulative_errors", numErrorsCumulative.get());
-    lst.add("docsDeleted", numDocsDeleted.get());
     return lst;
   }
 
