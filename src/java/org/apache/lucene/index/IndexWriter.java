@@ -3416,9 +3416,8 @@ public class IndexWriter {
     return docWriter.getRAMUsed();
   }
 
-  /** Expert:  Return the number of documents whose segments are currently cached in memory.
-   * Useful when calling flush()
-   */
+  /** Expert:  Return the number of documents currently
+   *  buffered in RAM. */
   public final synchronized int numRamDocs() {
     ensureOpen();
     return docWriter.getNumDocsInRAM();
