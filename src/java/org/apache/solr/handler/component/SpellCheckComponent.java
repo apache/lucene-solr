@@ -135,6 +135,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   @SuppressWarnings("unchecked")
   protected NamedList initParams;
+  
+  @SuppressWarnings("unchecked")
+  protected SolrParams defaults;
 
   /**
    * Key is the dictionary, value is the SpellChecker for that dictionary name
@@ -148,6 +151,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   public void init(NamedList args) {
     super.init(args);
     this.initParams = args;
+    if (args != null)   {
+      Object o = args.get("defaults");
+      if (o != null && o instanceof NamedList) {
+        defaults = SolrParams.toSolrParams((NamedList)o);
+      }
+    }
   }
 
   @Override
@@ -187,24 +196,28 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     if (tokens != null && tokens.isEmpty() == false) {
       if (spellChecker != null) {
-        int count = params.getInt(SPELLCHECK_COUNT, 1);
+        int count = params.getInt(SPELLCHECK_COUNT, defaults.getInt(
+            SPELLCHECK_COUNT, 1));
         boolean onlyMorePopular = params.getBool(SPELLCHECK_ONLY_MORE_POPULAR,
-                DEFAULT_ONLY_MORE_POPULAR);
+            defaults.getBool(SPELLCHECK_ONLY_MORE_POPULAR,
+                DEFAULT_ONLY_MORE_POPULAR));
         boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS,
-                false);
+            defaults.getBool(SPELLCHECK_EXTENDED_RESULTS, false));
         NamedList response = new SimpleOrderedMap();
         IndexReader reader = rb.req.getSearcher().getReader();
-        boolean collate = params.getBool(SPELLCHECK_COLLATE, false);
-        SpellingResult spellingResult = spellChecker.getSuggestions(tokens, reader, count, onlyMorePopular,
-                extendedResults);
+        boolean collate = params.getBool(SPELLCHECK_COLLATE, defaults.getBool(
+            SPELLCHECK_COLLATE, false));
+        SpellingResult spellingResult = spellChecker.getSuggestions(tokens,
+            reader, count, onlyMorePopular, extendedResults);
         if (spellingResult != null) {
-          response.add("suggestions", toNamedList(spellingResult, q, extendedResults, collate));
+          response.add("suggestions", toNamedList(spellingResult, q,
+              extendedResults, collate));
           rb.rsp.add("spellcheck", response);
         }
 
       } else {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-                "Specified dictionary does not exist.");
+            "Specified dictionary does not exist.");
       }
     }
   }
