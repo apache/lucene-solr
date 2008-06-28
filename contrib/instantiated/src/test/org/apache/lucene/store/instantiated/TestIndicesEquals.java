@@ -47,7 +47,7 @@ public class TestIndicesEquals extends TestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(), true);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
       indexWriter.addDocument(document);
@@ -59,8 +59,9 @@ public class TestIndicesEquals extends TestCase {
     InstantiatedIndex ii = new InstantiatedIndex(ir);
     ir.close();
 
-    testEquals(dir, ii);
+    testEqualBehaviour(dir, ii);
   }
+
 
   public void testInstantiatedIndexWriter() throws Exception {
 
@@ -86,7 +87,7 @@ public class TestIndicesEquals extends TestCase {
     }
     instantiatedIndexWriter.close();
 
-    testEquals(dir, ii);
+    testEqualBehaviour(dir, ii);
 
     testTermDocs(dir, ii);
 
@@ -186,12 +187,42 @@ public class TestIndicesEquals extends TestCase {
    * @param testIndex    the index that is supposed to equals the apriori index.
    * @throws Exception
    */
+  protected void testEqualBehaviour(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
+
+    testEquals(aprioriIndex,  testIndex);
+
+       // delete a few documents
+    IndexReader ir = IndexReader.open(aprioriIndex);
+    ir.deleteDocument(3);
+    ir.deleteDocument(8);
+    ir.close();
+
+    ir = testIndex.indexReaderFactory();
+    ir.deleteDocument(3);
+    ir.deleteDocument(8);
+    ir.close();
+
+    // make sure they still equal
+    testEquals(aprioriIndex,  testIndex);
+  }
+
   protected void testEquals(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
     IndexReader aprioriReader = IndexReader.open(aprioriIndex);
     IndexReader testReader = testIndex.indexReaderFactory();
 
     assertEquals(aprioriReader.numDocs(), testReader.numDocs());
+
+    // assert field options
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED), testReader.getFieldNames(IndexReader.FieldOption.INDEXED));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), testReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), testReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET));
+    assertEquals(aprioriReader.getFieldNames(IndexReader.FieldOption.UNINDEXED), testReader.getFieldNames(IndexReader.FieldOption.UNINDEXED));
 
     for (Object field : aprioriReader.getFieldNames(IndexReader.FieldOption.ALL)) {
 

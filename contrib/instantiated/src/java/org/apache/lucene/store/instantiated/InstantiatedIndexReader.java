@@ -16,22 +16,37 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.store.Directory;
 
-import java.io.IOException;
-import java.util.*;
-
 /**
- * An InstantiatedIndexReader is not a snapshot in time,
- * it is completely in sync with the latest commit to the store!
- *
+ * An InstantiatedIndexReader is not a snapshot in time, it is completely in
+ * sync with the latest commit to the store!
+ * 
  * Consider using InstantiatedIndex as if it was immutable.
  */
-public class InstantiatedIndexReader
-    extends IndexReader {
+public class InstantiatedIndexReader extends IndexReader {
 
   private final InstantiatedIndex index;
 
@@ -47,36 +62,32 @@ public class InstantiatedIndexReader
     return true;
   }
 
-
   /**
-   * An InstantiatedIndexReader is not a snapshot in time,
-   * it is completely in sync with the latest commit to the store!
-   *  
+   * An InstantiatedIndexReader is not a snapshot in time, it is completely in
+   * sync with the latest commit to the store!
+   * 
    * @return output from {@link InstantiatedIndex#getVersion()} in associated instantiated index.
    */
   public long getVersion() {
     return index.getVersion();
   }
 
-
   public Directory directory() {
     throw new UnsupportedOperationException();
   }
 
-
   /**
    * An InstantiatedIndexReader is always current!
-   *
-   * Check whether this IndexReader is still using the
-   * current (i.e., most recently committed) version of the
-   * index.  If a writer has committed any changes to the
-   * index since this reader was opened, this will return
-   * <code>false</code>, in which case you must open a new
-   * IndexReader in order to see the changes.  See the
-   * description of the <a href="IndexWriter.html#autoCommit"><code>autoCommit</code></a>
-   * flag which controls when the {@link IndexWriter}
-   * actually commits changes to the index.
-   *
+   * 
+   * Check whether this IndexReader is still using the current (i.e., most
+   * recently committed) version of the index. If a writer has committed any
+   * changes to the index since this reader was opened, this will return
+   * <code>false</code>, in which case you must open a new IndexReader in
+   * order to see the changes. See the description of the <a
+   * href="IndexWriter.html#autoCommit"><code>autoCommit</code></a> flag
+   * which controls when the {@link IndexWriter} actually commits changes to the
+   * index.
+   * 
    * @return always true
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -92,7 +103,7 @@ public class InstantiatedIndexReader
 
   private Set<InstantiatedDocument> deletedDocuments = new HashSet<InstantiatedDocument>();
   private Set<Integer> deletedDocumentNumbers = new HashSet<Integer>();
-  private Map<String, List<NormUpdate>> updatedNormsByFieldNameAndDocumentNumber = null;
+  private Map<String,List<NormUpdate>> updatedNormsByFieldNameAndDocumentNumber = null;
 
   private class NormUpdate {
     private int doc;
@@ -140,7 +151,7 @@ public class InstantiatedIndexReader
 
     // 1. update norms
     if (updatedNormsByFieldNameAndDocumentNumber != null) {
-      for (Map.Entry<String, List<NormUpdate>> e : updatedNormsByFieldNameAndDocumentNumber.entrySet()) {
+      for (Map.Entry<String,List<NormUpdate>> e : updatedNormsByFieldNameAndDocumentNumber.entrySet()) {
         byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(e.getKey());
         for (NormUpdate normUpdate : e.getValue()) {
           norms[normUpdate.doc] = normUpdate.value;
@@ -168,27 +179,67 @@ public class InstantiatedIndexReader
 
   protected void doClose() throws IOException {
     // ignored
+    // todo perhaps release all associated instances?
   }
 
-  public Collection getFieldNames(FieldOption fldOption) {
-    if (fldOption != FieldOption.ALL) {
-      throw new IllegalArgumentException("Only FieldOption.ALL implemented."); // todo
+  public Collection getFieldNames(FieldOption fieldOption) {
+    Set<String> fieldSet = new HashSet<String>();
+    for (FieldSetting fi : index.getFieldSettings().values()) {
+      if (fieldOption == IndexReader.FieldOption.ALL) {
+        fieldSet.add(fi.fieldName);
+      } else if (!fi.indexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.indexed && fieldOption == IndexReader.FieldOption.INDEXED) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.indexed && fi.storeTermVector == false && fieldOption == IndexReader.FieldOption.INDEXED_NO_TERMVECTOR) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.storeTermVector == true && fi.storePositionWithTermVector == false && fi.storeOffsetWithTermVector == false
+          && fieldOption == IndexReader.FieldOption.TERMVECTOR) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.indexed && fi.storeTermVector && fieldOption == IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.storePositionWithTermVector && fi.storeOffsetWithTermVector == false
+          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION) {
+        fieldSet.add(fi.fieldName);
+      } else if (fi.storeOffsetWithTermVector && fi.storePositionWithTermVector == false
+          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET) {
+        fieldSet.add(fi.fieldName);
+      } else if ((fi.storeOffsetWithTermVector && fi.storePositionWithTermVector)
+          && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
+        fieldSet.add(fi.fieldName);
+      } 
     }
-    return new ArrayList<String>(getIndex().getTermsByFieldAndText().keySet());
+    return fieldSet;
   }
-
 
   /**
-   * This implementation ignores the field selector! All fields are always returned
+   * Return the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup>
+   * position.
+     <p>
+   * <b>Warning!</b>
+   * The resulting document is the actual stored document instance
+   * and not a deserialized clone as retuned by an IndexReader
+   * over a {@link org.apache.lucene.store.Directory}.
+   * I.e., if you need to touch the document, clone it first!
+   * <p>
+   * This can also be seen as a feature for live canges of stored values,
+   * but be carful! Adding a field with an name unknown to the index
+   * or to a field with previously no stored values will make
+   * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
+   * out of sync, causing problems for instance when merging the
+   * instantiated index to another index.
+     <p>
+   * This implementation ignores the field selector! All stored fields are always returned!
+   * <p>
    *
-   * Get the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup> position.
-   *
-   * @param n Get the document at the <code>n</code><sup>th</sup> position
+   * @param n document number
    * @param fieldSelector ignored
    * @return The stored fields of the {@link org.apache.lucene.document.Document} at the nth position
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   *
+   * 
    * @see org.apache.lucene.document.Fieldable
    * @see org.apache.lucene.document.FieldSelector
    * @see org.apache.lucene.document.SetBasedFieldSelector
@@ -198,19 +249,34 @@ public class InstantiatedIndexReader
     return document(n);
   }
 
+  /**
+   * Returns the stored fields of the <code>n</code><sup>th</sup>
+   * <code>Document</code> in this index.
+   * <p>
+   * <b>Warning!</b>
+   * The resulting document is the actual stored document instance
+   * and not a deserialized clone as retuned by an IndexReader
+   * over a {@link org.apache.lucene.store.Directory}.
+   * I.e., if you need to touch the document, clone it first!
+   * <p>
+   * This can also be seen as a feature for live canges of stored values,
+   * but be carful! Adding a field with an name unknown to the index
+   * or to a field with previously no stored values will make
+   * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
+   * out of sync, causing problems for instance when merging the
+   * instantiated index to another index.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+
   public Document document(int n) throws IOException {
-    if ((deletedDocumentNumbers != null
-        && deletedDocumentNumbers.contains(n))
-        ||
-        (getIndex().getDeletedDocuments() != null
-            && getIndex().getDeletedDocuments().contains(n))) {
-      return null;
-    }
-    return getIndex().getDocumentsByNumber()[n].getDocument();
+    return isDeleted(n) ? null : getIndex().getDocumentsByNumber()[n].getDocument();
   }
 
   /**
-   * never ever touch these values. it is the true values, unless norms have been touched.
+   * never ever touch these values. it is the true values, unless norms have
+   * been touched.
    */
   public byte[] norms(String field) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
@@ -233,7 +299,7 @@ public class InstantiatedIndexReader
 
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
     if (updatedNormsByFieldNameAndDocumentNumber == null) {
-      updatedNormsByFieldNameAndDocumentNumber = new HashMap<String, List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
+      updatedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
     }
     List<NormUpdate> list = updatedNormsByFieldNameAndDocumentNumber.get(field);
     if (list == null) {
@@ -252,7 +318,6 @@ public class InstantiatedIndexReader
     }
   }
 
-
   public TermEnum terms() throws IOException {
     return new InstantiatedTermEnum(this);
   }
@@ -260,11 +325,11 @@ public class InstantiatedIndexReader
   public TermEnum terms(Term t) throws IOException {
     InstantiatedTerm it = getIndex().findTerm(t);
     if (it != null) {
-      return new InstantiatedTermEnum(this, it.getTermIndex());      
+      return new InstantiatedTermEnum(this, it.getTermIndex());
     } else {
       int startPos = Arrays.binarySearch(index.getOrderedTerms(), t, InstantiatedTerm.termComparator);
       if (startPos < 0) {
-        startPos = -1 -startPos;
+        startPos = -1 - startPos;
       }
       return new InstantiatedTermEnum(this, startPos);
     }
@@ -293,19 +358,16 @@ public class InstantiatedIndexReader
 
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    if (doc.getVectorSpace() == null
-        || doc.getVectorSpace().get(field) == null) {
+    if (doc.getVectorSpace() == null || doc.getVectorSpace().get(field) == null) {
       return null;
     } else {
       return new InstantiatedTermPositionVector(doc, field);
     }
   }
 
-
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    if (doc.getVectorSpace() != null
-        && doc.getVectorSpace().get(field) == null) {
+    if (doc.getVectorSpace() != null && doc.getVectorSpace().get(field) == null) {
       List<InstantiatedTermDocumentInformation> tv = doc.getVectorSpace().get(field);
       mapper.setExpectations(field, tv.size(), true, true);
       for (InstantiatedTermDocumentInformation tdi : tv) {
@@ -316,7 +378,7 @@ public class InstantiatedIndexReader
 
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    for (Map.Entry<String, List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
+    for (Map.Entry<String,List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
       mapper.setExpectations(e.getKey(), e.getValue().size(), true, true);
       for (InstantiatedTermDocumentInformation tdi : e.getValue()) {
         mapper.map(tdi.getTerm().text(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());

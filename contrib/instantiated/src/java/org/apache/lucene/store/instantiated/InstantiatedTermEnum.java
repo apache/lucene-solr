@@ -61,7 +61,7 @@ public class InstantiatedTermEnum
    * Returns the current Term in the enumeration.
    */
   public Term term() {
-    return /*term == null ? null :*/ term.getTerm();
+    return term == null ? null : term.getTerm();
   }
 
   /**

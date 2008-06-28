@@ -121,16 +121,11 @@ public class InstantiatedTermDocs
     } else {
       return true;
     }
-
-
   }
 
   /**
    * Does nothing
    */
   public void close() {
-
   }
-
-
 }

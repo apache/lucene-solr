@@ -1,0 +1,33 @@
+Lucene InstantiatedIndex contrib module change Log
+
+======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+ (None)
+
+API Changes
+
+ (None)
+
+Bug fixes
+
+ 1. LUCENE-1312: Added full support for InstantiatedIndexReader#getFieldNames()
+    and tests that assert that deleted documents behaves as they should (they did).
+    (Jason Rutherglen, Karl Wettin)
+
+New features
+
+ (None)
+
+Documentation
+
+ (None)
+
+Build
+
+ (None)
+
+Test Cases
+
+ (None)

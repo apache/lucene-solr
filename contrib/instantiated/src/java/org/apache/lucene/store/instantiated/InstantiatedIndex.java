@@ -16,14 +16,24 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.*;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermPositions;
 
 /**
  * Represented as a coupled graph of class instances, this
@@ -49,7 +59,8 @@ public class InstantiatedIndex
   private long version = System.currentTimeMillis();
 
   private InstantiatedDocument[] documentsByNumber;
-  /** todo: this should be a BitSet */
+
+  /** todo: should this be a BitSet? */
   private Set<Integer> deletedDocuments;
 
   private Map<String, Map<String, InstantiatedTerm>> termsByFieldAndText;
@@ -57,6 +68,7 @@ public class InstantiatedIndex
 
   private Map<String, byte[]> normsByFieldNameAndDocumentNumber;
 
+  private FieldSettings fieldSettings;
 
   /**
    * Creates an empty instantiated index for you to fill with data using an {@link org.apache.lucene.store.instantiated.InstantiatedIndexWriter}. 
@@ -68,12 +80,14 @@ public class InstantiatedIndex
   void initialize() {
     // todo: clear index without loosing memory (uncouple stuff)
     termsByFieldAndText = new HashMap<String, Map<String, InstantiatedTerm>>();
+    fieldSettings = new FieldSettings();
     orderedTerms = new InstantiatedTerm[0];
     documentsByNumber = new InstantiatedDocument[0];
     normsByFieldNameAndDocumentNumber = new HashMap<String, byte[]>();
     deletedDocuments = new HashSet<Integer>();
   }
 
+  
   /**
    * Creates a new instantiated index that looks just like the index in a specific state as represented by a reader.
    *
@@ -83,7 +97,9 @@ public class InstantiatedIndex
   public InstantiatedIndex(IndexReader sourceIndexReader) throws IOException {
     this(sourceIndexReader, null);
   }
+  
 
+  
   /**
    * Creates a new instantiated index that looks just like the index in a specific state as represented by a reader.
    *
@@ -97,9 +113,62 @@ public class InstantiatedIndex
       throw new IOException("Source index is not optimized.");
     }
 
-    Collection<String> allFieldNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.ALL);
 
     initialize();
+
+    Collection<String> allFieldNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.ALL);
+        
+    // load field options
+
+    Collection<String> indexedNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED);
+    for (String name : indexedNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.indexed = true;
+    }
+    Collection<String> indexedNoVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
+    for (String name : indexedNoVecNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storeTermVector = false;
+      setting.indexed = true;
+    }
+    Collection<String> indexedVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
+    for (String name : indexedVecNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storeTermVector = true;
+      setting.indexed = true;
+    }
+    Collection<String> payloadNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS);
+    for (String name : payloadNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storePayloads = true;
+    }
+    Collection<String> termVecNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR);
+    for (String name : termVecNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storeTermVector = true;
+    }
+    Collection<String> termVecOffsetNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET);
+    for (String name : termVecOffsetNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storeOffsetWithTermVector = true;
+    }
+    Collection<String> termVecPosNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION);
+    for (String name : termVecPosNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storePositionWithTermVector = true;
+    }
+    Collection<String> termVecPosOffNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET);
+    for (String name : termVecPosOffNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.storeOffsetWithTermVector = true;
+      setting.storePositionWithTermVector = true;
+    }
+    Collection<String> unindexedNames = sourceIndexReader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
+    for (String name : unindexedNames) {
+      FieldSetting setting = fieldSettings.get(name, true);
+      setting.indexed = false;
+    }
+
 
     documentsByNumber = new InstantiatedDocument[sourceIndexReader.numDocs()];
 
@@ -128,6 +197,8 @@ public class InstantiatedIndex
         }
       }
     }
+
+
 
     // create norms
     for (String fieldName : allFieldNames) {
@@ -270,5 +341,10 @@ public class InstantiatedIndex
 
   void setVersion(long version) {
     this.version = version;
+  }
+
+
+  FieldSettings getFieldSettings() {
+    return fieldSettings;
   }
 }

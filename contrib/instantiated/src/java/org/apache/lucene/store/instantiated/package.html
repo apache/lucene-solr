@@ -70,9 +70,10 @@
 <h2>Caveats</h2>
 <ul>
   <li>No locks! Consider using InstantiatedIndex as if it was immutable.</li>
-  <li>No documents with fields containing readers!</li>
-  <li>Only FieldOption.All allowed by IndexReader#getFieldNames(FieldOption).</li>
+  <li>No documents with fields containing readers.</li>
   <li>No field selection when retrieving documents, as all stored field are available in memory.</li>
+  <li>Any document returned must cloned if they are to be touched.</li>
+  <li>Norms array returned must not be touched.</li>
 </ul>
 
 <h2>Use cases</h2>

@@ -16,6 +16,22 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -27,11 +43,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
-
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.StringReader;
-import java.util.*;
 
 /**
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
@@ -161,6 +172,11 @@ public class InstantiatedIndexWriter {
 
     boolean orderedTermsDirty = false;
     Set<InstantiatedTerm> dirtyTerms = new HashSet<InstantiatedTerm>(1000);
+    
+    Map<String, FieldSetting> fieldSettingsByFieldName = new HashMap<String, FieldSetting>();
+    for (String fieldName : fieldNameBuffer) {
+      fieldSettingsByFieldName.put(fieldName, new FieldSetting(fieldName));
+    }
 
     InstantiatedDocument[] documentsByNumber = new InstantiatedDocument[index.getDocumentsByNumber().length + termDocumentInformationFactoryByDocument.size()];
     System.arraycopy(index.getDocumentsByNumber(), 0, documentsByNumber, 0, index.getDocumentsByNumber().length);
@@ -215,7 +231,7 @@ public class InstantiatedIndexWriter {
         }
         termsInDocument += eFieldTermDocInfoFactoriesByTermText.getValue().size();
 
-        if (eFieldTermDocInfoFactoriesByTermText.getKey().isIndexed && !eFieldTermDocInfoFactoriesByTermText.getKey().omitNorms) {
+        if (eFieldTermDocInfoFactoriesByTermText.getKey().indexed && !eFieldTermDocInfoFactoriesByTermText.getKey().omitNorms) {
           float norm = eFieldTermDocInfoFactoriesByTermText.getKey().boost;
           norm *= document.getDocument().getBoost();
           norm *= similarity.lengthNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
@@ -340,6 +356,7 @@ public class InstantiatedIndexWriter {
         }
 
       }
+      fieldSettingsByFieldName.putAll(documentFieldSettingsByFieldName);
     }
 
     // order document informations in dirty terms
@@ -358,6 +375,9 @@ public class InstantiatedIndexWriter {
     index.setDocumentsByNumber(documentsByNumber);
     index.setOrderedTerms(orderedTerms.toArray(new InstantiatedTerm[orderedTerms.size()]));
 
+    for (FieldSetting fieldSetting : fieldSettingsByFieldName.values()) {
+      index.getFieldSettings().merge(fieldSetting);
+    }
     // set term index
     if (orderedTermsDirty) {
       // todo optimize, only update from start position
@@ -434,45 +454,46 @@ public class InstantiatedIndexWriter {
 
     Map<String /* field name */, FieldSetting> fieldSettingsByFieldName = new HashMap<String, FieldSetting>();
     for (Field field : (List<Field>) document.getDocument().getFields()) {
-      FieldSetting fieldSettings = fieldSettingsByFieldName.get(field.name());
-      if (fieldSettings == null) {
-        fieldSettings = new FieldSetting();
-        fieldSettings.fieldName = field.name().intern();
-        fieldSettingsByFieldName.put(fieldSettings.fieldName, fieldSettings);
-        fieldNameBuffer.add(fieldSettings.fieldName);
+      FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
+      if (fieldSetting == null) {
+        fieldSetting = new FieldSetting();
+        fieldSetting.fieldName = field.name().intern();
+        fieldSettingsByFieldName.put(fieldSetting.fieldName, fieldSetting);
+        fieldNameBuffer.add(fieldSetting.fieldName);
       }
 
       // todo: fixme: multiple fields with the same name does not mean field boost += more boost.
-      fieldSettings.boost *= field.getBoost();
+      fieldSetting.boost *= field.getBoost();
       //fieldSettings.dimensions++;
 
+
       // once fieldSettings, always fieldSettings.
-      if (field.getOmitNorms() != fieldSettings.omitNorms) {
-        fieldSettings.omitNorms = true;
+      if (field.getOmitNorms()) {
+        fieldSetting.omitNorms = true;
       }
-      if (field.isIndexed() != fieldSettings.isIndexed) {
-        fieldSettings.isIndexed = true;
+      if (field.isIndexed() ) {
+        fieldSetting.indexed = true;
       }
-      if (field.isTokenized() != fieldSettings.isTokenized) {
-        fieldSettings.isTokenized = true;
+      if (field.isTokenized()) {
+        fieldSetting.tokenized = true;
       }
-      if (field.isCompressed() != fieldSettings.isCompressed) {
-        fieldSettings.isCompressed = true;
+      if (field.isCompressed()) {
+        fieldSetting.compressed = true;
       }
-      if (field.isStored() != fieldSettings.isStored) {
-        fieldSettings.isStored = true;
+      if (field.isStored()) {
+        fieldSetting.stored = true;
       }
-      if (field.isBinary() != fieldSettings.isBinary) {
-        fieldSettings.isBinary = true;
+      if (field.isBinary()) {
+        fieldSetting.isBinary = true;
       }
-      if (field.isTermVectorStored() != fieldSettings.storeTermVector) {
-        fieldSettings.storeTermVector = true;
+      if (field.isTermVectorStored()) {
+        fieldSetting.storeTermVector = true;
       }
-      if (field.isStorePositionWithTermVector() != fieldSettings.storePositionWithTermVector) {
-        fieldSettings.storePositionWithTermVector = true;
+      if (field.isStorePositionWithTermVector()) {
+        fieldSetting.storePositionWithTermVector = true;
       }
-      if (field.isStoreOffsetWithTermVector() != fieldSettings.storeOffsetWithTermVector) {
-        fieldSettings.storeOffsetWithTermVector = true;
+      if (field.isStoreOffsetWithTermVector()) {
+        fieldSetting.storeOffsetWithTermVector = true;
       }
     }
 
@@ -483,7 +504,7 @@ public class InstantiatedIndexWriter {
 
       Field field = it.next();
 
-      FieldSetting fieldSettings = fieldSettingsByFieldName.get(field.name());
+      FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
 
       if (field.isIndexed()) {
 
@@ -505,15 +526,15 @@ public class InstantiatedIndexWriter {
             next.setTermText(next.termText().intern()); // todo: not sure this needs to be interned?
             tokens.add(next); // the vector will be built on commit.
             next = tokenStream.next();
-            fieldSettings.fieldLength++;
-            if (fieldSettings.fieldLength > maxFieldLength) {
+            fieldSetting.fieldLength++;
+            if (fieldSetting.fieldLength > maxFieldLength) {
               break;
             }
           }
         } else {
           // untokenized
           tokens.add(new Token(field.stringValue().intern(), 0, field.stringValue().length(), "untokenized"));
-          fieldSettings.fieldLength++;
+          fieldSetting.fieldLength++;
         }
       }
 
@@ -528,7 +549,7 @@ public class InstantiatedIndexWriter {
 
     // build term vector, term positions and term offsets
     for (Map.Entry<Field, LinkedList<Token>> eField_Tokens : tokensByField.entrySet()) {
-      FieldSetting fieldSettings = fieldSettingsByFieldName.get(eField_Tokens.getKey().name());
+      FieldSetting fieldSetting = fieldSettingsByFieldName.get(eField_Tokens.getKey().name());
 
       Map<String, TermDocumentInformationFactory> termDocumentInformationFactoryByTermText = termDocumentInformationFactoryByTermTextAndFieldSetting.get(fieldSettingsByFieldName.get(eField_Tokens.getKey().name()));
       if (termDocumentInformationFactoryByTermText == null) {
@@ -539,9 +560,9 @@ public class InstantiatedIndexWriter {
       int lastOffset = 0;
 
       // for each new field, move positions a bunch.
-      if (fieldSettings.position > 0) {
+      if (fieldSetting.position > 0) {
         // todo what if no analyzer set, multiple fields with same name and index without tokenization?
-        fieldSettings.position += analyzer.getPositionIncrementGap(fieldSettings.fieldName);
+        fieldSetting.position += analyzer.getPositionIncrementGap(fieldSetting.fieldName);
       }
 
       for (Token token : eField_Tokens.getValue()) {
@@ -553,26 +574,27 @@ public class InstantiatedIndexWriter {
         }
         //termDocumentInformationFactory.termFrequency++;
 
-        fieldSettings.position += (token.getPositionIncrement() - 1);
-        termDocumentInformationFactory.termPositions.add(fieldSettings.position++);
+        fieldSetting.position += (token.getPositionIncrement() - 1);
+        termDocumentInformationFactory.termPositions.add(fieldSetting.position++);
 
         if (token.getPayload() != null && token.getPayload().length() > 0) {
           termDocumentInformationFactory.payloads.add(token.getPayload().toByteArray());
+          fieldSetting.storePayloads = true;
         } else {
           termDocumentInformationFactory.payloads.add(null);
         }
 
         if (eField_Tokens.getKey().isStoreOffsetWithTermVector()) {
 
-          termDocumentInformationFactory.termOffsets.add(new TermVectorOffsetInfo(fieldSettings.offset + token.startOffset(), fieldSettings.offset + token.endOffset()));
-          lastOffset = fieldSettings.offset + token.endOffset();
+          termDocumentInformationFactory.termOffsets.add(new TermVectorOffsetInfo(fieldSetting.offset + token.startOffset(), fieldSetting.offset + token.endOffset()));
+          lastOffset = fieldSetting.offset + token.endOffset();
         }
 
 
       }
 
       if (eField_Tokens.getKey().isStoreOffsetWithTermVector()) {
-        fieldSettings.offset = lastOffset + 1;
+        fieldSetting.offset = lastOffset + 1;
       }
 
     }
@@ -631,51 +653,30 @@ public class InstantiatedIndexWriter {
     return analyzer;
   }
 
-
-  private class FieldSetting {
-    private String fieldName;
-
-    private float boost = 1;
-    //private int dimensions = 0; // this is futuristic
-    private int position = 0;
-    private int offset;
-    private int fieldLength = 0;
-
-    private boolean storeTermVector = false;
-    private boolean storeOffsetWithTermVector = false;
-    private boolean storePositionWithTermVector = false;
-    private boolean omitNorms = false;
-    private boolean isTokenized = false;
-
-    private boolean isStored = false;
-    private boolean isIndexed = false;
-    private boolean isBinary = false;
-    private boolean isCompressed = false;
-
-    //private float norm;
-    //private byte encodedNorm;
-
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-
-      final FieldSetting that = (FieldSetting) o;
-
-      return fieldName.equals(that.fieldName);
-
-    }
-
-    public int hashCode() {
-      return fieldName.hashCode();
-    }
-  }
-
   private class TermDocumentInformationFactory {
     private LinkedList<byte[]> payloads = new LinkedList<byte[]>();
     private LinkedList<Integer> termPositions = new LinkedList<Integer>();
     private LinkedList<TermVectorOffsetInfo> termOffsets = new LinkedList<TermVectorOffsetInfo>();
   }
 
+
+  static class FieldSetting extends org.apache.lucene.store.instantiated.FieldSetting {
+
+    float boost = 1;
+    int position = 0;
+    int offset;
+    int fieldLength = 0;
+
+    boolean omitNorms = false;
+    boolean isBinary = false;
+
+    private FieldSetting() {
+    }
+
+    private FieldSetting(String fieldName) {
+      super(fieldName);
+    }
+  }
 
 
 }
