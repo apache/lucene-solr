@@ -16,6 +16,9 @@ Bug fixes
     and tests that assert that deleted documents behaves as they should (they did).
     (Jason Rutherglen, Karl Wettin)
 
+ 2. LUCENE-1318: InstantiatedIndexReader.norms(String, b[], int) didn't treat
+    the array offset right. (Jason Rutherglen via Karl Wettin)
+
 New features
 
  (None)

@@ -294,7 +294,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
   public void norms(String field, byte[] bytes, int offset) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
-    System.arraycopy(norms, offset, bytes, 0, norms.length);
+    System.arraycopy(norms, 0, bytes, offset, norms.length);
   }
 
   protected void doSetNorm(int doc, String field, byte value) throws IOException {

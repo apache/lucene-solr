@@ -252,6 +252,20 @@ public class TestIndicesEquals extends TestCase {
       }
 
 
+      // test norms as used by multireader
+
+      aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
+      aprioriReader.norms((String) field, aprioriNorms, 10);
+
+      testNorms = new byte[testReader.maxDoc() + 10];
+      testReader.norms((String) field, testNorms, 10);
+
+      assertEquals(aprioriNorms.length, testNorms.length);
+
+      for (int i = 0; i < aprioriNorms.length; i++) {
+        assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
+      }
+
     }
 
     for (int docIndex = 0; docIndex < aprioriReader.numDocs(); docIndex++) {
