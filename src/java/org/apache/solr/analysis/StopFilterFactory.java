@@ -53,6 +53,18 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
   private boolean ignoreCase;
   private boolean enablePositionIncrements;
 
+  public boolean isEnablePositionIncrements() {
+    return enablePositionIncrements;
+  }
+
+  public boolean isIgnoreCase() {
+    return ignoreCase;
+  }
+
+  public Set getStopWords() {
+    return stopWords;
+  }
+
   public StopFilter create(TokenStream input) {
     StopFilter stopFilter = new StopFilter(input,stopWords,ignoreCase);
     stopFilter.setEnablePositionIncrements(enablePositionIncrements);
