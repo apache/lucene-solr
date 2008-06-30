@@ -491,14 +491,7 @@
 
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
-    <lst name="defaults">
-      <!-- omp = Only More Popular -->
-      <str name="spellcheck.onlyMorePopular">false</str>
-      <!-- exr = Extended Results -->
-      <str name="spellcheck.extendedResults">false</str>
-      <!--  The number of suggestions to return -->
-      <str name="spellcheck.count">1</str>
-    </lst>
+
     <str name="queryAnalyzerFieldType">textSpell</str>
 
     <lst name="spellchecker">
@@ -528,6 +521,14 @@
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
   <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <!-- omp = Only More Popular -->
+      <str name="spellcheck.onlyMorePopular">false</str>
+      <!-- exr = Extended Results -->
+      <str name="spellcheck.extendedResults">false</str>
+      <!--  The number of suggestions to return -->
+      <str name="spellcheck.count">1</str>
+    </lst>
     <arr name="last-components">
       <str>spellcheck</str>
     </arr>
