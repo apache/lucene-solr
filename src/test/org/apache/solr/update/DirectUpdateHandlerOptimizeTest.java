@@ -60,6 +60,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
 
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
     updater.commit(cmtCmd);
+    updater.commit(cmtCmd);  // commit twice to give systems such as windows a chance to delete the old files
 
     String indexDir = core.getIndexDir();
     assertNumSegments(indexDir, 500);
@@ -67,6 +68,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     //now do an optimize
     cmtCmd = new CommitUpdateCommand(true);
     cmtCmd.maxOptimizeSegments = 250;
+    updater.commit(cmtCmd);
     updater.commit(cmtCmd);
     assertNumSegments(indexDir, 250);
 
@@ -77,6 +79,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     } catch (IllegalArgumentException e) {
     }
     cmtCmd.maxOptimizeSegments = 1;
+    updater.commit(cmtCmd);
     updater.commit(cmtCmd);
     assertNumSegments(indexDir, 1);
   }
