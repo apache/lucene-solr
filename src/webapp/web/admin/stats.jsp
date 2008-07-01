@@ -25,7 +25,10 @@
 
 
 <solr>
-  <core><%=core.getName()%></core>
+  <%  
+  if (core.getName() != null) { %> 
+	  <core><%=core.getName()%></core> 
+  <% } %>
   <schema><%= collectionName %></schema>
   <host><%= hostname %></host>
   <now><%= new Date().toString() %></now>

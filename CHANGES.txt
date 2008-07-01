@@ -446,6 +446,8 @@ Bug Fixes
 
 37. SOLR-604: If the spellchecking path is relative, make it relative to the Solr Data Directory.  (Shalin Shekhar Mangar via gsingers)
 
+38. SOLR-584: Make stats.jsp and stats.xsl more robust.
+    (Yousef Ourabi and hossman)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
