@@ -285,7 +285,7 @@ public class Highlighter
 					(lastEndOffset < text.length()) 
 					&&
 //					and that text is not too large...
-					(text.length()< maxDocCharsToAnalyze)
+					(text.length()<= maxDocCharsToAnalyze)
 				)				
 			{
 				//append it to the last fragment

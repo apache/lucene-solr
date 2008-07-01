@@ -876,6 +876,27 @@ public class HighlighterTest extends TestCase implements Formatter {
     helper.start();
 
   }
+  
+  public void testMaxSizeEndHighlight() throws Exception {
+    TestHighlightRunner helper = new TestHighlightRunner() {
+      public void run() throws Exception {
+        String stopWords[] = { "in", "it" };
+        TermQuery query = new TermQuery(new Term("text", "searchterm"));
+
+        String text = "this is a text with searchterm in it";
+        SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
+        Highlighter hg = getHighlighter(query, "text", new StandardAnalyzer(
+            stopWords).tokenStream("text", new StringReader(text)), fm);
+        hg.setTextFragmenter(new NullFragmenter());
+        hg.setMaxDocCharsToAnalyze(36);
+        String match = hg.getBestFragment(new StandardAnalyzer(stopWords), "text", text);
+        assertTrue(
+            "Matched text should contain remainder of text after highlighted query ",
+            match.endsWith("in it"));
+      }
+    };
+    helper.start();
+  }
 
   public void testUnRewrittenQuery() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
