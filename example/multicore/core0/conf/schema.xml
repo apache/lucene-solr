@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="example core0" version="1.1">
+<schema name="example core zero" version="1.1">
   <types>
    <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
   </types>
