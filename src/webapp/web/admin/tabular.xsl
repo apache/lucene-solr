@@ -37,8 +37,8 @@
     <html>
       <head>
         <link rel="stylesheet" type="text/css" href="solr-admin.css"></link>
-        <link rel="icon" href="/favicon.ico" type="image/ico"></link>
-        <link rel="shortcut icon" href="/favicon.ico" type="image/ico"></link>
+        <link rel="icon" href="favicon.ico" type="image/ico"></link>
+        <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
         <title>SOLR Search Results</title>
       </head>
       <body>
