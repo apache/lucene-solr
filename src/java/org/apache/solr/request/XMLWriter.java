@@ -640,6 +640,24 @@ final public class XMLWriter {
     writeBool(name,Boolean.toString(val));
   }
 
+  public void writeShort(String name, String val) throws IOException {
+    writePrim("short",name,val,false);
+  }
+
+  public void writeShort(String name, short val) throws IOException {
+    writeInt(name,Short.toString(val));
+  }
+
+
+  public void writeByte(String name, String val) throws IOException {
+    writePrim("byte",name,val,false);
+  }
+
+  public void writeByte(String name, byte val) throws IOException {
+    writeInt(name,Byte.toString(val));
+  }
+
+
   public void writeFloat(String name, String val) throws IOException {
     writePrim("float",name,val,false);
   }

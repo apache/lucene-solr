@@ -228,4 +228,16 @@ public abstract class TextResponseWriter {
 
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   public abstract void writeDate(String name, String val) throws IOException;
+
+  public abstract void writeShort(String name, String val) throws IOException;
+
+  public void writeShort(String name, short val) throws IOException{
+    writeShort(name, Short.toString(val));
+  }
+
+  public abstract void writeByte(String name, String s) throws IOException;
+
+  public void writeByte(String name, byte val) throws IOException{
+    writeByte(name, Byte.toString(val));
+  }
 }

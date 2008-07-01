@@ -300,6 +300,8 @@ New Features
 54. SOLR-423: Added Request Handler close hook notification so that RequestHandlers can be notified when a core is closing.  (gsingers, ryan)
 
 55. SOLR-603: Added ability to partially optimize. (gsingers)
+
+56. SOLR-483: Add byte/short sorting support (gsingers)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -719,6 +719,16 @@ class JSONWriter extends TextResponseWriter {
     writer.write(val);
   }
 
+   @Override
+  public void writeShort(String name, String val) throws IOException {
+    writer.write(val);
+  }
+
+  public void writeByte(String name, String val) throws IOException {
+    writer.write(val);
+
+  }
+
   // TODO: refactor this out to a DateUtils class or something...
   public void writeDate(String name, Date val) throws IOException {
     // using a stringBuilder for numbers can be nice since
