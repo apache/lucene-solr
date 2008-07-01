@@ -67,7 +67,7 @@ public class MultiReader extends IndexReader {
   }
   
   private void initialize(IndexReader[] subReaders, boolean closeSubReaders) {
-    this.subReaders = subReaders;
+    this.subReaders = (IndexReader[]) subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
     for (int i = 0; i < subReaders.length; i++) {
