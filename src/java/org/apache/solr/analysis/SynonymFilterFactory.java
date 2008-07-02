@@ -152,6 +152,10 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     return tokFactory.create( reader );
   }
 
+  public SynonymMap getSynonymMap() {
+    return synMap;
+  }  
+
   public SynonymFilter create(TokenStream input) {
     return new SynonymFilter(input,synMap);
   }
