@@ -24,6 +24,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -34,6 +36,7 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.PartBase;
+import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -69,6 +72,21 @@ public class CommonsHttpSolrServer extends SolrServer
   private boolean _allowCompression = false;
   private int _maxRetries = 0;
   
+  /**
+   * If set to false, add the query parameters as URL-encoded parameters to the
+   * POST request in a single part. If set to true, create a new part of a
+   * multi-part request for each parameter.
+   * 
+   * The reason for adding all parameters as parts of a multi-part request is
+   * that this allows us to specify the charset -- standards for single-part
+   * requests specify that non-ASCII characters should be URL-encoded, but don't
+   * specify the charset of the characters to be URL-encoded (cf.
+   * http://www.w3.org/TR/html401/interact/forms.html#form-content-type).
+   * Therefore you have to rely on your servlet container doing the right thing
+   * with single-part requests.
+   */
+  private boolean useMultiPartPost;
+  
   /**  
    * @param solrServerUrl The URL of the Solr server.  For 
    * example, "<code>http://localhost:8983/solr/</code>"
@@ -85,11 +103,15 @@ public class CommonsHttpSolrServer extends SolrServer
    * will use this SolrServer.
    */
   public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient) throws MalformedURLException {
-    this(new URL(solrServerUrl), httpClient, new BinaryResponseParser());
+    this(new URL(solrServerUrl), httpClient, new BinaryResponseParser(), false);
+  }
+  
+  public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient, boolean useMultiPartPost) throws MalformedURLException {
+    this(new URL(solrServerUrl), httpClient, new BinaryResponseParser(), useMultiPartPost);
   }
 
   public CommonsHttpSolrServer(String solrServerUrl, HttpClient httpClient, ResponseParser parser) throws MalformedURLException {
-    this(new URL(solrServerUrl), httpClient, parser);
+    this(new URL(solrServerUrl), httpClient, parser, false);
   }
 
   /**
@@ -100,15 +122,19 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   public CommonsHttpSolrServer(URL baseURL) 
   {
-    this(baseURL, null, new BinaryResponseParser());
+    this(baseURL, null, new BinaryResponseParser(), false);
   }
 
   public CommonsHttpSolrServer(URL baseURL, HttpClient client){
-    this(baseURL, client, new BinaryResponseParser());
+    this(baseURL, client, new BinaryResponseParser(), false);
+  }
+  
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client, boolean useMultiPartPost){
+    this(baseURL, client, new BinaryResponseParser(), useMultiPartPost);
   }
 
 
-  public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser) {
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser, boolean useMultiPartPost) {
     _baseURL = baseURL.toExternalForm();
     if( _baseURL.endsWith( "/" ) ) {
       _baseURL = _baseURL.substring( 0, _baseURL.length()-1 );
@@ -129,6 +155,8 @@ public class CommonsHttpSolrServer extends SolrServer
 
     // by default use the XML one
     _parser = parser;
+    
+    this.useMultiPartPost = useMultiPartPost;
   }
 
 
@@ -205,51 +233,55 @@ public class CommonsHttpSolrServer extends SolrServer
             String url = _baseURL + path;
             boolean isMultipart = ( streams != null && streams.size() > 1 );
 
-            if( streams == null || isMultipart ) {
-              // Without streams, just post the parameters
-              PostMethod post = new PostMethod( url );
+            if (streams == null || isMultipart) {
+              PostMethod post = new PostMethod(url);
+              post.getParams().setContentCharset("UTF-8");
+              if (!this.useMultiPartPost && !isMultipart) {
+                post.addRequestHeader("Content-Type",
+                    "application/x-www-form-urlencoded; charset=UTF-8");
+              }
 
+              List<Part> parts = new LinkedList<Part>();
               Iterator<String> iter = params.getParameterNamesIterator();
-              while( iter.hasNext() ) {
+              while (iter.hasNext()) {
                 String p = iter.next();
-                String[] vals = params.getParams( p );
-                if( vals != null && vals.length > 0 ) {
-                  for( String v : vals ) {
-                    post.addParameter( p, (v==null)?null:v );
+                String[] vals = params.getParams(p);
+                if (vals != null) {
+                  for (String v : vals) {
+                    if (this.useMultiPartPost || isMultipart) {
+                      parts.add(new StringPart(p, v, "UTF-8"));
+                    } else {
+                      post.addParameter(p, v);
+                    }
                   }
-                }
-                else {
-                  post.addParameter( p, null );
                 }
               }
 
-              post.getParams().setContentCharset("UTF-8");
-
-              if( isMultipart ) {
-                int i=0;
-                Part[] parts = new Part[streams.size()];
-
-                for( ContentStream content : streams ) {
+              if (isMultipart) {
+                int i = 0;
+                for (ContentStream content : streams) {
                   final ContentStream c = content;
 
                   String charSet = null;
                   String transferEncoding = null;
-                  parts[i++] = new PartBase( c.getName(), c.getContentType(), charSet, transferEncoding ) {
+                  parts.add(new PartBase(c.getName(), c.getContentType(),
+                      charSet, transferEncoding) {
                     @Override
                     protected long lengthOfData() throws IOException {
                       return c.getSize();
                     }
 
                     @Override
-                      protected void sendData(OutputStream out) throws IOException {
-                      IOUtils.copy( c.getReader(), out );
+                    protected void sendData(OutputStream out)
+                        throws IOException {
+                      IOUtils.copy(c.getReader(), out);
                     }
-                  };
+                  });
                 }
-
-                // Set the multi-part request
-                post.setRequestEntity( new MultipartRequestEntity( parts, post.getParams() ) );
-                method = post;
+              }
+              if (parts.size() > 0) {
+                post.setRequestEntity(new MultipartRequestEntity(parts
+                    .toArray(new Part[parts.size()]), post.getParams()));
               }
 
               method = post;
