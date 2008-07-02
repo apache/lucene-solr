@@ -218,11 +218,19 @@ class CompoundFileReader extends Directory {
         CSIndexInput(final IndexInput base, final long fileOffset, final long length, int readBufferSize)
         {
             super(readBufferSize);
-            this.base = base;
+            this.base = (IndexInput)base.clone();
             this.fileOffset = fileOffset;
             this.length = length;
         }
-
+        
+        public Object clone() {
+          CSIndexInput clone = (CSIndexInput)super.clone();
+          clone.base = (IndexInput)base.clone();
+          clone.fileOffset = fileOffset;
+          clone.length = length;
+          return clone;
+        }
+        
         /** Expert: implements buffer refill.  Reads bytes from the current
          *  position in the input.
          * @param b the array to read bytes into
@@ -232,13 +240,11 @@ class CompoundFileReader extends Directory {
         protected void readInternal(byte[] b, int offset, int len)
         throws IOException
         {
-            synchronized (base) {
-              long start = getFilePointer();
-              if(start + len > length)
-                throw new IOException("read past EOF");
-              base.seek(fileOffset + start);
-              base.readBytes(b, offset, len, false);
-            }
+          long start = getFilePointer();
+          if(start + len > length)
+            throw new IOException("read past EOF");
+          base.seek(fileOffset + start);
+          base.readBytes(b, offset, len, false);
         }
 
         /** Expert: implements seek.  Sets current position in this file, where
@@ -248,7 +254,9 @@ class CompoundFileReader extends Directory {
         protected void seekInternal(long pos) {}
 
         /** Closes the stream to further operations. */
-        public void close() {}
+        public void close() throws IOException {
+          base.close();
+        }
 
         public long length() {
           return length;

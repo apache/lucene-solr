@@ -296,7 +296,6 @@ class SegmentReader extends DirectoryIndexReader {
       } else
         storeDir = null;
 
-      // No compound file exists - use the multi-file format
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
 
       final String fieldsSegment;

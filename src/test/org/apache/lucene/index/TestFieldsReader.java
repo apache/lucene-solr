@@ -367,6 +367,9 @@ public class TestFieldsReader extends LuceneTestCase {
     public void close() throws IOException {
       delegate.close();
     }
+    public Object clone() {
+      return new FaultyIndexInput((IndexInput) delegate.clone());
+    }
   }
 
   // LUCENE-1262
