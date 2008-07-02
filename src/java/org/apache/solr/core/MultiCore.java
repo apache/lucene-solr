@@ -452,7 +452,7 @@ public class MultiCore
     XML.escapeAttributeValue(adminPath, writer);
     writer.write('\'');
     if (this.libDir != null) {
-      writer.write(" libDir='");
+      writer.write(" sharedLib='");
       XML.escapeAttributeValue(libDir, writer);
       writer.write('\'');
     }
