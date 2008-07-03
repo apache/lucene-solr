@@ -302,6 +302,9 @@ New Features
 55. SOLR-603: Added ability to partially optimize. (gsingers)
 
 56. SOLR-483: Add byte/short sorting support (gsingers)
+
+57. SOLR-14: Add preserveOriginal flag to WordDelimiterFilter
+    (Geoffrey Young, Trey Hyde, Ankur Madnani, yonik)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

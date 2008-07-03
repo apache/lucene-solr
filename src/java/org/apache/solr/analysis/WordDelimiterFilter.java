@@ -134,6 +134,13 @@ final class WordDelimiterFilter extends TokenFilter {
   final int splitOnCaseChange;
 
   /**
+   * If 1, original words are preserved and added to the subword list (Defaults to 0)
+   * <p/>
+   * "500-42" => "500" "42" "500-42"
+   */
+  final int preserveOriginal;
+
+  /**
    *
    * @param in Token stream to be filtered.
    * @param charTypeTable
@@ -143,8 +150,9 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
    * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
    * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
+   * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
    */
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange) {
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal) {
     super(in);
     this.generateWordParts = generateWordParts;
     this.generateNumberParts = generateNumberParts;
@@ -152,6 +160,7 @@ final class WordDelimiterFilter extends TokenFilter {
     this.catenateNumbers = catenateNumbers;
     this.catenateAll = catenateAll;
     this.splitOnCaseChange = splitOnCaseChange;
+    this.preserveOriginal = preserveOriginal;
     this.charTypeTable = charTypeTable;
   }
   /**
@@ -162,19 +171,20 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
    * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
    * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
+   * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
    */
-  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange);
+  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal) {
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal);
   }
   /** Compatibility constructor */
   @Deprecated
   public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
-    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1);
+    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0);
   }
   /** Compatibility constructor */
   @Deprecated
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1);
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0);
   }
 
   int charType(int ch) {
@@ -242,11 +252,12 @@ final class WordDelimiterFilter extends TokenFilter {
     // Would it actually be faster to check for the common form
     // of isLetter() isLower()*, and then backtrack if it doesn't match?
 
-    int origPosIncrement;
+    int origPosIncrement = 0;
+    Token t;
     while(true) {
       // t is either returned, or a new token is made from it, so it should
       // be safe to use the next(Token) method.
-      Token t = input.next(in);
+      t = input.next(in);
       if (t == null) return null;
 
       char [] termBuffer = t.termBuffer();
@@ -254,7 +265,7 @@ final class WordDelimiterFilter extends TokenFilter {
       int start=0;
       if (len ==0) continue;
 
-      origPosIncrement = t.getPositionIncrement();
+      origPosIncrement += t.getPositionIncrement();
 
       // Avoid calling charType more than once for each char (basically
       // avoid any backtracking).
@@ -348,14 +359,16 @@ final class WordDelimiterFilter extends TokenFilter {
               return t;
             }
 
-            Token newtok = newTok(t,start,pos);
-
             // optimization... if this is the only token,
             // return it immediately.
-            if (queue.size()==0) {
-              newtok.setPositionIncrement(origPosIncrement);
-              return newtok;
+            if (queue.size()==0 && preserveOriginal == 0) {
+              // just adjust the text w/o changing the rest
+              // of the original token
+              t.setTermBuffer(termBuffer, start, len-start);
+              return t;
             }
+
+            Token newtok = newTok(t,start,pos);
 
             queue.add(newtok);
             if ((firstType & ALPHA)!=0) numWords++;
@@ -379,13 +392,19 @@ final class WordDelimiterFilter extends TokenFilter {
       // If the queue is empty, we should continue by reading
       // the next token
       if (numtok==0) {
+        // the token might have been all delimiters, in which
+        // case return it if we're meant to preserve it
+        if (preserveOriginal != 0) {
+          return t;
+        }
         continue;
       }
 
-      // if number of tokens is 1, always return the single tok
+      // if number of tokens is 1, there are no catenations to be done.
       if (numtok==1) {
         break;
       }
+
 
       final int numNumbers = numtok - numWords;
 
@@ -411,16 +430,16 @@ final class WordDelimiterFilter extends TokenFilter {
       if (numWords==0) {
         // all numbers
         addCombos(tlist,0,numtok,generateNumberParts!=0,catenateNumbers!=0 || catenateAll!=0, 1);
-        if (queue.size() > 0) break; else continue;
+        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
       } else if (numNumbers==0) {
         // all words
         addCombos(tlist,0,numtok,generateWordParts!=0,catenateWords!=0 || catenateAll!=0, 1);
-        if (queue.size() > 0) break; else continue;
+        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
       } else if (generateNumberParts==0 && generateWordParts==0 && catenateNumbers==0 && catenateWords==0) {
         // catenate all *only*
         // OPT:could be optimized to add to current queue...
         addCombos(tlist,0,numtok,false,catenateAll!=0, 1);
-        if (queue.size() > 0) break; else continue;
+        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
       }
 
       //
@@ -454,15 +473,24 @@ final class WordDelimiterFilter extends TokenFilter {
       // NOTE: in certain cases, queue may be empty (for instance, if catenate
       // and generate are both set to false).  Only exit the loop if the queue
       // is not empty.
-      if (queue.size() > 0) break;
+      if (queue.size() > 0 || preserveOriginal!=0) break;
     }
 
     // System.out.println("##########AFTER COMBINATIONS:"+ str(queue));
 
-    queuePos=1;
-    Token tok = queue.get(0);
-    tok.setPositionIncrement(origPosIncrement);
-    return tok;
+    if (preserveOriginal != 0) {
+      queuePos = 0;
+      if (queue.size() > 0) {
+        // overlap first token with the original
+        queue.get(0).setPositionIncrement(0);
+      }
+      return t;  // return the original
+    } else {
+      queuePos=1;
+      Token tok = queue.get(0);
+      tok.setPositionIncrement(origPosIncrement);
+      return tok;
+    }
   }
 
 

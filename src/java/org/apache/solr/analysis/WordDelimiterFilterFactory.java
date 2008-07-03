@@ -30,6 +30,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {
   int catenateNumbers=0;
   int catenateAll=0;
   int splitOnCaseChange=0;
+  int preserveOriginal=0;
 
   @Override
   public void init(Map<String, String> args) {
@@ -40,12 +41,13 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {
     catenateNumbers = getInt("catenateNumbers", 0);
     catenateAll = getInt("catenateAll", 0);
     splitOnCaseChange = getInt("splitOnCaseChange", 1);
+    preserveOriginal = getInt("preserveOriginal", 0);
   }
 
   public WordDelimiterFilter create(TokenStream input) {
     return new WordDelimiterFilter(input,
                                    generateWordParts, generateNumberParts,
                                    catenateWords, catenateNumbers, catenateAll,
-                                   splitOnCaseChange);
+                                   splitOnCaseChange, preserveOriginal);
   }
 }

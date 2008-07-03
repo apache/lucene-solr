@@ -20,8 +20,10 @@ package org.apache.solr.analysis;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 import java.io.IOException;
+import java.io.StringReader;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
@@ -85,6 +87,49 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     );
   }
 
+
+  public void testPreserveOrignalTrue() {
+
+    assertU(adoc("id",  "144",
+                 "wdf_preserve", "404-123"));
+    assertU(commit());
+    
+    assertQ("preserving original word",
+            req("wdf_preserve:404")
+            ,"//result[@numFound=1]"
+    );
+    
+    assertQ("preserving original word",
+        req("wdf_preserve:123")
+        ,"//result[@numFound=1]"
+    );
+
+    assertQ("preserving original word",
+        req("wdf_preserve:404-123*")
+        ,"//result[@numFound=1]"
+    );
+
+  }
+
+  /***
+  public void testPerformance() throws IOException {
+    String s = "now is the time-for all good men to come to-the aid of their country.";
+    Token tok = new Token();
+    long start = System.currentTimeMillis();
+    int ret=0;
+    for (int i=0; i<1000000; i++) {
+      StringReader r = new StringReader(s);
+      TokenStream ts = new WhitespaceTokenizer(r);
+      ts = new WordDelimiterFilter(ts, 1,1,1,1,0);
+
+      while (ts.next(tok) != null) ret++;
+    }
+
+    System.out.println("ret="+ret+" time="+(System.currentTimeMillis()-start));
+  }
+  ***/
+
+
   public void testOffsets() throws IOException {
 
     // test that subwords and catenated subwords have
@@ -98,7 +143,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
                 return t;
               }
             },
-    1,1,0,0,1,1);
+    1,1,0,0,1,1,0);
 
     int i=0;
     for(Token t; (t=wdf.next())!=null;) {
@@ -131,7 +176,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
                 return t;
               }
             },
-    1,1,0,0,1,1);
+    1,1,0,0,1,1,0);
     for(Token t; (t=wdf.next())!=null;) {
       assertEquals(5, t.startOffset());
       assertEquals(6, t.endOffset());
