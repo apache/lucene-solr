@@ -550,28 +550,31 @@ final class FieldsReader {
   private final byte[] uncompress(final byte[] input)
           throws CorruptIndexException, IOException {
 
-    Inflater decompressor = new Inflater();
-    decompressor.setInput(input);
-
     // Create an expandable byte array to hold the decompressed data
     ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);
 
-    // Decompress the data
-    byte[] buf = new byte[1024];
-    while (!decompressor.finished()) {
-      try {
-        int count = decompressor.inflate(buf);
-        bos.write(buf, 0, count);
+    Inflater decompressor = new Inflater();
+
+    try {
+      decompressor.setInput(input);
+
+      // Decompress the data
+      byte[] buf = new byte[1024];
+      while (!decompressor.finished()) {
+        try {
+          int count = decompressor.inflate(buf);
+          bos.write(buf, 0, count);
+        }
+        catch (DataFormatException e) {
+          // this will happen if the field is not compressed
+          CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
+          newException.initCause(e);
+          throw newException;
+        }
       }
-      catch (DataFormatException e) {
-        // this will happen if the field is not compressed
-        CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
-        newException.initCause(e);
-        throw newException;
-      }
+    } finally {  
+      decompressor.end();
     }
-  
-    decompressor.end();
     
     // Get the decompressed data
     return bos.toByteArray();
