@@ -39,4 +39,9 @@ public abstract class TokenFilter extends TokenStream {
     input.close();
   }
 
+  /** Reset the filter as well as the input TokenStream. */
+  public void reset() throws IOException {
+    super.reset();
+    input.reset();
+  }
 }

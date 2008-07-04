@@ -86,6 +86,9 @@ API Changes
 12. LUCENE-1325: Added IndexCommit.isOptimized().  (Shalin Shekhar
     Mangar via Mike McCandless)
 
+13. LUCENE-1324: Added TokenFilter.reset(). (Shai Erera via Mike
+    McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 
