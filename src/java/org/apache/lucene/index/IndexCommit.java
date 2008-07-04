@@ -75,6 +75,13 @@ public abstract class IndexCommit implements IndexCommitPoint {
   }
 
   /**
+   * Returns true if this commit is an optimized index.
+   */
+  public boolean isOptimized() {
+    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
+  }
+
+  /**
    * Two IndexCommits are equal if both their Directory and versions are equal.
    */
   public boolean equals(Object other) {

@@ -579,6 +579,7 @@ final class IndexFileDeleter {
     Collection commitsToDelete;
     long version;
     long generation;
+    final boolean isOptimized;
 
     public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
@@ -595,7 +596,12 @@ final class IndexFileDeleter {
         if (segmentInfo.dir == directory) {
           files.addAll(segmentInfo.files());
         }
-      }
+      } 
+      isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
+    }
+
+    public boolean isOptimized() {
+      return isOptimized;
     }
 
     public String getSegmentsFileName() {

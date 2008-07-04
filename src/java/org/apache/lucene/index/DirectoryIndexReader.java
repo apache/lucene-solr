@@ -360,6 +360,7 @@ abstract class DirectoryIndexReader extends IndexReader {
     Directory dir;
     long generation;
     long version;
+    final boolean isOptimized;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
@@ -374,6 +375,11 @@ abstract class DirectoryIndexReader extends IndexReader {
       }
       version = infos.getVersion();
       generation = infos.getGeneration();
+      isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+    }
+
+    public boolean isOptimized() {
+      return isOptimized;
     }
     public String getSegmentsFileName() {
       return segmentsFileName;

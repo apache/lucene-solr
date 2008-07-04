@@ -1315,6 +1315,16 @@ public class TestIndexReader extends LuceneTestCase
 
       IndexReader r2 = r.reopen();
       assertFalse(c.equals(r2.getIndexCommit()));
+      assertFalse(r2.getIndexCommit().isOptimized());
+      r2.close();
+
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.optimize();
+      writer.close();
+
+      r2 = r.reopen();
+      assertTrue(r2.getIndexCommit().isOptimized());
+
       r.close();
       r2.close();
       d.close();

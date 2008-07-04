@@ -61,11 +61,16 @@ public class TestDeletionPolicy extends LuceneTestCase
   class KeepAllDeletionPolicy implements IndexDeletionPolicy {
     int numOnInit;
     int numOnCommit;
+    Directory dir;
     public void onInit(List commits) {
       verifyCommitOrder(commits);
       numOnInit++;
     }
-    public void onCommit(List commits) {
+    public void onCommit(List commits) throws IOException {
+      IndexCommit lastCommit = (IndexCommit) commits.get(commits.size()-1);
+      IndexReader r = IndexReader.open(dir);
+      assertEquals("lastCommit.isOptimized()=" + lastCommit.isOptimized() + " vs IndexReader.isOptimized=" + r.isOptimized(), r.isOptimized(), lastCommit.isOptimized());
+      r.close();
       verifyCommitOrder(commits);
       numOnCommit++;
     }
@@ -263,10 +268,12 @@ public class TestDeletionPolicy extends LuceneTestCase
       KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
 
       Directory dir = new RAMDirectory();
+      policy.dir = dir;
 
       IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
+      writer.setMergeScheduler(new SerialMergeScheduler());
       for(int i=0;i<107;i++) {
         addDoc(writer);
         if (autoCommit && i%10 == 0)

@@ -83,6 +83,9 @@ API Changes
     DeletionPolicy that keeps more than the last commit around.
     (Jason Rutherglen via Mike McCandless)
 
+12. LUCENE-1325: Added IndexCommit.isOptimized().  (Shalin Shekhar
+    Mangar via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 
