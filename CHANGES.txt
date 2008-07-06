@@ -305,6 +305,8 @@ New Features
 
 57. SOLR-14: Add preserveOriginal flag to WordDelimiterFilter
     (Geoffrey Young, Trey Hyde, Ankur Madnani, yonik)
+
+58. SOLR-502: Add search timeout support. (Sean Timm via yonik)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

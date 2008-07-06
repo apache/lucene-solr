@@ -61,7 +61,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
-    
+
     // Set field flags
     String fl = params.get(CommonParams.FL);
     int fieldFlags = 0;
@@ -120,6 +120,9 @@ public class QueryComponent extends SearchComponent
     SolrIndexSearcher searcher = req.getSearcher();
     SolrParams params = req.getParams();
 
+    // -1 as flag if not set.
+    long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
+
     // Optional: This could also be implemented by the top-level searcher sending
     // a filter that lists the ids... that would be transparent to
     // the request handler, but would be more expensive (and would preserve score
@@ -151,20 +154,11 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
-    if( rb.isNeedDocSet() ) {
-      rb.setResults( searcher.getDocListAndSet(
-          rb.getQuery(), rb.getFilters(), rb.getSortSpec().getSort(),
-          rb.getSortSpec().getOffset(), rb.getSortSpec().getCount(),
-          rb.getFieldFlags() ) );
-    }
-    else {
-      DocListAndSet results = new DocListAndSet();
-      results.docList = searcher.getDocList(
-          rb.getQuery(), rb.getFilters(), rb.getSortSpec().getSort(),
-          rb.getSortSpec().getOffset(), rb.getSortSpec().getCount(),
-          rb.getFieldFlags() );
-      rb.setResults( results );
-    }
+    SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
+    cmd.setTimeAllowed(timeAllowed);
+    SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
+    searcher.search(result,cmd);
+    rb.setResult( result );
 
     rsp.add("response",rb.getResults().docList);
     rsp.getToLog().add("hits", rb.getResults().docList.size());
@@ -432,7 +426,6 @@ public class QueryComponent extends SearchComponent
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);
       responseDocs.setNumFound(numFound);
       responseDocs.setStart(ss.getOffset());
-
       // size appropriately
       for (int i=0; i<resultSize; i++) responseDocs.add(null);
 
@@ -503,7 +496,6 @@ public class QueryComponent extends SearchComponent
     // TODO: if a multi-tiered system, it seems like some requests
     // could/should bypass middlemen (like retrieving stored fields)
     // TODO: merge fsv to if requested
-
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;

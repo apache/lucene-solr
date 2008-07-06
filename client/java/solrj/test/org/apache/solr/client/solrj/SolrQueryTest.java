@@ -79,6 +79,13 @@ public class SolrQueryTest extends TestCase {
     
     // check to see that the removes are properly clearing the cgi params
     Assert.assertEquals(q.toString(), "q=dog");
+
+    //Add time allowed param
+    q.setTimeAllowed(1000);
+    Assert.assertEquals((Integer)1000, q.getTimeAllowed() );
+    //Adding a null should remove it
+    q.setTimeAllowed(null);
+    Assert.assertEquals(null, q.getTimeAllowed() ); 
     
     System.out.println(q);
   }

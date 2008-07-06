@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SolrIndexSearcher;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -261,4 +262,29 @@ public class ResponseBuilder
     }
   }
 
+  /**
+   * Creates a SolrIndexSearcher.QueryCommand from this
+   * ResponseBuilder.  TimeAllowed is left unset.
+   */
+  public SolrIndexSearcher.QueryCommand getQueryCommand() {
+    SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
+    cmd.setQuery( getQuery() )
+      .setFilterList( getFilters() )
+      .setSort( getSortSpec().getSort() )
+      .setOffset( getSortSpec().getOffset() )
+      .setLen( getSortSpec().getCount() )
+      .setFlags( getFieldFlags() )
+      .setNeedDocSet( isNeedDocSet() );
+    return cmd;
+  }
+
+  /**
+   * Sets results from a SolrIndexSearcher.QueryResult.
+   */
+  public void setResult( SolrIndexSearcher.QueryResult result ) {
+    setResults( result.getDocListAndSet() );
+    if( result.isPartialResults() ) {
+      rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+    }
+  }
 }

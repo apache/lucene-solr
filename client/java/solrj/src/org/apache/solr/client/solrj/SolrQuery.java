@@ -464,6 +464,30 @@ public class SolrQuery extends ModifiableSolrParams
     return q;
   }
   
+  /**
+  * Set the maximum time allowed for this query. If the query takes more time
+  * than the specified milliseconds, a timeout occurs and partial (or no)
+  * results may be returned.
+  * 
+  * If given Long is null, then this parameter is removed from the request
+  * 
+  *@param milliseconds the time in milliseconds allowed for this query
+  */
+  public void setTimeAllowed(Integer milliseconds) {
+    if (milliseconds == null) {
+      this.remove(CommonParams.TIME_ALLOWED);
+    } else {
+      this.set(CommonParams.TIME_ALLOWED, milliseconds);
+    }
+  }
+  
+  /**
+  * Get the maximum time allowed for this query.
+  */
+  public Integer getTimeAllowed() {
+    return this.getInt(CommonParams.TIME_ALLOWED);
+  }
+
   ///////////////////////
   //  Utility functions
   ///////////////////////

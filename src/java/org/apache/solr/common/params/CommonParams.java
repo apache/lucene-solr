@@ -78,7 +78,11 @@ public interface CommonParams {
    * will be used for all of them.  
    */
   public static final String STREAM_CONTENTTYPE = "stream.contentType";
-    
+  
+  /**
+   * Timeout value in milliseconds.  If not set, or the value is <= 0, there is no timeout.
+   */
+  public static final String TIME_ALLOWED = "timeAllowed";
   
   /** 'true' if the header should include the handler name */
   public static final String HEADER_ECHO_HANDLER = "echoHandler";

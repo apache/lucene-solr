@@ -248,15 +248,26 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
                     nDocs = Math.min(oldnDocs,40);
                   }
 
-                  DocListAndSet ret = new DocListAndSet();
                   int flags=NO_CHECK_QCACHE | key.nc_flags;
-
-                  newSearcher.getDocListC(ret, key.query, key.filters, null, key.sort, 0, nDocs, flags);
+                  QueryCommand qc = new QueryCommand();
+                  qc.setQuery(key.query)
+                    .setFilterList(key.filters)
+                    .setSort(key.sort)
+                    .setLen(nDocs)
+                    .setSupersetMaxDoc(nDocs)
+                    .setFlags(flags);
+                  QueryResult qr = new QueryResult();
+                  newSearcher.getDocListC(qr,qc);
                   return true;
                 }
               }
       );
     }
+  }
+
+  public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
+    getDocListC(qr,cmd);
+    return qr;
   }
 
   public Hits search(Query query, Filter filter, Sort sort) throws IOException {
@@ -669,12 +680,15 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
-    List<Query> filterList = null;
-    if (filter != null) {
-      filterList = new ArrayList<Query>(1);
-      filterList.add(filter);
-    }
-    return getDocList(query, filterList, lsort, offset, len, 0);
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocList();
   }
 
 
@@ -696,11 +710,17 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocList getDocList(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
-    DocListAndSet answer = new DocListAndSet();
-    getDocListC(answer,query,filterList,null,lsort,offset,len,flags);
-    return answer.docList;
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filterList)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setFlags(flags);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocList();
   }
-
 
   private static final int NO_CHECK_QCACHE       = 0x80000000;
   private static final int GET_DOCSET            = 0x40000000;
@@ -708,47 +728,51 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public static final int GET_SCORES             =       0x01;
 
-  /** getDocList version that uses+populates query and filter caches.
-   * This should only be called using either filterList or filter, but not both.
+  /**
+   * getDocList version that uses+populates query and filter caches.
+   * In the event of a timeout, the cache is not populated.
    */
-  private void getDocListC(DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
+  private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+    // old parameters: DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags, long timeAllowed, NamedList<Object> responseHeader
+    DocListAndSet out = new DocListAndSet();
+    qr.setDocListAndSet(out);
     QueryResultKey key=null;
-    int maxDocRequested = offset + len;
+    int maxDocRequested = cmd.getOffset() + cmd.getLen();
     // check for overflow, and check for # docs in index
     if (maxDocRequested < 0 || maxDocRequested > maxDoc()) maxDocRequested = maxDoc();
     int supersetMaxDoc= maxDocRequested;
     DocList superset;
 
-
     // we can try and look up the complete query in the cache.
     // we can't do that if filter!=null though (we don't want to
     // do hashCode() and equals() for a big DocSet).
-    if (queryResultCache != null && filter==null) {
+    if (queryResultCache != null && cmd.getFilter()==null) {
         // all of the current flags can be reused during warming,
         // so set all of them on the cache key.
-        key = new QueryResultKey(query, filterList, lsort, flags);
-        if ((flags & NO_CHECK_QCACHE)==0) {
+        key = new QueryResultKey(cmd.getQuery(), cmd.getFilterList(), cmd.getSort(), cmd.getFlags());
+        if ((cmd.getFlags() & NO_CHECK_QCACHE)==0) {
           superset = (DocList)queryResultCache.get(key);
 
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them
-            if ((flags & GET_SCORES)==0 || superset.hasScores()) {
+            if ((cmd.getFlags() & GET_SCORES)==0 || superset.hasScores()) {
               // NOTE: subset() returns null if the DocList has fewer docs than
               // requested
-              out.docList = superset.subset(offset,len);
+              out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
             }
           }
           if (out.docList != null) {
             // found the docList in the cache... now check if we need the docset too.
             // OPT: possible future optimization - if the doclist contains all the matches,
             // use it to make the docset instead of rerunning the query.
-            if (out.docSet==null && ((flags & GET_DOCSET)!=0) ) {
-              if (filterList==null) {
-                out.docSet = getDocSet(query);
+            if (out.docSet==null && ((cmd.getFlags() & GET_DOCSET)!=0) ) {
+              if (cmd.getFilterList()==null) {
+                out.docSet = getDocSet(cmd.getQuery());
               } else {
-                List<Query> newList = new ArrayList<Query>(filterList.size()+1);
-                newList.add(query);
-                newList.addAll(filterList);
+                List<Query> newList = new ArrayList<Query>(cmd.getFilterList()
+.size()+1);
+                newList.add(cmd.getQuery());
+                newList.addAll(cmd.getFilterList());
                 out.docSet = getDocSet(newList);
               }
             }
@@ -778,9 +802,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
     // check if we should try and use the filter cache
     boolean useFilterCache=false;
-    if ((flags & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && lsort != null && filterCache != null) {
+    if ((cmd.getFlags() & (GET_SCORES|NO_CHECK_FILTERCACHE))==0 && useFilterForSortedQuery && cmd.getSort() != null && filterCache != null) {
       useFilterCache=true;
-      SortField[] sfields = lsort.getSort();
+      SortField[] sfields = cmd.getSort().getSort();
       for (SortField sf : sfields) {
         if (sf.getType() == SortField.SCORE) {
           useFilterCache=false;
@@ -794,41 +818,46 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       // for large filters that match few documents, this may be
       // slower than simply re-executing the query.
       if (out.docSet == null) {
-        out.docSet = getDocSet(query,filter);
-        DocSet bigFilt = getDocSet(filterList);
+        out.docSet = getDocSet(cmd.getQuery(),cmd.getFilter());
+        DocSet bigFilt = getDocSet(cmd.getFilterList());
         if (bigFilt != null) out.docSet = out.docSet.intersection(bigFilt);
       }
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
-      superset = sortDocSet(out.docSet,lsort,supersetMaxDoc);
-      out.docList = superset.subset(offset,len);
+      superset = sortDocSet(out.docSet,cmd.getSort(),supersetMaxDoc);
+      out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
     } else {
       // do it the normal way...
-      DocSet theFilt = filter!=null ? filter : getDocSet(filterList);
-
-      if ((flags & GET_DOCSET)!=0) {
-        DocSet qDocSet = getDocListAndSetNC(out,query,theFilt,lsort,0,supersetMaxDoc,flags);
+      cmd.setSupersetMaxDoc(supersetMaxDoc);
+      if ((cmd.getFlags() & GET_DOCSET)!=0) {
+        DocSet qDocSet = getDocListAndSetNC(qr,cmd);
         // cache the docSet matching the query w/o filtering
-        if (filterCache!=null) filterCache.put(query,qDocSet);
+        if (filterCache!=null && !qr.isPartialResults()) filterCache.put(cmd.getQuery(),qDocSet);
       } else {
-        out.docList = getDocListNC(query,theFilt,lsort,0,supersetMaxDoc,flags);
+        getDocListNC(qr,cmd);
+        //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
       }
       superset = out.docList;
-      out.docList = superset.subset(offset,len);
+      out.docList = superset.subset(cmd.getOffset(),cmd.getLen());
     }
 
     // lastly, put the superset in the cache if the size is less than or equal
     // to queryResultMaxDocsCached
-    if (key != null && superset.size() <= queryResultMaxDocsCached) {
+    if (key != null && superset.size() <= queryResultMaxDocsCached && !qr.isPartialResults()) {
       queryResultCache.put(key, superset);
     }
   }
 
 
 
-  private DocList getDocListNC(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    int last = offset+len;
+  private void getDocListNC(QueryResult qr,QueryCommand cmd) throws IOException {
+    //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
+    //Query query, DocSet filter, Sort lsort, int offset, int len, int flags, long timeAllowed, NamedList<Object> responseHeader
+    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
+    final long timeAllowed = cmd.getTimeAllowed();
+    int len = cmd.getSupersetMaxDoc();
+    int last = len;
     if (last < 0 || last > maxDoc()) last=maxDoc();
     final int lastDocRequested = last;
     int nDocsReturned;
@@ -837,7 +866,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     int[] ids;
     float[] scores;
 
-    query = QueryUtils.makeQueryable(query);
+    Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     // handle zero case...
     if (lastDocRequested<=0) {
@@ -845,44 +874,62 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
       final int[] numHits = new int[1];
 
-      searcher.search(query, new HitCollector() {
+      HitCollector hc = new HitCollector() {
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
           numHits[0]++;
           if (score > topscore[0]) topscore[0]=score;
         }
+      };
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
       }
-      );
+      try {
+        searcher.search(query, hc );
+      }
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       nDocsReturned=0;
       ids = new int[nDocsReturned];
       scores = new float[nDocsReturned];
       totalHits = numHits[0];
       maxScore = totalHits>0 ? topscore[0] : 0.0f;
-    } else if (lsort != null) {
+    } else if (cmd.getSort() != null) {
       // can't use TopDocs if there is a sort since it
       // will do automatic score normalization.
       // NOTE: this changed late in Lucene 1.9
 
       final DocSet filt = filter;
       final int[] numHits = new int[1];
-      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, lsort.getSort(), offset+len);
+      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
-      searcher.search(query, new HitCollector() {
+      HitCollector hc = new HitCollector() {
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
           numHits[0]++;
           hq.insert(new FieldDoc(doc, score));
         }
+      };
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
       }
-      );
+      try {
+        searcher.search(query, hc );
+      }
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       totalHits = numHits[0];
       maxScore = totalHits>0 ? hq.getMaxScore() : 0.0f;
 
       nDocsReturned = hq.size();
       ids = new int[nDocsReturned];
-      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      scores = (cmd.getFlags()&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
       for (int i = nDocsReturned -1; i >= 0; i--) {
         FieldDoc fieldDoc = (FieldDoc)hq.pop();
         // fillFields is the point where score normalization happens
@@ -898,7 +945,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final DocSet filt = filter;
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
-      searcher.search(query, new HitCollector() {
+      HitCollector hc = new HitCollector() {
         float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
@@ -911,13 +958,22 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
             minScore = ((ScoreDoc)hq.top()).score;
           }
         }
+      };
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
       }
-      );
+      try {
+        searcher.search(query, hc );
+      }
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       totalHits = numHits[0];
       nDocsReturned = hq.size();
       ids = new int[nDocsReturned];
-      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      scores = (cmd.getFlags()&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
       ScoreDoc sdoc =null;
       for (int i = nDocsReturned -1; i >= 0; i--) {
         sdoc = (ScoreDoc)hq.pop();
@@ -928,9 +984,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
 
 
-    int sliceLen = Math.min(lastDocRequested,nDocsReturned) - offset;
+    int sliceLen = Math.min(lastDocRequested,nDocsReturned);
     if (sliceLen < 0) sliceLen=0;
-    return new DocSlice(offset,sliceLen,ids,scores,totalHits,maxScore);
+    qr.setDocList(new DocSlice(0,sliceLen,ids,scores,totalHits,maxScore));
 
 
 
@@ -987,8 +1043,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   // the DocSet returned is for the query only, without any filtering... that way it may
   // be cached if desired.
-  private DocSet getDocListAndSetNC(DocListAndSet out, Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    int last = offset+len;
+  private DocSet getDocListAndSetNC(QueryResult qr,QueryCommand cmd) throws IOException {
+    int len = cmd.getSupersetMaxDoc();
+    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
+    int last = len;
     if (last < 0 || last > maxDoc()) last=maxDoc();
     final int lastDocRequested = last;
     int nDocsReturned;
@@ -997,8 +1055,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     int[] ids;
     float[] scores;
     final DocSetHitCollector setHC = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+    final HitCollector hitCollector = ( cmd.getTimeAllowed() > 0 ) ? new TimeLimitedCollector( setHC, cmd.getTimeAllowed() ) : setHC;
 
-    query = QueryUtils.makeQueryable(query);
+    Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     // TODO: perhaps unify getDocListAndSetNC and getDocListNC without imposing a significant performance hit
 
@@ -1018,46 +1077,58 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
       final int[] numHits = new int[1];
 
-      searcher.search(query, new HitCollector() {
-        public void collect(int doc, float score) {
-          setHC.collect(doc,score);
-          if (filt!=null && !filt.exists(doc)) return;
-          numHits[0]++;
-          if (score > topscore[0]) topscore[0]=score;
+      try {
+        searcher.search(query, new HitCollector() {
+          public void collect(int doc, float score) {
+            hitCollector.collect(doc,score);
+            if (filt!=null && !filt.exists(doc)) return;
+            numHits[0]++;
+            if (score > topscore[0]) topscore[0]=score;
+          }
         }
+        );
       }
-      );
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       nDocsReturned=0;
       ids = new int[nDocsReturned];
       scores = new float[nDocsReturned];
       totalHits = numHits[0];
       maxScore = totalHits>0 ? topscore[0] : 0.0f;
-    } else if (lsort != null) {
+    } else if (cmd.getSort() != null) {
       // can't use TopDocs if there is a sort since it
       // will do automatic score normalization.
       // NOTE: this changed late in Lucene 1.9
 
       final DocSet filt = filter;
       final int[] numHits = new int[1];
-      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, lsort.getSort(), offset+len);
+      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
-      searcher.search(query, new HitCollector() {
-        public void collect(int doc, float score) {
-          setHC.collect(doc,score);
-          if (filt!=null && !filt.exists(doc)) return;
-          numHits[0]++;
-          hq.insert(new FieldDoc(doc, score));
+      try {
+        searcher.search(query, new HitCollector() {
+          public void collect(int doc, float score) {
+            hitCollector.collect(doc,score);
+            if (filt!=null && !filt.exists(doc)) return;
+            numHits[0]++;
+            hq.insert(new FieldDoc(doc, score));
+          }
         }
+        );
       }
-      );
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       totalHits = numHits[0];
       maxScore = totalHits>0 ? hq.getMaxScore() : 0.0f;
 
       nDocsReturned = hq.size();
       ids = new int[nDocsReturned];
-      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      scores = (cmd.getFlags()&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
       for (int i = nDocsReturned -1; i >= 0; i--) {
         FieldDoc fieldDoc = (FieldDoc)hq.pop();
         // fillFields is the point where score normalization happens
@@ -1073,25 +1144,31 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final DocSet filt = filter;
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
-      searcher.search(query, new HitCollector() {
-        float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
-        public void collect(int doc, float score) {
-          setHC.collect(doc,score);
-          if (filt!=null && !filt.exists(doc)) return;
-          if (numHits[0]++ < lastDocRequested || score >= minScore) {
-            // if docs are always delivered in order, we could use "score>minScore"
-            // but might BooleanScorer14 might still be used and deliver docs out-of-order?
-            hq.insert(new ScoreDoc(doc, score));
-            minScore = ((ScoreDoc)hq.top()).score;
+      try {
+        searcher.search(query, new HitCollector() {
+          float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
+          public void collect(int doc, float score) {
+            hitCollector.collect(doc,score);
+            if (filt!=null && !filt.exists(doc)) return;
+            if (numHits[0]++ < lastDocRequested || score >= minScore) {
+              // if docs are always delivered in order, we could use "score>minScore"
+              // but might BooleanScorer14 might still be used and deliver docs out-of-order?
+              hq.insert(new ScoreDoc(doc, score));
+              minScore = ((ScoreDoc)hq.top()).score;
+            }
           }
         }
+        );
       }
-      );
+      catch( TimeLimitedCollector.TimeExceededException x ) {
+        log.warning( "Query: " + query + "; " + x.getMessage() );
+        qr.setPartialResults(true);
+      }
 
       totalHits = numHits[0];
       nDocsReturned = hq.size();
       ids = new int[nDocsReturned];
-      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      scores = (cmd.getFlags()&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
       ScoreDoc sdoc =null;
       for (int i = nDocsReturned -1; i >= 0; i--) {
         sdoc = (ScoreDoc)hq.pop();
@@ -1102,11 +1179,12 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
 
 
-    int sliceLen = Math.min(lastDocRequested,nDocsReturned) - offset;
+    int sliceLen = Math.min(lastDocRequested,nDocsReturned);
     if (sliceLen < 0) sliceLen=0;
-    out.docList = new DocSlice(offset,sliceLen,ids,scores,totalHits,maxScore);
+    
+    qr.setDocList(new DocSlice(0,sliceLen,ids,scores,totalHits,maxScore));
     DocSet qDocSet = setHC.getDocSet();
-    out.docSet = filter==null ? qDocSet : qDocSet.intersection(filter);
+    qr.setDocSet(filter==null ? qDocSet : qDocSet.intersection(filter));
     return qDocSet;
   }
 
@@ -1126,9 +1204,15 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocList getDocList(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
-    DocListAndSet answer = new DocListAndSet();
-    getDocListC(answer,query,null,filter,lsort,offset,len,0);
-    return answer.docList;
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilter(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocList();
   }
 
   /**
@@ -1152,9 +1236,16 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
-    List<Query> filterList = buildQueryList(filter);
-    return getDocListAndSet(query, filterList, lsort, offset, len);
-
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
   }
 
   /**
@@ -1179,22 +1270,19 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
-	List<Query> filterList = buildQueryList(filter);
-	return getDocListAndSet(query, filterList, lsort, offset, len, flags);
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setFlags(flags)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
   }
   
-  /**
-   * A simple utility method for to build a filterList from a query
-   * @param filter
-   */
-  private List<Query> buildQueryList(Query filter) {
-	List<Query> filterList = null;
-	if (filter != null) {
-	  filterList = new ArrayList<Query>(2);
-	  filterList.add(filter);
-	}
-	return filterList;
-  }
 
   /**
    * Returns documents matching both <code>query</code> and the intersection 
@@ -1219,9 +1307,16 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
-    DocListAndSet ret = new DocListAndSet();
-    getDocListC(ret,query,filterList,null,lsort,offset,len,GET_DOCSET);
-    return ret;
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filterList)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
   }
 
   /**
@@ -1248,9 +1343,17 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
-	    DocListAndSet ret = new DocListAndSet();
-	    getDocListC(ret,query,filterList,null,lsort,offset,len, flags |= GET_DOCSET);
-	    return ret;
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilterList(filterList)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setFlags(flags)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
   }
 
   /**
@@ -1269,9 +1372,16 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
-    DocListAndSet ret = new DocListAndSet();
-    getDocListC(ret,query,null,filter,lsort,offset,len,GET_DOCSET);
-    return ret;
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilter(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
   }
 
   /**
@@ -1296,10 +1406,18 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
-	    DocListAndSet ret = new DocListAndSet();
-	    getDocListC(ret,query,null,filter,lsort,offset,len, flags |= GET_DOCSET);
-	    return ret;
-	  }
+    QueryCommand qc = new QueryCommand();
+    qc.setQuery(query)
+      .setFilter(filter)
+      .setSort(lsort)
+      .setOffset(offset)
+      .setLen(len)
+      .setFlags(flags)
+      .setNeedDocSet(true);
+    QueryResult qr = new QueryResult();
+    search(qr,qc);
+    return qr.getDocListAndSet();
+  }
 
   protected DocList sortDocSet(DocSet set, Sort sort, int nDocs) throws IOException {
     final FieldSortedHitQueue hq =
@@ -1473,9 +1591,154 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
     return lst;
   }
+
+  /**
+   * A query request command to avoid having to change the method signatures
+   * if we want to pass additional information to the searcher.
+   */
+  public static class QueryCommand {
+    private Query query;
+    private List<Query> filterList;
+    private DocSet filter;
+    private Sort sort;
+    private int offset;
+    private int len;
+    private int supersetMaxDoc;
+    private int flags;
+    private long timeAllowed = -1;
+    private boolean needDocSet;
+
+    public Query getQuery() { return query; }
+    public QueryCommand setQuery(Query query) {
+      this.query = query;
+      return this;
+    }
+    
+    public List<Query> getFilterList() { return filterList; }
+    /**
+     * @throws IllegalArgumentException if filter is not null.
+     */
+    public QueryCommand setFilterList(List<Query> filterList) {
+      if( filter != null ) {
+        throw new IllegalArgumentException( "Either filter or filterList may be set in the QueryCommand, but not both." );
+      }
+      this.filterList = filterList;
+      return this;
+    }
+    /**
+     * A simple setter to build a filterList from a query
+     * @throws IllegalArgumentException if filter is not null.
+     */
+    public QueryCommand setFilterList(Query f) {
+      if( filter != null ) {
+        throw new IllegalArgumentException( "Either filter or filterList may be set in the QueryCommand, but not both." );
+      }
+      filterList = null;
+      if (f != null) {
+        filterList = new ArrayList<Query>(2);
+        filterList.add(f);
+      }
+      return this;
+    }
+    
+    public DocSet getFilter() { return filter; }
+    /**
+     * @throws IllegalArgumentException if filterList is not null.
+     */
+    public QueryCommand setFilter(DocSet filter) {
+      if( filterList != null ) {
+        throw new IllegalArgumentException( "Either filter or filterList may be set in the QueryCommand, but not both." );
+      }
+      this.filter = filter;
+      return this;
+    }
+
+    public Sort getSort() { return sort; }
+    public QueryCommand setSort(Sort sort) {
+      this.sort = sort;
+      return this;
+    }
+    
+    public int getOffset() { return offset; }
+    public QueryCommand setOffset(int offset) {
+      this.offset = offset;
+      return this;
+    }
+    
+    public int getLen() { return len; }
+    public QueryCommand setLen(int len) {
+      this.len = len;
+      return this;
+    }
+    
+    public int getSupersetMaxDoc() { return supersetMaxDoc; }
+    public QueryCommand setSupersetMaxDoc(int supersetMaxDoc) {
+      this.supersetMaxDoc = supersetMaxDoc;
+      return this;
+    }
+
+    public int getFlags() {
+      return flags;
+    }
+
+    public QueryCommand replaceFlags(int flags) {
+      this.flags = flags;
+      return this;
+    }
+
+    public QueryCommand setFlags(int flags) {
+      this.flags |= flags;
+      return this;
+    }
+
+    public QueryCommand clearFlags(int flags) {
+      this.flags &= ~flags;
+      return this;
+    }
+
+    public long getTimeAllowed() { return timeAllowed; }
+    public QueryCommand setTimeAllowed(long timeAllowed) {
+      this.timeAllowed = timeAllowed;
+      return this;
+    }
+    
+    public boolean isNeedDocSet() { return (flags & GET_DOCSET) != 0; }
+    public QueryCommand setNeedDocSet(boolean needDocSet) {
+      return needDocSet ? setFlags(GET_DOCSET) : clearFlags(GET_DOCSET);
+    }
+  }
+
+  /**
+   * The result of a search.
+   */
+  public static class QueryResult {
+    private boolean partialResults;
+    private DocListAndSet docListAndSet;
+    
+    public DocList getDocList() { return docListAndSet.docList; }
+    public void setDocList(DocList list) {
+      if( docListAndSet == null ) {
+        docListAndSet = new DocListAndSet();
+      }
+      docListAndSet.docList = list;
+    }
+
+    public DocSet getDocSet() { return docListAndSet.docSet; }
+    public void setDocSet(DocSet set) {
+      if( docListAndSet == null ) {
+        docListAndSet = new DocListAndSet();
+      }
+      docListAndSet.docSet = set;
+    }
+
+    public boolean isPartialResults() { return partialResults; }
+    public void setPartialResults(boolean partialResults) { this.partialResults = partialResults; }
+
+    public void setDocListAndSet( DocListAndSet listSet ) { docListAndSet = listSet; }
+    public DocListAndSet getDocListAndSet() { return docListAndSet; }
+  }
+
 }
-
-
 
 // Lucene's HitQueue isn't public, so here is our own.
 final class ScorePriorityQueue extends PriorityQueue {
@@ -1490,6 +1753,5 @@ final class ScorePriorityQueue extends PriorityQueue {
     return sd1.score < sd2.score || (sd1.score==sd2.score && sd1.doc > sd2.doc);
   }
 }
-
 
 
