@@ -473,12 +473,13 @@ public class SolrQuery extends ModifiableSolrParams
   * 
   *@param milliseconds the time in milliseconds allowed for this query
   */
-  public void setTimeAllowed(Integer milliseconds) {
+  public SolrQuery setTimeAllowed(Integer milliseconds) {
     if (milliseconds == null) {
       this.remove(CommonParams.TIME_ALLOWED);
     } else {
       this.set(CommonParams.TIME_ALLOWED, milliseconds);
     }
+    return this;
   }
   
   /**
