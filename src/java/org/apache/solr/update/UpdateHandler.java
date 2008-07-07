@@ -179,11 +179,25 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
 
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * 
+   * @see SolrCoreAware
+   */
   public void registerCommitCallback( SolrEventListener listener )
   {
     commitCallbacks.add( listener );
   }
 
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * 
+   * @see SolrCoreAware
+   */
   public void registerOptimizeCallback( SolrEventListener listener )
   {
     optimizeCallbacks.add( listener );

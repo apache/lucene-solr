@@ -44,6 +44,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -207,16 +208,37 @@ public final class SolrCore {
     newSearcherListeners = parseListener("//listener[@event=\"newSearcher\"]");
   }
   
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * 
+   * @see SolrCoreAware
+   */
   public void registerFirstSearcherListener( SolrEventListener listener )
   {
     firstSearcherListeners.add( listener );
   }
 
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * 
+   * @see SolrCoreAware
+   */
   public void registerNewSearcherListener( SolrEventListener listener )
   {
     newSearcherListeners.add( listener );
   }
 
+  /**
+   * NOTE: this function is not thread safe.  However, it is safe to call within the
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * 
+   * @see SolrCoreAware
+   */
   public void registerResponseWriter( String name, QueryResponseWriter responseWriter ){
     responseWriters.put(name, responseWriter);
   }
