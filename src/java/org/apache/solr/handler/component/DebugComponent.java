@@ -132,7 +132,7 @@ public class DebugComponent extends SearchComponent
       explain = HighlightComponent.removeNulls(new SimpleOrderedMap(Arrays.asList(arr)));
 
       if (info == null) {
-        info = new NamedList();
+        info = new SimpleOrderedMap();
       }
       int idx = info.indexOf("explain",0);
       if (idx>=0) {
