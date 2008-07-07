@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.PrefixAndSuffixAwareTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
+import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
@@ -42,7 +43,14 @@ public class TestShingleMatrixFilter extends TestCase {
     Token token = new Token(); // for debug use only
 
 
+
+
     TokenStream ts;
+
+
+    ts = new ShingleMatrixFilter(new EmptyTokenStream(), 1, 2, ' ', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
+    assertNull(ts.next());
+
     TokenListStream tls;
     LinkedList<Token> tokens;
 
