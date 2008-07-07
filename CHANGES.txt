@@ -309,6 +309,8 @@ New Features
 58. SOLR-502: Add search timeout support. (Sean Timm via yonik)
     
 59. SOLR-605: Add the ability to register callbacks programatically (ryan, Noble Paul)
+
+60. SOLR-610: hl.maxAnalyzedChars can be -1 to highlight everything (Lars Kotthoff via klaas)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This
@@ -464,6 +466,7 @@ Bug Fixes
     via useMultiPartPost in CommonsHttpSolrServer.
     (Lars Kotthoff, Andrew Schurman, ryan, yonik)
 
+40. SOLR-556: multi-valued fields always highlighted in disparate snippets (Lars Kotthoff via klaas)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

@@ -185,6 +185,26 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
 
   }
+  
+  public void testMultiValueBestFragmentHighlight() {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "textgap");
+    args.put("df", "textgap");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+        "standard", 0, 200, args);
+    
+    assertU(adoc("textgap", "first entry has one word foo", 
+        "textgap", "second entry has both words foo bar",
+        "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Best fragment summarization",
+        sumLRF.makeRequest("foo bar"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        "//lst[@name='1']/arr[@name='textgap']/str[.=\'second entry has both words <em>foo</em> <em>bar</em>\']"
+    );
+  }
 
 
   public void testDefaultFieldHighlight() {
@@ -361,6 +381,13 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1'][not(*)]"
             );
+    args.put("hl.maxAnalyzedChars", "-1");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("token at start of text",
+        sumLRF.makeRequest("t_text:disjoint"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        "//lst[@name='1']/arr[count(str)=1]"
+    );
   }
   public void testRegexFragmenter() {
     HashMap<String,String> args = new HashMap<String,String>();
