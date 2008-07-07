@@ -87,7 +87,7 @@ public class DebugComponent extends SearchComponent
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
 
-    // Turn on debug to get explain only only when retrieving fields
+    // Turn on debug to get explain only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
         sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
         sreq.params.set("debugQuery", "true");
@@ -130,6 +130,10 @@ public class DebugComponent extends SearchComponent
       }
 
       explain = HighlightComponent.removeNulls(new SimpleOrderedMap(Arrays.asList(arr)));
+
+      if (info == null) {
+        info = new NamedList();
+      }
       int idx = info.indexOf("explain",0);
       if (idx>=0) {
         info.setVal(idx, explain);

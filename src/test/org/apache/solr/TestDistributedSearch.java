@@ -486,6 +486,9 @@ public class TestDistributedSearch extends TestCase {
     query("q","now their fox sat had put","fl","*,score",
             "debugQuery", "true");
 
+    query("q","matchesnothing","fl","*,score",
+            "debugQuery", "true");    
+
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1);
     query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
