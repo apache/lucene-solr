@@ -320,7 +320,7 @@
           description="Generates solrj javadoc documentation.">
     <mkdir dir="${build.javadoc.solrj}"/>  
     <path id="javadoc.classpath.solrj">
-       <path refid="compile.classpath"/>
+       <path refid="compile.classpath.solrj"/>
     </path>
     <javadoc
       destdir="${build.javadoc.solrj}"
