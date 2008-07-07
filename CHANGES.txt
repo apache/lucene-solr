@@ -308,6 +308,8 @@ New Features
 
 58. SOLR-502: Add search timeout support. (Sean Timm via yonik)
     
+59. SOLR-605: Add the ability to register callbacks programatically (ryan, Noble Paul)
+    
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This
    removes the maxBufferedDeletes parameter added by SOLR-310 as Lucene
