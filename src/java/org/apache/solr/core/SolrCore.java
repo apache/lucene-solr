@@ -206,6 +206,20 @@ public final class SolrCore {
     firstSearcherListeners = parseListener("//listener[@event=\"firstSearcher\"]");
     newSearcherListeners = parseListener("//listener[@event=\"newSearcher\"]");
   }
+  
+  public void registerFirstSearcherListener( SolrEventListener listener )
+  {
+    firstSearcherListeners.add( listener );
+  }
+
+  public void registerNewSearcherListener( SolrEventListener listener )
+  {
+    newSearcherListeners.add( listener );
+  }
+
+  public void registerResponseWriter( String name, QueryResponseWriter responseWriter ){
+    responseWriters.put(name, responseWriter);
+  }
 
 
   // gets a non-caching searcher

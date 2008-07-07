@@ -178,6 +178,16 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+
+  public void registerCommitCallback( SolrEventListener listener )
+  {
+    commitCallbacks.add( listener );
+  }
+
+  public void registerOptimizeCallback( SolrEventListener listener )
+  {
+    optimizeCallbacks.add( listener );
+  }
 }
 
 
