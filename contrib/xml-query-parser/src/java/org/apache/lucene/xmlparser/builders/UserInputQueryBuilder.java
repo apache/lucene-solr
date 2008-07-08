@@ -40,6 +40,7 @@ public class UserInputQueryBuilder implements QueryBuilder {
 	private String defaultField;
 	
 	/**
+	 * This constructor has the disadvantage of not being able to change choice of default field name
 	 * @param parser thread un-safe query parser
 	 */
 	public UserInputQueryBuilder(QueryParser parser) {
@@ -68,8 +69,9 @@ public class UserInputQueryBuilder implements QueryBuilder {
 			}
 			else
 			{
+				String fieldName=DOMUtils.getAttribute(e, "fieldName", defaultField);
 				//Create new parser
-				QueryParser parser=new QueryParser(defaultField,analyzer);
+				QueryParser parser=createQueryParser(fieldName, analyzer);
 				q = parser.parse(text);				
 			}
 			q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
@@ -77,6 +79,17 @@ public class UserInputQueryBuilder implements QueryBuilder {
 		} catch (ParseException e1) {
 			throw new ParserException(e1.getMessage());
 		}
+	}
+	
+	/**
+	 * Method to create a QueryParser - designed to be overridden
+	 * @param fieldName
+	 * @param analyzer
+	 * @return
+	 */
+	protected QueryParser createQueryParser(String fieldName, Analyzer analyzer)
+	{
+		return new QueryParser(fieldName,analyzer);
 	}
 
 }

@@ -117,6 +117,14 @@ public class TestParser extends TestCase {
 			Query q=parse("UserInputQuery.xml");
 			dumpResults("UserInput with Filter", q, 5);
 	}
+	
+	public void testCustomFieldUserQueryXML() throws ParserException, IOException
+	{
+			Query q=parse("UserInputQueryCustomField.xml");
+			Hits h = searcher.search(q);
+			assertEquals("UserInputQueryCustomField should produce 0 result ", 0,h.length());
+	}
+	
 	public void testLikeThisQueryXML() throws Exception
 	{
 			Query q=parse("LikeThisQuery.xml");

@@ -145,6 +145,8 @@ Passes content directly through to the standard LuceneQuery parser see "Lucene Q
 <!ELEMENT UserQuery (#PCDATA)>
 <!-- Optional boost for matches on this query. Values > 1 -->
 <!ATTLIST UserQuery boost CDATA "1.0">
+<!-- fieldName can optionally be defined here to change the default field used in the QueryParser -->	
+<!ATTLIST UserQuery fieldName CDATA #IMPLIED>
 
 <!-- A query which is used to match all documents. This has a couple of uses: 
 	<ol>

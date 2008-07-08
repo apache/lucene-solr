@@ -41,7 +41,7 @@ positions in relation to each other and the documents containing them.</p><p>Cor
 <a name='BooleanQuery'></a>
 <br /><table class='elementTitle' summary="BooleanQuery"><tr><td class='leftElementTitle'>
 &lt;BooleanQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>BooleanQuerys implement Boolean logic which controls how multiple Clauses should be interpreted.
 Some clauses may represent optional Query criteria while others represent mandatory criteria.</p><p><span class='inTextTitle'>Example:</span> <em>Find articles about banks, preferably talking about mergers but nothing to do with "sumitomo"</em>
@@ -185,7 +185,7 @@ RAM to eliminate the cost of building this filter from disk for every query</em>
 <span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#BooleanQuery'>BooleanQuery</a> | <a href='#UserQuery'>UserQuery</a> | <a href='#FilteredQuery'>FilteredQuery</a> | <a href='#TermQuery'>TermQuery</a> | <a href='#TermsQuery'>TermsQuery</a> | <a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a> | <a href='#ConstantScoreQuery'>ConstantScoreQuery</a> | <a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#RangeFilter'>RangeFilter</a> | <a href='#CachedFilter'>CachedFilter</a>)</p><a name='UserQuery'></a>
 <br /><table class='elementTitle' summary="UserQuery"><tr><td class='leftElementTitle'>
 &lt;UserQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Passes content directly through to the standard LuceneQuery parser see "Lucene Query Syntax"</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about John Smith or John Doe using standard LuceneQuerySyntax</em>
 </p><pre>	          
@@ -198,16 +198,21 @@ Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#Cac
 <tr>
 <th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
 <tr><th colspan='3' height='1' class='ruler'></th></tr>
-<tr><td><a href='#UserQuery_boost'>boost</a></td><td></td><td>1.0</td></tr></table></td></tr></table></blockquote>
+<tr><td><a href='#UserQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#UserQuery_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
 <a name='UserQuery_boost'></a>
 <br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
 @boost</td><td class='rightAttributeTitle'>
 Attribute of <a href='#UserQuery'>UserQuery</a>
 </td></tr></table>
-<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='MatchAllDocsQuery'></a>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='UserQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#UserQuery'>UserQuery</a>
+</td></tr></table>
+<p>fieldName can optionally be defined here to change the default field used in the QueryParser</p><a name='MatchAllDocsQuery'></a>
 <br /><table class='elementTitle' summary="MatchAllDocsQuery"><tr><td class='leftElementTitle'>
 &lt;MatchAllDocsQuery/&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>A query which is used to match all documents. This has a couple of uses:
 <ol>
@@ -228,7 +233,7 @@ used to select content rather than it's usual role of filtering the results of a
 	       </pre><p></p><p class='emptyTagNote'>This element is always empty.</p><a name='TermQuery'></a>
 <br /><table class='elementTitle' summary="TermQuery"><tr><td class='leftElementTitle'>
 &lt;TermQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>a single term query - no analysis is done of the child text</p><p><span class='inTextTitle'>Example:</span> <em>Match on a primary key</em>
 </p><pre>	          
@@ -255,7 +260,7 @@ Attribute of <a href='#TermQuery'>TermQuery</a>
 <p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='TermsQuery'></a>
 <br /><table class='elementTitle' summary="TermsQuery"><tr><td class='leftElementTitle'>
 &lt;TermsQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>The equivalent of a BooleanQuery with multiple optional TermQuery clauses.
 Child text is analyzed using a field-specific choice of Analyzer to produce a set of terms that are ORed together in Boolean logic.
@@ -296,7 +301,7 @@ Attribute of <a href='#TermsQuery'>TermsQuery</a>
 <p>The minimum number of terms that should be present in any one document before it is considered to be a match.</p><p><span class='inTextTitle'>Default value</span>: 0</p><a name='FilteredQuery'></a>
 <br /><table class='elementTitle' summary="FilteredQuery"><tr><td class='leftElementTitle'>
 &lt;FilteredQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Runs a Query and filters results to only those query matches that also match the Filter element.</p><p><span class='inTextTitle'>Example:</span> <em>Find all documents about Lucene that have a status of "published"</em>
 </p><pre>	          
@@ -426,7 +431,7 @@ Attribute of <a href='#RangeFilter'>RangeFilter</a>
 <p>Controls if the upperTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='SpanTerm'></a>
 <br /><table class='elementTitle' summary="SpanTerm"><tr><td class='leftElementTitle'>
 &lt;SpanTerm&gt;</td><td class='rightElementTitle'>
-Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>A single term used in a SpanQuery. These clauses are the building blocks for more complex "span" queries which test word proximity</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
 </p><pre>
@@ -459,7 +464,7 @@ Attribute of <a href='#SpanTerm'>SpanTerm</a>
 <p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><p><span class='inTextTitle'>Required</span></p><a name='SpanOrTerms'></a>
 <br /><table class='elementTitle' summary="SpanOrTerms"><tr><td class='leftElementTitle'>
 &lt;SpanOrTerms&gt;</td><td class='rightElementTitle'>
-Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>A field-specific analyzer is used here to parse the child text provided in this tag. The SpanTerms produced are ORed in terms of Boolean logic</p><p><span class='inTextTitle'>Example:</span> <em>Use SpanOrTerms as a more convenient/succinct way of expressing multiple choices of SpanTerms. This example looks for reports
 using words describing a fatality near to references to miners</em>
@@ -485,7 +490,7 @@ Attribute of <a href='#SpanOrTerms'>SpanOrTerms</a>
 <p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><p><span class='inTextTitle'>Required</span></p><a name='SpanOr'></a>
 <br /><table class='elementTitle' summary="SpanOr"><tr><td class='leftElementTitle'>
 &lt;SpanOr&gt;</td><td class='rightElementTitle'>
-Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Takes any number of child queries from the Span family</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
 </p><pre>
@@ -519,7 +524,7 @@ Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a hr
 <span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a>)*</p><a name='SpanNear'></a>
 <br /><table class='elementTitle' summary="SpanNear"><tr><td class='leftElementTitle'>
 &lt;SpanNear&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Takes any number of child queries from the Span family and tests for proximity</p><blockquote><table summary='element info'><tr>
 <td class='construct'><table summary="&lt;SpanNear&gt;'s children">
@@ -570,7 +575,7 @@ Attribute of <a href='#SpanNear'>SpanNear</a>
 <p>Controls if matching terms have to appear in the order listed or can be reversed</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='SpanFirst'></a>
 <br /><table class='elementTitle' summary="SpanFirst"><tr><td class='leftElementTitle'>
 &lt;SpanFirst&gt;</td><td class='rightElementTitle'>
-Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanOr'>SpanOr</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Looks for a SpanQuery match occuring near the beginning of a document</p><p><span class='inTextTitle'>Example:</span> <em>Find letters where the first 50 words talk about a resignation:</em>
 </p><pre>	          
@@ -612,7 +617,7 @@ Attribute of <a href='#SpanFirst'>SpanFirst</a>
 <p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='SpanNot'></a>
 <br /><table class='elementTitle' summary="SpanNot"><tr><td class='leftElementTitle'>
 &lt;SpanNot&gt;</td><td class='rightElementTitle'>
-Child of <a href='#SpanNear'>SpanNear</a>, <a href='#Include'>Include</a>, <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#SpanOr'>SpanOr</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Exclude'>Exclude</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>Finds documents matching a SpanQuery but not if matching another SpanQuery</p><p><span class='inTextTitle'>Example:</span> <em>Find documents talking about social services but not containing the word "public"</em>
 </p><pre>
@@ -681,7 +686,7 @@ Child of <a href='#SpanNot'>SpanNot</a>
 <span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a>)</p><a name='ConstantScoreQuery'></a>
 <br /><table class='elementTitle' summary="ConstantScoreQuery"><tr><td class='leftElementTitle'>
 &lt;ConstantScoreQuery&gt;</td><td class='rightElementTitle'>
-Child of <a href='#Query'>Query</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>
+Child of <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
 </td></tr></table>
 <p>a utility tag to wrap any filter as a query</p><p><span class='inTextTitle'>Example:</span> <em> Find all documents from the last 10 years </em>
 </p><pre>

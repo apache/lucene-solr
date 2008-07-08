@@ -151,6 +151,8 @@
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ELEMENT</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">UserQuery</span><span class="dtd_plain"> (</span><span class="dtd_keyword">#PCDATA</span><span class="dtd_plain">)</span><span class="dtd_tag_symbols">&gt;</span>
 <span class="dtd_comment">&lt;!-- Optional boost for matches on this query. Values &gt; 1 --&gt;</span>
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">UserQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">boost</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;1.0&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- fieldName can optionally be defined here to change the default field used in the QueryParser --&gt;</span><span class="dtd_plain">   </span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">UserQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">fieldName</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#IMPLIED</span><span class="dtd_tag_symbols">&gt;</span>
 
 <span class="dtd_comment">&lt;!-- A query which is used to match all documents. This has a couple of uses: </span>
 <span class="dtd_comment">    &lt;ol&gt;</span>
