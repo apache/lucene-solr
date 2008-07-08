@@ -170,6 +170,23 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return null;
   }
 
+  /**
+   * Gets the values for the the specified name
+   * @param name Name
+   * @return List of values
+   */
+  public List<T> getAll(String name) {
+    List<T> result = new ArrayList<T>();
+    int sz = size();
+    for (int i = 0; i < sz; i++) {
+      String n = getName(i);
+      if (name==n || (name!=null && name.equals(n))) {
+        result.add(getVal(i));
+      }
+    }
+    return result;
+  }
+
   public String toString() {
     StringBuffer sb = new StringBuffer();
     sb.append('{');
