@@ -827,15 +827,9 @@ public class SolrPluginUtils {
                                               String[] queries) throws ParseException {    
     if (null == queries || 0 == queries.length) return null;
     List<Query> out = new LinkedList<Query>();
-    SolrIndexSearcher s = req.getSearcher();
-    /* Ignore SolrParams.DF - could have init param FQs assuming the
-     * schema default with query param DF intented to only affect Q.
-     * If user doesn't want schema default, they should be explicit in the FQ.
-     */
-    SolrQueryParser qp = new SolrQueryParser(s.getSchema(), null);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
-        out.add(qp.parse(q));
+        out.add(QParser.getParser(q, null, req).getQuery());
       }
     }
     return out;
