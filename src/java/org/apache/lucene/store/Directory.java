@@ -38,6 +38,8 @@ import java.io.IOException;
  */
 public abstract class Directory {
 
+  volatile boolean isOpen = true;
+
   /** Holds the LockFactory instance (implements locking for
    * this Directory instance). */
   protected LockFactory lockFactory;
@@ -209,5 +211,13 @@ public abstract class Directory {
       }
       if(closeDirSrc)
         src.close();
+  }
+
+  /**
+   * @throws AlreadyClosedException if this Directory is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (!isOpen)
+      throw new AlreadyClosedException("this Directory is closed");
   }
 }

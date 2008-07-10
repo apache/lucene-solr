@@ -237,15 +237,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Closes the store to future operations, releasing associated memory. */
   public void close() {
+    isOpen = false;
     fileMap = null;
-  }
-
-  /**
-   * @throws AlreadyClosedException if this IndexReader is closed
-   */
-  protected final void ensureOpen() throws AlreadyClosedException {
-    if (fileMap == null) {
-      throw new AlreadyClosedException("this RAMDirectory is closed");
-    }
   }
 }

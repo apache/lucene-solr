@@ -317,17 +317,20 @@ public class FSDirectory extends Directory {
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */
   public String[] list() {
+    ensureOpen();
     return directory.list(IndexFileNameFilter.getFilter());
   }
 
   /** Returns true iff a file with the given name exists. */
   public boolean fileExists(String name) {
+    ensureOpen();
     File file = new File(directory, name);
     return file.exists();
   }
 
   /** Returns the time the named file was last modified. */
   public long fileModified(String name) {
+    ensureOpen();
     File file = new File(directory, name);
     return file.lastModified();
   }
@@ -340,18 +343,21 @@ public class FSDirectory extends Directory {
 
   /** Set the modified time of an existing file to now. */
   public void touchFile(String name) {
+    ensureOpen();
     File file = new File(directory, name);
     file.setLastModified(System.currentTimeMillis());
   }
 
   /** Returns the length in bytes of a file in the directory. */
   public long fileLength(String name) {
+    ensureOpen();
     File file = new File(directory, name);
     return file.length();
   }
 
   /** Removes an existing file in the directory. */
   public void deleteFile(String name) throws IOException {
+    ensureOpen();
     File file = new File(directory, name);
     if (!file.delete())
       throw new IOException("Cannot delete " + file);
@@ -363,6 +369,7 @@ public class FSDirectory extends Directory {
    */
   public synchronized void renameFile(String from, String to)
       throws IOException {
+    ensureOpen();
     File old = new File(directory, from);
     File nu = new File(directory, to);
 
@@ -427,7 +434,7 @@ public class FSDirectory extends Directory {
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
   public IndexOutput createOutput(String name) throws IOException {
-
+    ensureOpen();
     File file = new File(directory, name);
     if (file.exists() && !file.delete())          // delete existing, if any
       throw new IOException("Cannot overwrite: " + file);
@@ -436,6 +443,7 @@ public class FSDirectory extends Directory {
   }
 
   public void sync(String name) throws IOException {
+    ensureOpen();
     File fullFile = new File(directory, name);
     boolean success = false;
     int retryCount = 0;
@@ -470,11 +478,13 @@ public class FSDirectory extends Directory {
 
   // Inherit javadoc
   public IndexInput openInput(String name) throws IOException {
+    ensureOpen();
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
   // Inherit javadoc
   public IndexInput openInput(String name, int bufferSize) throws IOException {
+    ensureOpen();
     return new FSIndexInput(new File(directory, name), bufferSize);
   }
 
@@ -486,6 +496,7 @@ public class FSDirectory extends Directory {
 
   
   public String getLockID() {
+    ensureOpen();
     String dirName;                               // name to be hashed
     try {
       dirName = directory.getCanonicalPath();
@@ -510,7 +521,8 @@ public class FSDirectory extends Directory {
 
   /** Closes the store to future operations. */
   public synchronized void close() {
-    if (--refCount <= 0) {
+    if (isOpen && --refCount <= 0) {
+      isOpen = false;
       synchronized (DIRECTORIES) {
         DIRECTORIES.remove(directory);
       }
@@ -518,6 +530,7 @@ public class FSDirectory extends Directory {
   }
 
   public File getFile() {
+    ensureOpen();
     return directory;
   }
 

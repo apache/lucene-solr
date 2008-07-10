@@ -22,11 +22,9 @@ import junit.textui.TestRunner;
 
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.*;
@@ -115,7 +113,6 @@ public class TestDoc extends LuceneTestCase {
       SegmentInfo si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
       writer.close();
-      directory.close();
 
       SegmentInfo siMerge = merge(si1, si2, "merge", false);
       printSegment(out, siMerge);
@@ -126,6 +123,7 @@ public class TestDoc extends LuceneTestCase {
       SegmentInfo siMerge3 = merge(siMerge, siMerge2, "merge3", false);
       printSegment(out, siMerge3);
       
+      directory.close();
       out.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -143,7 +141,6 @@ public class TestDoc extends LuceneTestCase {
       si2 = indexDoc(writer, "test2.txt");
       printSegment(out, si2);
       writer.close();
-      directory.close();
 
       siMerge = merge(si1, si2, "merge", true);
       printSegment(out, siMerge);
@@ -154,6 +151,7 @@ public class TestDoc extends LuceneTestCase {
       siMerge3 = merge(siMerge, siMerge2, "merge3", true);
       printSegment(out, siMerge3);
       
+      directory.close();
       out.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
