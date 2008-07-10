@@ -1005,9 +1005,10 @@ public abstract class IndexReader {
    *  Normally, because the default is {@link
    *  KeepOnlyLastCommitDeletionPolicy}, there would be only
    *  one commit point.  But if you're using a custom {@link
-   *  DeletionPolicy} then there could be many commits.
+   *  IndexDeletionPolicy} then there could be many commits.
    *  Once you have a given commit, you can open a reader on
    *  it by calling {@link IndexReader#open(Directory,
+   *  boolean, IndexDeletionPolicy,
    *  IndexCommit)}.  There must be at least one commit in
    *  the Directory, else this method throws {@link
    *  java.io.IOException}.  Note that if a commit is in
