@@ -84,7 +84,7 @@ public class SolrDocument implements Serializable, Iterable<Map.Entry<String, Ob
   public void setField(String name, Object value) 
   {
     if( value instanceof Object[] ) {
-      value = Arrays.asList( (Object[])value );
+      value = new ArrayList(Arrays.asList( (Object[])value ));
     }
     else if( value instanceof Collection ) {
       // nothing
