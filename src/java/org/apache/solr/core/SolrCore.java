@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -256,25 +257,23 @@ public final class SolrCore {
       boolean indexExists = dirFile.canRead();
 
       boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
-      if (removeLocks) {
+      if (indexExists && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = FSDirectory.getDirectory(dirFile, !indexExists);
-        if (IndexReader.isLocked(dir)) {
+        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), solrConfig.mainIndexConfig);
+        if (dir != null && IndexWriter.isLocked(dir)) {
           log.warning(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
-          IndexReader.unlock(dir);
+          IndexWriter.unlock(dir);
         }
       }
 
-      // Create the index if it doesn't exist. Note that indexExists was tested *before*
-      // lock removal, since that will result in the creation of the directory.
+      // Create the index if it doesn't exist.
       if(!indexExists) {
         log.warning(logid+"Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
         writer.close();
-
       }
 
     } catch (IOException e) {

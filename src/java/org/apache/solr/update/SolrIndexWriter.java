@@ -82,7 +82,7 @@ public class SolrIndexWriter extends IndexWriter {
 
   }
 
-  private static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
+  public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
     Directory d = FSDirectory.getDirectory(path);
 
     String rawLockType = (null == config) ? null : config.lockType;
