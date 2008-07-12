@@ -18,6 +18,7 @@
 <%@ page import="org.apache.lucene.analysis.Analyzer,
                  org.apache.lucene.analysis.Token,
                  org.apache.lucene.analysis.TokenStream,
+                 org.apache.lucene.index.Payload,
                  org.apache.solr.analysis.TokenFilterFactory,
                  org.apache.solr.analysis.TokenizerChain,
                  org.apache.solr.analysis.TokenizerFactory,
@@ -29,6 +30,7 @@
 <%@ page import="java.io.Reader"%>
 <%@ page import="java.io.StringReader"%>
 <%@ page import="java.util.*"%>
+<%@ page import="java.math.BigInteger" %>
 
 <%-- $Id$ --%>
 <%-- $Source: /cvs/main/searching/org.apache.solrolarServer/resources/admin/analysis.jsp,v $ --%>
@@ -66,7 +68,8 @@
 	<strong>Field
           <select name="nt">
 	  <option <%= nt.equals("name") ? "selected=\"selected\"" : "" %> >name</option>
-	  <option <%= nt.equals("type") ? "selected=\"selected\"" : "" %>>type</option></strong>
+	  <option <%= nt.equals("type") ? "selected=\"selected\"" : "" %>>type</option>
+          </select></strong>
   </td>
   <td>
 	<input class="std" name="name" type="text" value="<% XML.escapeCharData(name, out); %>">
@@ -295,7 +298,14 @@
 
   }
 
-
+  static String isPayloadString( Payload p ) {
+  	String sp = new String( p.getData() );
+	for( int i=0; i < sp.length(); i++ ) {
+	if( !Character.isDefined( sp.charAt(i) ) || Character.isISOControl( sp.charAt(i) ) )
+	  return "";
+	}
+	return "(" + sp + ")";
+  }
 
   static void writeHeader(JspWriter out, Class clazz, Map<String,String> args) throws IOException {
     out.print("<h4>");
@@ -416,6 +426,30 @@
       );
     }
 
+    if (verbose) {
+      printRow(out,"payload", arr, new ToStr() {
+        public String toStr(Object o) {
+          Token t = ((Tok)o).token;
+          Payload p = t.getPayload();
+          if( null != p ) {
+            BigInteger bi = new BigInteger( p.getData() );
+            String ret = bi.toString( 16 );
+            if (ret.length() % 2 != 0) {
+              // Pad with 0
+              ret = "0"+ret;
+            }
+            ret += isPayloadString( p );
+            return ret;
+          }
+          return "";			
+        }
+      }
+              ,true
+              ,verbose
+              ,null
+      );
+    }
+    
     out.println("</table>");
   }
 
