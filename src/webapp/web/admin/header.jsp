@@ -15,13 +15,17 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 --%>
+<html>
+<head>
+<%
+request.setCharacterEncoding("UTF-8");
+%>
 <%@include file="_info.jsp" %>
 <script>
 var host_name="<%= hostname %>"
 </script>
 
-<html>
-<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <link rel="stylesheet" type="text/css" href="solr-admin.css">
 <link rel="icon" href="favicon.ico" type="image/ico"></link>
 <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>

@@ -61,7 +61,7 @@
 
 <h2>Field Analysis</h2>
 
-<form method="POST" action="analysis.jsp">
+<form method="POST" action="analysis.jsp" accept-charset="UTF-8">
 <table>
 <tr>
   <td>

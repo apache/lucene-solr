@@ -106,7 +106,7 @@ if (cores.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
   Query String:
   </td>
   <td colspan=2>
-	<form name=queryForm method="GET" action="../select/">
+	<form name=queryForm method="GET" action="../select/" accept-charset="UTF-8">
         <textarea class="std" rows="4" cols="40" name="q"><%= defaultSearch %></textarea>
         <input name="version" type="hidden" value="2.2">
 	<input name="start" type="hidden" value="0">
