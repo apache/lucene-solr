@@ -255,6 +255,18 @@
                  <regexp pattern="CachingTokenFilter"/>
               </linecontainsregexp>
               <linecontainsregexp negate="true">
+                 <!-- no way to leverage this in Solr -->
+                 <regexp pattern="HyphenationCompoundWordTokenFilter"/>
+              </linecontainsregexp>
+              <linecontainsregexp negate="true">
+                 <!-- no way to leverage these in Solr (yet) -->
+                 <regexp pattern="Sink\|Tee"/>
+              </linecontainsregexp>
+              <linecontainsregexp negate="true">
+                 <!-- Solr already has a different impl for this -->
+                 <regexp pattern="SynonymTokenFilter"/> 
+              </linecontainsregexp>
+              <linecontainsregexp negate="true">
                  <!-- solr and lucene both have one? ? ? ? -->
                  <regexp pattern="LengthFilter"/> 
               </linecontainsregexp>
