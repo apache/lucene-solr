@@ -522,7 +522,7 @@ class JSONWriter extends TextResponseWriter {
     writeKey("start",false);
     writeLong(null,docs.getStart());
 
-    if (includeScore) {
+    if (includeScore && docs.getMaxScore() != null) {
       writeMapSeparator();
       writeKey("maxScore",false);
       writeFloat(null,docs.getMaxScore());

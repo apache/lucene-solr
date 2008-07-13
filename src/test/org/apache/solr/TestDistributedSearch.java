@@ -453,6 +453,7 @@ public class TestDistributedSearch extends TestCase {
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
+    query("q","*:*", "sort",i1+" desc", "fl","*,score");
     handle.put("maxScore", SKIPVAL);
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. NamedListCodec.writeSolrDocumentList()
     //is agnostic of request params.
