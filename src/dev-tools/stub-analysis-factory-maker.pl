@@ -46,7 +46,10 @@ use File::Find;
 my %classes = ();
 while (<STDIN>) {
     chomp;
-    $classes{$_} = 1;
+    # skip anonymous classes
+    if (!/\$/) {
+	$classes{$_} = 1;
+    }
 }
 
 find({wanted => \&wanted,
@@ -58,7 +61,7 @@ sub wanted {
 
     my $file = $File::Find::name;
     
-    return unless $file =~ m{/([^/]*)\.java};
+    return unless $file =~ m{/([^/]*)\.java$};
     my $class = $1;
     
     open(my $f, "<", $file) or die "can't open $file: $!";
@@ -81,6 +84,8 @@ sub wanted {
     # only looking for certain classes
     return unless $classes{$fullname};
 
+    print STDERR "$file\n";
+
     my @imports = $data =~ m/import\s+.*;/g;
     
     if ($data =~ m{public \s+ ((?:\w+\s+)*) $class \s*\(\s* ([^\)]*) \) }sx) {
@@ -100,6 +105,9 @@ sub wanted {
 			 ($k, $v)
 			 } split /\s*,\s*/, $argline;
 	
+	# wacky, doesn't use Reader or TokenStream ... skip (maybe a Sink?)
+	return unless defined $mainArgType;
+
 	my $type = ("Reader" eq $mainArgType) ? "Tokenizer" : "TokenFilter";
 
 	my $facClass = "${class}Factory";
@@ -119,8 +127,8 @@ sub wanted {
 	}
 	if (1 < @orderedArgs) {
 	    # we need to init something, stub it out
-	    print $o "  public abstract void init(SolrConfig solrConfig, Map<String, String> args) {\n";
-	    print $o "    super.init(solrConfig, args);\n";
+	    print $o "  public abstract void init(Map<String, String> args) {\n";
+	    print $o "    super.init(args);\n";
 	    print $o "    // ABSTRACT BECAUSE IT'S A STUB .. FILL IT IN\n";
 	    print $o "  }\n";
 	}
