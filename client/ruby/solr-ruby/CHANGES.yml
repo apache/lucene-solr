@@ -6,6 +6,7 @@ v0.0.6:
     - Fixed modify_document_test.rb so as to not be brittle with Hash ordering
     - Added support for alternate field highlighting to Solr::Request::Standard (and thus DisMax)
     - Added facet.offset support to Solr::Request::Standard/Dismax
+    - Added shards parameter to Solr::Request::Standard
   
 v0.0.5:
   release_date: 2007-08-27

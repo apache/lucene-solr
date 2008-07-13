@@ -12,7 +12,7 @@
 
 class Solr::Request::Standard < Solr::Request::Select
 
-  VALID_PARAMS = [:query, :sort, :default_field, :operator, :start, :rows,
+  VALID_PARAMS = [:query, :sort, :default_field, :operator, :start, :rows, :shards,
     :filter_queries, :field_list, :debug_query, :explain_other, :facets, :highlighting, :mlt]
   
   def initialize(params)
@@ -38,6 +38,8 @@ class Solr::Request::Standard < Solr::Request::Select
     @params[:rows] = params[:rows].to_i if params[:rows]
     
     @params[:field_list] ||= ["*","score"]
+    
+    @params[:shards] ||= []
   end
   
   def to_hash
@@ -59,6 +61,7 @@ class Solr::Request::Standard < Solr::Request::Select
     hash[:fl] = @params[:field_list].join(',')
     hash[:debugQuery] = @params[:debug_query]
     hash[:explainOther] = @params[:explain_other]
+    hash[:shards] = @params[:shards].join(',') unless @params[:shards].empty?
     
     # facet parameter processing
     if @params[:facets]
