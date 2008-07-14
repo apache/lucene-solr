@@ -25,7 +25,9 @@ import java.io.IOException;
 
 /**
  * @version $Id$
+ * @deprecated use {@link org.apache.lucene.analysis.LengthFilter}
  */
+@Deprecated
 public final class LengthFilter extends TokenFilter {
   final int min,max;
 
