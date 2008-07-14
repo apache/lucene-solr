@@ -1,5 +1,5 @@
 v0.0.6:
-  release_date: TBD
+  release_date: 2008-07-14
   changes:
     - Added Solr::Request::Spellcheck
     - Enabled Solr::Request::Select to work as a general pass through to any registered request handler
