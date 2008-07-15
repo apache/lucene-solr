@@ -63,6 +63,15 @@ using the LegacyDateField class as a possible alternative.  Users that
 desire 100% backwards compatibility should consider using the Solr 1.2
 version of DateField.
 
+Due to some changes in the lifecycle of TokenFilterFactories, users of
+Solr 1.2 who have written Java code which constructs new instances of
+StopFilterFactory, SynonymFilterFactory, or EnglishProterFilterFactory
+will need to modify their code by adding a line like the following
+prior to using the factory object...   
+  factory.inform(SolrCore.getSolrCore().getSolrConfig().getResourceLoader()); 
+These lifecycle changes do not affect people who use Solr "out of the
+box" or who have developed their own TokenFilterFactory plugins. More
+info can be found in SOLR-594.
    
 Detailed Change List
 --------------------
