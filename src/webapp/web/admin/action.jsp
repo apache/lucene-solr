@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 --%>
-<%@ page import="org.apache.solr.util.XML"%>
+<%@ page import="org.apache.solr.common.util.XML"%>
 <%@ page import="org.apache.solr.core.SolrCore,
                  org.apache.solr.schema.IndexSchema,
                  java.io.File,

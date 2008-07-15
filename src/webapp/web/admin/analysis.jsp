@@ -24,7 +24,7 @@
                  org.apache.solr.analysis.TokenizerFactory,
                  org.apache.solr.schema.FieldType,
                  org.apache.solr.schema.SchemaField,
-                 org.apache.solr.util.XML,
+                 org.apache.solr.common.util.XML,
                  javax.servlet.jsp.JspWriter,java.io.IOException
                 "%>
 <%@ page import="java.io.Reader"%>

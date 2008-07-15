@@ -21,7 +21,7 @@
 <%@ page import="java.net.InetAddress"%>
 <%@ page import="java.io.StringWriter"%>
 <%@ page import="org.apache.solr.core.Config"%>
-<%@ page import="org.apache.solr.util.XML"%>
+<%@ page import="org.apache.solr.common.util.XML"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
 <%@ page import="java.net.UnknownHostException" %>
 <%

@@ -20,7 +20,7 @@
                  java.lang.management.ThreadMXBean,
                  java.lang.management.ThreadInfo,
                  java.io.IOException,
-                 org.apache.solr.util.XML"%>
+                 org.apache.solr.common.util.XML"%>
 <%@include file="_info.jsp" %>
 
 
