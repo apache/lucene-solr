@@ -318,7 +318,7 @@ public class QueryComponent extends SearchComponent
     // and any fields needed for merging.
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
-    if (rb.getSortSpec().includesScore()) {
+    if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
     } else {
       sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());      
