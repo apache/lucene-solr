@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
@@ -62,10 +63,8 @@ import java.util.logging.Logger;
  * 
  * @since solr 1.3
  */
-public class SpellCheckComponent extends SearchComponent implements SolrCoreAware {
+public class SpellCheckComponent extends SearchComponent implements SolrCoreAware, SpellingParams {
   private static final Logger LOG = Logger.getLogger(SpellCheckComponent.class.getName());
-
-  private static WhitespaceAnalyzer whitespace = new WhitespaceAnalyzer();
 
   public static final boolean DEFAULT_ONLY_MORE_POPULAR = false;
 
@@ -74,64 +73,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
    * register this component with SearchHandler.
    */
   public static final String COMPONENT_NAME = "spellcheck";
-
-  public static final String SPELLCHECK_PREFIX = "spellcheck.";
-
-  /**
-   * The name of the dictionary to be used for giving the suggestion for a
-   * request. The value for this parameter is configured in solrconfig.xml
-   */
-  public static final String SPELLCHECK_DICT = SPELLCHECK_PREFIX + "dictionary";
-
-  /**
-   * The count of suggestions needed for a given query.
-   * <p/>
-   * If this parameter is absent in the request then only one suggestion is
-   * returned. If it is more than one then a maximum of given suggestions are
-   * returned for each token in the query.
-   */
-  public static final String SPELLCHECK_COUNT = SPELLCHECK_PREFIX + "count";
-
-  /**
-   * When this parameter is set to true and the misspelled word exists in the
-   * user field, only words that occur more frequently in the Solr field than
-   * the one given will be returned. The default value is false.
-   * <p/>
-   * <b>This is applicable only for dictionaries built from Solr fields.</b>
-   */
-  public static final String SPELLCHECK_ONLY_MORE_POPULAR = SPELLCHECK_PREFIX + "onlyMorePopular";
-
-  /**
-   * Whether to use the extended response format, which is more complicated but
-   * richer. Returns the document frequency for each suggestion and returns one
-   * suggestion block for each term in the query string. Default is false.
-   * <p/>
-   * <b>This is applicable only for dictionaries built from Solr fields.</b>
-   */
-  public static final String SPELLCHECK_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "extendedResults";
-
-  /**
-   * Use the value for this parameter as the query to spell check.
-   * <p/>
-   * This parameter is <b>optional</b>. If absent, then the q parameter is
-   * used.
-   */
-  public static final String SPELLCHECK_Q = SPELLCHECK_PREFIX + "q";
-
-  /**
-   * Whether to build the index or not. Optional and false by default.
-   */
-  public static final String SPELLCHECK_BUILD = SPELLCHECK_PREFIX + "build";
-
-  /**
-   * Whether to reload the index. Optional and false by default.
-   */
-  public static final String SPELLCHECK_RELOAD = SPELLCHECK_PREFIX + "reload";
-
-  /**
-   * Take the top suggestion for each token and create a new query from it
-   */
-  public static final String SPELLCHECK_COLLATE = SPELLCHECK_PREFIX + "collate";
 
   @SuppressWarnings("unchecked")
   protected NamedList initParams;
