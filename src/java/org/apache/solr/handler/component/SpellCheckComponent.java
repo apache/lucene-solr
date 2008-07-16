@@ -169,6 +169,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     return spellCheckers.get(dictName);
   }
+  
+  /**
+   * @return the spellchecker registered to a given name
+   */
+  public SolrSpellChecker getSpellChecker(String name) {
+    return spellCheckers.get(name);
+  }
 
   protected NamedList toNamedList(SpellingResult spellingResult, String origQuery, boolean extendedResults, boolean collate) {
     NamedList result = new NamedList();
