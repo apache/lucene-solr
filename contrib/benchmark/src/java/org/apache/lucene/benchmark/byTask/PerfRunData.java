@@ -240,7 +240,7 @@ public class PerfRunData {
   /**
    * @return Returns the queryMaker by read task type (class)
    */
-  public QueryMaker getQueryMaker(ReadTask readTask) {
+  synchronized public QueryMaker getQueryMaker(ReadTask readTask) {
     // mapping the query maker by task class allows extending/adding new search/read tasks
     // without needing to modify this class.
     Class readTaskClass = readTask.getClass();
