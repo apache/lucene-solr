@@ -109,7 +109,6 @@ public abstract class SolrSpellChecker {
    * @param count The maximum number of suggestions to return
    * @param onlyMorePopular  TODO
    * @param extendedResults  TODO
-   * @return
    * @throws IOException
    */
   public abstract SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count,

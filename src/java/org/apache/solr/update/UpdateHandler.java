@@ -36,6 +36,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.*;
 
 import javax.xml.xpath.XPathConstants;

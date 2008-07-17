@@ -67,7 +67,6 @@ public class FunctionQParser extends QParser {
   /**
    * TODO: Doc
    * 
-   * @return
    * @throws ParseException
    */
   public String parseId() throws ParseException {
@@ -107,7 +106,6 @@ public class FunctionQParser extends QParser {
   /**
    * Parse an individual ValueSource.
    * 
-   * @return
    * @throws ParseException
    */
   public ValueSource parseValueSource() throws ParseException {
@@ -118,7 +116,6 @@ public class FunctionQParser extends QParser {
   /**
    * TODO: Doc
    * 
-   * @return
    * @throws ParseException
    */
   public Query parseNestedQuery() throws ParseException {
@@ -170,7 +167,6 @@ public class FunctionQParser extends QParser {
    * Parse an individual value source.
    * 
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource  
-   * @return
    * @throws ParseException
    */
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws ParseException {

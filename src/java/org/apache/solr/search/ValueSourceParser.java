@@ -57,7 +57,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin
    * Parse the user input into a ValueSource.
    * 
    * @param fp
-   * @return
    * @throws ParseException
    */
   public abstract ValueSource parse(FunctionQParser fp) throws ParseException;

@@ -27,7 +27,7 @@ import java.util.*;
  * started automatically when created.
  *
  * @since solr 1.3
- * @revision $Id$
+ * @version $Id$
  */
 public class RTimer {
 

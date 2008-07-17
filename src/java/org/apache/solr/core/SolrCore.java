@@ -541,7 +541,7 @@ public final class SolrCore {
    * Returns a Request object based on the admin/pingQuery section
    * of the Solr config file.
    * 
-   * @use {@link org.apache.solr.handler.PingRequestHandler} instead
+   * @deprecated use {@link org.apache.solr.handler.PingRequestHandler} instead
    */
   @Deprecated
   public SolrQueryRequest getPingQueryRequest() {

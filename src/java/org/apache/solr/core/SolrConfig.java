@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -189,7 +190,7 @@ public class SolrConfig extends Config {
    * Returns a Request object based on the admin/pingQuery section
    * of the Solr config file.
    * 
-   * @use {@link PingRequestHandler} instead 
+   * @deprecated use {@link PingRequestHandler} instead 
    */
   @Deprecated
   public SolrQueryRequest getPingQueryRequest(SolrCore core) {

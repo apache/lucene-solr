@@ -77,9 +77,10 @@ public abstract class QParser {
     this.qstr = s;
   }
 
-  /** Returns the resulting query from this QParser, calling parse() only the
+  /**
+   * Returns the resulting query from this QParser, calling parse() only the
    * first time and caching the Query result.
-   * @return
+   *
    * @throws ParseException
    */
   public Query getQuery() throws ParseException {

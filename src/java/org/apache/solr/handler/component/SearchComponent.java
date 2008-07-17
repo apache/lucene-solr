@@ -53,8 +53,10 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
    */
   public abstract void process(ResponseBuilder rb) throws IOException;
 
-  /** Process for a distributed search.
-   * @returns the next stage for this component */
+  /**
+   * Process for a distributed search.
+   * @return the next stage for this component
+   */
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     return ResponseBuilder.STAGE_DONE;
   }

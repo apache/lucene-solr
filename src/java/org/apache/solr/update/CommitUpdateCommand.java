@@ -27,7 +27,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   /**
    * During optimize, optimize down to <= this many segments.  Must be >= 1
    *
-   * @see {@link org.apache.lucene.index.IndexWriter#optimize(int)}
+   * @see org.apache.lucene.index.IndexWriter#optimize(int)
    */
   public int maxOptimizeSegments = 1;
 
