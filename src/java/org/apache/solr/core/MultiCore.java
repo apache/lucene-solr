@@ -393,7 +393,7 @@ public class MultiCore
    * Creates a MultiCoreHandler for this MultiCore.
    * @return a MultiCoreHandler
    */
-  public MultiCoreHandler createMultiCoreHandler() {
+  protected MultiCoreHandler createMultiCoreHandler() {
     return new MultiCoreHandler() {
       @Override
       public MultiCore getMultiCore() {
