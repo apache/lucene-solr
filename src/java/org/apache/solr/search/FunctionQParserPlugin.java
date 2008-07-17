@@ -23,7 +23,7 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * Create a function query from the input value.
  * <br>Other parameters: none
- * <br>Example: <code>&lt;!func&gt;log(foo)</code>
+ * <br>Example: <code>{!func}log(foo)</code>
  */
 public class FunctionQParserPlugin extends QParserPlugin {
   public static String NAME = "func";

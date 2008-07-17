@@ -27,8 +27,8 @@ import org.apache.solr.request.SolrQueryRequest;
  * Create a prefix query from the input value.  Currently no analysis or
  * value transformation is done to create this prefix query (subject to change).
  * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>&lt;!prefix f=myfield&gt;foo</code> is generally equivalent
- * to the lucene query parser expression <code>myfield:foo*</code>
+ * <br>Example: <code>{!prefix f=myfield}foo</code> is generally equivalent
+ * to the Lucene query parser expression <code>myfield:foo*</code>
  */
 public class PrefixQParserPlugin extends QParserPlugin {
   public static String NAME = "prefix";

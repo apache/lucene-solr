@@ -34,7 +34,7 @@ import java.util.List;
  * <li>q.op - the default operator "OR" or "AND"</li>
  * <li>df - the default field name</li>
  * </ul>
- * <br>Example: <code>&lt;!lucene q.op=AND df=text sort='price asc'&gt;myfield:foo +bar -baz</code>
+ * <br>Example: <code>{!lucene q.op=AND df=text sort='price asc'}myfield:foo +bar -baz</code>
  */
 public class LuceneQParserPlugin extends QParserPlugin {
   public static String NAME = "lucene";

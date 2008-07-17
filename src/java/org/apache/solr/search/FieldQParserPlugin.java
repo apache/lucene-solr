@@ -36,9 +36,9 @@ import java.util.ArrayList;
 /**
  * Create a field query from the input value, applying text analysis and constructing a phrase query if appropriate.
  * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>&lt;!field f=myfield&gt;Foo Bar</code> creates a phrase query with "foo" followed by "bar"
+ * <br>Example: <code>{!field f=myfield}Foo Bar</code> creates a phrase query with "foo" followed by "bar"
  * if the analyzer for myfield is a text field with an analyzer that splits on whitespace and lowercases terms.
- * This is generally equivalent to the lucene query parser expression <code>myfield:"Foo Bar"</code>
+ * This is generally equivalent to the Lucene query parser expression <code>myfield:"Foo Bar"</code>
  */
 public class FieldQParserPlugin extends QParserPlugin {
   public static String NAME = "field";

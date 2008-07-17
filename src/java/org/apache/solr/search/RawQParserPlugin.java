@@ -27,7 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * Create a term query from the input value without any text analysis or transformation whatsoever.
  * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>&lt;!raw f=myfield&gt;Foo Bar</code> creates <code>TermQuery(Term("myfield","Foo Bar"))</code>
+ * <br>Example: <code>{!raw f=myfield}Foo Bar</code> creates <code>TermQuery(Term("myfield","Foo Bar"))</code>
  */
 public class RawQParserPlugin extends QParserPlugin {
   public static String NAME = "raw";

@@ -37,7 +37,7 @@ import java.util.Map;
  * Create a dismax query from the input value.
  * <br>Other parameters: all main query related parameters from the {@link org.apache.solr.handler.DisMaxRequestHandler} are supported.
  * localParams are checked before global request params.
- * <br>Example: <code>&lt;!dismax qf=myfield,mytitle^2&gt;foo</code> creates a dismax query across
+ * <br>Example: <code>{!dismax qf=myfield,mytitle^2}foo</code> creates a dismax query across
  * across myfield and mytitle, with a higher weight on mytitle.
  */
 public class DisMaxQParserPlugin extends QParserPlugin {
