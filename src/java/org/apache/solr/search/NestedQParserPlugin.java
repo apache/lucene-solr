@@ -30,9 +30,9 @@ import org.apache.solr.search.function.ValueSource;
  * Create a nested query, with the ability of that query to redefine it's type via
  * local parameters.  This is useful in specifying defaults in configuration and
  * letting clients indirectly reference them.
- * <br>Example: <code>&lt;!query defType=func v=$q1&gt;</code>
+ * <br>Example: <code>{!query defType=func v=$q1}</code>
  * <br> if the q1 parameter is <code>price</code> then the query would be a function query on the price field.
- * <br> if the q1 parameter is <code>&lt;!lucene&gt;inStock:true</code> then a term query is
+ * <br> if the q1 parameter is <code>{!lucene}inStock:true</code> then a term query is
  *     created from the lucene syntax string that matches documents with inStock=true.
  */
 public class NestedQParserPlugin extends QParserPlugin {
