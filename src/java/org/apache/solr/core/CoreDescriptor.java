@@ -123,17 +123,6 @@ public class CoreDescriptor implements Cloneable {
     this.core = core;
   }
 
-  public void reloadCore() throws IOException, ParserConfigurationException, SAXException {
-    SolrCore old = core;
-    if (multiCore != null) {
-      multiCore.create(this);
-    } else {
-      SolrConfig cfg = new SolrConfig(old.getConfigResource());
-      core = new SolrCore(null, null, cfg, null, this);
-    }
-    old.close(); 
-  }
-
   public MultiCore getMultiCore() {
     return multiCore;
   }
