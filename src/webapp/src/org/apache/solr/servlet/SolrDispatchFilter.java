@@ -35,12 +35,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.core.MultiCore;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.*;
 import org.apache.solr.request.*;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
@@ -54,7 +50,8 @@ public class SolrDispatchFilter implements Filter
 {
   final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
 
-  protected SolrCore singlecore;
+  protected CoreDescriptor singleCoreDescriptor;
+
   protected MultiCore multicore;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
@@ -76,7 +73,7 @@ public class SolrDispatchFilter implements Filter
 
       if(multicore != null && multicore.isEnabled() ) {
         abortOnConfigurationError = false;
-        singlecore = null;
+        singleCoreDescriptor = null;
         // if any core aborts on startup, then abort
         for( SolrCore c : multicore.getCores() ) {
           if( c.getSolrConfig().getBool( "abortOnConfigurationError",false) ) {
@@ -87,7 +84,10 @@ public class SolrDispatchFilter implements Filter
       }
       else {
         SolrConfig cfg = this.solrConfigFilename == null? new SolrConfig() : new SolrConfig(this.solrConfigFilename);
-        singlecore = new SolrCore( null, null, cfg, null );
+        singleCoreDescriptor = new CoreDescriptor((MultiCore)null);
+        singleCoreDescriptor.init("",cfg.getResourceLoader().getInstanceDir());
+        SolrCore singlecore = new SolrCore( null, null, cfg, null, singleCoreDescriptor);
+        singleCoreDescriptor.setCore(singlecore);
         abortOnConfigurationError = cfg.getBool(
                 "abortOnConfigurationError", abortOnConfigurationError);
       }
@@ -155,9 +155,9 @@ public class SolrDispatchFilter implements Filter
     multicore.shutdown();
       multicore = null;
     }
-    if( singlecore != null ) {
-      singlecore.close();
-      singlecore = null;
+    if( singleCoreDescriptor != null ) {
+      singleCoreDescriptor.getCore().close();
+      singleCoreDescriptor = null;
     }
   }
 
@@ -216,7 +216,7 @@ public class SolrDispatchFilter implements Filter
           }
         }
         else {
-          core = singlecore;
+          core = singleCoreDescriptor.getCore();
         }
 
         // With a valid core...
@@ -309,7 +309,7 @@ public class SolrDispatchFilter implements Filter
           else {
             req.setAttribute("org.apache.solr.SolrCore", core);
             // Modify the request so each core gets its own /admin
-            if( singlecore == null && path.startsWith( "/admin" ) ) {
+            if( singleCoreDescriptor == null && path.startsWith( "/admin" ) ) {
               req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
               return;
             }

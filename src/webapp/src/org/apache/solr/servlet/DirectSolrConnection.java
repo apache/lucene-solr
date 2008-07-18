@@ -106,7 +106,7 @@ public class DirectSolrConnection
 
       // If the Data directory is specified, initialize SolrCore directly
       IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml", null);
-      core = new SolrCore( null, dataDir, config, schema );
+      core = new SolrCore( null, dataDir, config, schema, null );
       parser = new SolrRequestParsers( config );
     } 
     catch (Exception ee) {

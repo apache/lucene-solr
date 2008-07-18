@@ -124,7 +124,7 @@ public class TestHarness {
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
     try {
-      core = new SolrCore( null, dataDirectory, solrConfig, indexSchema);
+      core = new SolrCore( null, dataDirectory, solrConfig, indexSchema, null);
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       
       updater = new XmlUpdateRequestHandler();

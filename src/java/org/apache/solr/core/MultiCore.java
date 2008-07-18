@@ -120,7 +120,7 @@ public class MultiCore
         for (int i=0; i<nodes.getLength(); i++) {
           Node node = nodes.item(i);
           try {
-            CoreDescriptor p = new CoreDescriptor();
+            CoreDescriptor p = new CoreDescriptor(this);
             p.init(DOMUtil.getAttr(node, "name", null), DOMUtil.getAttr(node, "instanceDir", null));
             // deal with optional settings
             String opt = DOMUtil.getAttr(node, "config", null);
@@ -252,7 +252,7 @@ public class MultiCore
     SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader);
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     IndexSchema schema = new IndexSchema(config, dcore.getSchemaName(), null);
-    SolrCore core = new SolrCore(dcore.getName(), null, config, schema);
+    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
     dcore.setCore(core);
     
     // Register the new core

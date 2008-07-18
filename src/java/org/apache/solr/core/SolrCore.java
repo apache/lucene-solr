@@ -69,6 +69,7 @@ public final class SolrCore {
 
   private String name;
   private String logid; // used to show what name is set
+  private final CoreDescriptor coreDescriptor;
   
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
@@ -336,7 +337,7 @@ public final class SolrCore {
       if( instance == null ) {
         try {
           // sets 'instance' to the latest solr core
-          instance = new SolrCore( null, null, new SolrConfig(), null);
+          instance = new SolrCore( null, null, new SolrConfig(), null, null);
         } catch(Exception xany) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "error creating core", xany );
@@ -346,8 +347,18 @@ public final class SolrCore {
     return instance;
   }
   
+  /**
+   * 
+   * @param dataDir
+   * @param schema
+   * @throws SAXException 
+   * @throws IOException 
+   * @throws ParserConfigurationException 
+   * 
+   * @since solr 1.0
+   */
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
-    this( null, dataDir, new SolrConfig(), schema );
+    this( null, dataDir, new SolrConfig(), schema, null );
   }
   
   /**
@@ -356,9 +367,12 @@ public final class SolrCore {
    *@param dataDir the index directory
    *@param config a solr config instance
    *@param schema a solr schema instance
+   *
+   *@since solr 1.3
    */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema) {
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
     synchronized (SolrCore.class) {
+      coreDescriptor = cd;
       // this is for backward compatibility (and also the reason
       // the sync block is needed)
       instance = this;   // set singleton
@@ -1200,7 +1214,11 @@ public final class SolrCore {
   public ValueSourceParser getValueSourceParser(String parserName) {
     return valueSourceParsers.get(parserName);
   }
-  
+
+
+  public CoreDescriptor getCoreDescriptor() {
+    return coreDescriptor;
+  }
 }
 
 

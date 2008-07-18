@@ -91,7 +91,7 @@ public abstract class MultiCoreHandler extends RequestHandlerBase
     // Handle a core creation
     //---------------------------------------------------------
     if (action == MultiCoreAction.CREATE) {
-      CoreDescriptor dcore = new CoreDescriptor();
+      CoreDescriptor dcore = new CoreDescriptor(manager);
       dcore.init(params.get(MultiCoreParams.NAME),
                 params.get(MultiCoreParams.INSTANCE_DIR));
       

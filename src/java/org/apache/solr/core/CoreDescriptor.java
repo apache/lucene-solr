@@ -17,6 +17,11 @@
 
 package org.apache.solr.core;
 
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+
 /**
  * A Solr core descriptor
  * @since solr 1.3
@@ -27,9 +32,12 @@ public class CoreDescriptor implements Cloneable {
   protected String configName;
   protected String schemaName;
   protected SolrCore core = null;
+  private final MultiCore multiCore;
 
-  public CoreDescriptor() {}
-  
+  public CoreDescriptor(MultiCore multiCore) {
+    this.multiCore = multiCore;
+  }
+
   /** Initialize defaults from instance directory. */
   public void init(String name, String instanceDir) {
     if (name == null) {
@@ -50,6 +58,7 @@ public class CoreDescriptor implements Cloneable {
     this.instanceDir = descr.instanceDir;
     this.configName = descr.configName;
     this.schemaName = descr.schemaName;
+    multiCore = descr.multiCore;
   }
   
   /**@return the default config name. */
@@ -92,13 +101,13 @@ public class CoreDescriptor implements Cloneable {
   /**@return the core configuration resource name. */
   public String getConfigName() {
     return this.configName;
-  }  
+  }
 
   /**Sets the core schema resource name. */
   public void setSchemaName(String name) {
     if (name == null || name.length() == 0)
       throw new IllegalArgumentException("name can not be null or empty");
-    this.schemaName = name; 
+    this.schemaName = name;
   }
   
   /**@return the core schema resource name. */
@@ -112,5 +121,20 @@ public class CoreDescriptor implements Cloneable {
   
   public void setCore(SolrCore core) {
     this.core = core;
+  }
+
+  public void reloadCore() throws IOException, ParserConfigurationException, SAXException {
+    SolrCore old = core;
+    if (multiCore != null) {
+      multiCore.create(this);
+    } else {
+      SolrConfig cfg = new SolrConfig(old.getConfigResource());
+      core = new SolrCore(null, null, cfg, null, this);
+    }
+    old.close(); 
+  }
+
+  public MultiCore getMultiCore() {
+    return multiCore;
   }
 }
