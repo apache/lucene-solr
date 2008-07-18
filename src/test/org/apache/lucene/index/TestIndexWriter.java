@@ -553,7 +553,7 @@ public class TestIndexWriter extends LuceneTestCase
       RAMDirectory dir = new RAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
-      char[] chars = new char[16383];
+      char[] chars = new char[DocumentsWriter.CHAR_BLOCK_SIZE-1];
       Arrays.fill(chars, 'x');
       Document doc = new Document();
       final String bigTerm = new String(chars);
@@ -1136,7 +1136,9 @@ public class TestIndexWriter extends LuceneTestCase
       dir.resetMaxUsedSizeInBytes();
 
       long startDiskUsage = dir.getMaxUsedSizeInBytes();
-      writer  = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(10);
+      writer.setMergeScheduler(new SerialMergeScheduler());
       for(int j=0;j<1470;j++) {
         addDocWithIndex(writer, j);
       }
@@ -1144,6 +1146,9 @@ public class TestIndexWriter extends LuceneTestCase
       dir.resetMaxUsedSizeInBytes();
       writer.optimize();
       writer.close();
+
+      IndexReader.open(dir).close();
+
       long endDiskUsage = dir.getMaxUsedSizeInBytes();
 
       // Ending index is 50X as large as starting index; due
@@ -1154,7 +1159,7 @@ public class TestIndexWriter extends LuceneTestCase
       // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
       assertTrue("writer used to much space while adding documents when autoCommit=false",     
                  midDiskUsage < 100*startDiskUsage);
-      assertTrue("writer used to much space after close when autoCommit=false",     
+      assertTrue("writer used to much space after close when autoCommit=false endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
                  endDiskUsage < 100*startDiskUsage);
     }
 
@@ -1584,6 +1589,7 @@ public class TestIndexWriter extends LuceneTestCase
       writer.flush();
       writer.addDocument(new Document());
       writer.close();
+      _TestUtil.checkIndex(dir);
       IndexReader reader = IndexReader.open(dir);
       assertEquals(2, reader.numDocs());
     }
@@ -1849,7 +1855,7 @@ public class TestIndexWriter extends LuceneTestCase
         boolean sawAppend = false;
         boolean sawFlush = false;
         for (int i = 0; i < trace.length; i++) {
-          if ("org.apache.lucene.index.DocumentsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()))
+          if ("org.apache.lucene.index.FreqProxTermsWriter".equals(trace[i].getClassName()) && "appendPostings".equals(trace[i].getMethodName()))
             sawAppend = true;
           if ("doFlush".equals(trace[i].getMethodName()))
             sawFlush = true;
@@ -2287,6 +2293,7 @@ public class TestIndexWriter extends LuceneTestCase
           writer.updateDocument(new Term("id", ""+(idUpto++)), doc);
           addCount++;
         } catch (IOException ioe) {
+          //System.out.println(Thread.currentThread().getName() + ": hit exc");
           //ioe.printStackTrace(System.out);
           if (ioe.getMessage().startsWith("fake disk full at") ||
               ioe.getMessage().equals("now failing on purpose")) {
@@ -2484,6 +2491,8 @@ public class TestIndexWriter extends LuceneTestCase
               "flushDocument".equals(trace[i].getMethodName())) {
             if (onlyOnce)
               doFail = false;
+            //System.out.println(Thread.currentThread().getName() + ": now fail");
+            //new Throwable().printStackTrace(System.out);
             throw new IOException("now failing on purpose");
           }
         }
@@ -2663,10 +2672,9 @@ public class TestIndexWriter extends LuceneTestCase
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("writeSegment".equals(trace[i].getMethodName())) {
+          if ("flush".equals(trace[i].getMethodName()) && "org.apache.lucene.index.DocFieldProcessor".equals(trace[i].getClassName())) {
             if (onlyOnce)
               doFail = false;
-            // new RuntimeException().printStackTrace(System.out);
             throw new IOException("now failing on purpose");
           }
         }

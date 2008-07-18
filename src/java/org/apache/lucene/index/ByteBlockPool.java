@@ -104,10 +104,10 @@ final class ByteBlockPool {
   }
 
   // Size of each slice.  These arrays should be at most 16
-  // elements.  First array is just a compact way to encode
-  // X+1 with a max.  Second array is the length of each
-  // slice, ie first slice is 5 bytes, next slice is 14
-  // bytes, etc.
+  // elements (index is encoded with 4 bits).  First array
+  // is just a compact way to encode X+1 with a max.  Second
+  // array is the length of each slice, ie first slice is 5
+  // bytes, next slice is 14 bytes, etc.
   final static int[] nextLevelArray = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
   final static int[] levelSizeArray = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
   final static int FIRST_LEVEL_SIZE = levelSizeArray[0];

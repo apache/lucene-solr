@@ -121,9 +121,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
               try {
                 writer.addDocument(doc);
               } catch (Throwable t) {
-                RuntimeException re = new RuntimeException("addDocument failed");
-                re.initCause(t);
-                throw re;
+                t.printStackTrace(System.out);
+                fail("addDocument failed");
               }
             }
             try {

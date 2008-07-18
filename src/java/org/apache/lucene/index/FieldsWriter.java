@@ -55,7 +55,7 @@ final class FieldsWriter
 
     FieldsWriter(Directory d, String segment, FieldInfos fn) throws IOException {
         fieldInfos = fn;
-        
+
         boolean success = false;
         final String fieldsName = segment + "." + IndexFileNames.FIELDS_EXTENSION;
         try {
@@ -112,6 +112,10 @@ final class FieldsWriter
         doClose = false;
     }
 
+    void setFieldsStream(IndexOutput stream) {
+      this.fieldsStream = stream;
+    }
+
     // Writes the contents of buffer into the fields stream
     // and adds a new entry for this document into the index
     // stream.  This assumes the buffer was already written
@@ -122,6 +126,11 @@ final class FieldsWriter
       buffer.writeTo(fieldsStream);
     }
 
+    void skipDocument() throws IOException {
+      indexStream.writeLong(fieldsStream.getFilePointer());
+      fieldsStream.writeVInt(0);
+    }
+
     void flush() throws IOException {
       indexStream.flush();
       fieldsStream.flush();
@@ -129,10 +138,37 @@ final class FieldsWriter
 
     final void close() throws IOException {
       if (doClose) {
-        if (fieldsStream != null)
-          fieldsStream.close();
-        if (indexStream != null)
-          indexStream.close();
+
+        try {
+          if (fieldsStream != null) {
+            try {
+              fieldsStream.close();
+            } finally {
+              fieldsStream = null;
+            }
+          }
+        } catch (IOException ioe) {
+          try {
+            if (indexStream != null) {
+              try {
+                indexStream.close();
+              } finally {
+                indexStream = null;
+              }
+            }
+          } catch (IOException ioe2) {
+            // Ignore so we throw only first IOException hit
+          }
+          throw ioe;
+        } finally {
+          if (indexStream != null) {
+            try {
+              indexStream.close();
+            } finally {
+              indexStream = null;
+            }
+          }
+        }
       }
     }
 

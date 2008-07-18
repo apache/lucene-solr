@@ -426,6 +426,7 @@ public class IndexWriter {
   public void setSimilarity(Similarity similarity) {
     ensureOpen();
     this.similarity = similarity;
+    docWriter.setSimilarity(similarity);
   }
 
   /** Expert: Return the Similarity implementation used by this IndexWriter.
@@ -1130,6 +1131,7 @@ public class IndexWriter {
 
       docWriter = new DocumentsWriter(directory, this);
       docWriter.setInfoStream(infoStream);
+      docWriter.setMaxFieldLength(maxFieldLength);
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
@@ -1267,6 +1269,7 @@ public class IndexWriter {
   public void setMaxFieldLength(int maxFieldLength) {
     ensureOpen();
     this.maxFieldLength = maxFieldLength;
+    docWriter.setMaxFieldLength(maxFieldLength);
     if (infoStream != null)
       message("setMaxFieldLength " + maxFieldLength);
   }
@@ -1715,62 +1718,61 @@ public class IndexWriter {
    */
   private synchronized boolean flushDocStores() throws IOException {
 
-    List files = docWriter.files();
-
     boolean useCompoundDocStore = false;
 
-    if (files.size() > 0) {
-      String docStoreSegment;
+    String docStoreSegment;
 
-      boolean success = false;
+    boolean success = false;
+    try {
+      docStoreSegment = docWriter.closeDocStore();
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream != null)
+          message("hit exception closing doc store segment");
+      }
+    }
+
+    useCompoundDocStore = mergePolicy.useCompoundDocStore(segmentInfos);
+      
+    if (useCompoundDocStore && docStoreSegment != null && docWriter.closedFiles().size() != 0) {
+      // Now build compound doc store file
+
+      success = false;
+
+      final int numSegments = segmentInfos.size();
+      final String compoundFileName = docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
+
       try {
-        docStoreSegment = docWriter.closeDocStore();
+        CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
+        final Iterator it = docWriter.closedFiles().iterator();
+        while(it.hasNext())
+          cfsWriter.addFile((String) it.next());
+      
+        // Perform the merge
+        cfsWriter.close();
         success = true;
+
       } finally {
         if (!success) {
           if (infoStream != null)
-            message("hit exception closing doc store segment");
-          docWriter.abort(null);
+            message("hit exception building compound file doc store for segment " + docStoreSegment);
+          deleter.deleteFile(compoundFileName);
         }
       }
 
-      useCompoundDocStore = mergePolicy.useCompoundDocStore(segmentInfos);
-      
-      if (useCompoundDocStore && docStoreSegment != null) {
-        // Now build compound doc store file
-
-        success = false;
-
-        final int numSegments = segmentInfos.size();
-        final String compoundFileName = docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION;
-
-        try {
-          CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-          final int size = files.size();
-          for(int i=0;i<size;i++)
-            cfsWriter.addFile((String) files.get(i));
-      
-          // Perform the merge
-          cfsWriter.close();
-          success = true;
-
-        } finally {
-          if (!success) {
-            if (infoStream != null)
-              message("hit exception building compound file doc store for segment " + docStoreSegment);
-            deleter.deleteFile(compoundFileName);
-          }
-        }
-
-        for(int i=0;i<numSegments;i++) {
-          SegmentInfo si = segmentInfos.info(i);
-          if (si.getDocStoreOffset() != -1 &&
-              si.getDocStoreSegment().equals(docStoreSegment))
-            si.setDocStoreIsCompoundFile(true);
-        }
-
-        checkpoint();
+      for(int i=0;i<numSegments;i++) {
+        SegmentInfo si = segmentInfos.info(i);
+        if (si.getDocStoreOffset() != -1 &&
+            si.getDocStoreSegment().equals(docStoreSegment))
+          si.setDocStoreIsCompoundFile(true);
       }
+
+      checkpoint();
+
+      // In case the files we just merged into a CFS were
+      // not previously checkpointed:
+      deleter.deleteNewFiles(docWriter.closedFiles());
     }
 
     return useCompoundDocStore;
@@ -1947,7 +1949,7 @@ public class IndexWriter {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
             if (docWriter != null) {
-              final List files = docWriter.abortedFiles();
+              final Collection files = docWriter.abortedFiles();
               if (files != null)
                 deleter.deleteNewFiles(files);
             }
@@ -2076,7 +2078,7 @@ public class IndexWriter {
           synchronized (this) {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
-            final List files = docWriter.abortedFiles();
+            final Collection files = docWriter.abortedFiles();
             if (files != null)
               deleter.deleteNewFiles(files);
           }
@@ -2650,8 +2652,8 @@ public class IndexWriter {
         // once").
         segmentInfos.clear();
         segmentInfos.addAll(rollbackSegmentInfos);
-
-        docWriter.abort(null);
+        
+        docWriter.abort();
 
         // Ask deleter to locate unreferenced files & remove
         // them:
@@ -3338,7 +3340,6 @@ public class IndexWriter {
           if (!success) {
             if (infoStream != null)
               message("hit exception flushing segment " + segment);
-            docWriter.abort(null);
             deleter.refresh(segment);
           }
         }
@@ -3830,8 +3831,9 @@ public class IndexWriter {
 
       // If the segment is referencing the current "live"
       // doc store outputs then we must merge
-      if (si.getDocStoreOffset() != -1 && currentDocStoreSegment != null && si.getDocStoreSegment().equals(currentDocStoreSegment))
+      if (si.getDocStoreOffset() != -1 && currentDocStoreSegment != null && si.getDocStoreSegment().equals(currentDocStoreSegment)) {
         doFlushDocStore = true;
+      }
     }
 
     final int docStoreOffset;
@@ -3859,8 +3861,9 @@ public class IndexWriter {
       // newly flushed doc store files then we should not
       // make compound file out of them...
       if (infoStream != null)
-        message("flush at merge");
-      flush(false, true, false);
+        message("now flush at merge");
+      doFlush(true, false);
+      //flush(false, true, false);
     }
 
     // We must take a full copy at this point so that we can

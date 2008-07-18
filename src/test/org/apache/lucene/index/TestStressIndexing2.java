@@ -19,11 +19,10 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.search.TermQuery;
 
 import java.util.*;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
@@ -53,7 +52,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  public void testRandom() throws Exception {
+  public void testRandom() throws Throwable {
     Directory dir1 = new MockRAMDirectory();
     // dir1 = FSDirectory.getDirectory("foofoofoo");
     Directory dir2 = new MockRAMDirectory();
@@ -68,17 +67,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     verifyEquals(dir1, dir2, "id");
   }
 
-  private void checkIndex(Directory dir) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    CheckIndex.out = new PrintStream(bos);
-    if (!CheckIndex.check(dir, false, null)) {
-      System.out.println("CheckIndex failed");
-      System.out.println(bos.toString());
-      fail("CheckIndex failed");
-    }
-  }
-
-  public void testMultiConfig() throws Exception {
+  public void testMultiConfig() throws Throwable {
     // test lots of smaller different params together
     for (int i=0; i<100; i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
@@ -157,7 +146,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
-    checkIndex(dir);
+    _TestUtil.checkIndex(dir);
 
     return docs;
   }
@@ -187,7 +176,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     w.close();
   }
 
-  public static void verifyEquals(Directory dir1, Directory dir2, String idField) throws IOException {
+  public static void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
     IndexReader r1 = IndexReader.open(dir1);
     IndexReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
@@ -196,7 +185,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
 
-  public static void verifyEquals(IndexReader r1, IndexReader r2, String idField) throws IOException {
+  public static void verifyEquals(IndexReader r1, IndexReader r2, String idField) throws Throwable {
     assertEquals(r1.numDocs(), r2.numDocs());
     boolean hasDeletes = !(r1.maxDoc()==r2.maxDoc() && r1.numDocs()==r1.maxDoc());
 
@@ -236,7 +225,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       try {
         // verify term vectors are equivalent        
         verifyEquals(r1.getTermFreqVectors(id1), r2.getTermFreqVectors(id2));
-      } catch (java.lang.Error e) {
+      } catch (Throwable e) {
         System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2);
         TermFreqVector[] tv1 = r1.getTermFreqVectors(id1);
         System.out.println("  d1=" + tv1);
@@ -367,6 +356,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     for(int i=0;i<d1.length;i++) {
       TermFreqVector v1 = d1[i];
       TermFreqVector v2 = d2[i];
+      if (v1 == null || v2 == null)
+        System.out.println("v1=" + v1 + " v2=" + v2 + " i=" + i + " of " + d1.length);
       assertEquals(v1.size(), v2.size());
       int numTerms = v1.size();
       String[] terms1 = v1.getTerms();
@@ -572,7 +563,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
             indexDoc();
           }
         }
-      } catch (Exception e) {
+      } catch (Throwable e) {
         e.printStackTrace();
         TestCase.fail(e.toString());
       }

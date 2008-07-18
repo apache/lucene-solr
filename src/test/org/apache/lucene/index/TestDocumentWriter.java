@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -249,6 +250,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(ram, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
+
+    _TestUtil.checkIndex(ram);
 
     IndexReader reader = IndexReader.open(ram);
     // f1

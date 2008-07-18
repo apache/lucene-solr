@@ -109,7 +109,7 @@ final class FieldsReader {
 
         // Verify the file is long enough to hold all of our
         // docs
-        assert ((int) (indexSize / 8)) >= size + this.docStoreOffset;
+        assert ((int) (indexSize / 8)) >= size + this.docStoreOffset: "indexSize=" + indexSize + " size=" + size + " docStoreOffset=" + docStoreOffset;
       } else {
         this.docStoreOffset = 0;
         this.size = (int) (indexSize >> 3);

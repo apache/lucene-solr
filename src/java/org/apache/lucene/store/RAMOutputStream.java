@@ -149,4 +149,9 @@ public class RAMOutputStream extends IndexOutput {
   public long getFilePointer() {
     return currentBufferIndex < 0 ? 0 : bufferStart + bufferPosition;
   }
+
+  /** Returns byte usage of all buffers. */
+  public long sizeInBytes() {
+    return file.numBuffers() * BUFFER_SIZE;
+  }
 }

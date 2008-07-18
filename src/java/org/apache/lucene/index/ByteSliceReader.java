@@ -39,7 +39,9 @@ final class ByteSliceReader extends IndexInput {
 
   public void init(ByteBlockPool pool, int startIndex, int endIndex) {
 
-    assert endIndex-startIndex > 0;
+    assert endIndex-startIndex >= 0;
+    assert startIndex >= 0;
+    assert endIndex >= 0;
 
     this.pool = pool;
     this.endIndex = endIndex;
@@ -59,9 +61,14 @@ final class ByteSliceReader extends IndexInput {
       limit = upto+firstSize-4;
   }
 
+  public boolean eof() {
+    assert upto + bufferOffset <= endIndex;
+    return upto + bufferOffset == endIndex;
+  }
+
   public byte readByte() {
-    // Assert that we are not @ EOF
-    assert upto + bufferOffset < endIndex;
+    assert !eof();
+    assert upto <= limit;
     if (upto == limit)
       nextSlice();
     return buffer[upto++];

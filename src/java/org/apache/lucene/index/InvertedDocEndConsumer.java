@@ -17,14 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-/* Used by DocumentsWriter to track data for term vectors.
- * One of these exists per unique term seen in each field in
- * the document. */
-class PostingVector {
-  Posting p;                                      // Corresponding Posting instance for this term
-  int lastOffset;                                 // Last offset we saw
-  int offsetStart;                                // Address of first slice for offsets
-  int offsetUpto;                                 // Next write address for offsets
-  int posStart;                                   // Address of first slice for positions
-  int posUpto;                                    // Next write address for positions
+import java.util.Map;
+import java.io.IOException;
+
+abstract class InvertedDocEndConsumer {
+  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
+  abstract void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException;
+  abstract void closeDocStore(DocumentsWriter.FlushState state) throws IOException;
+  abstract void abort();
+  abstract void setFieldInfos(FieldInfos fieldInfos);
 }

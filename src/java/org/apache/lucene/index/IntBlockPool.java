@@ -17,40 +17,49 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-final class CharBlockPool {
+final class IntBlockPool {
 
-  public char[][] buffers = new char[10][];
-  int numBuffer;
+  public int[][] buffers = new int[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
-  public int charUpto = DocumentsWriter.CHAR_BLOCK_SIZE;             // Where we are in head buffer
+  public int intUpto = DocumentsWriter.INT_BLOCK_SIZE;             // Where we are in head buffer
 
-  public char[] buffer;                              // Current head buffer
-  public int charOffset = -DocumentsWriter.CHAR_BLOCK_SIZE;          // Current head offset
+  public int[] buffer;                              // Current head buffer
+  public int intOffset = -DocumentsWriter.INT_BLOCK_SIZE;          // Current head offset
+
   final private DocumentsWriter docWriter;
+  final boolean trackAllocations;
 
-  public CharBlockPool(DocumentsWriter docWriter) {
+  public IntBlockPool(DocumentsWriter docWriter, boolean trackAllocations) {
     this.docWriter = docWriter;
+    this.trackAllocations = trackAllocations;
   }
 
   public void reset() {
-    docWriter.recycleCharBlocks(buffers, 1+bufferUpto);
-    bufferUpto = -1;
-    charUpto = DocumentsWriter.CHAR_BLOCK_SIZE;
-    charOffset = -DocumentsWriter.CHAR_BLOCK_SIZE;
+    if (bufferUpto != -1) {
+      if (bufferUpto > 0)
+        // Recycle all but the first buffer
+        docWriter.recycleIntBlocks(buffers, 1, 1+bufferUpto);
+
+      // Reuse first buffer
+      bufferUpto = 0;
+      intUpto = 0;
+      intOffset = 0;
+      buffer = buffers[0];
+    }
   }
 
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
-      char[][] newBuffers = new char[(int) (buffers.length*1.5)][];
+      int[][] newBuffers = new int[(int) (buffers.length*1.5)][];
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }
-    buffer = buffers[1+bufferUpto] = docWriter.getCharBlock();
+    buffer = buffers[1+bufferUpto] = docWriter.getIntBlock(trackAllocations);
     bufferUpto++;
 
-    charUpto = 0;
-    charOffset += DocumentsWriter.CHAR_BLOCK_SIZE;
+    intUpto = 0;
+    intOffset += DocumentsWriter.INT_BLOCK_SIZE;
   }
 }
 

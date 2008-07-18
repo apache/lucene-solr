@@ -229,3 +229,12 @@ from those sources:
  * for internal or external distribution as long as this notice
  * remains attached.
  */
+
+
+Some code in src/java/org/apache/lucene/util/ArrayUtil.java was
+derived from Python 2.4.2 sources available at
+http://www.python.org. Full license is here:
+
+  http://www.python.org/download/releases/2.4.2/license/
+
+

@@ -48,4 +48,47 @@ final class FieldInfo {
     return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
                          storeOffsetWithTermVector, omitNorms, storePayloads);
   }
+
+  void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
+              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads) {
+    if (this.isIndexed != isIndexed) {
+      this.isIndexed = true;                      // once indexed, always index
+    }
+    if (this.storeTermVector != storeTermVector) {
+      this.storeTermVector = true;                // once vector, always vector
+    }
+    if (this.storePositionWithTermVector != storePositionWithTermVector) {
+      this.storePositionWithTermVector = true;                // once vector, always vector
+    }
+    if (this.storeOffsetWithTermVector != storeOffsetWithTermVector) {
+      this.storeOffsetWithTermVector = true;                // once vector, always vector
+    }
+    if (this.omitNorms != omitNorms) {
+      this.omitNorms = false;                // once norms are stored, always store
+    }
+    if (this.storePayloads != storePayloads) {
+      this.storePayloads = true;
+    }
+  }
+
+  void update(FieldInfo other) {
+    if (isIndexed != other.isIndexed) {
+      isIndexed = true;                      // once indexed, always index
+    }
+    if (storeTermVector != other.storeTermVector) {
+      storeTermVector = true;                // once vector, always vector
+    }
+    if (storePositionWithTermVector != other.storePositionWithTermVector) {
+      storePositionWithTermVector = true;                // once vector, always vector
+    }
+    if (storeOffsetWithTermVector != other.storeOffsetWithTermVector) {
+      storeOffsetWithTermVector = true;                // once vector, always vector
+    }
+    if (omitNorms != other.omitNorms) {
+      omitNorms = false;                // once norms are stored, always store
+    }
+    if (storePayloads != other.storePayloads) {
+      storePayloads = true;
+    }
+  }
 }

@@ -403,9 +403,9 @@ final class IndexFileDeleter {
 
       final List docWriterFiles;
       if (docWriter != null) {
-        docWriterFiles = docWriter.files();
+        docWriterFiles = docWriter.openFiles();
         if (docWriterFiles != null)
-          // We must incRef thes files before decRef'ing
+          // We must incRef these files before decRef'ing
           // last files to make sure we don't accidentally
           // delete them:
           incRef(docWriterFiles);
@@ -510,11 +510,13 @@ final class IndexFileDeleter {
 
   /** Delets the specified files, but only if they are new
    *  (have not yet been incref'd). */
-  void deleteNewFiles(List files) throws IOException {
-    final int size = files.size();
-    for(int i=0;i<size;i++)
-      if (!refCounts.containsKey(files.get(i)))
-        deleteFile((String) files.get(i));
+  void deleteNewFiles(Collection files) throws IOException {
+    final Iterator it = files.iterator();
+    while(it.hasNext()) {
+      final String fileName = (String) it.next();
+      if (!refCounts.containsKey(fileName))
+        deleteFile(fileName);
+    }
   }
 
   void deleteFile(String fileName)

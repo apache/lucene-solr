@@ -19,43 +19,51 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+// TODO FI: some of this is "generic" to TermsHash* so we
+// should factor it out so other consumers don't have to
+// duplicate this code
+
 /** Used by DocumentsWriter to merge the postings from
  *  multiple ThreadStates when creating a segment */
-final class DocumentsWriterFieldMergeState {
+final class FreqProxFieldMergeState {
 
-  DocumentsWriterFieldData field;
+  final FreqProxTermsWriterPerField field;
+  final int numPostings;
+  final CharBlockPool charPool;
+  final RawPostingList[] postings;
 
-  Posting[] postings;
-
-  private Posting p;
+  private FreqProxTermsWriter.PostingList p;
   char[] text;
   int textOffset;
 
   private int postingUpto = -1;
 
-  ByteSliceReader freq = new ByteSliceReader();
-  ByteSliceReader prox = new ByteSliceReader();
+  final ByteSliceReader freq = new ByteSliceReader();
+  final ByteSliceReader prox = new ByteSliceReader();
 
   int docID;
   int termFreq;
 
+  public FreqProxFieldMergeState(FreqProxTermsWriterPerField field) {
+    this.field = field;
+    this.charPool = field.perThread.termsHashPerThread.charPool;
+    this.numPostings = field.termsHashPerField.numPostings;
+    this.postings = field.termsHashPerField.sortPostings();
+  }
+
   boolean nextTerm() throws IOException {
     postingUpto++;
-    if (postingUpto == field.numPostings)
+    if (postingUpto == numPostings)
       return false;
 
-    p = postings[postingUpto];
+    p = (FreqProxTermsWriter.PostingList) postings[postingUpto];
     docID = 0;
 
-    text = field.threadState.charPool.buffers[p.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+    text = charPool.buffers[p.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
     textOffset = p.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
 
-    if (p.freqUpto > p.freqStart)
-      freq.init(field.threadState.postingsPool, p.freqStart, p.freqUpto);
-    else
-      freq.bufferOffset = freq.upto = freq.endIndex = 0;
-
-    prox.init(field.threadState.postingsPool, p.proxStart, p.proxUpto);
+    field.termsHashPerField.initReader(freq, p, 0);
+    field.termsHashPerField.initReader(prox, p, 1);
 
     // Should always be true
     boolean result = nextDoc();
@@ -65,7 +73,7 @@ final class DocumentsWriterFieldMergeState {
   }
 
   public boolean nextDoc() throws IOException {
-    if (freq.bufferOffset + freq.upto == freq.endIndex) {
+    if (freq.eof()) {
       if (p.lastDocCode != -1) {
         // Return last doc
         docID = p.lastDocID;
