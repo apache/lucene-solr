@@ -152,15 +152,29 @@ public final class IndexSchema {
    * <p>
    * Modifying this Map (or any item in it) will affect the real schema
    * </p>
+   * 
+   * <p>
+   * NOTE: this function is not thread safe.  However, it is safe to use within the standard
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * </p>
    */
   public Map<String,SchemaField> getFields() { return fields; }
 
   /**
    * Provides direct access to the Map containing all Field Types
-   * in the index, keyed on fild type name.
+   * in the index, keyed on field type name.
    *
    * <p>
-   * Modifying this Map (or any item in it) will affect the real schema
+   * Modifying this Map (or any item in it) will affect the real schema.  However if you 
+   * make any modifications, be sure to call {@link IndexSchema#refreshAnalyzers()} to
+   * update the Analyzers for the registered fields.
+   * </p>
+   * 
+   * <p>
+   * NOTE: this function is not thread safe.  However, it is safe to use within the standard
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
    * </p>
    */
   public Map<String,FieldType> getFieldTypes() { return fieldTypes; }
@@ -287,8 +301,19 @@ public final class IndexSchema {
     }
     return f;
   }
-
-
+  
+  /**
+   * This will re-create the Analyzers.  If you make any modifications to
+   * the Field map ({@link IndexSchema#getFields()}, this function is required
+   * to synch the internally cached field analyzers.
+   * 
+   * @since solr 1.3
+   */
+  public void refreshAnalyzers()
+  {
+    analyzer = new SolrIndexAnalyzer();
+    queryAnalyzer = new SolrQueryAnalyzer();
+  }
 
   private class SolrIndexAnalyzer extends Analyzer {
     protected final HashMap<String,Analyzer> analyzers;
@@ -567,9 +592,8 @@ public final class IndexSchema {
     /////////////// parse out copyField commands ///////////////
     // Map<String,ArrayList<SchemaField>> cfields = new HashMap<String,ArrayList<SchemaField>>();
     // expression = "/schema/copyField";
-
-    ArrayList<DynamicCopy> dCopies = new ArrayList<DynamicCopy>();
-
+    
+    dynamicCopyFields = new DynamicCopy[] {};
     expression = "//copyField";
     nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
@@ -580,48 +604,7 @@ public final class IndexSchema {
         String source = DOMUtil.getAttr(attrs,"source","copyField definition");
         String dest   = DOMUtil.getAttr(attrs,"dest",  "copyField definition");
 
-        boolean sourceIsPattern = isWildCard(source);
-        boolean destIsPattern   = isWildCard(dest);
-
-        log.fine("copyField source='"+source+"' dest='"+dest+"'");
-        SchemaField d = getField(dest);
-
-        if(sourceIsPattern) {
-          if( destIsPattern ) {
-            DynamicField df = null;
-            for( DynamicField dd : dynamicFields ) {
-              if( dd.regex.equals( dest ) ) {
-                df = dd;
-                break;
-              }
-            }
-            if( df == null ) {
-              throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField dynamic destination must match a dynamicField." );
-            }
-            dCopies.add(new DynamicDestCopy(source, df ));
-          }
-          else {
-            dCopies.add(new DynamicCopy(source, d));
-          }
-        } 
-        else if( destIsPattern ) {
-          String msg =  "copyField only supports a dynamic destination if the source is also dynamic" ;
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
-        }
-        else {
-          // retrieve the field to force an exception if it doesn't exist
-          SchemaField f = getField(source);
-
-          SchemaField[] destArr = copyFields.get(source);
-          if (destArr==null) {
-            destArr=new SchemaField[]{d};
-          } else {
-            destArr = (SchemaField[])append(destArr,d);
-          }
-          copyFields.put(source,destArr);
-
-          copyFieldTargetCounts.put(d, (copyFieldTargetCounts.containsKey(d) ? copyFieldTargetCounts.get(d) + 1 : 1));
-        }
+        registerCopyField(source, dest);
      }
       
       for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet())    {
@@ -632,11 +615,6 @@ public final class IndexSchema {
         }
       }
 
-      log.finest("Dynamic Copied Fields:" + dCopies);
-
-      // stuff it in a normal array for faster access
-      dynamicCopyFields = (DynamicCopy[])dCopies.toArray(new DynamicCopy[dCopies.size()]);
-
     } catch (SolrException e) {
       SolrConfig.severeErrors.add( e );
       throw e;
@@ -646,13 +624,86 @@ public final class IndexSchema {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed",e,false);
     }
 
-     analyzer = new SolrIndexAnalyzer();
-     queryAnalyzer = new SolrQueryAnalyzer();
+    // create the field analyzers
+    refreshAnalyzers();
+  }
+
+  /**
+   * <p>
+   * NOTE: this function is not thread safe.  However, it is safe to use within the standard
+   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
+   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * </p>
+   * 
+   * @see SolrCoreAware
+   */
+  public void registerCopyField( String source, String dest )
+  {
+    boolean sourceIsPattern = isWildCard(source);
+    boolean destIsPattern   = isWildCard(dest);
+
+    log.fine("copyField source='"+source+"' dest='"+dest+"'");
+    SchemaField d = getField(dest);
+
+    if(sourceIsPattern) {
+      if( destIsPattern ) {
+        DynamicField df = null;
+        for( DynamicField dd : dynamicFields ) {
+          if( dd.regex.equals( dest ) ) {
+            df = dd;
+            break;
+          }
+        }
+        if( df == null ) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField dynamic destination must match a dynamicField." );
+        }
+        registerDynamicCopyField(new DynamicDestCopy(source, df ));
+      }
+      else {
+        registerDynamicCopyField(new DynamicCopy(source, d));
+      }
+    } 
+    else if( destIsPattern ) {
+      String msg =  "copyField only supports a dynamic destination if the source is also dynamic" ;
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+    }
+    else {
+      // retrieve the field to force an exception if it doesn't exist
+      SchemaField f = getField(source);
+
+      SchemaField[] destArr = copyFields.get(source);
+      if (destArr==null) {
+        destArr=new SchemaField[]{d};
+      } else {
+        destArr = (SchemaField[])append(destArr,d);
+      }
+      copyFields.put(source,destArr);
+
+      copyFieldTargetCounts.put(d, (copyFieldTargetCounts.containsKey(d) ? copyFieldTargetCounts.get(d) + 1 : 1));
+    }
+  }
+  
+  private void registerDynamicCopyField( DynamicCopy dcopy )
+  {
+    if( dynamicCopyFields == null ) {
+      dynamicCopyFields = new DynamicCopy[] {dcopy};
+    }
+    else {
+      int i=0;
+      DynamicCopy[] old = dynamicCopyFields;
+      dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length+1];
+      for( DynamicCopy dc : old ) {
+        dynamicCopyFields[i++] = dc;
+      }
+      dynamicCopyFields[i++] = dcopy;
+      old = null;
+    }
+    log.finest("Dynamic Copy Field:" + dcopy );
   }
 
   private static Object[] append(Object[] orig, Object item) {
     Object[] newArr = (Object[])java.lang.reflect.Array.newInstance(orig.getClass().getComponentType(), orig.length+1);
-	  System.arraycopy(orig, 0, newArr, 0, orig.length);
+    System.arraycopy(orig, 0, newArr, 0, orig.length);
     newArr[orig.length] = item;
     return newArr;
   }
@@ -864,18 +915,18 @@ public final class IndexSchema {
 
   private DynamicField[] dynamicFields;
   public SchemaField[] getDynamicFieldPrototypes() {
-	  SchemaField[] df = new SchemaField[dynamicFields.length];
-	  for (int i=0;i<dynamicFields.length;i++) {
-		  df[i] = dynamicFields[i].prototype;
-	  }
-	  return df;
+    SchemaField[] df = new SchemaField[dynamicFields.length];
+    for (int i=0;i<dynamicFields.length;i++) {
+      df[i] = dynamicFields[i].prototype;
+    }
+    return df;
   }
 
   public String getDynamicPattern(String fieldName) {
-	 for (DynamicField df : dynamicFields) {
-		 if (df.matches(fieldName)) return df.regex;
-	 }
-	 return  null; 
+   for (DynamicField df : dynamicFields) {
+     if (df.matches(fieldName)) return df.regex;
+   }
+   return  null; 
   }
   
   /**
@@ -1024,19 +1075,19 @@ public final class IndexSchema {
    */
 
   public SchemaField[] getCopySources(String destField) {
-	  SchemaField f = getField(destField);
-	  if (!isCopyFieldTarget(f)) {
-		  return new SchemaField[0];
-	  }
-	  List<SchemaField> sf = new ArrayList<SchemaField>();
-	  for (Map.Entry<String, SchemaField[]> cfs : copyFields.entrySet()) {
-		  for (SchemaField cf : cfs.getValue()) {
-			  if (cf.getName().equals(destField)) {
-				  sf.add(getField(cfs.getKey()));
-			  }
-		  }
-	  }
-	  return sf.toArray(new SchemaField[1]);
+    SchemaField f = getField(destField);
+    if (!isCopyFieldTarget(f)) {
+      return new SchemaField[0];
+    }
+    List<SchemaField> sf = new ArrayList<SchemaField>();
+    for (Map.Entry<String, SchemaField[]> cfs : copyFields.entrySet()) {
+      for (SchemaField cf : cfs.getValue()) {
+        if (cf.getName().equals(destField)) {
+          sf.add(getField(cfs.getKey()));
+        }
+      }
+    }
+    return sf.toArray(new SchemaField[1]);
   }
   /**
    * Get all copy fields, both the static and the dynamic ones.
@@ -1091,10 +1142,3 @@ public final class IndexSchema {
   }
 
 }
-
-
-
-
-
-
-
