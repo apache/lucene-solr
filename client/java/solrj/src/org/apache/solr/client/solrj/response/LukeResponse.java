@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.response;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
 
+import java.io.Serializable;
 import java.util.*;
 
 
@@ -31,7 +32,7 @@ import java.util.*;
  */
 public class LukeResponse extends SolrResponseBase {
 
-  public static class FieldTypeInfo {
+  public static class FieldTypeInfo implements Serializable {
     String name;
     String className;
     boolean tokenized;
@@ -102,7 +103,7 @@ public class LukeResponse extends SolrResponseBase {
     }
   }
 
-  public static class FieldInfo {
+  public static class FieldInfo implements Serializable {
     String name;
     String type;
     String schema;
