@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
@@ -46,7 +47,7 @@ public class TestDocumentObjectBinder extends TestCase
     List<Item> l = binder.getBeans(Item.class,res.getResults());
     Assert.assertEquals(solDocList.size(), l.size());
     Assert.assertEquals(solDocList.get(0).getFieldValue("features"), l.get(0).features);
-    
+
     Item item = new Item();
     item.id = "aaa";
     item.categories = new String[] { "aaa", "bbb", "ccc" };
@@ -67,6 +68,16 @@ public class TestDocumentObjectBinder extends TestCase
     catch( RuntimeException ex ) {
       // ok -- this should happen...
     }
+  }
+  public void testSingleVal4Array(){
+    DocumentObjectBinder binder = new DocumentObjectBinder();
+    SolrDocumentList solDocList = new SolrDocumentList();
+    SolrDocument d = new SolrDocument();
+    solDocList.add(d);
+    d.setField("cat","hello");
+    List<Item> l = binder.getBeans(Item.class,solDocList);
+    Assert.assertEquals("hello", l.get(0).categories[0]);
+
   }
   
   public void testToAndFromSolrDocument()

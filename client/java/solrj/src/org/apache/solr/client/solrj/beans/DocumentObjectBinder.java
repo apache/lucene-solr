@@ -196,7 +196,9 @@ public class DocumentObjectBinder {
           List collection = (List) val;
           set(obj, collection.toArray((Object[]) Array.newInstance(type,collection.size())));
         } else {
-          set(obj, new Object[]{val});
+          Object[] arr = (Object[]) Array.newInstance(type, 1);
+          arr[0] = val;
+          set(obj, arr);
         }
       } else if (isList) {
         if (val instanceof List) {
