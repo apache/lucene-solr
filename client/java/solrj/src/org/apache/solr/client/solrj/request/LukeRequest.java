@@ -39,7 +39,7 @@ import org.apache.solr.common.util.ContentStream;
 public class LukeRequest extends SolrRequest
 {
   private List<String> fields;
-  private int count = -1;
+  private int numTerms = -1;
   private boolean showSchema = false;
   
   public LukeRequest()
@@ -79,15 +79,15 @@ public class LukeRequest extends SolrRequest
     this.showSchema = showSchema;
   }
 
-  public int getCount() {
-    return count;
+  public int getNumTerms() {
+    return numTerms;
   }
 
   /**
    * the number of terms to return for a given field.  If the number is 0, it will not traverse the terms.  
    */
-  public void setCount(int count) {
-    this.count = count;
+  public void setNumTerms(int count) {
+    this.numTerms = count;
   }
 
   //---------------------------------------------------------------------------------
@@ -104,8 +104,8 @@ public class LukeRequest extends SolrRequest
     if( fields != null && fields.size() > 0 ) {
       params.add( CommonParams.FL, fields.toArray( new String[fields.size()] ) );
     }
-    if( count >= 0 ) {
-      params.add( "count", count+"" );
+    if( numTerms >= 0 ) {
+      params.add( "numTerms", numTerms+"" );
     }
     if (showSchema) {
     	params.add("show", "schema");
