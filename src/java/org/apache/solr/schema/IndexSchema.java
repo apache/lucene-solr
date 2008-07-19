@@ -689,14 +689,10 @@ public final class IndexSchema {
       dynamicCopyFields = new DynamicCopy[] {dcopy};
     }
     else {
-      int i=0;
-      DynamicCopy[] old = dynamicCopyFields;
-      dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length+1];
-      for( DynamicCopy dc : old ) {
-        dynamicCopyFields[i++] = dc;
-      }
-      dynamicCopyFields[i++] = dcopy;
-      old = null;
+      DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length+1];
+      System.arraycopy(dynamicCopyFields,0,temp,0,dynamicCopyFields.length);
+      temp[temp.length -1] = dcopy;
+      dynamicCopyFields = temp;
     }
     log.finest("Dynamic Copy Field:" + dcopy );
   }
