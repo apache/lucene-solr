@@ -255,7 +255,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           }
 
           @SuppressWarnings("unchecked")
-		  public T getValue() {
+          public T getValue() {
             return (T)list.getVal( index );
           }
           
@@ -264,9 +264,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         	  return getKey()+"="+getValue();
           }
 
-		  public T setValue(T value) {
-			return (T) list.setVal(index, value);
-		  }
+    		  public T setValue(T value) {
+    		    return (T) list.setVal(index, value);
+    		  }
         };
         return nv;
       }
