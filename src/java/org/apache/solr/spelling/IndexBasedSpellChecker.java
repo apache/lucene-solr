@@ -48,24 +48,12 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   public static final String THRESHOLD_TOKEN_FREQUENCY = "thresholdTokenFrequency";
 
   protected float threshold;
-  protected float accuracy = 0.5f;
   protected IndexReader reader;
 
   public String init(NamedList config, SolrResourceLoader loader) {
     super.init(config, loader);
-    String accuracy = (String) config.get(ACCURACY);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
-    if (accuracy != null) {
-      try {
-        this.accuracy = Float.parseFloat(accuracy);
-        spellChecker.setAccuracy(this.accuracy);
-
-      } catch (NumberFormatException e) {
-        throw new RuntimeException(
-                "Unparseable accuracy given for dictionary: " + name, e);
-      }
-    }
     initSourceReader();
     return name;
   }
