@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -124,6 +125,10 @@ public abstract class SolrServer implements Serializable
 
   public QueryResponse query(SolrParams params) throws SolrServerException {
     return new QueryRequest( params ).process( this );
+  }
+  
+  public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException {
+    return new QueryRequest( params, method ).process( this );
   }
   
   /**

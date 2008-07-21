@@ -46,6 +46,12 @@ public class QueryRequest extends SolrRequest
     super( METHOD.GET, null );
     query = q;
   }
+  
+  public QueryRequest( SolrParams q, METHOD method )
+  {
+    super( method, null );
+    query = q;
+  }
 
   /**
    * Use the params 'QT' parameter if it exists
