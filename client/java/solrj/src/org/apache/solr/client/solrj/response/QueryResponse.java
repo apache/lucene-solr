@@ -100,7 +100,7 @@ public class QueryResponse extends SolrResponseBase
       _debugMap.put( info.getKey(), info.getValue() );
     }
 
-    // Parse out interisting bits from the debug info
+    // Parse out interesting bits from the debug info
     _explainMap = new HashMap<String, String>();
     NamedList<String> explain = (NamedList<String>)_debugMap.get( "explain" );
     if( explain != null ) {
