@@ -61,7 +61,9 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.VersionedFile;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.request.SolrQueryRequest;
 import org.w3c.dom.Node;
@@ -182,8 +184,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
         else {
           // preload the first data
-          IndexReader reader = core.getSearcher().get().getReader(); 
-          getElevationMap( reader, core );
+          RefCounted<SolrIndexSearcher> searchHolder = null;
+          try {
+            searchHolder = core.getNewestSearcher(true);
+            IndexReader reader = searchHolder.get().getReader();
+            getElevationMap( reader, core );
+          } finally {
+            if (searchHolder != null) searchHolder.decref();
+          }
         }
       }
     }

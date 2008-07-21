@@ -70,7 +70,7 @@ public final class SolrCore {
   private String name;
   private String logid; // used to show what name is set
   private final CoreDescriptor coreDescriptor;
-  
+
   private final SolrConfig solrConfig;
   private final IndexSchema schema;
   private final String dataDir;
@@ -686,12 +686,21 @@ public final class SolrCore {
   // get it (and it will increment the ref count at the same time)
   private RefCounted<SolrIndexSearcher> _searcher;
 
+  // All of the open searchers.  Don't access this directly.
+  // protected by synchronizing on searcherLock.
+  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
+
   final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor();
   private int onDeckSearchers;  // number of searchers preparing
   private Object searcherLock = new Object();  // the sync object for the searcher
   private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
 
-
+  /**
+  * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
+  * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
+  * This method should not be called from SolrCoreAware.inform() since it can result
+  * in a deadlock if useColdSearcher==false. 
+  */
   public RefCounted<SolrIndexSearcher> getSearcher() {
     try {
       return getSearcher(false,true,null);
@@ -700,6 +709,28 @@ public final class SolrCore {
       return null;
     }
   }
+
+  /**
+  * Return the newest {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
+  * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
+  * If no searcher is currently open, then if openNew==true a new searcher will be opened,
+  * or null is returned if openNew==false.
+  */
+  public RefCounted<SolrIndexSearcher> getNewestSearcher(boolean openNew) {
+    synchronized (searcherLock) {
+      if (_searchers.isEmpty()) {
+        if (!openNew) return null;
+        // Not currently implemented since simply calling getSearcher during inform()
+        // can result in a deadlock.  Right now, solr always opens a searcher first
+        // before calling inform() anyway, so this should never happen.
+        throw new UnsupportedOperationException();
+      }
+      RefCounted<SolrIndexSearcher> newest = _searchers.getLast();
+      newest.incref();
+      return newest;
+    }
+  }
+
 
   /**
    * Get a {@link SolrIndexSearcher} or start the process of creating a new one.
@@ -810,6 +841,7 @@ public final class SolrCore {
 
     RefCounted<SolrIndexSearcher> currSearcherHolder=null;
     final RefCounted<SolrIndexSearcher> newSearchHolder=newHolder(newSearcher);
+
     if (returnSearcher) newSearchHolder.incref();
 
     // a signal to decrement onDeckSearchers if something goes wrong.
@@ -820,6 +852,8 @@ public final class SolrCore {
 
       boolean alreadyRegistered = false;
       synchronized (searcherLock) {
+        _searchers.add(newSearchHolder);
+
         if (_searcher == null) {
           // if there isn't a current searcher then we may
           // want to register this one before warming is complete instead of waiting.
@@ -965,6 +999,15 @@ public final class SolrCore {
     RefCounted<SolrIndexSearcher> holder = new RefCounted<SolrIndexSearcher>(newSearcher) {
       public void close() {
         try {
+          synchronized(searcherLock) {
+            // it's possible for someone to get a reference via the _searchers queue
+            // and increment the refcount while RefCounted.close() is being called.
+            // we check the refcount again to see if this has happened and abort the close.
+            // This relies on the RefCounted class allowing close() to be called every
+            // time the counter hits zero.
+            if (refcount.get() > 0) return;
+            _searchers.remove(this);
+          }
           resource.close();
         } catch (IOException e) {
           log.severe("Error closing searcher:" + SolrException.toStr(e));
