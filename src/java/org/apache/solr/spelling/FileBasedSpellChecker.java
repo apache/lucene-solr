@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.HighFrequencyDictionary;
+import org.apache.solr.search.SolrIndexSearcher;
 
 
 /**
@@ -65,7 +66,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     return name;
   }
 
-  public void build(SolrCore core) {
+  public void build(SolrCore core, SolrIndexSearcher searcher) {
     try {
       loadExternalFileDictionary(core.getSchema(), core.getResourceLoader());
       spellChecker.clearIndex();

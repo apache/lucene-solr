@@ -72,7 +72,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
-    checker.build(core);
+    checker.build(core, null);
 
     IndexReader reader = core.getSearcher().get().getReader();
     Collection<Token> tokens = queryConverter.convert("fob");
@@ -110,7 +110,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
-    checker.build(core);
+    checker.build(core, null);
 
     IndexReader reader = core.getSearcher().get().getReader();
     Collection<Token> tokens = queryConverter.convert("Solar");
@@ -151,7 +151,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
-    checker.build(core);
+    checker.build(core, null);
 
     IndexReader reader = core.getSearcher().get().getReader();
     Collection<Token> tokens = queryConverter.convert("solar");

@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -67,10 +68,8 @@ public abstract class SolrSpellChecker {
 
   /**
    * (re)Build The Spelling index.  May be a NOOP if the ipmlementation doesn't require building, or can't be rebuilt
-   *
-   * @param core The SolrCore
    */
-  public abstract void build(SolrCore core);
+  public abstract void build(SolrCore core, SolrIndexSearcher searcher);
 
   /**
    * Assumes count = 1, onlyMorePopular = false, extendedResults = false

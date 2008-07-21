@@ -43,6 +43,8 @@ import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.File;
 import java.util.Collection;
@@ -105,9 +107,12 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
-    checker.build(core);
+    RefCounted<SolrIndexSearcher> holder = core.getSearcher();
+    SolrIndexSearcher searcher = holder.get();
+    try {
+    checker.build(core, searcher);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    IndexReader reader = searcher.getReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingResult result = checker.getSuggestions(tokens, reader);
     assertTrue("result is null and it shouldn't be", result != null);
@@ -155,6 +160,9 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     entry = suggestions.entrySet().iterator().next();
     assertTrue(entry.getKey() + " is equal to " + "bug and it shouldn't be", entry.getKey().equals("bug") == false);
     assertTrue(entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+    } finally {
+      holder.decref();
+    }
   }
 
   public void testExtendedResults() throws Exception {
@@ -172,9 +180,12 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
-    checker.build(core);
+    RefCounted<SolrIndexSearcher> holder = core.getSearcher();
+    SolrIndexSearcher searcher = holder.get();
+    try {
+    checker.build(core, searcher);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    IndexReader reader = searcher.getReader();
     Collection<Token> tokens = queryConverter.convert("documemt");
     SpellingResult result = checker.getSuggestions(tokens, reader, 1, false, true);
     assertTrue("result is null and it shouldn't be", result != null);
@@ -198,6 +209,9 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(tokens.iterator().next());
     assertTrue("suggestions is not null and it should be", suggestions == null);
+    } finally {
+      holder.decref();
+    }
   }
 
   private class TestSpellChecker extends IndexBasedSpellChecker{
@@ -222,12 +236,18 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
-    checker.build(core);
+    RefCounted<SolrIndexSearcher> holder = core.getSearcher();
+    SolrIndexSearcher searcher = holder.get();
+    try {
+    checker.build(core, searcher);
     SpellChecker sc = checker.getSpellChecker();
     assertTrue("sc is null and it shouldn't be", sc != null);
     StringDistance sd = sc.getStringDistance();
     assertTrue("sd is null and it shouldn't be", sd != null);
     assertTrue("sd is not an instance of " + JaroWinklerDistance.class.getName(), sd instanceof JaroWinklerDistance);
+    } finally {
+      holder.decref();
+    }
   }
 
   public void testAlternateLocation() throws Exception {
@@ -266,9 +286,12 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     String dictName = checker.init(spellchecker, core.getResourceLoader());
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
-    checker.build(core);
+    RefCounted<SolrIndexSearcher> holder = core.getSearcher();
+    SolrIndexSearcher searcher = holder.get();
+    try {
+    checker.build(core, searcher);
 
-    IndexReader reader = core.getSearcher().get().getReader();
+    IndexReader reader = searcher.getReader();
     Collection<Token> tokens = queryConverter.convert("flesh");
     SpellingResult result = checker.getSuggestions(tokens, reader, 1, false, true);
     assertTrue("result is null and it shouldn't be", result != null);
@@ -292,7 +315,9 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     assertTrue("result is null and it shouldn't be", result != null);
     suggestions = result.get(tokens.iterator().next());
     assertTrue("suggestions is not null and it should be", suggestions == null);
-
+    } finally {
+      holder.decref();
+    }
   }
 }
 

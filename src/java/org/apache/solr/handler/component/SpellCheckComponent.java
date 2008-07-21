@@ -102,7 +102,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     SolrSpellChecker spellChecker = getSpellChecker(params);
     if (params.getBool(SPELLCHECK_BUILD, false)) {
-      spellChecker.build(rb.req.getCore());
+      spellChecker.build(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "build");
     } else if (params.getBool(SPELLCHECK_RELOAD, false)) {
       spellChecker.reload();
