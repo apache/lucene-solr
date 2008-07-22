@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -25,15 +27,16 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.MultiCore;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.BinaryResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -51,13 +54,12 @@ import org.apache.solr.servlet.SolrRequestParsers;
  */
 public class EmbeddedSolrServer extends SolrServer
 {
-  protected ModifiableSolrParams _invariantParams;
-  protected ResponseParser _processor;
   
   protected final MultiCore multicore; // either multicore
   protected final SolrCore core; // or single core
-  protected final SolrRequestParsers parser;
   protected final String coreName;  // use MultiCore registry
+
+  private final SolrRequestParsers _parser;
   
   public EmbeddedSolrServer( SolrCore core )
   {
@@ -67,7 +69,8 @@ public class EmbeddedSolrServer extends SolrServer
     this.core = core;
     this.multicore = null;
     this.coreName = null;
-    this.parser = init();
+
+    _parser = new SolrRequestParsers( null );
   }
     
   public EmbeddedSolrServer(  MultiCore multicore, String coreName )
@@ -82,20 +85,10 @@ public class EmbeddedSolrServer extends SolrServer
     if( c == null ) {
       throw new RuntimeException( "Unknown core: "+coreName );
     }
-    this.parser = init();
+
+    _parser = new SolrRequestParsers( null );
   }
   
-  private SolrRequestParsers init()
-  {
-    _processor = new XMLResponseParser();
-
-    _invariantParams = new ModifiableSolrParams();
-    _invariantParams.set( CommonParams.WT, _processor.getWriterType() );
-    _invariantParams.set( CommonParams.VERSION, "2.2" );
-    
-    return new SolrRequestParsers( null );
-  }
-
   @Override
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException 
   {
@@ -117,9 +110,6 @@ public class EmbeddedSolrServer extends SolrServer
     SolrParams params = request.getParams();
     if( params == null ) {
       params = new ModifiableSolrParams();
-    }
-    if( _invariantParams != null ) {
-      params = new DefaultSolrParams( _invariantParams, params );
     }
     
     // Extract the handler from the path or params
@@ -145,7 +135,7 @@ public class EmbeddedSolrServer extends SolrServer
     }
     
     try {
-      SolrQueryRequest req = parser.buildRequestFrom( core, params, request.getContentStreams() );
+      SolrQueryRequest req = _parser.buildRequestFrom( core, params, request.getContentStreams() );
       req.getContext().put( "path", path );
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute( handler, req, rsp );
@@ -154,19 +144,38 @@ public class EmbeddedSolrServer extends SolrServer
       }
       
       // Now write it out
-      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      StringWriter out = new StringWriter();
-      responseWriter.write(out, req, rsp);
-      // TODO: writers might be able to output binary someday
-      
+      NamedList<Object> normalized = getParsedResponse(req, rsp);
       req.close();
-      return _processor.processResponse( new StringReader( out.toString() ) );
+      return normalized;
     }
     catch( IOException iox ) {
       throw iox;
     }
     catch( Exception ex ) {
       throw new SolrServerException( ex );
+    }
+  }
+  
+  /**
+   * TODO -- in the future, this could perhaps transform the NamedList without serializing it
+   * then parsing it from the serialized form.
+   * 
+   * @param req
+   * @param rsp
+   * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
+   * become SolrDocuments, DocList becomes SolrDocumentList etc.
+   */
+  public NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
+  {
+    try {
+      BinaryResponseWriter writer = new BinaryResponseWriter();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      writer.write( bos, req, rsp );
+      BinaryResponseParser parser = new BinaryResponseParser();
+      return parser.processResponse( new ByteArrayInputStream( bos.toByteArray() ), "UTF-8" );
+    }
+    catch( Exception ex ) {
+      throw new RuntimeException( ex );
     }
   }
 }
