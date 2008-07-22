@@ -354,7 +354,7 @@ public class QueryComponent extends SearchComponent
       long numFound = 0;
       Float maxScore=null;
       for (ShardResponse srsp : sreq.responses) {
-        SolrDocumentList docs = (SolrDocumentList)srsp.rsp.getResponse().get("response");
+        SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
 
         // calculate global maxScore and numDocsFound
         if (docs.getMaxScore() != null) {
@@ -362,7 +362,7 @@ public class QueryComponent extends SearchComponent
         }
         numFound += docs.getNumFound();
 
-        NamedList sortFieldValues = (NamedList)(srsp.rsp.getResponse().get("sort_values"));
+        NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
 
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the priority queue so it can be ordered.
@@ -370,7 +370,7 @@ public class QueryComponent extends SearchComponent
           SolrDocument doc = docs.get(i);
           Object id = doc.getFieldValue(uniqueKeyField.getName());
 
-          String prevShard = uniqueDoc.put(id, srsp.shard);
+          String prevShard = uniqueDoc.put(id, srsp.getShard());
           if (prevShard != null) {
             // duplicate detected
             numFound--;
@@ -388,7 +388,7 @@ public class QueryComponent extends SearchComponent
 
           ShardDoc shardDoc = new ShardDoc();
           shardDoc.id = id;
-          shardDoc.shard = srsp.shard;
+          shardDoc.shard = srsp.getShard();
           shardDoc.orderInShard = i;
           Object scoreObj = doc.getFieldValue("score");
           if (scoreObj != null) {
@@ -502,7 +502,7 @@ public class QueryComponent extends SearchComponent
 
       assert(sreq.responses.size() == 1);
       ShardResponse srsp = sreq.responses.get(0);
-      SolrDocumentList docs = (SolrDocumentList)srsp.rsp.getResponse().get("response");
+      SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
 
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
 

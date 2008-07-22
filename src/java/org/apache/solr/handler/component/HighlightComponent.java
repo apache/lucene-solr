@@ -114,7 +114,7 @@ public class HighlightComponent extends SearchComponent
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_HIGHLIGHTS) == 0) continue;
         for (ShardResponse srsp : sreq.responses) {
-          NamedList hl = (NamedList)srsp.rsp.getResponse().get("highlighting");
+          NamedList hl = (NamedList)srsp.getSolrResponse().getResponse().get("highlighting");
           for (int i=0; i<hl.size(); i++) {
             String id = hl.getName(i);
             ShardDoc sdoc = rb.resultIds.get(id);

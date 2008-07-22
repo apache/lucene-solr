@@ -113,7 +113,7 @@ public class DebugComponent extends SearchComponent
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) == 0) continue;
         for (ShardResponse srsp : sreq.responses) {
-          NamedList sdebug = (NamedList)srsp.rsp.getResponse().get("debug");
+          NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
           info = (NamedList)merge(sdebug, info, excludeSet);
 
           NamedList sexplain = (NamedList)sdebug.get("explain");

@@ -16,13 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 
 // todo... when finalized make accessors
@@ -64,23 +61,5 @@ public class ShardRequest {
             + ", purpose=" + Integer.toHexString(purpose)
             + ", nResponses =" + responses.size()
             + "}";
-  }
-}
-
-
-class ShardResponse {
-  public ShardRequest req;
-  public String shard;
-  public String shardAddress;  // the specific shard that this response was received from  
-  public int rspCode;
-  public Throwable exception;
-  public SolrResponse rsp;
-
-  public String toString() {
-    return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
-            +"\n\trequest=" + req
-            +"\n\tresponse=" + rsp
-            + (exception==null ? "" : "\n\texception="+ SolrException.toStr(exception)) 
-            +"\n}";
   }
 }

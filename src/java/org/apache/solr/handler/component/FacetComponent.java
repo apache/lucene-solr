@@ -198,8 +198,8 @@ public class  FacetComponent extends SearchComponent
     FacetInfo fi = rb._facetInfo;
 
     for (ShardResponse srsp: sreq.responses) {
-      int shardNum = rb.getShardNum(srsp.shard);
-      NamedList facet_counts = (NamedList)srsp.rsp.getResponse().get("facet_counts");
+      int shardNum = rb.getShardNum(srsp.getShard());
+      NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
 
       // handle facet queries
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
@@ -287,7 +287,7 @@ public class  FacetComponent extends SearchComponent
 
     for (ShardResponse srsp: sreq.responses) {
       // int shardNum = rb.getShardNum(srsp.shard);
-      NamedList facet_counts = (NamedList)srsp.rsp.getResponse().get("facet_counts");
+      NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
 
       // These are single term queries used to fill in missing counts

@@ -235,20 +235,20 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
             // Was there an exception?  If so, abort everything and
             // rethrow
-            if (srsp.exception != null) {
+            if (srsp.getException() != null) {
               comm.cancelAll();
-              if (srsp.exception instanceof SolrException) {
-                throw (SolrException)srsp.exception;
+              if (srsp.getException() instanceof SolrException) {
+                throw (SolrException)srsp.getException();
               } else {
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.exception);
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
               }
             }
 
-            rb.finished.add(srsp.req);
+            rb.finished.add(srsp.getShardRequest());
 
             // let the components see the responses to the request
             for(SearchComponent c : components) {
-              c.handleResponses(rb, srsp.req);
+              c.handleResponses(rb, srsp.getShardRequest());
             }
           }
         }
@@ -346,10 +346,10 @@ class HttpCommComponent {
       public ShardResponse call() throws Exception {
 
         ShardResponse srsp = new ShardResponse();
-        srsp.req = sreq;
-        srsp.shard = shard;
+        srsp.setShardRequest(sreq);
+        srsp.setShard(shard);
         SimpleSolrResponse ssr = new SimpleSolrResponse();
-        srsp.rsp = ssr;
+        srsp.setSolrResponse(ssr);
         long startTime = System.currentTimeMillis();
 
         try {
@@ -370,11 +370,11 @@ class HttpCommComponent {
 
           ssr.nl = server.request(req);
         } catch (Throwable th) {
-          srsp.exception = th;
+          srsp.setException(th);
           if (th instanceof SolrException) {
-            srsp.rspCode = ((SolrException)th).code();
+            srsp.setResponseCode(((SolrException)th).code());
           } else {
-            srsp.rspCode = -1;
+            srsp.setResponseCode(-1);
           }
         }
 
@@ -394,8 +394,8 @@ class HttpCommComponent {
         Future<ShardResponse> future = completionService.take();
         pending.remove(future);
         ShardResponse rsp = future.get();
-        rsp.req.responses.add(rsp);
-        if (rsp.req.responses.size() == rsp.req.actualShards.length) {
+        rsp.getShardRequest().responses.add(rsp);
+        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
       } catch (InterruptedException e) {
@@ -419,13 +419,13 @@ class HttpCommComponent {
         Future<ShardResponse> future = completionService.take();
         pending.remove(future);
         ShardResponse rsp = future.get();
-        if (rsp.exception != null) return rsp; // if exception, return immediately
+        if (rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
-        rsp.req.responses.add(rsp);
-        if (rsp.req.responses.size() == rsp.req.actualShards.length) {
+        rsp.getShardRequest().responses.add(rsp);
+        if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
       } catch (InterruptedException e) {
