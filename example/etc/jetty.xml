@@ -12,6 +12,12 @@
 
 <Configure id="Server" class="org.mortbay.jetty.Server">
 
+    <!-- Increase the maximum POST size to 1 MB to be able to handle large shard requests -->
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>org.mortbay.jetty.Request.maxFormContentSize</Arg>
+      <Arg>1000000</Arg>
+    </Call>
+
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
