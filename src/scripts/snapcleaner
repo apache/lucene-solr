@@ -91,7 +91,13 @@ fi
 
 function remove
 {
-    syncing=`ps -fwwwu ${user}|grep -w rsync|grep -v grep|grep -w $1`
+    if [[ "${OS}" == "Darwin" ]]
+    then
+     syncing=`ps -www -U ${user} |grep -w rsync|grep -v grep|grep -w $1`
+    else
+     syncing=`ps -fwwwu ${user}|grep -w rsync|grep -v grep|grep -w $1`
+    fi
+
     if [[ -n $syncing ]]
     then
 	logMessage $1 not removed - rsync in progress
