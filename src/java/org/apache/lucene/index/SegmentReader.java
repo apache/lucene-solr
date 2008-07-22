@@ -138,7 +138,7 @@ class SegmentReader extends DirectoryIndexReader {
    * Increments the RC of this reader, as well as
    * of all norms this reader is using
    */
-  protected synchronized void incRef() {
+  public synchronized void incRef() {
     super.incRef();
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {
@@ -157,7 +157,7 @@ class SegmentReader extends DirectoryIndexReader {
     super.incRef();
   }
 
-  protected synchronized void decRef() throws IOException {
+  public synchronized void decRef() throws IOException {
     super.decRef();
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {

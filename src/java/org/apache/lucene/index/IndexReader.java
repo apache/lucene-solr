@@ -102,23 +102,38 @@ public abstract class IndexReader {
   }
   
   /**
-   * Increments the refCount of this IndexReader instance. RefCounts are used to determine
-   * when a reader can be closed safely, i. e. as soon as no other IndexReader is referencing
-   * it anymore.
+   * Expert: increments the refCount of this IndexReader
+   * instance.  RefCounts are used to determine when a
+   * reader can be closed safely, i.e. as soon as there are
+   * no more references.  Be sure to always call a
+   * corresponding {@link #decRef}, in a finally clause;
+   * otherwise the reader may never be closed.  Note that
+   * {@link #close} simply calls decRef(), which means that
+   * the IndexReader will not really be closed until {@link
+   * #decRef} has been called for all outstanding
+   * references.
+   *
+   * @see #decRef
    */
-  protected synchronized void incRef() {
+  public synchronized void incRef() {
     assert refCount > 0;
+    ensureOpen();
     refCount++;
   }
 
   /**
-   * Decreases the refCount of this IndexReader instance. If the refCount drops
-   * to 0, then pending changes are committed to the index and this reader is closed.
+   * Expert: decreases the refCount of this IndexReader
+   * instance.  If the refCount drops to 0, then pending
+   * changes (if any) are committed to the index and this
+   * reader is closed.
    * 
    * @throws IOException in case an IOException occurs in commit() or doClose()
+   *
+   * @see #incRef
    */
-  protected synchronized void decRef() throws IOException {
+  public synchronized void decRef() throws IOException {
     assert refCount > 0;
+    ensureOpen();
     if (refCount == 1) {
       commit();
       doClose();
