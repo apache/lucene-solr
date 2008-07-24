@@ -42,47 +42,29 @@ public abstract class SolrServer implements Serializable
 {
   private DocumentObjectBinder binder;
 
-  public UpdateResponse add(Collection<SolrInputDocument> docs, boolean overwrite ) throws SolrServerException, IOException {
+  public UpdateResponse add(Collection<SolrInputDocument> docs ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(docs);
-    req.setOverwrite(overwrite);
     return req.process(this);
   }
 
-  public UpdateResponse addBeans(Collection<?> beans, boolean overwrite ) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(Collection<?> beans ) throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs =  new ArrayList<SolrInputDocument>(beans.size());
     for (Object bean : beans) {
       docs.add(binder.toSolrInputDocument(bean));
     }
-    return add(docs,overwrite);
+    return add(docs);
   }
 
-  public UpdateResponse add(SolrInputDocument doc, boolean overwrite ) throws SolrServerException, IOException {
+  public UpdateResponse add(SolrInputDocument doc ) throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(doc);
-    req.setOverwrite(overwrite);
     return req.process(this);
   }
 
-  public UpdateResponse addBean(Object obj, boolean overwrite) throws IOException, SolrServerException {
-    return add(getBinder().toSolrInputDocument(obj), overwrite);
-  }
-
-  public UpdateResponse add(SolrInputDocument doc) throws SolrServerException, IOException {
-    return add(doc, true);
-  }
-
   public UpdateResponse addBean(Object obj) throws IOException, SolrServerException {
-    return add(getBinder().toSolrInputDocument(obj), true);
-  }
-
-  public UpdateResponse add(Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
-    return add(docs, true);
-  }
-
-  public UpdateResponse addBeans(Collection<?> beans ) throws SolrServerException, IOException {
-    return addBeans(beans,true);
+    return add(getBinder().toSolrInputDocument(obj));
   }
 
   /** waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access

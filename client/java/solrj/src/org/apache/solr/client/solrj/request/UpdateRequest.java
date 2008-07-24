@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
@@ -46,11 +45,6 @@ public class UpdateRequest extends SolrRequest
     COMMIT,
     OPTIMIZE
   };
-  
-
-  private boolean allowDups = false;
-  private boolean overwriteCommitted = true;
-  private boolean overwritePending = true;
   
   private List<SolrInputDocument> documents = null;
   private List<String> deleteById = null;
@@ -169,11 +163,7 @@ public class UpdateRequest extends SolrRequest
   public String getXML() throws IOException {
     StringWriter writer = new StringWriter();
     if( documents != null && documents.size() > 0 ) {
-      writer.write("<add ");
-      writer.write("allowDups=\"" + allowDups + "\" ");
-      // TODO: remove these when deprecations are removed
-      writer.write("overwriteCommitted=\"" + overwriteCommitted + "\" ");
-      writer.write("overwritePending=\"" + overwritePending + "\">");
+      writer.write("<add>");
       for (SolrInputDocument doc : documents ) {
         if( doc != null ) {
           ClientUtils.writeXML( doc, writer );
@@ -227,17 +217,6 @@ public class UpdateRequest extends SolrRequest
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
   }
-
-  //--------------------------------------------------------------------------
-  // 
-  //--------------------------------------------------------------------------
-
-  public void setOverwrite( boolean v )
-  {
-    allowDups = !v;
-    overwriteCommitted = v;
-    overwritePending = v;
-  }
   
   //--------------------------------------------------------------------------
   // 
@@ -256,44 +235,6 @@ public class UpdateRequest extends SolrRequest
     if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT; 
     if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
     return null;
-  }
-
-  public boolean isAllowDups() {
-    return allowDups;
-  }
-
-  /**
-   * Use setOverwrite()
-   */
-  @Deprecated
-  public void setAllowDups(boolean allowDups) {
-    this.allowDups = allowDups;
-  }
-
-  @Deprecated
-  public boolean isOverwriteCommitted() {
-    return overwriteCommitted;
-  }
-
-  /**
-   * Use setOverwrite()
-   */
-  @Deprecated
-  public void setOverwriteCommitted(boolean overwriteCommitted) {
-    this.overwriteCommitted = overwriteCommitted;
-  }
-
-  @Deprecated
-  public boolean isOverwritePending() {
-    return overwritePending;
-  }
-
-  /**
-   * Use setOverwrite()
-   */
-  @Deprecated
-  public void setOverwritePending(boolean overwritePending) {
-    this.overwritePending = overwritePending;
   }
 
   public void setWaitFlush(boolean waitFlush) {
