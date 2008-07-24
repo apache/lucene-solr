@@ -19,9 +19,9 @@ package org.apache.solr.analysis;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.TestHarness;
 import junit.framework.TestCase;
+
 /**
  *
- * @author hbiestro
  */
 abstract public class AnalysisTestCase extends TestCase {
   protected SolrConfig solrConfig;
