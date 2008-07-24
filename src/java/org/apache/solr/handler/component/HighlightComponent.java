@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -62,26 +63,32 @@ public class HighlightComponent extends SearchComponent
         defaultHighlightFields = params.getParams(CommonParams.DF);
       }
       
-      if(rb.getHighlightQuery()==null) {
+      Query highlightQuery = rb.getHighlightQuery();
+      if(highlightQuery==null) {
         if (rb.getQparser() != null) {
           try {
-            rb.setHighlightQuery( rb.getQparser().getHighlightQuery() );
+            highlightQuery = rb.getQparser().getHighlightQuery();
+            rb.setHighlightQuery( highlightQuery );
           } catch (Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
         } else {
-          rb.setHighlightQuery( rb.getQuery() );
+          highlightQuery = rb.getQuery();
+          rb.setHighlightQuery( highlightQuery );
         }
       }
       
-      NamedList sumData = highlighter.doHighlighting(
-              rb.getResults().docList,
-              rb.getHighlightQuery().rewrite(req.getSearcher().getReader()),
-              req, defaultHighlightFields );
-      
-      if(sumData != null) {
-        // TODO ???? add this directly to the response?
-        rb.rsp.add("highlighting", sumData);
+      // No highlighting if there is no query -- consider q.alt="*:*
+      if( highlightQuery != null ) {
+        NamedList sumData = highlighter.doHighlighting(
+                rb.getResults().docList,
+                highlightQuery.rewrite(req.getSearcher().getReader()),
+                req, defaultHighlightFields );
+        
+        if(sumData != null) {
+          // TODO ???? add this directly to the response?
+          rb.rsp.add("highlighting", sumData);
+        }
       }
     }
   }

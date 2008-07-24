@@ -148,6 +148,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("qf", "tv_text");
+    args.put("q.alt", "*:*");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "dismax",0,200,args);
     
@@ -159,7 +160,12 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str"
             );
-
+    
+    // try the same thing without a q param
+    assertQ("Should not explode...", // q.alt should return everything
+        sumLRF.makeRequest( new String[] { null } ), // empty query
+        "//result[@numFound='1']"
+        );
   }
 
 
