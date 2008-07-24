@@ -34,82 +34,82 @@ public interface FacetParams {
    * Any lucene formated queries the user would like to use for
    * Facet Constraint Counts (multi-value)
    */
-  public static final String FACET_QUERY = "facet.query";
+  public static final String FACET_QUERY = FACET + ".query";
   /**
    * Any field whose terms the user wants to enumerate over for
    * Facet Constraint Counts (multi-value)
    */
-  public static final String FACET_FIELD = "facet.field";
+  public static final String FACET_FIELD = FACET + ".field";
 
   /**
    * The offset into the list of facets.
    * Can be overridden on a per field basis.
    */
-  public static final String FACET_OFFSET = "facet.offset";
+  public static final String FACET_OFFSET = FACET + ".offset";
 
   /**
    * Numeric option indicating the maximum number of facet field counts
    * be included in the response for each field - in descending order of count.
    * Can be overridden on a per field basis.
    */
-  public static final String FACET_LIMIT = "facet.limit";
+  public static final String FACET_LIMIT = FACET + ".limit";
 
   /**
    * Numeric option indicating the minimum number of hits before a facet should
    * be included in the response.  Can be overridden on a per field basis.
    */
-  public static final String FACET_MINCOUNT = "facet.mincount";
+  public static final String FACET_MINCOUNT = FACET + ".mincount";
 
   /**
    * Boolean option indicating whether facet field counts of "0" should 
    * be included in the response.  Can be overridden on a per field basis.
    */
-  public static final String FACET_ZEROS = "facet.zeros";
+  public static final String FACET_ZEROS = FACET + ".zeros";
 
   /**
    * Boolean option indicating whether the response should include a 
    * facet field count for all records which have no value for the 
    * facet field. Can be overridden on a per field basis.
    */
-  public static final String FACET_MISSING = "facet.missing";
+  public static final String FACET_MISSING = FACET + ".missing";
 
   /**
    * Boolean option: true causes facets to be sorted
    * by the count, false results in natural index order.
    */
-  public static final String FACET_SORT = "facet.sort";
+  public static final String FACET_SORT = FACET + ".sort";
 
   /**
    * Only return constraints of a facet field with the given prefix.
    */
-  public static final String FACET_PREFIX = "facet.prefix";
+  public static final String FACET_PREFIX = FACET + ".prefix";
 
  /**
    * When faceting by enumerating the terms in a field,
    * only use the filterCache for terms with a df >= to this parameter.
    */
-  public static final String FACET_ENUM_CACHE_MINDF = "facet.enum.cache.minDf";
+  public static final String FACET_ENUM_CACHE_MINDF = FACET + ".enum.cache.minDf";
   /**
    * Any field whose terms the user wants to enumerate over for
    * Facet Contraint Counts (multi-value)
    */
-  public static final String FACET_DATE = "facet.date";
+  public static final String FACET_DATE = FACET + ".date";
   /**
    * Date string indicating the starting point for a date facet range.
    * Can be overriden on a per field basis.
    */
-  public static final String FACET_DATE_START = "facet.date.start";
+  public static final String FACET_DATE_START = FACET_DATE + ".start";
   /**
    * Date string indicating the endinging point for a date facet range.
    * Can be overriden on a per field basis.
    */
-  public static final String FACET_DATE_END = "facet.date.end";
+  public static final String FACET_DATE_END = FACET_DATE + ".end";
   /**
    * Date Math string indicating the interval of sub-ranges for a date
    * facet range.
    * Can be overriden on a per field basis.
    */
-  public static final String FACET_DATE_GAP = "facet.date.gap";
+  public static final String FACET_DATE_GAP = FACET_DATE + ".gap";
   /**
    * Boolean indicating how counts should be computed if the range
    * between 'start' and 'end' is not evenly divisible by 'gap'.  If
@@ -123,14 +123,14 @@ public interface FacetParams {
    * The default is false.
    * Can be overriden on a per field basis.
    */
-  public static final String FACET_DATE_HARD_END = "facet.date.hardend";
+  public static final String FACET_DATE_HARD_END = FACET_DATE + ".hardend";
   /**
    * String indicating what "other" ranges should be computed for a
    * date facet range (multi-value).
    * Can be overriden on a per field basis.
    * @see FacetDateOther
    */
-  public static final String FACET_DATE_OTHER = "facet.date.other";
+  public static final String FACET_DATE_OTHER = FACET_DATE + ".other";
 
   /**
    * An enumeration of the legal values for FACET_DATE_OTHER...
