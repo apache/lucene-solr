@@ -49,7 +49,7 @@ public abstract class SolrServer implements Serializable
     return req.process(this);
   }
 
-  public UpdateResponse addBeans(Collection<Object> beans, boolean overwrite ) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(Collection<?> beans, boolean overwrite ) throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
     ArrayList<SolrInputDocument> docs =  new ArrayList<SolrInputDocument>(beans.size());
     for (Object bean : beans) {
@@ -81,7 +81,7 @@ public abstract class SolrServer implements Serializable
     return add(docs, true);
   }
 
-  public UpdateResponse addBeans(Collection<Object> beans ) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(Collection<?> beans ) throws SolrServerException, IOException {
     return addBeans(beans,true);
   }
 
