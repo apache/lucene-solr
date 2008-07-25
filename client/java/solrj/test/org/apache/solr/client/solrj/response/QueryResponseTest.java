@@ -42,7 +42,7 @@ public class QueryResponseTest {
     NamedList<Object> response = parser.processResponse(in);
     in.close();
     
-    QueryResponse qr = new QueryResponse(response);
+    QueryResponse qr = new QueryResponse(response, null);
     Assert.assertNotNull(qr);
     
     Assert.assertNotNull(qr.getFacetDates());

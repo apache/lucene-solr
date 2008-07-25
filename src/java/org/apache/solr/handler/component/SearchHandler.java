@@ -332,12 +332,20 @@ class HttpCommComponent {
   private static class SimpleSolrResponse extends SolrResponse {
     long elapsedTime;
     NamedList<Object> nl;
+    
+    @Override
     public long getElapsedTime() {
       return elapsedTime;
     }
 
+    @Override
     public NamedList<Object> getResponse() {
       return nl;
+    }
+
+    @Override
+    public void setResponse(NamedList<Object> rsp) {
+      nl = rsp;
     }
   }
 

@@ -130,7 +130,8 @@ public class MultiCoreRequest extends SolrRequest
   public MultiCoreResponse process(SolrServer server) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();
-    MultiCoreResponse res = new MultiCoreResponse( server.request( this ) );
+    MultiCoreResponse res = new MultiCoreResponse();
+    res.setResponse( server.request( this ) );
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
   }

@@ -31,11 +31,6 @@ public class SolrResponseBase extends SolrResponse
   private NamedList<Object> response = null;
   private String requestUrl = null;
   
-  public SolrResponseBase( NamedList<Object> res )
-  {
-    response = res;
-  }
-
   @Override
   public long getElapsedTime() {
     return elapsedTime;
@@ -50,6 +45,7 @@ public class SolrResponseBase extends SolrResponse
     return response;
   }
 
+  @Override
   public void setResponse(NamedList<Object> response) {
     this.response = response;
   }

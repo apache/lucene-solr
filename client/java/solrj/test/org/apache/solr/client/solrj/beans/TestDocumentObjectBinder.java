@@ -42,7 +42,7 @@ public class TestDocumentObjectBinder extends TestCase
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> nl = null;
     nl = parser.processResponse(new StringReader(xml));
-    QueryResponse res = new QueryResponse(nl);
+    QueryResponse res = new QueryResponse(nl, null);
     SolrDocumentList solDocList = res.getResults();
     List<Item> l = binder.getBeans(Item.class,res.getResults());
     Assert.assertEquals(solDocList.size(), l.size());

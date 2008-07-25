@@ -188,9 +188,10 @@ public class LukeResponse extends SolrResponseBase {
   private Map<String, FieldInfo> fieldInfo;
   private Map<String, FieldTypeInfo> fieldTypeInfo;
 
+  @Override
   @SuppressWarnings("unchecked")
-  public LukeResponse(NamedList<Object> res) {
-    super(res);
+  public void setResponse(NamedList<Object> res) {
+    super.setResponse(res);
 
     // Parse indexinfo
     indexInfo = (NamedList<Object>) res.get("index");

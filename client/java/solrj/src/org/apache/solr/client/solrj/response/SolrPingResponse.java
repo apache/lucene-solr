@@ -26,7 +26,5 @@ import org.apache.solr.common.util.NamedList;
  */
 public class SolrPingResponse extends SolrResponseBase
 {
-  public SolrPingResponse(NamedList<Object> res) {
-    super(res);
-  }
+  // nothing special now...
 }

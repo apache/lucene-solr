@@ -58,7 +58,8 @@ public class DirectXmlRequest extends SolrRequest
   public UpdateResponse process( SolrServer server ) throws SolrServerException, IOException
   {
     long startTime = System.currentTimeMillis();
-    UpdateResponse res = new UpdateResponse( server.request( this ) );
+    UpdateResponse res = new UpdateResponse();
+    res.setResponse( server.request( this ) );
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
   }

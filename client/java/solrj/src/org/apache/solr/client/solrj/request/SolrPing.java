@@ -56,7 +56,8 @@ public class SolrPing extends SolrRequest
   public SolrPingResponse process( SolrServer server ) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();
-    SolrPingResponse res = new SolrPingResponse( server.request( this ) );
+    SolrPingResponse res = new SolrPingResponse();
+    res.setResponse( server.request( this ) );
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
   }

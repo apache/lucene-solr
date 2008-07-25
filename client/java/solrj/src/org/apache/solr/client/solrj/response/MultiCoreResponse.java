@@ -26,11 +26,7 @@ import org.apache.solr.common.util.NamedList;
  * @since solr 1.3
  */
 public class MultiCoreResponse extends SolrResponseBase
-{
-  public MultiCoreResponse(NamedList<Object> res) {
-    super(res);
-  }
-  
+{ 
   @SuppressWarnings("unchecked")
   public NamedList<NamedList<Object>> getCoreStatus()
   {

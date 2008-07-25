@@ -58,16 +58,24 @@ public class QueryResponse extends SolrResponseBase
   private Map<String,String> _explainMap = null;
 
   // utility variable used for automatic binding -- it should not be serialized
-  private transient SolrServer solrServer;
+  private transient final SolrServer solrServer;
   
+  public QueryResponse(){
+    solrServer = null;
+  }
+  
+  /**
+   * Utility constructor to set the solrServer and namedList
+   */
   public QueryResponse( NamedList<Object> res , SolrServer solrServer){
-    this(res);
+    this.setResponse( res );
     this.solrServer = solrServer;
   }
 
-  public QueryResponse( NamedList<Object> res )
+  @Override
+  public void setResponse( NamedList<Object> res )
   {
-    super( res );
+    super.setResponse( res );
     
     // Look for known things
     for( int i=0; i<res.size(); i++ ) {

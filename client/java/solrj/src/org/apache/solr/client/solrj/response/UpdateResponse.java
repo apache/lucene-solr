@@ -28,7 +28,5 @@ import org.apache.solr.common.util.NamedList;
  */
 public class UpdateResponse extends SolrResponseBase
 {
-  public UpdateResponse(NamedList<Object> res) {
-    super(res);
-  }
+  // nothing special now...
 }

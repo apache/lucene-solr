@@ -117,7 +117,8 @@ public class LukeRequest extends SolrRequest
   public LukeResponse process( SolrServer server ) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();
-    LukeResponse res = new LukeResponse( server.request( this ) );
+    LukeResponse res = new LukeResponse();
+    res.setResponse( server.request( this ) );
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
   }
