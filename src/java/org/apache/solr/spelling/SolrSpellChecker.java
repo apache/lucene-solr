@@ -67,7 +67,7 @@ public abstract class SolrSpellChecker {
   public abstract void reload() throws IOException;
 
   /**
-   * (re)Build The Spelling index.  May be a NOOP if the ipmlementation doesn't require building, or can't be rebuilt
+   * (re)Build The Spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher);
 
