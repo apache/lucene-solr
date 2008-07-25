@@ -486,6 +486,10 @@ Bug Fixes
 42. SOLR-616: SpellChecker accuracy configuration is not applied for FileBasedSpellChecker.
     Apply it for FileBasedSpellChecker and IndexBasedSpellChecker both.
     (shalin)
+    
+43. SOLR-648: SpellCheckComponent throws NullPointerException on using spellcheck.q request
+    parameter after restarting Solr, if reload is called but build is not called.
+    (Jonathan Lee, shalin)    
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

@@ -38,7 +38,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.HighFrequencyDictionary;
 import org.apache.solr.search.SolrIndexSearcher;
 
-
 /**
  * <p>
  * A spell checker implementation which can load words from a text 
@@ -51,17 +50,13 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   private static final Logger log = Logger.getLogger(FileBasedSpellChecker.class.getName());
 
-  public static final String FIELD_TYPE = "fieldType";
-
   public static final String SOURCE_FILE_CHAR_ENCODING = "characterEncoding";
 
-  private String fieldTypeName;
   private String characterEncoding;
   public static final String WORD_FIELD_NAME = "word";
 
-  public String init(NamedList config, SolrResourceLoader loader) {
-    super.init(config, loader);
-    fieldTypeName = (String) config.get(FIELD_TYPE);
+  public String init(NamedList config, SolrCore core) {
+    super.init(config, core);
     characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
     return name;
   }
@@ -113,12 +108,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         dictionary = new HighFrequencyDictionary(IndexReader.open(ramDir),
                 WORD_FIELD_NAME, 0.0f);
-        analyzer = fieldType.getQueryAnalyzer();
       } else {
-        log.warning("No fieldType: " + fieldTypeName
-                + " found for dictionary: " + name + ".  Using WhitespaceAnalzyer.");
-        analyzer = new WhitespaceAnalyzer();
-
         // check if character encoding is defined
         if (characterEncoding == null) {
           dictionary = new PlainTextDictionary(loader.openResource(sourceLocation));

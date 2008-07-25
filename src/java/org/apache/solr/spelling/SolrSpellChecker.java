@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ public abstract class SolrSpellChecker {
   protected String name;
   protected Analyzer analyzer;
 
-  public String init(NamedList config, SolrResourceLoader loader){
+  public String init(NamedList config, SolrCore core){
     name = (String) config.get(DICTIONARY_NAME);
     if (name == null) {
       name = DEFAULT_DICTIONARY_NAME;

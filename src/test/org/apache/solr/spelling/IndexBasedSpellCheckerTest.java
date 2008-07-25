@@ -89,7 +89,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
 
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
     RefCounted<SolrIndexSearcher> holder = core.getSearcher();
@@ -162,7 +162,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
     RefCounted<SolrIndexSearcher> holder = core.getSearcher();
@@ -218,7 +218,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     spellchecker.add(AbstractLuceneSpellChecker.STRING_DISTANCE, JaroWinklerDistance.class.getName());
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
     RefCounted<SolrIndexSearcher> holder = core.getSearcher();
@@ -268,7 +268,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
             dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
     RefCounted<SolrIndexSearcher> holder = core.getSearcher();

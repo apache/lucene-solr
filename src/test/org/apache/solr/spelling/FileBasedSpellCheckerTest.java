@@ -70,7 +70,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     indexDir.mkdirs();
     spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
@@ -108,7 +108,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
@@ -149,7 +149,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
 
     SolrCore core = h.getCore();
-    String dictName = checker.init(spellchecker, core.getResourceLoader());
+    String dictName = checker.init(spellchecker, core);
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 

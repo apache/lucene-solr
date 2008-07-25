@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.Dictionary;
@@ -17,7 +19,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.FieldType;
 
 
 /**
@@ -30,12 +33,16 @@ import org.apache.solr.core.SolrResourceLoader;
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
+  public static final Logger LOG = Logger.getLogger(AbstractLuceneSpellChecker.class.getName());
+  
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";
   public static final String INDEX_DIR = "spellcheckIndexDir";
   public static final String ACCURACY = "accuracy";
   public static final String STRING_DISTANCE = "distanceMeasure";
+  public static final String FIELD_TYPE = "fieldType";
   protected String field;
+  protected String fieldTypeName;
   protected org.apache.lucene.search.spell.SpellChecker spellChecker;
 
   protected String sourceLocation;
@@ -50,14 +57,14 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   protected float accuracy = 0.5f;
   public static final String FIELD = "field";
 
-  public String init(NamedList config, SolrResourceLoader loader) {
-    super.init(config, loader);
+  public String init(NamedList config, SolrCore core) {
+    super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
     String accuracy = (String) config.get(ACCURACY);
     //If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null)   {
       if (!new File(indexDir).isAbsolute()) {
-        indexDir = loader.getDataDir() + File.separator + indexDir;
+        indexDir = core.getDataDir() + File.separator + indexDir;
       }
     }
     sourceLocation = (String) config.get(LOCATION);
@@ -65,7 +72,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     String strDistanceName = (String)config.get(STRING_DISTANCE);
     StringDistance sd = null;
     if (strDistanceName != null) {
-      sd = (StringDistance) loader.newInstance(strDistanceName);
+      sd = (StringDistance) core.getResourceLoader().newInstance(strDistanceName);
       //TODO: Figure out how to configure options.  Where's Spring when you need it?  Or at least BeanUtils...
     } else {
       sd = new LevensteinDistance();
@@ -84,6 +91,18 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         throw new RuntimeException(
                 "Unparseable accuracy given for dictionary: " + name, e);
       }
+    }
+    if (field != null && core.getSchema().getFieldTypeNoEx(field) != null)  {
+      analyzer = core.getSchema().getFieldType(field).getQueryAnalyzer();
+    }
+    fieldTypeName = (String) config.get(FIELD_TYPE);
+    if (core.getSchema().getFieldTypes().containsKey(fieldTypeName))  {
+      FieldType fieldType = core.getSchema().getFieldTypes().get(fieldTypeName);
+      analyzer = fieldType.getQueryAnalyzer();
+    }
+    if (analyzer == null)   {
+      LOG.info("Using WhitespaceAnalzyer for dictionary: " + name);
+      analyzer = new WhitespaceAnalyzer();
     }
     return name;
   }
@@ -132,13 +151,10 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return reader;
   }
 
-
   public void reload() throws IOException {
     spellChecker.setSpellIndex(index);
 
   }
-
-
 
   /**
    * Initialize the {@link #index} variable based on the {@link #indexDir}.  Does not actually create the spelling index.

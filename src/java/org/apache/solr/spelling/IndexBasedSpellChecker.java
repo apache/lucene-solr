@@ -50,8 +50,8 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   protected float threshold;
   protected IndexReader reader;
 
-  public String init(NamedList config, SolrResourceLoader loader) {
-    super.init(config, loader);
+  public String init(NamedList config, SolrCore core) {
+    super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
     initSourceReader();
@@ -80,8 +80,9 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
         reader = this.reader;
       }
 
-
-      loadLuceneDictionary(core.getSchema(), reader);
+      // Create the dictionary
+      dictionary = new HighFrequencyDictionary(reader, field,
+          threshold);
       spellChecker.clearIndex();
       spellChecker.indexDictionary(dictionary);
 
@@ -99,17 +100,6 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
       result = reader;
     }
     return result;
-  }
-
-  @SuppressWarnings("unchecked")
-  private void loadLuceneDictionary(IndexSchema schema, IndexReader reader) {
-    // Create the dictionary
-    dictionary = new HighFrequencyDictionary(reader, field,
-            threshold);
-    // Get the field's analyzer
-    FieldType fieldType = schema.getFieldTypeNoEx(field);
-    analyzer = fieldType == null ? new WhitespaceAnalyzer()
-            : fieldType.getQueryAnalyzer();
   }
 
   @Override

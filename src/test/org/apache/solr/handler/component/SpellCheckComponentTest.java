@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
 import org.apache.solr.util.AbstractSolrTestCase;
 
@@ -310,6 +312,41 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     assertTrue(
         "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
         indexDir.exists());
+  }
+  
+  public void testReloadOnStart() throws Exception {
+    assertU(adoc("id", "0", "lowerfilt", "This is a title"));
+    assertU(commit());
+    SolrQueryRequest request = req("qt", "spellCheckCompRH", "q", "*:*",
+        "spellcheck.q", "ttle", "spellcheck", "true", "spellcheck.dictionary",
+        "default", "spellcheck.build", "true");
+    assertQ(request, "//arr[@name='suggestion'][.='title']");
+
+    NamedList args = new NamedList();
+    NamedList spellchecker = new NamedList();
+    spellchecker.add(AbstractLuceneSpellChecker.DICTIONARY_NAME, "default");
+    spellchecker.add(AbstractLuceneSpellChecker.FIELD, "lowerfilt");
+    spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, "spellchecker1");
+    args.add("spellchecker", spellchecker);
+
+    SpellCheckComponent checker = new SpellCheckComponent();
+    checker.init(args);
+    checker.inform(h.getCore());
+
+    request = req("qt", "spellCheckCompRH", "q", "*:*", "spellcheck.q", "ttle",
+        "spellcheck", "true", "spellcheck.dictionary", "default",
+        "spellcheck.reload", "true");
+    ResponseBuilder rb = new ResponseBuilder();
+    rb.req = request;
+    rb.rsp = new SolrQueryResponse();
+    rb.components = new ArrayList(h.getCore().getSearchComponents().values());
+    checker.prepare(rb);
+
+    try {
+      checker.process(rb);
+    } catch (NullPointerException e) {
+      fail("NullPointerException due to reload not initializing analyzers");
+    }
   }
 
   // TODO: add more tests for various spelling options

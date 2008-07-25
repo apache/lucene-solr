@@ -246,7 +246,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           SolrResourceLoader loader = core.getResourceLoader();
           SolrSpellChecker checker = (SolrSpellChecker) loader.newInstance(className);
           if (checker != null) {
-            String dictionary = checker.init(spellchecker, loader);
+            String dictionary = checker.init(spellchecker, core);
             if (dictionary != null) {
               boolean isDefault = dictionary.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME);
               if (isDefault == true && hasDefault == false){
