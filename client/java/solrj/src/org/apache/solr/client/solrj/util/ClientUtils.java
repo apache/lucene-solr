@@ -70,7 +70,7 @@ public class ClientUtils
   }
   
   /**
-   * @param SolrDocument to convert
+   * @param d SolrDocument to convert
    * @return a SolrInputDocument with the same fields and values as the 
    *   SolrDocument.  All boosts are 1.0f
    */
@@ -84,7 +84,7 @@ public class ClientUtils
   }
 
   /**
-   * @param SolrInputDocument to convert
+   * @param d SolrInputDocument to convert
    * @return a SolrDocument with the same fields and values as the SolrInputDocument
    */
   public static SolrDocument toSolrDocument( SolrInputDocument d )

@@ -34,6 +34,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.*;
 
 import javax.xml.xpath.XPath;

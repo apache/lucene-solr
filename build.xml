@@ -160,13 +160,15 @@
     </solr-javac>
   </target>
 
-  <target name="core-javadoc" depends="compile"
+  <target name="core-javadoc" depends="compile,compile-solrj"
           description="Generates javadoc documentation.">
 
     <mkdir dir="${build.javadoc}"/>
         
     <path id="javadoc.classpath">
        <path refid="compile.classpath"/>
+       <path refid="compile.classpath.solrj"/>
+       <pathelement location="${dest}/client/solrj"/>
     </path>
 
     <javadoc
