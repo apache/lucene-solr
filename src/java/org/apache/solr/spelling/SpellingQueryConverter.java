@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +39,9 @@ public class SpellingQueryConverter extends QueryConverter  {
 
 
   public Collection<Token> convert(String original) {
+    if( original == null ) { // this can happen with q.alt = and no query
+      return Collections.emptyList();
+    }
     Collection<Token> result = new ArrayList<Token>();
     //TODO: Extract the words using a simple regex, but not query stuff, and then analyze them to produce the token stream
     Matcher matcher = QUERY_REGEX.matcher(original);
