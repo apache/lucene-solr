@@ -17,19 +17,24 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.w3c.dom.Node;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * A factory to generate UpdateRequestProcessors for each request.  
+ * A factory to generate an UpdateRequestProcessor for each request.  
+ * 
+ * If the factory needs access to {@link SolrCore} in initialization, it could 
+ * implement {@link SolrCoreAware}
  * 
  * @since solr 1.3
  */
-public abstract class UpdateRequestProcessorFactory 
+public abstract class UpdateRequestProcessorFactory implements NamedListInitializedPlugin
 {    
-  public void init( final SolrCore core, final Node node )
+  public void init( NamedList args )
   {
     // could process the Node
   }

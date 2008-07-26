@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -27,8 +26,6 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.UpdateHandler;
-import org.w3c.dom.Node;
-
 
 
 /**
@@ -39,18 +36,13 @@ import org.w3c.dom.Node;
 public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 {
   @Override
-  public void init( final SolrCore core, final Node node ) {
-    
-  }
-
-  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) 
   {
     return new RunUpdateProcessor(req, next);
   }
 }
 
-class RunUpdateProcessor extends NoOpUpdateProcessor 
+class RunUpdateProcessor extends UpdateRequestProcessor 
 {
   private final SolrQueryRequest req;
   private final UpdateHandler updateHandler;

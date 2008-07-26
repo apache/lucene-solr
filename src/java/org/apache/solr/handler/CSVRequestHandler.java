@@ -28,6 +28,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.commons.csv.CSVStrategy;
@@ -47,10 +48,10 @@ public class CSVRequestHandler extends RequestHandlerBase {
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
-    UpdateRequestProcessorFactory processorFactory =
-            req.getCore().getUpdateProcessorFactory( params.get( UpdateParams.UPDATE_PROCESSOR ) );
+    UpdateRequestProcessorChain processorChain =
+            req.getCore().getUpdateProcessingChain( params.get( UpdateParams.UPDATE_PROCESSOR ) );
 
-    UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
 
     try {
       CSVLoader loader = new SingleThreadedCSVLoader(req, processor);

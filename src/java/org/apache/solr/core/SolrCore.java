@@ -40,7 +40,9 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.processor.ChainedUpdateProcessorFactory;
+import org.apache.solr.update.processor.LogUpdateProcessorFactory;
+import org.apache.solr.update.processor.RunUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
@@ -52,6 +54,9 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -79,7 +84,7 @@ public final class SolrCore {
   private final RequestHandlers reqHandlers;
   private final SolrHighlighter highlighter;
   private final Map<String,SearchComponent> searchComponents;
-  private final Map<String,UpdateRequestProcessorFactory> updateProcessors;
+  private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String,SolrInfoMBean> infoRegistry = new java.util.HashMap<String,SolrInfoMBean>();
   
   public long getStartTime() { return startTime; }
@@ -408,7 +413,7 @@ public final class SolrCore {
       this.searchComponents = loadSearchComponents( config );
 
       // Processors initialized before the handlers
-      updateProcessors = loadUpdateProcessors();
+      updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig( solrConfig );
   
@@ -458,30 +463,71 @@ public final class SolrCore {
   /**
    * Load the request processors configured in solrconfig.xml
    */
-  private Map<String, UpdateRequestProcessorFactory> loadUpdateProcessors() {
-    final Map<String,UpdateRequestProcessorFactory> map = new HashMap<String, UpdateRequestProcessorFactory>();
+  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+    final Map<String,UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
     
-    // If this is a more general use-case, this could be a regular type
-    final SolrCore thiscore = this;
-    AbstractPluginLoader<UpdateRequestProcessorFactory> loader 
-      = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "updateRequestProcessor" ) {
-
-      @Override
-      protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
-        plugin.init( thiscore, node );
+    final String parsingErrorText = "Parsing Update Request Processor Chain";
+    UpdateRequestProcessorChain def = null;
+    
+    // This is kinda ugly, but at least it keeps the xpath logic in one place
+    // away from the Processors themselves.  
+    XPath xpath = solrConfig.getXPath();
+    NodeList nodes = (NodeList)solrConfig.evaluate("updateRequestProcessorChain", XPathConstants.NODESET);
+    boolean requireName = nodes.getLength() > 1;
+    if (nodes !=null ) {
+      for (int i=0; i<nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        String name       = DOMUtil.getAttr(node,"name", requireName?parsingErrorText:null);
+        boolean isDefault = "true".equals( DOMUtil.getAttr(node,"default", null ) );
+        
+        NodeList links = null;
+        try {
+          links = (NodeList)xpath.evaluate("processor", node, XPathConstants.NODESET);
+        } 
+        catch (XPathExpressionException e) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error reading processors",e,false);
+        }
+        if( links == null || links.getLength() < 1 ) {
+          throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
+        }
+        
+        // keep a list of the factories...
+        final ArrayList<UpdateRequestProcessorFactory> factories = new ArrayList<UpdateRequestProcessorFactory>(links.getLength());
+        // Load and initialize the plugin chain
+        AbstractPluginLoader<UpdateRequestProcessorFactory> loader 
+            = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "processor chain", false, false ) {
+          @Override
+          protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
+            plugin.init( (node==null)?null:DOMUtil.childNodesToNamedList(node) );
+          }
+    
+          @Override
+          protected UpdateRequestProcessorFactory register(String name, UpdateRequestProcessorFactory plugin) throws Exception {
+            factories.add( plugin );
+            return null;
+          }
+        };
+        loader.load( solrConfig.getResourceLoader(), links );
+        
+        
+        UpdateRequestProcessorChain chain = new UpdateRequestProcessorChain( 
+            factories.toArray( new UpdateRequestProcessorFactory[factories.size()] ) );
+        if( isDefault || nodes.getLength()==1 ) {
+          def = chain;
+        }
+        if( name != null ) {
+          map.put(name, chain);
+        }
       }
-
-      @Override
-      protected UpdateRequestProcessorFactory register(String name, UpdateRequestProcessorFactory plugin) throws Exception {
-        return map.put( name, plugin );
-      }
-    };
-
-    NodeList nodes = (NodeList)solrConfig.evaluate("updateRequestProcessor/factory", XPathConstants.NODESET);
-    UpdateRequestProcessorFactory def = loader.load( solrConfig.getResourceLoader(), nodes ); 
+    }
+    
     if( def == null ) {
-      def = new ChainedUpdateProcessorFactory(); // the default
-      def.init( thiscore, null );
+      // construct the default chain
+      UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[] {
+        new RunUpdateProcessorFactory(),
+        new LogUpdateProcessorFactory()
+      };
+      def = new UpdateRequestProcessorChain( factories );
     }
     map.put( null, def );
     map.put( "", def );
@@ -489,16 +535,16 @@ public final class SolrCore {
   }
   
   /**
-   * @return an update processor registered to the given name.  Throw an exception if this factory is undefined
-   */
-  public UpdateRequestProcessorFactory getUpdateProcessorFactory( String name )
+   * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
+   */    
+  public UpdateRequestProcessorChain getUpdateProcessingChain( final String name )
   {
-    UpdateRequestProcessorFactory factory = updateProcessors.get( name );
-    if( factory == null ) {
+    UpdateRequestProcessorChain chain = updateProcessorChains.get( name );
+    if( chain == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "unknown UpdateProcessorFactory: "+name );
+          "unknown UpdateRequestProcessorChain: "+name );
     }
-    return factory;
+    return chain;
   }
 
   /**

@@ -18,7 +18,7 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.processor.ChainedUpdateProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
@@ -35,22 +35,21 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
 
     // make sure it loaded the factories
-    ChainedUpdateProcessorFactory chained = 
-      (ChainedUpdateProcessorFactory)core.getUpdateProcessorFactory( "standard" );
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain( "standard" );
     
-    // Make sure it got 3 items and configured the Log factory ok
-    assertEquals( 3, chained.factory.length );
-    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)chained.factory[0];
+    // Make sure it got 3 items and configured the Log chain ok
+    assertEquals( 3, chained.chain.length );
+    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)chained.chain[0];
     assertEquals( 100, log.maxNumToLog );
     
     
-    CustomUpdateRequestProcessorFactory custom = 
-      (CustomUpdateRequestProcessorFactory)core.getUpdateProcessorFactory( null );
-
-    assertEquals( custom, core.getUpdateProcessorFactory( "" ) );
-    assertEquals( custom, core.getUpdateProcessorFactory( "custom" ) );
+    UpdateRequestProcessorChain custom = core.getUpdateProcessingChain( null );
+    CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.chain[0];
+    
+    assertEquals( custom, core.getUpdateProcessingChain( "" ) );
+    assertEquals( custom, core.getUpdateProcessingChain( "custom" ) );
     
     // Make sure the NamedListArgs got through ok
-    assertEquals( "{name={n8=88,n9=99}}", custom.args.toString() );
+    assertEquals( "{name={n8=88,n9=99}}", link.args.toString() );
   }
 }

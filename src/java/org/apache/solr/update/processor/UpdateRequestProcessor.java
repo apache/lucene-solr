@@ -33,17 +33,34 @@ import org.apache.solr.update.DeleteUpdateCommand;
  * Perhaps you continue adding an error message (without indexing the document)...
  * perhaps you throw an error and halt indexing (remove anything already indexed??)
  * 
- * This implementation (the default) passes the request command (as is) to the updateHandler
- * and adds debug info to the response.
+ * By default, this just passes the request to the next processor in the chain.
  * 
  * @since solr 1.3
  */
 public abstract class UpdateRequestProcessor {
   protected static Logger log = Logger.getLogger(UpdateRequestProcessor.class.getName());
 
-  public abstract void processAdd(AddUpdateCommand cmd) throws IOException;
-  public abstract void processDelete(DeleteUpdateCommand cmd) throws IOException;
-  public abstract void processCommit(CommitUpdateCommand cmd) throws IOException;
-  public abstract void finish() throws IOException;
+  protected final UpdateRequestProcessor next;
+
+  public UpdateRequestProcessor( UpdateRequestProcessor next) {
+    this.next = next;
+  }
+
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
+    if (next != null) next.processAdd(cmd);
+  }
+
+  public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    if (next != null) next.processDelete(cmd);
+  }
+
+  public void processCommit(CommitUpdateCommand cmd) throws IOException
+  {
+    if (next != null) next.processCommit(cmd);
+  }
+
+  public void finish() throws IOException {
+    if (next != null) next.finish();    
+  }
 }
 

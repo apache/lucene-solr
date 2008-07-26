@@ -50,8 +50,8 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 
 /**
  * Add documents to solr using the STAX XML parser.
@@ -96,7 +96,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     catch( IllegalArgumentException ex ) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.fine( "Unable to set the 'reuse-instance' property for the input factory: "+inputFactory );
+      log.fine( "Unable to set the 'reuse-instance' property for the input chain: "+inputFactory );
     }
   }
   
@@ -106,10 +106,10 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     RequestHandlerUtils.addExperimentalFormatWarning( rsp );
     
     SolrParams params = req.getParams();
-    UpdateRequestProcessorFactory processorFactory = 
-      req.getCore().getUpdateProcessorFactory( params.get( UpdateParams.UPDATE_PROCESSOR ) );
+    UpdateRequestProcessorChain processingChain = 
+      req.getCore().getUpdateProcessingChain( params.get( UpdateParams.UPDATE_PROCESSOR ) );
     
-    UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+    UpdateRequestProcessor processor = processingChain.createProcessor(req, rsp);
     Iterable<ContentStream> streams = req.getContentStreams();
     if( streams == null ) {
       if( !RequestHandlerUtils.handleCommit(processor, params, false) ) {
@@ -381,13 +381,13 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       SolrCore core = SolrCore.getSolrCore();
 
       // Old style requests do not choose a custom handler
-      UpdateRequestProcessorFactory processorFactory = core.getUpdateProcessorFactory( null );
+      UpdateRequestProcessorChain processorFactory = core.getUpdateProcessingChain( null );
       
       SolrParams params = new MapSolrParams( new HashMap<String, String>() );
       SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
       SolrQueryResponse rsp = new SolrQueryResponse(); // ignored
       XMLStreamReader parser = inputFactory.createXMLStreamReader(input);
-      UpdateRequestProcessor processor = processorFactory.getInstance(req, rsp, null);
+      UpdateRequestProcessor processor = processorFactory.createProcessor(req, rsp);
       this.processUpdate( processor, parser );
       processor.finish();
       output.write("<result status=\"0\"></result>");

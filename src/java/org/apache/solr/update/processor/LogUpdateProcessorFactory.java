@@ -23,16 +23,13 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
-import org.w3c.dom.Node;
 
 /**
  * A logging processor.  This keeps track of all commands that have passed through
@@ -47,9 +44,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   int maxNumToLog = 8;
   
   @Override
-  public void init( final SolrCore core, final Node node ) {
-    if( node != null ) {
-      NamedList<Object> args = DOMUtil.childNodesToNamedList( node );
+  public void init( final NamedList args ) {
+    if( args != null ) {
       SolrParams params = SolrParams.toSolrParams( args );
       maxNumToLog = params.getInt( "maxNumToLog", maxNumToLog );
     }
@@ -70,7 +66,6 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 class LogUpdateProcessor extends UpdateRequestProcessor {
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
-  private final UpdateRequestProcessor next;
   private final NamedList<Object> toLog;
 
   int numAdds;
@@ -83,9 +78,9 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   private final int maxNumToLog;
 
   public LogUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, LogUpdateProcessorFactory factory, UpdateRequestProcessor next) {
+    super( next );
     this.req = req;
     this.rsp = rsp;
-    this.next = next;
     maxNumToLog = factory.maxNumToLog;  // TODO: make configurable
     // TODO: make log level configurable as well, or is that overkill?
     // (ryan) maybe?  I added it mostly to show that it *can* be configurable

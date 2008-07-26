@@ -47,6 +47,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.spelling.SpellingQueryConverter;
@@ -370,7 +371,8 @@ public class SolrResourceLoader implements ResourceLoader
       SolrCoreAware.class, new Class[] {
         SolrRequestHandler.class,
         QueryResponseWriter.class,
-        SearchComponent.class
+        SearchComponent.class,
+        UpdateRequestProcessorFactory.class
       }
     );
 

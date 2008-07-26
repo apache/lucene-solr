@@ -19,31 +19,31 @@
 
 <config>
 
- <updateRequestProcessor>
-   <factory name="standard" class="solr.ChainedUpdateProcessorFactory" >
-     <chain class="solr.LogUpdateProcessorFactory" >
-      <int name="maxNumToLog">100</int>
-     </chain>
-     <chain class="solr.CustomUpdateRequestProcessorFactory" >
-      <lst name="name">
-        <str name="n1">x1</str>
-        <str name="n2">x2</str>
-      </lst>
-     </chain>
-     <chain class="solr.CustomUpdateRequestProcessorFactory" >
-      <lst name="name">
-        <str name="nA">xA</str>
-        <str name="nA">xA</str>
-      </lst>
-     </chain>
-   </factory>
+<updateRequestProcessorChain name="standard">
+  <processor class="solr.LogUpdateProcessorFactory" >
+   <int name="maxNumToLog">100</int>
+  </processor>
+  <processor class="solr.CustomUpdateRequestProcessorFactory" >
+   <lst name="name">
+     <str name="n1">x1</str>
+     <str name="n2">x2</str>
+   </lst>
+  </processor>
+  <processor class="solr.CustomUpdateRequestProcessorFactory" >
+   <lst name="name">
+     <str name="nA">xA</str>
+     <str name="nA">xA</str>
+   </lst>
+  </processor>
+</updateRequestProcessorChain>
    
-   <factory name="custom" class="solr.CustomUpdateRequestProcessorFactory" default="true" >
+<updateRequestProcessorChain name="custom" default="true" >
+   <processor class="solr.CustomUpdateRequestProcessorFactory">
     <lst name="name">
       <str name="n8">88</str>
       <str name="n9">99</str>
     </lst>
-   </factory>
- </updateRequestProcessor>
+   </processor>
+</updateRequestProcessorChain>
 
 </config>
