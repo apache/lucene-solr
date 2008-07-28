@@ -165,9 +165,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
+    lst.add("handlerStart",handlerStart);
     lst.add("requests", numRequests);
     lst.add("errors", numErrors);
     lst.add("timeouts", numTimeouts);
+    lst.add("totalTime",totalTime);
     lst.add("avgTimePerRequest", (float) totalTime / (float) this.numRequests);
     lst.add("avgRequestsPerSecond", (float) numRequests*1000 / (float)(System.currentTimeMillis()-handlerStart));   
     return lst;
