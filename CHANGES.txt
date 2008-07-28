@@ -323,6 +323,8 @@ New Features
 
 61. SOLR-522: Make analysis.jsp show payloads. (Tricia Williams via yonik)
 
+62. SOLR-611: Expose sort_values returned by QueryComponent in SolrJ's QueryResponse (Dan Rosher via shalin)
+
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

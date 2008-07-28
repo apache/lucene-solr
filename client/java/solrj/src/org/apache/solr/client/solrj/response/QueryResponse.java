@@ -40,6 +40,7 @@ public class QueryResponse extends SolrResponseBase
   // Direct pointers to known types
   private NamedList<Object> _header = null;
   private SolrDocumentList _results = null;
+  private NamedList<ArrayList> _sortvalues = null;
   private NamedList<Object> _facetInfo = null;
   private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
@@ -85,6 +86,9 @@ public class QueryResponse extends SolrResponseBase
       }
       else if( "response".equals( n ) ) {
         _results = (SolrDocumentList) res.getVal( i );
+      }
+      else if( "sort_values".equals( n ) ) {
+        _sortvalues = (NamedList<ArrayList>) res.getVal( i );
       }
       else if( "facet_counts".equals( n ) ) {
         _facetInfo = (NamedList<Object>) res.getVal( i );
@@ -208,6 +212,10 @@ public class QueryResponse extends SolrResponseBase
 
   public SolrDocumentList getResults() {
     return _results;
+  }
+ 
+  public NamedList<ArrayList> getSortValues(){
+    return _sortvalues;
   }
 
   public Map<String, Object> getDebugMap() {
