@@ -41,7 +41,7 @@ import org.apache.lucene.util.ToStringUtils;
 public class MultiPhraseQuery extends Query {
   private String field;
   private ArrayList termArrays = new ArrayList();
-  private Vector positions = new Vector();
+  private ArrayList positions = new ArrayList();
 
   private int slop = 0;
 
@@ -68,7 +68,7 @@ public class MultiPhraseQuery extends Query {
   public void add(Term[] terms) {
     int position = 0;
     if (positions.size() > 0)
-      position = ((Integer) positions.lastElement()).intValue() + 1;
+      position = ((Integer) positions.get(positions.size()-1)).intValue() + 1;
 
     add(terms, position);
   }
@@ -93,7 +93,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     termArrays.add(terms);
-    positions.addElement(new Integer(position));
+    positions.add(new Integer(position));
   }
 
   /**
@@ -110,7 +110,7 @@ public class MultiPhraseQuery extends Query {
   public int[] getPositions() {
     int[] result = new int[positions.size()];
     for (int i = 0; i < positions.size(); i++)
-      result[i] = ((Integer) positions.elementAt(i)).intValue();
+      result[i] = ((Integer) positions.get(i)).intValue();
     return result;
   }
 

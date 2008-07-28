@@ -177,7 +177,7 @@ public class BooleanQuery extends Query {
 
   private class BooleanWeight implements Weight {
     protected Similarity similarity;
-    protected Vector weights = new Vector();
+    protected ArrayList weights = new ArrayList();
 
     public BooleanWeight(Searcher searcher)
       throws IOException {
@@ -195,7 +195,7 @@ public class BooleanQuery extends Query {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.elementAt(i);
+        Weight w = (Weight)weights.get(i);
         // call sumOfSquaredWeights for all clauses in case of side effects
         float s = w.sumOfSquaredWeights();         // sum sub weights
         if (!c.isProhibited())
@@ -212,7 +212,7 @@ public class BooleanQuery extends Query {
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
       for (int i = 0 ; i < weights.size(); i++) {
-        Weight w = (Weight)weights.elementAt(i);
+        Weight w = (Weight)weights.get(i);
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
       }
@@ -228,7 +228,7 @@ public class BooleanQuery extends Query {
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.elementAt(i);
+        Weight w = (Weight)weights.get(i);
         Scorer subScorer = w.scorer(reader);
         if (subScorer != null)
           result.add(subScorer, c.isRequired(), c.isProhibited());
@@ -252,7 +252,7 @@ public class BooleanQuery extends Query {
       int shouldMatchCount = 0;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.elementAt(i);
+        Weight w = (Weight)weights.get(i);
         Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
         if (e.isMatch()) {

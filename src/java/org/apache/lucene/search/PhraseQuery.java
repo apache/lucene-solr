@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 import java.util.Vector;
+import java.util.ArrayList;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
@@ -33,8 +34,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class PhraseQuery extends Query {
   private String field;
-  private Vector terms = new Vector();
-  private Vector positions = new Vector();
+  private ArrayList terms = new ArrayList(4);
+  private ArrayList positions = new ArrayList(4);
   private int slop = 0;
 
   /** Constructs an empty phrase query. */
@@ -65,7 +66,7 @@ public class PhraseQuery extends Query {
   public void add(Term term) {
     int position = 0;
     if(positions.size() > 0)
-        position = ((Integer) positions.lastElement()).intValue() + 1;
+        position = ((Integer) positions.get(positions.size()-1)).intValue() + 1;
 
     add(term, position);
   }
@@ -85,8 +86,8 @@ public class PhraseQuery extends Query {
       else if (term.field() != field)
           throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
 
-      terms.addElement(term);
-      positions.addElement(new Integer(position));
+      terms.add(term);
+      positions.add(new Integer(position));
   }
 
   /** Returns the set of terms in this phrase. */
@@ -100,7 +101,7 @@ public class PhraseQuery extends Query {
   public int[] getPositions() {
       int[] result = new int[positions.size()];
       for(int i = 0; i < positions.size(); i++)
-          result[i] = ((Integer) positions.elementAt(i)).intValue();
+          result[i] = ((Integer) positions.get(i)).intValue();
       return result;
   }
 
@@ -140,7 +141,7 @@ public class PhraseQuery extends Query {
 
       TermPositions[] tps = new TermPositions[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
-        TermPositions p = reader.termPositions((Term)terms.elementAt(i));
+        TermPositions p = reader.termPositions((Term)terms.get(i));
         if (p == null)
           return null;
         tps[i] = p;
@@ -171,7 +172,7 @@ public class PhraseQuery extends Query {
           query.append(" ");
         }
 
-        Term term = (Term)terms.elementAt(i);
+        Term term = (Term)terms.get(i);
 
         docFreqs.append(term.text());
         docFreqs.append("=");
@@ -237,7 +238,7 @@ public class PhraseQuery extends Query {
 
   protected Weight createWeight(Searcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
-      Term term = (Term)terms.elementAt(0);
+      Term term = (Term)terms.get(0);
       Query termQuery = new TermQuery(term);
       termQuery.setBoost(getBoost());
       return termQuery.createWeight(searcher);
@@ -262,7 +263,7 @@ public class PhraseQuery extends Query {
 
     buffer.append("\"");
     for (int i = 0; i < terms.size(); i++) {
-      buffer.append(((Term)terms.elementAt(i)).text());
+      buffer.append(((Term)terms.get(i)).text());
       if (i != terms.size()-1)
   buffer.append(" ");
     }
