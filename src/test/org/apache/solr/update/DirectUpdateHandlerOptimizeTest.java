@@ -49,8 +49,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     cmd.overwritePending = true;
     cmd.allowDups = false;
     //add just under the merge factor, so no segments are merged
-    //the merge factor is 1000 and the maxBufferedDocs is 2, so there should be 500 segments (498 segs each w/ 2 docs, and 1 segment with 1 doc)
-    for (int i = 0; i < 999; i++) {
+    //the merge factor is 100 and the maxBufferedDocs is 2, so there should be 50 segments
+    for (int i = 0; i < 99; i++) {
       // Add a valid document
       cmd.doc = new Document();
       cmd.doc.add(new Field("id", "id_" + i, Field.Store.YES, Field.Index.UN_TOKENIZED));
@@ -63,14 +63,14 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     updater.commit(cmtCmd);  // commit twice to give systems such as windows a chance to delete the old files
 
     String indexDir = core.getIndexDir();
-    assertNumSegments(indexDir, 500);
+    assertNumSegments(indexDir, 50);
 
     //now do an optimize
     cmtCmd = new CommitUpdateCommand(true);
-    cmtCmd.maxOptimizeSegments = 250;
+    cmtCmd.maxOptimizeSegments = 25;
     updater.commit(cmtCmd);
     updater.commit(cmtCmd);
-    assertNumSegments(indexDir, 250);
+    assertNumSegments(indexDir, 25);
 
     cmtCmd.maxOptimizeSegments = -1;
     try {
