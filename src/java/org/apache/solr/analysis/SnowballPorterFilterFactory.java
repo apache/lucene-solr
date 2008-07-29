@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.solr.core.SolrCore;
 
 /**
  * Factory for SnowballFilters, with configurable language
@@ -38,7 +37,6 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory {
     super.init(args);
     final String cfgLanguage = args.get("language");
     if(cfgLanguage!=null) language = cfgLanguage;
-    SolrCore.log.fine("SnowballPorterFilterFactory: language=" + language);
   }
   
   public SnowballFilter create(TokenStream input) {
