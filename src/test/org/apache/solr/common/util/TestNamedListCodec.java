@@ -87,6 +87,41 @@ public class TestNamedListCodec  extends TestCase {
     assertEquals(101, ((List)list.get(1).getFieldValue("f")).get(1));
   }
 
+  public void testIterator() throws Exception{
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    NamedList nl = new NamedList();
+    Float fval = new Float( 10.01f );
+    Boolean bval = Boolean.TRUE;
+    String sval = "12qwaszx";
+
+    // Set up a simple document
+    NamedList r = new NamedList();
+    List list =     new ArrayList();
+
+    SolrDocument doc = new SolrDocument();
+    doc.addField( "f", fval );
+    doc.addField( "b", bval );
+    doc.addField( "s", sval );
+    doc.addField( "f", 100 );
+    list.add(doc);
+
+    doc = new SolrDocument();
+    doc.addField( "f", fval );
+    doc.addField( "b", bval );
+    doc.addField( "s", sval );
+    doc.addField( "f", 101 );
+    list.add(doc);
+
+    nl.add("zzz",list.iterator());
+
+    new NamedListCodec(null).marshal(nl,baos);
+    byte[] arr = baos.toByteArray();
+    nl = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+
+    List l = (List) nl.get("zzz");
+    assertEquals(list.size(), l.size());
+  }
+
 
 
   

@@ -48,6 +48,9 @@ public class NamedListCodec {
           SOLRDOC = 11,
           SOLRDOCLST = 12,
           BYTEARR = 13,
+          ITERATOR = 14,
+          /** this is a special tag signals an end. No value is associated with it*/
+          END = 15,
 
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN=(byte)(1 << 5),
@@ -113,7 +116,7 @@ public class NamedListCodec {
     writeTag(nl instanceof SimpleOrderedMap ? ORDERED_MAP : NAMED_LST, nl.size());
     for (int i = 0; i < nl.size(); i++) {
       String name = nl.getName(i);
-      writeStr(name);
+      writeExternString(name);
       Object val = nl.getVal(i);
       writeVal(val);
     }
@@ -133,6 +136,7 @@ public class NamedListCodec {
 
     writeVal(val.getClass().getName() + ':' + val.toString());
   }
+  private static final Object END_OBJ = new Object();
 
   byte tagByte;
   public Object readVal(FastInputStream dis) throws IOException {
@@ -167,6 +171,8 @@ public class NamedListCodec {
       case SOLRDOC : return readSolrDocument(dis);
       case SOLRDOCLST : return readSolrDocumentList(dis);
       case BYTEARR : return readByteArray(dis);
+      case ITERATOR : return readIterator(dis);
+      case END : return END_OBJ;
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -206,13 +212,16 @@ public class NamedListCodec {
       }
       return true;
     }
+    if (val instanceof Map) {
+      writeMap((Map) val);
+      return true;
+    }
     if (val instanceof Iterator) {
       writeIterator((Iterator) val);
       return true;
     }
-    if (val instanceof Map) {
-      writeMap((Map) val);
-      return true;
+    if (val instanceof Iterable) {
+      writeIterator(((Iterable)val).iterator());
     }
     return false;
   }
@@ -318,9 +327,21 @@ public class NamedListCodec {
   }
 
   public void writeIterator(Iterator iter) throws IOException {
+    writeTag(ITERATOR);
+    while (iter.hasNext()) {
+      writeVal(iter.next());
+    }
+    writeVal(END_OBJ);
+  }
+
+  public List readIterator(FastInputStream fis) throws IOException {
     ArrayList l = new ArrayList();
-    while (iter.hasNext()) l.add(iter.next());
-    writeArray(l);
+    while(true){
+      Object  o = readVal(fis);
+      if(o == END_OBJ) break;
+      l.add(o);
+    }
+    return l;
   }
 
   public void writeArray(List l) throws IOException {
@@ -461,6 +482,9 @@ public class NamedListCodec {
       return true;
     } else if (val instanceof byte[]) {
       writeByteArray((byte[])val, 0, ((byte[])val).length);
+      return true;
+    } else if (val == END_OBJ) {
+      writeTag(END);
       return true;
     }
     return false;
