@@ -33,7 +33,7 @@
    <!-- Values here affect all index writers and act as a default
    unless overridden. -->
     <!-- Values here affect all index writers and act as a default unless overridden. -->
-    <useCompoundFile>false</useCompoundFile>
+    <useCompoundFile>true</useCompoundFile>
     <!-- Set a high merge factor, so we get lots of segments -->
     <mergeFactor>1000</mergeFactor>
     <maxBufferedDocs>2</maxBufferedDocs>
@@ -87,7 +87,7 @@
 
   <mainIndex>
     <!-- lucene options specific to the main on-disk lucene index -->
-    <useCompoundFile>false</useCompoundFile>
+    <useCompoundFile>true</useCompoundFile>
     <mergeFactor>1000</mergeFactor>
     <maxBufferedDocs>2</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>

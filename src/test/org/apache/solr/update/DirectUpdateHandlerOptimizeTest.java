@@ -88,7 +88,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     File file = new File(indexDir);
     File[] segs = file.listFiles(new FileFilter() {
       public boolean accept(File file) {
-        return file.getName().endsWith("tii");
+        return file.getName().endsWith("cfs");
       }
     });
     assertTrue("Wrong number of segments: " + segs.length + " does not equal: " + numSegs, segs.length == numSegs);
