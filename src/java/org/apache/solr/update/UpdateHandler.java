@@ -116,7 +116,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     idTerm = idField!=null ? new Term(idField.getName(),"") : null;
     parseEventListeners();
-    core.getInfoRegistry().put("updateHandler", this);
   }
 
   protected SolrIndexWriter createMainIndexWriter(String name, boolean removeAllExisting) throws IOException {

@@ -26,6 +26,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.lucene.search.BooleanQuery;
 
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -133,6 +134,15 @@ public class SolrConfig extends Config {
     pingQueryParams = readPingQueryParams(this);
 
     httpCachingConfig = new HttpCachingConfig(this);
+    
+    Node jmx = (Node) getNode("jmx", false);
+    if (jmx != null) {
+      jmxConfig = new JmxConfiguration(true, get("jmx/@agentId", null), get(
+          "jmx/@serviceUrl", null));
+    } else {
+      jmxConfig = new JmxConfiguration(false, null, null);
+    }
+    
     Config.log.info("Loaded SolrConfig: " + name);
     
     // TODO -- at solr 2.0. this should go away
@@ -161,6 +171,9 @@ public class SolrConfig extends Config {
   // default & main index configurations
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
+  
+  //JMX configuration
+  public final JmxConfiguration jmxConfig;
   
   private final HttpCachingConfig httpCachingConfig;
   public HttpCachingConfig getHttpCachingConfig() {
@@ -197,6 +210,19 @@ public class SolrConfig extends Config {
     return new LocalSolrQueryRequest(core, pingQueryParams);
   }
 
+  public static class JmxConfiguration {
+    public boolean enabled = false;
+
+    public String agentId;
+
+    public String serviceUrl;
+
+    public JmxConfiguration(boolean enabled, String agentId, String serviceUrl) {
+      this.enabled = enabled;
+      this.agentId = agentId;
+      this.serviceUrl = serviceUrl;
+    }
+  }
 
   public static class HttpCachingConfig {
 

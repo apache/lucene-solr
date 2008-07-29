@@ -24,6 +24,8 @@
 
 <config>
 
+  <jmx />
+
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->

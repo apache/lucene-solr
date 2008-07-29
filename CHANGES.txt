@@ -325,6 +325,8 @@ New Features
 
 62. SOLR-611: Expose sort_values returned by QueryComponent in SolrJ's QueryResponse (Dan Rosher via shalin)
 
+63. SOLR-256: Support exposing Solr statistics through JMX (Sharad Agrawal, shalin)
+
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

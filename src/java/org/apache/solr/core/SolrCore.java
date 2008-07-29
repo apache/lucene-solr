@@ -85,7 +85,7 @@ public final class SolrCore {
   private final SolrHighlighter highlighter;
   private final Map<String,SearchComponent> searchComponents;
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
-  private final Map<String,SolrInfoMBean> infoRegistry = new java.util.HashMap<String,SolrInfoMBean>();
+  private final Map<String, SolrInfoMBean> infoRegistry;
   
   public long getStartTime() { return startTime; }
 
@@ -182,15 +182,16 @@ public final class SolrCore {
   {
     return this.logid;
   }
-  
+
   /**
+   * @return the Info Registry map which contains SolrInfoMBean objects keyed by name
    * @since solr 1.3
    */
-  public Map<String,SolrInfoMBean> getInfoRegistry() {
+  public Map<String, SolrInfoMBean> getInfoRegistry() {
     return infoRegistry;
   }
-  
-  
+
+
   public List<SolrEventListener> parseListener(String path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
     log.info( logid+"Searching for listeners: " +path);
@@ -393,6 +394,14 @@ public final class SolrCore {
       if (schema==null) {
         schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
       }
+      
+      //Initialize JMX
+      if (config.jmxConfig.enabled) {
+        infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, config.jmxConfig);
+      } else  {
+        log.info("JMX monitoring not detected for core: " + name);
+        infoRegistry = new LinkedHashMap<String, SolrInfoMBean>();
+      }
 
       this.schema = schema;
       this.dataDir = dataDir;
@@ -444,6 +453,7 @@ public final class SolrCore {
           solrConfig.get("updateHandler/@class", DirectUpdateHandler.class.getName())
         );
 
+        infoRegistry.put("updateHandler", updateHandler);
 
         // Finally tell anyone who wants to know
         loader.inform( loader );
@@ -552,6 +562,7 @@ public final class SolrCore {
    *  1. searcher
    *  2. updateHandler
    *  3. all CloseHooks will be notified
+   *  4. All MBeans will be unregistered from MBeanServer if JMX was enabled
    */
   public void close() {
     log.info(logid+" CLOSING SolrCore!");
@@ -574,7 +585,12 @@ public final class SolrCore {
        for( CloseHook hook : closeHooks ) {
          hook.close( this );
        }
-     }
+    }
+    try {
+      infoRegistry.clear();
+    } catch (Exception e) {
+      SolrException.log(log, e);
+    }
   }
 
   public boolean isClosed() {

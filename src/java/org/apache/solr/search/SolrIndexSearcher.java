@@ -158,8 +158,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     // for DocSets
     HASHSET_INVERSE_LOAD_FACTOR = solrConfig.hashSetInverseLoadFactor;
     HASHDOCSET_MAXSIZE = solrConfig.hashDocSetMaxSize;
-    // register self
-    core.getInfoRegistry().put(this.name, this);
   }
 
 
@@ -171,6 +169,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   /** Register sub-objects such as caches
    */
   public void register() {
+    // register self
+    core.getInfoRegistry().put("searcher", this);
+    core.getInfoRegistry().put(name, this);
     for (SolrCache cache : cacheList) {
       cache.setState(SolrCache.State.LIVE);
       core.getInfoRegistry().put(cache.name(), cache);
@@ -184,9 +185,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * In particular, the underlying reader and any cache's in use are closed.
    */
   public void close() throws IOException {
-    // unregister first, so no management actions are tried on a closing searcher.
-    core.getInfoRegistry().remove(name);
-
     if (cachingEnabled) {
       StringBuilder sb = new StringBuilder();
       sb.append("Closing ").append(name);
@@ -198,6 +196,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     } else {
       log.fine("Closing " + name);
     }
+    core.getInfoRegistry().remove(name);
     try {
       searcher.close();
     }
