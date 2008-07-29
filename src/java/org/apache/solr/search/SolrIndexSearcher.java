@@ -1580,6 +1580,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
+    lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
