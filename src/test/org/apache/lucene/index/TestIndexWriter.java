@@ -3731,4 +3731,38 @@ public class TestIndexWriter extends LuceneTestCase
     reader.close();
     dir.close();
   }
+
+  // LUCENE-1347
+  public class MockIndexWriter4 extends IndexWriter {
+
+    public MockIndexWriter4(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
+      super(dir, autoCommit, a, create, mfl);
+    }
+
+    boolean doFail;
+
+    boolean testPoint(String name) {
+      if (doFail && name.equals("rollback before checkpoint"))
+        throw new RuntimeException("intentionally failing");
+      return true;
+    }
+  }
+
+  // LUCENE-1347
+  public void testRollbackExceptionHang() throws Throwable {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    MockIndexWriter4 w = new MockIndexWriter4(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+
+    addDoc(w);
+    w.doFail = true;
+    try {
+      w.rollback();
+      fail("did not hit intentional RuntimeException");
+    } catch (RuntimeException re) {
+      // expected
+    }
+    
+    w.doFail = false;
+    w.rollback();
+  }
 }

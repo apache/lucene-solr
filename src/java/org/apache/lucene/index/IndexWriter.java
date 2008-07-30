@@ -1618,37 +1618,40 @@ public class IndexWriter {
    * then return.
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
-    boolean doClose;
 
     // If any methods have hit OutOfMemoryError, then abort
     // on close, in case the internal state of IndexWriter
     // or DocumentsWriter is corrupt
-    if (hitOOM)
-      abort();
-
-    synchronized(this) {
-      // Ensure that only one thread actually gets to do the closing:
-      if (!closing) {
-        doClose = true;
-        closing = true;
-      } else
-        doClose = false;
+    if (hitOOM) {
+      rollback();
+      return;
     }
-    if (doClose)
+
+    // Ensure that only one thread actually gets to do the closing:
+    if (shouldClose())
       closeInternal(waitForMerges);
-    else
-      // Another thread beat us to it (is actually doing the
-      // close), so we will block until that other thread
-      // has finished closing
-      waitForClose();
   }
 
-  synchronized private void waitForClose() {
-    while(!closed && closing) {
-      try {
-        wait();
-      } catch (InterruptedException ie) {
-      }
+  // Returns true if this thread should attempt to close, or
+  // false if IndexWriter is now closed; else, waits until
+  // another thread finishes closing
+  synchronized private boolean shouldClose() {
+    while(true) {
+      if (!closed) {
+        if (!closing) {
+          closing = true;
+          return true;
+        } else {
+          // Another thread is presently trying to close;
+          // wait until it finishes one way (closes
+          // successfully) or another (fails to close)
+          try {
+            wait();
+          } catch (InterruptedException ie) {
+          }
+        }
+      } else
+        return false;
     }
   }
 
@@ -1676,7 +1679,7 @@ public class IndexWriter {
 
       if (infoStream != null)
         message("now call final commit()");
-
+      
       commit(0);
 
       if (infoStream != null)
@@ -1702,12 +1705,10 @@ public class IndexWriter {
       throw oom;
     } finally {
       synchronized(this) {
-        if (!closed) {
-          closing = false;
-          if (infoStream != null)
-            message("hit exception while closing");
-        }
+        closing = false;
         notifyAll();
+        if (!closed && infoStream != null)
+          message("hit exception while closing");
       }
     }
   }
@@ -2614,28 +2615,18 @@ public class IndexWriter {
   public void rollback() throws IOException {
     ensureOpen();
     if (autoCommit)
-      throw new IllegalStateException("abort() can only be called when IndexWriter was opened with autoCommit=false");
+      throw new IllegalStateException("rollback() can only be called when IndexWriter was opened with autoCommit=false");
 
-    boolean doClose;
-    synchronized(this) {
+    // Ensure that only one thread actually gets to do the closing:
+    if (shouldClose())
+      rollbackInternal();
+  }
 
-      if (pendingCommit != null) {
-        pendingCommit.rollbackCommit(directory);
-        deleter.decRef(pendingCommit);
-        pendingCommit = null;
-        notifyAll();
-      }
+  private void rollbackInternal() throws IOException {
 
-      // Ensure that only one thread actually gets to do the closing:
-      if (!closing) {
-        doClose = true;
-        closing = true;
-      } else
-        doClose = false;
-    }
+    boolean success = false;
 
-    if (doClose) {
-
+    try {
       finishMerges(false);
 
       // Must pre-close these two, in case they increment
@@ -2645,6 +2636,14 @@ public class IndexWriter {
       mergeScheduler.close();
 
       synchronized(this) {
+
+        if (pendingCommit != null) {
+          pendingCommit.rollbackCommit(directory);
+          deleter.decRef(pendingCommit);
+          pendingCommit = null;
+          notifyAll();
+        }
+
         // Keep the same segmentInfos instance but replace all
         // of its SegmentInfo instances.  This is so the next
         // attempt to commit using this instance of IndexWriter
@@ -2655,6 +2654,8 @@ public class IndexWriter {
         
         docWriter.abort();
 
+        assert testPoint("rollback before checkpoint");
+
         // Ask deleter to locate unreferenced files & remove
         // them:
         deleter.checkpoint(segmentInfos, false);
@@ -2662,9 +2663,23 @@ public class IndexWriter {
       }
 
       lastCommitChangeCount = changeCount;
-      closeInternal(false);
-    } else
-      waitForClose();
+
+      success = true;
+    } catch (OutOfMemoryError oom) {
+      hitOOM = true;
+      throw oom;
+    } finally {
+      synchronized(this) {
+        if (!success) {
+          closing = false;
+          notifyAll();
+          if (infoStream != null)
+            message("hit exception during rollback");
+        }
+      }
+    }
+
+    closeInternal(false);
   }
 
   private synchronized void finishMerges(boolean waitForMerges) throws IOException {
@@ -3561,7 +3576,7 @@ public class IndexWriter {
 
     assert merge.registerDone;
 
-    // If merge was explicitly aborted, or, if abort() or
+    // If merge was explicitly aborted, or, if rollback() or
     // rollbackTransaction() had been called since our merge
     // started (which results in an unqualified
     // deleter.refresh() call that will remove any index
