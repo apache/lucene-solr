@@ -24,9 +24,11 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,15 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     if (synonyms != null) {
       List<String> wlist=null;
       try {
-        wlist = loader.getLines(synonyms);
+        File synonymFile = new java.io.File(synonyms);
+        if (synonymFile.exists()) {
+          wlist = loader.getLines(synonyms);
+        } else  {
+          List<String> files = StrUtils.splitFileNames(synonyms);
+          for (String file : files) {
+            wlist = loader.getLines(file.trim());
+          }
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

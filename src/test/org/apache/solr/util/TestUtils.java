@@ -62,6 +62,11 @@ public class TestUtils extends TestCase {
     assertEquals(2,arr.size());
     assertEquals(" foo ",arr.get(0));
     assertEquals(" bar ",arr.get(1));
+    
+    arr = StrUtils.splitFileNames("/h/s,/h/\\,s,");
+    assertEquals(2,arr.size());
+    assertEquals("/h/s",arr.get(0));
+    assertEquals("/h/,s",arr.get(1));
   }
 
   public void testNamedLists()

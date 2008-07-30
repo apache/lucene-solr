@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.io.IOException;
 
 /**
@@ -116,6 +117,25 @@ public class StrUtils {
     }
 
     return lst;
+  }
+
+  /**
+   * Splits file names separated by comma character.
+   * File names can contain comma characters escaped by backslash '\'
+   *
+   * @param fileNames the string containing file names
+   * @return a list of file names with the escaping backslashed removed
+   */
+  public static List<String> splitFileNames(String fileNames) {
+    if (fileNames == null)
+      return Collections.<String>emptyList();
+
+    List<String> result = new ArrayList<String>();
+    for (String file : fileNames.split("(?<!\\\\),")) {
+      result.add(file.replaceAll("\\\\(?=,)", ""));
+    }
+
+    return result;
   }
 
   /** Creates a backslash escaped string, joining all the items. */

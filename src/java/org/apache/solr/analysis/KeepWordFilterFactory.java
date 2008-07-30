@@ -18,14 +18,16 @@
 package org.apache.solr.analysis;
 
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-import java.util.Map;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.io.File;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -39,14 +41,25 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
 
   @SuppressWarnings("unchecked")
   public void inform(ResourceLoader loader) {
-    String wordFile = args.get("words");
+    String wordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase",false);
 
-    if (wordFile != null) {
+    if (wordFiles != null) {
+      if (words == null)
+        words = new HashSet<String>();
       try {
-        List<String> wlist = loader.getLines(wordFile);
-        words = StopFilter.makeStopSet(
-            (String[])wlist.toArray(new String[0]), ignoreCase);
+        java.io.File keepWordsFile = new File(wordFiles);
+        if (keepWordsFile.exists()) {
+          List<String> wlist = loader.getLines(wordFiles);
+          words = StopFilter.makeStopSet(
+              (String[])wlist.toArray(new String[0]), ignoreCase);
+        } else  {
+          List<String> files = StrUtils.splitFileNames(wordFiles);
+          for (String file : files) {
+            List<String> wlist = loader.getLines(file.trim());
+            words.addAll(StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase));
+          }
+        }
       } 
       catch (IOException e) {
         throw new RuntimeException(e);

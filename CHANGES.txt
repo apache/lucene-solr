@@ -329,6 +329,8 @@ New Features
 
 64. SOLR-666: Expose warmup time in statistics for SolrIndexSearcher and LRUCache (shalin)
 
+65. SOLR-663: Allow multiple files for stopwords, keepwords, protwords and synonyms (shalin)
+
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -22,9 +22,11 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.List;
 
 /**
@@ -34,12 +36,24 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implement
   public static final String PROTECTED_TOKENS = "protected";
 
   public void inform(ResourceLoader loader) {
-    String wordFile = args.get(PROTECTED_TOKENS);
-    if (wordFile != null) {
+    String wordFiles = args.get(PROTECTED_TOKENS);
+    if (wordFiles != null) {
       try {
-        List<String> wlist = loader.getLines(wordFile);
-        //This cast is safe in Lucene
-        protectedWords = new CharArraySet(wlist, false);//No need to go through StopFilter as before, since it just uses a List internally
+        File protectedWordFiles = new File(wordFiles);
+        if (protectedWordFiles.exists()) {
+          List<String> wlist = loader.getLines(wordFiles);
+          //This cast is safe in Lucene
+          protectedWords = new CharArraySet(wlist, false);//No need to go through StopFilter as before, since it just uses a List internally
+        } else  {
+          List<String> files = StrUtils.splitFileNames(wordFiles);
+          for (String file : files) {
+            List<String> wlist = loader.getLines(file.trim());
+            if (protectedWords == null)
+              protectedWords = new CharArraySet(wlist, false);
+            else
+              protectedWords.addAll(wlist);
+          }
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
