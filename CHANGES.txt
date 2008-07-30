@@ -331,6 +331,11 @@ New Features
 
 65. SOLR-663: Allow multiple files for stopwords, keepwords, protwords and synonyms (shalin)
 
+66. SOLR-469: Added DataImportHandler as a contrib project which makes indexing data from Databases, XML files and HTTP
+              data sources into Solr quick and easy. Includes API and implementations for supporting multiple
+              data sources, processors and transformers for importing data. Supports full data imports as well as
+              incremental (delta) indexing. See http://wiki.apache.org/solr/DataImportHandler for more details.
+              (Noble Paul, shalin)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

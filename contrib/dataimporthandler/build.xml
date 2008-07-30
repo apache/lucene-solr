@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-dataimporthandler" default="build">
+	
+  <property name="solr-path" value="../.." />
+	
+  <property name="javadoc.dir" value="target/javadoc"></property>
+	
+  <import file="../../common-build.xml"/>
+
+  <description>
+    Data Import Handler
+  </description>
+
+  <path id="common.classpath">
+  	<pathelement location="${solr-path}/build/common" />
+  	<pathelement location="${solr-path}/build/core" />
+  	<fileset dir="${solr-path}/lib" includes="*.jar"></fileset>
+  </path>
+	
+  <path id="test.classpath">
+  	<path refid="common.classpath" />
+	<pathelement path="target/classes" />
+  	<pathelement path="target/test-classes" />
+  </path>
+	
+  <target name="clean">
+  	<delete failonerror="false" dir="target"/>
+  </target>
+	
+  <target name="init">
+  	<mkdir dir="target/classes"/>
+  	<ant dir="../../" inheritall="false" target="compile" /> 
+  </target>
+	
+  <target name="compile" depends="init">
+    <solr-javac destdir="target/classes"
+                classpathref="common.classpath">
+      <src path="src/main/java" />
+    </solr-javac>
+  </target>
+	
+  <target name="build" depends="compile">
+  	<jar destfile="target/${fullnamever}.jar" basedir="target/classes" />
+  </target>
+	
+  <target name="compileTests" depends="compile">
+  	<solr-javac destdir="target/test-classes"
+  	                classpathref="test.classpath">
+  	  <src path="src/test/java" />
+  	</solr-javac>
+  </target>
+	
+  <target name="test" depends="compileTests">
+  	<mkdir dir="target/test-results"/>
+  	
+  	<junit printsummary="on"
+           haltonfailure="no"
+           errorProperty="tests.failed"
+           failureProperty="tests.failed"
+           dir="src/test/resources/"
+           >
+      <formatter type="brief" usefile="false" if="junit.details"/>
+      <classpath refid="test.classpath"/>
+      <formatter type="xml"/>
+      <batchtest fork="yes" todir="target/test-results" unless="testcase">
+        <fileset dir="src/test/java" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="target/test-results" if="testcase">
+        <fileset dir="src/test/java" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+	
+  <target name="dist" depends="build">
+  	<copy todir="../../build/web">
+  		<fileset dir="src/main/webapp" includes="**" />
+  	</copy>
+  	<mkdir dir="../../build/web/WEB-INF/lib"/>
+  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>
+  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/dist"></copy>
+  </target>
+	
+  <target name="javadoc">
+   	<sequential>
+       <mkdir dir="${javadoc.dir}/contrib-${fullnamever}"/>
+   	   <javadoc
+   		      destdir="${javadoc.dir}/contrib-${fullnamever}"
+   		      author="true"
+   		      version="true"
+   		      failonerror="true"
+   		      use="true"
+   		      encoding="utf8"
+   		      access="${javadoc.access}"
+   		      windowtitle="${Name} ${version} contrib-${fullnamever} API"
+   		      doctitle="${Name} ${version} API (${specversion})"
+   		      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
+   		      >
+   		        <packageset dir="src/main/java"/>
+   		        <link href="${javadoc.link.java}"/>
+   		        <link href="${javadoc.link.junit}"/>
+   		        <link href="${javadoc.link.lucene}"/>
+   		        <classpath refid="common.classpath"/>
+   		</javadoc>
+      <jar basedir="${javadoc.dir}/contrib-${fullname}" destfile="target/contrib-${fullnamever}-javadoc.jar"/>
+   	  <copy file="target/contrib-${fullnamever}-javadoc.jar" todir="${solr-path}/dist"></copy>
+    </sequential>
+  </target>	
+  
+</project>
