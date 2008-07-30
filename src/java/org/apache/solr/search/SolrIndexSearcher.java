@@ -61,6 +61,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private final String name;
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
+  private long warmupTime = 0;
   private final IndexSearcher searcher;
   private final IndexReader reader;
   private final boolean closeReader;
@@ -1510,13 +1511,14 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   public void warm(SolrIndexSearcher old) throws IOException {
     // Make sure this is first!  filters can help queryResults execute!
     boolean logme = log.isLoggable(Level.INFO);
-
+    long warmingStartTime = System.currentTimeMillis();
     // warm the caches in order...
     for (int i=0; i<cacheList.length; i++) {
       if (logme) log.info("autowarming " + this + " from " + old + "\n\t" + old.cacheList[i]);
       this.cacheList[i].warm(this, old.cacheList[i]);
       if (logme) log.info("autowarming result for " + this + "\n\t" + this.cacheList[i]);
     }
+    warmupTime = System.currentTimeMillis() - warmingStartTime;
   }
 
   /**
@@ -1589,6 +1591,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     lst.add("indexVersion", reader.getVersion());
     lst.add("openedAt", new Date(openTime));
     if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
+    lst.add("warmupTime", warmupTime);
     return lst;
   }
 

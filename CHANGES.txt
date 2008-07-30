@@ -327,6 +327,8 @@ New Features
 
 63. SOLR-256: Support exposing Solr statistics through JMX (Sharad Agrawal, shalin)
 
+64. SOLR-666: Expose warmup time in statistics for SolrIndexSearcher and LRUCache (shalin)
+
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

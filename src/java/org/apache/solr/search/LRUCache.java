@@ -52,6 +52,8 @@ public class LRUCache implements SolrCache {
   private long inserts;
   private long evictions;
 
+  private long warmupTime = 0;
+
   private Map map;
   private String name;
   private int autowarmCount;
@@ -156,7 +158,7 @@ public class LRUCache implements SolrCache {
 
   public void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException {
     if (regenerator==null) return;
-
+    long warmingStartTime = System.currentTimeMillis();
     LRUCache other = (LRUCache)old;
 
     // warm entries
@@ -197,6 +199,8 @@ public class LRUCache implements SolrCache {
         }
       }
     }
+
+    warmupTime = System.currentTimeMillis() - warmingStartTime;
   }
 
 
@@ -261,6 +265,8 @@ public class LRUCache implements SolrCache {
       lst.add("evictions", evictions);
       lst.add("size", map.size());
     }
+
+    lst.add("warmupTime", warmupTime);
 
     long clookups = stats.lookups.get();
     long chits = stats.hits.get();
