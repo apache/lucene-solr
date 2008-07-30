@@ -21,14 +21,12 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +35,7 @@ import java.util.Map;
  * @version $Id$
  */
 public class SynonymFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
-  
+
   public void inform(ResourceLoader loader) {
     String synonyms = args.get("synonyms");
 
@@ -53,7 +51,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     if (synonyms != null) {
       List<String> wlist=null;
       try {
-        File synonymFile = new java.io.File(synonyms);
+        File synonymFile = new File(synonyms);
         if (synonymFile.exists()) {
           wlist = loader.getLines(synonyms);
         } else  {
@@ -67,9 +65,6 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
       }
       synMap = new SynonymMap(ignoreCase);
       parseRules(wlist, synMap, "=>", ",", expand,tokFactory);
-      if (wlist.size()<=20) {
-        SolrCore.log.fine("SynonymMap "+synonyms +":"+synMap);
-      }
     }
   }
 
@@ -132,7 +127,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     }
     return synList;
   }
-  
+
   private static List<String> splitByTokenizer(String source, TokenizerFactory tokFactory){
     StringReader reader = new StringReader( source );
     TokenStream ts = loadTokenizer(tokFactory, reader);
@@ -157,14 +152,14 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     tokFactory.init( args );
     return tokFactory;
   }
-  
+
   private static TokenStream loadTokenizer(TokenizerFactory tokFactory, Reader reader){
     return tokFactory.create( reader );
   }
 
   public SynonymMap getSynonymMap() {
     return synMap;
-  }  
+  }
 
   public SynonymFilter create(TokenStream input) {
     return new SynonymFilter(input,synMap);
