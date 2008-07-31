@@ -113,12 +113,12 @@ public class LRUCache implements SolrCache {
     }
   }
 
-  public synchronized Object put(Object key, Object value) {
-    if (state == State.LIVE) {
-      stats.inserts.incrementAndGet();
-    }
-
+  public Object put(Object key, Object value) {
     synchronized (map) {
+      if (state == State.LIVE) {
+        stats.inserts.incrementAndGet();
+      }
+
       // increment local inserts regardless of state???
       // it does make it more consistent with the current size...
       inserts++;
