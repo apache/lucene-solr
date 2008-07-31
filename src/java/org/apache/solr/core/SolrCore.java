@@ -987,7 +987,7 @@ public final class SolrCore {
                   public Object call() throws Exception {
                     try {
                       for (SolrEventListener listener : newSearcherListeners) {
-                        listener.newSearcher(newSearcher,null);
+                        listener.newSearcher(newSearcher, currSearcher);
                       }
                     } catch (Throwable e) {
                       SolrException.logOnce(log,null,e);
