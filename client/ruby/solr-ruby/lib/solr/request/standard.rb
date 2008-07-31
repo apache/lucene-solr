@@ -95,25 +95,263 @@ class Solr::Request::Standard < Solr::Request::Select
     end
     
     # highlighting parameter processing - http://wiki.apache.org/solr/HighlightingParameters
-    #TODO need to add per-field overriding to snippets, fragsize, requiredFieldMatch, formatting, and simple.pre/post
     if @params[:highlighting]
       hash[:hl] = true
       hash["hl.fl"] = @params[:highlighting][:field_list].join(',') if @params[:highlighting][:field_list]
-      hash["hl.snippets"] = @params[:highlighting][:max_snippets]
-      hash["hl.requireFieldMatch"] = @params[:highlighting][:require_field_match]
-      hash["hl.simple.pre"] = @params[:highlighting][:prefix]
-      hash["hl.simple.post"] = @params[:highlighting][:suffix]
-      hash["hl.fragsize"] = @params[:highlighting][:fragment_size]
-      if @params[:highlighting][:alternate_fields]
-        @params[:highlighting][:alternate_fields].each do |k,v|
-          hash["f.#{k}.hl.alternateField"] = v
+
+      snippets = @params[:highlighting][:max_snippets]
+      if snippets
+        if snippets.kind_of? Hash
+          if snippets[:default]
+            hash["hl.snippets"] = snippets[:default]
+          end
+          if snippets[:fields]
+            snippets[:fields].each do |k,v|
+              hash["f.#{k}.hl.snippets"] = v
+            end
+          end
+        else
+          hash["hl.snippets"] = snippets
         end
       end
-      if @params[:highlighting][:max_alternate_field_length]
-        @params[:highlighting][:max_alternate_field_length].each do |k,v|
-          hash["f.#{k}.hl.maxAlternateFieldLength"] = v
+
+      fragsize = @params[:highlighting][:fragment_size]
+      if fragsize
+        if fragsize.kind_of? Hash
+          if fragsize[:default]
+            hash["hl.fragsize"] = fragsize[:default]
+          end
+          if fragsize[:fields]
+            fragsize[:fields].each do |k,v|
+              hash["f.#{k}.hl.fragsize"] = v
+            end
+          end
+        else
+          hash["hl.fragsize"] = fragsize
         end
       end
+
+      rfm = @params[:highlighting][:require_field_match]
+      if nil != rfm
+        if rfm.kind_of? Hash
+          if nil != rfm[:default]
+            hash["hl.requireFieldMatch"] = rfm[:default]
+          end
+          if rfm[:fields]
+            rfm[:fields].each do |k,v|
+              hash["f.#{k}.hl.requireFieldMatch"] = v
+            end
+          end
+        else
+          hash["hl.requireFieldMatch"] = rfm
+        end
+      end
+
+      mac = @params[:highlighting][:max_analyzed_chars]
+      if mac
+        if mac.kind_of? Hash
+          if mac[:default]
+            hash["hl.maxAnalyzedChars"] = mac[:default]
+          end
+          if mac[:fields]
+            mac[:fields].each do |k,v|
+              hash["f.#{k}.hl.maxAnalyzedChars"] = v
+            end
+          end
+        else
+          hash["hl.maxAnalyzedChars"] = mac
+        end
+      end
+
+      prefix = @params[:highlighting][:prefix]
+      if prefix
+        if prefix.kind_of? Hash
+          if prefix[:default]
+            hash["hl.simple.pre"] = prefix[:default]
+          end
+          if prefix[:fields]
+            prefix[:fields].each do |k,v|
+              hash["f.#{k}.hl.simple.pre"] = v
+            end
+          end
+        else
+          hash["hl.simple.pre"] = prefix
+        end
+      end
+
+      suffix = @params[:highlighting][:suffix]
+      if suffix
+        if suffix.kind_of? Hash
+          if suffix[:default]
+            hash["hl.simple.post"] = suffix[:default]
+          end
+          if suffix[:fields]
+            suffix[:fields].each do |k,v|
+              hash["f.#{k}.hl.simple.post"] = v
+            end
+          end
+        else
+          hash["hl.simple.post"] = suffix
+        end
+      end
+
+      formatter = @params[:highlighting][:formatter]
+      if formatter
+        if formatter.kind_of? Hash
+          if formatter[:default]
+            hash["hl.formatter"] = formatter[:default]
+          end
+          if formatter[:fields]
+            formatter[:fields].each do |k,v|
+              hash["f.#{k}.hl.formatter"] = v
+            end
+          end
+        else
+          hash["hl.formatter"] = formatter
+        end
+      end
+
+      fragmenter = @params[:highlighting][:fragmenter]
+      if fragmenter
+        if fragmenter.kind_of? Hash
+          if fragmenter[:default]
+            hash["hl.fragmenter"] = fragmenter[:default]
+          end
+          if fragmenter[:fields]
+            fragmenter[:fields].each do |k,v|
+              hash["f.#{k}.hl.fragmenter"] = v
+            end
+          end
+        else
+          hash["hl.fragmenter"] = fragmenter
+        end
+      end
+
+      merge_contiguous = @params[:highlighting][:merge_contiguous]
+      if nil != merge_contiguous
+        if merge_contiguous.kind_of? Hash
+          if nil != merge_contiguous[:default]
+            hash["hl.mergeContiguous"] = merge_contiguous[:default]
+          end
+          if merge_contiguous[:fields]
+            merge_contiguous[:fields].each do |k,v|
+              hash["f.#{k}.hl.mergeContiguous"] = v
+            end
+          end
+        else
+          hash["hl.mergeContiguous"] = merge_contiguous
+        end
+      end
+
+      increment = @params[:highlighting][:increment]
+      if increment
+        if increment.kind_of? Hash
+          if increment[:default]
+            hash["hl.increment"] = increment[:default]
+          end
+          if increment[:fields]
+            increment[:fields].each do |k,v|
+              hash["f.#{k}.hl.increment"] = v
+            end
+          end
+        else
+          hash["hl.increment"] = increment
+        end
+      end
+
+      # support "old style"
+      alternate_fields = @params[:highlighting][:alternate_fields]
+      if alternate_fields
+        alternate_fields.each do |f,v|
+          hash["f.#{f}.hl.alternateField"] = v
+        end
+      end
+
+      alternate_field = @params[:highlighting][:alternate_field]
+      if alternate_field
+        if alternate_field.kind_of? Hash
+          if alternate_field[:default]
+            hash["hl.alternateField"] = alternate_field[:default]
+          end
+          if alternate_field[:fields]
+            alternate_field[:fields].each do |k,v|
+              hash["f.#{k}.hl.alternateField"] = v
+            end
+          end
+        else
+          hash["hl.alternateField"] = alternate_field
+        end
+      end
+
+      mafl = @params[:highlighting][:max_alternate_field_length]
+      if mafl
+        if mafl.kind_of? Hash
+          if mafl[:default]
+            hash["hl.maxAlternateFieldLength"] = mafl[:default]
+          end
+          if mafl[:fields]
+            mafl[:fields].each do |k,v|
+              hash["f.#{k}.hl.maxAlternateFieldLength"] = v
+            end
+          else
+            # support "old style"
+            mafl.each do |k,v|
+              hash["f.#{k}.hl.maxAlternateFieldLength"] = v
+            end
+          end
+        else
+          hash["hl.maxAlternateFieldLength"] = mafl
+        end
+      end
+
+      hash["hl.usePhraseHighlighter"] = @params[:highlighting][:use_phrase_highlighter]
+
+      regex = @params[:highlighting][:regex]
+      if regex
+        if regex[:slop]
+          if regex[:slop].kind_of? Hash
+            if regex[:slop][:default]
+              hash["hl.regex.slop"] = regex[:slop][:default]
+            end
+            if regex[:slop][:fields]
+              regex[:slop][:fields].each do |k,v|
+                hash["f.#{k}.hl.regex.slop"] = v
+              end
+            end
+          else
+            hash["hl.regex.slop"] = regex[:slop]
+          end
+        end
+        if regex[:pattern]
+          if regex[:pattern].kind_of? Hash
+            if regex[:pattern][:default]
+              hash["hl.regex.pattern"] = regex[:pattern][:default]
+            end
+            if regex[:pattern][:fields]
+              regex[:pattern][:fields].each do |k,v|
+                hash["f.#{k}.hl.regex.pattern"] = v
+              end
+            end
+          else
+            hash["hl.regex.pattern"] = regex[:pattern]
+          end
+        end
+        if regex[:max_analyzed_chars]
+          if regex[:max_analyzed_chars].kind_of? Hash
+            if regex[:max_analyzed_chars][:default]
+              hash["hl.regex.maxAnalyzedChars"] = regex[:max_analyzed_chars][:default]
+            end
+            if regex[:max_analyzed_chars][:fields]
+              regex[:max_analyzed_chars][:fields].each do |k,v|
+                hash["f.#{k}.hl.regex.maxAnalyzedChars"] = v
+              end
+            end
+          else
+            hash["hl.regex.maxAnalyzedChars"] = regex[:max_analyzed_chars]
+          end
+        end
+      end
+
     end
     
     if @params[:mlt]

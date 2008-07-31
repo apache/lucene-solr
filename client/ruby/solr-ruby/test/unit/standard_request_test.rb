@@ -103,13 +103,187 @@ class StandardRequestTest < Test::Unit::TestCase
     request = Solr::Request::Standard.new(:query => 'query',
       :highlighting => {
         :field_list => ['title', 'author'],
-        :alternate_fields => {'title'=>'title', 'author'=>'author'},
-        :max_alternate_field_length => {'title'=>30, 'author'=>20},
+        :merge_contiguous => true,
+        :increment => 100,
         :max_snippets => 3,
         :require_field_match => true,
         :prefix => "<blink>",
         :suffix => "</blink>",
-        :fragment_size => 300
+        :fragment_size => 300,
+        :max_analyzed_chars => 102400,
+        :formatter => 'myFormatter',
+        :fragmenter => 'myFragmenter',
+        :use_phrase_highlighter => true
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal true, hash["hl.mergeContiguous"]
+    assert_equal 100, hash["hl.increment"]
+    assert_equal 3, hash["hl.snippets"]
+    assert_equal true, hash["hl.requireFieldMatch"]
+    assert_equal "<blink>", hash["hl.simple.pre"]
+    assert_equal "</blink>", hash["hl.simple.post"]
+    assert_equal 300, hash["hl.fragsize"]
+    assert_equal 102400, hash["hl.maxAnalyzedChars"]
+    assert_equal "myFormatter", hash["hl.formatter"]
+    assert_equal "myFragmenter", hash["hl.fragmenter"]
+    assert_equal true, hash["hl.usePhraseHighlighter"]
+  end
+  
+  def test_highlighting2
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :merge_contiguous => {
+          :default=>false, :fields=>{'author'=>true}
+        },
+        :increment => {
+          :default=>100, :fields=>{'author'=>200}
+        },
+        :max_snippets => {
+          :default=>2,:fields=>{'author'=>3}
+        },
+        :prefix => {
+          :default=>"<em>", :fields=>{'author'=>"<blink>"},
+        },
+        :suffix => {
+          :default=>"</em>", :fields=>{'author'=>"</blink>"},
+        },
+        :fragment_size => {
+          :default=>300,:fields=>{'author'=>200}
+        },
+        :max_analyzed_chars => {
+          :default=>102400,:fields=>{'author'=>51200}
+        },
+        :require_field_match => {
+          :default=>false, :fields=>{'author'=>true}
+        },
+        :formatter => {
+          :default=>'defaultFormatter', :fields=>{'title'=>'titleFormatter'}
+        },
+        :fragmenter => {
+          :default=>'defaultFragmenter',:fields=>{'title'=>'titleFragmenter'}
+        },
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal false, hash["hl.mergeContiguous"]
+    assert_equal true, hash["f.author.hl.mergeContiguous"]
+    assert_equal 100, hash["hl.increment"]
+    assert_equal 200, hash["f.author.hl.increment"]
+    assert_equal 2, hash["hl.snippets"]
+    assert_equal 3, hash["f.author.hl.snippets"]
+    assert_equal "<em>", hash["hl.simple.pre"]
+    assert_equal "<blink>", hash["f.author.hl.simple.pre"]
+    assert_equal "</em>", hash["hl.simple.post"]
+    assert_equal "</blink>", hash["f.author.hl.simple.post"]
+    assert_equal 300, hash["hl.fragsize"]
+    assert_equal 200, hash["f.author.hl.fragsize"]
+    assert_equal 102400, hash["hl.maxAnalyzedChars"]
+    assert_equal 51200, hash["f.author.hl.maxAnalyzedChars"]
+    assert_equal false, hash["hl.requireFieldMatch"]
+    assert_equal true, hash["f.author.hl.requireFieldMatch"]
+    assert_equal 'defaultFormatter', hash["hl.formatter"]
+    assert_equal 'titleFormatter', hash["f.title.hl.formatter"]
+    assert_equal 'defaultFragmenter', hash["hl.fragmenter"]
+    assert_equal 'titleFragmenter', hash["f.title.hl.fragmenter"]
+  end
+  
+  def test_highlighting_regex
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :regex => {
+          :slop => 0.8,
+          :pattern => '\w',
+          :max_analyzed_chars => 10000
+        }
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal 0.8, hash["hl.regex.slop"]
+    assert_equal '\w', hash["hl.regex.pattern"]
+    assert_equal 10000, hash["hl.regex.maxAnalyzedChars"]
+  end
+  
+  def test_highlighting_regex2
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :regex => {
+          :slop => { :default=>0.5, :fields=>{'author'=>0.8} },
+          :pattern => { :default=>'\w', :fields=>{'author'=>'\n'} },
+          :max_analyzed_chars => { :default=>10000, :fields=>{'author'=>20000} }
+        }
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal 0.5, hash["hl.regex.slop"]
+    assert_equal 0.8, hash["f.author.hl.regex.slop"]
+    assert_equal '\w', hash["hl.regex.pattern"]
+    assert_equal '\n', hash["f.author.hl.regex.pattern"]
+    assert_equal 10000, hash["hl.regex.maxAnalyzedChars"]
+    assert_equal 20000, hash["f.author.hl.regex.maxAnalyzedChars"]
+  end
+  
+  def test_highlighting_alternate_field
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :alternate_field => 'title',
+        :max_alternate_field_length => 30
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal "title", hash["hl.alternateField"]
+    assert_equal 30, hash["hl.maxAlternateFieldLength"]
+  end
+  
+  def test_highlighting_alternate_field2
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :alternate_field => {
+          :default=>'default', :fields=>{'title'=>'title', 'author'=>'author'}
+        },
+        :max_alternate_field_length => {
+          :default=>10, :fields=>{'title'=>30, 'author'=>20}
+        }
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal "default", hash["hl.alternateField"]
+    assert_equal "title", hash["f.title.hl.alternateField"]
+    assert_equal "author", hash["f.author.hl.alternateField"]
+    assert_equal 10, hash["hl.maxAlternateFieldLength"]
+    assert_equal 30, hash["f.title.hl.maxAlternateFieldLength"]
+    assert_equal 20, hash["f.author.hl.maxAlternateFieldLength"]
+  end
+  
+  def test_highlighting_alternate_field_old_style
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :alternate_fields => {'title'=>'title', 'author'=>'author'},
+        :max_alternate_field_length => {'title'=>30, 'author'=>20}
       }
     )
     
@@ -120,10 +294,6 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal "author", hash["f.author.hl.alternateField"]
     assert_equal 30, hash["f.title.hl.maxAlternateFieldLength"]
     assert_equal 20, hash["f.author.hl.maxAlternateFieldLength"]
-    assert_equal true, hash["hl.requireFieldMatch"]
-    assert_equal "<blink>", hash["hl.simple.pre"]
-    assert_equal "</blink>", hash["hl.simple.post"]
-    assert_equal 300, hash["hl.fragsize"]
   end
   
   def test_mlt
