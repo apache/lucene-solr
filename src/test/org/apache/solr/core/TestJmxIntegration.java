@@ -60,7 +60,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxRegistration() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    System.out.println("Servers: " + servers);
+    System.out.println("Servers in testJmxRegistration: " + servers);
     assertNotNull("MBeanServers were null", servers);
     assertFalse("No MBeanServer was found", servers.isEmpty());
 
@@ -82,12 +82,24 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxUpdate() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    MBeanServer mbeanServer = servers.get(0);
+    System.out.println("Servers in testJmxUpdate: " + servers);
+    boolean found = false;
+    Set<ObjectInstance> objects = null;
+    MBeanServer mbeanServer = null;
 
-    Set<ObjectInstance> objects = mbeanServer.queryMBeans(null, Query.match(
-            Query.attr("numDocs"), Query.value("[0-9]")));
-    assertFalse("No MBean for SolrIndexSearcher found in MBeanServer", objects
-            .isEmpty());
+    for (MBeanServer server : servers) {
+      objects = server.queryMBeans(null, Query.match(
+              Query.attr("numDocs"), Query.value("*")));
+      if (!objects.isEmpty()) {
+        found = true;
+        mbeanServer = server;
+        break;
+      }
+    }
+
+    if (!found) {
+      assertFalse("No MBean for SolrIndexSearcher found in MBeanServer", objects.isEmpty());
+    }
 
     int oldNumDocs = Integer.valueOf((String) mbeanServer.getAttribute(objects
             .iterator().next().getObjectName(), "numDocs"));
@@ -96,7 +108,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     assertU(commit());
 
     objects = mbeanServer.queryMBeans(null, Query.match(Query.attr("numDocs"),
-            Query.value("[0-9]")));
+            Query.value("*")));
     assertFalse("No MBean for SolrIndexSearcher found in MBeanServer", objects
             .isEmpty());
 
@@ -106,3 +118,4 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
             numDocs > oldNumDocs);
   }
 }
+
