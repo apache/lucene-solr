@@ -506,7 +506,9 @@ Bug Fixes
     
 43. SOLR-648: SpellCheckComponent throws NullPointerException on using spellcheck.q request
     parameter after restarting Solr, if reload is called but build is not called.
-    (Jonathan Lee, shalin)    
+    (Jonathan Lee, shalin)
+
+44. SOLR-598: DebugComponent now always occurs last in the SearchHandler list unless the components are explicitly declared. (gsingers)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

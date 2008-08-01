@@ -70,7 +70,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   }
 
   /**
-   * Initialize the components based on name
+   * Initialize the components based on name.  Note, if using {@link #INIT_FIRST_COMPONENTS} or {@link #INIT_LAST_COMPONENTS},
+   * then the {@link DebugComponent} will always occur last.  If this is not desired, then one must explicitly declare all components using
+   * the {@link #INIT_COMPONENTS} syntax.
    */
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core)
@@ -80,6 +82,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     List<String> last  = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
 
     List<String> list = null;
+    boolean makeDebugLast = true;
     if( declaredComponents == null ) {
       // Use the default component list
       list = getDefaultComponents();
@@ -100,14 +103,24 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
             "First/Last components only valid if you do not declare 'components'");
       }
+      makeDebugLast = false;
     }
 
     // Build the component list
     components = new ArrayList<SearchComponent>( list.size() );
+    DebugComponent dbgCmp = null;
     for(String c : list){
       SearchComponent comp = core.getSearchComponent( c );
-      components.add(comp);
-      log.info("Adding  component:"+comp);
+      if (comp instanceof DebugComponent && makeDebugLast == true){
+        dbgCmp = (DebugComponent) comp;
+      } else {
+        components.add(comp);
+        log.info("Adding  component:"+comp);
+      }
+    }
+    if (makeDebugLast == true && dbgCmp != null){
+      components.add(dbgCmp);
+      log.info("Adding  debug component:" + dbgCmp);
     }
   }
 
