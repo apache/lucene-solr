@@ -159,16 +159,16 @@
   </target>
 
   <target name="contrib-test" depends="contrib-build">
-    <contrib-crawl target="test" failonerror="false"/>
+    <contrib-crawl target="test" failonerror="true"/>
   </target>
 	
   <target name="contrib-javadoc" description="Generate javadoc for contrib classes" depends="contrib-build">
     <contrib-crawl target="javadoc"
-                   failonerror="false"/>
+                   failonerror="true"/>
   </target>
 	
   <target name="dist-contrib" description="Make the contribs ready for distribution">
-  	<contrib-crawl target="dist" failonerror="false" />
+  	<contrib-crawl target="dist" failonerror="true" />
   </target>
 	
   <!-- Creates a Manifest file for Jars and WARs -->
