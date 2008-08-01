@@ -567,6 +567,11 @@ public final class SolrCore {
   public void close() {
     log.info(logid+" CLOSING SolrCore!");
     try {
+      infoRegistry.clear();
+    } catch (Exception e) {
+      SolrException.log(log, e);
+    }
+    try {
       closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
@@ -585,11 +590,6 @@ public final class SolrCore {
        for( CloseHook hook : closeHooks ) {
          hook.close( this );
        }
-    }
-    try {
-      infoRegistry.clear();
-    } catch (Exception e) {
-      SolrException.log(log, e);
     }
   }
 
