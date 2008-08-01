@@ -26,6 +26,7 @@ import javax.management.*;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Set;
+import java.util.Hashtable;
 
 /**
  * Test for JMX Integration
@@ -83,39 +84,27 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   public void testJmxUpdate() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
     System.out.println("Servers in testJmxUpdate: " + servers);
-    boolean found = false;
-    Set<ObjectInstance> objects = null;
-    MBeanServer mbeanServer = null;
 
-    for (MBeanServer server : servers) {
-      objects = server.queryMBeans(null, Query.match(
-              Query.attr("numDocs"), Query.value("*")));
-      if (!objects.isEmpty()) {
-        found = true;
-        mbeanServer = server;
-        break;
-      }
-    }
+    ObjectName searcher = getObjectName("searcher", h.getCore().getInfoRegistry().get("searcher")); 
+    MBeanServer mbeanServer = servers.get(0);
+    System.out.println("Mbeans in server: " + mbeanServer.queryNames(null, null));
 
-    if (!found) {
-      assertFalse("No MBean for SolrIndexSearcher found in MBeanServer", objects.isEmpty());
-    }
+    assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 
-    int oldNumDocs = Integer.valueOf((String) mbeanServer.getAttribute(objects
-            .iterator().next().getObjectName(), "numDocs"));
-
+    int oldNumDocs = Integer.valueOf((String) mbeanServer.getAttribute(searcher, "numDocs"));
     assertU(adoc("id", "1"));
-    assertU(commit());
-
-    objects = mbeanServer.queryMBeans(null, Query.match(Query.attr("numDocs"),
-            Query.value("*")));
-    assertFalse("No MBean for SolrIndexSearcher found in MBeanServer", objects
-            .isEmpty());
-
-    int numDocs = Integer.valueOf((String) mbeanServer.getAttribute(objects
-            .iterator().next().getObjectName(), "numDocs"));
+    assertU("commit", commit());
+    int numDocs = Integer.valueOf((String) mbeanServer.getAttribute(searcher, "numDocs"));
     assertTrue("New numDocs is same as old numDocs as reported by JMX",
             numDocs > oldNumDocs);
+  }
+
+  private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
+          throws MalformedObjectNameException {
+    Hashtable<String, String> map = new Hashtable<String, String>();
+    map.put("type", key);
+    map.put("id", infoBean.getName());
+    return ObjectName.getInstance("solr", map);
   }
 }
 
