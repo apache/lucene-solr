@@ -47,7 +47,8 @@
 	
   <target name="init">
   	<mkdir dir="target/classes"/>
-  	<ant dir="../../" inheritall="false" target="compile" /> 
+    <mkdir dir="${javadoc.dir}" />
+    <ant dir="../../" inheritall="false" target="compile" />
   </target>
 	
   <target name="compile" depends="init">
@@ -121,7 +122,7 @@
    		        <link href="${javadoc.link.lucene}"/>
    		        <classpath refid="common.classpath"/>
    		</javadoc>
-      <jar basedir="${javadoc.dir}/contrib-${fullname}" destfile="target/contrib-${fullnamever}-javadoc.jar"/>
+      <jar basedir="${javadoc.dir}/contrib-${fullnamever}" destfile="target/contrib-${fullnamever}-javadoc.jar"/>
    	  <copy file="target/contrib-${fullnamever}-javadoc.jar" todir="${solr-path}/dist"></copy>
     </sequential>
   </target>	
