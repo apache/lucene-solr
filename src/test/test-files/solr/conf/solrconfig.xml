@@ -326,6 +326,7 @@
       <str name="name">default</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellchecker1</str>
+      <str name="buildOnCommit">true</str>
     </lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">

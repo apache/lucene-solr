@@ -336,6 +336,10 @@ New Features
               data sources, processors and transformers for importing data. Supports full data imports as well as
               incremental (delta) indexing. See http://wiki.apache.org/solr/DataImportHandler for more details.
               (Noble Paul, shalin)
+
+67. SOLR-622: SpellCheckComponent supports auto-loading indices on startup and optionally, (re)builds indices
+              on newSearcher event, if configured in solrconfig.xml
+              (shalin)              
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -17,10 +17,24 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -30,28 +44,20 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
+import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.apache.solr.spelling.SpellingResult;
-import org.apache.solr.spelling.QueryConverter;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.NodeList;
-
-import javax.xml.xpath.XPathConstants;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 /**
  * A SearchComponent implementation which provides support for spell checking
@@ -263,6 +269,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
                 throw new RuntimeException("More than one dictionary is missing name.");
               }
             }
+            // Register event listeners for this SpellChecker
+            core.registerFirstSearcherListener(new SpellCheckerListener(core, checker, true));
+            if (Boolean.parseBoolean((String)spellchecker.get("buildOnCommit")))   {
+              LOG.info("Registering newSearcher listener for spellchecker: " + checker.getDictionaryName());
+              core.registerNewSearcherListener(new SpellCheckerListener(core, checker, false));
+            }
           } else {
             throw new RuntimeException("Can't load spell checker: " + className);
           }
@@ -291,6 +303,47 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         //TODO: Is there a better way?
         throw new RuntimeException("One and only one queryConverter may be defined");
       }
+    }
+  }
+
+  private static class SpellCheckerListener implements SolrEventListener {
+    private final SolrCore core;
+    private final SolrSpellChecker checker;
+    private final boolean firstSearcher;
+
+    public SpellCheckerListener(SolrCore core, SolrSpellChecker checker, boolean firstSearcher) {
+      this.core = core;
+      this.checker = checker;
+      this.firstSearcher = firstSearcher;
+    }
+
+    public void init(NamedList args) {
+    }
+
+    public void newSearcher(SolrIndexSearcher newSearcher,
+                            SolrIndexSearcher currentSearcher) {
+      if (firstSearcher) {
+        try {
+          LOG.info("Loading spell index for spellchecker: "
+                  + checker.getDictionaryName());
+          checker.reload();
+        } catch (IOException e) {
+          LOG.log(Level.SEVERE, "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
+        }
+      } else {
+        // newSearcher event
+        try {
+          LOG.info("Building spell index for spell checker: " + checker.getDictionaryName());
+          checker.build(core, newSearcher);
+        } catch (Exception e) {
+          LOG.log(Level.SEVERE,
+                  "Exception in building spell check index for spellchecker: " + checker.getDictionaryName(), e);
+        }
+      }
+
+    }
+
+    public void postCommit() {
     }
   }
 

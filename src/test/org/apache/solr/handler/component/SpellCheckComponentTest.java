@@ -67,7 +67,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "8", "lowerfilt", "blee"));
     assertU("commit", commit());
   }
-
+  
   public void testExtendedResultsCount() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
@@ -348,7 +348,19 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
       fail("NullPointerException due to reload not initializing analyzers");
     }
   }
-
+  
+    @SuppressWarnings("unchecked")
+  public void testRebuildOnCommit() throws Exception {
+    SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "spellCheckCompRH", "spellcheck", "true");
+    String response = h.query(req);
+    assertFalse("No suggestions should be returned", response.contains("lucenejava"));
+    
+    assertU(adoc("id", "11231", "lowerfilt", "lucenejava"));
+    assertU("commit", commit());
+    
+    assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
+  }
+  
   // TODO: add more tests for various spelling options
 
 }
