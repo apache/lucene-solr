@@ -196,7 +196,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       Token inputToken = entry.getKey();
       Map<String, Integer> theSuggestions = entry.getValue();
       if (theSuggestions != null && theSuggestions.size() > 0) {
-        NamedList suggestionList = new NamedList();
+        SimpleOrderedMap suggestionList = new SimpleOrderedMap();
         suggestionList.add("numFound", theSuggestions.size());
         suggestionList.add("startOffset", inputToken.startOffset());
         suggestionList.add("endOffset", inputToken.endOffset());
