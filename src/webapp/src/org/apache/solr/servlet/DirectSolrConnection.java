@@ -54,7 +54,10 @@ public class DirectSolrConnection
   
   /**
    * Initialize using the static singleton SolrCore.getSolrCore().
+   * 
+   * @deprecated use {@link #DirectSolrConnection(SolrCore)}
    */
+  @Deprecated
   public DirectSolrConnection()
   {
     this( SolrCore.getSolrCore() );
