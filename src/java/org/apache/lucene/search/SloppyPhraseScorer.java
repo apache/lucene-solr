@@ -20,13 +20,12 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.TermPositions;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
     private PhrasePositions repeats[];
+    private PhrasePositions tmpPos[]; // for flipping repeating pps.
     private boolean checkedRepeats;
 
     SloppyPhraseScorer(Weight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
@@ -66,12 +65,16 @@ final class SloppyPhraseScorer extends PhraseScorer {
             boolean tpsDiffer = true;
             for (int pos = start; pos <= next || !tpsDiffer; pos = pp.position) {
                 if (pos<=next && tpsDiffer)
-                    start = pos;				  // advance pp to min window
+                    start = pos;                  // advance pp to min window
                 if (!pp.nextPosition()) {
                     done = true;          // ran out of a term -- done
                     break;
                 }
-                tpsDiffer = !pp.repeats || termPositionsDiffer(pp);
+                PhrasePositions pp2 = null;
+                tpsDiffer = !pp.repeats || (pp2 = termPositionsDiffer(pp))==null;
+                if (pp2!=null && pp2!=pp) {
+                  pp = flip(pp,pp2); // flip pp to pp2
+                }
             }
 
             int matchLength = end - start;
@@ -80,20 +83,38 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
             if (pp.position > end)
                 end = pp.position;
-            pq.put(pp);				  // restore pq
+            pq.put(pp);               // restore pq
         }
 
         return freq;
     }
     
-    
+    // flip pp2 and pp in the queue: pop until finding pp2, insert back all but pp2, insert pp back.
+    // assumes: pp!=pp2, pp2 in pq, pp not in pq.
+    // called only when there are repeating pps.
+    private PhrasePositions flip(PhrasePositions pp, PhrasePositions pp2) {
+      int n=0;
+      PhrasePositions pp3;
+      //pop until finding pp2
+      while ((pp3=(PhrasePositions)pq.pop()) != pp2) {
+        tmpPos[n++] = pp3;
+      }
+      //insert back all but pp2
+      for (n--; n>=0; n--) {
+        pq.insert(tmpPos[n]);
+      }
+      //insert pp back
+      pq.put(pp);
+      return pp2;
+    }
+
     /**
      * Init PhrasePositions in place.
-     * There is a one time initializatin for this scorer:
+     * There is a one time initialization for this scorer:
      * <br>- Put in repeats[] each pp that has another pp with same position in the doc.
      * <br>- Also mark each such pp by pp.repeats = true.
      * <br>Later can consult with repeats[] in termPositionsDiffer(pp), making that check efficient.
-     * In particular, this allows to score queries with no repetiotions with no overhead due to this computation.
+     * In particular, this allows to score queries with no repetitions with no overhead due to this computation.
      * <br>- Example 1 - query with no repetitions: "ho my"~2
      * <br>- Example 2 - query with repetitions: "ho my my"~2
      * <br>- Example 3 - query with repetitions: "my ho my"~2
@@ -146,17 +167,12 @@ final class SloppyPhraseScorer extends PhraseScorer {
         
         // with repeats must advance some repeating pp's so they all start with differing tp's       
         if (repeats!=null) {
-            // must propagate higher offsets first (otherwise might miss matches).
-            Arrays.sort(repeats,  new Comparator() {
-                public int compare(Object x, Object y) {
-                    return ((PhrasePositions) y).offset - ((PhrasePositions) x).offset;
-                }});
-            // now advance them
             for (int i = 0; i < repeats.length; i++) {
                 PhrasePositions pp = repeats[i];
-                while (!termPositionsDiffer(pp)) {
-                  if (!pp.nextPosition())
-                      return -1;    // ran out of a term -- done  
+                PhrasePositions pp2;
+                while ((pp2 = termPositionsDiffer(pp)) != null) {
+                  if (!pp2.nextPosition())  // out of pps that do not differ, advance the pp with higher offset 
+                      return -1;           // ran out of a term -- done  
                 } 
             }
         }
@@ -169,13 +185,20 @@ final class SloppyPhraseScorer extends PhraseScorer {
             pq.put(pp);         // build pq from list
         }
 
+        if (repeats!=null) {
+          tmpPos = new PhrasePositions[pq.size()];
+        }
         return end;
     }
 
-    // disalow two pp's to have the same tp position, so that same word twice 
-    // in query would go elswhere in the matched doc
-    private boolean termPositionsDiffer(PhrasePositions pp) {
-        // efficiency note: a more efficient implemention could keep a map between repeating 
+    /**
+     * We disallow two pp's to have the same TermPosition, thereby verifying multiple occurrences 
+     * in the query of the same word would go elsewhere in the matched doc.
+     * @return null if differ (i.e. valid) otherwise return the higher offset PhrasePositions
+     * out of the first two PPs found to not differ.
+     */
+    private PhrasePositions termPositionsDiffer(PhrasePositions pp) {
+        // efficiency note: a more efficient implementation could keep a map between repeating 
         // pp's, so that if pp1a, pp1b, pp1c are repeats term1, and pp2a, pp2b are repeats 
         // of term2, pp2a would only be checked against pp2b but not against pp1a, pp1b, pp1c. 
         // However this would complicate code, for a rather rare case, so choice is to compromise here.
@@ -186,8 +209,8 @@ final class SloppyPhraseScorer extends PhraseScorer {
                 continue;
             int tpPos2 = pp2.position + pp2.offset;
             if (tpPos2 == tpPos)
-                return false;
+                return pp.offset > pp2.offset ? pp : pp2; // do not differ: return the one with higher offset.
         }
-        return true;
+        return null; 
     }
 }

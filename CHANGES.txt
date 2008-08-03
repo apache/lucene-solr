@@ -136,6 +136,9 @@ Bug fixes
     depending only upon the non-payload score part, regardless of the effect of 
     the payload on the score. Prior to this, score of a query containing a BTQ 
     differed from its explanation. (Doron Cohen)
+    
+14. LUCENE-1310: Fixed SloppyPhraseScorer to work also for terms repeating more 
+    than twice in the query. (Doron Cohen)
 
 New features
 
