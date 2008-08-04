@@ -46,7 +46,8 @@ public class EvaluatorBag {
    * of single-quotes by two single-quotes and similarily for double-quotes
    * </p>
    *
-   * @return
+   * @return an <code>Evaluator</code> instance capable of SQL-escaping
+   *         expressions.
    */
   public static Evaluator getSqlEscapingEvaluator() {
     return new Evaluator() {

@@ -240,7 +240,7 @@ public abstract class SolrWriter {
    * preserved.
    * </p>
    *
-   * @param date
+   * @param date the Date instance to be persisted
    */
   public void persistIndexStartTime(Date date) {
     this.persistStartTime(date);
@@ -254,7 +254,7 @@ public abstract class SolrWriter {
    * </p>
    *
    * @param d . The Document warapper object
-   * @return
+   * @return a boolean value denoting success (true) or failure (false)
    */
   public abstract boolean upload(SolrDoc d);
 

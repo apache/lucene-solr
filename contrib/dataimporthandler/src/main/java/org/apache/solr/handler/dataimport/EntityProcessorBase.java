@@ -333,8 +333,8 @@ public class EntityProcessorBase extends EntityProcessor {
    * If the where clause is present the cache is sql Vs Map of key Vs List of
    * Rows. Only used by cache implementations.
    *
-   * @param query
-   * @return
+   * @param query the query string for which cached data is to be returned
+   * @return the cached row corresponding to the given query after all variables have been resolved 
    */
   protected Map<String, Object> getIdCacheData(String query) {
     Map<Object, List<Map<String, Object>>> rowIdVsRows = cacheWithWhereClause
@@ -373,13 +373,14 @@ public class EntityProcessorBase extends EntityProcessor {
   }
 
   /**
+   * <p>
    * Get all the rows from the the datasource for the given query. Only used by
    * cache implementations.
-   * <p/>
+   * </p>
    * This <b>must</b> be implemented by sub-classes which intend to provide a
    * cached implementation
    *
-   * @return
+   * @return the list of all rows fetched from the datasource.
    */
   protected List<Map<String, Object>> getAllNonCachedRows() {
     return Collections.EMPTY_LIST;
@@ -389,7 +390,8 @@ public class EntityProcessorBase extends EntityProcessor {
    * If where clause is not present the cache is a Map of query vs List of Rows.
    * Only used by cache implementations.
    *
-   * @return
+   * @param query string for which cached row is to be returned
+   * @return the cached row corresponding to the given query
    */
   protected Map<String, Object> getSimplCacheData(String query) {
     List<Map<String, Object>> rows = simpleCache.get(query);

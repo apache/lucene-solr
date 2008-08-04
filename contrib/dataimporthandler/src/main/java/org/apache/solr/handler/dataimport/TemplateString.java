@@ -62,9 +62,9 @@ public class TemplateString {
    * Returns a string with all variables replaced by the known values. An
    * unknown variable is replaced by an empty string.
    *
-   * @param string
-   * @param resolver
-   * @return
+   * @param string the String to be resolved
+   * @param resolver the VariableResolver instance to be used for evaluation
+   * @return the string with all variables replaced
    */
   public String replaceTokens(String string, VariableResolver resolver) {
     TemplateString ts = cache.get(string);
@@ -104,7 +104,7 @@ public class TemplateString {
   /**
    * Returns the variables in the given string.
    *
-   * @param the templatized string
+   * @param s the templatized string
    * @return the list of variables (strings) in the given templatized string.
    */
   public static List<String> getVariables(String s) {

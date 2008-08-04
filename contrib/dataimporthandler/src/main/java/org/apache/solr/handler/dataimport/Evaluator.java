@@ -41,9 +41,10 @@ public abstract class Evaluator {
   /**
    * Return a String after processing an expression and a VariableResolver
    *
-   * @param resolver
-   * @param expression
-   * @return
+   * @see org.apache.solr.handler.dataimport.VariableResolver
+   * @param resolver the VariableResolver instance to be used for evaluation
+   * @param expression string to be evaluated
+   * @return the value of the given expression evaluated using the resolver
    */
   public abstract String evaluate(VariableResolver resolver, String expression);
 }

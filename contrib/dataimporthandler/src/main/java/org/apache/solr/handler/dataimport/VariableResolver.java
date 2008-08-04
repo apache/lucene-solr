@@ -38,8 +38,8 @@ public abstract class VariableResolver {
   /**
    * Resolves a given value with a name
    *
-   * @param name
-   * @return
+   * @param name the String to be resolved
+   * @return an Object which is the result of evaluation of given name
    */
   public abstract Object resolve(String name);
 
