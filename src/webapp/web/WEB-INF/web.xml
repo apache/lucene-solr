@@ -101,6 +101,11 @@
     <load-on-startup>2</load-on-startup>
   </servlet>
 
+  <servlet>
+    <servlet-name>Logging</servlet-name>
+    <servlet-class>org.apache.solr.servlet.LogLevelSelection</servlet-class>
+  </servlet>
+
   <!-- @Deprecated -->
   <servlet>
     <servlet-name>ping</servlet-name>
@@ -115,6 +120,11 @@
   <servlet-mapping>
     <servlet-name>SolrUpdate</servlet-name>
     <url-pattern>/update/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>Logging</servlet-name>
+    <url-pattern>/admin/logging</url-pattern>
   </servlet-mapping>
 
   <!-- @Deprecated -->

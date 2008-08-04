@@ -339,7 +339,9 @@ New Features
 
 67. SOLR-622: SpellCheckComponent supports auto-loading indices on startup and optionally, (re)builds indices
               on newSearcher event, if configured in solrconfig.xml
-              (shalin)              
+              (shalin)
+
+68. SOLR-554: Hierarchical JDK log level selector for SOLR Admin replaces logging.jsp (Sean Timm via shalin)                            
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -43,7 +43,7 @@
     [<a href="registry.jsp">Info</a>]
     [<a href="distributiondump.jsp">Distribution</a>]
     [<a href="ping">Ping</a>]
-    [<a href="logging.jsp">Logging</a>]
+    [<a href="logging">Logging</a>]
   </td>
 </tr>
 
