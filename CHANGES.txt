@@ -582,6 +582,8 @@ Build
  4. SOLR-563: Modified the build process to build contrib projects
     (Shalin Shekhar Mangar via Otis Gospodnetic)
 
+ 5. SOLR-673: Modify build file to create javadocs for core, solrj, contrib and "all inclusive" (shalin)
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1

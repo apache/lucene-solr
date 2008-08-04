@@ -21,8 +21,6 @@
 	
   <property name="solr-path" value="../.." />
 	
-  <property name="javadoc.dir" value="target/javadoc"></property>
-	
   <import file="../../common-build.xml"/>
 
   <description>
@@ -47,7 +45,7 @@
 	
   <target name="init">
   	<mkdir dir="target/classes"/>
-    <mkdir dir="${javadoc.dir}" />
+    <mkdir dir="${build.javadoc}" />
     <ant dir="../../" inheritall="false" target="compile" />
   </target>
 	
@@ -103,27 +101,19 @@
 	
   <target name="javadoc">
    	<sequential>
-       <mkdir dir="${javadoc.dir}/contrib-${fullnamever}"/>
-   	   <javadoc
-   		      destdir="${javadoc.dir}/contrib-${fullnamever}"
-   		      author="true"
-   		      version="true"
-   		      failonerror="true"
-   		      use="true"
-   		      encoding="utf8"
-   		      access="${javadoc.access}"
-   		      windowtitle="${Name} ${version} contrib-${fullnamever} API"
-   		      doctitle="${Name} ${version} API (${specversion})"
-   		      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
-   		      >
-   		        <packageset dir="src/main/java"/>
-   		        <link href="${javadoc.link.java}"/>
-   		        <link href="${javadoc.link.junit}"/>
-   		        <link href="${javadoc.link.lucene}"/>
-   		        <classpath refid="common.classpath"/>
-   		</javadoc>
-      <jar basedir="${javadoc.dir}/contrib-${fullnamever}" destfile="target/contrib-${fullnamever}-javadoc.jar"/>
-   	  <copy file="target/contrib-${fullnamever}-javadoc.jar" todir="${solr-path}/dist"></copy>
+      <mkdir dir="${build.javadoc}/contrib-${name}"/>
+
+      <path id="javadoc.classpath">
+        <path refid="common.classpath"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/contrib-${name}"
+      	title="${Name} ${version} contrib-${fullnamever} API">
+        <sources>
+          <packageset dir="src/main/java"/>
+        </sources>
+      </invoke-javadoc>
     </sequential>
   </target>	
   

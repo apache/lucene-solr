@@ -27,20 +27,12 @@
   <!-- solr source files -->
   <property name="src" value="src" />
 
-  <!-- Destination for compiled classes and binaries -->
-  <property name="dest" value="build" />
-
   <!-- Destination for distribution files (demo WAR, src distro, etc.) -->
   <property name="dist" value="dist" />
 
   <!-- Example directory -->
   <property name="example" value="example" />
 
-  <!-- Javadoc properties -->
-  <property name="build.docs" value="${dest}/docs"/>
-  <property name="build.javadoc" value="${build.docs}/api"/>
-  <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
-  
   <!-- JUnit properties -->
   <property name="junit.output.dir" location="${dest}/test-results"/>
   <property name="junit.reports" location="${dest}/test-results/reports"/>
@@ -160,39 +152,60 @@
     </solr-javac>
   </target>
 
-  <target name="core-javadoc" depends="compile,compile-solrj"
-          description="Generates javadoc documentation.">
+  <target name="javadoc-core" depends="compile,compile-solrj"  description="Generates javadoc documentation for core.">
 
-    <mkdir dir="${build.javadoc}"/>
-        
-    <path id="javadoc.classpath">
-       <path refid="compile.classpath"/>
-       <path refid="compile.classpath.solrj"/>
-       <pathelement location="${dest}/client/solrj"/>
-    </path>
+    <sequential>
+      <mkdir dir="${build.javadoc}/core"/>
 
-    <javadoc
-      destdir="${build.javadoc}"
-      author="true"
-      version="true"
-      failonerror="true"
-      use="true"
-      encoding="utf8"
-      access="${javadoc.access}"
-      windowtitle="${Name} ${version} API"
-      doctitle="${Name} ${version} API (${specversion})"
-      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
-      >
-        <packageset dir="${src}/java"/>
-        <packageset dir="${src}/webapp/src"/>
-        <link href="${javadoc.link.java}"/>
-        <link href="${javadoc.link.junit}"/>
-        <link href="${javadoc.link.lucene}"/>
-        <classpath refid="javadoc.classpath"/>
-    </javadoc>
+      <path id="javadoc.classpath">
+        <path refid="compile.classpath"/>
+        <path refid="compile.classpath.solrj"/>
+        <pathelement location="${dest}/client/solrj"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/core"
+      	title="${Name} ${version} core API (${specversion})">
+        <sources>
+          <packageset dir="src/java"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
   </target>
-	
-  <target name="javadoc" depends="core-javadoc, contrib-javadoc">
+
+  <target name="javadoc-all" description="Generate javadoc for core, client and contrib">
+    <sequential>
+      <mkdir dir="${build.javadoc}"/>
+
+      <path id="javadoc.classpath">
+         <path refid="compile.classpath"/>
+         <path refid="compile.classpath.solrj"/>
+         <path refid="compile.classpath.solrj-embedded"/>
+         <pathelement location="${dest}/client/solrj"/>
+      </path>
+
+      <invoke-javadoc destdir="${build.javadoc}">
+        <sources>
+          <packageset dir="${src}/java" />
+          <packageset dir="${src}/webapp/src" />
+          <packageset dir="${src}/webapp/src" />
+          <packageset dir="${solrj-dir}/src" />
+          <packageset dir="contrib/dataimporthandler/src/main/java" />
+
+          <group title="Core" packages="org.apache.*" />
+          <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
+          <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+
+  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="contrib-build">
+    <contrib-crawl target="javadoc"
+                   failonerror="true"/>
+  </target>
+
+  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
   <target name="stub-factories" depends="dist-jar"
@@ -330,31 +343,23 @@
   </target>
   
   
-  <target name="javadoc-solrj" depends="compile"
-          description="Generates solrj javadoc documentation.">
-    <mkdir dir="${build.javadoc.solrj}"/>  
-    <path id="javadoc.classpath.solrj">
-       <path refid="compile.classpath.solrj"/>
-    </path>
-    <javadoc
-      destdir="${build.javadoc.solrj}"
-      author="true"
-      version="true"
-      failonerror="true"
-      use="true"
-      encoding="utf8"
-      access="${javadoc.access}"
-      windowtitle="${Name}-j ${version} API"
-      doctitle="${Name}-j ${version} API (${specversion})"
-      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
-      >
-        <packageset dir="${solrj-dir}/src" />
-        <link href="${javadoc.link.java}"/>
-        <link href="${javadoc.link.junit}"/>
-        <link href="${javadoc.link.lucene}"/>
-        <classpath refid="compile.classpath.solrj"/>
-        <classpath refid="compile.classpath.solrj-embedded"/>
-    </javadoc>
+  <target name="javadoc-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
+    <sequential>
+      <mkdir dir="${build.javadoc}/solrj"/>
+
+      <path id="javadoc.classpath">
+        <path refid="compile.classpath.solrj"/>
+        <path refid="compile.classpath.solrj-embedded"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/solrj"
+      	title="${Name}-j ${version} API (${specversion})">
+        <sources>
+          <packageset dir="${solrj-dir}/src"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
   </target>
   
 

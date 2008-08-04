@@ -20,11 +20,15 @@
     This file is designed for importing into a main build file, and not intended
     for standalone use.
   </description>
+
+  <dirname file="${ant.file.common}" property="common.dir"/>
   
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
 
   <property name="Name" value="Solr" />
+
+  <property name="name" value="${ant.project.name}"/>
 
   <tstamp>
     <format property="year" pattern="yyyy"/>
@@ -63,6 +67,9 @@
   <property name="fullname" value="apache-${ant.project.name}"/>
   <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
 
+  <!-- Destination for compiled classes and binaries -->
+  <property name="dest" value="build" />
+
   <!-- Javadoc properties -->
   <property name="javadoc.years" value="2006 - ${year}" />
   <property name="javadoc.access" value="protected"/>
@@ -73,6 +80,9 @@
   <property name="javadoc.link.lucene"
             value="http://lucene.apache.org/java/docs/api/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
+  <property name="build.docs" value="${dest}/docs"/>
+  <property name="build.javadoc" value="${common.dir}/${build.docs}/api"/>
+  <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
   
   <!-- JUnit properties -->
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
@@ -147,6 +157,39 @@
       </subant>
     </sequential>
   </macrodef>
+
+  <macrodef name="invoke-javadoc">
+    <element name="sources" optional="yes"/>
+    <attribute name="destdir"/>
+  	<attribute name="title" default="${Name} ${version} API (${specversion})"/>
+    <sequential>
+      <javadoc
+          packagenames="org.apache.solr.*"
+          failonerror="true"
+          destdir="@{destdir}"
+          access="${javadoc.access}"
+          encoding="utf-8"
+          author="true"
+          version="true"
+          use="true"
+          source="${ant.java.version}"
+          link="${javadoc.link.java}"
+          windowtitle="${Name} ${version} API"
+          doctitle="@{title}"
+          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
+        <tag name="todo" description="To Do:"/>
+        <tag name="uml.property" description="UML Property:"/>
+      	<link offline="true" packagelistLoc="${build.javadoc}"/>
+        <link href="${javadoc.link.java}"/>
+        <link href="${javadoc.link.junit}"/>
+        <link href="${javadoc.link.lucene}"/>
+
+        <sources />
+
+        <classpath refid="javadoc.classpath"/>
+      </javadoc>
+   </sequential>
+  </macrodef>
 	
   <target name="contrib-clean"
 	          description="Cleans all contrib modules and their tests">
@@ -160,11 +203,6 @@
 
   <target name="contrib-test" depends="contrib-build">
     <contrib-crawl target="test" failonerror="true"/>
-  </target>
-	
-  <target name="contrib-javadoc" description="Generate javadoc for contrib classes" depends="contrib-build">
-    <contrib-crawl target="javadoc"
-                   failonerror="true"/>
   </target>
 	
   <target name="dist-contrib" description="Make the contribs ready for distribution">
