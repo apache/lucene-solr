@@ -393,7 +393,7 @@ public class EntityProcessorBase extends EntityProcessor {
    * @param query string for which cached row is to be returned
    * @return the cached row corresponding to the given query
    */
-  protected Map<String, Object> getSimplCacheData(String query) {
+  protected Map<String, Object> getSimpleCacheData(String query) {
     List<Map<String, Object>> rows = simpleCache.get(query);
     if (rows != null) {
       dataSourceRowCache = new ArrayList<Map<String, Object>>(rows);

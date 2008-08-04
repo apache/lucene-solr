@@ -54,7 +54,7 @@ public class CachedSqlEntityProcessor extends SqlEntityProcessor {
     String query = resolver.replaceTokens(context.getEntityAttribute("query"));
     isFirst = false;
     if (simpleCache != null) {
-      return getSimplCacheData(query);
+      return getSimpleCacheData(query);
     } else {
       return getIdCacheData(query);
     }
