@@ -24,10 +24,11 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.CharArrayReader;
 import java.io.CharArrayWriter;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -65,6 +66,12 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   protected javax.xml.transform.Transformer xslTransformer;
 
+  protected boolean useSolrAddXml = false;
+
+  protected boolean streamRows   =  false;
+  
+  private int batchSz = 1000;
+
   @SuppressWarnings("unchecked")
   public void init(Context context) {
     super.init(context);
@@ -76,8 +83,13 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   }
 
   private void initXpathReader() {
-    boolean useSolrAddXml = Boolean.parseBoolean(context
+    useSolrAddXml = Boolean.parseBoolean(context
             .getEntityAttribute(USE_SOLR_ADD_SCHEMA));
+    streamRows = Boolean.parseBoolean(context
+        .getEntityAttribute(STREAM));
+    if(context.getEntityAttribute("batchSize") != null){
+      batchSz = Integer.parseInt(context.getEntityAttribute("batchSize"));
+    }
     String xslt = context.getEntityAttribute(XSL);
     if (xslt != null) {
       xslt = resolver.replaceTokens(xslt);
@@ -192,71 +204,75 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   }
 
   private void initQuery(String s) {
-    Reader data = null;
-    try {
-      final List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-      data = dataSource.getData(s);
-      if (xslTransformer != null) {
-        try {
-          SimpleCharArrayReader caw = new SimpleCharArrayReader();
-          xslTransformer.transform(new StreamSource(data),
-                  new StreamResult(caw));
-          data = caw.getReader();
-        } catch (TransformerException e) {
-          throw new DataImportHandlerException(
-                  DataImportHandlerException.SEVERE,
-                  "Exception in applying XSL Transformeation", e);
-        }
-      }
-      final List<Map<String, Object>> solrDocs = new ArrayList<Map<String, Object>>();
-      final boolean useSolrAddXml = Boolean.parseBoolean(context
-              .getEntityAttribute(USE_SOLR_ADD_SCHEMA));
-      xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
-        @SuppressWarnings("unchecked")
-        public void handle(Map<String, Object> record, String xpath) {
-          if (useSolrAddXml) {
-            List<String> names = (List<String>) record.get("name");
-            List<String> values = (List<String>) record.get("value");
-
-            Map<String, Object> row = new HashMap<String, Object>();
-
-            for (int i = 0; i < names.size(); i++) {
-              if (row.containsKey(names.get(i))) {
-                Object existing = row.get(names.get(i));
-                if (existing instanceof List) {
-                  List list = (List) existing;
-                  list.add(values.get(i));
-                } else {
-                  List list = new ArrayList();
-                  list.add(existing);
-                  list.add(values.get(i));
-                  row.put(names.get(i), list);
-                }
-              } else {
-                row.put(names.get(i), values.get(i));
-              }
-            }
-
-            solrDocs.add(row);
-          } else {
-            record.put(XPATH_FIELD_NAME, xpath);
-            rows.add(record);
+      Reader data = null;
+      try {
+        final List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+        data = dataSource.getData(s);
+        if (xslTransformer != null) {
+          try {
+            SimpleCharArrayReader caw = new SimpleCharArrayReader();
+            xslTransformer.transform(new StreamSource(data),
+                new StreamResult(caw));
+            data = caw.getReader();
+          } catch (TransformerException e) {
+            throw new DataImportHandlerException(
+                DataImportHandlerException.SEVERE,
+                "Exception in applying XSL Transformeation", e);
           }
         }
-      });
+        if(streamRows ){
+          rowIterator = getRowIterator(data);
+        } else {
+          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
+            @SuppressWarnings("unchecked")
+            public void handle(Map<String, Object> record, String xpath) {
+              rows.add(readRow(record, xpath));
+            }
+          });
+          rowIterator = rows.iterator();
+        }
+      } finally {
+        if (!streamRows) {
+          closeIt(data);
+        }
 
-      if (useSolrAddXml) {
-        rowIterator = solrDocs.iterator();
-      } else {
-        rowIterator = rows.iterator();
       }
-    } finally {
+    }
+
+    private void closeIt(Reader data) {
       try {
         data.close();
       } catch (Exception e) { /* Ignore */
       }
     }
-  }
+  private Map<String, Object> readRow(Map<String, Object> record, String xpath) {
+     if (useSolrAddXml) {
+       List<String> names = (List<String>) record.get("name");
+       List<String> values = (List<String>) record.get("value");
+       Map<String, Object> row = new HashMap<String, Object>();
+       for (int i = 0; i < names.size(); i++) {
+         if (row.containsKey(names.get(i))) {
+           Object existing = row.get(names.get(i));
+           if (existing instanceof List) {
+             List list = (List) existing;
+             list.add(values.get(i));
+           } else {
+             List list = new ArrayList();
+             list.add(existing);
+             list.add(values.get(i));
+             row.put(names.get(i), list);
+           }
+         } else {
+           row.put(names.get(i), values.get(i));
+         }
+       }
+       return row;
+     } else {
+       record.put(XPATH_FIELD_NAME, xpath);
+       return  record;
+     }
+   }
+
 
   private static class SimpleCharArrayReader extends CharArrayWriter {
     public Reader getReader() {
@@ -297,6 +313,55 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     return r;
 
   }
+  private Iterator<Map<String ,Object>> getRowIterator(final Reader data){
+    final BlockingQueue<Map<String, Object>> blockingQueue = new ArrayBlockingQueue<Map<String, Object>>(batchSz);
+    final AtomicBoolean isEnd = new AtomicBoolean(false);
+    new Thread() {
+      public void run() {
+        try {
+          xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
+            @SuppressWarnings("unchecked")
+            public void handle(Map<String, Object> record, String xpath) {
+              if(isEnd.get()) return ;
+              try {
+                blockingQueue.offer(readRow(record, xpath), 10, TimeUnit.SECONDS);
+              } catch (Exception e) {
+                isEnd.set(true);
+              }
+            }
+          });
+        } finally {
+          closeIt(data);
+          try {
+            blockingQueue.offer(Collections.EMPTY_MAP, 10, TimeUnit.SECONDS);
+          } catch (Exception e) { }
+        }
+      }
+    }.start();
+
+    return new Iterator<Map<String, Object>>() {
+      public boolean hasNext() {
+        return !isEnd.get();
+      }
+      public Map<String, Object> next() {
+        try {
+          Map<String, Object> row = blockingQueue.poll(10, TimeUnit.SECONDS);
+          if (row == null || row == Collections.EMPTY_MAP) {
+            isEnd.set(true);
+            return null;
+          }
+          return row;
+        } catch (InterruptedException e) {
+          isEnd.set(true);
+          return null;
+        }
+      }
+      public void remove() {
+        /*no op*/
+      }
+    };
+
+  }
 
   @SuppressWarnings("unchecked")
   private Map getNameSpace() {
@@ -325,5 +390,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   public static final String USE_SOLR_ADD_SCHEMA = "useSolrAddSchema";
 
   public static final String XSL = "xsl";
+
+  public static final String STREAM = "stream";
 
 }

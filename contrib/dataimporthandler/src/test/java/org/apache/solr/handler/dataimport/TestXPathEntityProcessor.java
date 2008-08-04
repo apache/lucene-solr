@@ -69,6 +69,31 @@ public class TestXPathEntityProcessor {
   }
 
   @Test
+  public void withFieldsAndXpathStream() throws Exception {
+    Map entityAttrs = createMap("name", "e", "url", "cd.xml",
+        XPathEntityProcessor.FOR_EACH, "/catalog/cd", "stream", "true", "batchSize","1");
+    List fields = new ArrayList();
+    fields.add(createMap("column", "title", "xpath", "/catalog/cd/title"));
+    fields.add(createMap("column", "artist", "xpath", "/catalog/cd/artist"));
+    fields.add(createMap("column", "year", "xpath", "/catalog/cd/year"));
+    Context c = AbstractDataImportHandlerTest.getContext(null,
+        new VariableResolverImpl(), getds(), 0, fields, entityAttrs);
+    XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
+    xPathEntityProcessor.init(c);
+    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    while (true) {
+      Map<String, Object> row = xPathEntityProcessor.nextRow();
+      if (row == null)
+        break;
+      result.add(row);
+    }
+    Assert.assertEquals(3, result.size());
+    Assert.assertEquals("Empire Burlesque", result.get(0).get("title"));
+    Assert.assertEquals("Bonnie Tyler", result.get(1).get("artist"));
+    Assert.assertEquals("1982", result.get(2).get("year"));
+  }
+
+  @Test
   public void withDefaultSolrAndXsl() throws Exception {
     long time = System.currentTimeMillis();
     File tmpdir = new File("." + time);
