@@ -52,3 +52,32 @@ else
   echo "HTTP POST does not default to UTF-8"
 fi
 
+
+#A codepoint outside of the BMP
+CODEPOINT='\\U00100058'
+#URL encoded UTF8 of the codepoint
+URL_UTF8='%F4%80%81%98'
+#expected return of the python writer (currently uses UTF-16 surrogates)
+EXPECTED='\\udbc0\\udc58'
+
+curl "$URL/select?q=$URL_UTF8&echoParams=explicit&wt=python" 2> /dev/null | grep $EXPECTED > /dev/null 2>&1
+if [ $? = 0 ]; then
+  echo "HTTP GET is accepting UTF-8 beyond the basic multilingual plane"
+else
+  echo "ERROR: HTTP GET is not accepting UTF-8 beyond the basic multilingual plane"
+fi
+
+curl $URL/select --data-binary "q=$URL_UTF8&echoParams=explicit&wt=python"  -H 'Content-type:application/x-www-form-urlencoded; charset=UTF-8' 2> /dev/null | grep $EXPECTED > /dev/null 2>&1
+if [ $? = 0 ]; then
+  echo "HTTP POST is accepting UTF-8 beyond the basic multilingual plane"
+else
+  echo "ERROR: HTTP POST is not accepting UTF-8 beyond the basic multilingual plane"
+fi
+
+curl "$URL/select?q=$URL_UTF8&echoParams=explicit&wt=python" --data-binary '' 2> /dev/null | grep $EXPECTED > /dev/null 2>&1
+if [ $? = 0 ]; then
+  echo "HTTP POST + URL params is accepting UTF-8 beyond the basic multilingual plane"
+else
+  echo "ERROR: HTTP POST + URL params is not accepting UTF-8 beyond the basic multilingual plane"
+fi
+
