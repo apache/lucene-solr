@@ -31,10 +31,6 @@ import java.util.Iterator;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
-  FreqProxTermsWriter() {
-    streamCount = 2;
-  }
-
   public TermsHashConsumerPerThread addThread(TermsHashPerThread perThread) {
     return new FreqProxTermsWriterPerThread(perThread);
   }
@@ -102,7 +98,12 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
                                                          state.docWriter.writer.getTermIndexInterval());
 
     final IndexOutput freqOut = state.directory.createOutput(state.segmentFileName(IndexFileNames.FREQ_EXTENSION));
-    final IndexOutput proxOut = state.directory.createOutput(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
+    final IndexOutput proxOut;
+
+    if (fieldInfos.hasProx())
+      proxOut = state.directory.createOutput(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
+    else
+      proxOut = null;
 
     final DefaultSkipListWriter skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,
                                                                            termsOut.maxSkipLevels,
@@ -135,6 +136,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         int numPostings = perField.numPostings;
         perField.reset();
         perField.shrinkHash(numPostings);
+        fields[i].reset();
       }
 
       start = end;
@@ -148,13 +150,15 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     }
 
     freqOut.close();
-    proxOut.close();
+    if (proxOut != null) {
+      state.flushedFiles.add(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
+      proxOut.close();
+    }
     termsOut.close();
     
     // Record all files we have flushed
     state.flushedFiles.add(state.segmentFileName(IndexFileNames.FIELD_INFOS_EXTENSION));
     state.flushedFiles.add(state.segmentFileName(IndexFileNames.FREQ_EXTENSION));
-    state.flushedFiles.add(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
     state.flushedFiles.add(state.segmentFileName(IndexFileNames.TERMS_EXTENSION));
     state.flushedFiles.add(state.segmentFileName(IndexFileNames.TERMS_INDEX_EXTENSION));
   }
@@ -205,8 +209,12 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     }
 
     final int skipInterval = termsOut.skipInterval;
-    final boolean currentFieldStorePayloads = fields[0].fieldInfo.storePayloads;
+    final boolean currentFieldOmitTf = fields[0].fieldInfo.omitTf;
 
+    // If current field omits tf then it cannot store
+    // payloads.  We silently drop the payloads in this case:
+    final boolean currentFieldStorePayloads = currentFieldOmitTf ? false : fields[0].fieldInfo.storePayloads;
+  
     FreqProxFieldMergeState[] termStates = new FreqProxFieldMergeState[numFields];
 
     while(numFields > 0) {
@@ -235,8 +243,12 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       final char[] text = termStates[0].text;
       final int start = termStates[0].textOffset;
 
-      long freqPointer = freqOut.getFilePointer();
-      long proxPointer = proxOut.getFilePointer();
+      final long freqPointer = freqOut.getFilePointer();
+      final long proxPointer;
+      if (proxOut != null)
+        proxPointer = proxOut.getFilePointer();
+      else
+        proxPointer = 0;
 
       skipListWriter.resetSkip();
 
@@ -261,44 +273,52 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         assert doc < flushState.numDocsInRAM;
         assert doc > lastDoc || df == 1;
 
-        final int newDocCode = (doc-lastDoc)<<1;
-
-        lastDoc = doc;
-
         final ByteSliceReader prox = minState.prox;
 
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
         // format.
-        for(int j=0;j<termDocFreq;j++) {
-          final int code = prox.readVInt();
-          if (currentFieldStorePayloads) {
-            final int payloadLength;
-            if ((code & 1) != 0) {
-              // This position has a payload
-              payloadLength = prox.readVInt();
-            } else
-              payloadLength = 0;
-            if (payloadLength != lastPayloadLength) {
-              proxOut.writeVInt(code|1);
-              proxOut.writeVInt(payloadLength);
-              lastPayloadLength = payloadLength;
-            } else
-              proxOut.writeVInt(code & (~1));
-            if (payloadLength > 0)
-              copyBytes(prox, proxOut, payloadLength);
-          } else {
-            assert 0 == (code & 1);
-            proxOut.writeVInt(code>>1);
+        if (!currentFieldOmitTf) {
+          // omitTf == false so we do write positions & payload          
+          assert proxOut != null;
+          for(int j=0;j<termDocFreq;j++) {
+            final int code = prox.readVInt();
+            if (currentFieldStorePayloads) {
+              final int payloadLength;
+              if ((code & 1) != 0) {
+                // This position has a payload
+                payloadLength = prox.readVInt();
+              } else
+                payloadLength = 0;
+              if (payloadLength != lastPayloadLength) {
+                proxOut.writeVInt(code|1);
+                proxOut.writeVInt(payloadLength);
+                lastPayloadLength = payloadLength;
+              } else
+                proxOut.writeVInt(code & (~1));
+              if (payloadLength > 0)
+                copyBytes(prox, proxOut, payloadLength);
+            } else {
+              assert 0 == (code & 1);
+              proxOut.writeVInt(code>>1);
+            }
+          } //End for
+          
+          final int newDocCode = (doc-lastDoc)<<1;
+
+          if (1 == termDocFreq) {
+            freqOut.writeVInt(newDocCode|1);
+           } else {
+            freqOut.writeVInt(newDocCode);
+            freqOut.writeVInt(termDocFreq);
           }
+        } else {
+          // omitTf==true: we store only the docs, without
+          // term freq, positions, payloads
+          freqOut.writeVInt(doc-lastDoc);
         }
 
-        if (1 == termDocFreq) {
-          freqOut.writeVInt(newDocCode|1);
-        } else {
-          freqOut.writeVInt(newDocCode);
-          freqOut.writeVInt(termDocFreq);
-        }
+        lastDoc = doc;
 
         if (!minState.nextDoc()) {
 

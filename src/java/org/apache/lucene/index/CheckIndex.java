@@ -114,13 +114,12 @@ public class CheckIndex {
     else if (format == SegmentInfos.FORMAT_SHARED_DOC_STORE)
       sFormat = "FORMAT_SHARED_DOC_STORE [Lucene 2.3]";
     else {
-      // LUCENE-1255: All versions before 2.3.2/2.4 were
-      // able to create position=-1 when the very first
-      // Token has positionIncrement 0
       if (format == SegmentInfos.FORMAT_CHECKSUM)
         sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
       else if (format == SegmentInfos.FORMAT_DEL_COUNT)
-          sFormat = "FORMAT_DEL_COUNT [Lucene 2.4]";
+        sFormat = "FORMAT_DEL_COUNT [Lucene 2.4]";
+      else if (format == SegmentInfos.FORMAT_HAS_PROX)
+        sFormat = "FORMAT_HAS_PROX [Lucene 2.4]";
       else if (format < SegmentInfos.CURRENT_FORMAT) {
         sFormat = "int=" + format + " [newer version of Lucene than this tool]";
         skip = true;
@@ -161,6 +160,7 @@ public class CheckIndex {
 
       try {
         out.println("    compound=" + info.getUseCompoundFile());
+        out.println("    hasProx=" + info.getHasProx());
         out.println("    numFiles=" + info.files().size());
         out.println("    size (MB)=" + nf.format(info.sizeInBytes()/(1024.*1024.)));
         final int docStoreOffset = info.getDocStoreOffset();
@@ -224,7 +224,7 @@ public class CheckIndex {
             final int doc = termPositions.doc();
             final int freq = termPositions.freq();
             if (doc <= lastDoc)
-              throw new RuntimeException("term " + term + ": doc " + doc + " < lastDoc " + lastDoc);
+              throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
             lastDoc = doc;
             if (freq <= 0)
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");

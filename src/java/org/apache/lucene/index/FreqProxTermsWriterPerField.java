@@ -31,6 +31,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
   final DocInverter.FieldInvertState fieldState;
+  boolean omitTf;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
@@ -38,11 +39,18 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
+    omitTf = fieldInfo.omitTf;
+  }
+
+  int getStreamCount() {
+    if (fieldInfo.omitTf)
+      return 1;
+    else
+      return 2;
   }
 
   void finish() {}
 
-  //boolean doNext;
   boolean hasPayloads;
 
   void skippingLongTerm(Token t) throws IOException {}
@@ -50,6 +58,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   public int compareTo(Object other0) {
     FreqProxTermsWriterPerField other = (FreqProxTermsWriterPerField) other0;
     return fieldInfo.name.compareTo(other.fieldInfo.name);
+  }
+
+  void reset() {
+    // Record, up front, whether our in-RAM format will be
+    // with or without term freqs:
+    omitTf = fieldInfo.omitTf;
   }
 
   boolean start(Fieldable[] fields, int count) {
@@ -76,10 +90,14 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // flush
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
     FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
-    p.lastDocCode = docState.docID << 1;
     p.lastDocID = docState.docID;
-    p.docFreq = 1;
-    writeProx(t, p, fieldState.position);
+    if (omitTf) {
+      p.lastDocCode = docState.docID;
+    } else {
+      p.lastDocCode = docState.docID << 1;
+      p.docFreq = 1;
+      writeProx(t, p, fieldState.position);
+    }
   }
 
   final void addTerm(Token t, RawPostingList p0) {
@@ -88,27 +106,37 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
 
-    assert p.docFreq > 0;
+    assert omitTf || p.docFreq > 0;
 
-    if (docState.docID != p.lastDocID) {
-      // Term not yet seen in the current doc but previously
-      // seen in other doc(s) since the last flush
-
-      // Now that we know doc freq for previous doc,
-      // write it & lastDocCode
-      if (1 == p.docFreq)
-        termsHashPerField.writeVInt(0, p.lastDocCode|1);
-      else {
+    if (omitTf) {
+      if (docState.docID != p.lastDocID) {
+        assert docState.docID > p.lastDocID;
         termsHashPerField.writeVInt(0, p.lastDocCode);
-        termsHashPerField.writeVInt(0, p.docFreq);
+        p.lastDocCode = docState.docID - p.lastDocID;
+        p.lastDocID = docState.docID;
       }
-      p.docFreq = 1;
-      p.lastDocCode = (docState.docID - p.lastDocID) << 1;
-      p.lastDocID = docState.docID;
-      writeProx(t, p, fieldState.position);
     } else {
-      p.docFreq++;
-      writeProx(t, p, fieldState.position-p.lastPosition);
+      if (docState.docID != p.lastDocID) {
+        assert docState.docID > p.lastDocID;
+        // Term not yet seen in the current doc but previously
+        // seen in other doc(s) since the last flush
+
+        // Now that we know doc freq for previous doc,
+        // write it & lastDocCode
+        if (1 == p.docFreq)
+          termsHashPerField.writeVInt(0, p.lastDocCode|1);
+        else {
+          termsHashPerField.writeVInt(0, p.lastDocCode);
+          termsHashPerField.writeVInt(0, p.docFreq);
+        }
+        p.docFreq = 1;
+        p.lastDocCode = (docState.docID - p.lastDocID) << 1;
+        p.lastDocID = docState.docID;
+        writeProx(t, p, fieldState.position);
+      } else {
+        p.docFreq++;
+        writeProx(t, p, fieldState.position-p.lastPosition);
+      }
     }
   }
 

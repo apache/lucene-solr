@@ -39,7 +39,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   public TermVectorsTermsWriter(DocumentsWriter docWriter) {
     this.docWriter = docWriter;
-    streamCount = 2;
   }
 
   public TermsHashConsumerPerThread addThread(TermsHashPerThread termsHashPerThread) {

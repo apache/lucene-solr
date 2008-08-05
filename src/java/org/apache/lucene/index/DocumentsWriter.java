@@ -132,6 +132,8 @@ final class DocumentsWriter {
   boolean bufferIsFull;                   // True when it's time to write segment
   private boolean aborting;               // True if an abort is pending
 
+  private DocFieldProcessor docFieldProcessor;
+
   PrintStream infoStream;
   int maxFieldLength = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
   Similarity similarity;
@@ -261,7 +263,13 @@ final class DocumentsWriter {
     final DocInverter docInverter = new DocInverter(termsHash, normsWriter);
     final StoredFieldsWriter fieldsWriter = new StoredFieldsWriter(this);
     final DocFieldConsumers docFieldConsumers = new DocFieldConsumers(docInverter, fieldsWriter);
-    consumer = new DocFieldProcessor(this, docFieldConsumers);
+    consumer = docFieldProcessor = new DocFieldProcessor(this, docFieldConsumers);
+  }
+
+  /** Returns true if any of the fields in the current
+   *  buffered docs have omitTf==false */
+  boolean hasProx() {
+    return docFieldProcessor.fieldInfos.hasProx();
   }
 
   /** If non-null, various details of indexing are printed

@@ -96,6 +96,10 @@ API Changes
 13. LUCENE-1324: Added TokenFilter.reset(). (Shai Erera via Mike
     McCandless)
 
+14. LUCENE-1340: Added Fieldable.omitTf() method to skip indexing term
+    frequency, positions and payloads.  This saves index space, and
+    indexing/searching time.  (Eks Dev via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

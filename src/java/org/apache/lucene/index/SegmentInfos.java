@@ -65,8 +65,13 @@ final class SegmentInfos extends Vector {
    *  This way IndexWriter can efficiently report numDocs(). */
   public static final int FORMAT_DEL_COUNT = -6;
 
+  /** This format adds the boolean hasProx to record if any
+   *  fields in the segment store prox information (ie, have
+   *  omitTf==false) */
+  public static final int FORMAT_HAS_PROX = -7;
+
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_DEL_COUNT;
+  static final int CURRENT_FORMAT = FORMAT_HAS_PROX;
   
   public int counter = 0;    // used to name new segments
   /**

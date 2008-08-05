@@ -40,6 +40,7 @@ final class FieldInfos {
   static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
+  static final byte OMIT_TF = 0x40;
   
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
@@ -85,6 +86,15 @@ final class FieldInfos {
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
               field.isStoreOffsetWithTermVector(), field.getOmitNorms());
     }
+  }
+
+  /** Returns true if any fields do not omitTf */
+  boolean hasProx() {
+    final int numFields = byNumber.size();
+    for(int i=0;i<numFields;i++)
+      if (!fieldInfo(i).omitTf)
+        return true;
+    return false;
   }
   
   /**
@@ -172,7 +182,7 @@ final class FieldInfos {
   synchronized public void add(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
     add(name, isIndexed, storeTermVector, storePositionWithTermVector,
-        storeOffsetWithTermVector, omitNorms, false);
+        storeOffsetWithTermVector, omitNorms, false, false);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -187,15 +197,16 @@ final class FieldInfos {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
+   * @param omitTf true if term freqs should be omitted for this field
    */
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads) {
+                       boolean omitNorms, boolean storePayloads, boolean omitTf) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads);
+      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
     }
     return fi;
   }
@@ -205,7 +216,7 @@ final class FieldInfos {
     if (fi == null) {
       return addInternal(fieldInfo.name, fieldInfo.isIndexed, fieldInfo.storeTermVector,
                          fieldInfo.storePositionWithTermVector, fieldInfo.storeOffsetWithTermVector,
-                         fieldInfo.omitNorms, fieldInfo.storePayloads);
+                         fieldInfo.omitNorms, fieldInfo.storePayloads, fieldInfo.omitTf);
     } else {
       fi.update(fieldInfo);
     }
@@ -214,10 +225,10 @@ final class FieldInfos {
 
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTf) {
     FieldInfo fi =
       new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-              storeOffsetWithTermVector, omitNorms, storePayloads);
+              storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;
@@ -289,6 +300,8 @@ final class FieldInfos {
       if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
+      if (fi.omitTf) bits |= OMIT_TF;
+      
       output.writeString(fi.name);
       output.writeByte(bits);
     }
@@ -305,8 +318,9 @@ final class FieldInfos {
       boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
+      boolean omitTf = (bits & OMIT_TF) != 0;
       
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads);
+      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
     }    
   }
 

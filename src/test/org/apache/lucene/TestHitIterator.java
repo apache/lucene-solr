@@ -18,6 +18,7 @@ package org.apache.lucene;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -53,6 +54,8 @@ public class TestHitIterator extends LuceneTestCase {
     writer.addDocument(doc);
 
     writer.close();
+
+    _TestUtil.checkIndex(directory);
 
     IndexSearcher searcher = new IndexSearcher(directory);
     Hits hits = searcher.search(new TermQuery(new Term("field", "iterator")));

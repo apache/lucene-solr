@@ -60,6 +60,9 @@ extends SegmentTermDocs implements TermPositions {
   }
 
   public final int nextPosition() throws IOException {
+    if (currentFieldOmitTf)
+      // This field does not store term freq, positions, payloads
+      return 0;
     // perform lazy skips if neccessary
     lazySkip();
     proxCount--;
@@ -116,6 +119,7 @@ extends SegmentTermDocs implements TermPositions {
   }
 
   private void skipPositions(int n) throws IOException {
+    assert !currentFieldOmitTf;
     for (int f = n; f > 0; f--) {        // skip unread positions
       readDeltaPosition();
       skipPayload();

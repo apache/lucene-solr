@@ -139,6 +139,15 @@ public interface Fieldable extends Serializable {
    */
   void setOmitNorms(boolean omitNorms);
 
+  /** Expert:
+   *
+   * If set, omit term freq, positions and payloads from postings for this field.
+   */
+  void setOmitTf(boolean omitTf);
+  
+  /** True if tf is omitted for this indexed field */
+  boolean getOmitTf();
+
   /**
    * Indicates whether a Field is Lazy or not.  The semantics of Lazy loading are such that if a Field is lazily loaded, retrieving
    * it's values via {@link #stringValue()} or {@link #binaryValue()} is only valid as long as the {@link org.apache.lucene.index.IndexReader} that

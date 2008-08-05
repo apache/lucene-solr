@@ -47,6 +47,10 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     fieldState = termsHashPerField.fieldState;
   }
 
+  int getStreamCount() {
+    return 2;
+  }
+
   boolean start(Fieldable[] fields, int count) {
     doVectors = false;
     doVectorPositions = false;

@@ -3069,7 +3069,7 @@ public class IndexWriter {
           synchronized(this) {
             segmentInfos.setSize(0);                      // pop old infos & add new
             info = new SegmentInfo(mergedName, docCount, directory, false, true,
-                                   -1, null, false);
+                                   -1, null, false, merger.hasProx());
             segmentInfos.addElement(info);
           }
 
@@ -3377,7 +3377,8 @@ public class IndexWriter {
                                      flushedDocCount,
                                      directory, false, true,
                                      docStoreOffset, docStoreSegment,
-                                     docStoreIsCompoundFile);
+                                     docStoreIsCompoundFile,    
+                                     docWriter.hasProx());
       }
 
       docWriter.pushDeletes();
@@ -3614,6 +3615,8 @@ public class IndexWriter {
         }
       }
     }
+
+    merge.info.setHasProx(merger.hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
     segmentInfos.add(start, merge.info);
@@ -3905,7 +3908,8 @@ public class IndexWriter {
                                  directory, false, true,
                                  docStoreOffset,
                                  docStoreSegment,
-                                 docStoreIsCompoundFile);
+                                 docStoreIsCompoundFile,
+                                 false);
 
     // Also enroll the merged segment into mergingSegments;
     // this prevents it from getting selected for a merge

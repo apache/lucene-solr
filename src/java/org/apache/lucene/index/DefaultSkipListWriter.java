@@ -62,7 +62,8 @@ class DefaultSkipListWriter extends MultiLevelSkipListWriter {
     this.curStorePayloads = storePayloads;
     this.curPayloadLength = payloadLength;
     this.curFreqPointer = freqOutput.getFilePointer();
-    this.curProxPointer = proxOutput.getFilePointer();
+    if (proxOutput != null)
+      this.curProxPointer = proxOutput.getFilePointer();
   }
   
   protected void resetSkip() {
@@ -70,7 +71,8 @@ class DefaultSkipListWriter extends MultiLevelSkipListWriter {
     Arrays.fill(lastSkipDoc, 0);
     Arrays.fill(lastSkipPayloadLength, -1);  // we don't have to write the first length in the skip list
     Arrays.fill(lastSkipFreqPointer, freqOutput.getFilePointer());
-    Arrays.fill(lastSkipProxPointer, proxOutput.getFilePointer());
+    if (proxOutput != null)
+      Arrays.fill(lastSkipProxPointer, proxOutput.getFilePointer());
   }
   
   protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {

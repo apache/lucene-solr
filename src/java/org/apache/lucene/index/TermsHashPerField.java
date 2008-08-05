@@ -57,9 +57,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     bytePool = perThread.bytePool;
     docState = perThread.docState;
     fieldState = docInverterPerField.fieldState;
-    streamCount = perThread.termsHash.streamCount;
-    numPostingInt = 2*streamCount;
     this.consumer = perThread.consumer.addField(this, fieldInfo);
+    streamCount = consumer.getStreamCount();
+    numPostingInt = 2*streamCount;
     this.fieldInfo = fieldInfo;
     if (nextPerThread != null)
       nextPerField = (TermsHashPerField) nextPerThread.addField(docInverterPerField, fieldInfo);
@@ -488,6 +488,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   void writeVInt(int stream, int i) {
+    assert stream < streamCount;
     while ((i & ~0x7F) != 0) {
       writeByte(stream, (byte)((i & 0x7f) | 0x80));
       i >>>= 7;

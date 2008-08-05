@@ -32,4 +32,5 @@ abstract class TermsHashConsumerPerField {
   abstract void skippingLongTerm(Token t) throws IOException;
   abstract void newTerm(Token t, RawPostingList p) throws IOException;
   abstract void addTerm(Token t, RawPostingList p) throws IOException;
+  abstract int getStreamCount();
 }

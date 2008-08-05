@@ -63,7 +63,8 @@ final class FreqProxFieldMergeState {
     textOffset = p.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
 
     field.termsHashPerField.initReader(freq, p, 0);
-    field.termsHashPerField.initReader(prox, p, 1);
+    if (!field.fieldInfo.omitTf)
+      field.termsHashPerField.initReader(prox, p, 1);
 
     // Should always be true
     boolean result = nextDoc();
@@ -77,20 +78,27 @@ final class FreqProxFieldMergeState {
       if (p.lastDocCode != -1) {
         // Return last doc
         docID = p.lastDocID;
-        termFreq = p.docFreq;
+        if (!field.omitTf)
+          termFreq = p.docFreq;
         p.lastDocCode = -1;
         return true;
-      } else 
+      } else
         // EOF
         return false;
     }
 
     final int code = freq.readVInt();
-    docID += code >>> 1;
-    if ((code & 1) != 0)
-      termFreq = 1;
-    else
-      termFreq = freq.readVInt();
+    if (field.omitTf)
+      docID += code;
+    else {
+      docID += code >>> 1;
+      if ((code & 1) != 0)
+        termFreq = 1;
+      else
+        termFreq = freq.readVInt();
+    }
+
+    assert docID != p.lastDocID;
 
     return true;
   }

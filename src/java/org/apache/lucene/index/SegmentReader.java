@@ -298,6 +298,12 @@ class SegmentReader extends DirectoryIndexReader {
 
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
 
+      boolean anyProx = false;
+      final int numFields = fieldInfos.size();
+      for(int i=0;!anyProx && i<numFields;i++)
+        if (!fieldInfos.fieldInfo(i).omitTf)
+          anyProx = true;
+
       final String fieldsSegment;
 
       if (si.getDocStoreOffset() != -1)
@@ -322,7 +328,8 @@ class SegmentReader extends DirectoryIndexReader {
       // make sure that all index files have been read or are kept open
       // so that if an index update removes them we'll still have them
       freqStream = cfsDir.openInput(segment + ".frq", readBufferSize);
-      proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
+      if (anyProx)
+        proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
       openNorms(cfsDir, readBufferSize);
 
       if (doOpenStores && fieldInfos.hasVectors()) { // open term vector files only as needed
@@ -726,6 +733,9 @@ class SegmentReader extends DirectoryIndexReader {
         fieldSet.add(fi.name);
       }
       else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.omitTf && fieldOption == IndexReader.FieldOption.OMIT_TF) {
         fieldSet.add(fi.name);
       }
       else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {

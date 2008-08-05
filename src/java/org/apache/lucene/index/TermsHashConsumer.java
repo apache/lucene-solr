@@ -28,8 +28,6 @@ abstract class TermsHashConsumer {
   abstract void abort();
   abstract void closeDocStore(DocumentsWriter.FlushState state) throws IOException;
 
-  int streamCount;
-
   FieldInfos fieldInfos;
 
   void setFieldInfos(FieldInfos fieldInfos) {

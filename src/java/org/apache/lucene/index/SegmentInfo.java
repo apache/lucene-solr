@@ -77,6 +77,8 @@ final class SegmentInfo {
   private int delCount;                           // How many deleted docs in this segment, or -1 if not yet known
                                                   // (if it's an older index)
 
+  private boolean hasProx;                        // True if this segment has any fields with omitTf==false
+
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -89,14 +91,15 @@ final class SegmentInfo {
     docStoreSegment = name;
     docStoreIsCompoundFile = false;
     delCount = 0;
+    hasProx = true;
   }
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
-    this(name, docCount, dir, isCompoundFile, hasSingleNormFile, -1, null, false);
+    this(name, docCount, dir, isCompoundFile, hasSingleNormFile, -1, null, false, true);
   }
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile,
-                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile) { 
+                     int docStoreOffset, String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx) { 
     this(name, docCount, dir);
     this.isCompoundFile = (byte) (isCompoundFile ? YES : NO);
     this.hasSingleNormFile = hasSingleNormFile;
@@ -104,6 +107,7 @@ final class SegmentInfo {
     this.docStoreOffset = docStoreOffset;
     this.docStoreSegment = docStoreSegment;
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    this.hasProx = hasProx;
     delCount = 0;
     assert docStoreOffset == -1 || docStoreSegment != null;
   }
@@ -180,6 +184,10 @@ final class SegmentInfo {
         assert delCount <= docCount;
       } else
         delCount = -1;
+      if (format <= SegmentInfos.FORMAT_HAS_PROX)
+        hasProx = input.readByte() == 1;
+      else
+        hasProx = true;
     } else {
       delGen = CHECK_DIR;
       normGen = null;
@@ -190,6 +198,7 @@ final class SegmentInfo {
       docStoreIsCompoundFile = false;
       docStoreSegment = null;
       delCount = -1;
+      hasProx = true;
     }
   }
   
@@ -507,6 +516,16 @@ final class SegmentInfo {
     }
     output.writeByte(isCompoundFile);
     output.writeInt(delCount);
+    output.writeByte((byte) (hasProx ? 1:0));
+  }
+
+  void setHasProx(boolean hasProx) {
+    this.hasProx = hasProx;
+    clearFiles();
+  }
+
+  boolean getHasProx() {
+    return hasProx;
   }
 
   private void addIfExists(List files, String fileName) throws IOException {

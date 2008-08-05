@@ -41,7 +41,8 @@ class SegmentTermDocs implements TermDocs {
   private boolean haveSkipped;
   
   protected boolean currentFieldStoresPayloads;
-
+  protected boolean currentFieldOmitTf;
+  
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
     this.freqStream = (IndexInput) parent.freqStream.clone();
@@ -75,6 +76,7 @@ class SegmentTermDocs implements TermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = parent.fieldInfos.fieldInfo(term.field);
+    currentFieldOmitTf = (fi != null) ? fi.omitTf : false;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
@@ -105,14 +107,19 @@ class SegmentTermDocs implements TermDocs {
     while (true) {
       if (count == df)
         return false;
-
-      int docCode = freqStream.readVInt();
-      doc += docCode >>> 1;       // shift off low bit
-      if ((docCode & 1) != 0)       // if low bit is set
-        freq = 1;         // freq is one
-      else
-        freq = freqStream.readVInt();     // else read freq
-
+      final int docCode = freqStream.readVInt();
+      
+      if (currentFieldOmitTf) {
+        doc += docCode;
+        freq = 1;
+      } else {
+        doc += docCode >>> 1;       // shift off low bit
+        if ((docCode & 1) != 0)       // if low bit is set
+          freq = 1;         // freq is one
+        else
+          freq = freqStream.readVInt();     // else read freq
+      }
+      
       count++;
 
       if (deletedDocs == null || !deletedDocs.get(doc))
@@ -126,27 +133,49 @@ class SegmentTermDocs implements TermDocs {
   public int read(final int[] docs, final int[] freqs)
           throws IOException {
     final int length = docs.length;
+    if (currentFieldOmitTf) {
+      return readNoTf(docs, freqs, length);
+    } else {
+      int i = 0;
+      while (i < length && count < df) {
+        // manually inlined call to next() for speed
+        final int docCode = freqStream.readVInt();
+        doc += docCode >>> 1;       // shift off low bit
+        if ((docCode & 1) != 0)       // if low bit is set
+          freq = 1;         // freq is one
+        else
+          freq = freqStream.readVInt();     // else read freq
+        count++;
+
+        if (deletedDocs == null || !deletedDocs.get(doc)) {
+          docs[i] = doc;
+          freqs[i] = freq;
+          ++i;
+        }
+      }
+      return i;
+    }
+  }
+
+  private final int readNoTf(final int[] docs, final int[] freqs, final int length) throws IOException {
     int i = 0;
     while (i < length && count < df) {
-
       // manually inlined call to next() for speed
-      final int docCode = freqStream.readVInt();
-      doc += docCode >>> 1;       // shift off low bit
-      if ((docCode & 1) != 0)       // if low bit is set
-        freq = 1;         // freq is one
-      else
-        freq = freqStream.readVInt();     // else read freq
+      doc += freqStream.readVInt();       
       count++;
 
       if (deletedDocs == null || !deletedDocs.get(doc)) {
         docs[i] = doc;
-        freqs[i] = freq;
+        // Hardware freq to 1 when term freqs were not
+        // stored in the index
+        freqs[i] = 1;
         ++i;
       }
     }
     return i;
   }
-
+ 
+  
   /** Overridden by SegmentTermPositions to skip in prox stream. */
   protected void skipProx(long proxPointer, int payloadLength) throws IOException {}
 

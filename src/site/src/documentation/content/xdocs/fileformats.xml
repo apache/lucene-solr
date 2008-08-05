@@ -246,14 +246,16 @@
                     <p>Term Frequency
                         data. For each term in the dictionary, the numbers of all the
                         documents that contain that term, and the frequency of the term in
-                        that document.
+                        that document if omitTf is false.
                     </p>
                 </li>
 
                 <li>
                     <p>Term Proximity
                         data. For each term in the dictionary, the positions that the term
-                        occurs in each document.
+                        occurs in each document.  Note that this will
+                        not exist if all fields in all documents set
+                        omitTf to true.
                     </p>
                 </li>
 
@@ -826,11 +828,12 @@
                     <b>2.4 and above:</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
-                    IsCompoundFile&gt;<sup>SegCount</sup>, Checksum
+                    IsCompoundFile, DeletionCount, HasProx&gt;<sup>SegCount</sup>, Checksum
                 </p>
 
                 <p>
-                    Format, NameCounter, SegCount, SegSize, NumField, DocStoreOffset --&gt; Int32
+                    Format, NameCounter, SegCount, SegSize, NumField,
+                    DocStoreOffset, DeletionCount --&gt; Int32
                 </p>
 
                 <p>
@@ -842,7 +845,8 @@
                 </p>
 
                 <p>
-                    IsCompoundFile, HasSingleNormFile, DocStoreIsCompoundFile --&gt; Int8
+                    IsCompoundFile, HasSingleNormFile,
+                    DocStoreIsCompoundFile, HasProx --&gt; Int8
                 </p>
 
                 <p>
@@ -936,7 +940,16 @@
 		    This is used to verify integrity of the file on
 		    opening the index.
 		</p>
-		
+
+		<p>
+		    DeletionCount records the number of deleted
+		    documents in this segment.
+		</p>
+
+		<p>
+		    HasProx is 1 if any fields in this segment have
+		    omitTf set to false; else, it's 0.
+		</p>
 
             </section>
 
@@ -1264,7 +1277,9 @@
                             determines the position of this term's TermPositions within the .prx
                             file. In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
-                            term's data (or zero, for the first term in the file.
+                            term's data (or zero, for the first term in the file.  For fields
+			    with omitTf true, this will be 0 since
+                            prox information is not stored.
                         </p>
                         <p>SkipDelta determines the position of this
                             term's SkipData within the .frq file. In
@@ -1338,7 +1353,7 @@
                 <p>
                     The .frq file contains the lists of documents
                     which contain each term, along with the frequency of the term in that
-                    document.
+                    document (if omitTf is false).
                 </p>
                 <p>FreqFile (.frq) --&gt;
                     &lt;TermFreqs, SkipData&gt;
@@ -1349,7 +1364,7 @@
                     <sup>DocFreq</sup>
                 </p>
                 <p>TermFreq --&gt;
-                    DocDelta, Freq?
+                    DocDelta[, Freq?]
                 </p>
                 <p>SkipData --&gt;
                     &lt;&lt;SkipLevelLength, SkipLevel&gt;
@@ -1375,21 +1390,31 @@
                 <p>TermFreq
                     entries are ordered by increasing document number.
                 </p>
-                <p>DocDelta
-                    determines both the document number and the frequency. In
-                    particular, DocDelta/2 is the difference between this document number
-                    and the previous document number (or zero when this is the first
-                    document in a TermFreqs). When DocDelta is odd, the frequency is
-                    one. When DocDelta is even, the frequency is read as another VInt.
+                <p>DocDelta: if omitTf is false, this determines both
+                    the document number and the frequency. In
+                    particular, DocDelta/2 is the difference between
+                    this document number and the previous document
+                    number (or zero when this is the first document in
+                    a TermFreqs). When DocDelta is odd, the frequency
+                    is one. When DocDelta is even, the frequency is
+                    read as another VInt.  If omitTf is true, DocDelta
+                    contains the gap (not multiplied by 2) between
+                    document numbers and no frequency information is
+                    stored.
                 </p>
-                <p>For
-                    example, the TermFreqs for a term which occurs once in document seven
-                    and three times in document eleven would be the following sequence of
-                    VInts:
+                <p>For example, the TermFreqs for a term which occurs
+                    once in document seven and three times in document
+                    eleven, with omitTf false, would be the following
+                    sequence of VInts:
                 </p>
-                <p>15,
-                    8, 3
+                <p>15, 8, 3
                 </p>
+		<p> If omitTf were true it would be this sequence
+		of VInts instead:
+		  </p>
+		 <p>
+		   7,4
+                 </p>
                 <p>DocSkip records the document number before every
                     SkipInterval
                     <sup>th</sup>
@@ -1454,7 +1479,11 @@
 
                 <p>
                     The .prx file contains the lists of positions that
-                    each term occurs at within documents.
+                    each term occurs at within documents.  Note that
+                    fields with omitTf true do not store
+                    anything into this file, and if all fields in the
+                    index have omitTf true then the .prx file will not
+                    exist.
                 </p>
                 <p>ProxFile (.prx) --&gt;
                     &lt;TermPositions&gt;

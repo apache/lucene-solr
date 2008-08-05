@@ -83,6 +83,10 @@ final class SegmentMerger {
       checkAbort = new CheckAbort(merge, directory);
     termIndexInterval = writer.getTermIndexInterval();
   }
+  
+  boolean hasProx() {
+    return fieldInfos.hasProx();
+  }
 
   /**
    * Add an IndexReader to the collection of readers that are to be merged
@@ -164,6 +168,10 @@ final class SegmentMerger {
     // Basic files
     for (int i = 0; i < IndexFileNames.COMPOUND_EXTENSIONS.length; i++) {
       String ext = IndexFileNames.COMPOUND_EXTENSIONS[i];
+
+      if (ext.equals(IndexFileNames.PROX_EXTENSION) && !hasProx())
+        continue;
+
       if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&
                             !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
         files.add(segment + "." + ext);
@@ -198,11 +206,11 @@ final class SegmentMerger {
   }
 
   private void addIndexed(IndexReader reader, FieldInfos fieldInfos, Collection names, boolean storeTermVectors, boolean storePositionWithTermVector,
-                         boolean storeOffsetWithTermVector, boolean storePayloads) throws IOException {
+                         boolean storeOffsetWithTermVector, boolean storePayloads, boolean omitTf) throws IOException {
     Iterator i = names.iterator();
     while (i.hasNext()) {
       String field = (String)i.next();
-      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field), storePayloads);
+      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field), storePayloads, omitTf);
     }
   }
 
@@ -265,15 +273,16 @@ final class SegmentMerger {
         SegmentReader segmentReader = (SegmentReader) reader;
         for (int j = 0; j < segmentReader.getFieldInfos().size(); j++) {
           FieldInfo fi = segmentReader.getFieldInfos().fieldInfo(j);
-          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name), fi.storePayloads);
+          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name), fi.storePayloads, fi.omitTf);
         }
       } else {
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false, false);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), false, false, false, true);
-        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false, false, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.OMIT_TF), false, false, false, false, true);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), false, false, false, true, false);
+        addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false, false, false);
         fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
       }
     }
@@ -477,7 +486,8 @@ final class SegmentMerger {
   private final void mergeTerms() throws CorruptIndexException, IOException {
     try {
       freqOutput = directory.createOutput(segment + ".frq");
-      proxOutput = directory.createOutput(segment + ".prx");
+      if (hasProx())
+        proxOutput = directory.createOutput(segment + ".prx");
       termInfosWriter =
               new TermInfosWriter(directory, segment, fieldInfos,
                                   termIndexInterval);
@@ -561,11 +571,20 @@ final class SegmentMerger {
    */
   private final int mergeTermInfo(SegmentMergeInfo[] smis, int n)
           throws CorruptIndexException, IOException {
-    long freqPointer = freqOutput.getFilePointer();
-    long proxPointer = proxOutput.getFilePointer();
+    final long freqPointer = freqOutput.getFilePointer();
+    final long proxPointer;
+    if (proxOutput != null)
+      proxPointer = proxOutput.getFilePointer();
+    else
+      proxPointer = 0;
 
-    int df = appendPostings(smis, n);		  // append posting data
-
+    int df;
+    if (fieldInfos.fieldInfo(smis[0].term.field).omitTf) { // append posting data
+      df = appendPostingsNoTf(smis, n);     
+    } else{
+      df = appendPostings(smis, n);      
+    }
+    
     long skipPointer = skipListWriter.writeSkip(freqOutput);
 
     if (df > 0) {
@@ -672,6 +691,53 @@ final class SegmentMerger {
     return df;
   }
 
+  /** Process postings from multiple segments without tf, all positioned on the
+   *  same term. Writes out merged entries only into freqOutput, proxOut is not written.
+   *
+   * @param smis array of segments
+   * @param n number of cells in the array actually occupied
+   * @return number of documents across all segments where this term was found
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  private final int appendPostingsNoTf(SegmentMergeInfo[] smis, int n)
+          throws CorruptIndexException, IOException {
+    int lastDoc = 0;
+    int df = 0;           // number of docs w/ term
+    skipListWriter.resetSkip();
+    int lastPayloadLength = -1;   // ensures that we write the first length
+    for (int i = 0; i < n; i++) {
+      SegmentMergeInfo smi = smis[i];
+      TermPositions postings = smi.getPositions();
+      assert postings != null;
+      int base = smi.base;
+      int[] docMap = smi.getDocMap();
+      postings.seek(smi.termEnum);
+      while (postings.next()) {
+        int doc = postings.doc();
+        if (docMap != null)
+          doc = docMap[doc];                      // map around deletions
+        doc += base;                              // convert to merged space
+
+        if (doc < 0 || (df > 0 && doc <= lastDoc))
+          throw new CorruptIndexException("docs out of order (" + doc +
+              " <= " + lastDoc + " )");
+
+        df++;
+
+        if ((df % skipInterval) == 0) {
+          skipListWriter.setSkipData(lastDoc, false, lastPayloadLength);
+          skipListWriter.bufferSkip(df);
+        }
+
+        int docCode = (doc - lastDoc);   
+        lastDoc = doc;
+        freqOutput.writeVInt(docCode);    // write doc & freq=1
+      }
+    }
+    return df;
+  }
+  
   private void mergeNorms() throws IOException {
     byte[] normBuffer = null;
     IndexOutput output = null;

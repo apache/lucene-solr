@@ -42,7 +42,6 @@ final class TermsHash extends InvertedDocConsumer {
   final TermsHash nextTermsHash;
   final int bytesPerPosting;
   final int postingsFreeChunk;
-  final int streamCount;
   final DocumentsWriter docWriter;
   
   TermsHash primaryTermsHash;
@@ -55,7 +54,6 @@ final class TermsHash extends InvertedDocConsumer {
   public TermsHash(final DocumentsWriter docWriter, boolean trackAllocations, final TermsHashConsumer consumer, final TermsHash nextTermsHash) {
     this.docWriter = docWriter;
     this.consumer = consumer;
-    this.streamCount = consumer.streamCount;
     this.nextTermsHash = nextTermsHash;
     this.trackAllocations = trackAllocations;
 

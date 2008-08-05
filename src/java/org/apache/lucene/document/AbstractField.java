@@ -33,6 +33,7 @@ public abstract class AbstractField implements Fieldable {
   protected boolean isBinary = false;
   protected boolean isCompressed = false;
   protected boolean lazy = false;
+  protected boolean omitTf = false;
   protected float boost = 1.0f;
   // the one and only data object for all different kind of field values
   protected Object fieldsData = null;
@@ -203,6 +204,9 @@ public abstract class AbstractField implements Fieldable {
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }
 
+  /** True if tf is omitted for this indexed field */
+  public boolean getOmitTf() { return omitTf; }
+  
   /** Expert:
    *
    * If set, omit normalization factors associated with this indexed field.
@@ -210,6 +214,12 @@ public abstract class AbstractField implements Fieldable {
    */
   public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
 
+  /** Expert:
+  *
+  * If set, omit tf from postings of this indexed field.
+  */
+  public void setOmitTf(boolean omitTf) { this.omitTf=omitTf; }
+ 
   public boolean isLazy() {
     return lazy;
   }
@@ -256,6 +266,9 @@ public abstract class AbstractField implements Fieldable {
     }
     if (omitNorms) {
       result.append(",omitNorms");
+    }
+    if (omitTf) {
+      result.append(",omitTf");
     }
     if (lazy){
       result.append(",lazy");
