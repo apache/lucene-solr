@@ -84,7 +84,7 @@
   </target>
 
   <!-- Clean: cleans compiled files and other temporary artifacts. -->
-  <target name="clean" depends="contrib-clean"
+  <target name="clean" depends="clean-contrib"
           description="Cleans compiled files and other temporary artifacts.">
     <delete dir="${dest}" />
     <delete dir="${dist}" />
@@ -200,7 +200,7 @@
     </sequential>
   </target>
 
-  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="contrib-build">
+  <target name="javadoc-contrib" description="Generate javadoc for contrib classes" depends="build-contrib">
     <contrib-crawl target="javadoc"
                    failonerror="true"/>
   </target>
@@ -412,7 +412,7 @@
   <!-- Run contrib unit tests. -->
   <target name="test"
         description="Runs the core unit tests."
-        depends="core-test, contrib-test" />
+        depends="core-test, test-contrib" />
   
   <target name="junit" depends="compileTests">
     <!-- no description so it doesn't show up in -projecthelp -->  

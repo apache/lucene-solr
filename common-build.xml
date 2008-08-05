@@ -191,17 +191,17 @@
    </sequential>
   </macrodef>
 	
-  <target name="contrib-clean"
+  <target name="clean-contrib"
 	          description="Cleans all contrib modules and their tests">
 	<contrib-crawl target="clean"/>
   </target>
 	
-  <target name="contrib-build"
+  <target name="build-contrib"
           description="Builds all contrib modules and their tests">
     <contrib-crawl target="build"/>
   </target>
 
-  <target name="contrib-test" depends="contrib-build">
+  <target name="test-contrib" depends="build-contrib">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
 	
