@@ -41,7 +41,7 @@ public class ISOLatin1AccentFilter extends TokenFilter {
       // just return token as-is:
       for(int i=0;i<length;i++) {
         final char c = buffer[i];
-        if (c >= '\u00c0' && c <= '\u0178') {
+        if (c >= '\u00c0' && c <= '\uFB06') {
           removeAccents(buffer, length);
           result.setTermBuffer(output, 0, outputPos);
           break;
@@ -76,7 +76,7 @@ public class ISOLatin1AccentFilter extends TokenFilter {
 
       // Quick test: if it's not in range then just keep
       // current character
-      if (c < '\u00c0')
+      if (c < '\u00c0' || c > '\uFB06')
         output[outputPos++] = c;
       else {
         switch (c) {
@@ -107,6 +107,10 @@ public class ISOLatin1AccentFilter extends TokenFilter {
         case '\u00CF' : // Ï
           output[outputPos++] = 'I';
           break;
+        case '\u0132' : // Ĳ
+            output[outputPos++] = 'I';
+            output[outputPos++] = 'J';
+            break;
         case '\u00D0' : // Ð
           output[outputPos++] = 'D';
           break;
@@ -166,6 +170,10 @@ public class ISOLatin1AccentFilter extends TokenFilter {
         case '\u00EF' : // ï
           output[outputPos++] = 'i';
           break;
+        case '\u0133' : // ĳ
+            output[outputPos++] = 'i';
+            output[outputPos++] = 'j';
+            break;
         case '\u00F0' : // ð
           output[outputPos++] = 'd';
           break;
@@ -202,6 +210,37 @@ public class ISOLatin1AccentFilter extends TokenFilter {
         case '\u00FF' : // ÿ
           output[outputPos++] = 'y';
           break;
+        case '\uFB00': // ﬀ
+            output[outputPos++] = 'f';
+            output[outputPos++] = 'f';
+            break;
+        case '\uFB01': // ﬁ
+            output[outputPos++] = 'f';
+            output[outputPos++] = 'i';
+            break;
+        case '\uFB02': // ﬂ
+            output[outputPos++] = 'f';
+            output[outputPos++] = 'l';
+            break;
+        // following 2 are commented as they can break the maxSizeNeeded (and doing *3 could be expensive)
+//        case '\uFB03': // ﬃ
+//            output[outputPos++] = 'f';
+//            output[outputPos++] = 'f';
+//            output[outputPos++] = 'i';
+//            break;
+//        case '\uFB04': // ﬄ
+//            output[outputPos++] = 'f';
+//            output[outputPos++] = 'f';
+//            output[outputPos++] = 'l';
+//            break;
+        case '\uFB05': // ﬅ
+            output[outputPos++] = 'f';
+            output[outputPos++] = 't';
+            break;
+        case '\uFB06': // ﬆ
+            output[outputPos++] = 's';
+            output[outputPos++] = 't';
+        	break;
         default :
           output[outputPos++] = c;
           break;

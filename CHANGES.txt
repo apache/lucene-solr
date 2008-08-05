@@ -147,6 +147,8 @@ Bug fixes
 14. LUCENE-1310: Fixed SloppyPhraseScorer to work also for terms repeating more 
     than twice in the query. (Doron Cohen)
 
+15. LUCENE-1351: ISOLatin1AccentFilter now cleans additional ligatures (Cedrik Lime via Grant Ingersoll)
+
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

@@ -23,7 +23,7 @@ import java.io.StringReader;
 
 public class TestISOLatin1AccentFilter extends LuceneTestCase {
   public void testU() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ"));
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ISOLatin1AccentFilter filter = new ISOLatin1AccentFilter(stream);
     assertEquals("Des", filter.next().termText());
     assertEquals("mot", filter.next().termText());
@@ -47,6 +47,7 @@ public class TestISOLatin1AccentFilter extends LuceneTestCase {
     assertEquals("I", filter.next().termText());
     assertEquals("I", filter.next().termText());
     assertEquals("I", filter.next().termText());
+    assertEquals("IJ", filter.next().termText());
     assertEquals("D", filter.next().termText());
     assertEquals("N", filter.next().termText());
     assertEquals("O", filter.next().termText());
@@ -79,6 +80,7 @@ public class TestISOLatin1AccentFilter extends LuceneTestCase {
     assertEquals("i", filter.next().termText());
     assertEquals("i", filter.next().termText());
     assertEquals("i", filter.next().termText());
+    assertEquals("ij", filter.next().termText());
     assertEquals("d", filter.next().termText());
     assertEquals("n", filter.next().termText());
     assertEquals("o", filter.next().termText());
@@ -96,6 +98,8 @@ public class TestISOLatin1AccentFilter extends LuceneTestCase {
     assertEquals("u", filter.next().termText());
     assertEquals("y", filter.next().termText());
     assertEquals("y", filter.next().termText());
+    assertEquals("fi", filter.next().termText());
+    assertEquals("fl", filter.next().termText());
     assertNull(filter.next());
   }
 }
