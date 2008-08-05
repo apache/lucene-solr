@@ -83,11 +83,12 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxUpdate() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    System.out.println("Servers in testJmxUpdate: " + servers);
+    System.err.println("Servers in testJmxUpdate: " + servers);
+    System.err.println(h.getCore().getInfoRegistry());
 
     ObjectName searcher = getObjectName("searcher", h.getCore().getInfoRegistry().get("searcher")); 
     MBeanServer mbeanServer = servers.get(0);
-    System.out.println("Mbeans in server: " + mbeanServer.queryNames(null, null));
+    System.err.println("Mbeans in server: " + mbeanServer.queryNames(null, null));
 
     assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 
