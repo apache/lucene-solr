@@ -37,8 +37,8 @@ import org.apache.solr.util.AbstractSolrTestCase;
  *
  * It is tricky to be correctly notified when commits occur: Solr's post-commit
  * hook is called after commit has completed but before the search is opened.  The
- * best that can be done is wait for a post commit hook, then add a document (which
- * will block while the searcher is opened)
+ * best that can be done is wait for a post commit hook, and then wait for a little
+ * longer for a new searcher to be registered. 
  */
 class CommitListener implements SolrEventListener {
   public boolean triggered = false;
@@ -50,8 +50,13 @@ class CommitListener implements SolrEventListener {
   public boolean waitForCommit(int timeout) {
     triggered = false;
     for (int towait=timeout; towait > 0; towait -= 250) {
-      if (triggered) break;
-      try { Thread.sleep( 250 ); } catch (InterruptedException e) {}
+      try {
+        if (triggered) {
+          Thread.sleep( 500 );
+          break;
+        }
+        Thread.sleep( 250 );
+      } catch (InterruptedException e) {}
     }
     return triggered;
   }
@@ -149,7 +154,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForCommit(20000));
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
@@ -163,7 +168,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForCommit(20000));
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
@@ -180,7 +185,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(10000));
+    assertTrue(trigger.waitForCommit(20000));
     req.setContentStreams( toContentStreams(
       adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
