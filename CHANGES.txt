@@ -588,6 +588,8 @@ Build
 
  5. SOLR-673: Modify build file to create javadocs for core, solrj, contrib and "all inclusive" (shalin)
 
+ 6. SOLR-672: Nightly release includes contrib sources. (Jeremy Hinegardner, shalin)
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1

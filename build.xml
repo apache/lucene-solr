@@ -608,8 +608,8 @@
     <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/**"
-        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/" />
+        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
+        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
