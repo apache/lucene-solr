@@ -16,13 +16,19 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+
 import java.io.Reader;
 import java.io.Serializable;
 
-import org.apache.lucene.analysis.TokenStream;
-
 /**
  * Synonymous with {@link Field}.
+ *
+ * <p><bold>WARNING</bold>: This interface may change within minor versions, despite Lucene's backward compatibility requirements.
+ * This means new methods may be added from version to version.  This change only affects the Fieldable API; other backwards
+ * compatibility promises remain intact. For example, Lucene can still
+ * read and write indices created within the same major version.
+ * </p>
  *
  **/
 public interface Fieldable extends Serializable {

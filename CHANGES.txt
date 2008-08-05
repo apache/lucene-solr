@@ -1,6 +1,13 @@
 Lucene Change Log
 $Id$
 
+NOTE:  In a minor change to Lucene's backward compatibility policy, we are now allowing the Fieldable interface to have
+changes, within reason, and made on a case-by-case basis.  If an application implements it's own Fieldable, please be aware
+  of this.  Otherwise, no need to be concerned.  For more details see https://issues.apache.org/jira/browse/LUCENE-1349.
+  This is in effect for all 2.X releases, starting with 2.4.  Also note, that in all likelihood, Fieldable will be changed
+  in 3.0.
+
+
 ======================= Trunk (not yet released) =======================
 
 Changes in runtime behavior
