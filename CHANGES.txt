@@ -249,6 +249,9 @@ Documentation
      from CHANGES.txt. This HTML file is curretly visible only via developers page.     
      (Steven Rowe via Doron Cohen)
 
+  3. LUCENE-1349: Fieldable can now be changed without breaking backward compatibility rules (within reason.  See the note at
+  the top of this file and also on Fieldable.java).  (Grant Ingersoll)
+
 Build
 
   1. LUCENE-1153: Added JUnit JAR to new lib directory.  Updated build to rely on local JUnit instead of ANT/lib.
