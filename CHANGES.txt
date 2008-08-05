@@ -257,6 +257,8 @@ Test Cases
     Within this fix, "greedy" flag was added to TimeLimitedCollector, to allow the wrapped 
     collector to collect also the last doc, after allowed-tTime passed. (Doron Cohen)   
 	
+ 2. LUCENE-1348: relax TestTimeLimitedCollector to not fail due to 
+    timeout exceeded (just because test machine is very busy).
 	
 ======================= Release 2.3.2 2008-05-05 =======================
 

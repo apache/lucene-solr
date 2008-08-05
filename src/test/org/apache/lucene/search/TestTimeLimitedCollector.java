@@ -185,12 +185,17 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     // a) Not too early
     assertTrue ( "elapsed="+timoutException.getTimeElapsed()+" <= (allowed-resolution)="+(TIME_ALLOWED-TimeLimitedCollector.getResolution()),
         timoutException.getTimeElapsed() > TIME_ALLOWED-TimeLimitedCollector.getResolution());
-    // b) Not too late  (this part might be problematic in a busy system, consider removing it if it raises false test failures. 
-    assertTrue ( "lastDoc="+exceptionDoc+
+    // b) Not too late.
+    //    This part is problematic in a busy test system, so we just print a warning.
+    //    We already verified that a timeout occurred, we just can't be picky about how long it took.
+    if (timoutException.getTimeElapsed() > maxTime(multiThreaded)) {
+      System.out.println("Informative: timeout exceeded (no action required: most probably just " +
+        " because the test machine is slower than usual):  " +
+        "lastDoc="+exceptionDoc+
         " ,&& allowed="+timoutException.getTimeAllowed() +
         " ,&& elapsed="+timoutException.getTimeElapsed() +
-        " >= " + maxTimeStr(multiThreaded),
-        timoutException.getTimeElapsed() < maxTime(multiThreaded));
+        " >= " + maxTimeStr(multiThreaded));
+    }
   }
 
   private long maxTime(boolean multiThreaded) {
