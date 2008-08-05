@@ -194,7 +194,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return facet sort or default of true
    */
   public boolean getFacetSort() {
-    return this.getBool(FacetParams.FACET_SORT, false);
+    return this.getBool(FacetParams.FACET_SORT, true);
   }
 
   /** set facet sort

@@ -89,4 +89,11 @@ public class SolrQueryTest extends TestCase {
     
     System.out.println(q);
   }
+  
+  public void testFacetSort() {
+    SolrQuery q = new SolrQuery("dog");
+    assertTrue("expected default value to be true", q.getFacetSort());
+    q.setFacetSort(false);
+    assertFalse("expected set value to be false", q.getFacetSort());
+  }
 }
