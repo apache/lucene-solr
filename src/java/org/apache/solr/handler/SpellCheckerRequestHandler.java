@@ -182,7 +182,13 @@ pre.code
  * 
  * @see <a href="http://wiki.apache.org/jakarta-lucene/SpellChecker">The Lucene Spellchecker documentation</a>
  *
+ *
+ * @deprecated Use {@link org.apache.solr.handler.component.SpellCheckComponent} instead.
+ *
+ * See also https://issues.apache.org/jira/browse/SOLR-474 and https://issues.apache.org/jira/browse/SOLR-485
+ *
  */
+@Deprecated
 public class SpellCheckerRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static Logger log = Logger.getLogger(SpellCheckerRequestHandler.class.getName());
