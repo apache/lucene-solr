@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -28,13 +27,13 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.apache.lucene.search.BooleanQuery;
 
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -209,32 +208,6 @@ public class SolrConfig extends Config {
   @Deprecated
   public SolrQueryRequest getPingQueryRequest(SolrCore core) {
     return new LocalSolrQueryRequest(core, pingQueryParams);
-  }
-
-  /**
-   * Get a list of NamedList, one for each node matched by the given XPath 
-   *
-   * @param xpath the XPath to match
-   * @return a list of NamedList instances corresponding to each node matched by the given XPath
-   */
-  public List<NamedList> getAllNodesAsNamedList(String xpath) {
-    NodeList nodes = (NodeList) evaluate(xpath, XPathConstants.NODESET);
-    List<NamedList> result = new ArrayList<NamedList>();
-    for (int i = 0; i < nodes.getLength(); i++) {
-      result.add(DOMUtil.childNodesToNamedList(nodes.item(i)));
-    }
-    return result;
-  }
-
-  /**
-   * Get the NamedList corresponding to the first node matched by the given XPath
-   *
-   * @param xpath the XPath to match
-   * @return the NamedList corresponding to the first node matched by the given XPath
-   */
-  public NamedList getNodeAsNamedList(String xpath) {
-    List<NamedList> list = getAllNodesAsNamedList(xpath);
-    return list.isEmpty() ? null : list.get(0);
   }
 
   public static class JmxConfiguration {

@@ -345,9 +345,6 @@ New Features
 
 69. SOLR-506: Emitting HTTP Cache headers can be enabled or disabled through configuration
               on a per-handler basis (shalin)
-
-70. SOLR-614: Allow components to be configured with NamedListInitializedPlugin using arbitary XML in solrconfig
-              without using XPath (Noble Paul, shalin)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

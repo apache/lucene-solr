@@ -89,8 +89,7 @@ public class DOMUtil {
   // Should these be moved to Config?  Should all of these things?
   //////////////////////////////////////////////////////////
   public static NamedList<Object> childNodesToNamedList(Node nd) {
-    NamedList<Object> nl = nodesToNamedList(nd.getChildNodes());
-    return nl;
+    return nodesToNamedList(nd.getChildNodes());
   }
 
   public static List childNodesToList(Node nd) {
@@ -147,49 +146,10 @@ public class DOMUtil {
       val = childNodesToNamedList(nd);
     } else if ("arr".equals(type)) {
       val = childNodesToList(nd);
-    } else {
-      name = type;
-      val = readFlexibleNamedList(nd);
     }
 
     if (nlst != null) nlst.add(name,val);
     if (arr != null) arr.add(val);
-  }
-
-  private static Object readFlexibleNamedList(Node nd) {
-    if (hasChildren(nd)) {
-      NamedList nl = new NamedList<Object>();
-      readAttributes(nd, nl);
-      NodeList nlist = nd.getChildNodes();
-      if (nlist != null) {
-        for (int i = 0; i < nlist.getLength(); i++) {
-          if (nlist.item(i).getNodeType() == Node.ELEMENT_NODE)
-            addToNamedList(nlist.item(i), nl, null);
-        }
-      }
-      return nl;
-    } else {
-      return getText(nd);
-    }
-  }
-
-  private static void readAttributes(Node nd, NamedList nl) {
-    NamedNodeMap attrs = nd.getAttributes();
-    if (attrs != null) {
-      for (int i = 0; i < attrs.getLength(); i++) {
-        Node nameNd = attrs.item(i);
-        nl.add("@"+nameNd.getNodeName(), nameNd.getNodeValue());
-      }
-    }
-  }
-
-  private static boolean hasChildren(Node nd){
-    if(nd.hasAttributes()) return true;
-    NodeList nlst = nd.getChildNodes();
-     for (int i=0; i<nlst.getLength(); i++) {
-       if(nlst.item(i).getNodeType() == Node.ELEMENT_NODE) return true;
-    }
-    return false;
   }
 
   /**
