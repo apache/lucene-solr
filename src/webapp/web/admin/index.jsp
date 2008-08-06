@@ -34,8 +34,12 @@
 	<h3>Solr</h3>
   </td>
   <td>
-    [<a href="file/?file=<%=core.getSchemaFile()%>">Schema</a>]
-    [<a href="file/?file=<%=core.getConfigFile()%>">Config</a>]
+    <% if (null != core.getSchemaResource()) { %>
+    [<a href="file/?file=<%=core.getSchemaResource()%>">Schema</a>]
+    <% }
+       if (null != core.getConfigResource()) { %>
+    [<a href="file/?file=<%=core.getConfigResource()%>">Config</a>]
+    <% } %>
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
     [<a href="schema.jsp">Schema Browser</a>]
     <br>
