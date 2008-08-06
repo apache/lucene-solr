@@ -74,8 +74,13 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     assert freePostingsCount == 0;
     termsHash.getPostings(freePostings);
     freePostingsCount = freePostings.length;
-    for(int i=0;i<freePostingsCount;i++)
-      assert freePostings[i] != null;
+    assert noNullPostings(freePostings, freePostingsCount, "consumer=" + consumer);
+  }
+
+  private static boolean noNullPostings(RawPostingList[] postings, int count, String details) {
+    for(int i=0;i<count;i++)
+      assert postings[i] != null: "postings[" + i + "] of " + count + " is null: " + details;
+    return true;
   }
 
   public void startDocument() throws IOException {

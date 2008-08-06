@@ -44,11 +44,11 @@ final class TermsHash extends InvertedDocConsumer {
   final int postingsFreeChunk;
   final DocumentsWriter docWriter;
   
-  TermsHash primaryTermsHash;
+  private TermsHash primaryTermsHash;
 
-  RawPostingList[] postingsFreeList = new RawPostingList[1];
-  int postingsFreeCount;
-  int postingsAllocCount;
+  private RawPostingList[] postingsFreeList = new RawPostingList[1];
+  private int postingsFreeCount;
+  private int postingsAllocCount;
   boolean trackAllocations;
 
   public TermsHash(final DocumentsWriter docWriter, boolean trackAllocations, final TermsHashConsumer consumer, final TermsHash nextTermsHash) {
@@ -176,17 +176,6 @@ final class TermsHash extends InvertedDocConsumer {
     return any;
   }
 
-  // USE ONLY FOR DEBUGGING!
-  /*
-    public String getPostingText() {
-    char[] text = charPool.buffers[p.textStart >> CHAR_BLOCK_SHIFT];
-    int upto = p.textStart & CHAR_BLOCK_MASK;
-    while(text[upto] != 0xffff)
-    upto++;
-    return new String(text, p.textStart, upto-(p.textStart & BYTE_BLOCK_MASK));
-    }
-  */
-
   synchronized public void recyclePostings(final RawPostingList[] postings, final int numPostings) {
 
     assert postings.length >= numPostings;
@@ -219,12 +208,9 @@ final class TermsHash extends InvertedDocConsumer {
                      postings, 0, numToCopy);
 
     // Directly allocate the remainder if any
-    if (numToCopy < postings.length) {
+    if (numToCopy != postings.length) {
       final int extra = postings.length - numToCopy;
       final int newPostingsAllocCount = postingsAllocCount + extra;
-
-      if (newPostingsAllocCount > postingsFreeList.length)
-        postingsFreeList = new RawPostingList[ArrayUtil.getNextSize(newPostingsAllocCount)];
 
       consumer.createPostings(postings, numToCopy, extra);
       assert docWriter.writer.testPoint("TermsHash.getPostings after create");
@@ -232,6 +218,11 @@ final class TermsHash extends InvertedDocConsumer {
 
       if (trackAllocations)
         docWriter.bytesAllocated(extra * bytesPerPosting);
+
+      if (newPostingsAllocCount > postingsFreeList.length)
+        // Pre-allocate the postingsFreeList so it's large
+        // enough to hold all postings we've given out
+        postingsFreeList = new RawPostingList[ArrayUtil.getNextSize(newPostingsAllocCount)];
     }
 
     postingsFreeCount -= numToCopy;
