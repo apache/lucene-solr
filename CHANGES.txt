@@ -574,6 +574,8 @@ Other Changes
 
 18. SOLR-591: Changed Solrj default value for facet.sort to true (Lars Kotthoff via Shalin) 
     
+19. Upgraded to Lucene 2.4-dev (r669476) to support SOLR-572 (gsingers)
+
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on
     project-name-version.jar.  This yields, for example:
