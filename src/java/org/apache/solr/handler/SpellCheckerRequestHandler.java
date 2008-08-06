@@ -75,14 +75,19 @@ pre.code
 &lt;str name="words"&gt;facial&lt;/str&gt;
 &lt;str name="exist"&gt;true&lt;/str&gt; </pre>
  * 
- * <p>If a query string parameter of "multiWords" is used, then each word within the
+ * <p>If a query string parameter of "extendedResults" is used, then each word within the
  * "q" parameter (seperated by a space or +) will 
  * be iterated through the spell checker and will be wrapped in an 
  * NamedList.  Each word will then get its own set of results: words, exists, and
  * suggestions.</p>
+ * <P><bold>NOTE</bold>: Query terms are simply split on whitespace when using extendedResults mode.  This is may not be adequate.
+ *  See the {@link org.apache.solr.handler.component.SpellCheckComponent} for alternatives.
+ * </P>
+ * <p>Also note that multiword queries will be treated as a single term if extendedResults is false.  This may or may not make sense
+ * depending on how the spelling field was indexed.</p>
  * 
  * <p>Examples of the use of the standard ouput (XML) without and with the 
- * use of the "multiWords" parameter are as follows.</p>
+ * use of the "extendedResults" parameter are as follows.</p>
  * 
  * <p> The following URL
  * examples were configured with the solr.SpellCheckerRequestHandler 
@@ -263,7 +268,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase implements So
   }
 
   /**
-   * Processes the following query string parameters: q, multiWords, cmd rebuild,
+   * Processes the following query string parameters: q, extendedResults, cmd rebuild,
    * cmd reopen, accuracy, suggestionCount, restrictToField, and onlyMorePopular.
    */
   @Override
