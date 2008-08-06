@@ -50,6 +50,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected SolrParams invariants;
   volatile long totalTime = 0;
   long handlerStart = System.currentTimeMillis();
+  protected boolean httpCaching = true;
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -113,6 +114,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         invariants = SolrParams.toSolrParams((NamedList)o);
       }
     }
+    
+    if (initArgs != null) {
+      Object caching = initArgs.get("httpCaching");
+      httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
+    }
   }
 
   public NamedList getInitArgs() {
@@ -125,6 +131,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numRequests++;
     try {
       U.setDefaults(req,defaults,appends,invariants);
+      rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
       // count timeouts
       boolean timedOut = (Boolean)rsp.getResponseHeader().get("partialResults") == null ? false : (Boolean)rsp.getResponseHeader().get("partialResults");

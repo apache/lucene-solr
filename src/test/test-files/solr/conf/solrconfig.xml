@@ -229,7 +229,9 @@
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler"/>
+  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  	<bool name="httpCaching">true</bool>
+  </requestHandler>
   <requestHandler name="dismaxOldStyleDefaults"
                   class="solr.DisMaxRequestHandler" >
      <!-- for historic reasons, DisMaxRequestHandler will use all of
@@ -302,7 +304,9 @@
   </requestHandler>
 
   <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
+  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
+  	<bool name="httpCaching">false</bool>
+  </requestHandler>
 
   <!-- test elevation -->
   <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >

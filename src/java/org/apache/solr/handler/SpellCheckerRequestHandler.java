@@ -263,7 +263,6 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase implements So
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
     throws Exception {
-    rsp.setHttpCaching(true);
     SolrParams p = req.getParams();
     String words = p.get("q");
     String cmd = p.get("cmd");

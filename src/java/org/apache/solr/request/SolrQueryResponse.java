@@ -75,7 +75,7 @@ public class SolrQueryResponse {
   /**
    * Should this response be tagged with HTTP caching headers?
    */
-  protected boolean httpCaching=false;
+  protected boolean httpCaching=true;
   
   /***
    // another way of returning an error
