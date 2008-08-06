@@ -33,7 +33,7 @@ import java.util.Map.Entry;
  * Document, a SolrDocument may have an Object value matching the type defined in
  * schema.xml
  * 
- * For indexing documents, use the SolrInputDocumet that contains extra information
+ * For indexing documents, use the SolrInputDocument that contains extra information
  * for document and field boosting.
  * 
  * @version $Id$
