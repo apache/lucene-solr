@@ -590,6 +590,9 @@
       </fileset>
     </copy>
     <chmod dir="${example}/solr/bin" perm="755" includes="**"/>
+    <delete includeemptydirs="true">
+      <fileset dir="${example}/work" includes="**/*"/>
+    </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 
