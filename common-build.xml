@@ -86,6 +86,8 @@
   
   <!-- JUnit properties -->
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
+  <property name="junit.output.dir" location="${common.dir}/${dest}/test-results"/>
+  <property name="junit.reports" location="${common.dir}/${dest}/test-results/reports"/>
   
   <available property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"

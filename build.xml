@@ -33,10 +33,6 @@
   <!-- Example directory -->
   <property name="example" value="example" />
 
-  <!-- JUnit properties -->
-  <property name="junit.output.dir" location="${dest}/test-results"/>
-  <property name="junit.reports" location="${dest}/test-results/reports"/>
-
   <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
   <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
 

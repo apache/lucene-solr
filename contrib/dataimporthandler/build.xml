@@ -41,6 +41,9 @@
 	
   <target name="clean">
   	<delete failonerror="false" dir="target"/>
+    <delete failonerror="false">
+      <fileset dir="src/test/resources" includes="**/dataimport.properties" />
+    </delete>
   </target>
 	
   <target name="init">
@@ -68,7 +71,7 @@
   </target>
 	
   <target name="test" depends="compileTests">
-  	<mkdir dir="target/test-results"/>
+  	<mkdir dir="${junit.output.dir}"/>
   	
   	<junit printsummary="on"
            haltonfailure="no"
@@ -79,10 +82,10 @@
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
-      <batchtest fork="yes" todir="target/test-results" unless="testcase">
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
         <fileset dir="src/test/java" includes="${junit.includes}"/>
       </batchtest>
-      <batchtest fork="yes" todir="target/test-results" if="testcase">
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test/java" includes="**/${testcase}.java"/>
       </batchtest>
     </junit>
