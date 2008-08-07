@@ -233,7 +233,7 @@ public final class LogLevelSelection extends HttpServlet {
         level = l;
       }
     }
-    return level;
+    return level != null ? level : Level.OFF;
   }
 
   private static class LogWrapper
