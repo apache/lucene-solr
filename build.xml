@@ -457,6 +457,8 @@
     <clover-setup initString="${clover.db.dir}/solr_coverage.db">
       <fileset dir="src/java"/>
       <fileset dir="src/webapp/src"/>
+      <fileset dir="${solrj-dir}/src" />
+      <fileset dir="contrib/dataimporthandler/src/main/java" />
     </clover-setup>
   </target>
 
