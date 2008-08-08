@@ -25,7 +25,7 @@ import java.util.Map;
  * </p>
  * <p/>
  * <p>
- * Implementations of this interface must provide a public no-args constructor.
+ * Implementations of this abstract class must provide a public no-args constructor.
  * </p>
  * <p/>
  * <p>

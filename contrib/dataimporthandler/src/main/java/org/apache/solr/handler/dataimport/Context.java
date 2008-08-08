@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * <p>
- * This interface is supposed to give access to all available objects. So any
+ * This abstract class gives access to all available objects. So any
  * component implemented by a user can have the full power of DataImportHandler
  * </p>
  * <p>

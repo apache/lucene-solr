@@ -11,7 +11,6 @@ import java.util.Map;
  * <p>
  * An implementation for the Context
  * </p>
- * <p/>
  * <b>This API is experimental and subject to change</b>
  *
  * @version $Id$

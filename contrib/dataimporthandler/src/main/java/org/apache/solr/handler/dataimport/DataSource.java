@@ -25,7 +25,7 @@ import java.util.Properties;
  * </p>
  * <p/>
  * <p>
- * Implementation of this interface must provide a default no-arg constructor
+ * Implementation of this abstract class must provide a default no-arg constructor
  * </p>
  * <p/>
  * <p>
