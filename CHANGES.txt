@@ -305,6 +305,7 @@ New Features
               Also includes ability to add your own SolrSpellChecker implementation that plugs in.
               See http://wiki.apache.org/solr/SpellCheckComponent for more details
               (Shalin Shekhar Mangar, Bojan Smid, gsingers)
+53a. SOLR-679: Added accessor methods to Lucene based spell checkers (gsingers)
 
 54. SOLR-423: Added Request Handler close hook notification so that RequestHandlers can be notified when a core is closing.  (gsingers, ryan)
 

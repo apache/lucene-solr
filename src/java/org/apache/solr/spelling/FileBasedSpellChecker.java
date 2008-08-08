@@ -129,5 +129,8 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
       }
     }
   }
-  
+
+  public String getCharacterEncoding() {
+    return characterEncoding;
+  }
 }

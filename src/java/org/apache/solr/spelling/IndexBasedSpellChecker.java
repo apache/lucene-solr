@@ -108,4 +108,9 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     //reload the source
     initSourceReader();
   }
+
+
+  public float getThreshold() {
+    return threshold;
+  }
 }

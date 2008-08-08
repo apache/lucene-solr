@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -345,6 +346,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     public void postCommit() {
     }
+  }
+
+  public Map<String, SolrSpellChecker> getSpellCheckers() {
+    return Collections.unmodifiableMap(spellCheckers);
   }
 
   // ///////////////////////////////////////////

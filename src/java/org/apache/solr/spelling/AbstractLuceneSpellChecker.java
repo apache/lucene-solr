@@ -168,4 +168,42 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       index = new RAMDirectory();
     }
   }
+
+  /*
+  * @return the Accuracy used for the Spellchecker
+  * */
+  public float getAccuracy() {
+    return accuracy;
+  }
+
+  /*
+  * @return the Field used
+  *
+  * */
+  public String getField() {
+    return field;
+  }
+
+  /*
+  *
+  * @return the FieldType name.
+  * */
+  public String getFieldTypeName() {
+    return fieldTypeName;
+  }
+
+
+  /*
+  * @return the Index directory
+  * */
+  public String getIndexDir() {
+    return indexDir;
+  }
+
+  /*
+  * @return the location of the source
+  * */
+  public String getSourceLocation() {
+    return sourceLocation;
+  }
 }
