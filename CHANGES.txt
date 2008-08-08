@@ -583,6 +583,8 @@ Other Changes
     links more resilient to configs loaded via an InputStream
     (Lars Kotthoff, hossman)
 
+21. SOLR-682: Scripts now support FreeBSD (Richard Trey Hyde via gsingers)
+
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on
     project-name-version.jar.  This yields, for example:

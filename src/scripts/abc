@@ -175,7 +175,7 @@ trap 'echo cleaning up, please wait ...;/bin/rm -rf ${data_dir}/${name} ${data_d
 
 # make a backup using hard links into temporary location
 # then move it into place atomically
-if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
 then
   orig_dir=$(pwd)
   mkdir ${data_dir}/${temp}

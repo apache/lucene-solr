@@ -91,7 +91,7 @@ fi
 
 function remove
 {
-    if [[ "${OS}" == "Darwin" ]]
+    if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
     then
      syncing=`ps -www -U ${user} |grep -w rsync|grep -v grep|grep -w $1`
     else

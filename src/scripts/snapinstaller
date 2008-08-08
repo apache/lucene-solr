@@ -141,7 +141,7 @@ fi
 # install using hard links into temporary directory
 # remove original index and then atomically copy new one into place
 logMessage installing snapshot ${name}
-if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
 then
   orig_dir=$(pwd)
   mkdir ${data_dir}/index.tmp$$ && \

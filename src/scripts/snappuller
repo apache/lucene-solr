@@ -200,7 +200,7 @@ fi
 # take a snapshot of current index so that only modified files will be rsync-ed
 # put the snapshot in the 'work-in-progress" directory to prevent it from
 # being installed while the copying is still in progress
-if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
 then
   orig_dir=$(pwd)
   mkdir ${data_dir}/${name}-wip
