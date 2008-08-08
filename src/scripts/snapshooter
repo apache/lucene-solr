@@ -36,10 +36,11 @@ usage: $prog [-d dir] [-u username] [-v]
        -u          specify user to sudo to before running script
        -v          increase verbosity
        -V          output debugging info
+       -c          only take snapshot if different than previous
 "
 
 # parse args
-while getopts d:u:vV OPTION
+while getopts d:u:vVc OPTION
 do
     case $OPTION in
     d)
@@ -54,6 +55,9 @@ do
     V)
         debug="V"
         ;;
+    c)
+        check=1
+ 	;;
     *)
         echo "$USAGE"
         exit 1
@@ -95,6 +99,20 @@ then
     logExit aborted 1
 fi
 
+if [[ ${check} ]]
+then
+   previous=`find ${data_dir} -name snapshot.\* | sort -r  | head -1` 
+   if [[ -d ${previous} ]]
+   then
+     differences=`diff -q ${data_dir}/index ${previous} | wc -l` 
+     if [[ ${differences} -lt 1 ]]
+     then 
+       logMessage Snap would be same as last, exiting
+       logExit aborted 1 
+     fi
+   fi
+fi
+
 # clean up after INT/TERM
 trap 'echo cleaning up, please wait ...;/bin/rm -rf ${name} ${temp};logExit aborted 13' INT TERM
 
@@ -102,7 +120,7 @@ logMessage taking snapshot ${name}
 
 # take a snapshot using hard links into temporary location
 # then move it into place atomically
-if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" ]]
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin"  || "${OS}" == "FreeBSD" ]]
 then
   orig_dir=$(pwd)
   mkdir ${temp}

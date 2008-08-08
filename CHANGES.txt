@@ -381,6 +381,8 @@ Optimizations
  7. SOLR-330: Converted TokenStreams to use Lucene's new char array based
     capabilities. (gsingers)
 
+ 8. SOLR-624: Only take snapshots if there are differences to the index (Richard Trey Hyde via gsingers)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
