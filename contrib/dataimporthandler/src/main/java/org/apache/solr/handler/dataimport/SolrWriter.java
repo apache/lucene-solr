@@ -20,7 +20,8 @@ import org.apache.lucene.document.Document;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.common.SolrInputDocument;
 
 import java.io.*;
 import java.text.ParseException;
@@ -48,29 +49,29 @@ public abstract class SolrWriter {
 
   static final String LAST_INDEX_KEY = "last_index_time";
 
-  private final UpdateHandler updater;
+  private final UpdateRequestProcessor processor;
 
   private final String configDir;
 
-  public SolrWriter(UpdateHandler updater, String confDir) {
-    this.updater = updater;
+  public SolrWriter(UpdateRequestProcessor processor, String confDir) {
+    this.processor = processor;
     configDir = confDir;
 
   }
 
-  public boolean upload(Document d) {
+  public boolean upload(SolrInputDocument d) {
     try {
       AddUpdateCommand command = new AddUpdateCommand();
-      command.doc = d;
+      command.solrDoc = d;
       command.allowDups = false;
       command.overwritePending = true;
       command.overwriteCommitted = true;
-      updater.addDoc(command);
+      processor.processAdd(command);
     } catch (IOException e) {
       LOG.log(Level.SEVERE, "Exception while adding: " + d, e);
       return false;
     } catch (Exception e) {
-      LOG.log(Level.WARNING, "Error creating document : " + d);
+      LOG.log(Level.WARNING, "Error creating document : " + d, e);
       return false;
     }
 
@@ -84,7 +85,7 @@ public abstract class SolrWriter {
       delCmd.id = id.toString();
       delCmd.fromPending = true;
       delCmd.fromCommitted = true;
-      updater.delete(delCmd);
+      processor.processDelete(delCmd);
     } catch (IOException e) {
       LOG.log(Level.SEVERE, "Exception while deleteing: " + id, e);
     }
@@ -167,7 +168,7 @@ public abstract class SolrWriter {
       delCmd.query = query;
       delCmd.fromCommitted = true;
       delCmd.fromPending = true;
-      updater.deleteByQuery(delCmd);
+      processor.processDelete(delCmd);
     } catch (IOException e) {
       LOG.log(Level.SEVERE, "Exception while deleting by query: " + query, e);
     }
@@ -176,7 +177,7 @@ public abstract class SolrWriter {
   public void commit(boolean optimize) {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(optimize);
-      updater.commit(commit);
+      processor.processCommit(commit);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Exception while solr commit.", e);
     }
@@ -188,7 +189,7 @@ public abstract class SolrWriter {
       deleteCommand.query = "*:*";
       deleteCommand.fromCommitted = true;
       deleteCommand.fromPending = true;
-      updater.deleteByQuery(deleteCommand);
+      processor.processDelete(deleteCommand);
     } catch (IOException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Exception in full dump while deleting all documents.", e);

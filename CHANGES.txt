@@ -519,6 +519,8 @@ Bug Fixes
 
 44. SOLR-598: DebugComponent now always occurs last in the SearchHandler list unless the components are explicitly declared. (gsingers)
 
+45. SOLR-676: DataImportHandler should use UpdateRequestProcessor API instead of directly using UpdateHandler. (shalin)
+
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
     build scripts to make two jars: apache-solr-1.3.jar and 

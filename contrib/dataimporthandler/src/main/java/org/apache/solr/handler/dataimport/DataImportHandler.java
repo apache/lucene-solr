@@ -16,12 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.lucene.document.Document;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig;
@@ -33,8 +33,8 @@ import org.apache.solr.request.RawResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.update.DocumentBuilder;
-import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.*;
@@ -77,7 +77,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private DataImporter.RequestParams requestParams;
 
-  private List<Document> debugDocuments;
+  private List<SolrInputDocument> debugDocuments;
 
   private DebugLogger debugLogger;
 
@@ -176,9 +176,12 @@ public class DataImportHandler extends RequestHandlerBase implements
     } else if (command != null) {
       if (DataImporter.FULL_IMPORT_CMD.equals(command)
               || DataImporter.DELTA_IMPORT_CMD.equals(command)) {
-        UpdateHandler updater = req.getCore().getUpdateHandler();
+
+        UpdateRequestProcessorChain processorChain =
+                req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
+        UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
-        SolrWriter sw = getSolrWriter(updater, loader, req
+        SolrWriter sw = getSolrWriter(processor, loader, req
                 .getSchema());
 
         if (requestParams.debug) {
@@ -263,19 +266,18 @@ public class DataImportHandler extends RequestHandlerBase implements
     }
   }
 
-  private SolrWriter getSolrWriter(final UpdateHandler updater,
+  private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
                                    final SolrResourceLoader loader, final IndexSchema schema) {
 
-    return new SolrWriter(updater, loader.getConfigDir()) {
+    return new SolrWriter(processor, loader.getConfigDir()) {
 
       @Override
       public boolean upload(SolrDoc d) {
         try {
-          Document document = DocumentBuilder.toDocument(
-                  ((SolrDocumentWrapper) d).doc, schema);
+          SolrInputDocument document = ((SolrDocumentWrapper) d).doc;
           if (requestParams.debug) {
             if (debugDocuments == null)
-              debugDocuments = new ArrayList<Document>();
+              debugDocuments = new ArrayList<SolrInputDocument>();
             debugDocuments.add(document);
             if (debugDocuments.size() >= requestParams.rows) {
               // Abort this operation now
