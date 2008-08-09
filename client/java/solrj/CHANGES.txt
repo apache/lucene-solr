@@ -46,3 +46,9 @@ Changes in runtime behavior
 Bug Fixes
 
 Other Changes
+
+ 1. SOLR-653: Since the "overwrite" command will be removed in future versions
+    it has been removed from solrj now -- before anyone starts to rely on it.
+    (ryan)
+ 
+ 
