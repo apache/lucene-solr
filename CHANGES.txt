@@ -229,9 +229,10 @@ New Features
     (ryan)
     
 35. SOLR-142: Added RawResponseWriter and ShowFileRequestHandler.  This returns config
-    files directly.  If the AdminHandlers is configured, this will be added automatically.
+    files directly.  If AdminHandlers are configured, this will be added automatically.
     The jsp files /admin/get-file.jsp and /admin/raw-schema.jsp have been deprecated.
-    (ryan)
+    The deprecated <admin><gettableFiles> will be automatically registered with
+    a ShowFileRequestHandler instance for backwards compatibility. (ryan)
 
 36. SOLR-446: TextResponseWriter can write SolrDocuments and SolrDocumentLists the 
     same way it writes Document and DocList.  (yonik, ryan)
