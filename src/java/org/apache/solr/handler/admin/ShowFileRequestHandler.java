@@ -111,6 +111,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
   }
   
+  public Set<String> getHiddenFiles()
+  {
+    return hiddenFiles;
+  }
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {

@@ -29,6 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.*;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
@@ -430,6 +431,9 @@ public final class SolrCore {
     		  solrConfig.get("highlighting/@class", DefaultSolrHighlighter.class.getName())
       );
       highlighter.initalize( solrConfig );
+      
+      // Handle things that should eventually go away
+      initDeprecatedSupport();
 
       final CountDownLatch latch = new CountDownLatch(1);
 
@@ -1319,7 +1323,47 @@ public final class SolrCore {
   public ValueSourceParser getValueSourceParser(String parserName) {
     return valueSourceParsers.get(parserName);
   }
+  
+  /**
+   * Manage anything that should be taken care of in case configs change
+   */
+  private void initDeprecatedSupport()
+  {
+    // TODO -- this should be removed in deprecation release...
+    String gettable = solrConfig.get("admin/gettableFiles", null );
+    if( gettable != null ) {
+      log.warning( 
+          "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
+          "update your config to use the ShowFileRequestHandler." );
+      if( getRequestHandler( "admin/file" ) == null ) {
+        NamedList<String> invariants = new NamedList<String>();
+        
+        // Hide everything...
+        Set<String> hide = new HashSet<String>();
+        File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
+        for( String file : configdir.list() ) {
+          hide.add( file.toUpperCase() );
+        }
+        
+        // except the "gettable" list
+        StringTokenizer st = new StringTokenizer( gettable );
+        while( st.hasMoreTokens() ) {
+          hide.remove( st.nextToken().toUpperCase() );
+        }
+        for( String s : hide ) {
+          invariants.add( ShowFileRequestHandler.HIDDEN, s );
+        }
+        
+        NamedList<Object> args = new NamedList<Object>();
+        args.add( "invariants", invariants );
+        ShowFileRequestHandler handler = new ShowFileRequestHandler();
+        handler.init( args );
+        reqHandlers.register("admin/file", handler);
 
+        log.warning( "adding ShowFileRequestHandler with hidden files: "+hide );
+      }
+    }
+  } 
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

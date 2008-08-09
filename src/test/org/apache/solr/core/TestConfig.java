@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.update.SolrIndexConfig;
 import org.w3c.dom.Node;
@@ -61,5 +62,18 @@ public class TestConfig extends AbstractSolrTestCase {
     assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
     boolean luceneAutoCommit = solrConfig.getBool("indexDefaults/luceneAutoCommit");
     assertTrue(luceneAutoCommit + " does not equal: " + false, luceneAutoCommit == false);
+  }
+
+  // sometime if the config referes to old things, it must be replaced with new stuff
+  public void testAutomaticDeprecationSupport()
+  {
+    // make sure the "admin/file" handler is registered
+    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler( "admin/file" );
+    assertTrue( "file handler should have been automatically registered", handler!=null );
+
+    //System.out.println( handler.getHiddenFiles() );
+    // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
+    assertFalse( handler.getHiddenFiles().contains( "scheam.xml".toUpperCase() ) );
+    assertTrue( handler.getHiddenFiles().contains( "PROTWORDS.TXT" ) );
   }
 }
