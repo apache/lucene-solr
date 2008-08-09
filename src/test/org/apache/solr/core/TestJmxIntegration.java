@@ -86,14 +86,16 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     System.err.println("Servers in testJmxUpdate: " + servers);
     System.err.println(h.getCore().getInfoRegistry());
 
-    ObjectName searcher = null;
+    SolrInfoMBean bean = null;
     // wait until searcher is registered
     for (int i=0; i<100; i++) {
-      searcher = getObjectName("searcher", h.getCore().getInfoRegistry().get("searcher"));
-      if (searcher != null) break;
+      bean = h.getCore().getInfoRegistry().get("searcher");
+      if (bean != null) break;
       Thread.sleep(250);
     }
-    if (searcher==null) throw new RuntimeException("searcher was never registered");
+    if (bean==null) throw new RuntimeException("searcher was never registered");
+    ObjectName searcher = getObjectName("searcher", bean);
+
     MBeanServer mbeanServer = servers.get(0);
     System.err.println("Mbeans in server: " + mbeanServer.queryNames(null, null));
 
