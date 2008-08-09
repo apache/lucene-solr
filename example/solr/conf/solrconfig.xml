@@ -88,12 +88,14 @@
       specify one of the other Lucene LockFactory implementations in
       the event that you have a custom situation.
       
-      none = NoLockFactory (typically only used with read only indexes)
-      single = SingleInstanceLockFactory (suggested)
+      single = SingleInstanceLockFactory - suggested for a read-only index
+               or if there is no possibility of another process trying
+               to modify the index.
       native = NativeFSLockFactory
       simple = SimpleFSLockFactory
 
-      ('simple' is the default for backwards compatibility with Solr 1.2)
+      (For backwards compatibility with Solr 1.2, 'single' is the default
+       if not specified.)
     -->
     <lockType>single</lockType>
   </indexDefaults>

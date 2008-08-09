@@ -21,12 +21,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 
@@ -94,12 +89,16 @@ public class SolrIndexWriter extends IndexWriter {
     final String lockType = rawLockType.toLowerCase().trim();
 
     if ("simple".equals(lockType)) {
+      // multiple SimpleFSLockFactory instances should be OK
       d.setLockFactory(new SimpleFSLockFactory(path));
     } else if ("native".equals(lockType)) {
       d.setLockFactory(new NativeFSLockFactory(path));
     } else if ("single".equals(lockType)) {
-      d.setLockFactory(new SingleInstanceLockFactory());
+      if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
+        d.setLockFactory(new SingleInstanceLockFactory());
     } else if ("none".equals(lockType)) {
+      // recipie for disaster
+      log.severe("CONFIGURATION WARNING: locks are disabled on " + path);      
       d.setLockFactory(new NoLockFactory());
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
