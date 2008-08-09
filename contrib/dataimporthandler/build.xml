@@ -35,8 +35,9 @@
 	
   <path id="test.classpath">
   	<path refid="common.classpath" />
-	<pathelement path="target/classes" />
+	  <pathelement path="target/classes" />
   	<pathelement path="target/test-classes" />
+    <pathelement path="${java.class.path}"/>
   </path>
 	
   <target name="clean">
