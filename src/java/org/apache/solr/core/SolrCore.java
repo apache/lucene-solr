@@ -259,13 +259,17 @@ public final class SolrCore {
   }
 
 
+  // protect via synchronized(SolrCore.class)
+  private static Set<String> dirs = new HashSet<String>();
+
+  // currently only called with SolrCore.class lock held
   void initIndex() {
     try {
       File dirFile = new File(getIndexDir());
       boolean indexExists = dirFile.canRead();
-
+      boolean firstTime = dirs.add(dirFile.getCanonicalPath());
       boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
-      if (indexExists && removeLocks) {
+      if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
         Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), solrConfig.mainIndexConfig);
