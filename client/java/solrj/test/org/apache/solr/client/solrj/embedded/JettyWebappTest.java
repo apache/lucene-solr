@@ -44,7 +44,7 @@ public class JettyWebappTest extends TestCase
     System.setProperty("solr.solr.home", "../../../example/solr");
     String path = "../../webapp/web";
 
-    Server server = new Server(port);
+    server = new Server(port);
     new WebAppContext(server, path, context );
 
     SocketConnector connector = new SocketConnector();
