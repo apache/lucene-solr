@@ -28,7 +28,7 @@ import java.util.Set;
  * Expert: A Query that sets the scores of document to the
  * values obtained from a {@link org.apache.lucene.search.function.ValueSource ValueSource}.
  * <p>   
- * The value source can be based on a (cached) value of an indexd  field, but it
+ * The value source can be based on a (cached) value of an indexed field, but it
  * can also be based on an external source, e.g. values read from an external database. 
  * <p>
  * Score is set as: Score(doc,query) = query.getBoost()<sup>2</sup> * valueSource(doc).  
@@ -37,8 +37,6 @@ import java.util.Set;
  * WARNING: The status of the <b>search.function</b> package is experimental. 
  * The APIs introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
- * 
- * @author yonik
  */
 public class ValueSourceQuery extends Query {
   ValueSource valSrc;

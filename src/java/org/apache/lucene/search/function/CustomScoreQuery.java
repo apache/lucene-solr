@@ -34,8 +34,8 @@ import org.apache.lucene.util.ToStringUtils;
  * Query that sets document score as a programmatic function of several (sub) scores.
  * <ol>
  *    <li>the score of its subQuery (any query)</li>
- *    <li>(optional) the score of its ValueSourtceQuery (or queries),
- *        for most simple/convineient use case this query would be a 
+ *    <li>(optional) the score of its ValueSourceQuery (or queries).
+ *        For most simple/convenient use cases this query is likely to be a 
  *        {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQuery}</li>
  * </ol>
  * Subclasses can modify the computation by overriding {@link #customScore(int, float, float)}.
