@@ -786,6 +786,13 @@ public class QueryComponent extends SearchComponent
     public void setOmitNorms(boolean omitNorms) {
     }
 
+    public void setOmitTf(boolean omitTf) {
+    }
+
+    public boolean getOmitTf() {
+      return false;
+    }
+
     public boolean isLazy() {
       return false;
     }
