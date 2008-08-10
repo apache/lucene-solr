@@ -174,14 +174,22 @@ public class TestDistributedSearch extends TestCase {
     for (SolrServer client : clients) client.commit();    
   }
 
+  // to stress with higher thread counts and requests, make sure the junit
+  // xml formatter is not being used (all output will be buffered before
+  // transformation to xml and cause an OOM exception).
+  int stress = 2;
+  boolean verifyStress = true;
+  int nThreads = 3;
+
+
   void query(Object... q) throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
+    final ModifiableSolrParams params = new ModifiableSolrParams();
 
     for (int i=0; i<q.length; i+=2) {
       params.add(q[i].toString(), q[i+1].toString());
     }
 
-    QueryResponse controlRsp = controlClient.query(params);
+    final QueryResponse controlRsp = controlClient.query(params);
 
     // query a random server
     params.set("shards", shards);
@@ -190,6 +198,34 @@ public class TestDistributedSearch extends TestCase {
     QueryResponse rsp = client.query(params);
 
     compareResponses(rsp, controlRsp);
+
+    if (stress>0) {
+      System.out.println("starting stress...");
+      Thread[] threads = new Thread[nThreads];
+      for (int i=0; i<threads.length; i++) {
+        threads[i] = new Thread() {
+          public void run() {
+            for (int j=0; j<stress; j++) {
+              int which = r.nextInt(clients.size());
+              SolrServer client = clients.get(which);
+              try {
+                QueryResponse rsp = client.query(new ModifiableSolrParams(params));
+                if (verifyStress) {
+                  compareResponses(rsp, controlRsp);                  
+                }
+              } catch (SolrServerException e) {
+                throw new RuntimeException(e);
+              }
+            }
+          }
+        };
+        threads[i].start();
+      }
+
+      for (Thread thread : threads) {
+        thread.join();
+      }
+    }
   }
 
 
