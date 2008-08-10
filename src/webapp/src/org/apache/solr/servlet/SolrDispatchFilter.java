@@ -315,6 +315,9 @@ public class SolrDispatchFilter implements Filter
             }
           }
         }
+        if( core == null ) {
+          req.setAttribute("org.apache.solr.NoCoreSet", Boolean.TRUE );
+        }
         log.fine("no handler or core retrieved for " + path + ", follow through...");
       } catch (Throwable ex) {
         sendError( (HttpServletResponse)response, ex );

@@ -22,13 +22,15 @@
 <%@ page import="java.io.StringWriter"%>
 <%@ page import="org.apache.solr.core.Config"%>
 <%@ page import="org.apache.solr.common.util.XML"%>
+<%@ page import="org.apache.solr.common.SolrException"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
 <%@ page import="java.net.UnknownHostException" %>
 <%
   // 
   SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
-  if (core == null)
-    core = SolrCore.getSolrCore();
+  if (core == null) {
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing core name" );
+  }
     
   SolrConfig solrConfig = core.getSolrConfig();
   int port = request.getServerPort();

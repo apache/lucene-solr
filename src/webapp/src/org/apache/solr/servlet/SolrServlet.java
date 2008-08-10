@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.logging.Logger;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
@@ -39,9 +41,17 @@ import org.apache.solr.request.SolrRequestHandler;
 public class SolrServlet extends HttpServlet {
     
   final Logger log = Logger.getLogger(SolrServlet.class.getName());
+  private boolean hasMulticore = false;
     
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
+    
+    // Check if the "multicore.xml" file exists -- if so, this is an invalid servlet
+    // (even if there is only one core...)
+    String instanceDir = SolrResourceLoader.locateInstanceDir();
+    File fconf = new File(instanceDir, "multicore.xml");
+    hasMulticore = fconf.exists();
+    
     // we deliberately do not initialize a SolrCore because of SOLR-597
     // https://issues.apache.org/jira/browse/SOLR-597
     log.info("SolrServlet.init() done");
@@ -52,6 +62,11 @@ public class SolrServlet extends HttpServlet {
   }
 
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    if( hasMulticore ) {
+      response.sendError( 400, "Missing solr core name in path" );
+      return;
+    }
+    
     final SolrCore core = SolrCore.getSolrCore();
     SolrServletRequest solrReq = new SolrServletRequest(core, request);;
     SolrQueryResponse solrRsp = new SolrQueryResponse();
