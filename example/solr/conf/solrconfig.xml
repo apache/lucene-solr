@@ -83,18 +83,15 @@
     <!--<mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>-->
 
     <!--
-      As long as Solr is the only process modifying your index, it is
-      safe to use Lucene's in process locking mechanism.  But you may
-      specify one of the other Lucene LockFactory implementations in
-      the event that you have a custom situation.
+      This option specifies which Lucene LockFactory implementation to use.
       
       single = SingleInstanceLockFactory - suggested for a read-only index
-               or if there is no possibility of another process trying
+               or when there is no possibility of another process trying
                to modify the index.
       native = NativeFSLockFactory
       simple = SimpleFSLockFactory
 
-      (For backwards compatibility with Solr 1.2, 'single' is the default
+      (For backwards compatibility with Solr 1.2, 'simple' is the default
        if not specified.)
     -->
     <lockType>single</lockType>
