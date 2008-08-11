@@ -27,7 +27,7 @@
       <New class="org.mortbay.thread.BoundedThreadPool">
         <Set name="minThreads">10</Set>
         <Set name="lowThreads">50</Set>
-        <Set name="maxThreads">250</Set>
+        <Set name="maxThreads">10000</Set>
       </New>
 
       <!-- Optional Java 5 bounded threadpool with job queue 
