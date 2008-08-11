@@ -29,7 +29,8 @@
   // 
   SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
   if (core == null) {
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing core name" );
+    response.sendError( 404, "missing core name in path" );
+    return;
   }
     
   SolrConfig solrConfig = core.getSolrConfig();
