@@ -98,16 +98,24 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     this.params = params;
   }
 
+  /**
+   * @deprecated Use {@link #getParams()} instead.
+   */
+  @Deprecated
   public String getParam(String name) {
     return params.get(name);
   }
 
+  /**
+   * @deprecated Use {@link #getParams()} instead.
+   */
+  @Deprecated
   public String[] getParams(String name) {
     return params.getParams(name);
   }
 
   /**
-   * use getParams().required().getInt( name ) instead
+   * @deprecated use getParams().required().getInt( name ) instead
    */
   @Deprecated
   public int getIntParam(String name) {
@@ -119,7 +127,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   }
 
   /**
-   * use getParams().required().getInt( name ) instead
+   * @deprecated use getParams().required().getInt( name ) instead
    */
   @Deprecated
   public int getIntParam(String name, int defval) {
@@ -128,7 +136,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   }
 
   /**
-   * use getParams().required().getParam( name ) instead
+   * @deprecated use getParams().required().getParam( name ) instead
    */
   @Deprecated
   public String getStrParam(String name) {
@@ -140,7 +148,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   }
 
   /**
-   * use getParams().required().getParam( name ) instead
+   * @deprecated use getParams().required().getParam( name ) instead
    */
   @Deprecated
   public String getStrParam(String name, String defval) {
@@ -148,23 +156,35 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return s==null ? defval : s;
   }
 
+  /**
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#Q} instead.
+   */
   @Deprecated
   public String getQueryString() {
     return params.get(CommonParams.Q);
   }
 
+  /**
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#QT} instead.
+   */
   @Deprecated
   public String getQueryType() {
     return params.get(CommonParams.QT);
   }
 
-  // starting position in matches to return to client
+  /**
+   * starting position in matches to return to client
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#START} instead.
+   */
   @Deprecated
   public int getStart() {
     return params.getInt(CommonParams.START, 0);
   }
 
-  // number of matching documents to return
+  /**
+   * number of matching documents to return
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#ROWS} instead.
+   */
   @Deprecated
   public int getLimit() {
     return params.getInt(CommonParams.ROWS, 10);

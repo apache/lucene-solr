@@ -193,6 +193,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
    * 
    * It is only used so that we can get rid of "/admin/get-file.jsp" and include
    * "admin-extra.html" in "/admin/index.html" using jsp scriptlets
+   * 
+   * @deprecated This functionality is implemented in
+   *             {@link #handleRequestBody(SolrQueryRequest, SolrQueryResponse)}.
    */
   @Deprecated
   public static String getFileContents( String path )

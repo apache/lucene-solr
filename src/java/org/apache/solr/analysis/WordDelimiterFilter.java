@@ -176,12 +176,24 @@ final class WordDelimiterFilter extends TokenFilter {
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal) {
     this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal);
   }
-  /** Compatibility constructor */
+  /**
+   * Compatibility constructor
+   * 
+   * @deprecated Use
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int)}
+   *             instead.
+   */
   @Deprecated
   public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
     this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0);
   }
-  /** Compatibility constructor */
+  /**
+   * Compatibility constructor
+   * 
+   * @deprecated Use
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int)}
+   *             instead.
+   */
   @Deprecated
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
     this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0);

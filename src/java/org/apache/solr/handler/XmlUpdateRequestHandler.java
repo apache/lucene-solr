@@ -374,6 +374,10 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
    * success or failure from an XML formated Update (from the Reader)
    * 
    * @since solr 1.2
+   * 
+   * @deprecated Use
+   *             {@link #processUpdate(UpdateRequestProcessor, XMLStreamReader)}
+   *             instead.
    */
   @Deprecated
   public void doLegacyUpdate(Reader input, Writer output) {

@@ -52,7 +52,10 @@ public class SolrConfig extends Config {
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
-  // Compatibility feature for single-core (pre-solr{215,350} patch); should go away at solr-2.0
+  /**
+   * Compatibility feature for single-core (pre-solr{215,350} patch); should go away at solr-2.0
+   * @deprecated Use {@link SolrCore#getSolrConfig()} instead.
+   */
   @Deprecated
   public static SolrConfig config = null; 
 
@@ -180,7 +183,10 @@ public class SolrConfig extends Config {
     return httpCachingConfig;
   }
   
-  // ping query request parameters
+  /**
+   * ping query request parameters
+   * @deprecated Use {@link PingRequestHandler} instead.
+   */
   @Deprecated
   private final NamedList pingQueryParams;
 

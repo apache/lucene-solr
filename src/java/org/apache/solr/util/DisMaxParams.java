@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
+ * @deprecated Use {@link org.apache.solr.common.params.DisMaxParams} instead.
  */
 @Deprecated
 public class DisMaxParams extends CommonParams implements org.apache.solr.common.params.DisMaxParams {

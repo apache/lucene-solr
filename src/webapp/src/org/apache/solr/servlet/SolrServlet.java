@@ -35,6 +35,10 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 
 /**
+ * @deprecated Register a standard request handler instead of using this
+ *             servlet. Add &lt;requestHandler name="standard"
+ *             class="solr.StandardRequestHandler" default="true"&gt; to
+ *             solrconfig.xml.
  */
 
 @Deprecated

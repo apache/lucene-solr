@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 /**
  * A collection on common params, both for Plugin initialization and
  * for Requests.
+ * @deprecated Use {@link org.apache.solr.common.params.CommonParams} instead.
  */
 @Deprecated
 public class CommonParams implements org.apache.solr.common.params.CommonParams {

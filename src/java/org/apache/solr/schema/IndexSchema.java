@@ -67,6 +67,7 @@ public final class IndexSchema {
    * Config path directory searching rules.
    *
    * @see Config#openResource
+   * @deprecated Use {@link #IndexSchema(SolrConfig, String, InputStream)} instead.
    */
   @Deprecated
   public IndexSchema(SolrConfig solrConfig, String name) {
@@ -121,6 +122,8 @@ public final class IndexSchema {
   /**
    * Direct access to the InputStream for the schemaFile used by this instance.
    * @see Config#openResource
+   * @deprecated Use {@link #getSolrConfig()} and open a resource input stream
+   *             for {@link #getResourceName()} instead.
    */
   @Deprecated
   public InputStream getInputStream() {
@@ -128,7 +131,7 @@ public final class IndexSchema {
   }
 
   /** Gets the name of the schema file.
-   * @see IndexSchema#getResourceName
+   * @deprecated Use {@link #getResourceName()} instead.
    */
   @Deprecated
   public String getSchemaFile() {
@@ -136,7 +139,7 @@ public final class IndexSchema {
   }
 
   /** The Name of this schema (as specified in the schema file)
-   * @see IndexSchema#getSchemaName
+   * @deprecated Use {@link #getSchemaName()} instead.
    */
   @Deprecated
   public String getName() { return name; }
@@ -249,6 +252,7 @@ public final class IndexSchema {
    * Name of the default search field specified in the schema file
    * @deprecated use getSolrQueryParser().getField()
    */
+  @Deprecated
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
   }
@@ -257,6 +261,7 @@ public final class IndexSchema {
    * default operator ("AND" or "OR") for QueryParser
    * @deprecated use getSolrQueryParser().getDefaultOperator()
    */
+  @Deprecated
   public String getQueryParserDefaultOperator() {
     return queryParserDefaultOperator;
   }

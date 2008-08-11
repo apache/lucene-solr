@@ -90,6 +90,9 @@ public final class SolrCore {
   
   public long getStartTime() { return startTime; }
 
+  /**
+   * @deprecated Use {@link MultiCore#getCore(String)} instead.
+   */
   @Deprecated
   private static SolrCore instance;
 
@@ -125,7 +128,7 @@ public final class SolrCore {
   
   /**
    * Gets the configuration resource name used by this core instance.
-   * @see #getConfigResource()
+   * @deprecated Use {@link #getConfigResource()} instead.
    */
   @Deprecated
   public String getConfigFile() {
@@ -148,7 +151,7 @@ public final class SolrCore {
 
   /**
    * Gets the schema resource name used by this core instance.
-   * @see #getSchemaResource() 
+   * @deprecated Use {@link #getSchemaResource()} instead.
    */
   @Deprecated
   public String getSchemaFile() {
@@ -341,6 +344,8 @@ public final class SolrCore {
   /** 
    * @return the last core initialized.  If you are using multiple cores, 
    * this is not a function to use.
+   * 
+   * @deprecated Use {@link MultiCore#getCore(String)} instead.
    */
   @Deprecated
   public static SolrCore getSolrCore() {
@@ -1162,6 +1167,9 @@ public final class SolrCore {
        (int)(rsp.getEndTime() - req.getStartTime()));*/
   }
 
+  /**
+   * @deprecated Use {@link #execute(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)} instead. 
+   */
   @Deprecated
   public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrRequestHandler handler = getRequestHandler(req.getQueryType());

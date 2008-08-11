@@ -36,6 +36,8 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * @version $Id$
+ * 
+ * @deprecated Test against the real request handlers instead.
  */
 @Deprecated
 public class OldRequestHandler implements SolrRequestHandler {

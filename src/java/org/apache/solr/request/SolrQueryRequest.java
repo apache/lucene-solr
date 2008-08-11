@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
@@ -66,6 +67,7 @@ public interface SolrQueryRequest {
    * Returns the input parameter value for the specified name
    * @return the value, or the first value if the parameter was
    * specified more then once; may be null.
+   * @deprecated Use {@link #getParams()} instead.
    */
   @Deprecated
   public String getParam(String name);
@@ -73,12 +75,14 @@ public interface SolrQueryRequest {
   /**
    * Returns the input parameter values for the specified name
    * @return the values; may be null or empty depending on implementation
+   * @deprecated Use {@link #getParams()} instead.
    */
   @Deprecated
   public String[] getParams(String name);
 
   /**
    * Returns the primary query string parameter of the request
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#Q} instead.
    */
   @Deprecated
   public String getQueryString();
@@ -86,15 +90,20 @@ public interface SolrQueryRequest {
   /**
    * Signifies the syntax and the handler that should be used
    * to execute this query.
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#QT} instead.
    */
   @Deprecated
   public String getQueryType();
 
-  /** starting position in matches to return to client */
+  /** starting position in matches to return to client
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#START} instead.
+   */
   @Deprecated
   public int getStart();
 
-  /** number of matching documents to return */
+  /** number of matching documents to return
+   * @deprecated Use {@link #getParams()} and {@link CommonParams#ROWS} instead.
+   */
   @Deprecated
   public int getLimit();
 

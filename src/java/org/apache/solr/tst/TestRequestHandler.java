@@ -40,6 +40,8 @@ import org.apache.solr.request.SolrQueryResponse;
 
 /**
  * @version $Id$
+ * 
+ * @deprecated Test against the real request handlers instead.
  */
 @Deprecated
 public class TestRequestHandler implements SolrRequestHandler {
