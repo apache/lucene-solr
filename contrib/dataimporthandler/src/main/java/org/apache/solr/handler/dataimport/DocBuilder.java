@@ -576,14 +576,14 @@ public class DocBuilder {
       return inst != null ?
               inst.writer.loadClass(name) :
               Class.forName(name);
-    } catch (ClassNotFoundException e) {
+    } catch (Exception e) {
       try {
         String n = DocBuilder.class.getPackage().getName() + "." + name;
         return inst != null ?
                 inst.writer.loadClass(n) :
                 Class.forName(n);
-      } catch (ClassNotFoundException e1) {
-        throw e;
+      } catch (Exception e1) {
+        throw new ClassNotFoundException("Unable to load " + name + " or " + DocBuilder.class.getPackage().getName() + "." + name, e);
       }
     }
   }
