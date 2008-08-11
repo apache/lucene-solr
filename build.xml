@@ -571,7 +571,7 @@
 
   <target name="example" 
           description="Creates a runnable example configuration."
-          depends="init-forrest-entities,dist-war">
+          depends="init-forrest-entities,dist-contrib,dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
