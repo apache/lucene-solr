@@ -46,25 +46,6 @@
            <isset property="clover.present"/>
        </and>
    </condition>
-
-  <!-- Macro for building Jars -->
-  <macrodef name="solr-jar">
-    <attribute name="destfile" />
-    <attribute name="basedir" />
-    <attribute name="includes" default="org/apache/**" />
-    <attribute name="manifest" default="${dest}/META-INF/MANIFEST.MF" />
-    <element name="nested" optional="true" implicit="true" />
-    <sequential>
-      <jar destfile="@{destfile}"
-           basedir="@{basedir}"
-           includes="@{includes}"
-           filesetmanifest="skip"
-           manifest="@{manifest}">
-        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
-        <nested />
-      </jar>
-    </sequential>
-  </macrodef>
                  
   <!-- Default target: usage.  Prints out instructions. -->
   <target name="usage"

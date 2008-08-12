@@ -60,8 +60,9 @@
     </solr-javac>
   </target>
 	
-  <target name="build" depends="compile">
-  	<jar destfile="target/${fullnamever}.jar" basedir="target/classes" />
+  <target name="build" depends="compile, make-manifest">
+    <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
+              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
   </target>
 	
   <target name="compileTests" depends="compile">

@@ -118,6 +118,25 @@
       </javac>
     </sequential>
   </macrodef>
+
+  <!-- Macro for building Jars -->
+  <macrodef name="solr-jar">
+    <attribute name="destfile" />
+    <attribute name="basedir" />
+    <attribute name="includes" default="org/apache/**" />
+    <attribute name="manifest" default="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+    <element name="nested" optional="true" implicit="true" />
+    <sequential>
+      <jar destfile="@{destfile}"
+           basedir="@{basedir}"
+           includes="@{includes}"
+           filesetmanifest="skip"
+           manifest="@{manifest}">
+        <metainf dir="${common.dir}" includes="LICENSE.txt,NOTICE.txt"/>
+        <nested />
+      </jar>
+    </sequential>
+  </macrodef>
   
   <!-- Macro for building checksum files
        This is only needed until the "format" option is supported
@@ -214,13 +233,13 @@
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest">
      <!-- If possible, include the svnversion -->
-     <exec dir="." executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
+     <exec dir="${common.dir}" executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
       <arg line="."/>
      </exec>
      
      <!-- no description, don't advertise -->
-     <mkdir dir="${dest}/META-INF/" />
-     <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
+     <mkdir dir="${common.dir}/${dest}/META-INF/" />
+     <manifest mode="replace" file="${common.dir}/${dest}/META-INF/MANIFEST.MF">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
         http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
