@@ -99,9 +99,10 @@ public class MultiCore
     try {
       Config cfg = new Config(loader, null, cfgis, null);
     
-      persistent = cfg.getBool( "multicore/@persistent", false );
-      adminPath  = cfg.get(     "multicore/@adminPath", null );
-      libDir     = cfg.get(     "multicore/@sharedLib", null);
+      persistent = cfg.getBool( "solr/@persistent", false );
+      libDir     = cfg.get(     "solr/@sharedLib", null);
+      
+      adminPath  = cfg.get(     "solr/cores/@adminPath", null );
       
       if (libDir != null) {
         // relative dir to conf
@@ -115,7 +116,7 @@ public class MultiCore
         multiCoreHandler = this.createMultiCoreHandler();
       }
       
-      NodeList nodes = (NodeList)cfg.evaluate("multicore/core", XPathConstants.NODESET);
+      NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
       synchronized (cores) {
         for (int i=0; i<nodes.getLength(); i++) {
           Node node = nodes.item(i);
@@ -415,7 +416,7 @@ public class MultiCore
     File tmpFile = null;
     try {
       // write in temp first
-      tmpFile = File.createTempFile("multicore", ".xml", configFile.getParentFile());
+      tmpFile = File.createTempFile("solr", ".xml", configFile.getParentFile());
       java.io.FileOutputStream out = new java.io.FileOutputStream(tmpFile);
       synchronized(cores) {
         Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
@@ -447,10 +448,7 @@ public class MultiCore
   /** Write the multicore configuration through a writer.*/
   void persist(Writer writer) throws IOException {
     writer.write("<?xml version='1.0' encoding='UTF-8'?>");
-    writer.write("\n");
-    writer.write("<multicore adminPath='");
-    XML.escapeAttributeValue(adminPath, writer);
-    writer.write('\'');
+    writer.write("<solr");
     if (this.libDir != null) {
       writer.write(" sharedLib='");
       XML.escapeAttributeValue(libDir, writer);
@@ -464,13 +462,18 @@ public class MultiCore
       writer.write("false'");
     }
     writer.write(">\n");
+    writer.write("<cores adminPath='");
+    XML.escapeAttributeValue(adminPath, writer);
+    writer.write('\'');
+    writer.write(">\n");
 
     synchronized(cores) {
       for (Map.Entry<String, CoreDescriptor> entry : cores.entrySet()) {
         persist(writer, entry.getValue());
       }
     }
-    writer.write("</multicore>\n");
+    writer.write("</cores>\n");
+    writer.write("</solr>\n");
   }
   
   /** Writes the multicore configuration node for a given core. */

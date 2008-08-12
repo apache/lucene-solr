@@ -217,7 +217,7 @@ New Features
     informed about the SolrCore/ResourceLoader. (Henri Biestro, ryan)
 
 33. SOLR-350: Support multiple SolrCores running in the same solr instance.  If a 
-    multicore.xml file exists in solr.home, this file is used to instanciate
+    solr.xml file exists in solr.home, this file is used to instanciate
     multiple cores and enables runtime core manipulation.  For more informaion see:
     http://wiki.apache.org/solr/MultiCore  (Henri Biestro, ryan)
 
@@ -355,6 +355,9 @@ Changes in runtime behavior
    performance and makes overwrites atomic, eliminating the possibility of
    a crash causing duplicates. (yonik)
 
+ 2. SOLR-689: solr.xml has replaced multicore.xml, and uses a slightly
+    differnet syntax.  (hossman)
+    
 Optimizations
  1. SOLR-276: improve JSON writer speed. (yonik)
  

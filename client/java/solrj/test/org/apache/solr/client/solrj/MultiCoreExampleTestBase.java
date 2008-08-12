@@ -42,9 +42,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   @Override public String getSolrConfigFile() { return getSolrHome()+"core0/conf/solrconfig.xml"; }
   
   @Override public void setUp() throws Exception {
-//    File src = new File(getSolrHome(), "multicore-base.xml");
-//    File dest = new File(getSolrHome(), "multicore.xml");
-//    org.apache.solr.core.MultiCore.fileCopy(src, dest);
     super.setUp();
   }
 

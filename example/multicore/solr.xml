@@ -19,13 +19,17 @@
 <!--
  All (relative) paths are relative to the installation path
   
-  adminPath: RequestHandler path to manage multicores.  
-    If 'null', cores will not be managable via REST
-    
   persistent: Save changes made via the API to this file
   sharedLib: path to a lib directory that will be shared across all cores
 -->
-<multicore adminPath="/admin/multicore" persistent="true" >
-  <core name="core0" instanceDir="core0" />
-  <core name="core1" instanceDir="core1" />
-</multicore>
+<solr persistent="true">
+
+  <!--
+  adminPath: RequestHandler path to manage multicores.  
+    If 'null', cores will not be managable via REST
+  -->
+  <cores adminPath="/admin/multicore">
+    <core name="core0" instanceDir="core0" />
+    <core name="core1" instanceDir="core1" />
+  </cores>
+</solr>

@@ -35,7 +35,7 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
     super.setUp();
     
     File home = new File( getSolrHome() );
-    File f = new File( home, "multicore.xml" );
+    File f = new File( home, "solr.xml" );
     multicore.load( getSolrHome(), f );
   }
 

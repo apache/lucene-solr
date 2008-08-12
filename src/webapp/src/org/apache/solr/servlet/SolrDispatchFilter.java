@@ -109,7 +109,7 @@ public class SolrDispatchFilter implements Filter
       out.println( "If you want solr to continue after configuration errors, change: \n");
       out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
       if (multicore != null && multicore.isEnabled()) {
-        out.println( "in multicore.xml\n" );
+        out.println( "in solr.xml\n" );
       } else {
         out.println( "in solrconfig.xml\n" );
       }
@@ -141,8 +141,8 @@ public class SolrDispatchFilter implements Filter
   protected MultiCore initMultiCore(FilterConfig config) throws Exception {
     MultiCore mcore = new MultiCore();
     String instanceDir = SolrResourceLoader.locateInstanceDir();
-    File fconf = new File(instanceDir, "multicore.xml");
-    log.info("looking for multicore.xml: " + fconf.getAbsolutePath());
+    File fconf = new File(instanceDir, "solr.xml");
+    log.info("looking for solr.xml: " + fconf.getAbsolutePath());
     if (fconf.exists()) {
       mcore.load(instanceDir, fconf);
     }

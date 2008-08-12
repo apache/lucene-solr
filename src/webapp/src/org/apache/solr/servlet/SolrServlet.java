@@ -53,7 +53,7 @@ public class SolrServlet extends HttpServlet {
     // Check if the "multicore.xml" file exists -- if so, this is an invalid servlet
     // (even if there is only one core...)
     String instanceDir = SolrResourceLoader.locateInstanceDir();
-    File fconf = new File(instanceDir, "multicore.xml");
+    File fconf = new File(instanceDir, "solr.xml");
     hasMulticore = fconf.exists();
     
     // we deliberately do not initialize a SolrCore because of SOLR-597
