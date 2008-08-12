@@ -266,6 +266,9 @@ Build
      with contribs.  Of particular note: a single clover db is used
      regardless of whether tests are run globally or in the specific
      contrib directories. 
+     
+  3. LUCENE-1353: Javacc target in contrib/miscellaneous for 
+     generating the precedence query parser. 
 
 Test Cases
 

@@ -26,4 +26,18 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+
+  <property name="javacc.path" location="src/java/org/apache/lucene/queryParser/precedence"/>
+
+  <target name="javacc" depends="javacc-check" description="generate precedence query parser from jj (requires javacc 3.2)">
+    <delete>
+      <fileset dir="${javacc.path}" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+    </delete>
+    <invoke-javacc target="${javacc.path}/PrecedenceQueryParser.jj"
+                   outputDir="${javacc.path}"
+    />
+  </target>
+
 </project>
