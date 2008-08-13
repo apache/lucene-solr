@@ -17,7 +17,7 @@
  limitations under the License.
 -->
 
-<project name="solr" default="usage" basedir=".">
+<project name="solr" default="usage" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 	
   <import file="common-build.xml"/>
   
@@ -144,7 +144,31 @@
         destdir="${build.javadoc}/core"
       	title="${Name} ${version} core API (${specversion})">
         <sources>
-          <packageset dir="src/java"/>
+          <packageset dir="${src}/java">
+            <exclude name="org/apache/solr/common/**" />
+          </packageset>
+          <packageset dir="${src}/webapp/src"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+
+  <target name="javadoc-common" depends="compile,compile-solrj"  description="Generates javadoc documentation for core.">
+
+    <sequential>
+      <mkdir dir="${build.javadoc}/common"/>
+
+      <path id="javadoc.classpath">
+        <path refid="compile.classpath"/>
+        <path refid="compile.classpath.solrj"/>
+        <pathelement location="${dest}/client/solrj"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/common"
+      	title="${Name} ${version} core API (${specversion})">
+        <sources>
+          <fileset dir="${src}/java" includes="org/apache/solr/common/**" />
         </sources>
       </invoke-javadoc>
     </sequential>
@@ -169,6 +193,7 @@
           <packageset dir="contrib/dataimporthandler/src/main/java" />
 
           <group title="Core" packages="org.apache.*" />
+          <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
         </sources>
@@ -181,7 +206,7 @@
                    failonerror="true"/>
   </target>
 
-  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
+  <target name="javadoc" depends="javadoc-core, javadoc-common, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
   <target name="stub-factories" depends="dist-jar"
@@ -498,7 +523,7 @@
          <exclude name="easymock.jar" />
        </lib>
        <lib dir="${dist}">
-         <include name="${fullnamever}.jar" />
+         <include name="${fullname}-server-${version}.jar" />
          <include name="${fullname}-common-${version}.jar" />
        </lib>
        <lib dir="client/java/solrj/lib"/>
@@ -511,13 +536,43 @@
     </war>
   </target>
 
+  <target name="dist-src" description="Creates the Solr source distribution files"
+          depends="make-manifest">
+    <mkdir dir="${dist}" />
+    
+    <solr-jar destfile="${dist}/${fullname}-server-src-${version}.jar">
+      <fileset dir="${src}/java" excludes="org/apache/solr/common/**" />
+      <fileset dir="${src}/webapp/src"/>
+    </solr-jar>
+    <solr-jar destfile="${dist}/${fullname}-common-src-${version}.jar" basedir="${src}/java"
+              includes="org/apache/solr/common/**" />
+    <solr-jar destfile="${dist}/${fullname}-solrj-src-${version}.jar"
+              basedir="client/java/solrj/src" />
+    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
+              basedir="contrib/dataimporthandler/src" />
+  </target>
+
+  <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
+          depends="make-manifest, javadoc">
+    <mkdir dir="${dist}" />
+
+    <solr-jar destfile="${dist}/${fullname}-server-docs-${version}.jar"
+              basedir="${build.javadoc}/core" />
+    <solr-jar destfile="${dist}/${fullname}-common-docs-${version}.jar"
+              basedir="${build.javadoc}/common"/>
+    <solr-jar destfile="${dist}/${fullname}-solrj-docs-${version}.jar"
+              basedir="${build.javadoc}/solrj" />
+    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
+  </target>
+
   <!-- Creates the solr jar. -->
   <target name="dist-jar"
           description="Creates the Solr JAR Distribution file."
           depends="compile, make-manifest">
     <mkdir dir="${dist}" />
     <solr-jar
-         destfile="${dist}/${fullnamever}.jar"
+         destfile="${dist}/${fullname}-server-${version}.jar"
          basedir="${dest}/core" />
 
     <!-- package the common classes together -->
@@ -580,7 +635,7 @@
   <!-- make a distribution -->
   <target name="package"
           description="Packages the Solr Distribution files and Documentation."
-          depends="dist, example, javadoc-solrj, javadoc">
+          depends="dist, example, javadoc, dist-src, dist-javadoc">
 
     <copy todir="${build.docs}">
       <fileset dir="site" />
@@ -623,6 +678,86 @@
     </zip>
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
+  </target>
+
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package">
+    <sequential>
+
+      <mkdir dir="${maven.build.dir}"/>
+      <mkdir dir="${maven.dist.dir}"/>
+
+      <!-- ========== SOLR PARENT POM ========== -->
+
+      <m2-deploy pom.xml="solr-parent-pom.xml.template"/>
+
+      <!-- ========== SOLR SPECIFIC LUCENE ARTIFACTS ========== -->
+
+      <m2-deploy pom.xml="lib/solr-lucene-core-pom.xml.template"
+                 jar.file="lib/lucene-core-${lucene_version}.jar" />
+
+      <m2-deploy pom.xml="lib/solr-lucene-contrib-pom.xml.template"/>
+
+      <m2-deploy pom.xml="lib/solr-lucene-analyzers-pom.xml.template"
+                 jar.file="lib/lucene-analyzers-${lucene_version}.jar" />
+
+      <m2-deploy pom.xml="lib/solr-lucene-highlighter-pom.xml.template"
+                 jar.file="lib/lucene-highlighter-${lucene_version}.jar" />
+
+      <m2-deploy pom.xml="lib/solr-lucene-queries-pom.xml.template"
+                 jar.file="lib/lucene-queries-${lucene_version}.jar" />
+
+      <m2-deploy pom.xml="lib/solr-lucene-snowball-pom.xml.template"
+                 jar.file="lib/lucene-snowball-${lucene_version}.jar" />
+
+      <m2-deploy  pom.xml="lib/solr-lucene-spellchecker-pom.xml.template"
+                  jar.file="lib/lucene-spellchecker-${lucene_version}.jar" />
+
+      <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
+      <m2-deploy  pom.xml="lib/solr-commons-csv-pom.xml.template"
+                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r609327.jar" />
+
+      <!-- ========== SOLR ARTIFACTS ========== -->
+
+      <m2-deploy pom.xml="solr-common-pom.xml.template"
+                 jar.file="${dist}/apache-solr-common-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/${fullname}-common-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/${fullname}-common-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+
+      </m2-deploy>
+
+      <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-pom.xml.template"
+                 jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+      <m2-deploy pom.xml="solr-core-pom.xml.template"
+                 jar.file="${dist}/apache-solr-core-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-core-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-core-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+
+      </m2-deploy>
+
+      <m2-deploy pom.xml="client/java/solrj/solr-solrj-pom.xml.template"
+                 jar.file="${dist}/apache-solr-solrj-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-solrj-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-solrj-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+
+      </m2-deploy>
+
+    </sequential>
   </target>
 
   <target name="nightly"

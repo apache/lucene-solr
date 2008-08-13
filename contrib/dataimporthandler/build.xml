@@ -51,6 +51,7 @@
   	<mkdir dir="target/classes"/>
     <mkdir dir="${build.javadoc}" />
     <ant dir="../../" inheritall="false" target="compile" />
+    <ant dir="../../" inheritall="false" target="make-manifest" />
   </target>
 	
   <target name="compile" depends="init">
@@ -60,7 +61,7 @@
     </solr-javac>
   </target>
 	
-  <target name="build" depends="compile, make-manifest">
+  <target name="build" depends="compile">
     <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
               manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
   </target>

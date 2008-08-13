@@ -88,7 +88,30 @@
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.output.dir" location="${common.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common.dir}/${dest}/test-results/reports"/>
-  
+
+  <!-- Maven properties -->
+  <property name="maven.build.dir" value="${basedir}/build/maven"/>
+  <property name="maven.dist.dir" value="${basedir}/dist/maven"/>
+
+  <!-- The version suffix of the Lucene artifacts checked into "lib" -->
+  <property name="lucene_version" value="2.4-dev"/>
+  <!-- The version number to assign to the Maven artifacts. -->
+  <property name="maven_version" value="1.3-SNAPSHOT"/>
+
+  <!-- By default, "deploy" to a temporary directory (as well as installing
+       into your local repository).  If you wish to deploy to a remote
+       repository, set this property to the URL of that repository.  In
+       addition, if the repository requires authentication, you can set
+       properties "m2.repository.username" and "m2.repository.private.key"
+       to define your credentials.
+  -->
+  <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
+  <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
+
+  <available property="maven.ant.tasks.present" classname="org.apache.maven.artifact.ant.Pom" />
+
+  <!-- End Maven Properties -->
+
   <available property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"
             />
@@ -122,14 +145,16 @@
   <!-- Macro for building Jars -->
   <macrodef name="solr-jar">
     <attribute name="destfile" />
-    <attribute name="basedir" />
+    <attribute name="basedir" default="." />
     <attribute name="includes" default="org/apache/**" />
+    <attribute name="excludes" default="" />
     <attribute name="manifest" default="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
     <element name="nested" optional="true" implicit="true" />
     <sequential>
       <jar destfile="@{destfile}"
            basedir="@{basedir}"
            includes="@{includes}"
+           excludes="@{excludes}"
            filesetmanifest="skip"
            manifest="@{manifest}">
         <metainf dir="${common.dir}" includes="LICENSE.txt,NOTICE.txt"/>
@@ -137,7 +162,7 @@
       </jar>
     </sequential>
   </macrodef>
-  
+
   <!-- Macro for building checksum files
        This is only needed until the "format" option is supported
        by ant's built in checksum task
@@ -165,8 +190,8 @@
      </concat>
     </sequential>
   </macrodef>
-  
-  
+
+
   <macrodef name="contrib-crawl">
     <attribute name="target" default=""/>
     <attribute name="failonerror" default="true"/>
@@ -211,12 +236,34 @@
       </javadoc>
    </sequential>
   </macrodef>
-	
+
+  <macrodef name="m2-deploy" description="Builds a Maven artifact">
+        <element name="artifact-attachments" optional="yes"/>
+    <attribute name="pom.xml" default="${pom.xml}"/>
+    <attribute name="jar.file" default="${jar.file}"/>
+    <sequential>
+      <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
+        <filterset begintoken="@" endtoken="@">
+          <filter token="maven_version" value="${maven_version}"/>
+        </filterset>
+      </copy>
+      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
+      <artifact:pom id="maven.project" file="${maven.build.dir}/@{pom.xml}" />
+      <artifact:deploy file="@{jar.file}" uniqueVersion="false">
+        <artifact-attachments/>
+        <remoteRepository url="${m2.repository.url}">
+          <authentication username="${m2.repository.username}" privateKey="${m2.repository.private.key}"/>
+        </remoteRepository>
+        <pom refid="maven.project"/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
+
   <target name="clean-contrib"
 	          description="Cleans all contrib modules and their tests">
 	<contrib-crawl target="clean"/>
   </target>
-	
+
   <target name="build-contrib"
           description="Builds all contrib modules and their tests">
     <contrib-crawl target="build"/>
@@ -225,21 +272,21 @@
   <target name="test-contrib" depends="build-contrib">
     <contrib-crawl target="test" failonerror="true"/>
   </target>
-	
+
   <target name="dist-contrib" description="Make the contribs ready for distribution">
   	<contrib-crawl target="dist" failonerror="true" />
   </target>
-	
+
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest">
      <!-- If possible, include the svnversion -->
-     <exec dir="${common.dir}" executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
+     <exec dir="." executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
       <arg line="."/>
      </exec>
-     
+
      <!-- no description, don't advertise -->
-     <mkdir dir="${common.dir}/${dest}/META-INF/" />
-     <manifest mode="replace" file="${common.dir}/${dest}/META-INF/MANIFEST.MF">
+     <mkdir dir="${dest}/META-INF/" />
+     <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
         http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
@@ -282,5 +329,15 @@
                    value="${java.compat.version}"/>
      </manifest>
   </target>
-  
+
+  <target name="maven.ant.tasks-check">
+    <fail unless="maven.ant.tasks.present">
+      ##################################################################
+      Maven ant tasks not found.
+      Please make sure the maven-ant-tasks jar is in ANT_HOME/lib, or made
+      available to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+    </fail>
+  </target>
+
 </project>

@@ -614,6 +614,10 @@ Build
 
  6. SOLR-672: Nightly release includes contrib sources. (Jeremy Hinegardner, shalin)
 
+ 7. SOLR-586: Added ant target and POM files for building maven artifacts of the Solr core, common,
+              client and contrib. The target can publish artifacts with source and javadocs.
+              (Spencer Crissman, Craig McClanahan, shalin)
+
 ================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1
