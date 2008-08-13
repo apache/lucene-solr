@@ -523,7 +523,7 @@
          <exclude name="easymock.jar" />
        </lib>
        <lib dir="${dist}">
-         <include name="${fullname}-server-${version}.jar" />
+         <include name="${fullname}-core-${version}.jar" />
          <include name="${fullname}-common-${version}.jar" />
        </lib>
        <lib dir="client/java/solrj/lib"/>
