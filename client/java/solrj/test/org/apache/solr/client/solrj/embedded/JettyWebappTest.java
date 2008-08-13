@@ -76,6 +76,7 @@ public class JettyWebappTest extends TestCase
     assertNotNull( html ); // real error will be an exception
 
     adminPath += "admin/";
+    html = IOUtils.toString( new URL(adminPath).openStream() );
     assertNotNull( html ); // real error will be an exception
 
     // analysis

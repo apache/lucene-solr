@@ -26,7 +26,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.MultiCoreParams.MultiCoreAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.MultiCore;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -39,12 +39,12 @@ import org.apache.solr.util.RefCounted;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class MultiCoreHandler extends RequestHandlerBase
+public abstract class CoreAdminHandler extends RequestHandlerBase
 {
-  public MultiCoreHandler()
+  public CoreAdminHandler()
   {
     super();
-    // Unlike most request handlers, MultiCore initialization 
+    // Unlike most request handlers, CoreContainer initialization 
     // should happen in the constructor...  
   }
   
@@ -52,25 +52,25 @@ public abstract class MultiCoreHandler extends RequestHandlerBase
   @Override
   final public void init(NamedList args) {
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-        "MultiCoreHandler should not be configured in solrconf.xml\n"+
+        "CoreAdminHandler should not be configured in solrconf.xml\n"+
         "it is a special Handler configured directly by the RequestDispatcher" );
   }
   
   /**
    * The instance of multicore this handler handles.
-   * This should be the MultiCore instance that created this handler.
-   * @return a MultiCore instance
+   * This should be the CoreContainer instance that created this handler.
+   * @return a CoreContainer instance
    */
-  public abstract MultiCore getMultiCore();
+  public abstract CoreContainer getMultiCore();
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     // Make sure the manager is enabled
-    MultiCore manager = getMultiCore();
+    CoreContainer manager = getMultiCore();
     if( !manager.isEnabled() ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "MultiCore support must be enabled at startup." );
+          "CoreContainer support must be enabled at startup." );
     }
     boolean do_persist = false;
     

@@ -17,13 +17,10 @@
 
 package org.apache.solr.core;
 
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
 
 /**
  * A Solr core descriptor
+ * 
  * @since solr 1.3
  */
 public class CoreDescriptor implements Cloneable {
@@ -32,10 +29,10 @@ public class CoreDescriptor implements Cloneable {
   protected String configName;
   protected String schemaName;
   protected SolrCore core = null;
-  private final MultiCore multiCore;
+  private final CoreContainer coreContainer;
 
-  public CoreDescriptor(MultiCore multiCore) {
-    this.multiCore = multiCore;
+  public CoreDescriptor(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
   }
 
   /** Initialize defaults from instance directory. */
@@ -58,7 +55,7 @@ public class CoreDescriptor implements Cloneable {
     this.instanceDir = descr.instanceDir;
     this.configName = descr.configName;
     this.schemaName = descr.schemaName;
-    multiCore = descr.multiCore;
+    coreContainer = descr.coreContainer;
   }
   
   /**@return the default config name. */
@@ -123,7 +120,7 @@ public class CoreDescriptor implements Cloneable {
     this.core = core;
   }
 
-  public MultiCore getMultiCore() {
-    return multiCore;
+  public CoreContainer getMultiCore() {
+    return coreContainer;
   }
 }

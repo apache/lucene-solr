@@ -52,7 +52,7 @@
 </tr>
 
 <%-- List the cores (that arent this one) so we can switch --%>
-<% org.apache.solr.core.MultiCore multicore = (org.apache.solr.core.MultiCore)request.getAttribute("org.apache.solr.MultiCore");
+<% org.apache.solr.core.CoreContainer multicore = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
   if (multicore!=null) {
   java.util.Collection<SolrCore> cores = multicore.getCores();
 if (cores.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%

@@ -34,7 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.MultiCore;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.BinaryResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
@@ -55,9 +55,9 @@ import org.apache.solr.servlet.SolrRequestParsers;
 public class EmbeddedSolrServer extends SolrServer
 {
   
-  protected final MultiCore multicore; // either multicore
+  protected final CoreContainer multicore; // either multicore
   protected final SolrCore core; // or single core
-  protected final String coreName;  // use MultiCore registry
+  protected final String coreName;  // use CoreContainer registry
 
   private final SolrRequestParsers _parser;
   
@@ -73,10 +73,10 @@ public class EmbeddedSolrServer extends SolrServer
     _parser = new SolrRequestParsers( null );
   }
     
-  public EmbeddedSolrServer(  MultiCore multicore, String coreName )
+  public EmbeddedSolrServer(  CoreContainer multicore, String coreName )
   {
     if ( multicore == null ) {
-      throw new NullPointerException("MultiCore instance required");
+      throw new NullPointerException("CoreContainer instance required");
     }
     this.core = null;
     this.multicore = multicore;

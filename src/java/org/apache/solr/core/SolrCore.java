@@ -91,7 +91,7 @@ public final class SolrCore {
   public long getStartTime() { return startTime; }
 
   /**
-   * @deprecated Use {@link MultiCore#getCore(String)} instead.
+   * @deprecated Use {@link CoreContainer#getCore(String)} instead.
    */
   @Deprecated
   private static SolrCore instance;
@@ -345,7 +345,7 @@ public final class SolrCore {
    * @return the last core initialized.  If you are using multiple cores, 
    * this is not a function to use.
    * 
-   * @deprecated Use {@link MultiCore#getCore(String)} instead.
+   * @deprecated Use {@link CoreContainer#getCore(String)} instead.
    */
   @Deprecated
   public static SolrCore getSolrCore() {

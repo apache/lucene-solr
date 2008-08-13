@@ -204,6 +204,14 @@
       </analyzer>
     </fieldType>
 
+    <fieldType name="grams" class="solr.TextField" positionIncrementGap="100" >
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
+        <filter class="solr.LengthFilterFactory" min="3" max="15" />
+        <filter class="solr.WordGramFilterFactory" minLength="1" maxLength="3" sep=" " />      
+      </analyzer>
+    </fieldType>
 
     <!--
      Setup simple analysis for spell checking

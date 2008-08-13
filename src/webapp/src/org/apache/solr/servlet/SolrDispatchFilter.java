@@ -52,7 +52,7 @@ public class SolrDispatchFilter implements Filter
 
   protected CoreDescriptor singleCoreDescriptor;
 
-  protected MultiCore multicore;
+  protected CoreContainer cores;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
@@ -68,14 +68,14 @@ public class SolrDispatchFilter implements Filter
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       this.solrConfigFilename = config.getInitParameter("solrconfig-filename");
 
-      // multicore instantiation
-      this.multicore = initMultiCore(config);
+      // cores instantiation
+      this.cores = initMultiCore(config);
 
-      if(multicore != null && multicore.isEnabled() ) {
+      if(cores != null && cores.isEnabled() ) {
         abortOnConfigurationError = false;
         singleCoreDescriptor = null;
         // if any core aborts on startup, then abort
-        for( SolrCore c : multicore.getCores() ) {
+        for( SolrCore c : cores.getCores() ) {
           if( c.getSolrConfig().getBool( "abortOnConfigurationError",false) ) {
             abortOnConfigurationError = true;
             break;
@@ -84,7 +84,7 @@ public class SolrDispatchFilter implements Filter
       }
       else {
         SolrConfig cfg = this.solrConfigFilename == null? new SolrConfig() : new SolrConfig(this.solrConfigFilename);
-        singleCoreDescriptor = new CoreDescriptor((MultiCore)null);
+        singleCoreDescriptor = new CoreDescriptor((CoreContainer)null);
         singleCoreDescriptor.init("",cfg.getResourceLoader().getInstanceDir());
         SolrCore singlecore = new SolrCore( null, null, cfg, null, singleCoreDescriptor);
         singleCoreDescriptor.setCore(singlecore);
@@ -108,7 +108,7 @@ public class SolrDispatchFilter implements Filter
       out.println( "Check your log files for more detailed information on what may be wrong.\n" );
       out.println( "If you want solr to continue after configuration errors, change: \n");
       out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
-      if (multicore != null && multicore.isEnabled()) {
+      if (cores != null && cores.isEnabled()) {
         out.println( "in solr.xml\n" );
       } else {
         out.println( "in solrconfig.xml\n" );
@@ -133,13 +133,13 @@ public class SolrDispatchFilter implements Filter
   }
 
   /**
-   * Initialize the multicore instance.
+   * Initialize the cores instance.
    * @param config the filter configuration
-   * @return the multicore instance or null
+   * @return the cores instance or null
    * @throws java.lang.Exception
    */
-  protected MultiCore initMultiCore(FilterConfig config) throws Exception {
-    MultiCore mcore = new MultiCore();
+  protected CoreContainer initMultiCore(FilterConfig config) throws Exception {
+    CoreContainer mcore = new CoreContainer();
     String instanceDir = SolrResourceLoader.locateInstanceDir();
     File fconf = new File(instanceDir, "solr.xml");
     log.info("looking for solr.xml: " + fconf.getAbsolutePath());
@@ -151,9 +151,9 @@ public class SolrDispatchFilter implements Filter
 
 
   public void destroy() {
-    if (multicore != null) {
-    multicore.shutdown();
-      multicore = null;
+    if (cores != null) {
+    cores.shutdown();
+      cores = null;
     }
     if( singleCoreDescriptor != null ) {
       singleCoreDescriptor.getCore().close();
@@ -189,18 +189,18 @@ public class SolrDispatchFilter implements Filter
           path = path.substring( 0, idx );
         }
 
-        // By default use the single core.  If multicore is enabled, look for one.
+        // By default use the single core.  If cores is enabled, look for one.
         final SolrCore core;
-        if (multicore != null && multicore.isEnabled()) {
-          req.setAttribute("org.apache.solr.MultiCore", multicore);
+        if (cores != null && cores.isEnabled()) {
+          req.setAttribute("org.apache.solr.CoreContainer", cores);
 
           // if this is the multi-core admin page, it will handle it
-          if( path.equals( multicore.getAdminPath() ) ) {
-            handler = multicore.getMultiCoreHandler();
+          if( path.equals( cores.getAdminPath() ) ) {
+            handler = cores.getMultiCoreHandler();
             // pick a core to use for output generation
-            core = multicore.getAdminCore();
+            core = cores.getAdminCore();
             if( core == null ) {
-              throw new RuntimeException( "Can not find a valid core for the multicore admin handler" );
+              throw new RuntimeException( "Can not find a valid core for the cores admin handler" );
             }
           } else {
             //otherwise, we should find a core from the path
@@ -209,7 +209,7 @@ public class SolrDispatchFilter implements Filter
               // try to get the corename as a request parameter first
               String corename = path.substring( 1, idx );
               path = path.substring( idx );
-              core = multicore.getCore( corename );
+              core = cores.getCore( corename );
             } else {
               core = null;
             }
@@ -231,7 +231,7 @@ public class SolrDispatchFilter implements Filter
           }
 
           // Determine the handler from the url path if not set
-          // (we might already have selected the multicore handler)
+          // (we might already have selected the cores handler)
           if( handler == null && path.length() > 1 ) { // don't match "" or "/" as valid path
             handler = core.getRequestHandler( path );
             // no handler yet but allowed to handle select; let's check
