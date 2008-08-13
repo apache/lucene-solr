@@ -22,9 +22,12 @@ import org.apache.solr.TestDistributedSearch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 import junit.framework.TestCase;
 
@@ -122,9 +125,45 @@ public class TestNamedListCodec  extends TestCase {
     assertEquals(list.size(), l.size());
   }
 
+  public void testIterable() throws Exception {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+    NamedList r = new NamedList();
+
+    Map<String, String> map = new HashMap<String, String>();
+    map.put("foo", "bar");
+    map.put("junk", "funk");
+    map.put("ham", "burger");
+
+    r.add("keys", map.keySet());
+    r.add("more", "less");
+    r.add("values", map.values());
+    r.add("finally", "the end");
+    new NamedListCodec(null).marshal(r,baos);
+    byte[] arr = baos.toByteArray();
+
+    try {
+      NamedList result = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+      assertTrue("result is null and it shouldn't be", result != null);
+      List keys = (List) result.get("keys");
+      assertTrue("keys is null and it shouldn't be", keys != null);
+      assertTrue("keys Size: " + keys.size() + " is not: " + 3, keys.size() == 3);
+      String less = (String) result.get("more");
+      assertTrue("less is null and it shouldn't be", less != null);
+      assertTrue(less + " is not equal to " + "less", less.equals("less") == true);
+      List values = (List) result.get("values");
+      assertTrue("values is null and it shouldn't be", values != null);
+      assertTrue("values Size: " + values.size() + " is not: " + 3, values.size() == 3);
+      String theEnd = (String) result.get("finally");
+      assertTrue("theEnd is null and it shouldn't be", theEnd != null);
+      assertTrue(theEnd + " is not equal to " + "the end", theEnd.equals("the end") == true);
+    } catch (ClassCastException e) {
+      assertTrue("Received a CCE and we shouldn't have", false);
+    }
+
+  }
 
 
-  
   int rSz(int orderOfMagnitude) {
     int sz = r.nextInt(orderOfMagnitude);
     switch (sz) {

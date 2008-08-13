@@ -222,6 +222,7 @@ public class NamedListCodec {
     }
     if (val instanceof Iterable) {
       writeIterator(((Iterable)val).iterator());
+      return true;
     }
     return false;
   }
