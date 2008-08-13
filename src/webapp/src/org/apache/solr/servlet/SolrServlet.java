@@ -50,7 +50,7 @@ public class SolrServlet extends HttpServlet {
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
     
-    // Check if the "multicore.xml" file exists -- if so, this is an invalid servlet
+    // Check if the "solr.xml" file exists -- if so, this is an invalid servlet
     // (even if there is only one core...)
     String instanceDir = SolrResourceLoader.locateInstanceDir();
     File fconf = new File(instanceDir, "solr.xml");

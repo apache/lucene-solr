@@ -50,7 +50,7 @@ public class SolrUpdateServlet extends HttpServlet {
     legacyUpdateHandler = new XmlUpdateRequestHandler();
     legacyUpdateHandler.init( null );
 
-    // Check if the "multicore.xml" file exists -- if so, this is an invalid servlet
+    // Check if the "solr.xml" file exists -- if so, this is an invalid servlet
     // (even if there is only one core...)
     String instanceDir = SolrResourceLoader.locateInstanceDir();
     File fconf = new File(instanceDir, "solr.xml");
