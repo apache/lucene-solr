@@ -356,7 +356,7 @@ Changes in runtime behavior
    a crash causing duplicates. (yonik)
 
  2. SOLR-689: solr.xml has replaced multicore.xml, and uses a slightly
-    differnet syntax.  (hossman)
+    different syntax.  (hossman)
     
 Optimizations
  1. SOLR-276: improve JSON writer speed. (yonik)
