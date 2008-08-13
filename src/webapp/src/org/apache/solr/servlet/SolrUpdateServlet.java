@@ -16,6 +16,7 @@ package org.apache.solr.servlet;/**
  */
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.logging.Logger;
@@ -25,6 +26,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.XMLResponseWriter;
@@ -40,18 +42,29 @@ public class SolrUpdateServlet extends HttpServlet {
 
   XmlUpdateRequestHandler legacyUpdateHandler;
   XMLResponseWriter xmlResponseWriter;
+  private boolean hasMulticore = false;
 
   @Override
   public void init() throws ServletException
   {
     legacyUpdateHandler = new XmlUpdateRequestHandler();
     legacyUpdateHandler.init( null );
+
+    // Check if the "multicore.xml" file exists -- if so, this is an invalid servlet
+    // (even if there is only one core...)
+    String instanceDir = SolrResourceLoader.locateInstanceDir();
+    File fconf = new File(instanceDir, "solr.xml");
+    hasMulticore = fconf.exists();
     
     log.info("SolrUpdateServlet.init() done");
   }
 
   @Override
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    if( hasMulticore ) {
+      response.sendError( 400, "Missing solr core name in path" );
+      return;
+    }
     BufferedReader requestReader = request.getReader();
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
