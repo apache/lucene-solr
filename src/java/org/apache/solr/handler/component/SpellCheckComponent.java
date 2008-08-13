@@ -50,11 +50,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.spelling.AbstractLuceneSpellChecker;
-import org.apache.solr.spelling.IndexBasedSpellChecker;
-import org.apache.solr.spelling.QueryConverter;
-import org.apache.solr.spelling.SolrSpellChecker;
-import org.apache.solr.spelling.SpellingResult;
+import org.apache.solr.spelling.*;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -290,6 +286,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               new NamedListPluginLoader<QueryConverter>("[solrconfig.xml] " + xpath, queryConverters);
 
       loader.load(solrConfig.getResourceLoader(), nodes);
+
+      //ensure that there is at least one query converter defined
+      if (queryConverters.size() == 0) {
+        LOG.warning("No queryConverter defined, using default converter");
+        queryConverters.put("queryConverter", new SpellingQueryConverter());
+      }
+
       //there should only be one
       if (queryConverters.size() == 1) {
         queryConverter = queryConverters.values().iterator().next();
@@ -300,9 +303,6 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
                 : fieldType.getQueryAnalyzer();
         //TODO: There's got to be a better way!  Where's Spring when you need it?
         queryConverter.setAnalyzer(analyzer);
-      } else {
-        //TODO: Is there a better way?
-        throw new RuntimeException("One and only one queryConverter may be defined");
       }
     }
   }
