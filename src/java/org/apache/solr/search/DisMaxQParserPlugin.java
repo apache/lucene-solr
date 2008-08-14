@@ -142,6 +142,7 @@ class DismaxQParser extends QParser {
     else {
       // There is a valid query string
       userQuery = U.partialEscape(U.stripUnbalancedQuotes(userQuery)).toString();
+      userQuery = U.stripIllegalOperators(userQuery).toString();
 
       String minShouldMatch = solrParams.get(DMP.MM, "100%");
       Query dis = up.parse(userQuery);

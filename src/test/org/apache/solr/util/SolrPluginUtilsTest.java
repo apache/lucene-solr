@@ -66,6 +66,24 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
         
   }
 
+  public void testStripIllegalOperators() {
+
+    assertEquals("",stripOp(""));
+    assertEquals("foo",stripOp("foo"));
+    assertEquals("foo -bar",stripOp("foo -bar"));
+    assertEquals("foo +bar",stripOp("foo +bar"));
+    assertEquals("foo + bar",stripOp("foo + bar"));
+    assertEquals("foo+ bar",stripOp("foo+ bar"));
+    assertEquals("foo+ bar",stripOp("foo+ bar"));
+    assertEquals("foo+",stripOp("foo+"));
+    assertEquals("foo bar",stripOp("foo bar -"));
+    assertEquals("foo bar ",stripOp("foo bar - + ++"));
+    assertEquals("foo bar",stripOp("foo --bar"));
+    assertEquals("foo bar ",stripOp("foo -------------------------------------------------------------------------------------------------------------------------bar --"));
+    assertEquals("foo bar ",stripOp("foo --bar -----------------------------------------------------------------------------------------------------------------------"));
+
+  }
+
   public void testParseFieldBoosts() throws Exception {
 
     Map<String,Float> e1 = new HashMap<String,Float>();
@@ -313,6 +331,11 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
   /** macro */
   public String strip(CharSequence s) {
     return SolrPluginUtils.stripUnbalancedQuotes(s).toString();
+  }
+   
+  /** macro */
+  public String stripOp(CharSequence s) {
+    return SolrPluginUtils.stripIllegalOperators(s).toString();
   }
    
   /** macro */

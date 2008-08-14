@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
     
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -671,6 +672,23 @@ public class SolrPluginUtils {
       sb.append(c);
     }
     return sb;
+  }
+
+  // Pattern to detect dangling operator(s) at end of query
+  // \s+[-+\s]+$
+  private final static Pattern DANGLING_OP_PATTERN = Pattern.compile( "\\s+[-+\\s]+$" );
+  // Pattern to detect consecutive + and/or - operators
+  // \s+[+-](?:\s*[+-]+)+
+  private final static Pattern CONSECUTIVE_OP_PATTERN = Pattern.compile( "\\s+[+-](?:\\s*[+-]+)+" );    
+
+  /**
+   * Strips operators that are used illegally, otherwise reuturns it's
+   * input.  Some examples of illegal user queries are: "chocolate +-
+   * chip", "chocolate - - chip", and "chocolate chip -".
+   */
+  public static CharSequence stripIllegalOperators(CharSequence s) {
+    String temp = CONSECUTIVE_OP_PATTERN.matcher( s ).replaceAll( " " );
+    return DANGLING_OP_PATTERN.matcher( temp ).replaceAll( "" );
   }
 
   /**
