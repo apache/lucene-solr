@@ -332,7 +332,7 @@ New Features
 
 64. SOLR-666: Expose warmup time in statistics for SolrIndexSearcher and LRUCache (shalin)
 
-65. SOLR-663: Allow multiple files for stopwords, keepwords, protwords and synonyms (shalin)
+65. SOLR-663: Allow multiple files for stopwords, keepwords, protwords and synonyms (Otis Gospodnetic, shalin)
 
 66. SOLR-469: Added DataImportHandler as a contrib project which makes indexing data from Databases, XML files and HTTP
               data sources into Solr quick and easy. Includes API and implementations for supporting multiple
