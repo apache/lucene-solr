@@ -190,7 +190,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     boolean isCorrectlySpelled = true;
     Map<Token, String> best = null;
     if (collate == true){
-      best = new HashMap<Token, String>(suggestions.size());
+      best = new LinkedHashMap<Token, String>(suggestions.size());
     }
     for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
       Token inputToken = entry.getKey();
@@ -225,10 +225,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     if (collate == true){
       StringBuilder collation = new StringBuilder(origQuery);
+      int offset = 0;
       for (Iterator<Map.Entry<Token, String>> bestIter = best.entrySet().iterator(); bestIter.hasNext();) {
         Map.Entry<Token, String> entry = bestIter.next();
         Token tok = entry.getKey();
-        collation.replace(tok.startOffset(), tok.endOffset(), entry.getValue());
+        collation.replace(tok.startOffset() + offset, 
+          tok.endOffset() + offset, entry.getValue());
+        offset += entry.getValue().length() - (tok.endOffset() - tok.startOffset());
       }
       String collVal = collation.toString();
       if (collVal.equals(origQuery) == false) {

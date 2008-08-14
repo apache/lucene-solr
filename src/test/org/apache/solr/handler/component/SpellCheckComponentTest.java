@@ -199,6 +199,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
 
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
@@ -212,6 +213,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     params.add(CommonParams.Q, "documemt lowerfilt:broen^4");
     handler = core.getRequestHandler("spellCheckCompRH");
     rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
@@ -221,6 +223,23 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     collation = (String) suggestions.get("collation");
     assertTrue("collation is null and it shouldn't be", collation != null);
     assertTrue(collation + " is not equal to " + "document lowerfilt:brown^4", collation.equals("document lowerfilt:brown^4") == true);
+
+    params.remove(CommonParams.Q);
+    params.add(CommonParams.Q, "documemtsss broens");
+    handler = core.getRequestHandler("spellCheckCompRH");
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    spellCheck = (NamedList) values.get("spellcheck");
+    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
+    suggestions = (NamedList) spellCheck.get("suggestions");
+    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
+    collation = (String) suggestions.get("collation");
+    assertTrue("collation is null and it shouldn't be", collation != null);
+    System.out.println("Collation: " + collation);
+    assertTrue(collation + " is not equal to " + "document brown", collation.equals("document brown") == true);
+
 
   }
 
