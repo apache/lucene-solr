@@ -224,8 +224,14 @@ ssh -o StrictHostKeyChecking=no ${master_host} mkdir -p ${master_status_dir}
 
 # start new distribution stats
 rsyncStart=`date +'%Y-%m-%d %H:%M:%S'`
+if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
+then
+  startTimestamp=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncStart" +'%Y%m%d-%H%M%S'`
+  rsyncStartSec=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncStart" +'%s'`
+else
 startTimestamp=`date -d "$rsyncStart" +'%Y%m%d-%H%M%S'`
 rsyncStartSec=`date -d "$rsyncStart" +'%s'`
+fi
 startStatus="rsync of `basename ${name}` started:$startTimestamp"
 echo ${startStatus} > ${solr_root}/logs/snappuller.status
 pushStatus
@@ -236,8 +242,14 @@ ${stats} rsync://${master_host}:${rsyncd_port}/solr/${name}/ ${data_dir}/${name}
 
 rc=$?
 rsyncEnd=`date +'%Y-%m-%d %H:%M:%S'`
+if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
+then
+  endTimestamp=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncEnd" +'%Y%m%d-%H%M%S'`
+  rsyncEndSec=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncEnd" +'%s'`
+else
 endTimestamp=`date -d "$rsyncEnd" +'%Y%m%d-%H%M%S'`
 rsyncEndSec=`date -d "$rsyncEnd" +'%s'`
+fi
 elapsed=`expr $rsyncEndSec - $rsyncStartSec`
 if [[ $rc != 0 ]]
 then
