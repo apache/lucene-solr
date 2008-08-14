@@ -127,7 +127,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       //we have a spell check param, tokenize it with the query analyzer applicable for this spellchecker
       tokens = getTokens(q, spellChecker.getQueryAnalyzer());
     } else {
-      q = params.get(CommonParams.Q);
+      q = rb.getQueryString();
+      if (q == null) {
+        q = params.get(CommonParams.Q);
+      }
       tokens = queryConverter.convert(q);
     }
     if (tokens != null && tokens.isEmpty() == false) {
