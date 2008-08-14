@@ -368,8 +368,8 @@ public class CoreContainer
   
   /**
    * Swaps two SolrCore descriptors.
-   * @param c0
-   * @param c1
+   * @param n0
+   * @param n1
    */
   public void swap(String n0, String n1) {
     if( n0 == null || n1 == null ) {
@@ -512,7 +512,7 @@ public class CoreContainer
    * declare an alternate way of accessing named cores.
    * This can also be used in a pseudo single-core environment so admins can prepare
    * a new version before swapping.
-   * @param adminPath
+   * @param path
    */
   public void setManagementPath(String path) {
     this.managementPath = path;
