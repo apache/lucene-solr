@@ -216,10 +216,11 @@ New Features
     plugins.  Plugins that implement SolrCoreAware or ResourceLoaderAware are 
     informed about the SolrCore/ResourceLoader. (Henri Biestro, ryan)
 
-33. SOLR-350: Support multiple SolrCores running in the same solr instance.  If a 
-    solr.xml file exists in solr.home, this file is used to instanciate
-    multiple cores and enables runtime core manipulation.  For more informaion see:
-    http://wiki.apache.org/solr/MultiCore  (Henri Biestro, ryan)
+33. SOLR-350: Support multiple SolrCores running in the same solr instance and allows
+    runtime runtime management for any running SolrCore.  If a solr.xml file exists 
+    in solr.home, this file is used to instanciate multiple cores and enables runtime 
+    core manipulation.  For more informaion see:  http://wiki.apache.org/solr/CoreAdmin  
+    (Henri Biestro, ryan)
 
 34. SOLR-447: Added an single request handler that will automatically register all
     standard admin request handlers.  This replaces the need to register (and maintain)
@@ -355,8 +356,11 @@ Changes in runtime behavior
    performance and makes overwrites atomic, eliminating the possibility of
    a crash causing duplicates. (yonik)
 
- 2. SOLR-689: solr.xml has replaced multicore.xml, and uses a slightly
-    different syntax.  (hossman)
+ 2. SOLR-689 / SOLR-695: If you have used "MultiCore" functionality in an unreleased
+   version of 1.3-dev, many classes and configs have been renamed for the official 
+   1.3 release.  Speciffically, solr.xml has replaced multicore.xml, and uses a slightly 
+   different syntax.  The solrj classes: MultiCore{Request/Response/Params} have been 
+   renamed:  CoreAdmin{Request/Response/Params}  (hossman, ryan, Henri Biestro)
     
 Optimizations
  1. SOLR-276: improve JSON writer speed. (yonik)
