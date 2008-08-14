@@ -67,9 +67,13 @@ public class EmbeddedSolrServer extends SolrServer
       throw new NullPointerException("SolrCore instance required");
     }
     this.core = core;
-    this.multicore = null;
-    this.coreName = null;
-
+    if (core.getCoreDescriptor() != null) {
+      this.multicore = core.getCoreDescriptor().getMultiCore();
+      this.coreName = core.getCoreDescriptor().getName();
+    } else {
+      this.multicore = null;
+      this.coreName = null;
+    }
     _parser = new SolrRequestParsers( null );
   }
     
@@ -80,11 +84,7 @@ public class EmbeddedSolrServer extends SolrServer
     }
     this.core = null;
     this.multicore = multicore;
-    this.coreName = coreName;
-    SolrCore c = multicore.getCore( coreName );
-    if( c == null ) {
-      throw new RuntimeException( "Unknown core: "+coreName );
-    }
+    this.coreName = coreName == null? "" : coreName;
 
     _parser = new SolrRequestParsers( null );
   }
@@ -99,14 +99,16 @@ public class EmbeddedSolrServer extends SolrServer
 
     // Check for multicore action
     SolrCore core = this.core;
-    if( core == null ) {
+    if( core == null )
       core = multicore.getCore( coreName );
-      if( core == null ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-            "Unknown core: "+coreName );
-      }
+    // solr-647
+    //else
+    //  core = core.open();
+    if( core == null ) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+          coreName == null? "No core": "No such core: " + coreName );
     }
-
+    
     SolrParams params = request.getParams();
     if( params == null ) {
       params = new ModifiableSolrParams();
@@ -125,15 +127,16 @@ public class EmbeddedSolrServer extends SolrServer
       // Perhaps the path is to manage the cores
       if( handler == null &&
           multicore != null &&
-          path.equals( multicore.getAdminPath() ) && 
-          multicore.isEnabled() ) {
+          path.equals( multicore.getAdminPath() ) ) {
         handler = multicore.getMultiCoreHandler();
       }
     }
     if( handler == null ) {
+      // solr-647
+      // core.close();
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
-    
+
     try {
       SolrQueryRequest req = _parser.buildRequestFrom( core, params, request.getContentStreams() );
       req.getContext().put( "path", path );
@@ -153,6 +156,10 @@ public class EmbeddedSolrServer extends SolrServer
     }
     catch( Exception ex ) {
       throw new SolrServerException( ex );
+    }
+    finally {
+      // solr-647
+      // core.close();
     }
   }
   

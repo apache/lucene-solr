@@ -28,9 +28,11 @@
 <a href="."><img border="0" align="right" height="61" width="142" src="admin/solr-head.gif" alt="Solr"/></a>
 
 <% 
-  org.apache.solr.core.CoreContainer multicore = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
-  if(multicore != null && multicore.isEnabled() ) { 
-    for( org.apache.solr.core.SolrCore core : multicore.getCores() ) {%>
+  org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
+  if( cores != null
+   && cores.getCores().size() > 0 // HACK! check that we have valid names...
+   && cores.getCores().iterator().next().getName() != null ) { 
+    for( org.apache.solr.core.SolrCore core : cores.getCores() ) {%>
 <a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %></a><br/>
 <% }} else { %>
 <a href="admin/">Solr Admin</a>

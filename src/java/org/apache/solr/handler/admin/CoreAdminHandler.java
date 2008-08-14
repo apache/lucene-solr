@@ -57,20 +57,20 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
   }
   
   /**
-   * The instance of multicore this handler handles.
+   * The instance of CoreContainer this handler handles.
    * This should be the CoreContainer instance that created this handler.
    * @return a CoreContainer instance
    */
-  public abstract CoreContainer getMultiCore();
+  public abstract CoreContainer getCoreContainer();
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
-    // Make sure the manager is enabled
-    CoreContainer manager = getMultiCore();
-    if( !manager.isEnabled() ) {
+    // Make sure the cores is enabled
+    CoreContainer cores = getCoreContainer();
+    if( cores == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "CoreContainer support must be enabled at startup." );
+          "Core container instance missing" );
     }
     boolean do_persist = false;
     
@@ -86,112 +86,96 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
           "Unknown 'action' value.  Use: "+MultiCoreAction.values() );
       }
     }
+    String cname = params.get( MultiCoreParams.CORE );
     
-    SolrCore core = null;
-    // Handle a core creation
-    //---------------------------------------------------------
-    if (action == MultiCoreAction.CREATE) {
-      CoreDescriptor dcore = new CoreDescriptor(manager);
-      dcore.init(params.get(MultiCoreParams.NAME),
-                params.get(MultiCoreParams.INSTANCE_DIR));
-      
-      // fillup optional parameters
-      String opts = params.get(MultiCoreParams.CONFIG);
-      if (opts != null)
-        dcore.setConfigName(opts);
-      
-      opts = params.get(MultiCoreParams.SCHEMA);
-      if (opts != null)
-        dcore.setSchemaName(opts);
-      
-      core = manager.create(dcore);
-      rsp.add("core", core.getName());
-      do_persist = manager.isPersistent();
-    }
-    else {
-      // Select the core
-      String cname = params.get( MultiCoreParams.CORE );
-      if( cname != null ) {
-        core = manager.getCore(cname);
-        if( core == null ) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-              "Unknown core: "+cname );
-        }
-      }
+    switch(action) {
+      case CREATE: {
+        CoreDescriptor dcore = new CoreDescriptor(cores);
+        dcore.init(params.get(MultiCoreParams.NAME),
+                  params.get(MultiCoreParams.INSTANCE_DIR));
 
-      // Handle a Status Request
-      //---------------------------------------------------------
-      if( action == MultiCoreAction.STATUS ) {
-        do_persist = false; // no state change
+        // fillup optional parameters
+        String opts = params.get(MultiCoreParams.CONFIG);
+        if (opts != null)
+          dcore.setConfigName(opts);
+
+        opts = params.get(MultiCoreParams.SCHEMA);
+        if (opts != null)
+          dcore.setSchemaName(opts);
+
+        SolrCore core = cores.create(dcore);
+        rsp.add("core", core.getName());
+        do_persist = cores.isPersistent();
+        break;
+      }
+      
+      case STATUS: {
         NamedList<Object> status = new SimpleOrderedMap<Object>();
-        if( core == null ) {
-          for (CoreDescriptor d : manager.getDescriptors()) {
-            status.add(d.getName(), getCoreStatus( d.getCore() ) );
+        if( cname == null ) {
+          for (CoreDescriptor d : cores.getDescriptors()) {
+            cname = d.getName();
+            status.add(d.getName(), getCoreStatus( cores, cname  ) );
           }
         } 
         else {
-          status.add(core.getName(), getCoreStatus(core) );
+          status.add(cname, getCoreStatus( cores, cname  ) );
         }
         rsp.add( "status", status );
-      } 
-      else if (core == null) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "Action '"+action+"' requires a core name." );
-      } 
-      else {
-        // Handle all other
-        //---------------------------------------------------------
-        do_persist = params.getBool(MultiCoreParams.PERSISTENT, manager.isPersistent());
-        switch( action ) {
-          case RELOAD: {
-            manager.reload( manager.getDescriptor( core.getName() ) );
-            do_persist = false; // no change on reload
-            break;
-          }
-  
-          case SWAP: {
-            String name = required.get( MultiCoreParams.WITH );
-            CoreDescriptor swap = manager.getDescriptor( name );
-            
-            if( swap == null ) {
-              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-                  "Unknown core: "+name );
-            }
-            manager.swap( manager.getDescriptor( core.getName() ), swap );
-            break;
-          } 
-        
-          case PERSIST: {
-            do_persist = true;
-            break;
-          } 
-          
-          default: {
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-                "TODO: IMPLEMENT: " + action );
-          }
-        } // switch
+        do_persist = false; // no state change
+        break;
+       
       }
-    }
-    
+      
+      case PERSIST: {
+        do_persist = true;
+        break;
+      }
+
+      case RELOAD: {
+        cores.reload( cname  );
+        do_persist = false; // no change on reload
+        break;
+      }
+
+      case SWAP: {
+        do_persist = params.getBool(MultiCoreParams.PERSISTENT, cores.isPersistent());
+        String with = required.get( MultiCoreParams.WITH );
+        cores.swap( cname, with );
+        break;
+      } 
+
+      default: {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "TODO: IMPLEMENT: " + action );
+      }
+    } // switch
+      
     // Should we persist the changes?
     if (do_persist) {
-      manager.persist();
-      rsp.add("saved", manager.getConfigFile().getAbsolutePath());
+      cores.persist();
+      rsp.add("saved", cores.getConfigFile().getAbsolutePath());
     }
   }
   
-  private static NamedList<Object> getCoreStatus( SolrCore core ) throws IOException
+  private static NamedList<Object> getCoreStatus( CoreContainer cores, String cname ) throws IOException
   {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
-    info.add( "name", core.getName() );
-    info.add( "instanceDir", core.getResourceLoader().getInstanceDir() );
-    info.add( "dataDir", core.getDataDir() );
-    info.add( "startTime", new Date( core.getStartTime() ) );
-    info.add( "uptime", System.currentTimeMillis()-core.getStartTime() );
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    info.add( "index", LukeRequestHandler.getIndexInfo( searcher.get().getReader(), false ) );
-    searcher.decref();
+    SolrCore core = cores.getCore(cname);
+    if (core != null) {
+      try {
+        info.add("name", core.getName());
+        info.add("instanceDir", core.getResourceLoader().getInstanceDir());
+        info.add("dataDir", core.getDataDir());
+        info.add("startTime", new Date(core.getStartTime()));
+        info.add("uptime", System.currentTimeMillis() - core.getStartTime());
+        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+        info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getReader(), false));
+        searcher.decref();
+      } finally {
+        // solr-647
+        // core.close();
+      }
+    }
     return info;
   }
   

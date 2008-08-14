@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -50,47 +49,25 @@ public class SolrDispatchFilter implements Filter
 {
   final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
 
-  protected CoreDescriptor singleCoreDescriptor;
-
   protected CoreContainer cores;
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
-  protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
   protected String solrConfigFilename = null;
+  protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
 
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init()");
 
     boolean abortOnConfigurationError = true;
+    CoreContainer.Initializer init = createInitializer();
     try {
       // web.xml configuration
-      this.pathPrefix = config.getInitParameter( "path-prefix" );
-      this.solrConfigFilename = config.getInitParameter("solrconfig-filename");
+      init.setPathPrefix(config.getInitParameter( "path-prefix" ));
+      init.setSolrConfigFilename(config.getInitParameter("solrconfig-filename"));
 
-      // cores instantiation
-      this.cores = initMultiCore(config);
-
-      if(cores != null && cores.isEnabled() ) {
-        abortOnConfigurationError = false;
-        singleCoreDescriptor = null;
-        // if any core aborts on startup, then abort
-        for( SolrCore c : cores.getCores() ) {
-          if( c.getSolrConfig().getBool( "abortOnConfigurationError",false) ) {
-            abortOnConfigurationError = true;
-            break;
-          }
-        }
-      }
-      else {
-        SolrConfig cfg = this.solrConfigFilename == null? new SolrConfig() : new SolrConfig(this.solrConfigFilename);
-        singleCoreDescriptor = new CoreDescriptor((CoreContainer)null);
-        singleCoreDescriptor.init("",cfg.getResourceLoader().getInstanceDir());
-        SolrCore singlecore = new SolrCore( null, null, cfg, null, singleCoreDescriptor);
-        singleCoreDescriptor.setCore(singlecore);
-        abortOnConfigurationError = cfg.getBool(
-                "abortOnConfigurationError", abortOnConfigurationError);
-      }
+      this.cores = init.initialize();
+      abortOnConfigurationError = init.isAbortOnConfigurationError();
       log.info("user.dir=" + System.getProperty("user.dir"));
     }
     catch( Throwable t ) {
@@ -108,11 +85,7 @@ public class SolrDispatchFilter implements Filter
       out.println( "Check your log files for more detailed information on what may be wrong.\n" );
       out.println( "If you want solr to continue after configuration errors, change: \n");
       out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
-      if (cores != null && cores.isEnabled()) {
-        out.println( "in solr.xml\n" );
-      } else {
-        out.println( "in solrconfig.xml\n" );
-      }
+      out.println( "in "+init.getSolrConfigFilename()+"\n" );
 
       for( Throwable t : SolrConfig.severeErrors ) {
         out.println( "-------------------------------------------------------------" );
@@ -132,33 +105,16 @@ public class SolrDispatchFilter implements Filter
     log.info("SolrDispatchFilter.init() done");
   }
 
-  /**
-   * Initialize the cores instance.
-   * @param config the filter configuration
-   * @return the cores instance or null
-   * @throws java.lang.Exception
-   */
-  protected CoreContainer initMultiCore(FilterConfig config) throws Exception {
-    CoreContainer mcore = new CoreContainer();
-    String instanceDir = SolrResourceLoader.locateInstanceDir();
-    File fconf = new File(instanceDir, "solr.xml");
-    log.info("looking for solr.xml: " + fconf.getAbsolutePath());
-    if (fconf.exists()) {
-      mcore.load(instanceDir, fconf);
-    }
-    return mcore;
+  /** Method to override to change how CoreContainer initialization is performed. */
+  protected CoreContainer.Initializer createInitializer() {
+    return new CoreContainer.Initializer();
   }
-
-
+  
   public void destroy() {
     if (cores != null) {
-    cores.shutdown();
+      cores.shutdown();
       cores = null;
-    }
-    if( singleCoreDescriptor != null ) {
-      singleCoreDescriptor.getCore().close();
-      singleCoreDescriptor = null;
-    }
+    }    
   }
 
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -172,8 +128,11 @@ public class SolrDispatchFilter implements Filter
       HttpServletResponse resp = (HttpServletResponse)response;
       SolrRequestHandler handler = null;
       SolrQueryRequest solrReq = null;
-
+      SolrCore core = null;
+      String corename = "";
       try {
+        // put the core container in request attribute
+        req.setAttribute("org.apache.solr.CoreContainer", cores);
         String path = req.getServletPath();
         if( req.getPathInfo() != null ) {
           // this lets you handle /update/commit when /update is a servlet
@@ -182,41 +141,42 @@ public class SolrDispatchFilter implements Filter
         if( pathPrefix != null && path.startsWith( pathPrefix ) ) {
           path = path.substring( pathPrefix.length() );
         }
-
+        // check for management path
+        String alternate = cores.getManagementPath();
+        if (alternate != null && path.startsWith(alternate)) {
+          path = path.substring(0, alternate.length());
+        }
+        // unused feature ?
         int idx = path.indexOf( ':' );
         if( idx > 0 ) {
           // save the portion after the ':' for a 'handler' path parameter
           path = path.substring( 0, idx );
         }
 
-        // By default use the single core.  If cores is enabled, look for one.
-        final SolrCore core;
-        if (cores != null && cores.isEnabled()) {
-          req.setAttribute("org.apache.solr.CoreContainer", cores);
-
-          // if this is the multi-core admin page, it will handle it
-          if( path.equals( cores.getAdminPath() ) ) {
-            handler = cores.getMultiCoreHandler();
-            // pick a core to use for output generation
-            core = cores.getAdminCore();
-            if( core == null ) {
-              throw new RuntimeException( "Can not find a valid core for the cores admin handler" );
-            }
-          } else {
-            //otherwise, we should find a core from the path
-            idx = path.indexOf( "/", 1 );
-            if( idx > 1 ) {
-              // try to get the corename as a request parameter first
-              String corename = path.substring( 1, idx );
+        // Check for the core admin page
+        if( path.equals( cores.getAdminPath() ) ) {
+          handler = cores.getMultiCoreHandler();
+          // pick a core to use for output generation
+          core = cores.getAdminCore();
+          if( core == null ) {
+            throw new RuntimeException( "Can not find a valid core for the multicore admin handler" );
+          }
+        } 
+        else {
+          //otherwise, we should find a core from the path
+          idx = path.indexOf( "/", 1 );
+          if( idx > 1 ) {
+            // try to get the corename as a request parameter first
+            corename = path.substring( 1, idx );
+            core = cores.getCore(corename);
+            if (core != null) {
               path = path.substring( idx );
-              core = cores.getCore( corename );
-            } else {
-              core = null;
             }
           }
-        }
-        else {
-          core = singleCoreDescriptor.getCore();
+          if (core == null) {
+            corename = "";
+            core = cores.getCore("");
+          }
         }
 
         // With a valid core...
@@ -250,7 +210,7 @@ public class SolrDispatchFilter implements Filter
             }
           }
 
-            // With a valid handler and a valid core...
+          // With a valid handler and a valid core...
           if( handler != null ) {
             // if not a /select, create the request
             if( solrReq == null ) {
@@ -309,20 +269,19 @@ public class SolrDispatchFilter implements Filter
           else {
             req.setAttribute("org.apache.solr.SolrCore", core);
             // Modify the request so each core gets its own /admin
-            if( singleCoreDescriptor == null && path.startsWith( "/admin" ) ) {
+            if( path.startsWith( "/admin" ) ) {
               req.getRequestDispatcher( pathPrefix == null ? path : pathPrefix + path ).forward( request, response );
               return;
             }
           }
         }
-        if( core == null ) {
-          req.setAttribute("org.apache.solr.NoCoreSet", Boolean.TRUE );
-        }
         log.fine("no handler or core retrieved for " + path + ", follow through...");
-      } catch (Throwable ex) {
+      } 
+      catch (Throwable ex) {
         sendError( (HttpServletResponse)response, ex );
         return;
-      } finally {
+      } 
+      finally {
         if( solrReq != null ) {
           solrReq.close();
         }
