@@ -503,7 +503,7 @@
    </requestHandler>
 
 
-  <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
+  <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
     <str name="queryAnalyzerFieldType">textSpell</str>
 
@@ -531,9 +531,7 @@
     </lst>
   </searchComponent>
 
-  <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
-
-  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH" class="solr.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -571,7 +569,7 @@
   
    -->
  
-  <requestHandler name="/search" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/search" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
     </lst>
@@ -599,13 +597,13 @@
     -->
   </requestHandler>
   
-  <searchComponent name="elevator" class="org.apache.solr.handler.component.QueryElevationComponent" >
+  <searchComponent name="elevator" class="solr.QueryElevationComponent" >
     <!-- pick a fieldType to analyze queries -->
     <str name="queryFieldType">string</str>
     <str name="config-file">elevate.xml</str>
   </searchComponent>
  
-  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler" startup="lazy">
+  <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
     </lst>
