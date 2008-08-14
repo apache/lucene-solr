@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj;
 
 import java.io.File;
 
-import org.apache.solr.client.solrj.request.MultiCoreRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
-import org.apache.solr.client.solrj.response.MultiCoreResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 
@@ -34,7 +34,7 @@ import org.apache.solr.core.CoreContainer;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  protected static final CoreContainer multicore = new CoreContainer();
+  protected static final CoreContainer cores = new CoreContainer();
   
   @Override public String getSolrHome() { return "../../../example/multicore/"; }
   
@@ -118,11 +118,11 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     // Now test reloading it should have a newer open time
     String name = "core0";
     SolrServer coreadmin = getSolrAdmin();
-    MultiCoreResponse mcr = MultiCoreRequest.getStatus( name, coreadmin );
+    CoreAdminResponse mcr = CoreAdminRequest.getStatus( name, coreadmin );
     long before = mcr.getStartTime( name ).getTime();
-    MultiCoreRequest.reloadCore( name, coreadmin );
+    CoreAdminRequest.reloadCore( name, coreadmin );
     
-    mcr = MultiCoreRequest.getStatus( name, coreadmin );
+    mcr = CoreAdminRequest.getStatus( name, coreadmin );
     long after = mcr.getStartTime( name ).getTime();
     assertTrue( "should have more recent time: "+after+","+before, after > before );
   }

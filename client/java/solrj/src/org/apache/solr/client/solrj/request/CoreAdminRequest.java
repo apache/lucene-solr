@@ -23,31 +23,31 @@ import java.util.Collection;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.MultiCoreResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.MultiCoreParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.MultiCoreParams.MultiCoreAction;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.ContentStream;
 
 /**
  * 
- * @version $Id: MultiCoreRequest.java 606335 2007-12-21 22:23:39Z ryan $
+ * @version $Id: CoreAdminRequest.java 606335 2007-12-21 22:23:39Z ryan $
  * @since solr 1.3
  */
-public class MultiCoreRequest extends SolrRequest
+public class CoreAdminRequest extends SolrRequest
 {
   protected String core = null;
-  protected MultiCoreParams.MultiCoreAction action = null;
+  protected CoreAdminParams.CoreAdminAction action = null;
   
   //a create core request
-  public static class Create extends MultiCoreRequest {
+  public static class Create extends CoreAdminRequest {
     protected String instanceDir;
     protected String configName = null;
     protected String schemaName = null;
     
     public Create() {
-      action = MultiCoreAction.CREATE;
+      action = CoreAdminAction.CREATE;
     }
     
     public void setInstanceDir(String instanceDir) { this.instanceDir = instanceDir; }
@@ -64,25 +64,25 @@ public class MultiCoreRequest extends SolrRequest
         throw new RuntimeException( "no action specified!" );
       }
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set( MultiCoreParams.ACTION, action.toString() );
-      params.set( MultiCoreParams.CORE, core );
-      params.set( MultiCoreParams.INSTANCE_DIR, instanceDir);
+      params.set( CoreAdminParams.ACTION, action.toString() );
+      params.set( CoreAdminParams.CORE, core );
+      params.set( CoreAdminParams.INSTANCE_DIR, instanceDir);
       if (configName != null) {
-        params.set( MultiCoreParams.CONFIG, configName);
+        params.set( CoreAdminParams.CONFIG, configName);
       }
       if (schemaName != null) {
-        params.set( MultiCoreParams.SCHEMA, schemaName);
+        params.set( CoreAdminParams.SCHEMA, schemaName);
       }
       return params;
     }
   }
   
-  public MultiCoreRequest()
+  public CoreAdminRequest()
   {
-    super( METHOD.GET, "/admin/multicore" );
+    super( METHOD.GET, "/admin/cores" );
   }
 
-  public MultiCoreRequest( String path )
+  public CoreAdminRequest( String path )
   {
     super( METHOD.GET, path );
   }
@@ -96,7 +96,7 @@ public class MultiCoreRequest extends SolrRequest
   //
   //---------------------------------------------------------------------------------------
 
-  public void setAction( MultiCoreAction action )
+  public void setAction( CoreAdminAction action )
   {
     this.action = action;
   }
@@ -112,8 +112,8 @@ public class MultiCoreRequest extends SolrRequest
       throw new RuntimeException( "no action specified!" );
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set( MultiCoreParams.ACTION, action.toString() );
-    params.set( MultiCoreParams.CORE, core );
+    params.set( CoreAdminParams.ACTION, action.toString() );
+    params.set( CoreAdminParams.CORE, core );
     return params;
   }
 
@@ -127,10 +127,10 @@ public class MultiCoreRequest extends SolrRequest
   }
 
   @Override
-  public MultiCoreResponse process(SolrServer server) throws SolrServerException, IOException 
+  public CoreAdminResponse process(SolrServer server) throws SolrServerException, IOException 
   {
     long startTime = System.currentTimeMillis();
-    MultiCoreResponse res = new MultiCoreResponse();
+    CoreAdminResponse res = new CoreAdminResponse();
     res.setResponse( server.request( this ) );
     res.setElapsedTime( System.currentTimeMillis()-startTime );
     return res;
@@ -140,25 +140,25 @@ public class MultiCoreRequest extends SolrRequest
   //
   //---------------------------------------------------------------------------------------
 
-  public static MultiCoreResponse reloadCore( String name, SolrServer server ) throws SolrServerException, IOException
+  public static CoreAdminResponse reloadCore( String name, SolrServer server ) throws SolrServerException, IOException
   {
-    MultiCoreRequest req = new MultiCoreRequest();
+    CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreParam( name );
-    req.setAction( MultiCoreAction.RELOAD );
+    req.setAction( CoreAdminAction.RELOAD );
     return req.process( server );
   }
 
-  public static MultiCoreResponse getStatus( String name, SolrServer server ) throws SolrServerException, IOException
+  public static CoreAdminResponse getStatus( String name, SolrServer server ) throws SolrServerException, IOException
   {
-    MultiCoreRequest req = new MultiCoreRequest();
+    CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreParam( name );
-    req.setAction( MultiCoreAction.STATUS );
+    req.setAction( CoreAdminAction.STATUS );
     return req.process( server );
   }
   
-  public static MultiCoreResponse createCore( String name, String instanceDir, SolrServer server ) throws SolrServerException, IOException 
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server ) throws SolrServerException, IOException 
   {
-    MultiCoreRequest.Create req = new MultiCoreRequest.Create();
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreParam( name );
     req.setInstanceDir(instanceDir);
     return req.process( server );

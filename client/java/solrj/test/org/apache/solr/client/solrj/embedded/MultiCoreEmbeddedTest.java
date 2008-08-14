@@ -36,24 +36,24 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
     
     File home = new File( getSolrHome() );
     File f = new File( home, "solr.xml" );
-    multicore.load( getSolrHome(), f );
+    cores.load( getSolrHome(), f );
   }
 
   @Override
   protected SolrServer getSolrCore0()
   {
-    return new EmbeddedSolrServer( multicore, "core0" );
+    return new EmbeddedSolrServer( cores, "core0" );
   }
 
   @Override
   protected SolrServer getSolrCore1()
   {
-    return new EmbeddedSolrServer( multicore, "core1" );
+    return new EmbeddedSolrServer( cores, "core1" );
   }
 
   @Override
   protected SolrServer getSolrAdmin()
   {
-    return new EmbeddedSolrServer( multicore, "core0" );
+    return new EmbeddedSolrServer( cores, "core0" );
   } 
 }

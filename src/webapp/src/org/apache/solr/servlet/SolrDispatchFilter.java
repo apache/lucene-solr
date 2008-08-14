@@ -159,7 +159,7 @@ public class SolrDispatchFilter implements Filter
           // pick a core to use for output generation
           core = cores.getAdminCore();
           if( core == null ) {
-            throw new RuntimeException( "Can not find a valid core for the multicore admin handler" );
+            throw new RuntimeException( "Can not find a valid core for the cores admin handler" );
           }
         } 
         else {

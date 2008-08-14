@@ -290,7 +290,7 @@ public class CoreContainer
    * @throws org.xml.sax.SAXException
    */
   public SolrCore create(CoreDescriptor dcore)  throws ParserConfigurationException, IOException, SAXException {
-    // Make the instanceDir relative to the multicore instanceDir if not absolute
+    // Make the instanceDir relative to the cores instanceDir if not absolute
     File idir = new File(dcore.getInstanceDir());
     if (!idir.isAbsolute()) {
       idir = new File(loader.getInstanceDir(), dcore.getInstanceDir());
@@ -522,12 +522,12 @@ public class CoreContainer
     return configFile;
   }
   
-/** Persists the multicore config file in multicore.xml. */
+/** Persists the cores config file in cores.xml. */
   public void persist() {
     persistFile(null);
   }
   
-  /** Persists the multicore config file in a user provided file. */
+  /** Persists the cores config file in a user provided file. */
   public void persistFile(File file) {
     File tmpFile = null;
     try {
@@ -565,7 +565,7 @@ public class CoreContainer
     }
   }
   
-  /** Write the multicore configuration through a writer.*/
+  /** Write the cores configuration through a writer.*/
   void persist(Writer writer) throws IOException {
     writer.write("<?xml version='1.0' encoding='UTF-8'?>");
     writer.write("<solr");
@@ -596,7 +596,7 @@ public class CoreContainer
     writer.write("</solr>\n");
   }
   
-  /** Writes the multicore configuration node for a given core. */
+  /** Writes the cores configuration node for a given core. */
   void persist(Writer writer, CoreDescriptor dcore) throws IOException {
     writer.write("  <core");
     writer.write (" name='");

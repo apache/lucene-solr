@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.MultiCoreParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.MultiCoreParams.MultiCoreAction;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
@@ -77,29 +77,29 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
     // Pick the action
     SolrParams params = req.getParams();
     SolrParams required = params.required();
-    MultiCoreAction action = MultiCoreAction.STATUS;
-    String a = params.get( MultiCoreParams.ACTION );
+    CoreAdminAction action = CoreAdminAction.STATUS;
+    String a = params.get( CoreAdminParams.ACTION );
     if( a != null ) {
-      action = MultiCoreAction.get( a );
+      action = CoreAdminAction.get( a );
       if( action == null ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-          "Unknown 'action' value.  Use: "+MultiCoreAction.values() );
+          "Unknown 'action' value.  Use: "+CoreAdminAction.values() );
       }
     }
-    String cname = params.get( MultiCoreParams.CORE );
+    String cname = params.get( CoreAdminParams.CORE );
     
     switch(action) {
       case CREATE: {
         CoreDescriptor dcore = new CoreDescriptor(cores);
-        dcore.init(params.get(MultiCoreParams.NAME),
-                  params.get(MultiCoreParams.INSTANCE_DIR));
+        dcore.init(params.get(CoreAdminParams.NAME),
+                  params.get(CoreAdminParams.INSTANCE_DIR));
 
         // fillup optional parameters
-        String opts = params.get(MultiCoreParams.CONFIG);
+        String opts = params.get(CoreAdminParams.CONFIG);
         if (opts != null)
           dcore.setConfigName(opts);
 
-        opts = params.get(MultiCoreParams.SCHEMA);
+        opts = params.get(CoreAdminParams.SCHEMA);
         if (opts != null)
           dcore.setSchemaName(opts);
 
@@ -138,8 +138,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
       }
 
       case SWAP: {
-        do_persist = params.getBool(MultiCoreParams.PERSISTENT, cores.isPersistent());
-        String with = required.get( MultiCoreParams.WITH );
+        do_persist = params.getBool(CoreAdminParams.PERSISTENT, cores.isPersistent());
+        String with = required.get( CoreAdminParams.WITH );
         cores.swap( cname, with );
         break;
       } 

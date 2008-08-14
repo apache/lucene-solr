@@ -25,10 +25,10 @@
 <solr persistent="true">
 
   <!--
-  adminPath: RequestHandler path to manage multicores.  
-    If 'null', cores will not be managable via REST
+  adminPath: RequestHandler path to manage cores.  
+    If 'null' (or absent), cores will not be manageable via REST
   -->
-  <cores adminPath="/admin/multicore">
+  <cores adminPath="/admin/cores">
     <core name="core0" instanceDir="core0" />
     <core name="core1" instanceDir="core1" />
   </cores>

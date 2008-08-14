@@ -55,7 +55,7 @@ import org.apache.solr.servlet.SolrRequestParsers;
 public class EmbeddedSolrServer extends SolrServer
 {
   
-  protected final CoreContainer multicore; // either multicore
+  protected final CoreContainer multicore; // either cores
   protected final SolrCore core; // or single core
   protected final String coreName;  // use CoreContainer registry
 
@@ -97,7 +97,7 @@ public class EmbeddedSolrServer extends SolrServer
       path = "/select";
     }
 
-    // Check for multicore action
+    // Check for cores action
     SolrCore core = this.core;
     if( core == null )
       core = multicore.getCore( coreName );

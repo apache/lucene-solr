@@ -21,12 +21,12 @@ package org.apache.solr.common.params;
 /**
  * @since solr 1.3
  */
-public interface MultiCoreParams 
+public interface CoreAdminParams 
 {
   /** What Core are we talking about **/
   public final static String CORE = "core";
 
-  /** Persistent -- should it save the multicore state? **/
+  /** Persistent -- should it save the cores state? **/
   public final static String PERSISTENT = "persistent";
 
   /** The name of the the core to swap names with **/
@@ -47,7 +47,7 @@ public interface MultiCoreParams
   /** Specifies a core instance dir. */
   public final static String INSTANCE_DIR = "instanceDir";
   
-  public enum MultiCoreAction {
+  public enum CoreAdminAction {
     STATUS,  
     LOAD,
     UNLOAD,
@@ -57,11 +57,11 @@ public interface MultiCoreParams
     PERSIST,
     SWAP;
     
-    public static MultiCoreAction get( String p )
+    public static CoreAdminAction get( String p )
     {
       if( p != null ) {
         try {
-          return MultiCoreAction.valueOf( p.toUpperCase() );
+          return CoreAdminAction.valueOf( p.toUpperCase() );
         }
         catch( Exception ex ) {}
       }
