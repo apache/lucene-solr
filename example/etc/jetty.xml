@@ -73,6 +73,10 @@
             <Set name="port"><SystemProperty name="jetty.port" default="8983"/></Set>
             <Set name="maxIdleTime">50000</Set>
             <Set name="lowResourceMaxIdleTime">1500</Set>
+            <!-- Enable this if you want to avoid deadlocks in a distributed setup (cf. SOLR-683).
+                 *** This *will* cause requests which could be serviced to be dropped under load!
+                 *** Only use this setting if you know what you're doing. -->
+            <!--<Set name="acceptQueueSize">0</Set>-->
           </New>
       </Arg>
     </Call>
