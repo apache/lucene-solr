@@ -24,10 +24,11 @@ import org.apache.solr.schema.FieldType;
 
 
 /**
- * Abstract base class for all Lucene based spell checking implementations.
+ * Abstract base class for all Lucene-based spell checking implementations.
  * 
  * <p>
- * Refer to http://wiki.apache.org/solr/SpellCheckComponent for more details
+ * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * for more details.
  * </p>
  * 
  * @since solr 1.3

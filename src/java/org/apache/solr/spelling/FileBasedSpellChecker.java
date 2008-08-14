@@ -40,8 +40,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * <p>
- * A spell checker implementation which can load words from a text 
- * file (one word per line).
+ * A spell checker implementation that loads words from a text file (one word per line).
  * </p>
  *
  * @since solr 1.3

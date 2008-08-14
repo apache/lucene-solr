@@ -33,11 +33,12 @@ import java.util.logging.Logger;
 
 /**
  * <p>
- * A spell checker implementation which can load words from Solr as well as arbitary Lucene indices.
+ * A spell checker implementation that loads words from Solr as well as arbitary Lucene indices.
  * </p>
  * 
  * <p>
- * Refer to http://wiki.apache.org/solr/SpellCheckComponent for more details
+ * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * for more details.
  * </p>
  * 
  * @since solr 1.3
@@ -108,7 +109,6 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
     //reload the source
     initSourceReader();
   }
-
 
   public float getThreshold() {
     return threshold;

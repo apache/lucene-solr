@@ -29,7 +29,8 @@ import java.util.Collection;
 
 /**
  * <p>
- * Refer to http://wiki.apache.org/solr/SpellCheckComponent for more details
+ * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * for more details.
  * </p>
  * 
  * @since solr 1.3
@@ -37,10 +38,11 @@ import java.util.Collection;
 public abstract class SolrSpellChecker {
   public static final String DICTIONARY_NAME = "name";
   public static final String DEFAULT_DICTIONARY_NAME = "default";
+  /** Dictionary name */
   protected String name;
   protected Analyzer analyzer;
 
-  public String init(NamedList config, SolrCore core){
+  public String init(NamedList config, SolrCore core) {
     name = (String) config.get(DICTIONARY_NAME);
     if (name == null) {
       name = DEFAULT_DICTIONARY_NAME;
@@ -48,25 +50,23 @@ public abstract class SolrSpellChecker {
     return name;
   }
   
-  public Analyzer getQueryAnalyzer()    {
+  public Analyzer getQueryAnalyzer() {
     return analyzer;
   }
-
 
   public String getDictionaryName() {
     return name;
   }
 
-
   /**
-   * Reload the index.  Useful if an external process is responsible for building the spell checker.
+   * Reloads the index.  Useful if an external process is responsible for building the spell checker.
    *
    * @throws java.io.IOException
    */
   public abstract void reload() throws IOException;
 
   /**
-   * (re)Build The Spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt
+   * (re)Builds the spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt.
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher);
 
@@ -99,8 +99,8 @@ public abstract class SolrSpellChecker {
   }
 
   /**
-   * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.  The {@link SpellingResult#getSuggestions()} suggestions must be ordered by 
-   * best suggestion first
+   * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.
+   * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion first.
    *
    * @param tokens          The Tokens to be spell checked.
    * @param reader          The (optional) IndexReader.  If there is not IndexReader, than extendedResults are not possible

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Implementations of SolrSpellChecker must return suggestions as SpellResult instance.
- * This is converted into the required NamedList format in SpellCheckComponent
+ * This is converted into the required NamedList format in SpellCheckComponent.
  * 
  * @since solr 1.3
  */
@@ -34,7 +34,7 @@ public class SpellingResult {
   }
 
   /**
-   * Add a whole bunch of suggestions, and don't worry about frequency
+   * Adds a whole bunch of suggestions, and does not worry about frequency.
    *
    * @param token The token to associate the suggestions with
    * @param suggestions The suggestions
@@ -58,7 +58,7 @@ public class SpellingResult {
   }
 
   /**
-   * Suggestions must be added with the best suggestion first.  ORDER is important
+   * Suggestions must be added with the best suggestion first.  ORDER is important.
    * @param token The {@link org.apache.lucene.analysis.Token}
    * @param suggestion The suggestion for the Token
    * @param docFreq The document frequency
@@ -74,7 +74,7 @@ public class SpellingResult {
   }
 
   /**
-   * Get the suggestions for the given token
+   * Gets the suggestions for the given token.
    *
    * @param token The {@link org.apache.lucene.analysis.Token} to look up
    * @return A LinkedHashMap of the suggestions.  Key is the suggestion, value is the token frequency in the index, else {@link #NO_FREQUENCY_INFO}.

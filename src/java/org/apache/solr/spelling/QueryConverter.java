@@ -17,14 +17,15 @@ import java.util.Collection;
  * <p>
  * It is only invoked for the CommonParams.Q parameter, and <b>not</b> the
  * "spellcheck.q" parameter. Systems that use their own query parser or those
- * that find issue with the basic implementation will want to implement their
+ * that find issue with the basic implementation should implement their
  * own QueryConverter instead of using the provided implementation
  * (SpellingQueryConverter) by overriding the appropriate methods on the
  * SpellingQueryConverter and registering it in the solrconfig.xml
  * </p>
  * 
  * <p>
- * Refer to http://wiki.apache.org/solr/SpellCheckComponent for more details
+ * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * for more details
  * </p>
  * 
  * @since solr 1.3

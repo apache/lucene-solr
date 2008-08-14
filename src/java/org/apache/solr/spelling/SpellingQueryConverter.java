@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.TokenStream;
 
 
 /**
+ * Converts the query string to a Collection of Lucene tokens using a regular expression.
+ * Boolean operators AND and OR are skipped.
  *
  * @since solr 1.3
  **/
@@ -37,9 +39,13 @@ public class SpellingQueryConverter extends QueryConverter  {
 
   protected Pattern QUERY_REGEX = Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
 
-
+  /**
+   * Converts the original query string to a collection of Lucene Tokens.
+   * @param original the original query string
+   * @return a Collection of Lucene Tokens
+   */
   public Collection<Token> convert(String original) {
-    if( original == null ) { // this can happen with q.alt = and no query
+    if (original == null) { // this can happen with q.alt = and no query
       return Collections.emptyList();
     }
     Collection<Token> result = new ArrayList<Token>();
