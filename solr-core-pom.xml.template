@@ -33,7 +33,7 @@
   <artifactId>solr-core</artifactId>
   <name>Apache Solr Core</name>
   <version>@maven_version@</version>
-  <description>Apache Solr Embedded Server</description>
+  <description>Apache Solr Server</description>
   <packaging>jar</packaging>
 
   <dependencies>
