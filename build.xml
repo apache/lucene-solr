@@ -642,6 +642,9 @@
       <fileset dir="site" />
     </copy>
 
+    <delete file="${dist}/${fullnamever}.tgz" failonerror="false" />
+    <delete file="${dist}/${fullnamever}.zip" failonerror="false" />
+
     <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip">
       <tarfileset dir="."
         prefix="${fullnamever}"
