@@ -28,6 +28,9 @@ New Features
 Changes in runtime behavior
 
 Bug Fixes
+1. SOLR-704:  NumberFormatTransformer can silently ignore part of the string while parsing. Now it tries to
+              use the complete string for parsing. Failure to do so will result in an exception.
+              (Stefan Oestreicher via shalin)
 
 Other Changes
 

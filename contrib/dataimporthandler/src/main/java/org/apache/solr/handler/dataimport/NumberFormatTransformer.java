@@ -2,6 +2,7 @@ package org.apache.solr.handler.dataimport;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -88,16 +89,25 @@ public class NumberFormatTransformer extends Transformer {
 
   private Number process(String val, String style, Locale locale) throws ParseException {
     if (INTEGER.equals(style)) {
-      return NumberFormat.getIntegerInstance(locale).parse(val);
+      return parseNumber(val, NumberFormat.getIntegerInstance(locale));
     } else if (NUMBER.equals(style)) {
-      return NumberFormat.getNumberInstance(locale).parse(val);
+      return parseNumber(val, NumberFormat.getNumberInstance(locale));
     } else if (CURRENCY.equals(style)) {
-      return NumberFormat.getCurrencyInstance(locale).parse(val);
+      return parseNumber(val, NumberFormat.getCurrencyInstance(locale));
     } else if (PERCENT.equals(style)) {
-      return NumberFormat.getPercentInstance(locale).parse(val);
+      return parseNumber(val, NumberFormat.getPercentInstance(locale));
     }
 
     return null;
+  }
+
+  private Number parseNumber(String val, NumberFormat numFormat) throws ParseException {
+    ParsePosition parsePos = new ParsePosition(0);
+    Number num = numFormat.parse(val, parsePos);
+    if (parsePos.getIndex() != val.length()) {
+      throw new ParseException("illegal number format", parsePos.getIndex());
+    }
+    return num;
   }
 
   public static final String FORMAT_STYLE = "formatStyle";

@@ -35,6 +35,7 @@ import java.util.Map;
  */
 public class TestNumberFormatTransformer {
   private char GROUPING_SEP = new DecimalFormatSymbols().getGroupingSeparator();
+  private char DECIMAL_SEP = new DecimalFormatSymbols().getDecimalSeparator();
 
   @Test
   @SuppressWarnings("unchecked")
@@ -82,5 +83,93 @@ public class TestNumberFormatTransformer {
             "outputs", output);
 
     Assert.assertEquals(outputRow, row);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput1_Number() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap("num", "123" + GROUPING_SEP + "5a67");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput2_Number() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap("num", "123" + GROUPING_SEP + "567b");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput2_Currency() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap("num", "123" + GROUPING_SEP + "567b");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput1_Percent() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.PERCENT));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap("num", "123" + GROUPING_SEP + "5a67");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput3_Currency() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap(
+            "num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test(expected = DataImportHandlerException.class)
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_InvalidInput3_Number() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap(
+            "num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
+    new NumberFormatTransformer().transformRow(m, c);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testTransformRow_MalformedInput_Number() {
+    List l = new ArrayList();
+    l.add(AbstractDataImportHandlerTest.createMap("column", "num",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
+    Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
+            l, null);
+    Map m = AbstractDataImportHandlerTest.createMap(
+            "num", "123" + GROUPING_SEP + GROUPING_SEP + "789");
+    new NumberFormatTransformer().transformRow(m, c);
+    Assert.assertEquals(new Long(123789), m.get("num"));
   }
 }
