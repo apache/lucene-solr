@@ -67,18 +67,9 @@ public class CoreContainer
   
   // Helper class to initialize the CoreContainer
   public static class Initializer {
-    protected String pathPrefix = null; // strip this from the beginning of a path
     protected String solrConfigFilename = null;
     protected boolean abortOnConfigurationError = true;
     protected String managementPath = null;
-
-    public String getPathPrefix() {
-      return pathPrefix;
-    }
-
-    public void setPathPrefix(String pathPrefix) {
-      this.pathPrefix = pathPrefix;
-    }
     
     public boolean isAbortOnConfigurationError() {
       return abortOnConfigurationError;

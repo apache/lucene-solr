@@ -63,7 +63,7 @@ public class SolrDispatchFilter implements Filter
     CoreContainer.Initializer init = createInitializer();
     try {
       // web.xml configuration
-      init.setPathPrefix(config.getInitParameter( "path-prefix" ));
+      this.pathPrefix = config.getInitParameter( "path-prefix" );
       init.setSolrConfigFilename(config.getInitParameter("solrconfig-filename"));
 
       this.cores = init.initialize();
