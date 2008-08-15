@@ -19,8 +19,10 @@ package org.apache.solr.handler.dataimport;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -32,17 +34,23 @@ import java.util.Map;
  * @since solr 1.3
  */
 public class TestNumberFormatTransformer {
+  private char GROUPING_SEP = new DecimalFormatSymbols().getGroupingSeparator();
+
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_SingleNumber() {
+    char GERMAN_GROUPING_SEP = new DecimalFormatSymbols(Locale.GERMANY).getGroupingSeparator();
     List l = new ArrayList();
     l.add(AbstractDataImportHandlerTest.createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
+    l.add(AbstractDataImportHandlerTest.createMap("column", "localizedNum",
+            NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER, NumberFormatTransformer.LOCALE, "de-DE"));
     Context c = AbstractDataImportHandlerTest.getContext(null, null, null, 0,
             l, null);
-    Map m = AbstractDataImportHandlerTest.createMap("num", "123,567");
+    Map m = AbstractDataImportHandlerTest.createMap("num", "123" + GROUPING_SEP + "567", "localizedNum", "123" + GERMAN_GROUPING_SEP + "567");
     new NumberFormatTransformer().transformRow(m, c);
     Assert.assertEquals(new Long(123567), m.get("num"));
+    Assert.assertEquals(new Long(123567), m.get("localizedNum"));
   }
 
   @Test
@@ -56,8 +64,8 @@ public class TestNumberFormatTransformer {
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
 
     List inputs = new ArrayList();
-    inputs.add("123,567");
-    inputs.add("245,678");
+    inputs.add("123" + GROUPING_SEP + "567");
+    inputs.add("245" + GROUPING_SEP + "678");
     Map row = AbstractDataImportHandlerTest.createMap("inputs", inputs);
 
     VariableResolverImpl resolver = new VariableResolverImpl();

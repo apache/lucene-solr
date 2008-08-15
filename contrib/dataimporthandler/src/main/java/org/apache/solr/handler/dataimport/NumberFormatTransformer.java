@@ -4,14 +4,17 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>
  * A Transformer instance which can extract numbers out of strings. It uses
  * <code>java.text.NumberFormat</code> class to parse strings and supports
  * Number, Integer, Currency and Percent styles as supported by
- * <code>java.text.NumberFormat</code>
+ * <code>java.text.NumberFormat</code> with configurable locales.
  * </p>
  * <p/>
  * <p>
@@ -27,6 +30,8 @@ import java.util.Map;
  */
 public class NumberFormatTransformer extends Transformer {
 
+  private static final Pattern localeRegex = Pattern.compile("^([a-z]{2})-([A-Z]{2})$");
+
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
     for (Map<String, String> fld : context.getAllEntityFields()) {
@@ -34,8 +39,20 @@ public class NumberFormatTransformer extends Transformer {
       if (style != null) {
         String column = fld.get(DataImporter.COLUMN);
         String srcCol = fld.get(RegexTransformer.SRC_COL_NAME);
+        Locale locale = null;
+        String localeStr = fld.get(LOCALE);
         if (srcCol == null)
           srcCol = column;
+        if (localeStr != null) {
+          Matcher matcher = localeRegex.matcher(localeStr);
+          if (matcher.find() && matcher.groupCount() == 2) {
+            locale = new Locale(matcher.group(1), matcher.group(2));
+          } else {
+            throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Invalid Locale specified for field: " + fld);
+          }
+        } else {
+          locale = Locale.getDefault();
+        }
 
         Object val = row.get(srcCol);
         String styleSmall = style.toLowerCase();
@@ -45,7 +62,7 @@ public class NumberFormatTransformer extends Transformer {
           List results = new ArrayList();
           for (String input : inputs) {
             try {
-              results.add(process(input, styleSmall));
+              results.add(process(input, styleSmall, locale));
             } catch (ParseException e) {
               throw new DataImportHandlerException(
                       DataImportHandlerException.SEVERE,
@@ -57,7 +74,7 @@ public class NumberFormatTransformer extends Transformer {
           if (val == null || val.toString().trim().equals(""))
             continue;
           try {
-            row.put(column, process(val.toString(), styleSmall));
+            row.put(column, process(val.toString(), styleSmall, locale));
           } catch (ParseException e) {
             throw new DataImportHandlerException(
                     DataImportHandlerException.SEVERE,
@@ -69,15 +86,15 @@ public class NumberFormatTransformer extends Transformer {
     return row;
   }
 
-  private Number process(String val, String style) throws ParseException {
+  private Number process(String val, String style, Locale locale) throws ParseException {
     if (INTEGER.equals(style)) {
-      return NumberFormat.getIntegerInstance().parse(val);
+      return NumberFormat.getIntegerInstance(locale).parse(val);
     } else if (NUMBER.equals(style)) {
-      return NumberFormat.getNumberInstance().parse(val);
+      return NumberFormat.getNumberInstance(locale).parse(val);
     } else if (CURRENCY.equals(style)) {
-      return NumberFormat.getCurrencyInstance().parse(val);
+      return NumberFormat.getCurrencyInstance(locale).parse(val);
     } else if (PERCENT.equals(style)) {
-      return NumberFormat.getPercentInstance().parse(val);
+      return NumberFormat.getPercentInstance(locale).parse(val);
     }
 
     return null;
