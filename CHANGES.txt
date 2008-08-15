@@ -473,11 +473,11 @@ Bug Fixes
 
 28. SOLR-509: Moved firstSearcher event notification to the end of the SolrCore constructor (Koji Sekiguchi via gsingers)
 
-29. SOLR-470, SOLR-552, and SOLR-544: Multiple fixes to DateField
+29. SOLR-470, SOLR-552, SOLR-544, SOLR-701: Multiple fixes to DateField
     regarding lenient parsing of optional milliseconds, and correct
     formating using the canonical representation.  LegacyDateField has
     been added for people who have come to depend on the existing
-    broken behavior. (hossman)
+    broken behavior. (hossman, Stefan Oestreicher)
 
 30. SOLR-539: Fix for non-atomic long counters and a cast fix to avoid divide
     by zero. (Sean Timm via Otis Gospodnetic)

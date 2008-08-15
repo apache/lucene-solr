@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -103,6 +104,24 @@ import java.text.FieldPosition;
 public class DateField extends FieldType {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+  /* :TODO: let Locale/TimeZone come from init args for rounding only */
+
+  /** TimeZone for DateMath (UTC) */
+  protected static final TimeZone MATH_TZ = UTC;
+  /** Locale for DateMath (Locale.US) */
+  protected static final Locale MATH_LOCALE = Locale.US;
+
+  /** 
+   * Fixed TimeZone (UTC) needed for parsing/formating Dates in the 
+   * canonical representation.
+   */
+  protected static final TimeZone CANONICAL_TZ = UTC;
+  /** 
+   * Fixed Locale needed for parsing/formating Milliseconds in the 
+   * canonical representation.
+   */
+  protected static final Locale CANONICAL_LOCALE = Locale.US;
   
   // The XML (external) date format will sort correctly, except if
   // fractions of seconds are present (because '.' is lower than 'Z').
@@ -127,8 +146,7 @@ public class DateField extends FieldType {
    */
   public Date parseMath(Date now, String val) {
     String math = null;
-    /* :TODO: let Locale/TimeZone come from init args for rounding only */
-    final DateMathParser p = new DateMathParser(UTC, Locale.US);
+    final DateMathParser p = new DateMathParser(MATH_TZ, MATH_LOCALE);
     
     if (null != now) p.setNow(now);
     
@@ -243,13 +261,14 @@ public class DateField extends FieldType {
   private static class ISO8601CanonicalDateFormat extends SimpleDateFormat {
     
     protected NumberFormat millisParser
-      = NumberFormat.getIntegerInstance(Locale.US);
+      = NumberFormat.getIntegerInstance(CANONICAL_LOCALE);
 
-    protected NumberFormat millisFormat = new DecimalFormat(".###");
+    protected NumberFormat millisFormat = new DecimalFormat(".###", 
+      new DecimalFormatSymbols(CANONICAL_LOCALE));
 
     public ISO8601CanonicalDateFormat() {
-      super("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-      this.setTimeZone(UTC);
+      super("yyyy-MM-dd'T'HH:mm:ss", CANONICAL_LOCALE);
+      this.setTimeZone(CANONICAL_TZ);
     }
 
     public Date parse(String i, ParsePosition p) {
@@ -294,8 +313,9 @@ public class DateField extends FieldType {
     public Object clone() {
       ISO8601CanonicalDateFormat c
         = (ISO8601CanonicalDateFormat) super.clone();
-      c.millisParser = NumberFormat.getIntegerInstance(Locale.US);
-      c.millisFormat = new DecimalFormat(".###");
+      c.millisParser = NumberFormat.getIntegerInstance(CANONICAL_LOCALE);
+      c.millisFormat = new DecimalFormat(".###", 
+        new DecimalFormatSymbols(CANONICAL_LOCALE));
       return c;
     }
   }
