@@ -132,6 +132,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception, ParseException, InstantiationException, IllegalAccessException
   {
+    // int sleep = req.getParams().getInt("sleep",0);
+    // if (sleep > 0) {log.severe("SLEEPING for " + sleep);  Thread.sleep(sleep);}
     ResponseBuilder rb = new ResponseBuilder();
     rb.req = req;
     rb.rsp = rsp;
