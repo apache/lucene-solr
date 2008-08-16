@@ -692,7 +692,7 @@
 
       <!-- ========== SOLR PARENT POM ========== -->
 
-      <m2-deploy pom.xml="solr-parent-pom.xml.template"/>
+      <m2-deploy pom.xml="${src}/maven/solr-parent-pom.xml.template"/>
 
       <!-- ========== SOLR SPECIFIC LUCENE ARTIFACTS ========== -->
 
@@ -722,7 +722,7 @@
 
       <!-- ========== SOLR ARTIFACTS ========== -->
 
-      <m2-deploy pom.xml="solr-common-pom.xml.template"
+      <m2-deploy pom.xml="${src}/maven/solr-common-pom.xml.template"
                  jar.file="${dist}/apache-solr-common-${version}.jar">
 
         <artifact-attachments>
@@ -741,7 +741,7 @@
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="solr-core-pom.xml.template"
+      <m2-deploy pom.xml="${src}/maven/solr-core-pom.xml.template"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
 
         <artifact-attachments>
