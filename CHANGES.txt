@@ -282,10 +282,7 @@ New Features
 47. SOLR-516: Added hl.maxAlternateFieldLength parameter, to set max length for hl.alternateField
     (Koji Sekiguchi via klaas)
 
-48. SOLR-537: Use of hl.maxAlternateFieldLength parameter from solr-ruby
-    (koji)
-
-49. SOLR-319: Changed SynonymFilterFactory to "tokenize" synonyms file.
+48. SOLR-319: Changed SynonymFilterFactory to "tokenize" synonyms file.
     To use a tokenizer, specify "tokenizerFactory" attribute in <filter>.
     For example:
     <tokenizer class="solr.CJKTokenizerFactory"/>
@@ -293,21 +290,21 @@ New Features
       ignoreCase="true" tokenizerFactory="solr.CJKTokenizerFactory"/>
     (koji)
 
-50. SOLR-515: Added SimilarityFactory capability to schema.xml,
+49. SOLR-515: Added SimilarityFactory capability to schema.xml,
     making config file parameters usable in the construction of
     the global Lucene Similarity implementation.
     (ehatcher)
     
-51. SOLR-536: Add a DocumentObjectBinder to solrj that converts Objects to and
+50. SOLR-536: Add a DocumentObjectBinder to solrj that converts Objects to and
     from SolrDocuments.  (Noble Paul via ryan)
 
-52. SOLR-595: Add support for Field level boosting in the MoreLikeThis Handler.  (Tom Morton, gsingers)
+51. SOLR-595: Add support for Field level boosting in the MoreLikeThis Handler.  (Tom Morton, gsingers)
 
-53. SOLR-572: Added SpellCheckComponent and org.apache.solr.spelling package to support more spell checking functionality.
+52. SOLR-572: Added SpellCheckComponent and org.apache.solr.spelling package to support more spell checking functionality.
               Also includes ability to add your own SolrSpellChecker implementation that plugs in.
               See http://wiki.apache.org/solr/SpellCheckComponent for more details
               (Shalin Shekhar Mangar, Bojan Smid, gsingers)
-53a. SOLR-679: Added accessor methods to Lucene based spell checkers (gsingers)
+53. SOLR-679: Added accessor methods to Lucene based spell checkers (gsingers)
 
 54. SOLR-423: Added Request Handler close hook notification so that RequestHandlers can be notified when a core is closing.  (gsingers, ryan)
 

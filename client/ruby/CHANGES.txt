@@ -1,0 +1,32 @@
+                    Apache Solr - solr-ruby and flare Version 1.3-dev
+                            Release Notes
+
+Introduction
+------------
+solr-ruby is a Ruby client for the solr search engine.
+flare is a plugin adding faceted browsing, AJAX suggest and more to Rails controllers. 
+
+$Id$
+
+================== Release 1.3-dev ==================
+
+Status
+------
+This is the first release since solr-ruby and flare were added to the main solr
+distribution. The following changes list changes since the code was introduced,
+not since the first official release.
+
+
+Detailed Change List
+--------------------
+
+New Features
+ 1. SOLR-537: Use of hl.maxAlternateFieldLength parameter from solr-ruby (koji)
+
+Changes in runtime behavior
+
+Bug Fixes
+
+Other Changes
+
+ 
