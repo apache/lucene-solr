@@ -45,7 +45,7 @@ public class JdbcDataSource extends
 
   private Callable<Connection> factory;
 
-  private long connLastUsed = System.currentTimeMillis();
+  private long connLastUsed = 0;
 
   private Connection conn;
 
@@ -61,12 +61,6 @@ public class JdbcDataSource extends
       convertType = Boolean.parseBoolean(o.toString());
 
     createConnectionFactory(context, initProps);
-    try {
-      conn = factory.call();
-    } catch (Exception e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "Unable to create database connection", e);
-    }
 
     String bsz = initProps.getProperty("batchSize");
     if (bsz != null) {
@@ -287,7 +281,7 @@ public class JdbcDataSource extends
     if (currTime - connLastUsed > CONN_TIME_OUT) {
       synchronized (this) {
         Connection tmpConn = factory.call();
-        finalize();
+        close();
         connLastUsed = System.currentTimeMillis();
         return conn = tmpConn;
       }
