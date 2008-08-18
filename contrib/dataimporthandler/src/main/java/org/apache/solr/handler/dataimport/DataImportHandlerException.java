@@ -59,5 +59,5 @@ public class DataImportHandlerException extends RuntimeException {
     return errCode;
   }
 
-  public static final String MSG = " Processing Documemt # ";
+  public static final String MSG = " Processing Document # ";
 }
