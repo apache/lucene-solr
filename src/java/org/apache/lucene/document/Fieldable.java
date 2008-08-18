@@ -156,4 +156,45 @@ public interface Fieldable extends Serializable {
    * @return true if this field can be loaded lazily
    */
   boolean isLazy();
+  
+  /**
+   * Returns offset into byte[] segment that is used as value, if Field is not binary
+   * returned value is undefined
+   * @return index of the first character in byte[] segment that represents this Field value
+   */
+  abstract int getBinaryOffset();
+  
+  /**
+   * Returns length of byte[] segment that is used as value, if Field is not binary
+   * returned value is undefined
+   * @return length of byte[] segment that represents this Field value
+   */
+  abstract int getBinaryLength();
+
+  /**
+   * Return the raw byte[] for the binary field.  Note that
+   * you must also call {@link #getBinaryLength} and {@link
+   * #getBinaryOffset} to know which range of bytes in this
+   * returned array belong to the field.
+   * @return reference to the Field value as byte[].
+   */
+  abstract byte[] getBinaryValue();
+
+  /**
+   * Return the raw byte[] for the binary field.  Note that
+   * you must also call {@link #getBinaryLength} and {@link
+   * #getBinaryOffset} to know which range of bytes in this
+   * returned array belong to the field.<p>
+   * About reuse: if you pass in the result byte[] and it is
+   * used, likely the underlying implementation will hold
+   * onto this byte[] and return it in future calls to
+   * {@link #binaryValue()} or {@link #getBinaryValue()}.
+   * So if you subsequently re-use the same byte[] elsewhere
+   * it will alter this Fieldable's value.
+   * @param result  User defined buffer that will be used if
+   *  possible.  If this is null or not large enough, a new
+   *  buffer is allocated
+   * @return reference to the Field value as byte[].
+   */
+  abstract byte[] getBinaryValue(byte[] result);
 }

@@ -100,6 +100,11 @@ API Changes
     frequency, positions and payloads.  This saves index space, and
     indexing/searching time.  (Eks Dev via Mike McCandless)
 
+15. LUCENE-1219: Add basic reuse API to Fieldable for binary fields:
+    getBinaryValue/Offset/Length(); currently only lazy fields reuse
+    the provided byte[] result to getBinaryValue.  (Eks Dev via Mike
+    McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

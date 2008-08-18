@@ -105,7 +105,7 @@ final class FieldsWriter
         doClose = true;
     }
 
-    FieldsWriter(IndexOutput fdx, IndexOutput fdt, FieldInfos fn) throws IOException {
+    FieldsWriter(IndexOutput fdx, IndexOutput fdt, FieldInfos fn) {
         fieldInfos = fn;
         fieldsStream = fdt;
         indexStream = fdx;
@@ -190,32 +190,42 @@ final class FieldsWriter
                 
       if (field.isCompressed()) {
         // compression is enabled for the current field
-        byte[] data = null;
-                  
+        final byte[] data;
+        final int len;
+        final int offset;
         if (disableCompression) {
           // optimized case for merging, the data
           // is already compressed
-          data = field.binaryValue();
+          data = field.getBinaryValue();
+          len = field.getBinaryLength();
+          offset = field.getBinaryOffset();  
         } else {
           // check if it is a binary field
           if (field.isBinary()) {
-            data = compress(field.binaryValue());
+            data = compress(field.getBinaryValue(), field.getBinaryOffset(), field.getBinaryLength());
+          } else {
+            byte x[] = field.stringValue().getBytes("UTF-8");
+            data = compress(x, 0, x.length);
           }
-          else {
-            data = compress(field.stringValue().getBytes("UTF-8"));
-          }
+          len = data.length;
+          offset = 0;
         }
-        final int len = data.length;
+        
         fieldsStream.writeVInt(len);
-        fieldsStream.writeBytes(data, len);
+        fieldsStream.writeBytes(data, offset, len);
       }
       else {
         // compression is disabled for the current field
         if (field.isBinary()) {
-          byte[] data = field.binaryValue();
-          final int len = data.length;
+          final byte[] data;
+          final int len;
+          final int offset;
+          data = field.getBinaryValue();
+          len = field.getBinaryLength();
+          offset =  field.getBinaryOffset();
+
           fieldsStream.writeVInt(len);
-          fieldsStream.writeBytes(data, len);
+          fieldsStream.writeBytes(data, offset, len);
         }
         else {
           fieldsStream.writeString(field.stringValue());
@@ -259,7 +269,14 @@ final class FieldsWriter
         }
     }
 
-    private final byte[] compress (byte[] input) {
+    private final byte[] compress (byte[] input, int offset, int length) {
+      // Create the compressor with highest level of compression
+      Deflater compressor = new Deflater();
+      compressor.setLevel(Deflater.BEST_COMPRESSION);
+
+      // Give the compressor the data to compress
+      compressor.setInput(input, offset, length);
+      compressor.finish();
 
       /*
        * Create an expandable byte array to hold the compressed data.
@@ -267,10 +284,7 @@ final class FieldsWriter
        * there is no guarantee that the compressed data will be smaller than
        * the uncompressed data.
        */
-      ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);
-
-      // Create the compressor with highest level of compression
-      Deflater compressor = new Deflater();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
 
       try {
         compressor.setLevel(Deflater.BEST_COMPRESSION);

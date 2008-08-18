@@ -450,28 +450,7 @@ final class FieldsReader {
      * String value, or TokenStream value is used. Exactly one of stringValue(), 
      * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public byte[] binaryValue() {
-      ensureOpen();
-      if (isBinary) {
-        if (fieldsData == null) {
-          final byte[] b = new byte[toRead];
-          IndexInput localFieldsStream = getFieldStream();
-          //Throw this IO Exception since IndexReader.document does so anyway, so probably not that big of a change for people
-          //since they are already handling this exception when getting the document
-          try {
-            localFieldsStream.seek(pointer);
-            localFieldsStream.readBytes(b, 0, b.length);
-            if (isCompressed == true) {
-              fieldsData = uncompress(b);
-            } else {
-              fieldsData = b;
-            }
-          } catch (IOException e) {
-            throw new FieldReaderException(e);
-          }
-        }
-        return (byte[]) fieldsData;
-      } else
-        return null;
+      return getBinaryValue(null);
     }
 
     /** The value of the field as a Reader, or null.  If null, the String value,
@@ -545,8 +524,45 @@ final class FieldsReader {
       ensureOpen();
       this.toRead = toRead;
     }
-  }
 
+    public byte[] getBinaryValue(byte[] result) {
+      ensureOpen();
+
+      if (isBinary) {
+        if (fieldsData == null) {
+          // Allocate new buffer if result is null or too small
+          final byte[] b;
+          if (result == null || result.length < toRead)
+            b = new byte[toRead];
+          else
+            b = result;
+   
+          IndexInput localFieldsStream = getFieldStream();
+
+          // Throw this IOException since IndexReader.document does so anyway, so probably not that big of a change for people
+          // since they are already handling this exception when getting the document
+          try {
+            localFieldsStream.seek(pointer);
+            localFieldsStream.readBytes(b, 0, toRead);
+            if (isCompressed == true) {
+              fieldsData = uncompress(b);
+            } else {
+              fieldsData = b;
+            }
+          } catch (IOException e) {
+            throw new FieldReaderException(e);
+          }
+
+          binaryOffset = 0;
+          binaryLength = toRead;
+        }
+
+        return (byte[]) fieldsData;
+      } else
+        return null;     
+    }
+  }
+  
   private final byte[] uncompress(final byte[] input)
           throws CorruptIndexException, IOException {
 

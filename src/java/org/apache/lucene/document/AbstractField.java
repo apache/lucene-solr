@@ -37,10 +37,12 @@ public abstract class AbstractField implements Fieldable {
   protected float boost = 1.0f;
   // the one and only data object for all different kind of field values
   protected Object fieldsData = null;
+  //length/offset for all primitive types
+  protected int binaryLength;
+  protected int binaryOffset;
 
   protected AbstractField()
   {
-    
   }
 
   protected AbstractField(String name, Field.Store store, Field.Index index, Field.TermVector termVector) {
@@ -199,7 +201,43 @@ public abstract class AbstractField implements Fieldable {
   }
 
   /** True iff the value of the filed is stored as binary */
-  public final boolean  isBinary()      { return isBinary; }
+  public final boolean  isBinary() {
+    return isBinary;
+  }
+
+
+  /**
+   * Return the raw byte[] for the binary field.  Note that
+   * you must also call {@link #getBinaryLength} and {@link
+   * #getBinaryOffset} to know which range of bytes in this
+   * returned array belong to the field.
+   * @return reference to the Field value as byte[].
+   */
+  public byte[] getBinaryValue() {
+    return getBinaryValue(null);
+  }
+  
+  public byte[] getBinaryValue(byte[] result){
+    return isBinary ? (byte[]) fieldsData : null;
+  }
+
+  /**
+   * Returns length of byte[] segment that is used as value, if Field is not binary
+   * returned value is undefined
+   * @return length of byte[] segment that represents this Field value
+   */
+  public int getBinaryLength() {
+     return binaryLength;
+    }
+
+  /**
+   * Returns offset into byte[] segment that is used as value, if Field is not binary
+   * returned value is undefined
+   * @return index of the first character in byte[] segment that represents this Field value
+   */
+  public int getBinaryOffset() {
+    return binaryOffset;
+  }
 
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }

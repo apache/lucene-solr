@@ -3765,4 +3765,36 @@ public class TestIndexWriter extends LuceneTestCase
     w.doFail = false;
     w.rollback();
   }
+
+
+  // LUCENE-1219
+  public void testBinaryFieldOffsetLength() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    byte[] b = new byte[50];
+    for(int i=0;i<50;i++)
+      b[i] = (byte) (i+77);
+    
+    Document doc = new Document();
+    Field f = new Field("binary", b, 10, 17, Field.Store.YES);
+    byte[] bx = f.getBinaryValue();
+    assertTrue(bx != null);
+    assertEquals(50, bx.length);
+    assertEquals(10, f.getBinaryOffset());
+    assertEquals(17, f.getBinaryLength());
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader ir = IndexReader.open(dir);
+    doc = ir.document(0);
+    f = doc.getField("binary");
+    b = f.getBinaryValue();
+    assertTrue(b != null);
+    assertEquals(17, b.length, 17);
+    assertEquals(87, b[0]);
+    ir.close();
+    dir.close();
+  }
+  
 }

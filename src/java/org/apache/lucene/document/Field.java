@@ -137,22 +137,39 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   
   /** The value of the field as a String, or null.  If null, the Reader value,
    * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
   public String stringValue()   { return fieldsData instanceof String ? (String)fieldsData : null; }
   
   /** The value of the field as a Reader, or null.  If null, the String value,
    * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
   public Reader readerValue()   { return fieldsData instanceof Reader ? (Reader)fieldsData : null; }
   
   /** The value of the field in Binary, or null.  If null, the Reader value,
    * String value, or TokenStream value is used. Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
-  public byte[] binaryValue()   { return isBinary ? (byte[])fieldsData : null; }
+   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set.
+   * @deprecated This method must allocate a new byte[] if
+   * the {@link AbstractField#getBinaryOffset()} is non-zero
+   * or {@link AbstractField#getBinaryLength()} is not the
+   * full length of the byte[]. Please use {@link
+   * AbstractField#getBinaryValue()} instead, which simply
+   * returns the byte[].
+   */ 
+  public byte[] binaryValue() {
+    if (!isBinary)
+      return null;
+    final byte[] data = (byte[]) fieldsData;
+    if (binaryOffset == 0 && data.length == binaryLength)
+      return data; //Optimization
+    
+    final byte[] ret = new byte[binaryLength];
+    System.arraycopy(data, binaryOffset, ret, 0, binaryLength);
+    return ret;    
+  }
   
   /** The value of the field as a TokesStream, or null.  If null, the Reader value,
    * String value, or binary value is used. Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
   public TokenStream tokenStreamValue()   { return fieldsData instanceof TokenStream ? (TokenStream)fieldsData : null; }
   
 
@@ -182,8 +199,18 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(byte[] value) {
     fieldsData = value;
+    binaryLength = value.length;
+    binaryOffset = 0;
   }
 
+  /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
+  public void setValue(byte[] value, int offset, int length) {
+    fieldsData = value;
+    binaryLength = length;
+    binaryOffset = offset;
+  }
+  
+  
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(TokenStream value) {
     fieldsData = value;
@@ -378,34 +405,49 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    * @throws IllegalArgumentException if store is <code>Store.NO</code> 
    */
   public Field(String name, byte[] value, Store store) {
+    this(name, value, 0, value.length, store);
+  }
+
+  /**
+   * Create a stored field with binary value. Optionally the value may be compressed.
+   * 
+   * @param name The name of the field
+   * @param value The binary value
+   * @param offset Starting offset in value where this Field's bytes are
+   * @param length Number of bytes to use for this Field, starting at offset
+   * @param store How <code>value</code> should be stored (compressed or not)
+   * @throws IllegalArgumentException if store is <code>Store.NO</code> 
+   */
+  public Field(String name, byte[] value, int offset, int length, Store store) {
+
     if (name == null)
       throw new IllegalArgumentException("name cannot be null");
     if (value == null)
       throw new IllegalArgumentException("value cannot be null");
     
     this.name = name.intern();
-    this.fieldsData = value;
+    fieldsData = value;
     
-    if (store == Store.YES){
-      this.isStored = true;
-      this.isCompressed = false;
+    if (store == Store.YES) {
+      isStored = true;
+      isCompressed = false;
     }
     else if (store == Store.COMPRESS) {
-      this.isStored = true;
-      this.isCompressed = true;
+      isStored = true;
+      isCompressed = true;
     }
     else if (store == Store.NO)
       throw new IllegalArgumentException("binary values can't be unstored");
     else
       throw new IllegalArgumentException("unknown store parameter " + store);
     
-    this.isIndexed   = false;
-    this.isTokenized = false;
+    isIndexed   = false;
+    isTokenized = false;
     
-    this.isBinary    = true;
+    isBinary    = true;
+    binaryLength = length;
+    binaryOffset = offset;
     
     setStoreTermVector(TermVector.NO);
   }
-
-
 }
