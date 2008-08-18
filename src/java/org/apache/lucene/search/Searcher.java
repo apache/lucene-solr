@@ -34,7 +34,7 @@ public abstract class Searcher implements Searchable {
   /** Returns the documents matching <code>query</code>. 
    * @throws BooleanQuery.TooManyClauses
    * @deprecated Hits will be removed in Lucene 3.0. Use
-   * {@link #search(Query, Filter, int))} instead.
+   * {@link #search(Query, Filter, int)} instead.
    */
   public final Hits search(Query query) throws IOException {
     return search(query, (Filter)null);
@@ -44,7 +44,7 @@ public abstract class Searcher implements Searchable {
    * <code>filter</code>.
    * @throws BooleanQuery.TooManyClauses
    * @deprecated Hits will be removed in Lucene 3.0. Use
-   * {@link #search(Query, Filter, int))} instead.
+   * {@link #search(Query, Filter, int)} instead.
    */
   public Hits search(Query query, Filter filter) throws IOException {
     return new Hits(this, query, filter);
@@ -54,7 +54,7 @@ public abstract class Searcher implements Searchable {
    * <code>sort</code>.
    * @throws BooleanQuery.TooManyClauses
    * @deprecated Hits will be removed in Lucene 3.0. Use 
-   * {@link #search(Query, Filter, int, Sort))} instead.
+   * {@link #search(Query, Filter, int, Sort)} instead.
    */
   public Hits search(Query query, Sort sort)
     throws IOException {
@@ -65,7 +65,7 @@ public abstract class Searcher implements Searchable {
    * sorted by <code>sort</code>.
    * @throws BooleanQuery.TooManyClauses
    * @deprecated Hits will be removed in Lucene 3.0. Use 
-   * {@link #search(Query, Filter, int, Sort))} instead.
+   * {@link #search(Query, Filter, int, Sort)} instead.
    */
   public Hits search(Query query, Filter filter, Sort sort)
     throws IOException {
@@ -113,7 +113,7 @@ public abstract class Searcher implements Searchable {
    *
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query, Filter, int))}) is usually more efficient, as it skips
+   * Searcher#search(Query, Filter, int)}) is usually more efficient, as it skips
    * non-high-scoring hits.
    *
    * @param query to match documents
