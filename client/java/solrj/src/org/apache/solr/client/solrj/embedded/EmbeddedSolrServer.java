@@ -36,6 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.BinaryResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -54,38 +55,46 @@ import org.apache.solr.servlet.SolrRequestParsers;
  */
 public class EmbeddedSolrServer extends SolrServer
 {
-  
-  protected final CoreContainer multicore; // either cores
-  protected final SolrCore core; // or single core
-  protected final String coreName;  // use CoreContainer registry
-
+  protected final CoreContainer coreContainer;
+  protected final String coreName;
   private final SolrRequestParsers _parser;
   
+  /**
+   * Use the other constructor using a CoreContainer and a name.
+   * @param core
+   * @deprecated
+   */
+  @Deprecated
   public EmbeddedSolrServer( SolrCore core )
   {
     if ( core == null ) {
       throw new NullPointerException("SolrCore instance required");
     }
-    this.core = core;
-    if (core.getCoreDescriptor() != null) {
-      this.multicore = core.getCoreDescriptor().getMultiCore();
-      this.coreName = core.getCoreDescriptor().getName();
-    } else {
-      this.multicore = null;
-      this.coreName = null;
-    }
+    CoreDescriptor dcore = core.getCoreDescriptor();
+    if (dcore == null)
+      throw new NullPointerException("CoreDescriptor required");
+    
+    CoreContainer cores = dcore.getCoreContainer();
+    if (cores == null)
+      throw new NullPointerException("CoreContainer required");
+    
+    coreName = dcore.getName();
+    coreContainer = cores;
     _parser = new SolrRequestParsers( null );
   }
     
-  public EmbeddedSolrServer(  CoreContainer multicore, String coreName )
+  /**
+   * Creates a SolrServer.
+   * @param coreContainer the core container
+   * @param coreName the core name
+   */
+  public EmbeddedSolrServer(  CoreContainer coreContainer, String coreName )
   {
-    if ( multicore == null ) {
+    if ( coreContainer == null ) {
       throw new NullPointerException("CoreContainer instance required");
     }
-    this.core = null;
-    this.multicore = multicore;
+    this.coreContainer = coreContainer;
     this.coreName = coreName == null? "" : coreName;
-
     _parser = new SolrRequestParsers( null );
   }
   
@@ -98,15 +107,10 @@ public class EmbeddedSolrServer extends SolrServer
     }
 
     // Check for cores action
-    SolrCore core = this.core;
-    if( core == null )
-      core = multicore.getCore( coreName );
-    // solr-647
-    //else
-    //  core = core.open();
+    SolrCore core =  coreContainer.getCore( coreName );
     if( core == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          coreName == null? "No core": "No such core: " + coreName );
+                               "No such core: " + coreName );
     }
     
     SolrParams params = request.getParams();
@@ -126,14 +130,13 @@ public class EmbeddedSolrServer extends SolrServer
       }
       // Perhaps the path is to manage the cores
       if( handler == null &&
-          multicore != null &&
-          path.equals( multicore.getAdminPath() ) ) {
-        handler = multicore.getMultiCoreHandler();
+          coreContainer != null &&
+          path.equals( coreContainer.getAdminPath() ) ) {
+        handler = coreContainer.getMultiCoreHandler();
       }
     }
     if( handler == null ) {
-      // solr-647
-      // core.close();
+      core.close();
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
 
@@ -158,8 +161,7 @@ public class EmbeddedSolrServer extends SolrServer
       throw new SolrServerException( ex );
     }
     finally {
-      // solr-647
-      // core.close();
+      core.close();
     }
   }
   

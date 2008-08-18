@@ -21,6 +21,8 @@
 <%-- $Name:  $ --%>
 
 <%@ page import="java.util.Date" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Collection" %>
 
 <%-- jsp:include page="header.jsp"/ --%>
 <%-- do a verbatim include so we can use the local vars --%>
@@ -52,15 +54,12 @@
 </tr>
 
 <%-- List the cores (that arent this one) so we can switch --%>
-<% org.apache.solr.core.CoreContainer multicore = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
-  if (multicore!=null) {
-  java.util.Collection<SolrCore> cores = multicore.getCores();
-if (cores.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
-  java.util.Iterator<SolrCore> icore = cores.iterator();
-  while (icore.hasNext()) {
-    SolrCore acore = icore.next();
-    if (acore == core) continue;
-    %>[<a href="../../<%=acore.getName()%>/admin/"><%=acore.getName()%></a>]<%         
+<% org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
+  if (cores!=null) {
+    Collection<String> names = cores.getCoreNames();
+    if (names.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
+    for (String name : names) {
+    %>[<a href="../../<%=name%>/admin/"><%=name%></a>]<%         
   }%></td></tr><%
 }}%>
 

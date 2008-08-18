@@ -21,6 +21,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.QueryResponseWriter;
@@ -32,6 +35,7 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -60,7 +64,7 @@ import java.util.Map;
  * @version $Id:$
  */
 public class TestHarness {
-
+  protected CoreContainer container;
   private SolrCore core;
   private XPath xpath = XPathFactory.newInstance().newXPath();
   private DocumentBuilder builder;
@@ -123,8 +127,19 @@ public class TestHarness {
   public TestHarness( String dataDirectory,
                       SolrConfig solrConfig,
                       IndexSchema indexSchema) {
+      this("", new Initializer("", dataDirectory, solrConfig, indexSchema));
+  }
+  
+  public TestHarness(String coreName, CoreContainer.Initializer init) {
     try {
-      core = new SolrCore( null, dataDirectory, solrConfig, indexSchema, null);
+      container = init.initialize();
+      if (coreName == null)
+        coreName = "";
+      // get the core & decrease its refcount:
+      // the container holds the core for the harness lifetime
+      core = container.getCore(coreName);
+      if (core != null)
+        core.close();
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       
       updater = new XmlUpdateRequestHandler();
@@ -132,6 +147,42 @@ public class TestHarness {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  // Creates a container based on infos needed to create one core
+  static class Initializer extends CoreContainer.Initializer {
+    String coreName;
+    String dataDirectory;
+    SolrConfig solrConfig;
+    IndexSchema indexSchema;
+    public Initializer(String coreName,
+                      String dataDirectory,
+                      SolrConfig solrConfig,
+                      IndexSchema indexSchema) {
+      if (coreName == null)
+        coreName = "";
+      this.coreName = coreName;
+      this.dataDirectory = dataDirectory;
+      this.solrConfig = solrConfig;
+      this.indexSchema = indexSchema;
+    }
+    public String getCoreName() {
+      return coreName;
+    }
+    @Override
+    public CoreContainer initialize() {
+      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateInstanceDir()));
+      CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
+      dcore.setConfigName(solrConfig.getResourceName());
+      dcore.setSchemaName(indexSchema.getResourceName());
+      SolrCore core = new SolrCore( null, dataDirectory, solrConfig, indexSchema, dcore);
+      container.register(coreName, core, false);
+      return container;
+    }
+  }
+  
+  public CoreContainer getCoreContainer() {
+    return container;
   }
 
   public SolrCore getCore() {
@@ -152,9 +203,7 @@ public class TestHarness {
                 
     StringReader req = new StringReader(xml);
     StringWriter writer = new StringWriter(32000);
-    
-    // This relies on the fact that SolrCore.getSolrCore() uses the 
-    // last instantiated SolrCore.
+
     updater.doLegacyUpdate(req, writer);
     return writer.toString();
   }
@@ -321,7 +370,17 @@ public class TestHarness {
    * Shuts down and frees any resources
    */
   public void close() {
-    core.close();
+    if (container != null) {
+      for (SolrCore c : container.getCores()) {
+        if (c.getOpenCount() > 1)
+          throw new RuntimeException("SolrCore.getOpenCount()=="+core.getOpenCount());
+      }      
+    }
+
+    if (container != null) {
+      container.shutdown();
+      container = null;
+    }
   }
 
   /**

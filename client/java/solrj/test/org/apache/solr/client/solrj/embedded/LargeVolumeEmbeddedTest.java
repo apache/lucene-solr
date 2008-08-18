@@ -45,6 +45,6 @@ public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   @Override
   protected SolrServer createNewSolrServer()
   {
-    return new EmbeddedSolrServer( h.getCore() );
+    return new EmbeddedSolrServer( h.getCoreContainer(), "" );
   }
 }

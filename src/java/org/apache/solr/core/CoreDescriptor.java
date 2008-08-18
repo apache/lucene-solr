@@ -28,22 +28,17 @@ public class CoreDescriptor implements Cloneable {
   protected String instanceDir;
   protected String configName;
   protected String schemaName;
-  protected SolrCore core = null;
   private final CoreContainer coreContainer;
 
-  public CoreDescriptor(CoreContainer coreContainer) {
+  public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
-  }
-
-  /** Initialize defaults from instance directory. */
-  public void init(String name, String instanceDir) {
+    this.name = name;
     if (name == null) {
       throw new RuntimeException("Core needs a name");
     }
     if (instanceDir == null) {
       throw new NullPointerException("Missing required \'instanceDir\'");
     }
-    this.name = name;
     if (!instanceDir.endsWith("/")) instanceDir = instanceDir + "/";
     this.instanceDir = instanceDir;
     this.configName = getDefaultConfigName();
@@ -51,10 +46,10 @@ public class CoreDescriptor implements Cloneable {
   }
 
   public CoreDescriptor(CoreDescriptor descr) {
-    this.name = descr.name;
     this.instanceDir = descr.instanceDir;
     this.configName = descr.configName;
     this.schemaName = descr.schemaName;
+    this.name = descr.name;
     coreContainer = descr.coreContainer;
   }
   
@@ -72,17 +67,7 @@ public class CoreDescriptor implements Cloneable {
   public String getDefaultDataDir() {
     return this.instanceDir + "data/";
   }
-  
-  /**@return the core name. */
-  public String getName() {
-    return name;
-  }
-  
-  /** Sets the core name. */
-  public void setName(String name) {
-    this.name = name;
-  }
-  
+ 
   /**@return the core instance directory. */
   public String getInstanceDir() {
     return instanceDir;
@@ -111,16 +96,13 @@ public class CoreDescriptor implements Cloneable {
   public String getSchemaName() {
     return this.schemaName;
   }
-  
-  public SolrCore getCore() {
-    return core;
-  }
-  
-  public void setCore(SolrCore core) {
-    this.core = core;
+
+  /**@return the initial core name */
+  public String getName() {
+    return this.name;
   }
 
-  public CoreContainer getMultiCore() {
+  public CoreContainer getCoreContainer() {
     return coreContainer;
   }
 }

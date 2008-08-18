@@ -90,9 +90,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
     
     switch(action) {
       case CREATE: {
-        CoreDescriptor dcore = new CoreDescriptor(cores);
-        dcore.init(params.get(CoreAdminParams.NAME),
-                  params.get(CoreAdminParams.INSTANCE_DIR));
+        String name = params.get(CoreAdminParams.NAME);
+        CoreDescriptor dcore = new CoreDescriptor(cores, name, params.get(CoreAdminParams.INSTANCE_DIR));
 
         // fillup optional parameters
         String opts = params.get(CoreAdminParams.CONFIG);
@@ -104,6 +103,7 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
           dcore.setSchemaName(opts);
 
         SolrCore core = cores.create(dcore);
+        cores.register(name, core,false);
         rsp.add("core", core.getName());
         do_persist = cores.isPersistent();
         break;
@@ -112,9 +112,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
       case STATUS: {
         NamedList<Object> status = new SimpleOrderedMap<Object>();
         if( cname == null ) {
-          for (CoreDescriptor d : cores.getDescriptors()) {
-            cname = d.getName();
-            status.add(d.getName(), getCoreStatus( cores, cname  ) );
+          for (SolrCore core : cores.getCores()) {
+            status.add(core.getName(), getCoreStatus( cores, cname  ) );
           }
         } 
         else {
@@ -172,8 +171,7 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
         info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getReader(), false));
         searcher.decref();
       } finally {
-        // solr-647
-        // core.close();
+        core.close();
       }
     }
     return info;

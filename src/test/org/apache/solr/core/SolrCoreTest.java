@@ -24,13 +24,14 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
+import java.util.concurrent.*;
+import java.util.*;
 public class SolrCoreTest extends AbstractSolrTestCase {
 
   public String getSchemaFile() { return "schema.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
-
+  
   public void testRequestHandlerRegistry() {
-    // property values defined in build.xml
     SolrCore core = h.getCore();
 
     EmptyRequestHandler handler1 = new EmptyRequestHandler();
@@ -46,7 +47,8 @@ public class SolrCoreTest extends AbstractSolrTestCase {
   }
 
   public void testClose() throws Exception {
-    SolrCore core = h.getCore();
+    final CoreContainer cores = h.getCoreContainer();
+    SolrCore core = cores.getCore("");
 
     ClosingRequestHandler handler1 = new ClosingRequestHandler();
     handler1.inform( core );
@@ -56,9 +58,115 @@ public class SolrCoreTest extends AbstractSolrTestCase {
     assertNull( old ); // should not be anything...
     assertEquals( core.getRequestHandlers().get( path ), handler1 );
     core.close();
+    cores.shutdown();
     assertTrue("Handler not closed", handler1.closed == true);
   }
+  
+  public void testRefCount() throws Exception {
+    SolrCore core = h.getCore();
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+    
+    final CoreContainer cores = h.getCoreContainer();
+    SolrCore c1 = cores.getCore("");
+    assertTrue("Refcount != 2", core.getOpenCount() == 2);
+
+    ClosingRequestHandler handler1 = new ClosingRequestHandler();
+    handler1.inform( core );
+
+    String path = "/this/is A path /that won't be registered!";
+    SolrRequestHandler old = core.registerRequestHandler( path, handler1 );
+    assertNull( old ); // should not be anything...
+    assertEquals( core.getRequestHandlers().get( path ), handler1 );
+   
+    SolrCore c2 = cores.getCore("");
+    c1.close();
+    assertTrue("Refcount < 1", core.getOpenCount() >= 1);
+    assertTrue("Handler is closed", handler1.closed == false);
+    
+    c1 = cores.getCore("");
+    assertTrue("Refcount < 2", core.getOpenCount() >= 2);
+    assertTrue("Handler is closed", handler1.closed == false);
+    
+    c2.close();
+    assertTrue("Refcount < 1", core.getOpenCount() >= 1);
+    assertTrue("Handler is closed", handler1.closed == false);
+
+    c1.close();
+    cores.shutdown();
+    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+  }
+    
+
+  public void testRefCountMT() throws Exception {
+    SolrCore core = h.getCore();
+    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+
+    final ClosingRequestHandler handler1 = new ClosingRequestHandler();
+    handler1.inform(core);
+    String path = "/this/is A path /that won't be registered!";
+    SolrRequestHandler old = core.registerRequestHandler(path, handler1);
+    assertNull(old); // should not be anything...
+    assertEquals(core.getRequestHandlers().get(path), handler1);
+
+    final int LOOP = 100;
+    final int MT = 16;
+    ExecutorService service = Executors.newFixedThreadPool(MT);
+    List<Callable<Integer>> callees = new ArrayList<Callable<Integer>>(MT);
+    final CoreContainer cores = h.getCoreContainer();
+    for (int i = 0; i < MT; ++i) {
+      Callable<Integer> call = new Callable<Integer>() {
+        void yield(int n) {
+          try {
+            Thread.sleep(0, (n % 13 + 1) * 10);
+          } catch (InterruptedException xint) {
+          }
+        }
+        
+        public Integer call() {
+          SolrCore core = null;
+          int r = 0;
+          try {
+            for (int l = 0; l < LOOP; ++l) {
+              r += 1;
+              core = cores.getCore("");
+              // sprinkle concurrency hinting...
+              yield(l);
+              assertTrue("Refcount < 1", core.getOpenCount() >= 1);              
+              yield(l);
+              assertTrue("Refcount > 17", core.getOpenCount() <= 17);             
+              yield(l);
+              assertTrue("Handler is closed", handler1.closed == false);
+              yield(l);
+              core.close();
+              core = null;
+              yield(l);
+            }
+            return r;
+          } finally {
+            if (core != null)
+              core.close();
+          }
+        }
+      };
+      callees.add(call);
+    }
+
+    List<Future<Integer>> results = service.invokeAll(callees);
+    for (Future<Integer> result : results) {
+      assertTrue("loop=" + result.get() +" < " + LOOP, result.get() >= LOOP);
+    }
+    
+    cores.shutdown();
+    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+    
+    service.shutdown();
+    assertTrue("Running for too long...", service.awaitTermination(60, TimeUnit.SECONDS));
+  }
 }
+
+
 
 class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware {
   boolean closed = false;

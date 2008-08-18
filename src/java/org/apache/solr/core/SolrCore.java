@@ -62,13 +62,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+import java.net.URL;
 
 
 /**
  * @version $Id$
  */
-public final class SolrCore {
+public final class SolrCore implements SolrInfoMBean {
   public static final String version="1.0";  
 
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
@@ -374,7 +376,7 @@ public final class SolrCore {
    * @since solr 1.0
    */
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
-    this( null, dataDir, new SolrConfig(), schema, null );
+    this(null, dataDir, new SolrConfig(), schema, null );
   }
   
   /**
@@ -479,8 +481,9 @@ public final class SolrCore {
         latch.countDown();
       }
     } // end synchronized
+
+    infoRegistry.put("core", this);
   }
-  
 
 
   /**
@@ -569,16 +572,39 @@ public final class SolrCore {
     }
     return chain;
   }
+  
+  // this core current usage count
+  private final AtomicInteger refCount = new AtomicInteger(1);
 
+  final void open() {
+    refCount.incrementAndGet();
+  }
+  
   /**
    * Close all resources allocated by the core.
    *  1. searcher
    *  2. updateHandler
    *  3. all CloseHooks will be notified
    *  4. All MBeans will be unregistered from MBeanServer if JMX was enabled
+   * <p>
+   * This should always be called when the core is obtained through:
+   * @see CoreContainer.getCore
+   * @see CoreContainer.getAdminCore
+   * </p>
+   * The actual close is performed if the core usage count is 1.
+   * (A core is created with a usage count of 1).
+   * If usage count is > 1, the usage count is decreased by 1.
+   * If usage count is &lt; 0, this is an error and a runtime exception is thrown.
    */
   public void close() {
-    log.info(logid+" CLOSING SolrCore!");
+    int count = refCount.decrementAndGet();
+    if (count > 0) return;
+    if (count < 0) {
+      //throw new RuntimeException("Too many closes on " + this);
+      log.severe("Too many close {count:"+count+"} on " + this + ". Please report this exception to solr-user@lucene.apache.org");
+      return;
+    }
+    log.info(logid+" CLOSING SolrCore " + this);
     try {
       infoRegistry.clear();
     } catch (Exception e) {
@@ -602,16 +628,22 @@ public final class SolrCore {
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          hook.close( this );
-       }
+      }
     }
   }
 
-  public boolean isClosed() {
-    return _searcher == null;
+  /** Current core usage count. */
+  public int getOpenCount() {
+    return refCount.get();
   }
   
-  @Override
-  protected void finalize() { close(); }
+  /** Whether this core is closed. */
+  public boolean isClosed() {
+      return refCount.get() <= 0;
+  }
+  
+  // this can cause an extra close
+  // protected void finalize() { close(); }
 
   private List<CloseHook> closeHooks = null;
 
@@ -1380,6 +1412,45 @@ public final class SolrCore {
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;
   }
+
+
+  /////////////////////////////////////////////////////////////////////
+  // SolrInfoMBean stuff: Statistics and Module Info
+  /////////////////////////////////////////////////////////////////////
+
+  public String getVersion() {
+    return SolrCore.version;
+  }
+
+  public String getDescription() {
+    return "SolrCore";
+  }
+
+  public Category getCategory() {
+    return Category.CORE;
+  }
+
+  public String getSourceId() {
+    return "$Id:$";
+  }
+
+  public String getSource() {
+    return "$URL:$";
+  }
+
+  public URL[] getDocs() {
+    return null;
+  }
+
+  public NamedList getStatistics() {
+    NamedList lst = new SimpleOrderedMap();
+    lst.add("coreName", name==null ? "(null)" : name);
+    lst.add("startTime", new Date(startTime));
+    lst.add("refCount", getOpenCount());
+    lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+    return lst;
+  }
+
 }
 
 

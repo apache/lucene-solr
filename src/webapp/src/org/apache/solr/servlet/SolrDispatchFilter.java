@@ -285,6 +285,9 @@ public class SolrDispatchFilter implements Filter
         if( solrReq != null ) {
           solrReq.close();
         }
+        if (core != null) {
+          core.close();
+        }
       }
     }
 

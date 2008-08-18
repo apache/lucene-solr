@@ -25,9 +25,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -36,6 +34,7 @@ import javax.xml.xpath.XPathConstants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Node;
@@ -51,7 +50,7 @@ public class CoreContainer
 {
   protected static Logger log = Logger.getLogger(CoreContainer.class.getName());
   
-  protected final Map<String, CoreDescriptor> cores = new LinkedHashMap<String, CoreDescriptor>();
+  protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>();
   protected boolean persistent = false;
   protected String adminPath = null;
   protected String managementPath = null;
@@ -69,8 +68,7 @@ public class CoreContainer
   public static class Initializer {
     protected String solrConfigFilename = null;
     protected boolean abortOnConfigurationError = true;
-    protected String managementPath = null;
-    
+
     public boolean isAbortOnConfigurationError() {
       return abortOnConfigurationError;
     }
@@ -85,14 +83,6 @@ public class CoreContainer
 
     public void setSolrConfigFilename(String solrConfigFilename) {
       this.solrConfigFilename = solrConfigFilename;
-    }
-    
-    public String getManagementPath() {
-      return managementPath;
-    }
-
-    public void setManagementPath(String managementPath) {
-      this.managementPath = managementPath;
     }
 
     // core container instantiation
@@ -116,16 +106,13 @@ public class CoreContainer
         solrConfigFilename = cores.getConfigFile().getName();
       } else {
         // perform compatibility init
-        cores = new CoreContainer();
-        cores.loader = new SolrResourceLoader(instanceDir);
+        cores = new CoreContainer(new SolrResourceLoader(instanceDir));
         SolrConfig cfg = solrConfigFilename == null ? new SolrConfig() : new SolrConfig(solrConfigFilename);
-        CoreDescriptor dcore = new CoreDescriptor(cores);
-        dcore.init("", cfg.getResourceLoader().getInstanceDir());
+        CoreDescriptor dcore = new CoreDescriptor(cores, "", cfg.getResourceLoader().getInstanceDir());
         SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
-        dcore.setCore(singlecore);
         abortOnConfigurationError = cfg.getBool(
                 "abortOnConfigurationError", abortOnConfigurationError);
-        cores.register(dcore);
+        cores.register("", singlecore, false);
         cores.setPersistent(false);
         solrConfigFilename = cfg.getName();
       }
@@ -147,6 +134,14 @@ public class CoreContainer
     this.load(dir, configFile);
   }
   
+  /**
+   * Minimal CoreContainer constructor. 
+   * @param loader the CoreContainer resource loader
+   */
+  public CoreContainer(SolrResourceLoader loader) {
+    this.loader = loader;
+  }
+  
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -165,54 +160,60 @@ public class CoreContainer
     FileInputStream cfgis = new FileInputStream(configFile);
     try {
       Config cfg = new Config(loader, null, cfgis, null);
-    
+
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
-      
+
       if (libDir != null) {
         // relative dir to conf
         File f = new File(dir, libDir);
-        libDir = f.getPath(); 
+        libDir = f.getPath();
         log.info( "loading shared library: "+f.getAbsolutePath() );
         libLoader = SolrResourceLoader.createClassLoader(f, null);
       }
-      
+
       if( adminPath != null ) {
         coreAdminHandler = this.createMultiCoreHandler();
       }
-      
+
       NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-      synchronized (cores) {
-        for (int i=0; i<nodes.getLength(); i++) {
-          Node node = nodes.item(i);
-          try {
-            CoreDescriptor p = new CoreDescriptor(this);
-            p.init(DOMUtil.getAttr(node, "name", null), DOMUtil.getAttr(node, "instanceDir", null));
-            // deal with optional settings
-            String opt = DOMUtil.getAttr(node, "config", null);
-            if (opt != null) {
-              p.setConfigName(opt);
-            }
-            opt = DOMUtil.getAttr(node, "schema", null);
-            if (opt != null) {
-              p.setSchemaName(opt);
-            }
-            CoreDescriptor old = cores.get(p.getName());
-            if (old != null && old.getName() != null && old.getName().equals(p.getName())) {
-              throw new RuntimeException( cfg.getName() +
-                " registers multiple cores to the same name: " + p.name);
-            }
-            p.setCore(create(p));
+
+      for (int i=0; i<nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        try {
+          String names = DOMUtil.getAttr(node, "name", null);
+          List<String> aliases = StrUtils.splitSmart(names,',');
+          String name = aliases.get(0);
+          CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
+
+          // deal with optional settings
+          String opt = DOMUtil.getAttr(node, "config", null);
+          if (opt != null) {
+            p.setConfigName(opt);
           }
-          catch (Throwable ex) {
-            SolrConfig.severeErrors.add( ex );
-            SolrException.logOnce(log,null,ex);
+          opt = DOMUtil.getAttr(node, "schema", null);
+          if (opt != null) {
+            p.setSchemaName(opt);
           }
+
+          SolrCore core = create(p);
+
+          for (int a=1; a<aliases.size(); a++) {
+            core.open();
+            register(aliases.get(i), core, false);
+          }
+
+          register(name, core, false);
+        }
+        catch (Throwable ex) {
+          SolrConfig.severeErrors.add( ex );
+          SolrException.logOnce(log,null,ex);
         }
       }
     }
+
     finally {
       if (cfgis != null) {
         try { cfgis.close(); } catch (Exception xany) {}
@@ -225,11 +226,8 @@ public class CoreContainer
    */
   public void shutdown() {
     synchronized(cores) {
-      for(CoreDescriptor descriptor : cores.values()) {
-        SolrCore core = descriptor.getCore();
-        if( core != null ) {
-          core.close();
-        }
+      for(SolrCore core : cores.values()) {
+        core.close();
       }
       cores.clear();
     }
@@ -239,40 +237,44 @@ public class CoreContainer
   protected void finalize() {
     shutdown();
   }
-  
-  // ---------------- CoreDescriptor related methods --------------- 
+
   /**
    * Registers a SolrCore descriptor in the registry.
-   * @param descr the Solr core descriptor
-   * @return a previous descriptor having the same name if it existed, null otherwise
+   * @return a previous core having the same name if it existed and returnPrev==true
    */
-  public CoreDescriptor register( CoreDescriptor descr ) {
-    if( descr == null ) {
+  public SolrCore register(String name, SolrCore core, boolean returnPrev) {
+    if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
-    String name = descr.getName();
-    if( name == null || 
+    if( name == null ||
         name.indexOf( '/'  ) >= 0 ||
         name.indexOf( '\\' ) >= 0 ){
       throw new RuntimeException( "Invalid core name: "+name );
     }
 
-    CoreDescriptor old = null;    
+    SolrCore old = null;
     synchronized (cores) {
-      old = cores.put(name, descr);
+      old = cores.put(name, core);
+      core.setName(name);
     }
-    if( old == null ) {
+
+
+    if( old == null || old == core) {
       log.info( "registering core: "+name );
       return null;
-    } 
+    }
     else {
       log.info( "replacing core: "+name );
+      if (!returnPrev) {
+        old.close();
+      }
       return old;
     }
   }
 
+
   /**
-   * Creates a new core based on a descriptor.
+   * Creates a new core based on a descriptor but does not register it.
    *
    * @param dcore a core descriptor
    * @return the newly created core
@@ -293,10 +295,6 @@ public class CoreContainer
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     IndexSchema schema = new IndexSchema(config, dcore.getSchemaName(), null);
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
-    dcore.setCore(core);
-    
-    // Register the new core
-    CoreDescriptor old = this.register(dcore);
     return core;
   }
     
@@ -304,37 +302,39 @@ public class CoreContainer
    * @return a Collection of registered SolrCores
    */
   public Collection<SolrCore> getCores() {
-    java.util.List<SolrCore> l = new java.util.ArrayList<SolrCore>();
+    List<SolrCore> lst = new ArrayList<SolrCore>();
     synchronized (cores) {
-      for(CoreDescriptor descr : this.cores.values()) {
-        if (descr.getCore() != null)
-          l.add(descr.getCore());
-      }
+      lst.addAll(this.cores.values());
     }
-    return l;
-  }
-    
-  /**
-   * @return a Collection of registered CoreDescriptors
-   */
-  public Collection<CoreDescriptor> getDescriptors() {
-   java.util.List<CoreDescriptor> l = new java.util.ArrayList<CoreDescriptor>();
-   synchronized (cores) {
-     l.addAll(cores.values());
-   }
-   return l;
+    return lst;
   }
 
   /**
-   * @return the CoreDescriptor registered under that name
+   * @return a Collection of the names that cores are mapped to
    */
-  public CoreDescriptor getDescriptor(String name) {
-    synchronized(cores) {
-      return cores.get( name );
+  public Collection<String> getCoreNames() {
+    List<String> lst = new ArrayList<String>();
+    synchronized (cores) {
+      lst.addAll(this.cores.keySet());
     }
+    return lst;
   }
-  
-  
+
+  /**
+   * @return a Collection of the names that a specific core is mapped to.
+   */
+  public Collection<String> getCoreNames(SolrCore core) {
+    List<String> lst = new ArrayList<String>();
+    synchronized (cores) {
+      for (Map.Entry<String,SolrCore> entry : cores.entrySet()) {
+        if (core == entry.getValue()) {
+          lst.add(entry.getKey());
+        }
+      }
+    }
+    return lst;
+  }
+
   // ---------------- Core name related methods --------------- 
   /**
    * Recreates a SolrCore.
@@ -348,12 +348,14 @@ public class CoreContainer
    */
 
   public void reload(String name) throws ParserConfigurationException, IOException, SAXException {
+    SolrCore core;
     synchronized(cores) {
-      CoreDescriptor dcore = cores.get(name);
-      if (dcore == null)
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );   
-      create(new CoreDescriptor(dcore));
+      core = cores.get(name);
     }
+    if (core == null)
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
+
+    register(name, create(core.getCoreDescriptor()), false);
   }
     
   
@@ -367,36 +369,27 @@ public class CoreContainer
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Can not swap unnamed cores." );
     }
     synchronized( cores ) {
-      CoreDescriptor c0 = cores.get(n0);
+      SolrCore c0 = cores.get(n0);
+      SolrCore c1 = cores.get(n1);
       if (c0 == null)
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n0 );
-      CoreDescriptor c1 = cores.get(n1);
       if (c1 == null)
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1 );
       cores.put(n0, c1);
       cores.put(n1, c0);
-      c0.setName( n1 );
-      if (c0.getCore() != null)
-        c0.getCore().setName(n1);
-      c1.setName( n0 );
-      if (c1.getCore() != null)
-        c1.getCore().setName(n0);
-      log.info( "swaped: "+c0.getName() + " with " + c1.getName() );
+
+      c0.setName(n1);
+      c1.setName(n0);
     }
+
+
+    log.info("swaped: "+n0 + " with " + n1);
   }
   
-  /** Removes & closes a registered core. */
-  public void remove( String name ) {
+  /** Removes and returns registered core w/o decrementing it's reference count */
+  public SolrCore remove( String name ) {
     synchronized(cores) {
-      CoreDescriptor dcore = cores.remove( name );
-      if (dcore == null) {
-        return;
-      }
-      
-      SolrCore core = dcore.getCore();
-      if (core != null) {
-        core.close();
-      }
+      return cores.remove( name );
     }
   }
 
@@ -408,15 +401,10 @@ public class CoreContainer
    */
   public SolrCore getCore(String name) {
     synchronized(cores) {
-      CoreDescriptor dcore = cores.get(name);
-       SolrCore core = null;
-      if (dcore != null)
-        core = dcore.getCore();
-       return core;
-// solr-647
-//      if (core != null)
-//        return core.open();
-//      return null;
+      SolrCore core = cores.get(name);
+      if (core != null)
+        core.open();  // increment the ref count while still synchronized
+      return core;
     }
   }
 
@@ -433,20 +421,17 @@ public class CoreContainer
    * Ensures there is a valid core to handle MultiCore admin taks and
    * increase its refcount.
    * @return the acquired admin core, null if no core is available
-   */
+   */               
   public SolrCore getAdminCore() {
     synchronized (cores) {
       SolrCore core = adminCore != null ? adminCore.get() : null;
-//      solr-647
-//      if (core != null)
-//        core = core.open();
-      if (core == null) {
-        for (CoreDescriptor descr : this.cores.values()) {
-          core = descr.getCore();
-//          solr-647
-//          if (core != null)
-//            core = core.open();
-          if (core != null) {
+      if (core != null) {
+        core.open();
+      } else {
+        for (SolrCore c : cores.values()) {
+          if (c != null) {
+            core = c;
+            core.open();
             break;
           }
         }
@@ -517,7 +502,7 @@ public class CoreContainer
   public void persist() {
     persistFile(null);
   }
-  
+
   /** Persists the cores config file in a user provided file. */
   public void persistFile(File file) {
     File tmpFile = null;
@@ -527,7 +512,6 @@ public class CoreContainer
         file = tmpFile = File.createTempFile("solr", ".xml", configFile.getParentFile());
       }
       java.io.FileOutputStream out = new java.io.FileOutputStream(file);
-      synchronized(cores) {
         Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
         persist(writer);
         writer.flush();
@@ -540,7 +524,6 @@ public class CoreContainer
           else
             fileCopy(tmpFile, configFile);
         }
-      }
     } 
     catch(java.io.FileNotFoundException xnf) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, xnf);
@@ -578,20 +561,35 @@ public class CoreContainer
     writer.write('\'');
     writer.write(">\n");
 
+    Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
+
     synchronized(cores) {
-      for (Map.Entry<String, CoreDescriptor> entry : cores.entrySet()) {
-        persist(writer, entry.getValue());
+      for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
+        String name = entry.getKey();
+        LinkedList<String> a = aliases.get(entry.getValue());
+        if (a==null) a = new LinkedList<String>();
+        if (name.equals(entry.getValue().getName())) {
+          a.addFirst(name);
+        } else {
+          a.addLast(name);
+        }
+        aliases.put(entry.getValue(), a);
       }
     }
+
+    for (Map.Entry<SolrCore, LinkedList<String>> entry : aliases.entrySet()) {
+      persist(writer, entry.getValue(), entry.getKey().getCoreDescriptor());
+    }
+
     writer.write("</cores>\n");
     writer.write("</solr>\n");
   }
   
   /** Writes the cores configuration node for a given core. */
-  void persist(Writer writer, CoreDescriptor dcore) throws IOException {
+  void persist(Writer writer, List<String> aliases, CoreDescriptor dcore) throws IOException {
     writer.write("  <core");
     writer.write (" name='");
-    XML.escapeAttributeValue(dcore.getName(), writer);
+    XML.escapeAttributeValue(StrUtils.join(aliases,','), writer);
     writer.write("' instanceDir='");
     XML.escapeAttributeValue(dcore.getInstanceDir(), writer);
     writer.write('\'');
