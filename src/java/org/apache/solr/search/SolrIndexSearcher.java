@@ -1217,7 +1217,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   /**
    * Returns documents matching both <code>query</code> and <code>filter</code>
-   * and sorted by <code>sort</code>.  Also returns the compete set of documents
+   * and sorted by <code>sort</code>.  Also returns the complete set of documents
    * matching <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
    * <p>
    * This method is cache aware and may retrieve <code>filter</code> from
