@@ -42,9 +42,14 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FilteredQuery;
@@ -57,12 +62,14 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RangeFilter;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -1244,6 +1251,60 @@ public class HighlighterTest extends TestCase implements Formatter {
     };
 
     helper.start();
+  }
+  
+  private Directory dir = new RAMDirectory();
+  private Analyzer a = new WhitespaceAnalyzer();
+  
+  public void testWeightedTermsWithDeletes() throws IOException, ParseException {
+    makeIndex();
+    deleteDocument();
+    searchIndex();
+  }
+  
+  private Document doc( String f, String v ){
+    Document doc = new Document();
+    doc.add( new Field( f, v, Store.YES, Index.TOKENIZED ) );
+    return doc;
+  }
+  
+  private void makeIndex() throws IOException {
+    IndexWriter writer = new IndexWriter( dir, a, MaxFieldLength.LIMITED );
+    writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
+    writer.addDocument( doc( "t_text1", "more random words for second field del" ) );
+    writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
+    writer.addDocument( doc( "t_text1", "more random words for second field" ) );
+    writer.optimize();
+    writer.close();
+  }
+  
+  private void deleteDocument() throws IOException {
+    IndexWriter writer = new IndexWriter( dir, a, false, MaxFieldLength.LIMITED );
+    writer.deleteDocuments( new Term( "t_text1", "del" ) );
+    // To see negative idf, keep comment the following line
+    //writer.optimize();
+    writer.close();
+  }
+  
+  private void searchIndex() throws IOException, ParseException {
+    String q = "t_text1:random";
+    QueryParser parser = new QueryParser( "t_text1", a );
+    Query query = parser.parse( q );
+    IndexSearcher searcher = new IndexSearcher( dir );
+    // This scorer can return negative idf -> null fragment
+    Scorer scorer = new QueryScorer( query, searcher.getIndexReader(), "t_text1" );
+    // This scorer doesn't use idf (patch version)
+    //Scorer scorer = new QueryScorer( query, "t_text1" );
+    Highlighter h = new Highlighter( scorer );
+
+    TopDocs hits = searcher.search(query, null, 10);
+    for( int i = 0; i < hits.totalHits; i++ ){
+      Document doc = searcher.doc( hits.scoreDocs[i].doc );
+      String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
+      System.out.println("result:" +  result);
+      assertEquals("more <B>random</B> words for second field", result);
+    }
+    searcher.close();
   }
 
   /*

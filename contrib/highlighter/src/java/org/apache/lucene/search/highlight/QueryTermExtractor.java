@@ -66,6 +66,10 @@ public final class QueryTermExtractor
 	        try
             {
                 int docFreq=reader.docFreq(new Term(fieldName,terms[i].term));
+                // docFreq counts deletes
+                if(totalNumDocs < docFreq) {
+                  docFreq = totalNumDocs;
+                }
                 //IDF algorithm taken from DefaultSimilarity class
                 float idf=(float)(Math.log((float)totalNumDocs/(double)(docFreq+1)) + 1.0);
                 terms[i].weight*=idf;

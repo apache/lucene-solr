@@ -409,7 +409,10 @@ public class WeightedSpanTermExtractor {
       while (it.hasNext()) {
         WeightedSpanTerm weightedSpanTerm = (WeightedSpanTerm) terms.get(it.next());
         int docFreq = reader.docFreq(new Term(fieldName, weightedSpanTerm.term));
-
+        // docFreq counts deletes
+        if(totalNumDocs < docFreq) {
+          docFreq = totalNumDocs;
+        }
         // IDF algorithm taken from DefaultSimilarity class
         float idf = (float) (Math.log((float) totalNumDocs / (double) (docFreq + 1)) + 1.0);
         weightedSpanTerm.weight *= idf;
