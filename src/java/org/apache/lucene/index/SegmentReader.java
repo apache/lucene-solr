@@ -924,9 +924,14 @@ class SegmentReader extends DirectoryIndexReader {
    * @return TermVectorsReader
    */
   private TermVectorsReader getTermVectorsReader() {
+    assert termVectorsReaderOrig != null;
     TermVectorsReader tvReader = (TermVectorsReader)termVectorsLocal.get();
     if (tvReader == null) {
-      tvReader = (TermVectorsReader)termVectorsReaderOrig.clone();
+      try {
+        tvReader = (TermVectorsReader)termVectorsReaderOrig.clone();
+      } catch (CloneNotSupportedException cnse) {
+        return null;
+      }
       termVectorsLocal.set(tvReader);
     }
     return tvReader;

@@ -523,19 +523,17 @@ class TermVectorsReader implements Cloneable {
     }
   }
 
-  protected Object clone() {
+  protected Object clone() throws CloneNotSupportedException {
     
-    if (tvx == null || tvd == null || tvf == null)
-      return null;
-    
-    TermVectorsReader clone = null;
-    try {
-      clone = (TermVectorsReader) super.clone();
-    } catch (CloneNotSupportedException e) {}
+    final TermVectorsReader clone = (TermVectorsReader) super.clone();
 
-    clone.tvx = (IndexInput) tvx.clone();
-    clone.tvd = (IndexInput) tvd.clone();
-    clone.tvf = (IndexInput) tvf.clone();
+    // These are null when a TermVectorsReader was created
+    // on a segment that did not have term vectors saved
+    if (tvx != null && tvd != null && tvf != null) {
+      clone.tvx = (IndexInput) tvx.clone();
+      clone.tvd = (IndexInput) tvd.clone();
+      clone.tvf = (IndexInput) tvf.clone();
+    }
     
     return clone;
   }
