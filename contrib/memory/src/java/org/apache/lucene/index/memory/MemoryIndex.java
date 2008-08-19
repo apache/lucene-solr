@@ -704,7 +704,7 @@ public class MemoryIndex implements Serializable {
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:
   ///////////////////////////////////////////////////////////////////////////////
-  private static final Term MATCH_ALL_TERM = new Term("", "");
+  private static final Term MATCH_ALL_TERM = new Term("");
     
   /**
    * Search support for Lucene framework integration; implements all methods
@@ -821,7 +821,7 @@ public class MemoryIndex implements Serializable {
           Term template = info.template;
           if (template == null) { // not yet cached?
             String fieldName = (String) sortedFields[pos].getKey();
-            template = new Term(fieldName, "");
+            template = new Term(fieldName);
             info.template = template;
           }
           

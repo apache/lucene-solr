@@ -105,6 +105,9 @@ API Changes
     the provided byte[] result to getBinaryValue.  (Eks Dev via Mike
     McCandless)
 
+16. LUCENE-1334: Add new constructor for Term: Term(String fieldName)
+    which defaults term text to "".  (DM Smith via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

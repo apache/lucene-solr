@@ -45,7 +45,7 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
       LongParser parser = (LongParser) entry.custom;
       final long[] retArray = new long[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term(field, ""));
+      TermEnum termEnum = reader.terms (new Term(field));
       try {
         do {
           Term term = termEnum.term();
@@ -85,7 +85,7 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
       DoubleParser parser = (DoubleParser) entry.custom;
       final double[] retArray = new double[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -115,7 +115,7 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
     protected Object createValue(IndexReader reader, Object fieldKey)
         throws IOException {
       String field = ((String)fieldKey).intern();
-      TermEnum enumerator = reader.terms (new Term (field, ""));
+      TermEnum enumerator = reader.terms (new Term (field));
       try {
         Term term = enumerator.term();
         if (term == null) {

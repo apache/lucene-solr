@@ -486,7 +486,7 @@ public class ParallelReader extends IndexReader {
       }
       while (fieldIterator.hasNext()) {
         field = (String) fieldIterator.next();
-        termEnum = ((IndexReader)fieldToReader.get(field)).terms(new Term(field, ""));
+        termEnum = ((IndexReader)fieldToReader.get(field)).terms(new Term(field));
         Term term = termEnum.term();
         if (term!=null && term.field()==field)
           return true;

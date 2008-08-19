@@ -69,7 +69,7 @@ public class RangeQuery extends Query
             this.lowerTerm = lowerTerm;
         }
         else {
-            this.lowerTerm = new Term(upperTerm.field(), "");
+            this.lowerTerm = new Term(upperTerm.field());
         }
 
         this.upperTerm = upperTerm;

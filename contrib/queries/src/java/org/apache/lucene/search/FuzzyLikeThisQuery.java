@@ -106,7 +106,7 @@ public class FuzzyLikeThisQuery extends Query
         TokenStream ts=analyzer.tokenStream(f.fieldName,new StringReader(f.queryString));
         Token token=ts.next();
         int corpusNumDocs=reader.numDocs();
-        Term internSavingTemplateTerm =new Term(f.fieldName,""); //optimization to avoid constructing new Term() objects
+        Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet processedTerms=new HashSet();
         while(token!=null)
         {            

@@ -114,7 +114,7 @@ public class LengthNormModifier {
       reader = IndexReader.open(dir);
       termCounts = new int[reader.maxDoc()];
       try {
-        termEnum = reader.terms(new Term(field,""));
+        termEnum = reader.terms(new Term(field));
         try {
           termDocs = reader.termDocs();
           do {

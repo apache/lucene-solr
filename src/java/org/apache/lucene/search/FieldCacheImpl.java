@@ -176,7 +176,7 @@ implements FieldCache {
       ByteParser parser = (ByteParser) entry.custom;
       final byte[] retArray = new byte[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -215,7 +215,7 @@ implements FieldCache {
       ShortParser parser = (ShortParser) entry.custom;
       final short[] retArray = new short[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -254,7 +254,7 @@ implements FieldCache {
       IntParser parser = (IntParser) entry.custom;
       final int[] retArray = new int[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -295,7 +295,7 @@ implements FieldCache {
       FloatParser parser = (FloatParser) entry.custom;
       final float[] retArray = new float[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -327,7 +327,7 @@ implements FieldCache {
       String field = ((String) fieldKey).intern();
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();
@@ -360,7 +360,7 @@ implements FieldCache {
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       int t = 0;  // current term number
 
       // an entry for documents that have no terms in this field
@@ -431,7 +431,7 @@ implements FieldCache {
     protected Object createValue(IndexReader reader, Object fieldKey)
         throws IOException {
       String field = ((String)fieldKey).intern();
-      TermEnum enumerator = reader.terms (new Term (field, ""));
+      TermEnum enumerator = reader.terms (new Term (field));
       try {
         Term term = enumerator.term();
         if (term == null) {
@@ -488,7 +488,7 @@ implements FieldCache {
       SortComparator comparator = (SortComparator) entry.custom;
       final Comparable[] retArray = new Comparable[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field, ""));
+      TermEnum termEnum = reader.terms (new Term (field));
       try {
         do {
           Term term = termEnum.term();

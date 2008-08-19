@@ -102,7 +102,7 @@ public class RangeFilter extends Filter {
         TermEnum enumerator =
             (null != lowerTerm
              ? reader.terms(new Term(fieldName, lowerTerm))
-             : reader.terms(new Term(fieldName,"")));
+             : reader.terms(new Term(fieldName)));
         
         try {
             
@@ -164,7 +164,7 @@ public class RangeFilter extends Filter {
         TermEnum enumerator =
             (null != lowerTerm
              ? reader.terms(new Term(fieldName, lowerTerm))
-             : reader.terms(new Term(fieldName,"")));
+             : reader.terms(new Term(fieldName)));
         
         try {
             

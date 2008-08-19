@@ -138,7 +138,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   public int addStopWords(IndexReader reader, String fieldName, int maxDocFreq) throws IOException {
     HashSet stopWords = new HashSet();
     String internedFieldName = fieldName.intern();
-    TermEnum te = reader.terms(new Term(fieldName, ""));
+    TermEnum te = reader.terms(new Term(fieldName));
     Term term = te.term();
     while (term != null) {
       if (term.field() != internedFieldName) {

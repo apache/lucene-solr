@@ -57,7 +57,7 @@ public class LuceneDictionary implements Dictionary {
 
     LuceneIterator() {
       try {
-        termEnum = reader.terms(new Term(field, ""));
+        termEnum = reader.terms(new Term(field));
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

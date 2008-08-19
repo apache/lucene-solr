@@ -35,6 +35,17 @@ public final class Term implements Comparable, java.io.Serializable {
   public Term(String fld, String txt) {
     this(fld, txt, true);
   }
+
+  /** Constructs a Term with the given field and empty text.
+   * This serves two purposes: 1) reuse of a Term with the same field.
+   * 2) pattern for a query.
+   * 
+   * @param fld
+   */
+  public Term(String fld) {
+    this(fld, "", true);
+  }
+
   Term(String fld, String txt, boolean intern) {
     field = intern ? fld.intern() : fld;	  // field names are interned
     text = txt;					  // unless already known to be

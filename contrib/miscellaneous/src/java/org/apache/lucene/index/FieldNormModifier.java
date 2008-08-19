@@ -118,7 +118,7 @@ public class FieldNormModifier {
       if (sim == null)
         fakeNorms = SegmentReader.createFakeNorms(reader.maxDoc());
       try {
-        termEnum = reader.terms(new Term(field,""));
+        termEnum = reader.terms(new Term(field));
         try {
           termDocs = reader.termDocs();
           do {

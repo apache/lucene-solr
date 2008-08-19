@@ -83,7 +83,7 @@ public class DuplicateFilter extends Filter
 	{
 		
     OpenBitSet bits=new OpenBitSet(reader.maxDoc()); //assume all are INvalid
-		Term startTerm=new Term(fieldName,"");
+		Term startTerm=new Term(fieldName);
 		TermEnum te = reader.terms(startTerm);
 		if(te!=null)
 		{
@@ -123,7 +123,7 @@ public class DuplicateFilter extends Filter
 		
     OpenBitSet bits=new OpenBitSet(reader.maxDoc());
 		bits.set(0,reader.maxDoc()); //assume all are valid
-		Term startTerm=new Term(fieldName,"");
+		Term startTerm=new Term(fieldName);
 		TermEnum te = reader.terms(startTerm);
 		if(te!=null)
 		{
