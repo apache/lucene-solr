@@ -796,6 +796,22 @@ public class QueryComponent extends SearchComponent
     public boolean isLazy() {
       return false;
     }
+
+    public int getBinaryOffset() {
+      return 0;
+    }
+
+    public int getBinaryLength() {
+      return 0;
+    }
+
+    public byte[] getBinaryValue() {
+      return new byte[0];
+    }
+
+    public byte[] getBinaryValue(byte[] result) {
+      return new byte[0];
+    }
   }
 
 

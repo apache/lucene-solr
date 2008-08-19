@@ -108,12 +108,46 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
         do_persist = cores.isPersistent();
         break;
       }
-      
+
+      case RENAME: {
+        String name = params.get(CoreAdminParams.OTHER);
+        if (cname.equals(name)) break;
+
+        SolrCore core = cores.getCore(cname);
+        if (core != null) {
+          do_persist = cores.isPersistent();          
+          cores.register(name, core, false);
+          cores.remove(cname);
+          core.close();
+        }
+        break;
+      }
+
+      case ALIAS: {
+        String name = params.get(CoreAdminParams.OTHER);
+        if (cname.equals(name)) break;
+        
+        SolrCore core = cores.getCore(cname);
+        if (core != null) {
+          do_persist = cores.isPersistent();
+          cores.register(name, core, false);
+          // no core.close() since each entry in the cores map should increase the ref
+        }
+        break;
+      }
+
+      case UNLOAD: {
+        SolrCore core = cores.remove(cname);
+        core.close();
+        do_persist = cores.isPersistent();
+        break;
+      }
+
       case STATUS: {
         NamedList<Object> status = new SimpleOrderedMap<Object>();
         if( cname == null ) {
-          for (SolrCore core : cores.getCores()) {
-            status.add(core.getName(), getCoreStatus( cores, cname  ) );
+          for (String name : cores.getCoreNames()) {
+            status.add(name, getCoreStatus( cores, name  ) );
           }
         } 
         else {
@@ -138,8 +172,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
 
       case SWAP: {
         do_persist = params.getBool(CoreAdminParams.PERSISTENT, cores.isPersistent());
-        String with = required.get( CoreAdminParams.WITH );
-        cores.swap( cname, with );
+        String other = required.get( CoreAdminParams.OTHER );
+        cores.swap( cname, other );
         break;
       } 
 
@@ -156,7 +190,7 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
     }
   }
   
-  private static NamedList<Object> getCoreStatus( CoreContainer cores, String cname ) throws IOException
+  private static NamedList<Object> getCoreStatus(CoreContainer cores, String cname ) throws IOException
   {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     SolrCore core = cores.getCore(cname);

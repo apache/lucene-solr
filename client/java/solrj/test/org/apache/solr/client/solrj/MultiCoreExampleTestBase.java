@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 
 
 /**
@@ -34,8 +35,9 @@ import org.apache.solr.core.CoreContainer;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  protected static final CoreContainer cores = new CoreContainer();
-  
+  // protected static final CoreContainer cores = new CoreContainer();
+  protected static CoreContainer cores;
+
   @Override public String getSolrHome() { return "../../../example/multicore/"; }
   
   @Override public String getSchemaFile()     { return getSolrHome()+"core0/conf/schema.xml";     }
@@ -43,6 +45,9 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   
   @Override public void setUp() throws Exception {
     super.setUp();
+    cores = h.getCoreContainer();
+SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
+    cores.setPersistent(false);
   }
 
   @Override
@@ -60,6 +65,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   protected abstract SolrServer getSolrCore0();
   protected abstract SolrServer getSolrCore1();
   protected abstract SolrServer getSolrAdmin();
+  protected abstract SolrServer getSolrCore(String name);
   
 
   public void testMultiCore() throws Exception
@@ -114,7 +120,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     assertEquals( 0, getSolrCore1().query( new SolrQuery( "id:AAA" ) ).getResults().size() );
     assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-  
+
     // Now test reloading it should have a newer open time
     String name = "core0";
     SolrServer coreadmin = getSolrAdmin();
@@ -125,5 +131,33 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     mcr = CoreAdminRequest.getStatus( name, coreadmin );
     long after = mcr.getStartTime( name ).getTime();
     assertTrue( "should have more recent time: "+after+","+before, after > before );
+
+    // test alias
+    CoreAdminRequest.aliasCore("core1","corefoo",coreadmin);
+    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+    assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+
+    // test close
+    CoreAdminRequest.unloadCore("corefoo",coreadmin);
+    try {
+      getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) );
+      fail( "corefoo should be gone" );
+    }
+    catch( Exception ex ) {}
+    // aliased core should still work
+    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+    
+    // test move
+    CoreAdminRequest.renameCore("core1","corea",coreadmin);
+    CoreAdminRequest.renameCore("corea","coreb",coreadmin);
+    CoreAdminRequest.renameCore("coreb","corec",coreadmin);
+    CoreAdminRequest.renameCore("corec","cored",coreadmin);
+    CoreAdminRequest.renameCore("cored","corefoo",coreadmin);
+    try {
+      getSolrCore("core1").query( new SolrQuery( "id:BBB" ) );
+      fail( "core1 should be gone" );
+    }
+    catch( Exception ex ) {}
+    assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
   }
 }

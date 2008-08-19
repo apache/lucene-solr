@@ -39,11 +39,12 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
   @Override public void setUp() throws Exception 
   {    
     super.setUp();
-    
+
     jetty = new JettySolrRunner( context, 0 );
     jetty.start();
     port = jetty.getLocalPort();
-    
+
+    h.getCoreContainer().setPersistent(false);    
   }
 
   @Override public void tearDown() throws Exception 
@@ -52,6 +53,12 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty.stop();  // stop the server
   }
   
+
+  @Override
+  protected SolrServer getSolrCore(String name)
+  {
+    return createServer(name);
+  }
 
   @Override
   protected SolrServer getSolrCore0()

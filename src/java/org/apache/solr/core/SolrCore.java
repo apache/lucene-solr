@@ -642,8 +642,11 @@ public final class SolrCore implements SolrInfoMBean {
       return refCount.get() <= 0;
   }
   
-  // this can cause an extra close
-  // protected void finalize() { close(); }
+  protected void finalize() {
+    if (getOpenCount() != 0) {
+      log.severe("REFCOUNT ERROR: unreferenced " + this + " (" + getName() + ") has a reference count of " + getOpenCount());
+    }
+  }
 
   private List<CloseHook> closeHooks = null;
 
@@ -1431,11 +1434,11 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 
   public URL[] getDocs() {

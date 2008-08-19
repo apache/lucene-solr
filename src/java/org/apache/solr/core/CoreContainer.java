@@ -505,6 +505,8 @@ public class CoreContainer
 
   /** Persists the cores config file in a user provided file. */
   public void persistFile(File file) {
+    log.info("Persisting cores config to " + (file==null ? configFile : file));
+
     File tmpFile = null;
     try {
       // write in temp first

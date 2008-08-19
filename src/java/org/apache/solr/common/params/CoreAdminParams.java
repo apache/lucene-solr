@@ -28,13 +28,13 @@ public interface CoreAdminParams
 
   /** Persistent -- should it save the cores state? **/
   public final static String PERSISTENT = "persistent";
-
-  /** The name of the the core to swap names with **/
-  public final static String WITH = "with";
   
   /** If you rename something, what is the new name **/
   public final static String NAME = "name";
-  
+
+  /** Name of the other core in actions involving 2 cores **/
+  public final static String OTHER = "other";
+
   /** What action **/
   public final static String ACTION = "action";
   
@@ -53,9 +53,10 @@ public interface CoreAdminParams
     UNLOAD,
     RELOAD,
     CREATE,
-    DROP,
     PERSIST,
-    SWAP;
+    SWAP,
+    RENAME,
+    ALIAS;
     
     public static CoreAdminAction get( String p )
     {

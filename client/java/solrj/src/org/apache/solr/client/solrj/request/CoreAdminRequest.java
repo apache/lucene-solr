@@ -31,13 +31,14 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.ContentStream;
 
 /**
- * 
+ * This class is experimental and subject to change.
  * @version $Id: CoreAdminRequest.java 606335 2007-12-21 22:23:39Z ryan $
  * @since solr 1.3
  */
 public class CoreAdminRequest extends SolrRequest
 {
   protected String core = null;
+  protected String other = null;
   protected CoreAdminParams.CoreAdminAction action = null;
   
   //a create core request
@@ -87,9 +88,14 @@ public class CoreAdminRequest extends SolrRequest
     super( METHOD.GET, path );
   }
 
-  public final void setCoreParam( String v )
+  public final void setCoreName( String coreName )
   {
-    this.core = v;
+    this.core = coreName;
+  }
+
+  public final void setOtherCoreName( String otherCoreName )
+  {
+    this.other = otherCoreName;
   }
   
   //---------------------------------------------------------------------------------------
@@ -114,6 +120,9 @@ public class CoreAdminRequest extends SolrRequest
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set( CoreAdminParams.ACTION, action.toString() );
     params.set( CoreAdminParams.CORE, core );
+    if (other != null) {
+      params.set(CoreAdminParams.OTHER, other);
+    }
     return params;
   }
 
@@ -143,15 +152,41 @@ public class CoreAdminRequest extends SolrRequest
   public static CoreAdminResponse reloadCore( String name, SolrServer server ) throws SolrServerException, IOException
   {
     CoreAdminRequest req = new CoreAdminRequest();
-    req.setCoreParam( name );
+    req.setCoreName( name );
     req.setAction( CoreAdminAction.RELOAD );
+    return req.process( server );
+  }
+
+  public static CoreAdminResponse unloadCore( String name, SolrServer server ) throws SolrServerException, IOException
+  {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setCoreName( name );
+    req.setAction( CoreAdminAction.UNLOAD );
+    return req.process( server );
+  }  
+
+  public static CoreAdminResponse renameCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
+  {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setCoreName(coreName);
+    req.setOtherCoreName(newName);
+    req.setAction( CoreAdminAction.RENAME );
+    return req.process( server );
+  }
+
+  public static CoreAdminResponse aliasCore(String coreName, String newName, SolrServer server ) throws SolrServerException, IOException
+  {
+    CoreAdminRequest req = new CoreAdminRequest();
+    req.setCoreName(coreName);
+    req.setOtherCoreName(newName);
+    req.setAction( CoreAdminAction.ALIAS );
     return req.process( server );
   }
 
   public static CoreAdminResponse getStatus( String name, SolrServer server ) throws SolrServerException, IOException
   {
     CoreAdminRequest req = new CoreAdminRequest();
-    req.setCoreParam( name );
+    req.setCoreName( name );
     req.setAction( CoreAdminAction.STATUS );
     return req.process( server );
   }
@@ -159,7 +194,7 @@ public class CoreAdminRequest extends SolrRequest
   public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server ) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-    req.setCoreParam( name );
+    req.setCoreName( name );
     req.setInstanceDir(instanceDir);
     return req.process( server );
   }
