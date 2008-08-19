@@ -44,6 +44,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _facetInfo = null;
   private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
+  private NamedList<Object> _spellInfo = null;
 
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
@@ -53,6 +54,9 @@ public class QueryResponse extends SolrResponseBase
 
   // Highlight Info
   private Map<String,Map<String,List<String>>> _highlighting = null;
+
+  // SpellCheck Response
+  private SpellCheckResponse _spellResponse = null;
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
@@ -102,9 +106,17 @@ public class QueryResponse extends SolrResponseBase
         _highlightingInfo = (NamedList<Object>) res.getVal( i );
         extractHighlightingInfo( _highlightingInfo );
       }
+      else if ( "spellcheck".equals( n ) )  {
+        _spellInfo = (NamedList<Object>) res.getVal( i );
+        extractSpellCheckInfo( _spellInfo );
+      }
     }
   }
-    
+
+  private void extractSpellCheckInfo(NamedList<Object> spellInfo) {
+    _spellResponse = new SpellCheckResponse(spellInfo);
+  }
+
   private void extractDebugInfo( NamedList<Object> debug )
   {
     _debugMap = new LinkedHashMap<String, Object>(); // keep the order
@@ -232,6 +244,10 @@ public class QueryResponse extends SolrResponseBase
 
   public Map<String, Map<String, List<String>>> getHighlighting() {
     return _highlighting;
+  }
+
+  public SpellCheckResponse getSpellCheckResponse() {
+    return _spellResponse;
   }
 
   public List<FacetField> getFacetFields() {

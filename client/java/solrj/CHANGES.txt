@@ -43,6 +43,8 @@ Changes in runtime behavior
  5. SOLR-476: CommonsHttpSolrServer can set the ResponseParser on a per 
     request basis.  (Grant Ingersoll, ryan)
 
+ 6. SOLR-430: Added support for reading SpellCheckComponent's responses. (shalin)
+
 Bug Fixes
 
 Other Changes
