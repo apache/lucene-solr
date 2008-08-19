@@ -93,6 +93,7 @@ public class FunctionQuery extends Query {
     final float qWeight;
     int doc=-1;
     final DocValues vals;
+    final boolean hasDeletions;
 
     public AllScorer(Similarity similarity, IndexReader reader, FunctionWeight w) throws IOException {
       super(similarity);
@@ -100,6 +101,7 @@ public class FunctionQuery extends Query {
       this.qWeight = w.getValue();
       this.reader = reader;
       this.maxDoc = reader.maxDoc();
+      this.hasDeletions = reader.hasDeletions();
       vals = func.getValues(reader);
     }
 
@@ -113,7 +115,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return false;
         }
-        if (reader.isDeleted(doc)) continue;
+        if (hasDeletions && reader.isDeleted(doc)) continue;
         // todo: maybe allow score() to throw a specific exception
         // and continue on to the next document if it is thrown...
         // that may be useful, but exceptions aren't really good
