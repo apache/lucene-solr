@@ -29,7 +29,7 @@
     <version>@maven_version@</version>
   </parent>
 
-  <groupId>org.apache.lucene.solr</groupId>
+  <groupId>org.apache.solr</groupId>
   <artifactId>solr-dataimporthandler</artifactId>
   <name>Apache Solr DataImportHandler</name>
   <version>@maven_version@</version>

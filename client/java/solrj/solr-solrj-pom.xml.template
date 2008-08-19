@@ -29,7 +29,7 @@
     <version>@maven_version@</version>
   </parent>
 
-  <groupId>org.apache.lucene.solr</groupId>
+  <groupId>org.apache.solr</groupId>
   <artifactId>solr-solrj</artifactId>
   <name>Apache Solr Solrj</name>
   <version>@maven_version@</version>
@@ -40,7 +40,7 @@
 
     <!-- Solr -->
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-common</artifactId>
       <version>@maven_version@</version>
     </dependency>
