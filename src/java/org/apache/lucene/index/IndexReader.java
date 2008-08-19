@@ -1024,9 +1024,8 @@ public abstract class IndexReader {
    *  one commit point.  But if you're using a custom {@link
    *  IndexDeletionPolicy} then there could be many commits.
    *  Once you have a given commit, you can open a reader on
-   *  it by calling {@link IndexReader#open(Directory,
-   *  boolean, IndexDeletionPolicy,
-   *  IndexCommit)}.  There must be at least one commit in
+   *  it by calling {@link IndexReader#open(IndexCommit)}
+   *  There must be at least one commit in
    *  the Directory, else this method throws {@link
    *  java.io.IOException}.  Note that if a commit is in
    *  progress while this method is running, that commit
