@@ -24,7 +24,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.lucene.solr</groupId>
+    <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
     <version>@maven_version@</version>
   </parent>

@@ -23,11 +23,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache.lucene.solr</groupId>
+    <groupId>org.apache.solr</groupId>
     <artifactId>solr-lucene-contrib</artifactId>
     <version>@maven_version@</version>
   </parent>
-  <groupId>org.apache.lucene.solr</groupId>
+  <groupId>org.apache.solr</groupId>
   <artifactId>solr-lucene-spellchecker</artifactId>
   <name>Solr Specific Lucene Spellchecker</name>
   <version>@maven_version@</version>

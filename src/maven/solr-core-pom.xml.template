@@ -24,12 +24,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.lucene.solr</groupId>
+    <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
     <version>@maven_version@</version>
   </parent>
 
-  <groupId>org.apache.lucene.solr</groupId>
+  <groupId>org.apache.solr</groupId>
   <artifactId>solr-core</artifactId>
   <name>Apache Solr Core</name>
   <version>@maven_version@</version>
@@ -40,39 +40,39 @@
 
     <!-- Solr -->
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-common</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
       <version>@maven_version@</version>
     </dependency>
 
     <!-- Solr Specific Lucene -->
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-lucene-analyzers</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-lucene-highlighter</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-lucene-queries</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-lucene-snowball</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-lucene-spellchecker</artifactId>
       <version>@maven_version@</version>
     </dependency>
@@ -101,7 +101,7 @@
 
     <!-- Solr specific commons csv -->
     <dependency>
-      <groupId>org.apache.lucene.solr</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-commons-csv</artifactId>
       <version>@maven_version@</version>
     </dependency>

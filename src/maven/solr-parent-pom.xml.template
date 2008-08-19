@@ -29,7 +29,7 @@
     <version>4</version>
   </parent>
 
-  <groupId>org.apache.lucene.solr</groupId>
+  <groupId>org.apache.solr</groupId>
   <artifactId>solr-parent</artifactId>
   <name>Apache Solr Parent POM</name>
   <version>@maven_version@</version>
