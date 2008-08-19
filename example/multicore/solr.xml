@@ -22,7 +22,7 @@
   persistent: Save changes made via the API to this file
   sharedLib: path to a lib directory that will be shared across all cores
 -->
-<solr persistent="true">
+<solr persistent="false">
 
   <!--
   adminPath: RequestHandler path to manage cores.  
