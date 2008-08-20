@@ -118,6 +118,16 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
+   * Removes the name/value pair at the specified index.
+   * @return the value at the index removed
+   */
+  public T remove(int idx) {
+    int index = (idx<<1);
+    nvPairs.remove(index);
+    return (T)nvPairs.remove(index);  // same index, as things shifted in previous remove
+  }
+
+  /**
    * Scans the list sequentially beginning at the specified index and
    * returns the index of the first pair with the specified name.
    *
