@@ -31,7 +31,7 @@
   org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
   if( cores != null
    && cores.getCores().size() > 0 // HACK! check that we have valid names...
-   && cores.getCores().iterator().next().getName() != null ) { 
+   && cores.getCores().iterator().next().getName().length() != 0 ) { 
     for( org.apache.solr.core.SolrCore core : cores.getCores() ) {%>
 <a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %></a><br/>
 <% }} else { %>
