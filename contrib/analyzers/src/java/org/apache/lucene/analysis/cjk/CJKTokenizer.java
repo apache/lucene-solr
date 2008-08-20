@@ -26,7 +26,7 @@ import java.io.Reader;
 /**
  * CJKTokenizer was modified from StopTokenizer which does a decent job for
  * most European languages. It performs other token methods for double-byte
- * Characters: the token will return at each two charactors with overlap match.<br>
+ * Characters: the token will return at each two characters with overlap match.<br>
  * Example: "java C1C2C3C4" will be segment to: "java" "C1C2" "C2C3" "C3C4" it
  * also need filter filter zero length token ""<br>
  * for Digit: digit, '+', '#' will token as letter<br>
@@ -96,24 +96,26 @@ public final class CJKTokenizer extends Tokenizer {
      * See http://java.sun.com/j2se/1.3/docs/api/java/lang/Character.UnicodeBlock.html
      * for detail.
      *
+     * @param reusableToken a reusable token
      * @return Token
      *
      * @throws java.io.IOException - throw IOException when read error <br>
-     *         hanppened in the InputStream
+     *         happened in the InputStream
      *
      */
-    public final Token next() throws java.io.IOException {
+    public final Token next(final Token reusableToken) throws java.io.IOException {
         /** how many character(s) has been stored in buffer */
+        assert reusableToken != null;
         int length = 0;
 
         /** the position used to create Token */
         int start = offset;
 
         while (true) {
-            /** current charactor */
+            /** current character */
             char c;
 
-            /** unicode block of current charactor for detail */
+            /** unicode block of current character for detail */
             Character.UnicodeBlock ub;
 
             offset++;
@@ -198,7 +200,7 @@ public final class CJKTokenizer extends Tokenizer {
                     }
                 }
             } else {
-                // non-ASCII letter, eg."C1C2C3C4"
+                // non-ASCII letter, e.g."C1C2C3C4"
                 if (Character.isLetter(c)) {
                     if (length == 0) {
                         start = offset - 1;
@@ -236,8 +238,6 @@ public final class CJKTokenizer extends Tokenizer {
             }
         }
 
-        return new Token(new String(buffer, 0, length), start, start + length,
-                         tokenType
-                        );
+        return reusableToken.reinit(buffer, 0, length, start, start+length, tokenType);
     }
 }

@@ -47,7 +47,7 @@ public class ShingleFilter extends TokenFilter {
   /**
    * filler token for when positionIncrement is more than 1
    */
-  public static final String FILLER_TOKEN = "_";
+  public static final char[] FILLER_TOKEN = { '_' };
 
 
   /**
@@ -150,11 +150,12 @@ public class ShingleFilter extends TokenFilter {
   }
 
   /* (non-Javadoc)
-	 * @see org.apache.lucene.analysis.TokenStream#next()
-	 */
-  public Token next() throws IOException {
+   * @see org.apache.lucene.analysis.TokenStream#next()
+   */
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (outputBuf.isEmpty()) {
-      fillOutputBuf();
+      fillOutputBuf(reusableToken);
     }
     Token nextToken = null;
     if ( ! outputBuf.isEmpty())
@@ -173,16 +174,19 @@ public class ShingleFilter extends TokenFilter {
    * @return the next token, or null if at end of input stream
    * @throws IOException if the input stream has a problem
    */
-  private Token getNextToken() throws IOException {
+  private Token getNextToken(final Token reusableToken) throws IOException {
     if (tokenBuf.isEmpty()) {
-      Token lastToken = input.next();
-      if (lastToken != null) {
-        for (int i = 1; i < lastToken.getPositionIncrement(); i++) {
-          tokenBuf.add(new Token(FILLER_TOKEN, lastToken.startOffset(),
-                                 lastToken.startOffset()));
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null) {
+        for (int i = 1; i < nextToken.getPositionIncrement(); i++) {
+          Token fillerToken = (Token) nextToken.clone();
+          // A filler token occupies no space
+          fillerToken.setEndOffset(fillerToken.startOffset());
+          fillerToken.setTermBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+          tokenBuf.add(fillerToken);
         }
-        tokenBuf.add(lastToken);
-        return getNextToken();
+        tokenBuf.add(nextToken.clone());
+        return getNextToken(nextToken);
       } else {
         return null;
       }
@@ -196,15 +200,15 @@ public class ShingleFilter extends TokenFilter {
    *
    * @throws IOException if there's a problem getting the next token
    */
-  private void fillOutputBuf() throws IOException {
+  private void fillOutputBuf(Token token) throws IOException {
     boolean addedToken = false;
     /*
      * Try to fill the shingle buffer.
      */
     do {
-      Token token = getNextToken();
+      token = getNextToken(token);
       if (token != null) {
-        shingleBuf.add(token);
+        shingleBuf.add(token.clone());
         if (shingleBuf.size() > maxShingleSize)
         {
           shingleBuf.remove(0);
@@ -235,17 +239,17 @@ public class ShingleFilter extends TokenFilter {
     }
 
     int i = 0;
-    Token token = null;
+    Token shingle = null;
     for (Iterator it = shingleBuf.iterator(); it.hasNext(); ) {
-      token = (Token) it.next();
+      shingle = (Token) it.next();
       for (int j = i; j < shingles.length; j++) {
         if (shingles[j].length() != 0) {
           shingles[j].append(TOKEN_SEPARATOR);
         }
-        shingles[j].append(token.termBuffer(), 0, token.termLength());
+        shingles[j].append(shingle.termBuffer(), 0, shingle.termLength());
       }
 
-      endOffsets[i] = token.endOffset();
+      endOffsets[i] = shingle.endOffset();
       i++;
     }
 
@@ -258,17 +262,26 @@ public class ShingleFilter extends TokenFilter {
     /*
      * Push new tokens to the output buffer.
      */
+    if (!shingleBuf.isEmpty()) {
+      Token firstShingle = (Token) shingleBuf.get(0);
+      shingle = (Token) firstShingle.clone();
+      shingle.setType(tokenType);
+    }
     for (int j = 1; j < shingleBuf.size(); j++) {
-      Token shingle = new Token(shingles[j].toString(),
-                                ((Token) shingleBuf.get(0)).startOffset(),
-                                endOffsets[j],
-                                tokenType);
+      shingle.setEndOffset(endOffsets[j]);
+      StringBuffer buf = shingles[j];
+      int termLength = buf.length();
+      char[] termBuffer = shingle.termBuffer();
+      if (termBuffer.length < termLength)
+        termBuffer = shingle.resizeTermBuffer(termLength);
+      buf.getChars(0, termLength, termBuffer, 0);
+      shingle.setTermLength(termLength);
       if ((! outputUnigrams) && j == 1) {
         shingle.setPositionIncrement(1);
       } else {
         shingle.setPositionIncrement(0);
       }
-      outputBuf.add(shingle);
+      outputBuf.add(shingle.clone());
     }
   }
 }

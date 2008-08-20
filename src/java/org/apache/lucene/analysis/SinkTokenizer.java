@@ -22,11 +22,11 @@ public class SinkTokenizer extends Tokenizer {
   }
 
   public SinkTokenizer() {
-    this.lst = new ArrayList();
+    this.lst = new ArrayList/*<Token>*/();
   }
 
   public SinkTokenizer(int initCap){
-    this.lst = new ArrayList(initCap);
+    this.lst = new ArrayList/*<Token>*/(initCap);
   }
 
   /**
@@ -35,6 +35,8 @@ public class SinkTokenizer extends Tokenizer {
    * WARNING: Adding tokens to this list requires the {@link #reset()} method to be called in order for them
    * to be made available.  Also, this Tokenizer does nothing to protect against {@link java.util.ConcurrentModificationException}s
    * in the case of adds happening while {@link #next(org.apache.lucene.analysis.Token)} is being called.
+   * <p/>
+   * WARNING: Since this SinkTokenizer can be reset and the cached tokens made available again, do not modify them. Modify clones instead.
    *
    * @return A List of {@link org.apache.lucene.analysis.Token}s
    */
@@ -47,9 +49,15 @@ public class SinkTokenizer extends Tokenizer {
    * @return The next {@link org.apache.lucene.analysis.Token} in the Sink.
    * @throws IOException
    */
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (iter == null) iter = lst.iterator();
-    return iter.hasNext() ? (Token) iter.next() : null;
+    // Since this TokenStream can be reset we have to maintain the tokens as immutable
+    if (iter.hasNext()) {
+      Token nextToken = (Token) iter.next();
+      return (Token) nextToken.clone();
+    }
+    return null;
   }
 
 

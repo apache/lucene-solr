@@ -105,17 +105,18 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     return dict;
   }
   
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (tokens.size() > 0) {
       return (Token)tokens.removeFirst();
     }
 
-    Token token = input.next();
-    if (token == null) {
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null) {
       return null;
     }
 
-    decompose(token);
+    decompose(nextToken);
 
     if (tokens.size() > 0) {
       return (Token)tokens.removeFirst();
@@ -145,17 +146,15 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   
   protected final Token createToken(final int offset, final int length,
       final Token prototype) {
-    Token t = new Token(prototype.startOffset() + offset, prototype
-        .startOffset()
-        + offset + length, prototype.type());
-    t.setTermBuffer(prototype.termBuffer(), offset, length);
+    int newStart = prototype.startOffset() + offset;
+    Token t = prototype.clone(prototype.termBuffer(), offset, length, newStart, newStart+length);
     t.setPositionIncrement(0);
     return t;
   }
 
   protected void decompose(final Token token) {
     // In any case we give the original token back
-    tokens.add(token);
+    tokens.add((Token) token.clone());
 
     // Only words longer than minWordSize get processed
     if (token.termLength() < this.minWordSize) {

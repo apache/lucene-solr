@@ -32,33 +32,40 @@ public class TestPrefixAwareTokenFilter extends TestCase {
     PrefixAwareTokenFilter ts;
 
     ts = new PrefixAwareTokenFilter(
-        new SingleTokenTokenStream(new Token("a", 0, 1)),
-        new SingleTokenTokenStream(new Token("b", 0, 1)));
-    assertNext(ts, "a", 0, 1);
-    assertNext(ts, "b", 1, 2);
-    assertNull(ts.next());
+        new SingleTokenTokenStream(createToken("a", 0, 1)),
+        new SingleTokenTokenStream(createToken("b", 0, 1)));
+    final Token reusableToken = new Token();
+    assertNext(ts, reusableToken, "a", 0, 1);
+    assertNext(ts, reusableToken, "b", 1, 2);
+    assertNull(ts.next(reusableToken));
 
 
     // prefix and suffix using 2x prefix
 
-    ts = new PrefixAwareTokenFilter(new SingleTokenTokenStream(new Token("^", 0, 0)), new WhitespaceTokenizer(new StringReader("hello world")));
-    ts = new PrefixAwareTokenFilter(ts, new SingleTokenTokenStream(new Token("$", 0, 0)));
+    ts = new PrefixAwareTokenFilter(new SingleTokenTokenStream(createToken("^", 0, 0)), new WhitespaceTokenizer(new StringReader("hello world")));
+    ts = new PrefixAwareTokenFilter(ts, new SingleTokenTokenStream(createToken("$", 0, 0)));
 
-    assertNext(ts, "^", 0, 0);
-    assertNext(ts, "hello", 0, 5);
-    assertNext(ts, "world", 6, 11);
-    assertNext(ts, "$", 11, 11);
-    assertNull(ts.next());
+    assertNext(ts, reusableToken, "^", 0, 0);
+    assertNext(ts, reusableToken, "hello", 0, 5);
+    assertNext(ts, reusableToken, "world", 6, 11);
+    assertNext(ts, reusableToken, "$", 11, 11);
+    assertNull(ts.next(reusableToken));
   }
 
 
-  private Token assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    Token token = ts.next();
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    assertEquals(startOffset, token.startOffset());
-    assertEquals(endOffset, token.endOffset());
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int startOffset, int endOffset) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    assertEquals(startOffset, nextToken.startOffset());
+    assertEquals(endOffset, nextToken.endOffset());
+    return nextToken;
+  }
+
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
     return token;
   }
-
 }

@@ -153,15 +153,16 @@ public class TestCompoundWordTokenFilter extends TestCase {
 
   private void assertFiltersTo(TokenFilter tf, String[] s, int[] startOffset,
       int[] endOffset, int[] posIncr) throws Exception {
+    final Token reusableToken = new Token();
     for (int i = 0; i < s.length; ++i) {
-      Token t = tf.next();
-      assertNotNull(t);
-      assertEquals(s[i], new String(t.termBuffer(), 0, t.termLength()));
-      assertEquals(startOffset[i], t.startOffset());
-      assertEquals(endOffset[i], t.endOffset());
-      assertEquals(posIncr[i], t.getPositionIncrement());
+      Token nextToken = tf.next(reusableToken);
+      assertNotNull(nextToken);
+      assertEquals(s[i], nextToken.term());
+      assertEquals(startOffset[i], nextToken.startOffset());
+      assertEquals(endOffset[i], nextToken.endOffset());
+      assertEquals(posIncr[i], nextToken.getPositionIncrement());
     }
-    assertNull(tf.next());
+    assertNull(tf.next(reusableToken));
   }
 
   private void getHyphenationPatternFileContents() {

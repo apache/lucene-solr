@@ -73,10 +73,10 @@ public class DateRecognizerSinkTokenizer extends SinkTokenizer {
     //Check to see if this token is a date
     if (t != null) {
       try {
-        Date date = dateFormat.parse(new String(t.termBuffer(), 0, t.termLength()));//We don't care about the date, just that we can parse it as a date
+        Date date = dateFormat.parse(t.term());//We don't care about the date, just that we can parse it as a date
         if (date != null) {
           t.setType(DATE_TYPE);
-          lst.add(t.clone());
+          super.add(t);
         }
       } catch (ParseException e) {
 

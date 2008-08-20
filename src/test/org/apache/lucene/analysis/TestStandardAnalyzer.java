@@ -35,18 +35,19 @@ public class TestStandardAnalyzer extends LuceneTestCase {
 
   public void assertAnalyzesTo(Analyzer a, String input, String[] expectedImages, String[] expectedTypes, int[] expectedPosIncrs) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+    final Token reusableToken = new Token();
     for (int i = 0; i < expectedImages.length; i++) {
-      Token t = ts.next();
-      assertNotNull(t);
-      assertEquals(expectedImages[i], t.termText());
+      Token nextToken = ts.next(reusableToken);
+      assertNotNull(nextToken);
+      assertEquals(expectedImages[i], nextToken.term());
       if (expectedTypes != null) {
-        assertEquals(expectedTypes[i], t.type());
+        assertEquals(expectedTypes[i], nextToken.type());
       }
       if (expectedPosIncrs != null) {
-        assertEquals(expectedPosIncrs[i], t.getPositionIncrement());
+        assertEquals(expectedPosIncrs[i], nextToken.getPositionIncrement());
       }
     }
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
     ts.close();
   }
 

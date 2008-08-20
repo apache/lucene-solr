@@ -61,7 +61,7 @@ public class TokenGroup
           tot+=score;
         }
       }
-			tokens[numTokens]=token;
+			tokens[numTokens]= (Token) token.clone();
 			scores[numTokens]=score;
 			numTokens++;
         }

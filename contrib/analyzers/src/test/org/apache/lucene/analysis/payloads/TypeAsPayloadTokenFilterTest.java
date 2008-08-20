@@ -44,14 +44,14 @@ public class TypeAsPayloadTokenFilterTest extends TestCase {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
     TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))));
-    Token tok = new Token();
     int count = 0;
-    while ((tok = nptf.next(tok)) != null){
-      assertTrue(tok.type() + " is not null and it should be", tok.type().equals(String.valueOf(Character.toUpperCase(tok.termBuffer()[0]))));
-      assertTrue("tok.getPayload() is null and it shouldn't be", tok.getPayload() != null);
-      String type = new String(tok.getPayload().getData(), "UTF-8");
+    final Token reusableToken = new Token();
+    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
+      assertTrue(nextToken.type() + " is not null and it should be", nextToken.type().equals(String.valueOf(Character.toUpperCase(nextToken.termBuffer()[0]))));
+      assertTrue("nextToken.getPayload() is null and it shouldn't be", nextToken.getPayload() != null);
+      String type = new String(nextToken.getPayload().getData(), "UTF-8");
       assertTrue("type is null and it shouldn't be", type != null);
-      assertTrue(type + " is not equal to " + tok.type(), type.equals(tok.type()) == true);
+      assertTrue(type + " is not equal to " + nextToken.type(), type.equals(nextToken.type()) == true);
       count++;
     }
     assertTrue(count + " does not equal: " + 10, count == 10);
@@ -64,12 +64,13 @@ public class TypeAsPayloadTokenFilterTest extends TestCase {
 
 
 
-    public Token next(Token result) throws IOException {
-      result = input.next(result);
-      if (result != null) {
-        result.setType(String.valueOf(Character.toUpperCase(result.termBuffer()[0])));
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null) {
+        nextToken.setType(String.valueOf(Character.toUpperCase(nextToken.termBuffer()[0])));
       }
-      return result;
+      return nextToken;
     }
   }
 

@@ -334,7 +334,8 @@ public class PatternAnalyzer extends Analyzer {
       this.toLowerCase = toLowerCase;
     }
 
-    public Token next() {
+    public Token next(final Token reusableToken) {
+      assert reusableToken != null;
       if (matcher == null) return null;
       
       while (true) { // loop takes care of leading and trailing boundary cases
@@ -352,7 +353,7 @@ public class PatternAnalyzer extends Analyzer {
         if (start != end) { // non-empty match (header/trailer)
           String text = str.substring(start, end);
           if (toLowerCase) text = text.toLowerCase(locale);
-          return new Token(text, start, end);
+          return reusableToken.reinit(text, start, end);
         }
         if (!isMatch) return null;
       }
@@ -384,7 +385,8 @@ public class PatternAnalyzer extends Analyzer {
       this.stopWords = stopWords;
     }
 
-    public Token next() {
+    public Token next(final Token reusableToken) {
+      assert reusableToken != null;
       // cache loop instance vars (performance)
       String s = str;
       int len = s.length();
@@ -422,7 +424,11 @@ public class PatternAnalyzer extends Analyzer {
       } while (text != null && isStopWord(text));
       
       pos = i;
-      return text != null ? new Token(text, start, i) : null;
+      if (text == null)
+      {
+        return null;
+      }
+      return reusableToken.reinit(text, start, i);
     }
     
     private boolean isTokenChar(char c, boolean isLetter) {

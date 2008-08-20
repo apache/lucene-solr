@@ -39,11 +39,12 @@ public class TypeAsPayloadTokenFilter extends TokenFilter {
   }
 
 
-  public Token next(Token result) throws IOException {
-    result = input.next(result);
-    if (result != null && result.type() != null && result.type().equals("") == false){
-      result.setPayload(new Payload(result.type().getBytes("UTF-8")));
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken != null && nextToken.type() != null && nextToken.type().equals("") == false){
+      nextToken.setPayload(new Payload(nextToken.type().getBytes("UTF-8")));
     }
-    return result;
+    return nextToken;
   }
 }

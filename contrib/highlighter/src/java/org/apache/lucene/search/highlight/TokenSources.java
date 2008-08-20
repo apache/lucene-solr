@@ -147,8 +147,9 @@ public class TokenSources
             {
                 this.tokens=tokens;
             }
-            public Token next()
+            public Token next(final Token reusableToken)
             {
+                assert reusableToken != null;
                 if(currentToken>=tokens.length)
                 {
                     return null;
@@ -160,6 +161,7 @@ public class TokenSources
         String[] terms=tpv.getTerms();          
         int[] freq=tpv.getTermFrequencies();
         int totalTokens=0;
+        Token newToken = new Token();
         for (int t = 0; t < freq.length; t++)
         {
             totalTokens+=freq[t];
@@ -189,9 +191,8 @@ public class TokenSources
                 }
                 for (int tp = 0; tp < offsets.length; tp++)
                 {
-                    unsortedTokens.add(new Token(terms[t],
-                        offsets[tp].getStartOffset(),
-                        offsets[tp].getEndOffset()));
+                  newToken.reinit(terms[t], offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
+                  unsortedTokens.add(newToken.clone());
                 }
             }
             else
@@ -204,9 +205,8 @@ public class TokenSources
                 //tokens stored with positions - can use this to index straight into sorted array
                 for (int tp = 0; tp < pos.length; tp++)
                 {
-                    tokensInOriginalOrder[pos[tp]]=new Token(terms[t],
-                            offsets[tp].getStartOffset(),
-                            offsets[tp].getEndOffset());
+                  newToken.reinit(terms[t], offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
+                  tokensInOriginalOrder[pos[tp]] = (Token) newToken.clone();
                 }                
             }
         }
@@ -261,7 +261,7 @@ public class TokenSources
 		}
         return getTokenStream(field, contents, analyzer);
   }
-  //conevenience method
+  //convenience method
   public static TokenStream getTokenStream(String field, String contents, Analyzer analyzer){
     return analyzer.tokenStream(field,new StringReader(contents));
   }

@@ -41,30 +41,34 @@ public class PrefixAwareTokenFilter extends TokenStream {
     prefixExhausted = false;
   }
 
-  private CopyableToken previousPrefixToken = new CopyableToken();
+  private Token previousPrefixToken = new Token();
 
   private boolean prefixExhausted;
 
-  public Token next(Token result) throws IOException {
-
-    Token buf = result;
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
 
     if (!prefixExhausted) {
-      result = prefix.next(result);
-      if (result == null) {
+      Token nextToken = prefix.next(reusableToken);
+      if (nextToken == null) {
         prefixExhausted = true;
       } else {
-        previousPrefixToken.copyFrom(result);        
-        return result;
+        previousPrefixToken.reinit(nextToken);
+        // Make it a deep copy
+        Payload p = previousPrefixToken.getPayload();
+        if (p != null) {
+          previousPrefixToken.setPayload((Payload) p.clone());
+        }
+        return nextToken;
       }
     }
 
-    result = suffix.next(buf);
-    if (result == null) {
+    Token nextToken = suffix.next(reusableToken);
+    if (nextToken == null) {
       return null;
     }
 
-    return updateSuffixToken(result, previousPrefixToken);
+    return updateSuffixToken(nextToken, previousPrefixToken);
   }
 
   /**
@@ -98,7 +102,6 @@ public class PrefixAwareTokenFilter extends TokenStream {
 
   }
 
-
   public TokenStream getPrefix() {
     return prefix;
   }
@@ -113,36 +116,5 @@ public class PrefixAwareTokenFilter extends TokenStream {
 
   public void setSuffix(TokenStream suffix) {
     this.suffix = suffix;
-  }
-
-
-  public static class CopyableToken extends Token {
-
-    private Payload buf = new Payload();
-
-    public void copyFrom(Token source) {
-      if (source.termBuffer() != null) {
-        setTermBuffer(source.termBuffer(), 0, source.termLength());
-      } else {
-        setTermText(null);
-        setTermLength(0);
-      }
-
-      setPositionIncrement(source.getPositionIncrement());
-      setFlags(source.getFlags());
-      setStartOffset(source.startOffset());
-      setEndOffset(source.endOffset());
-      setType(source.type());
-      if (source.getPayload() == null) {
-        setPayload(null);
-      } else {
-        setPayload(buf);        
-        if (buf.getData() == null || buf.getData().length < source.getPayload().length()) {
-          buf.setData(new byte[source.getPayload().length()]);
-        }
-        source.getPayload().copyTo(buf.getData(), 0);
-        buf.setData(buf.getData(), 0, source.getPayload().length());
-      }
-    }
   }
 }

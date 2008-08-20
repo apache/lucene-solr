@@ -126,28 +126,28 @@ public class WikipediaTokenizerTest extends TestCase {
     tcm.put("3.25", "<NUM>");
     tcm.put("3.50", "<NUM>");
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test));
-    Token token = new Token();
     int count = 0;
     int numItalics = 0;
     int numBoldItalics = 0;
     int numCategory = 0;
     int numCitation = 0;
-    while ((token = tf.next(token)) != null) {
-      String tokText = token.termText();
+    final Token reusableToken = new Token();
+    for (Token nextToken = tf.next(reusableToken); nextToken != null; nextToken = tf.next(reusableToken)) {
+      String tokText = nextToken.term();
       //System.out.println("Text: " + tokText + " Type: " + token.type());
-      assertTrue("token is null and it shouldn't be", token != null);
+      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
       String expectedType = (String) tcm.get(tokText);
-      assertTrue("expectedType is null and it shouldn't be for: " + token, expectedType != null);
-      assertTrue(token.type() + " is not equal to " + expectedType + " for " + token, token.type().equals(expectedType) == true);
+      assertTrue("expectedType is null and it shouldn't be for: " + nextToken, expectedType != null);
+      assertTrue(nextToken.type() + " is not equal to " + expectedType + " for " + nextToken, nextToken.type().equals(expectedType) == true);
       count++;
-      if (token.type().equals(WikipediaTokenizer.ITALICS)  == true){
+      if (nextToken.type().equals(WikipediaTokenizer.ITALICS)  == true){
         numItalics++;
-      } else if (token.type().equals(WikipediaTokenizer.BOLD_ITALICS)  == true){
+      } else if (nextToken.type().equals(WikipediaTokenizer.BOLD_ITALICS)  == true){
         numBoldItalics++;
-      } else if (token.type().equals(WikipediaTokenizer.CATEGORY)  == true){
+      } else if (nextToken.type().equals(WikipediaTokenizer.CATEGORY)  == true){
         numCategory++;
       }
-      else if (token.type().equals(WikipediaTokenizer.CITATION)  == true){
+      else if (nextToken.type().equals(WikipediaTokenizer.CITATION)  == true){
         numCitation++;
       }
     }
@@ -166,105 +166,105 @@ public class WikipediaTokenizerTest extends TestCase {
   }
 
   private void checkLinkPhrases(WikipediaTokenizer tf) throws IOException {
-    Token token = new Token();
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "click", new String(token.termBuffer(), 0, token.termLength()).equals("click") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link", new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
+    final Token reusableToken = new Token();
+    Token nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "click", nextToken.term().equals("click") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "link", nextToken.term().equals("link") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "here",
+            nextToken.term().equals("here") == true);
     //The link, and here should be at the same position for phrases to work
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "again",
-            new String(token.termBuffer(), 0, token.termLength()).equals("again") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "again",
+            nextToken.term().equals("again") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "click",
-            new String(token.termBuffer(), 0, token.termLength()).equals("click") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "click",
+            nextToken.term().equals("click") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "http://lucene.apache.org",
-            new String(token.termBuffer(), 0, token.termLength()).equals("http://lucene.apache.org") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "http://lucene.apache.org",
+            nextToken.term().equals("http://lucene.apache.org") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "here",
+            nextToken.term().equals("here") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "again",
-            new String(token.termBuffer(), 0, token.termLength()).equals("again") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "again",
+            nextToken.term().equals("again") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "a",
-            new String(token.termBuffer(), 0, token.termLength()).equals("a") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "a",
+            nextToken.term().equals("a") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "b",
-            new String(token.termBuffer(), 0, token.termLength()).equals("b") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "b",
+            nextToken.term().equals("b") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "c",
-            new String(token.termBuffer(), 0, token.termLength()).equals("c") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "c",
+            nextToken.term().equals("c") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "d",
-            new String(token.termBuffer(), 0, token.termLength()).equals("d") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "d",
+            nextToken.term().equals("d") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
 
-    token = tf.next();
-    assertTrue("token is not null and it should be", token == null);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is not null and it should be", nextToken == null);
   }
 
   public void testLinks() throws Exception {
     String test = "[http://lucene.apache.org/java/docs/index.html#news here] [http://lucene.apache.org/java/docs/index.html?b=c here] [https://lucene.apache.org/java/docs/index.html?b=c here]";
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test));
-    Token token = new Token();
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "http://lucene.apache.org/java/docs/index.html#news",
-            new String(token.termBuffer(), 0, token.termLength()).equals("http://lucene.apache.org/java/docs/index.html#news") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
-    tf.next(token);//skip here
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "http://lucene.apache.org/java/docs/index.html?b=c",
-            new String(token.termBuffer(), 0, token.termLength()).equals("http://lucene.apache.org/java/docs/index.html?b=c") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
-    tf.next(token);//skip here
-    token = tf.next(token);
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "https://lucene.apache.org/java/docs/index.html?b=c",
-            new String(token.termBuffer(), 0, token.termLength()).equals("https://lucene.apache.org/java/docs/index.html?b=c") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, token.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
+    final Token reusableToken = new Token();
+    Token nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "http://lucene.apache.org/java/docs/index.html#news",
+            nextToken.term().equals("http://lucene.apache.org/java/docs/index.html#news") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, nextToken.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
+    tf.next(reusableToken);//skip here
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "http://lucene.apache.org/java/docs/index.html?b=c",
+            nextToken.term().equals("http://lucene.apache.org/java/docs/index.html?b=c") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, nextToken.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
+    tf.next(reusableToken);//skip here
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "https://lucene.apache.org/java/docs/index.html?b=c",
+            nextToken.term().equals("https://lucene.apache.org/java/docs/index.html?b=c") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.EXTERNAL_LINK_URL, nextToken.type().equals(WikipediaTokenizer.EXTERNAL_LINK_URL) == true);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
 
-    token = tf.next();
-    assertTrue("token is not null and it should be", token == null);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is not null and it should be", nextToken == null);
 
   }
 
@@ -277,72 +277,72 @@ public class WikipediaTokenizerTest extends TestCase {
     checkLinkPhrases(tf);
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";
     tf = new WikipediaTokenizer(new StringReader(test), WikipediaTokenizer.UNTOKENIZED_ONLY, untoks);
-    Token token;
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "a b c d",
-            new String(token.termBuffer(), 0, token.termLength()).equals("a b c d") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.startOffset() + " does not equal: " + 11, token.startOffset() == 11);
-    assertTrue(token.endOffset() + " does not equal: " + 18, token.endOffset() == 18);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "e f g",
-            new String(token.termBuffer(), 0, token.termLength()).equals("e f g") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 32, token.startOffset() == 32);
-    assertTrue(token.endOffset() + " does not equal: " + 37, token.endOffset() == 37);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link",
-            new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 42, token.startOffset() == 42);
-    assertTrue(token.endOffset() + " does not equal: " + 46, token.endOffset() == 46);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 47, token.startOffset() == 47);
-    assertTrue(token.endOffset() + " does not equal: " + 51, token.endOffset() == 51);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link",
-            new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 56, token.startOffset() == 56);
-    assertTrue(token.endOffset() + " does not equal: " + 60, token.endOffset() == 60);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "there",
-            new String(token.termBuffer(), 0, token.termLength()).equals("there") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 61, token.startOffset() == 61);
-    assertTrue(token.endOffset() + " does not equal: " + 66, token.endOffset() == 66);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "italics here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("italics here") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 71, token.startOffset() == 71);
-    assertTrue(token.endOffset() + " does not equal: " + 83, token.endOffset() == 83);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "something",
-            new String(token.termBuffer(), 0, token.termLength()).equals("something") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 86, token.startOffset() == 86);
-    assertTrue(token.endOffset() + " does not equal: " + 95, token.endOffset() == 95);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "more italics",
-            new String(token.termBuffer(), 0, token.termLength()).equals("more italics") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 98, token.startOffset() == 98);
-    assertTrue(token.endOffset() + " does not equal: " + 110, token.endOffset() == 110);
+    final Token reusableToken = new Token();
+    Token nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "a b c d",
+            nextToken.term().equals("a b c d") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 11, nextToken.startOffset() == 11);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 18, nextToken.endOffset() == 18);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "e f g",
+            nextToken.term().equals("e f g") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 32, nextToken.startOffset() == 32);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 37, nextToken.endOffset() == 37);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "link",
+            nextToken.term().equals("link") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 42, nextToken.startOffset() == 42);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 46, nextToken.endOffset() == 46);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "here",
+            nextToken.term().equals("here") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 47, nextToken.startOffset() == 47);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 51, nextToken.endOffset() == 51);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "link",
+            nextToken.term().equals("link") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 56, nextToken.startOffset() == 56);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 60, nextToken.endOffset() == 60);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "there",
+            nextToken.term().equals("there") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 61, nextToken.startOffset() == 61);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 66, nextToken.endOffset() == 66);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "italics here",
+            nextToken.term().equals("italics here") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 71, nextToken.startOffset() == 71);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 83, nextToken.endOffset() == 83);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "something",
+            nextToken.term().equals("something") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 86, nextToken.startOffset() == 86);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 95, nextToken.endOffset() == 95);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "more italics",
+            nextToken.term().equals("more italics") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 98, nextToken.startOffset() == 98);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 110, nextToken.endOffset() == 110);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "h   i   j",
-            new String(token.termBuffer(), 0, token.termLength()).equals("h   i   j") == true);
-    assertTrue(token.startOffset() + " does not equal: " + 124, token.startOffset() == 124);
-    assertTrue(token.endOffset() + " does not equal: " + 133, token.endOffset() == 133);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "h   i   j",
+            nextToken.term().equals("h   i   j") == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 124, nextToken.startOffset() == 124);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 133, nextToken.endOffset() == 133);
 
-    token = tf.next();
-    assertTrue("token is not null and it should be", token == null);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is not null and it should be", nextToken == null);
   }
 
   public void testBoth() throws Exception {
@@ -352,225 +352,225 @@ public class WikipediaTokenizerTest extends TestCase {
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";
     //should output all the indivual tokens plus the untokenized tokens as well.  Untokenized tokens
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test), WikipediaTokenizer.BOTH, untoks);
-    Token token;
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "a b c d",
-            new String(token.termBuffer(), 0, token.termLength()).equals("a b c d") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, token.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 11, token.startOffset() == 11);
-    assertTrue(token.endOffset() + " does not equal: " + 18, token.endOffset() == 18);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "a",
-            new String(token.termBuffer(), 0, token.termLength()).equals("a") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getFlags() + " equals: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG + " and it shouldn't", token.getFlags() != WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 11, token.startOffset() == 11);
-    assertTrue(token.endOffset() + " does not equal: " + 12, token.endOffset() == 12);
+    final Token reusableToken = new Token();
+    Token nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "a b c d",
+            nextToken.term().equals("a b c d") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, nextToken.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 11, nextToken.startOffset() == 11);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 18, nextToken.endOffset() == 18);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "a",
+            nextToken.term().equals("a") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getFlags() + " equals: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG + " and it shouldn't", nextToken.getFlags() != WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 11, nextToken.startOffset() == 11);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 12, nextToken.endOffset() == 12);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "b",
-            new String(token.termBuffer(), 0, token.termLength()).equals("b") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 13, token.startOffset() == 13);
-    assertTrue(token.endOffset() + " does not equal: " + 14, token.endOffset() == 14);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "b",
+            nextToken.term().equals("b") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 13, nextToken.startOffset() == 13);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 14, nextToken.endOffset() == 14);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "c",
-            new String(token.termBuffer(), 0, token.termLength()).equals("c") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 15, token.startOffset() == 15);
-    assertTrue(token.endOffset() + " does not equal: " + 16, token.endOffset() == 16);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "c",
+            nextToken.term().equals("c") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 15, nextToken.startOffset() == 15);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 16, nextToken.endOffset() == 16);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "d",
-            new String(token.termBuffer(), 0, token.termLength()).equals("d") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 17, token.startOffset() == 17);
-    assertTrue(token.endOffset() + " does not equal: " + 18, token.endOffset() == 18);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "d",
+            nextToken.term().equals("d") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 17, nextToken.startOffset() == 17);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 18, nextToken.endOffset() == 18);
 
 
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "e f g",
-            new String(token.termBuffer(), 0, token.termLength()).equals("e f g") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, token.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 32, token.startOffset() == 32);
-    assertTrue(token.endOffset() + " does not equal: " + 37, token.endOffset() == 37);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "e f g",
+            nextToken.term().equals("e f g") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, nextToken.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 32, nextToken.startOffset() == 32);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 37, nextToken.endOffset() == 37);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "e",
-            new String(token.termBuffer(), 0, token.termLength()).equals("e") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
-    assertTrue(token.startOffset() + " does not equal: " + 32, token.startOffset() == 32);
-    assertTrue(token.endOffset() + " does not equal: " + 33, token.endOffset() == 33);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "e",
+            nextToken.term().equals("e") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 32, nextToken.startOffset() == 32);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 33, nextToken.endOffset() == 33);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "f",
-            new String(token.termBuffer(), 0, token.termLength()).equals("f") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.startOffset() + " does not equal: " + 34, token.startOffset() == 34);
-    assertTrue(token.endOffset() + " does not equal: " + 35, token.endOffset() == 35);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "f",
+            nextToken.term().equals("f") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 34, nextToken.startOffset() == 34);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 35, nextToken.endOffset() == 35);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "g",
-            new String(token.termBuffer(), 0, token.termLength()).equals("g") == true);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.startOffset() + " does not equal: " + 36, token.startOffset() == 36);
-    assertTrue(token.endOffset() + " does not equal: " + 37, token.endOffset() == 37);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "g",
+            nextToken.term().equals("g") == true);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 36, nextToken.startOffset() == 36);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 37, nextToken.endOffset() == 37);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link",
-            new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, token.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 42, token.startOffset() == 42);
-    assertTrue(token.endOffset() + " does not equal: " + 46, token.endOffset() == 46);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, token.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 47, token.startOffset() == 47);
-    assertTrue(token.endOffset() + " does not equal: " + 51, token.endOffset() == 51);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "link",
-            new String(token.termBuffer(), 0, token.termLength()).equals("link") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.startOffset() + " does not equal: " + 56, token.startOffset() == 56);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, token.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
-    assertTrue(token.endOffset() + " does not equal: " + 60, token.endOffset() == 60);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "there",
-            new String(token.termBuffer(), 0, token.termLength()).equals("there") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, token.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 61, token.startOffset() == 61);
-    assertTrue(token.endOffset() + " does not equal: " + 66, token.endOffset() == 66);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "italics here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("italics here") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
-    assertTrue(token.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, token.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 71, token.startOffset() == 71);
-    assertTrue(token.endOffset() + " does not equal: " + 83, token.endOffset() == 83);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "link",
+            nextToken.term().equals("link") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, nextToken.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 42, nextToken.startOffset() == 42);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 46, nextToken.endOffset() == 46);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "here",
+            nextToken.term().equals("here") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, nextToken.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 47, nextToken.startOffset() == 47);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 51, nextToken.endOffset() == 51);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "link",
+            nextToken.term().equals("link") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 56, nextToken.startOffset() == 56);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, nextToken.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 60, nextToken.endOffset() == 60);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "there",
+            nextToken.term().equals("there") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.INTERNAL_LINK, nextToken.type().equals(WikipediaTokenizer.INTERNAL_LINK) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 61, nextToken.startOffset() == 61);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 66, nextToken.endOffset() == 66);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "italics here",
+            nextToken.term().equals("italics here") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
+    assertTrue(nextToken.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, nextToken.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 71, nextToken.startOffset() == 71);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 83, nextToken.endOffset() == 83);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "italics",
-            new String(token.termBuffer(), 0, token.termLength()).equals("italics") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 71, token.startOffset() == 71);
-    assertTrue(token.endOffset() + " does not equal: " + 78, token.endOffset() == 78);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "italics",
+            nextToken.term().equals("italics") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 71, nextToken.startOffset() == 71);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 78, nextToken.endOffset() == 78);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "here",
-            new String(token.termBuffer(), 0, token.termLength()).equals("here") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 79, token.startOffset() == 79);
-    assertTrue(token.endOffset() + " does not equal: " + 83, token.endOffset() == 83);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "here",
+            nextToken.term().equals("here") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 79, nextToken.startOffset() == 79);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 83, nextToken.endOffset() == 83);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "something",
-            new String(token.termBuffer(), 0, token.termLength()).equals("something") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.startOffset() + " does not equal: " + 86, token.startOffset() == 86);
-    assertTrue(token.endOffset() + " does not equal: " + 95, token.endOffset() == 95);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "more italics",
-            new String(token.termBuffer(), 0, token.termLength()).equals("more italics") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
-    assertTrue(token.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, token.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 98, token.startOffset() == 98);
-    assertTrue(token.endOffset() + " does not equal: " + 110, token.endOffset() == 110);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "something",
+            nextToken.term().equals("something") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 86, nextToken.startOffset() == 86);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 95, nextToken.endOffset() == 95);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "more italics",
+            nextToken.term().equals("more italics") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
+    assertTrue(nextToken.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, nextToken.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 98, nextToken.startOffset() == 98);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 110, nextToken.endOffset() == 110);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "more",
-            new String(token.termBuffer(), 0, token.termLength()).equals("more") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 98, token.startOffset() == 98);
-    assertTrue(token.endOffset() + " does not equal: " + 102, token.endOffset() == 102);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "more",
+            nextToken.term().equals("more") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 98, nextToken.startOffset() == 98);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 102, nextToken.endOffset() == 102);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "italics",
-            new String(token.termBuffer(), 0, token.termLength()).equals("italics") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-        assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.ITALICS, token.type().equals(WikipediaTokenizer.ITALICS) == true);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "italics",
+            nextToken.term().equals("italics") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+        assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.ITALICS, nextToken.type().equals(WikipediaTokenizer.ITALICS) == true);
 
-    assertTrue(token.startOffset() + " does not equal: " + 103, token.startOffset() == 103);
-    assertTrue(token.endOffset() + " does not equal: " + 110, token.endOffset() == 110);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 103, nextToken.startOffset() == 103);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 110, nextToken.endOffset() == 110);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "h   i   j",
-            new String(token.termBuffer(), 0, token.termLength()).equals("h   i   j") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, token.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
-    assertTrue(token.startOffset() + " does not equal: " + 124, token.startOffset() == 124);
-    assertTrue(token.endOffset() + " does not equal: " + 133, token.endOffset() == 133);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "h   i   j",
+            nextToken.term().equals("h   i   j") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.getFlags() + " does not equal: " + WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG, nextToken.getFlags() == WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 124, nextToken.startOffset() == 124);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 133, nextToken.endOffset() == 133);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "h",
-            new String(token.termBuffer(), 0, token.termLength()).equals("h") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 0, token.getPositionIncrement() == 0);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 124, token.startOffset() == 124);
-    assertTrue(token.endOffset() + " does not equal: " + 125, token.endOffset() == 125);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "h",
+            nextToken.term().equals("h") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 0, nextToken.getPositionIncrement() == 0);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 124, nextToken.startOffset() == 124);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 125, nextToken.endOffset() == 125);
 
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "i",
-            new String(token.termBuffer(), 0, token.termLength()).equals("i") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 128, token.startOffset() == 128);
-    assertTrue(token.endOffset() + " does not equal: " + 129, token.endOffset() == 129);
-    token = tf.next();
-    assertTrue("token is null and it shouldn't be", token != null);
-    assertTrue(new String(token.termBuffer(), 0, token.termLength()) + " is not equal to " + "j",
-            new String(token.termBuffer(), 0, token.termLength()).equals("j") == true);
-    assertTrue(token.getPositionIncrement() + " does not equal: " + 1, token.getPositionIncrement() == 1);
-    assertTrue(token.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, token.type().equals(WikipediaTokenizer.CATEGORY) == true);
-    assertTrue(token.startOffset() + " does not equal: " + 132, token.startOffset() == 132);
-    assertTrue(token.endOffset() + " does not equal: " + 133, token.endOffset() == 133);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "i",
+            nextToken.term().equals("i") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 128, nextToken.startOffset() == 128);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 129, nextToken.endOffset() == 129);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    assertTrue(nextToken.term() + " is not equal to " + "j",
+            nextToken.term().equals("j") == true);
+    assertTrue(nextToken.getPositionIncrement() + " does not equal: " + 1, nextToken.getPositionIncrement() == 1);
+    assertTrue(nextToken.type() + " is not equal to " + WikipediaTokenizer.CATEGORY, nextToken.type().equals(WikipediaTokenizer.CATEGORY) == true);
+    assertTrue(nextToken.startOffset() + " does not equal: " + 132, nextToken.startOffset() == 132);
+    assertTrue(nextToken.endOffset() + " does not equal: " + 133, nextToken.endOffset() == 133);
 
-    token = tf.next();
-    assertTrue("token is not null and it should be", token == null);
+    nextToken = tf.next(reusableToken);
+    assertTrue("nextToken is not null and it should be", nextToken == null);
 
   }
 }

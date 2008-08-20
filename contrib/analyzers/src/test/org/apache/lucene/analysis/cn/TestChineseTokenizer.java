@@ -33,14 +33,13 @@ public class TestChineseTokenizer extends TestCase
     {
         String s = "a天b";
         ChineseTokenizer tokenizer = new ChineseTokenizer(new StringReader(s));
-        Token token;
 
         int correctStartOffset = 0;
         int correctEndOffset = 1;
-        while ((token = tokenizer.next()) != null)
-        {
-            assertEquals(correctStartOffset, token.startOffset());
-            assertEquals(correctEndOffset, token.endOffset());
+        final Token reusableToken = new Token();
+        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
+            assertEquals(correctStartOffset, nextToken.startOffset());
+            assertEquals(correctEndOffset, nextToken.endOffset());
             correctStartOffset++;
             correctEndOffset++;
         }

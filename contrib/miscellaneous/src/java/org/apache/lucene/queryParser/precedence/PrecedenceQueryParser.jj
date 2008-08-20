@@ -25,14 +25,29 @@ PARSER_BEGIN(PrecedenceQueryParser)
 
 package org.apache.lucene.queryParser.precedence;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Vector;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Parameter;
 
 /**
@@ -320,21 +335,22 @@ public class PrecedenceQueryParser {
 
     TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
     Vector v = new Vector();
-    org.apache.lucene.analysis.Token t;
+    final org.apache.lucene.analysis.Token reusableToken = new org.apache.lucene.analysis.Token();
+    org.apache.lucene.analysis.Token nextToken;
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
 
     while (true) {
       try {
-        t = source.next();
+        nextToken = source.next(reusableToken);
       }
       catch (IOException e) {
-        t = null;
+        nextToken = null;
       }
-      if (t == null)
+      if (nextToken == null)
         break;
-      v.addElement(t);
-      if (t.getPositionIncrement() == 1)
+      v.addElement(nextToken.clone());
+      if (nextToken.getPositionIncrement() == 1)
         positionCount++;
       else
         severalTokensAtSamePosition = true;
@@ -349,17 +365,17 @@ public class PrecedenceQueryParser {
     if (v.size() == 0)
       return null;
     else if (v.size() == 1) {
-      t = (org.apache.lucene.analysis.Token) v.elementAt(0);
-      return new TermQuery(new Term(field, t.termText()));
+      nextToken = (org.apache.lucene.analysis.Token) v.elementAt(0);
+      return new TermQuery(new Term(field, nextToken.term()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
           BooleanQuery q = new BooleanQuery();
           for (int i = 0; i < v.size(); i++) {
-            t = (org.apache.lucene.analysis.Token) v.elementAt(i);
+            nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
             TermQuery currentQuery = new TermQuery(
-                new Term(field, t.termText()));
+                new Term(field, nextToken.term()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
@@ -369,12 +385,12 @@ public class PrecedenceQueryParser {
           MultiPhraseQuery mpq = new MultiPhraseQuery();
           List multiTerms = new ArrayList();
           for (int i = 0; i < v.size(); i++) {
-            t = (org.apache.lucene.analysis.Token) v.elementAt(i);
-            if (t.getPositionIncrement() == 1 && multiTerms.size() > 0) {
+            nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
+            if (nextToken.getPositionIncrement() == 1 && multiTerms.size() > 0) {
               mpq.add((Term[])multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
-            multiTerms.add(new Term(field, t.termText()));
+            multiTerms.add(new Term(field, nextToken.term()));
           }
           mpq.add((Term[])multiTerms.toArray(new Term[0]));
           return mpq;
@@ -385,7 +401,7 @@ public class PrecedenceQueryParser {
         q.setSlop(phraseSlop);
         for (int i = 0; i < v.size(); i++) {
           q.add(new Term(field, ((org.apache.lucene.analysis.Token) 
-              v.elementAt(i)).termText()));
+              v.elementAt(i)).term()));
 
         }
         return q;

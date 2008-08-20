@@ -18,11 +18,10 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.IOException;
-
 import java.lang.reflect.Method;
 
 import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.ext.*;
+import net.sf.snowball.ext.EnglishStemmer;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
@@ -60,20 +59,22 @@ public class SnowballFilter extends TokenFilter {
   }
 
   /** Returns the next input Token, after being stemmed */
-  public final Token next() throws IOException {
-    Token token = input.next();
-    if (token == null)
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null)
       return null;
-    stemmer.setCurrent(token.termText());
+    String originalTerm = nextToken.term();
+    stemmer.setCurrent(originalTerm);
     try {
       stemMethod.invoke(stemmer, EMPTY_ARGS);
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
-    
-    Token newToken = new Token(stemmer.getCurrent(),
-                      token.startOffset(), token.endOffset(), token.type());
-    newToken.setPositionIncrement(token.getPositionIncrement());
-    return newToken;
+    String finalTerm = stemmer.getCurrent();
+    // Don't bother updating, if it is unchanged.
+    if (!originalTerm.equals(finalTerm))
+      nextToken.setTermBuffer(finalTerm);
+    return nextToken;
   }
 }

@@ -132,7 +132,8 @@ public class StandardTokenizer extends Tokenizer {
    *
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
-  public Token next(Token result) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
       int posIncr = 1;
 
       while(true) {
@@ -143,26 +144,26 @@ public class StandardTokenizer extends Tokenizer {
 	}
 
         if (scanner.yylength() <= maxTokenLength) {
-          result.clear();
-          result.setPositionIncrement(posIncr);
-          scanner.getText(result);
+          reusableToken.clear();
+          reusableToken.setPositionIncrement(posIncr);
+          scanner.getText(reusableToken);
           final int start = scanner.yychar();
-          result.setStartOffset(start);
-          result.setEndOffset(start+result.termLength());
+          reusableToken.setStartOffset(start);
+          reusableToken.setEndOffset(start+reusableToken.termLength());
           // This 'if' should be removed in the next release. For now, it converts
           // invalid acronyms to HOST. When removed, only the 'else' part should
           // remain.
           if (tokenType == StandardTokenizerImpl.ACRONYM_DEP) {
             if (replaceInvalidAcronym) {
-              result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
-              result.setTermLength(result.termLength() - 1); // remove extra '.'
+              reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
+              reusableToken.setTermLength(reusableToken.termLength() - 1); // remove extra '.'
             } else {
-              result.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
+              reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
             }
           } else {
-            result.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
+            reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
           }
-          return result;
+          return reusableToken;
         } else
           // When we skip a too-long term, we still increment the
           // position increment

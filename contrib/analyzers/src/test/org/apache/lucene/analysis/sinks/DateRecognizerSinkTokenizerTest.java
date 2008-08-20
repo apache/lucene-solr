@@ -43,13 +43,13 @@ public class DateRecognizerSinkTokenizerTest extends TestCase {
     DateRecognizerSinkTokenizer sink = new DateRecognizerSinkTokenizer(new SimpleDateFormat("MM/dd/yyyy"));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
     TeeTokenFilter tee = new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(test)), sink);
-    Token tok = null;
     int count = 0;
-    while ((tok = tee.next()) != null){
-      assertTrue("tok is null and it shouldn't be", tok != null);
-      if (tok.termBuffer()[0] == '7'){
-        assertTrue(tok.type() + " is not equal to " + DateRecognizerSinkTokenizer.DATE_TYPE,
-                tok.type().equals(DateRecognizerSinkTokenizer.DATE_TYPE) == true);
+    final Token reusableToken = new Token();
+    for (Token nextToken = tee.next(reusableToken); nextToken != null; nextToken = tee.next(reusableToken)) {
+      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+      if (nextToken.termBuffer()[0] == '7'){
+        assertTrue(nextToken.type() + " is not equal to " + DateRecognizerSinkTokenizer.DATE_TYPE,
+                nextToken.type().equals(DateRecognizerSinkTokenizer.DATE_TYPE) == true);
       }
       count++;
     }

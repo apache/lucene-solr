@@ -38,21 +38,22 @@ public class KeywordTokenizer extends Tokenizer {
     this.done = false;
   }
 
-  public Token next(Token result) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (!done) {
       done = true;
       int upto = 0;
-      result.clear();
-      char[] buffer = result.termBuffer();
+      reusableToken.clear();
+      char[] buffer = reusableToken.termBuffer();
       while (true) {
         final int length = input.read(buffer, upto, buffer.length-upto);
         if (length == -1) break;
         upto += length;
         if (upto == buffer.length)
-          buffer = result.resizeTermBuffer(1+buffer.length);
+          buffer = reusableToken.resizeTermBuffer(1+buffer.length);
       }
-      result.termLength = upto;
-      return result;
+      reusableToken.setTermLength(upto);
+      return reusableToken;
     }
     return null;
   }

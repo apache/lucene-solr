@@ -141,34 +141,34 @@ public class TestMultiAnalyzer extends LuceneTestCase {
 
   private final class TestFilter extends TokenFilter {
     
-    private org.apache.lucene.analysis.Token prevToken;
+    private Token prevToken;
     
     public TestFilter(TokenStream in) {
       super(in);
     }
 
-    public final org.apache.lucene.analysis.Token next() throws java.io.IOException {
+    public final Token next(final Token reusableToken) throws java.io.IOException {
       if (multiToken > 0) {
-        org.apache.lucene.analysis.Token token = 
-          new org.apache.lucene.analysis.Token("multi"+(multiToken+1), prevToken.startOffset(),
-          prevToken.endOffset(), prevToken.type());
-        token.setPositionIncrement(0);
+        reusableToken.reinit("multi"+(multiToken+1), prevToken.startOffset(), prevToken.endOffset(), prevToken.type());
+        reusableToken.setPositionIncrement(0);
         multiToken--;
-        return token;
+        return reusableToken;
       } else {
-        org.apache.lucene.analysis.Token t = input.next();
-        prevToken = t;
-        if (t == null)
+        Token nextToken = input.next(reusableToken);
+        if (nextToken == null) {
+          prevToken = null;
           return null;
-        String text = t.termText();
+        }
+        prevToken = (Token) nextToken.clone();
+        String text = nextToken.term();
         if (text.equals("triplemulti")) {
           multiToken = 2;
-          return t;
+          return nextToken;
         } else if (text.equals("multi")) {
           multiToken = 1;
-          return t;
+          return nextToken;
         } else {
-          return t;
+          return nextToken;
         }
       }
     }
@@ -197,22 +197,16 @@ public class TestMultiAnalyzer extends LuceneTestCase {
       super(in);
     }
 
-    public final org.apache.lucene.analysis.Token next() throws java.io.IOException {
-      for (Token t = input.next(); t != null; t = input.next()) {
-        if (t.termText().equals("the")) {
+    public final Token next(final Token reusableToken) throws java.io.IOException {
+      for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+        if (nextToken.term().equals("the")) {
           // stopword, do nothing
-        } else if (t.termText().equals("quick")) {
-          org.apache.lucene.analysis.Token token = 
-            new org.apache.lucene.analysis.Token(t.termText(), t.startOffset(),
-                t.endOffset(), t.type());
-          token.setPositionIncrement(2);
-          return token;
+        } else if (nextToken.term().equals("quick")) {
+          nextToken.setPositionIncrement(2);
+          return nextToken;
         } else {
-          org.apache.lucene.analysis.Token token = 
-            new org.apache.lucene.analysis.Token(t.termText(), t.startOffset(),
-                t.endOffset(), t.type());
-          token.setPositionIncrement(1);
-          return token;
+          nextToken.setPositionIncrement(1);
+          return nextToken;
         }
       }
       return null;

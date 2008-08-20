@@ -40,29 +40,23 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ShingleMatrixFilter.defaultSettingsCodec = null;
 
-    Token token = new Token(); // for debug use only
-
-
-
-
     TokenStream ts;
 
-
     ts = new ShingleMatrixFilter(new EmptyTokenStream(), 1, 2, ' ', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
-    assertNull(ts.next());
+    assertNull(ts.next(new Token()));
 
     TokenListStream tls;
     LinkedList<Token> tokens;
 
-    // test a plain old token stream with synonyms tranlated to rows.
+    // test a plain old token stream with synonyms translated to rows.
 
     tokens = new LinkedList<Token>();
-    tokens.add(new Token("please", 0, 6));
-    tokens.add(new Token("divide", 7, 13));
-    tokens.add(new Token("this", 14, 18));
-    tokens.add(new Token("sentence", 19, 27));
-    tokens.add(new Token("into", 28, 32));
-    tokens.add(new Token("shingles", 33, 39));
+    tokens.add(createToken("please", 0, 6));
+    tokens.add(createToken("divide", 7, 13));
+    tokens.add(createToken("this", 14, 18));
+    tokens.add(createToken("sentence", 19, 27));
+    tokens.add(createToken("into", 28, 32));
+    tokens.add(createToken("shingles", 33, 39));
 
     tls = new TokenListStream(tokens);
 
@@ -70,20 +64,22 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ts = new ShingleMatrixFilter(tls, 1, 2, ' ', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
-    assertNext(ts, "please", 0, 6);
-    assertNext(ts, "please divide", 0, 13);
-    assertNext(ts, "divide", 7, 13);
-    assertNext(ts, "divide this", 7, 18);
-    assertNext(ts, "this", 14, 18);
-    assertNext(ts, "this sentence", 14, 27);
-    assertNext(ts, "sentence", 19, 27);
-    assertNext(ts, "sentence into", 19, 32);
-    assertNext(ts, "into", 28, 32);
-    assertNext(ts, "into shingles", 28, 39);
-    assertNext(ts, "shingles", 33, 39);
+    Token reusableToken = new Token();
+
+    assertNext(ts, reusableToken, "please", 0, 6);
+    assertNext(ts, reusableToken, "please divide", 0, 13);
+    assertNext(ts, reusableToken, "divide", 7, 13);
+    assertNext(ts, reusableToken, "divide this", 7, 18);
+    assertNext(ts, reusableToken, "this", 14, 18);
+    assertNext(ts, reusableToken, "this sentence", 14, 27);
+    assertNext(ts, reusableToken, "sentence", 19, 27);
+    assertNext(ts, reusableToken, "sentence into", 19, 32);
+    assertNext(ts, reusableToken, "into", 28, 32);
+    assertNext(ts, reusableToken, "into shingles", 28, 39);
+    assertNext(ts, reusableToken, "shingles", 33, 39);
 
 
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
 
   }
 
@@ -94,9 +90,6 @@ public class TestShingleMatrixFilter extends TestCase {
   public void testTokenStream() throws IOException {
 
     ShingleMatrixFilter.defaultSettingsCodec = null;//new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec();
-
-    Token token = new Token(); // for debug use only
-
 
     TokenStream ts;
     TokenListStream tls;
@@ -117,25 +110,26 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ts = new ShingleMatrixFilter(tls, 2, 2, '_', false, new ShingleMatrixFilter.TwoDimensionalNonWeightedSynonymTokenSettingsCodec());
 
-    assertNext(ts, "hello_world");
-    assertNext(ts, "greetings_world");
-    assertNext(ts, "hello_earth");
-    assertNext(ts, "greetings_earth");
-    assertNext(ts, "hello_tellus");
-    assertNext(ts, "greetings_tellus");
-    assertNull(ts.next());
+    final Token reusableToken = new Token();
+    assertNext(ts, reusableToken, "hello_world");
+    assertNext(ts, reusableToken, "greetings_world");
+    assertNext(ts, reusableToken, "hello_earth");
+    assertNext(ts, reusableToken, "greetings_earth");
+    assertNext(ts, reusableToken, "hello_tellus");
+    assertNext(ts, reusableToken, "greetings_tellus");
+    assertNull(ts.next(reusableToken));
 
     // bi-grams with no spacer character, start offset, end offset
 
     tls.reset();
     ts = new ShingleMatrixFilter(tls, 2, 2, null, false, new ShingleMatrixFilter.TwoDimensionalNonWeightedSynonymTokenSettingsCodec());
-    assertNext(ts, "helloworld", 0, 10);
-    assertNext(ts, "greetingsworld", 0, 10);
-    assertNext(ts, "helloearth", 0, 10);
-    assertNext(ts, "greetingsearth", 0, 10);
-    assertNext(ts, "hellotellus", 0, 10);
-    assertNext(ts, "greetingstellus", 0, 10);
-    assertNull(ts.next());
+    assertNext(ts, reusableToken, "helloworld", 0, 10);
+    assertNext(ts, reusableToken, "greetingsworld", 0, 10);
+    assertNext(ts, reusableToken, "helloearth", 0, 10);
+    assertNext(ts, reusableToken, "greetingsearth", 0, 10);
+    assertNext(ts, reusableToken, "hellotellus", 0, 10);
+    assertNext(ts, reusableToken, "greetingstellus", 0, 10);
+    assertNull(ts.next(reusableToken));
 
 
     // add ^_prefix_and_suffix_$
@@ -160,119 +154,119 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ts = new ShingleMatrixFilter(tls, 2, 2, '_', false);
 //
-//    while ((token = ts.next(token)) != null) {
-//      System.out.println("assertNext(ts, \"" + token.termText() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
+//    for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
+//      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
 //    }
 
-    assertNext(ts, "^_hello", 1, 10.049875f, 0, 4);
-    assertNext(ts, "^_greetings", 1, 10.049875f, 0, 4);
-    assertNext(ts, "hello_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "world_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "earth_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "tellus_$", 1, 7.1414285f, 5, 10);
-    assertNull(ts.next());
+    assertNext(ts, reusableToken, "^_hello", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "^_greetings", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "hello_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "world_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "earth_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "tellus_$", 1, 7.1414285f, 5, 10);
+    assertNull(ts.next(reusableToken));
 
     // test unlimited size and allow single boundary token as shingle
     tls.reset();
     ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, '_', false);
 
 //
-//    while ((token = ts.next(token)) != null) {
-//      System.out.println("assertNext(ts, \"" + token.termText() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
+//  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
+//      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
 //    }
 
-    assertNext(ts, "^", 1, 10.0f, 0, 0);
-    assertNext(ts, "^_hello", 1, 10.049875f, 0, 4);
-    assertNext(ts, "^_hello_world", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_world_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello", 1, 1.0f, 0, 4);
-    assertNext(ts, "hello_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_world_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "world", 1, 1.0f, 5, 10);
-    assertNext(ts, "world_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "$", 1, 7.071068f, 10, 10);
-    assertNext(ts, "^_greetings", 1, 10.049875f, 0, 4);
-    assertNext(ts, "^_greetings_world", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_world_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings", 1, 1.0f, 0, 4);
-    assertNext(ts, "greetings_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_world_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "^_hello_earth", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_earth_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_earth_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "earth", 1, 1.0f, 5, 10);
-    assertNext(ts, "earth_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "^_greetings_earth", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_earth_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_earth_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "^_hello_tellus", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_tellus_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_tellus_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "tellus", 1, 1.0f, 5, 10);
-    assertNext(ts, "tellus_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "^_greetings_tellus", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_tellus_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_tellus_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^", 1, 10.0f, 0, 0);
+    assertNext(ts, reusableToken, "^_hello", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "^_hello_world", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_world_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello", 1, 1.0f, 0, 4);
+    assertNext(ts, reusableToken, "hello_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_world_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "world", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "world_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "$", 1, 7.071068f, 10, 10);
+    assertNext(ts, reusableToken, "^_greetings", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "^_greetings_world", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_world_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings", 1, 1.0f, 0, 4);
+    assertNext(ts, reusableToken, "greetings_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_world_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_earth", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_earth_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "earth", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "earth_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "^_greetings_earth", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_earth_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_earth_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_tellus", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_tellus_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "tellus", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "tellus_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "^_greetings_tellus", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_tellus_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_tellus_$", 1, 7.2111025f, 0, 10);
 
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
 
     // test unlimited size but don't allow single boundary token as shingle
 
     tls.reset();
     ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, '_', true);
-//    while ((token = ts.next(token)) != null) {
-//      System.out.println("assertNext(ts, \"" + token.termText() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
+//  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
+//      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
 //    }
 
-    assertNext(ts, "^_hello", 1, 10.049875f, 0, 4);
-    assertNext(ts, "^_hello_world", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_world_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello", 1, 1.0f, 0, 4);
-    assertNext(ts, "hello_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_world_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "world", 1, 1.0f, 5, 10);
-    assertNext(ts, "world_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "^_greetings", 1, 10.049875f, 0, 4);
-    assertNext(ts, "^_greetings_world", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_world_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings", 1, 1.0f, 0, 4);
-    assertNext(ts, "greetings_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_world_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "^_hello_earth", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_earth_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_earth_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "earth", 1, 1.0f, 5, 10);
-    assertNext(ts, "earth_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "^_greetings_earth", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_earth_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_earth_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "^_hello_tellus", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_hello_tellus_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "hello_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_tellus_$", 1, 7.2111025f, 0, 10);
-    assertNext(ts, "tellus", 1, 1.0f, 5, 10);
-    assertNext(ts, "tellus_$", 1, 7.1414285f, 5, 10);
-    assertNext(ts, "^_greetings_tellus", 1, 10.099504f, 0, 10);
-    assertNext(ts, "^_greetings_tellus_$", 1, 12.328828f, 0, 10);
-    assertNext(ts, "greetings_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_tellus_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "^_hello_world", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_world_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello", 1, 1.0f, 0, 4);
+    assertNext(ts, reusableToken, "hello_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_world_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "world", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "world_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "^_greetings", 1, 10.049875f, 0, 4);
+    assertNext(ts, reusableToken, "^_greetings_world", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_world_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings", 1, 1.0f, 0, 4);
+    assertNext(ts, reusableToken, "greetings_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_world_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_earth", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_earth_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "earth", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "earth_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "^_greetings_earth", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_earth_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_earth_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_tellus", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_hello_tellus_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus_$", 1, 7.2111025f, 0, 10);
+    assertNext(ts, reusableToken, "tellus", 1, 1.0f, 5, 10);
+    assertNext(ts, reusableToken, "tellus_$", 1, 7.1414285f, 5, 10);
+    assertNext(ts, reusableToken, "^_greetings_tellus", 1, 10.099504f, 0, 10);
+    assertNext(ts, reusableToken, "^_greetings_tellus_$", 1, 12.328828f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_tellus_$", 1, 7.2111025f, 0, 10);
 
 
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
 
     System.currentTimeMillis();
 
@@ -300,27 +294,27 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ts = new ShingleMatrixFilter(tls, 2, 3, '_', false);
 
-//    while ((token = ts.next(token)) != null) {
-//      System.out.println("assertNext(ts, \"" + token.termText() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
+//  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
+//      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
 //    }
 
     // shingle, position increment, weight, start offset, end offset
 
-    assertNext(ts, "hello_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "greetings_and", 1, 1.4142135f, 0, 4);
-    assertNext(ts, "greetings_and_salutations", 1, 1.7320508f, 0, 4);
-    assertNext(ts, "and_salutations", 1, 1.4142135f, 0, 4);
-    assertNext(ts, "and_salutations_world", 1, 1.7320508f, 0, 10);
-    assertNext(ts, "salutations_world", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "and_salutations_earth", 1, 1.7320508f, 0, 10);
-    assertNext(ts, "salutations_earth", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "hello_tellus", 1, 1.4142135f, 0, 10);
-    assertNext(ts, "and_salutations_tellus", 1, 1.7320508f, 0, 10);
-    assertNext(ts, "salutations_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "greetings_and", 1, 1.4142135f, 0, 4);
+    assertNext(ts, reusableToken, "greetings_and_salutations", 1, 1.7320508f, 0, 4);
+    assertNext(ts, reusableToken, "and_salutations", 1, 1.4142135f, 0, 4);
+    assertNext(ts, reusableToken, "and_salutations_world", 1, 1.7320508f, 0, 10);
+    assertNext(ts, reusableToken, "salutations_world", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "and_salutations_earth", 1, 1.7320508f, 0, 10);
+    assertNext(ts, reusableToken, "salutations_earth", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "hello_tellus", 1, 1.4142135f, 0, 10);
+    assertNext(ts, reusableToken, "and_salutations_tellus", 1, 1.7320508f, 0, 10);
+    assertNext(ts, reusableToken, "salutations_tellus", 1, 1.4142135f, 0, 10);
 
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
 
     System.currentTimeMillis();
 
@@ -361,53 +355,53 @@ public class TestShingleMatrixFilter extends TestCase {
 
     TokenStream ts = new ShingleMatrixFilter(matrix, 2, 4, '_', true, new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec());
 
-//    Token token = new Token();
-//    while ((token = ts.next(token)) != null) {
-//      System.out.println("assertNext(ts, \"" + token.termText() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
+//  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
+//      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
 //    }
 
-    assertNext(ts, "no_surprise", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "no_surprise_to", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "no_surprise_to_see", 1, 2.0f, 0, 0);
-    assertNext(ts, "surprise_to", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "surprise_to_see", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "surprise_to_see_england", 1, 2.0f, 0, 0);
-    assertNext(ts, "to_see", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "to_see_england", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "to_see_england_manager", 1, 2.0f, 0, 0);
-    assertNext(ts, "see_england", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "see_england_manager", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "see_england_manager_svennis", 1, 2.0f, 0, 0);
-    assertNext(ts, "england_manager", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "england_manager_svennis", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "england_manager_svennis_in", 1, 2.0f, 0, 0);
-    assertNext(ts, "manager_svennis", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "manager_svennis_in", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "manager_svennis_in_the", 1, 2.0f, 0, 0);
-    assertNext(ts, "svennis_in", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "svennis_in_the", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "svennis_in_the_croud", 1, 2.0f, 0, 0);
-    assertNext(ts, "in_the", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "in_the_croud", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "the_croud", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "see_england_manager_sven", 1, 2.0f, 0, 0);
-    assertNext(ts, "england_manager_sven", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "england_manager_sven_göran", 1, 2.0f, 0, 0);
-    assertNext(ts, "manager_sven", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "manager_sven_göran", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "manager_sven_göran_eriksson", 1, 2.0f, 0, 0);
-    assertNext(ts, "sven_göran", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "sven_göran_eriksson", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "sven_göran_eriksson_in", 1, 2.0f, 0, 0);
-    assertNext(ts, "göran_eriksson", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "göran_eriksson_in", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "göran_eriksson_in_the", 1, 2.0f, 0, 0);
-    assertNext(ts, "eriksson_in", 1, 1.4142135f, 0, 0);
-    assertNext(ts, "eriksson_in_the", 1, 1.7320508f, 0, 0);
-    assertNext(ts, "eriksson_in_the_croud", 1, 2.0f, 0, 0);
+    final Token reusableToken = new Token();
+    assertNext(ts, reusableToken, "no_surprise", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "no_surprise_to", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "no_surprise_to_see", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "surprise_to", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "surprise_to_see", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "surprise_to_see_england", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "to_see", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "to_see_england", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "to_see_england_manager", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "see_england", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "see_england_manager", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "see_england_manager_svennis", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "england_manager", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "england_manager_svennis", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "england_manager_svennis_in", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "manager_svennis", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "manager_svennis_in", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "manager_svennis_in_the", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "svennis_in", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "svennis_in_the", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "svennis_in_the_croud", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "in_the", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "in_the_croud", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "the_croud", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "see_england_manager_sven", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "england_manager_sven", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "england_manager_sven_göran", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "manager_sven", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "manager_sven_göran", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "manager_sven_göran_eriksson", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "sven_göran", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "sven_göran_eriksson", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "sven_göran_eriksson_in", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "göran_eriksson", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "göran_eriksson_in", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "göran_eriksson_in_the", 1, 2.0f, 0, 0);
+    assertNext(ts, reusableToken, "eriksson_in", 1, 1.4142135f, 0, 0);
+    assertNext(ts, reusableToken, "eriksson_in_the", 1, 1.7320508f, 0, 0);
+    assertNext(ts, reusableToken, "eriksson_in_the_croud", 1, 2.0f, 0, 0);
 
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
 
   }
 
@@ -417,11 +411,9 @@ public class TestShingleMatrixFilter extends TestCase {
 
 
   private Token tokenFactory(String text, int posIncr, int startOffset, int endOffset) {
-    Token token = new Token();
-    token.setTermText(text);
+    Token token = new Token(startOffset, endOffset);
+    token.setTermBuffer(text);
     token.setPositionIncrement(posIncr);
-    token.setStartOffset(startOffset);
-    token.setEndOffset(endOffset);
     return token;
   }
 
@@ -435,61 +427,64 @@ public class TestShingleMatrixFilter extends TestCase {
   }
 
   private Token tokenFactory(String text, int posIncr, float weight, int startOffset, int endOffset) {
-    Token token = new Token();
-    token.setTermText(text);
+    Token token = new Token(startOffset, endOffset);
+    token.setTermBuffer(text);
     token.setPositionIncrement(posIncr);
     ShingleMatrixFilter.defaultSettingsCodec.setWeight(token, weight);
-    token.setStartOffset(startOffset);
-    token.setEndOffset(endOffset);
     return token;
   }
 
   private Token tokenFactory(String text, int posIncr, float weight, int startOffset, int endOffset, ShingleMatrixFilter.TokenPositioner positioner) {
-    Token token = new Token();
-    token.setTermText(text);
+    Token token = new Token(startOffset, endOffset);
+    token.setTermBuffer(text);
     token.setPositionIncrement(posIncr);
     ShingleMatrixFilter.defaultSettingsCodec.setWeight(token, weight);
-    token.setStartOffset(startOffset);
-    token.setEndOffset(endOffset);
     ShingleMatrixFilter.defaultSettingsCodec.setTokenPositioner(token, positioner);
     return token;
   }
 
   // assert-methods start here
 
-  private Token assertNext(TokenStream ts, String text) throws IOException {
-    Token token = ts.next(new Token());
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    return token;
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    return nextToken;
   }
 
-  private Token assertNext(TokenStream ts, String text, int positionIncrement, float boost) throws IOException {
-    Token token = ts.next(new Token());
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    assertEquals(positionIncrement, token.getPositionIncrement());
-    assertEquals(boost, token.getPayload() == null ? 1f : PayloadHelper.decodeFloat(token.getPayload().getData()));
-    return token;
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int positionIncrement, float boost) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    assertEquals(positionIncrement, nextToken.getPositionIncrement());
+    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()));
+    return nextToken;
   }
 
-  private Token assertNext(TokenStream ts, String text, int positionIncrement, float boost, int startOffset, int endOffset) throws IOException {
-    Token token = ts.next(new Token());
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    assertEquals(positionIncrement, token.getPositionIncrement());
-    assertEquals(boost, token.getPayload() == null ? 1f : PayloadHelper.decodeFloat(token.getPayload().getData()));
-    assertEquals(startOffset, token.startOffset());
-    assertEquals(endOffset, token.endOffset());
-    return token;
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int positionIncrement, float boost, int startOffset, int endOffset) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    assertEquals(positionIncrement, nextToken.getPositionIncrement());
+    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()));
+    assertEquals(startOffset, nextToken.startOffset());
+    assertEquals(endOffset, nextToken.endOffset());
+    return nextToken;
   }
 
-  private Token assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    Token token = ts.next(new Token());
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    assertEquals(startOffset, token.startOffset());
-    assertEquals(endOffset, token.endOffset());
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int startOffset, int endOffset) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    assertEquals(startOffset, nextToken.startOffset());
+    assertEquals(endOffset, nextToken.endOffset());
+    return nextToken;
+  }
+
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
     return token;
   }
 
@@ -500,9 +495,9 @@ public class TestShingleMatrixFilter extends TestCase {
 
     public TokenListStream(TokenStream ts) throws IOException {
       tokens = new ArrayList<Token>();
-      Token token;
-      while ((token = ts.next(new Token())) != null) {
-        tokens.add(token);
+      final Token reusableToken = new Token();
+      for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+        tokens.add((Token) nextToken.clone());
       }
     }
 
@@ -512,14 +507,16 @@ public class TestShingleMatrixFilter extends TestCase {
 
     private Iterator<Token> iterator;
 
-    public Token next() throws IOException {
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
       if (iterator == null) {
         iterator = tokens.iterator();
       }
       if (!iterator.hasNext()) {
         return null;
       }
-      return iterator.next();
+      Token nextToken = (Token) iterator.next();
+      return (Token) nextToken.clone();
     }
 
 

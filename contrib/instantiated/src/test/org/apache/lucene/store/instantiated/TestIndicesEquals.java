@@ -15,18 +15,31 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+
 import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Payload;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -151,21 +164,24 @@ public class TestIndicesEquals extends TestCase {
             document.add(f);
             if (i > 4) {
               final List<Token> tokens = new ArrayList<Token>(2);
-              Token t = new Token("the", 0, 2, "text");
+              Token t = createToken("the", 0, 2, "text");
               t.setPayload(new Payload(new byte[]{1, 2, 3}));
               tokens.add(t);
-              t = new Token("end", 3, 5, "text");
+              t = createToken("end", 3, 5, "text");
               t.setPayload(new Payload(new byte[]{2}));
               tokens.add(t);
-              tokens.add(new Token("fin", 7, 9));
+              tokens.add(createToken("fin", 7, 9));
               document.add(new Field("f", new TokenStream() {
                 Iterator<Token> it = tokens.iterator();
 
-                public Token next() throws IOException {
+                public Token next(final Token reusableToken) throws IOException {
+                  assert reusableToken != null;
                   if (!it.hasNext()) {
                     return null;
                   }
-                  return it.next();
+                  // Resettable token streams need to return clones.
+                  Token nextToken = (Token) it.next();
+                  return (Token) nextToken.clone();
                 }
 
                 public void reset() throws IOException {
@@ -465,5 +481,20 @@ public class TestIndicesEquals extends TestCase {
     aprioriReader.close();
     testReader.close();
   }
+
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
+    return token;
+  }
+
+  private static Token createToken(String term, int start, int offset, String type)
+  {
+    Token token = new Token(start, offset, type);
+    token.setTermBuffer(term);
+    return token;
+  }
+
 
 }

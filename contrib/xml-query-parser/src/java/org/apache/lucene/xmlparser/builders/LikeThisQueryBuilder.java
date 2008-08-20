@@ -74,16 +74,14 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		if((stopWords!=null)&&(fields!=null))
 		{
 		    stopWordsSet=new HashSet();
+                    final Token reusableToken = new Token();
 		    for (int i = 0; i < fields.length; i++)
             {
                 TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
                 try
                 {
-	                Token stopToken=ts.next();
-	                while(stopToken!=null)
-	                {
-	                    stopWordsSet.add(stopToken.termText());
-	                    stopToken=ts.next();
+	                for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+	                    stopWordsSet.add(nextToken.term());
 	                }
                 }
                 catch(IOException ioe)

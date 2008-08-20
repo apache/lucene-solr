@@ -27,18 +27,8 @@ import java.io.IOException;
  */
 public class EmptyTokenStream extends TokenStream {
 
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     return null;
   }
-
-  public Token next(Token result) throws IOException {
-    return null;
-  }
-
-  public void reset() throws IOException {
-  }
-
-  public void close() throws IOException {
-  }
-
 }

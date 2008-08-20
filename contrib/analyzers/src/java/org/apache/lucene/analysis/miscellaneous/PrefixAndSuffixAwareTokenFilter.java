@@ -55,8 +55,9 @@ public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
   }
 
 
-  public Token next(Token result) throws IOException {
-    return suffix.next(result);
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    return suffix.next(reusableToken);
   }
 
 

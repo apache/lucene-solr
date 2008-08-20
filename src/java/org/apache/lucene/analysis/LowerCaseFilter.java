@@ -29,16 +29,17 @@ public final class LowerCaseFilter extends TokenFilter {
     super(in);
   }
 
-  public final Token next(Token result) throws IOException {
-    result = input.next(result);
-    if (result != null) {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken != null) {
 
-      final char[] buffer = result.termBuffer();
-      final int length = result.termLength;
+      final char[] buffer = nextToken.termBuffer();
+      final int length = nextToken.termLength();
       for(int i=0;i<length;i++)
         buffer[i] = Character.toLowerCase(buffer[i]);
 
-      return result;
+      return nextToken;
     } else
       return null;
   }

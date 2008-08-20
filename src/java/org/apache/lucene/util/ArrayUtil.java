@@ -32,7 +32,10 @@ public final class ArrayUtil {
 
   public static int getShrinkSize(int currentSize, int targetSize) {
     final int newSize = getNextSize(targetSize);
-    if (newSize < currentSize && currentSize > newSize*2)
+    // Only reallocate if we are "substantially" smaller.
+    // This saves us from "running hot" (constantly making a
+    // bit bigger then a bit smaller, over and over):
+    if (newSize < currentSize/2)
       return newSize;
     else
       return currentSize;
@@ -105,5 +108,23 @@ public final class ArrayUtil {
       return newArray;
     } else
       return array;
+  }
+
+  /** Returns hash of chars in range start (inclusive) to
+   *  end (inclusive) */
+  public static int hashCode(char[] array, int start, int end) {
+    int code = 0;
+    for(int i=end-1;i>=start;i--)
+      code = code*31 + array[i];
+    return code;
+  }
+
+  /** Returns hash of chars in range start (inclusive) to
+   *  end (inclusive) */
+  public static int hashCode(byte[] array, int start, int end) {
+    int code = 0;
+    for(int i=end-1;i>=start;i--)
+      code = code*31 + array[i];
+    return code;
   }
 }

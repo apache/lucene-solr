@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -85,12 +86,11 @@ public final class SimilarityQueries
 										  throws IOException
 	{	
 		TokenStream ts = a.tokenStream( field, new StringReader( body));
-		org.apache.lucene.analysis.Token t;
 		BooleanQuery tmp = new BooleanQuery();
 		Set already = new HashSet(); // ignore dups
-		while ( (t = ts.next()) != null)
-		{
-			String word = t.termText();
+                final Token reusableToken = new Token();
+		for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+			String word = nextToken.term();
 			// ignore opt stop words
 			if ( stop != null &&
 				 stop.contains( word)) continue;

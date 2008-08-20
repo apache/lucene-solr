@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.TokenFilter;
 public class ElisionFilter extends TokenFilter {
   private Set articles = null;
 
-  private static String apostrophes = "'’";
+  private static char[] apostrophes = {'\'', '’'};
 
   public void setArticles(Set articles) {
     this.articles = new HashSet();
@@ -74,25 +74,36 @@ public class ElisionFilter extends TokenFilter {
   }
 
   /**
-   * Returns the next input Token whith termText() without elisioned start
+   * Returns the next input Token with term() without elisioned start
    */
-  public Token next() throws IOException {
-    Token t = input.next();
-    if (t == null)
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null)
       return null;
-    String text = t.termText();
-    System.out.println(text);
-    int minPoz = -1;
-    int poz;
-    for (int i = 0; i < apostrophes.length(); i++) {
-      poz = text.indexOf(apostrophes.charAt(i));
-      if (poz != -1)
-        minPoz = (minPoz == -1) ? poz : Math.min(poz, minPoz);
+
+    char[] termBuffer = nextToken.termBuffer();
+    int termLength = nextToken.termLength();
+
+    int minPoz = Integer.MAX_VALUE;
+    for (int i = 0; i < apostrophes.length; i++) {
+      char apos = apostrophes[i];
+      // The equivalent of String.indexOf(ch)
+      for (int poz = 0; poz < termLength ; poz++) {
+        if (termBuffer[poz] == apos) {
+            minPoz = Math.min(poz, minPoz);
+            break;
+        }
+      }
     }
-    if (minPoz != -1
-        && articles.contains(text.substring(0, minPoz).toLowerCase()))
-      text = text.substring(minPoz + 1);
-    return new Token(text, t.startOffset(), t.endOffset(), t.type());
+
+    // An apostrophe has been found. If the prefix is an article strip it off.
+    if (minPoz != Integer.MAX_VALUE
+        && articles.contains(new String(nextToken.termBuffer(), 0, minPoz).toLowerCase())) {
+      nextToken.setTermBuffer(nextToken.termBuffer(), minPoz + 1, nextToken.termLength() - (minPoz + 1));
+    }
+
+    return nextToken;
   }
 
 }

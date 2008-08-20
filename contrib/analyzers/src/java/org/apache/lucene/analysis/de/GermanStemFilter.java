@@ -37,7 +37,6 @@ public final class GermanStemFilter extends TokenFilter
     /**
      * The actual token in the input stream.
      */
-    private Token token = null;
     private GermanStemmer stemmer = null;
     private Set exclusionSet = null;
 
@@ -48,7 +47,7 @@ public final class GermanStemFilter extends TokenFilter
     }
 
     /**
-     * Builds a GermanStemFilter that uses an exclusiontable.
+     * Builds a GermanStemFilter that uses an exclusion table.
      */
     public GermanStemFilter( TokenStream in, Set exclusionSet )
     {
@@ -59,25 +58,24 @@ public final class GermanStemFilter extends TokenFilter
     /**
      * @return  Returns the next token in the stream, or null at EOS
      */
-    public final Token next()
+    public final Token next(final Token reusableToken)
       throws IOException
     {
-      if ( ( token = input.next() ) == null ) {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+
+      if (nextToken == null)
         return null;
+
+      String term = nextToken.term();
+      // Check the exclusion table.
+      if (exclusionSet == null || !exclusionSet.contains(term)) {
+        String s = stemmer.stem(term);
+        // If not stemmed, don't waste the time adjusting the token.
+        if ((s != null) && !s.equals(term))
+          nextToken.setTermBuffer(s);
       }
-      // Check the exclusiontable
-      else if ( exclusionSet != null && exclusionSet.contains( token.termText() ) ) {
-        return token;
-      }
-      else {
-        String s = stemmer.stem( token.termText() );
-        // If not stemmed, dont waste the time creating a new token
-        if ( !s.equals( token.termText() ) ) {
-          return new Token( s, token.startOffset(),
-            token.endOffset(), token.type() );
-        }
-        return token;
-      }
+      return nextToken;
     }
 
     /**

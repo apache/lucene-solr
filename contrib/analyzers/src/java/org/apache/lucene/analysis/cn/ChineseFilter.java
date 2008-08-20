@@ -18,7 +18,10 @@ package org.apache.lucene.analysis.cn;
  */
 
 import java.util.Hashtable;
-import org.apache.lucene.analysis.*;
+
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Title: ChineseFilter
@@ -61,10 +64,11 @@ public final class ChineseFilter extends TokenFilter {
             stopTable.put(STOP_WORDS[i], STOP_WORDS[i]);
     }
 
-    public final Token next() throws java.io.IOException {
+    public final Token next(final Token reusableToken) throws java.io.IOException {
+        assert reusableToken != null;
 
-        for (Token token = input.next(); token != null; token = input.next()) {
-            String text = token.termText();
+        for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+            String text = nextToken.term();
 
           // why not key off token type here assuming ChineseTokenizer comes first?
             if (stopTable.get(text) == null) {
@@ -75,7 +79,7 @@ public final class ChineseFilter extends TokenFilter {
 
                     // English word/token should larger than 1 character.
                     if (text.length()>1) {
-                        return token;
+                        return nextToken;
                     }
                     break;
                 case Character.OTHER_LETTER:
@@ -83,7 +87,7 @@ public final class ChineseFilter extends TokenFilter {
                     // One Chinese character as one Chinese word.
                     // Chinese word extraction to be added later here.
 
-                    return token;
+                    return nextToken;
                 }
 
             }

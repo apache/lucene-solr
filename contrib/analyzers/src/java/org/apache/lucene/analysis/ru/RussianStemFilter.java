@@ -35,7 +35,6 @@ public final class RussianStemFilter extends TokenFilter
     /**
      * The actual token in the input stream.
      */
-    private Token token = null;
     private RussianStemmer stemmer = null;
 
     public RussianStemFilter(TokenStream in, char[] charset)
@@ -47,22 +46,18 @@ public final class RussianStemFilter extends TokenFilter
     /**
      * @return  Returns the next token in the stream, or null at EOS
      */
-    public final Token next() throws IOException
+    public final Token next(final Token reusableToken) throws IOException
     {
-        if ((token = input.next()) == null)
-        {
+        assert reusableToken != null;
+        Token nextToken = input.next(reusableToken);
+        if (nextToken == null)
             return null;
-        }
-        else
-        {
-            String s = stemmer.stem(token.termText());
-            if (!s.equals(token.termText()))
-            {
-                return new Token(s, token.startOffset(), token.endOffset(),
-                    token.type());
-            }
-            return token;
-        }
+
+        String term = nextToken.term();
+        String s = stemmer.stem(term);
+        if (s != null && !s.equals(term))
+          nextToken.setTermBuffer(s);
+        return nextToken;
     }
 
     /**

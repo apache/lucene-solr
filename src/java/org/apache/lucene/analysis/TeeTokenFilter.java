@@ -45,10 +45,11 @@ public class TeeTokenFilter extends TokenFilter {
     this.sink = sink;
   }
 
-  public Token next(Token result) throws IOException {
-    Token t = input.next(result);
-    sink.add(t);
-    return t;
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    sink.add(nextToken);
+    return nextToken;
   }
 
 }

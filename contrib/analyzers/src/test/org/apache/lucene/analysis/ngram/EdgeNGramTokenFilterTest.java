@@ -68,52 +68,46 @@ public class EdgeNGramTokenFilterTest extends TestCase {
 
   public void testFrontUnigram() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 1);
-    Token token = null;
-    token = tokenizer.next();
-    assertEquals("(a,0,1)", token.toString());
-    token = tokenizer.next();
-    assertNull(token);
+    final Token reusableToken = new Token();
+    Token nextToken = tokenizer.next(reusableToken);
+    assertEquals("(a,0,1)", nextToken.toString());
+    assertNull(tokenizer.next(reusableToken));
   }
 
   public void testBackUnigram() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 1);
-    Token token = null;
-    token = tokenizer.next();
-    assertEquals("(e,4,5)", token.toString());
-    token = tokenizer.next();
-    assertNull(token);
+    final Token reusableToken = new Token();
+    Token nextToken = tokenizer.next(reusableToken);
+    assertEquals("(e,4,5)", nextToken.toString());
+    assertNull(tokenizer.next(reusableToken));
   }
 
   public void testOversizedNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 6, 6);
-    Token token = null;
-    token = tokenizer.next();
-    assertNull(token);
+    assertNull(tokenizer.next(new Token()));
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
-    Token token = null;
-    token = tokenizer.next();
-    assertEquals("(a,0,1)", token.toString());
-    token = tokenizer.next();
-    assertEquals("(ab,0,2)", token.toString());
-    token = tokenizer.next();
-    assertEquals("(abc,0,3)", token.toString());
-    token = tokenizer.next();
-    assertNull(token);
+    final Token reusableToken = new Token();
+    Token nextToken = tokenizer.next(reusableToken);
+    assertEquals("(a,0,1)", nextToken.toString());
+    nextToken = tokenizer.next(reusableToken);
+    assertEquals("(ab,0,2)", nextToken.toString());
+    nextToken = tokenizer.next(reusableToken);
+    assertEquals("(abc,0,3)", nextToken.toString());
+    assertNull(tokenizer.next(reusableToken));
   }
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 3);
-    Token token = null;
-    token = tokenizer.next();
-    assertEquals("(e,4,5)", token.toString());
-    token = tokenizer.next();
-    assertEquals("(de,3,5)", token.toString());
-    token = tokenizer.next();
-    assertEquals("(cde,2,5)", token.toString());
-    token = tokenizer.next();
-    assertNull(token);
+    final Token reusableToken = new Token();
+    Token nextToken = tokenizer.next(reusableToken);
+    assertEquals("(e,4,5)", nextToken.toString());
+    nextToken = tokenizer.next(reusableToken);
+    assertEquals("(de,3,5)", nextToken.toString());
+    nextToken = tokenizer.next(reusableToken);
+    assertEquals("(cde,2,5)", nextToken.toString());
+    assertNull(tokenizer.next(reusableToken));
   }
 }

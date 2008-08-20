@@ -17,13 +17,14 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.List;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.LinkedList;
+import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestAnalyzers extends LuceneTestCase {
 
@@ -35,12 +36,13 @@ public class TestAnalyzers extends LuceneTestCase {
                                String input, 
                                String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+    final Token reusableToken  = new Token();
     for (int i=0; i<output.length; i++) {
-      Token t = ts.next();
-      assertNotNull(t);
-      assertEquals(t.termText(), output[i]);
+      Token nextToken = ts.next(reusableToken);
+      assertNotNull(nextToken);
+      assertEquals(nextToken.term(), output[i]);
     }
-    assertNull(ts.next());
+    assertNull(ts.next(reusableToken));
     ts.close();
   }
 
@@ -93,14 +95,14 @@ public class TestAnalyzers extends LuceneTestCase {
   }
 
   void verifyPayload(TokenStream ts) throws IOException {
-    Token t = new Token();
+    final Token reusableToken = new Token();
     for(byte b=1;;b++) {
-      t.clear();
-      t = ts.next(t);
-      if (t==null) break;
-      // System.out.println("id="+System.identityHashCode(t) + " " + t);
-      // System.out.println("payload=" + (int)t.getPayload().toByteArray()[0]);
-      assertEquals(b, t.getPayload().toByteArray()[0]);
+      reusableToken.clear();
+      Token nextToken = ts.next(reusableToken);
+      if (nextToken==null) break;
+      // System.out.println("id="+System.identityHashCode(nextToken) + " " + t);
+      // System.out.println("payload=" + (int)nextToken.getPayload().toByteArray()[0]);
+      assertEquals(b, nextToken.getPayload().toByteArray()[0]);
     }
   }
 
@@ -141,13 +143,11 @@ class BuffTokenFilter extends TokenFilter {
     super(input);
   }
 
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
     if (lst == null) {
       lst = new LinkedList();
-      for(;;) {
-        Token t = input.next();
-        if (t==null) break;
-        lst.add(t);
+      for(Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+        lst.add(nextToken.clone());
       }
     }
     return lst.size()==0 ? null : (Token)lst.remove(0);
@@ -162,11 +162,12 @@ class PayloadSetter extends TokenFilter {
   byte[] data = new byte[1];
   Payload p = new Payload(data,0,1);
 
-  public Token next(Token target) throws IOException {
-    target = input.next(target);
-    if (target==null) return null;
-    target.setPayload(p);  // reuse the payload / byte[]
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken==null) return null;
+    nextToken.setPayload(p);  // reuse the payload / byte[]
     data[0]++;
-    return target;
+    return nextToken;
   }
 }

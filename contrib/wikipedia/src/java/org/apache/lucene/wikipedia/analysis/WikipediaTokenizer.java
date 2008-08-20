@@ -133,7 +133,8 @@ public class WikipediaTokenizer extends Tokenizer {
   *
   * @see org.apache.lucene.analysis.TokenStream#next()
   */
-  public Token next(Token result) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (tokens != null && tokens.hasNext()){
       return (Token)tokens.next();
     }
@@ -144,22 +145,22 @@ public class WikipediaTokenizer extends Tokenizer {
     }
     String type = WikipediaTokenizerImpl.TOKEN_TYPES[tokenType];
     if (tokenOutput == TOKENS_ONLY || untokenizedTypes.contains(type) == false){
-      setupToken(result);
+      setupToken(reusableToken);
     } else if (tokenOutput == UNTOKENIZED_ONLY && untokenizedTypes.contains(type) == true){
-      collapseTokens(result, tokenType);
+      collapseTokens(reusableToken, tokenType);
 
     }
     else if (tokenOutput == BOTH){
       //collapse into a single token, add it to tokens AND output the individual tokens
       //output the untokenized Token first
-      collapseAndSaveTokens(result, tokenType, type);
+      collapseAndSaveTokens(reusableToken, tokenType, type);
     }
-    result.setPositionIncrement(scanner.getPositionIncrement());
-    result.setType(type);
-    return result;
+    reusableToken.setPositionIncrement(scanner.getPositionIncrement());
+    reusableToken.setType(type);
+    return reusableToken;
   }
 
-  private void collapseAndSaveTokens(Token result, int tokenType, String type) throws IOException {
+  private void collapseAndSaveTokens(final Token reusableToken, int tokenType, String type) throws IOException {
     //collapse
     StringBuffer buffer = new StringBuffer(32);
     int numAdded = scanner.setText(buffer);
@@ -188,10 +189,10 @@ public class WikipediaTokenizer extends Tokenizer {
     }
     //trim the buffer
     String s = buffer.toString().trim();
-    result.setTermBuffer(s.toCharArray(), 0, s.length());
-    result.setStartOffset(theStart);
-    result.setEndOffset(theStart + s.length());
-    result.setFlags(UNTOKENIZED_TOKEN_FLAG);
+    reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
+    reusableToken.setStartOffset(theStart);
+    reusableToken.setEndOffset(theStart + s.length());
+    reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
       scanner.yypushback(scanner.yylength());
@@ -205,7 +206,7 @@ public class WikipediaTokenizer extends Tokenizer {
     saved.setType(type);
   }
 
-  private void collapseTokens(Token result, int tokenType) throws IOException {
+  private void collapseTokens(final Token reusableToken, int tokenType) throws IOException {
     //collapse
     StringBuffer buffer = new StringBuffer(32);
     int numAdded = scanner.setText(buffer);
@@ -227,10 +228,10 @@ public class WikipediaTokenizer extends Tokenizer {
     }
     //trim the buffer
     String s = buffer.toString().trim();
-    result.setTermBuffer(s.toCharArray(), 0, s.length());
-    result.setStartOffset(theStart);
-    result.setEndOffset(theStart + s.length());
-    result.setFlags(UNTOKENIZED_TOKEN_FLAG);
+    reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
+    reusableToken.setStartOffset(theStart);
+    reusableToken.setEndOffset(theStart + s.length());
+    reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
       scanner.yypushback(scanner.yylength());
@@ -239,11 +240,11 @@ public class WikipediaTokenizer extends Tokenizer {
     }
   }
 
-  private void setupToken(Token result) {
-    scanner.getText(result);
+  private void setupToken(final Token reusableToken) {
+    scanner.getText(reusableToken);
     final int start = scanner.yychar();
-    result.setStartOffset(start);
-    result.setEndOffset(start + result.termLength());
+    reusableToken.setStartOffset(start);
+    reusableToken.setEndOffset(start + reusableToken.termLength());
   }
 
   /*

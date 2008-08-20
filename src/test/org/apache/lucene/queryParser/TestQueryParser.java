@@ -75,19 +75,20 @@ public class TestQueryParser extends LuceneTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    public Token next() throws IOException {
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
       if (inPhrase) {
         inPhrase = false;
-        return new Token("phrase2", savedStart, savedEnd);
+        return reusableToken.reinit("phrase2", savedStart, savedEnd);
       } else
-        for (Token token = input.next(); token != null; token = input.next()) {
-          if (token.termText().equals("phrase")) {
+        for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+          if (nextToken.term().equals("phrase")) {
             inPhrase = true;
-            savedStart = token.startOffset();
-            savedEnd = token.endOffset();
-            return new Token("phrase1", savedStart, savedEnd);
-          } else if (!token.termText().equals("stop"))
-            return token;
+            savedStart = nextToken.startOffset();
+            savedEnd = nextToken.endOffset();
+            return nextToken.reinit("phrase1", savedStart, savedEnd);
+          } else if (!nextToken.term().equals("stop"))
+            return nextToken;
         }
       return null;
     }

@@ -42,10 +42,10 @@ public class TokenRangeSinkTokenizerTest extends TestCase {
     TokenRangeSinkTokenizer rangeToks = new TokenRangeSinkTokenizer(2, 4);
     String test = "The quick red fox jumped over the lazy brown dogs";
     TeeTokenFilter tee = new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(test)), rangeToks);
-    Token tok = null;
     int count = 0;
-    while ((tok = tee.next()) != null){
-      assertTrue("tok is null and it shouldn't be", tok != null);
+    final Token reusableToken = new Token();
+    for (Token nextToken = tee.next(reusableToken); nextToken != null; nextToken = tee.next(reusableToken)) {
+      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
       count++;
     }
     assertTrue(count + " does not equal: " + 10, count == 10);

@@ -73,10 +73,11 @@ public class AnalyzerUtil {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int position = -1;
           
-          public Token next() throws IOException {
-            Token token = input.next(); // from filter super class
-            log.println(toString(token));
-            return token;
+          public Token next(final Token reusableToken) throws IOException {
+            assert reusableToken != null;
+            Token nextToken = input.next(reusableToken); // from filter super class
+            log.println(toString(nextToken));
+            return nextToken;
           }
           
           private String toString(Token token) {
@@ -84,7 +85,7 @@ public class AnalyzerUtil {
             
             position += token.getPositionIncrement();
             return "[" + logName + ":" + position + ":" + fieldName + ":"
-                + token.termText() + ":" + token.startOffset()
+                + token.term() + ":" + token.startOffset()
                 + "-" + token.endOffset() + ":" + token.type()
                 + "]";
           }         
@@ -121,8 +122,9 @@ public class AnalyzerUtil {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int todo = maxTokens;
           
-          public Token next() throws IOException {
-            return --todo >= 0 ? input.next() : null;
+          public Token next(final Token reusableToken) throws IOException {
+            assert reusableToken != null;
+            return --todo >= 0 ? input.next(reusableToken) : null;
           }
         };
       }
@@ -239,10 +241,11 @@ public class AnalyzerUtil {
           final ArrayList tokens2 = new ArrayList();
           TokenStream tokenStream = new TokenFilter(child.tokenStream(fieldName, reader)) {
 
-            public Token next() throws IOException {
-              Token token = input.next(); // from filter super class
-              if (token != null) tokens2.add(token);
-              return token;
+            public Token next(final Token reusableToken) throws IOException {
+              assert reusableToken != null;
+              Token nextToken = input.next(reusableToken); // from filter super class
+              if (nextToken != null) tokens2.add(nextToken.clone());
+              return nextToken;
             }
           };
           
@@ -253,7 +256,8 @@ public class AnalyzerUtil {
 
             private Iterator iter = tokens.iterator();
 
-            public Token next() {
+            public Token next(Token token) {
+              assert token != null;
               if (!iter.hasNext()) return null;
               return (Token) iter.next();
             }
@@ -300,12 +304,12 @@ public class AnalyzerUtil {
     HashMap map = new HashMap();
     TokenStream stream = analyzer.tokenStream("", new StringReader(text));
     try {
-      Token token;
-      while ((token = stream.next()) != null) {
-        MutableInteger freq = (MutableInteger) map.get(token.termText());
+      final Token reusableToken = new Token();
+      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+        MutableInteger freq = (MutableInteger) map.get(nextToken.term());
         if (freq == null) {
           freq = new MutableInteger(1);
-          map.put(token.termText(), freq);
+          map.put(nextToken.term(), freq);
         } else {
           freq.setValue(freq.intValue() + 1);
         }

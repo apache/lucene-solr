@@ -16,10 +16,10 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * tests for the TeeTokenFilter and SinkTokenizer
  */
-public class TeeSinkTokenTest extends TestCase {
+public class TeeSinkTokenTest extends LuceneTestCase {
   protected StringBuffer buffer1;
   protected StringBuffer buffer2;
   protected String[] tokens1;
@@ -63,23 +63,23 @@ public class TeeSinkTokenTest extends TestCase {
 
     SinkTokenizer sink1 = new SinkTokenizer(null) {
       public void add(Token t) {
-        if (t != null && t.termText().equalsIgnoreCase("The")) {
+        if (t != null && t.term().equalsIgnoreCase("The")) {
           super.add(t);
         }
       }
     };
     TokenStream source = new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(buffer1.toString())), sink1);
-    Token token = null;
     int i = 0;
-    while ((token = source.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + tokens1[i], token.termText().equals(tokens1[i]) == true);
+    final Token reusableToken = new Token();
+    for (Token nextToken = source.next(reusableToken); nextToken != null; nextToken = source.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + tokens1[i], nextToken.term().equals(tokens1[i]) == true);
       i++;
     }
     assertTrue(i + " does not equal: " + tokens1.length, i == tokens1.length);
     assertTrue("sink1 Size: " + sink1.getTokens().size() + " is not: " + 2, sink1.getTokens().size() == 2);
     i = 0;
-    while ((token = sink1.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + "The", token.termText().equalsIgnoreCase("The") == true);
+    for (Token token = sink1.next(reusableToken); token != null; token = sink1.next(reusableToken)) {
+      assertTrue(token.term() + " is not equal to " + "The", token.term().equalsIgnoreCase("The") == true);
       i++;
     }
     assertTrue(i + " does not equal: " + sink1.getTokens().size(), i == sink1.getTokens().size());
@@ -88,54 +88,54 @@ public class TeeSinkTokenTest extends TestCase {
   public void testMultipleSources() throws Exception {
     SinkTokenizer theDetector = new SinkTokenizer(null) {
       public void add(Token t) {
-        if (t != null && t.termText().equalsIgnoreCase("The")) {
+        if (t != null && t.term().equalsIgnoreCase("The")) {
           super.add(t);
         }
       }
     };
     SinkTokenizer dogDetector = new SinkTokenizer(null) {
       public void add(Token t) {
-        if (t != null && t.termText().equalsIgnoreCase("Dogs")) {
+        if (t != null && t.term().equalsIgnoreCase("Dogs")) {
           super.add(t);
         }
       }
     };
     TokenStream source1 = new CachingTokenFilter(new TeeTokenFilter(new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(buffer1.toString())), theDetector), dogDetector));
     TokenStream source2 = new TeeTokenFilter(new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(buffer2.toString())), theDetector), dogDetector);
-    Token token = null;
     int i = 0;
-    while ((token = source1.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + tokens1[i], token.termText().equals(tokens1[i]) == true);
+    final Token reusableToken = new Token();
+    for (Token nextToken = source1.next(reusableToken); nextToken != null; nextToken = source1.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + tokens1[i], nextToken.term().equals(tokens1[i]) == true);
       i++;
     }
     assertTrue(i + " does not equal: " + tokens1.length, i == tokens1.length);
     assertTrue("theDetector Size: " + theDetector.getTokens().size() + " is not: " + 2, theDetector.getTokens().size() == 2);
     assertTrue("dogDetector Size: " + dogDetector.getTokens().size() + " is not: " + 1, dogDetector.getTokens().size() == 1);
     i = 0;
-    while ((token = source2.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + tokens2[i], token.termText().equals(tokens2[i]) == true);
+    for (Token nextToken = source2.next(reusableToken); nextToken != null; nextToken = source2.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + tokens2[i], nextToken.term().equals(tokens2[i]) == true);
       i++;
     }
     assertTrue(i + " does not equal: " + tokens2.length, i == tokens2.length);
     assertTrue("theDetector Size: " + theDetector.getTokens().size() + " is not: " + 4, theDetector.getTokens().size() == 4);
     assertTrue("dogDetector Size: " + dogDetector.getTokens().size() + " is not: " + 2, dogDetector.getTokens().size() == 2);
     i = 0;
-    while ((token = theDetector.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + "The", token.termText().equalsIgnoreCase("The") == true);
+    for (Token nextToken = theDetector.next(reusableToken); nextToken != null; nextToken = theDetector.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + "The", nextToken.term().equalsIgnoreCase("The") == true);
       i++;
     }
     assertTrue(i + " does not equal: " + theDetector.getTokens().size(), i == theDetector.getTokens().size());
     i = 0;
-    while ((token = dogDetector.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + "Dogs", token.termText().equalsIgnoreCase("Dogs") == true);
+    for (Token nextToken = dogDetector.next(reusableToken); nextToken != null; nextToken = dogDetector.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + "Dogs", nextToken.term().equalsIgnoreCase("Dogs") == true);
       i++;
     }
     assertTrue(i + " does not equal: " + dogDetector.getTokens().size(), i == dogDetector.getTokens().size());
     source1.reset();
     TokenStream lowerCasing = new LowerCaseFilter(source1);
     i = 0;
-    while ((token = lowerCasing.next()) != null) {
-      assertTrue(token.termText() + " is not equal to " + tokens1[i].toLowerCase(), token.termText().equals(tokens1[i].toLowerCase()) == true);
+    for (Token nextToken = lowerCasing.next(reusableToken); nextToken != null; nextToken = lowerCasing.next(reusableToken)) {
+      assertTrue(nextToken.term() + " is not equal to " + tokens1[i].toLowerCase(), nextToken.term().equals(tokens1[i].toLowerCase()) == true);
       i++;
     }
     assertTrue(i + " does not equal: " + tokens1.length, i == tokens1.length);
@@ -157,22 +157,21 @@ public class TeeSinkTokenTest extends TestCase {
       }
       //make sure we produce the same tokens
       ModuloSinkTokenizer sink = new ModuloSinkTokenizer(tokCount[k], 100);
-      Token next = new Token();
-      TokenStream result = new TeeTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), sink);
-      while ((next = result.next(next)) != null) {
+      final Token reusableToken = new Token();
+      TokenStream stream = new TeeTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), sink);
+      while (stream.next(reusableToken) != null) {
       }
-      result = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), 100);
-      next = new Token();
+      stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), 100);
       List tmp = new ArrayList();
-      while ((next = result.next(next)) != null) {
-        tmp.add(next.clone());
+      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+        tmp.add(nextToken.clone());
       }
       List sinkList = sink.getTokens();
       assertTrue("tmp Size: " + tmp.size() + " is not: " + sinkList.size(), tmp.size() == sinkList.size());
       for (int i = 0; i < tmp.size(); i++) {
         Token tfTok = (Token) tmp.get(i);
         Token sinkTok = (Token) sinkList.get(i);
-        assertTrue(tfTok.termText() + " is not equal to " + sinkTok.termText() + " at token: " + i, tfTok.termText().equals(sinkTok.termText()) == true);
+        assertTrue(tfTok.term() + " is not equal to " + sinkTok.term() + " at token: " + i, tfTok.term().equals(sinkTok.term()) == true);
       }
       //simulate two fields, each being analyzed once, for 20 documents
 
@@ -180,15 +179,13 @@ public class TeeSinkTokenTest extends TestCase {
         int tfPos = 0;
         long start = System.currentTimeMillis();
         for (int i = 0; i < 20; i++) {
-          next = new Token();
-          result = new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString())));
-          while ((next = result.next(next)) != null) {
-            tfPos += next.getPositionIncrement();
+          stream = new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString())));
+          for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+            tfPos += nextToken.getPositionIncrement();
           }
-          next = new Token();
-          result = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), modCounts[j]);
-          while ((next = result.next(next)) != null) {
-            tfPos += next.getPositionIncrement();
+          stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), modCounts[j]);
+          for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+            tfPos += nextToken.getPositionIncrement();
           }
         }
         long finish = System.currentTimeMillis();
@@ -198,15 +195,14 @@ public class TeeSinkTokenTest extends TestCase {
         start = System.currentTimeMillis();
         for (int i = 0; i < 20; i++) {
           sink = new ModuloSinkTokenizer(tokCount[k], modCounts[j]);
-          next = new Token();
-          result = new TeeTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), sink);
-          while ((next = result.next(next)) != null) {
-            sinkPos += next.getPositionIncrement();
+          stream = new TeeTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), sink);
+          for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+            sinkPos += nextToken.getPositionIncrement();
           }
           //System.out.println("Modulo--------");
-          result = sink;
-          while ((next = result.next(next)) != null) {
-            sinkPos += next.getPositionIncrement();
+          stream = sink;
+          for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+            sinkPos += nextToken.getPositionIncrement();
           }
         }
         finish = System.currentTimeMillis();
@@ -232,13 +228,15 @@ public class TeeSinkTokenTest extends TestCase {
     int count = 0;
 
     //return every 100 tokens
-    public Token next(Token result) throws IOException {
-
-      while ((result = input.next(result)) != null && count % modCount != 0) {
+    public Token next(final Token reusableToken) throws IOException {
+      Token nextToken = null;
+      for (nextToken = input.next(reusableToken);
+           nextToken != null && count % modCount != 0;
+           nextToken = input.next(reusableToken)) {
         count++;
       }
       count++;
-      return result;
+      return nextToken;
     }
   }
 
@@ -254,7 +252,7 @@ public class TeeSinkTokenTest extends TestCase {
 
     public void add(Token t) {
       if (t != null && count % modCount == 0) {
-        lst.add(t.clone());
+        super.add(t);
       }
       count++;
     }

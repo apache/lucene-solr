@@ -69,10 +69,11 @@ public class TestGermanStemFilter extends TestCase {
   private void check(final String input, final String expected) throws IOException {
     StandardTokenizer tokenStream = new StandardTokenizer(new StringReader(input));
     GermanStemFilter filter = new GermanStemFilter(tokenStream);
-    Token t = filter.next();
-    if (t == null)
+    final Token reusableToken = new Token();
+    Token nextToken = filter.next(reusableToken);
+    if (nextToken == null)
       fail();
-    assertEquals(expected, t.termText());
+    assertEquals(expected, nextToken.term());
     filter.close();
   }
 

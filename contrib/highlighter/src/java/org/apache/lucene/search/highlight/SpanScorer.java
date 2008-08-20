@@ -121,7 +121,7 @@ public class SpanScorer implements Scorer {
    */
   public float getTokenScore(Token token) {
     position += token.getPositionIncrement();
-    String termText = new String(token.termBuffer(), 0, token.termLength());
+    String termText = token.term();
 
     WeightedSpanTerm weightedSpanTerm;
 

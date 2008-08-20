@@ -42,17 +42,17 @@ public class TokenOffsetPayloadTokenFilterTest extends TestCase {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
     TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
-    Token tok = new Token();
     int count = 0;
-    while ((tok = nptf.next(tok)) != null){
-      assertTrue("tok is null and it shouldn't be", tok != null);
-      Payload pay = tok.getPayload();
+    final Token reusableToken = new Token();
+    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
+      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+      Payload pay = nextToken.getPayload();
       assertTrue("pay is null and it shouldn't be", pay != null);
       byte [] data = pay.getData();
       int start = PayloadHelper.decodeInt(data, 0);
-      assertTrue(start + " does not equal: " + tok.startOffset(), start == tok.startOffset());
+      assertTrue(start + " does not equal: " + nextToken.startOffset(), start == nextToken.startOffset());
       int end = PayloadHelper.decodeInt(data, 4);
-      assertTrue(end + " does not equal: " + tok.endOffset(), end == tok.endOffset());
+      assertTrue(end + " does not equal: " + nextToken.endOffset(), end == nextToken.endOffset());
       count++;
     }
     assertTrue(count + " does not equal: " + 10, count == 10);

@@ -1786,11 +1786,11 @@ public class TestIndexWriter extends LuceneTestCase
         return new TokenFilter(new StandardTokenizer(reader)) {
           private int count = 0;
 
-          public Token next() throws IOException {
+          public Token next(final Token reusableToken) throws IOException {
             if (count++ == 5) {
               throw new IOException();
             }
-            return input.next();
+            return input.next(reusableToken);
           }
         };
       }
@@ -1909,10 +1909,10 @@ public class TestIndexWriter extends LuceneTestCase
       this.fieldName = fieldName;
     }
 
-    public Token next(Token result) throws IOException {
+    public Token next(final Token reusableToken) throws IOException {
       if (this.fieldName.equals("crash") && count++ >= 4)
         throw new IOException("I'm experiencing problems");
-      return input.next(result);
+      return input.next(reusableToken);
     }
 
     public void reset() throws IOException {
@@ -3574,13 +3574,13 @@ public class TestIndexWriter extends LuceneTestCase
   public void testNegativePositions() throws Throwable {
     SinkTokenizer tokens = new SinkTokenizer();
     Token t = new Token();
-    t.setTermText("a");
+    t.setTermBuffer("a");
     t.setPositionIncrement(0);
     tokens.add(t);
-    t.setTermText("b");
+    t.setTermBuffer("b");
     t.setPositionIncrement(1);
     tokens.add(t);
-    t.setTermText("c");
+    t.setTermBuffer("c");
     tokens.add(t);
 
     MockRAMDirectory dir = new MockRAMDirectory();

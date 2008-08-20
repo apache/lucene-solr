@@ -64,7 +64,8 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws IOException {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (!started) {
       started = true;
       gramSize = minGram;
@@ -82,9 +83,9 @@ public class NGramTokenizer extends Tokenizer {
       if (pos+gramSize > inLen)
         return null;
     }
-    String gram = inStr.substring(pos, pos+gramSize);
+
     int oldPos = pos;
     pos++;
-    return new Token(gram, oldPos, oldPos+gramSize);
+    return reusableToken.reinit(inStr, oldPos, gramSize, oldPos, oldPos+gramSize);
   }
 }

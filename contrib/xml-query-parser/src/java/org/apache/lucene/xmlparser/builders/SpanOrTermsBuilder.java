@@ -52,12 +52,10 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 		{
 			ArrayList clausesList=new ArrayList();
 			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
-			Token token=ts.next();
-			while(token!=null)
-			{
-			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName,token.termText()));
+			final Token reusableToken = new Token();
+	                for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName,nextToken.term()));
 			    clausesList.add(stq);
-				token=ts.next();		    
 			}
 			SpanOrQuery soq=new SpanOrQuery((SpanQuery[]) clausesList.toArray(new SpanQuery[clausesList.size()]));
 			soq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));

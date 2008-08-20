@@ -37,12 +37,11 @@ public final class FrenchStemFilter extends TokenFilter {
 	/**
 	 * The actual token in the input stream.
 	 */
-	private Token token = null;
 	private FrenchStemmer stemmer = null;
 	private Set exclusions = null;
 
 	public FrenchStemFilter( TokenStream in ) {
-    super(in);
+          super(in);
 		stemmer = new FrenchStemmer();
 	}
 
@@ -55,23 +54,23 @@ public final class FrenchStemFilter extends TokenFilter {
 	/**
 	 * @return  Returns the next token in the stream, or null at EOS
 	 */
-	public final Token next()
+	public final Token next(final Token reusableToken)
 		throws IOException {
-		if ( ( token = input.next() ) == null ) {
+                assert reusableToken != null;
+                Token nextToken = input.next(reusableToken);
+		if (nextToken == null)
 			return null;
+
+		String term = nextToken.term();
+
+		// Check the exclusion table
+		if ( exclusions == null || !exclusions.contains( term ) ) {
+			String s = stemmer.stem( term );
+			// If not stemmed, don't waste the time  adjusting the token.
+			if ((s != null) && !s.equals( term ) )
+			   nextToken.setTermBuffer(s);
 		}
-		// Check the exclusiontable
-		else if ( exclusions != null && exclusions.contains( token.termText() ) ) {
-			return token;
-		}
-		else {
-			String s = stemmer.stem( token.termText() );
-			// If not stemmed, dont waste the time creating a new token
-			if ( !s.equals( token.termText() ) ) {
-			   return new Token( s, token.startOffset(), token.endOffset(), token.type());
-			}
-			return token;
-		}
+                return nextToken;
 	}
 	/**
 	 * Set a alternative/custom FrenchStemmer for this filter.

@@ -103,12 +103,13 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       super(input);
     }
 
-    public Token next() throws IOException {
-      Token t = input.next();
-      if (t != null) {
-        t.setPayload(new Payload(new byte[] { (byte) count++ }));
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null) {
+        nextToken.setPayload(new Payload(new byte[] { (byte) count++ }));
       }
-      return t;
+      return nextToken;
     }
 
   }

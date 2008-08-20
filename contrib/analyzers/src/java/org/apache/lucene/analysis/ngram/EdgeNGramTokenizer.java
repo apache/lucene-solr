@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter.Side;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -113,13 +114,14 @@ public class EdgeNGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws IOException {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     // if we are just starting, read the whole input
     if (!started) {
       started = true;
       char[] chars = new char[1024];
       input.read(chars);
-      inStr = new String(chars).trim();  // remove any trailing empty strings
+      inStr = new String(chars).trim();  // remove any leading or trailing spaces
       inLen = inStr.length();
       gramSize = minGram;
     }
@@ -134,15 +136,13 @@ public class EdgeNGramTokenizer extends Tokenizer {
       return null;
     }
 
-    Token tok;
-    if (side == Side.FRONT) {
-      tok = new Token(inStr.substring(0, gramSize), 0, gramSize);
-    }
-    else {
-      tok = new Token(inStr.substring(inLen-gramSize), inLen-gramSize, inLen);
-    }
-
+    // grab gramSize chars from front or back
+    int start = side == Side.FRONT ? 0 : inLen - gramSize;
+    int end = start + gramSize;
+    reusableToken.setTermBuffer(inStr, start, gramSize);
+    reusableToken.setStartOffset(start);
+    reusableToken.setEndOffset(end);
     gramSize++;
-    return tok;
+    return reusableToken;
   }
 }

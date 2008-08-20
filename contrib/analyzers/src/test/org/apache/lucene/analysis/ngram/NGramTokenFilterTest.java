@@ -60,17 +60,14 @@ public class NGramTokenFilterTest extends TestCase {
 
     public void testUnigrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 1, 1);
-        
-        Token token = null;
-        do { 
-            token = filter.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+
+      final Token reusableToken = new Token();
+        for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+            tokens.add(nextToken.toString());
+//          System.out.println(token.term());
+//          System.out.println(token);
+//          Thread.sleep(1000);
+        }
 
         assertEquals(5, tokens.size());
         ArrayList exp = new ArrayList();
@@ -80,17 +77,13 @@ public class NGramTokenFilterTest extends TestCase {
 
     public void testBigrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 2, 2);
-        
-        Token token = null;
-        do { 
-            token = filter.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+      final Token reusableToken = new Token();
+        for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+            tokens.add(nextToken.toString());
+//          System.out.println(token.term());
+//          System.out.println(token);
+//          Thread.sleep(1000);
+        }
 
         assertEquals(4, tokens.size());
         ArrayList exp = new ArrayList();
@@ -100,17 +93,13 @@ public class NGramTokenFilterTest extends TestCase {
 
     public void testNgrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 1, 3);
-        
-        Token token = null;
-        do { 
-            token = filter.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+      final Token reusableToken = new Token();
+        for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+            tokens.add(nextToken.toString());
+//          System.out.println(token.term());
+//          System.out.println(token);
+//          Thread.sleep(1000);
+        }
 
         assertEquals(12, tokens.size());
         ArrayList exp = new ArrayList();
@@ -122,17 +111,13 @@ public class NGramTokenFilterTest extends TestCase {
 
     public void testOversizedNgrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 6, 7);
-        
-        Token token = null;
-        do { 
-            token = filter.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+      final Token reusableToken = new Token();
+        for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+            tokens.add(nextToken.toString());
+//          System.out.println(token.term());
+//          System.out.println(token);
+//          Thread.sleep(1000);
+        }
 
         assertTrue(tokens.isEmpty());
     }

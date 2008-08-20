@@ -275,7 +275,8 @@ public class MemoryIndex implements Serializable {
     return new TokenStream() {
       private Iterator iter = keywords.iterator();
       private int start = 0;
-      public Token next() {
+      public Token next(final Token reusableToken) {
+        assert reusableToken != null;
         if (!iter.hasNext()) return null;
         
         Object obj = iter.next();
@@ -283,9 +284,9 @@ public class MemoryIndex implements Serializable {
           throw new IllegalArgumentException("keyword must not be null");
         
         String term = obj.toString();
-        Token token = new Token(term, start, start + term.length());
+        reusableToken.reinit(term, start, start+reusableToken.termLength());
         start += term.length() + 1; // separate words by 1 (blank) character
-        return token;
+        return reusableToken;
       }
     };
   }
@@ -349,14 +350,13 @@ public class MemoryIndex implements Serializable {
       HashMap terms = new HashMap();
       int numTokens = 0;
       int pos = -1;
-      Token token;
-      
-      while ((token = stream.next()) != null) {
-        String term = token.termText();
+      final Token reusableToken = new Token();
+      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+        String term = nextToken.term();
         if (term.length() == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
-        pos += token.getPositionIncrement();
+        pos += nextToken.getPositionIncrement();
         
         ArrayIntList positions = (ArrayIntList) terms.get(term);
         if (positions == null) { // term not seen before
@@ -366,7 +366,7 @@ public class MemoryIndex implements Serializable {
         if (stride == 1) {
           positions.add(pos);
         } else {
-          positions.add(pos, token.startOffset(), token.endOffset());
+          positions.add(pos, nextToken.startOffset(), nextToken.endOffset());
         }
       }
       

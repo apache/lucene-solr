@@ -29,16 +29,17 @@ public class TestPerFieldAnalzyerWrapper extends LuceneTestCase {
 
     TokenStream tokenStream = analyzer.tokenStream("field",
                                             new StringReader(text));
-    Token token = tokenStream.next();
+    final Token reusableToken = new Token();
+    Token nextToken = tokenStream.next(reusableToken);
     assertEquals("WhitespaceAnalyzer does not lowercase",
                  "Qwerty",
-                 token.termText());
+                 nextToken.term());
 
     tokenStream = analyzer.tokenStream("special",
                                             new StringReader(text));
-    token = tokenStream.next();
+    nextToken = tokenStream.next(reusableToken);
     assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
-                 token.termText());
+                 nextToken.term());
   }
 }

@@ -19,8 +19,9 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
+import org.apache.lucene.util.ArrayUtil;
 
-/** A Token is an occurence of a term from the text of a field.  It consists of
+/** A Token is an occurrence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
   <p>
@@ -29,7 +30,7 @@ import org.apache.lucene.index.TermPositions;     // for javadoc
   browser, or to show matching text fragments in a KWIC (KeyWord In Context)
   display, etc.
   <p>
-  The type is an interned string, assigned by a lexical analyzer
+  The type is a string, assigned by a lexical analyzer
   (a.k.a. tokenizer), naming the lexical or syntactic class that the token
   belongs to.  For example an end of sentence marker token might be implemented
   with type "eos".  The default token type is "word".  
@@ -49,7 +50,7 @@ import org.apache.lucene.index.TermPositions;     // for javadoc
   <p><b>NOTE:</b> As of 2.3, Token stores the term text
   internally as a malleable char[] termBuffer instead of
   String termText.  The indexing code and core tokenizers
-  have been changed re-use a single Token instance, changing
+  have been changed to re-use a single Token instance, changing
   its buffer and other fields in-place as the Token is
   processed.  This provides substantially better indexing
   performance as it saves the GC cost of new'ing a Token and
@@ -62,14 +63,55 @@ import org.apache.lucene.index.TermPositions;     // for javadoc
   instance when possible for best performance, by
   implementing the {@link TokenStream#next(Token)} API.
   Failing that, to create a new Token you should first use
-  one of the constructors that starts with null text.  Then
-  you should call either {@link #termBuffer()} or {@link
-  #resizeTermBuffer(int)} to retrieve the Token's
-  termBuffer.  Fill in the characters of your term into this
-  buffer, and finally call {@link #setTermLength(int)} to
+  one of the constructors that starts with null text.  To load
+  the token from a char[] use {@link #setTermBuffer(char[], int, int)}.
+  To load from a String use {@link #setTermBuffer(String)} or {@link #setTermBuffer(String, int, int)}.
+  Alternatively you can get the Token's termBuffer by calling either {@link #termBuffer()},
+  if you know that your text is shorter than the capacity of the termBuffer
+  or {@link #resizeTermBuffer(int)}, if there is any possibility
+  that you may need to grow the buffer. Fill in the characters of your term into this
+  buffer, with {@link String#getChars(int, int, char[], int)} if loading from a string,
+  or with {@link System#arraycopy(Object, int, Object, int, int)}, and finally call {@link #setTermLength(int)} to
   set the length of the term text.  See <a target="_top"
   href="https://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>
   for details.</p>
+  <p>Typical reuse patterns:
+  <ul>
+  <li> Copying text from a string (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <pre>
+    return reusableToken.reinit(string, startOffset, endOffset[, type]);
+  </pre>
+  </li>
+  <li> Copying some text from a string (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <pre>
+    return reusableToken.reinit(string, 0, string.length(), startOffset, endOffset[, type]);
+  </pre>
+  </li>
+  </li>
+  <li> Copying text from char[] buffer (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <pre>
+    return reusableToken.reinit(buffer, 0, buffer.length, startOffset, endOffset[, type]);
+  </pre>
+  </li>
+  <li> Copying some text from a char[] buffer (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <pre>
+    return reusableToken.reinit(buffer, start, end - start, startOffset, endOffset[, type]);
+  </pre>
+  </li>
+  <li> Copying from one one Token to another (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <pre>
+    return reusableToken.reinit(source.termBuffer(), 0, source.termLength(), source.startOffset(), source.endOffset()[, source.type()]);
+  </pre>
+  </li>
+  </ul>
+  A few things to note:
+  <ul>
+  <li>clear() initializes most of the fields to default values, but not startOffset, endOffset and type.</li>
+  <li>Because <code>TokenStreams</code> can be chained, one cannot assume that the <code>Token's</code> current type is correct.</li>
+  <li>The startOffset and endOffset represent the start and offset in the source text. So be careful in adjusting them.</li>
+  <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
+  </ul>
+  </p>
 
   @see org.apache.lucene.index.Payload
 */
@@ -83,16 +125,56 @@ public class Token implements Cloneable {
    * deprecated APIs */
   private String termText;
 
-  char[] termBuffer;                              // characters for the term text
-  int termLength;                                 // length of term text in buffer
+  /**
+   * Characters for the term text.
+   * @deprecated This will be made private. Instead, use:
+   * {@link termBuffer()}, 
+   * {@link #setTermBuffer(char[], int, int)},
+   * {@link #setTermBuffer(String)}, or
+   * {@link #setTermBuffer(String, int, int)}
+   */
+  char[] termBuffer;
 
-  int startOffset;				  // start in source text
-  int endOffset;				  // end in source text
-  String type = DEFAULT_TYPE;                     // lexical type
+  /**
+   * Length of term text in the buffer.
+   * @deprecated This will be made private. Instead, use:
+   * {@link termLength()}, or @{link setTermLength(int)}.
+   */
+  int termLength;
+
+  /**
+   * Start in source text.
+   * @deprecated This will be made private. Instead, use:
+   * {@link startOffset()}, or @{link setStartOffset(int)}.
+   */
+  int startOffset;
+
+  /**
+   * End in source text.
+   * @deprecated This will be made private. Instead, use:
+   * {@link endOffset()}, or @{link setEndOffset(int)}.
+   */
+  int endOffset;
+
+  /**
+   * The lexical type of the token.
+   * @deprecated This will be made private. Instead, use:
+   * {@link type()}, or @{link setType(String)}.
+   */
+  String type = DEFAULT_TYPE;
+
   private int flags;
   
+  /**
+   * @deprecated This will be made private. Instead, use:
+   * {@link getPayload()}, or @{link setPayload(Payload)}.
+   */
   Payload payload;
   
+  /**
+   * @deprecated This will be made private. Instead, use:
+   * {@link getPositionIncrement()}, or @{link setPositionIncrement(String)}.
+   */
   int positionIncrement = 1;
 
   /** Constructs a Token will null text. */
@@ -101,8 +183,8 @@ public class Token implements Cloneable {
 
   /** Constructs a Token with null text and start & end
    *  offsets.
-   *  @param start start offset
-   *  @param end end offset */
+   *  @param start start offset in the source text
+   *  @param end end offset in the source text */
   public Token(int start, int end) {
     startOffset = start;
     endOffset = end;
@@ -110,8 +192,9 @@ public class Token implements Cloneable {
 
   /** Constructs a Token with null text and start & end
    *  offsets plus the Token type.
-   *  @param start start offset
-   *  @param end end offset */
+   *  @param start start offset in the source text
+   *  @param end end offset in the source text
+   *  @param typ the lexical type of this Token */
   public Token(int start, int end, String typ) {
     startOffset = start;
     endOffset = end;
@@ -120,12 +203,12 @@ public class Token implements Cloneable {
 
   /**
    * Constructs a Token with null text and start & end
-   *  offsets plus the Token type.
-   *  @param start start offset
-   *  @param end end offset
-   * @param flags The bits to set for this token
+   *  offsets plus flags. NOTE: flags is EXPERIMENTAL.
+   *  @param start start offset in the source text
+   *  @param end end offset in the source text
+   *  @param flags The bits to set for this token
    */
-  public Token(int start, int end, int flags){
+  public Token(int start, int end, int flags) {
     startOffset = start;
     endOffset = end;
     this.flags = flags;
@@ -138,7 +221,9 @@ public class Token implements Cloneable {
    *  term text.
    *  @param text term text
    *  @param start start offset
-   *  @param end end offset */
+   *  @param end end offset
+   *  @deprecated
+   */
   public Token(String text, int start, int end) {
     termText = text;
     startOffset = start;
@@ -152,7 +237,9 @@ public class Token implements Cloneable {
    *  @param text term text
    *  @param start start offset
    *  @param end end offset
-   *  @param typ token type */
+   *  @param typ token type
+   *  @deprecated
+   */
   public Token(String text, int start, int end, String typ) {
     termText = text;
     startOffset = start;
@@ -169,12 +256,29 @@ public class Token implements Cloneable {
    * @param start
    * @param end
    * @param flags token type bits
+   * @deprecated
    */
   public Token(String text, int start, int end, int flags) {
     termText = text;
     startOffset = start;
     endOffset = end;
     this.flags = flags;
+  }
+
+  /**
+   *  Constructs a Token with the given term buffer (offset
+   *  & length), start and end
+   *  offsets
+   * @param startTermBuffer
+   * @param termBufferOffset
+   * @param termBufferLength
+   * @param start
+   * @param end
+   */
+  public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
+    setTermBuffer(startTermBuffer, termBufferOffset, termBufferLength);
+    startOffset = start;
+    endOffset = end;
   }
 
   /** Set the position increment.  This determines the position of this token
@@ -200,6 +304,7 @@ public class Token implements Cloneable {
    * occur with no intervening stop words.
    *
    * </ul>
+   * @param positionIncrement the distance from the prior term
    * @see org.apache.lucene.index.TermPositions
    */
   public void setPositionIncrement(int positionIncrement) {
@@ -218,7 +323,11 @@ public class Token implements Cloneable {
 
   /** Sets the Token's term text.  <b>NOTE:</b> for better
    *  indexing speed you should instead use the char[]
-   *  termBuffer methods to set the term text. */
+   *  termBuffer methods to set the term text.
+   *  @deprecated use {@link #setTermBuffer(char[], int, int)} or
+   *                  {@link #setTermBuffer(String)} or
+   *                  {@link #setTermBuffer(String, int, int)}.
+   */
   public void setTermText(String text) {
     termText = text;
     termBuffer = null;
@@ -230,7 +339,7 @@ public class Token implements Cloneable {
    * because the text is stored internally in a char[].  If
    * possible, use {@link #termBuffer()} and {@link
    * #termLength()} directly instead.  If you really need a
-   * String, use <b>new String(token.termBuffer(), 0, token.termLength())</b>
+   * String, use {@link #term()}</b>
    */
   public final String termText() {
     if (termText == null && termBuffer != null)
@@ -238,16 +347,67 @@ public class Token implements Cloneable {
     return termText;
   }
 
+  /** Returns the Token's term text.
+   * 
+   * This method has a performance penalty
+   * because the text is stored internally in a char[].  If
+   * possible, use {@link #termBuffer()} and {@link
+   * #termLength()} directly instead.  If you really need a
+   * String, use this method, which is nothing more than
+   * a convenience call to <b>new String(token.termBuffer(), 0, token.termLength())</b>
+   */
+  public final String term() {
+    if (termText != null)
+      return termText;
+    initTermBuffer();
+    return new String(termBuffer, 0, termLength);
+  }
+
   /** Copies the contents of buffer, starting at offset for
-   *  length characters, into the termBuffer
-   *  array. <b>NOTE:</b> for better indexing speed you
-   *  should instead retrieve the termBuffer, using {@link
-   *  #termBuffer()} or {@link #resizeTermBuffer(int)}, and
-   *  fill it in directly to set the term text.  This saves
-   *  an extra copy. */
+   *  length characters, into the termBuffer array.
+   *  @param buffer the buffer to copy
+   *  @param offset the index in the buffer of the first character to copy
+   *  @param length the number of characters to copy
+   */
   public final void setTermBuffer(char[] buffer, int offset, int length) {
-    resizeTermBuffer(length);
+    termText = null;
+    char[] newCharBuffer = growTermBuffer(length);
+    if (newCharBuffer != null) {
+      termBuffer = newCharBuffer;
+    }
     System.arraycopy(buffer, offset, termBuffer, 0, length);
+    termLength = length;
+  }
+
+  /** Copies the contents of buffer into the termBuffer array.
+   *  @param buffer the buffer to copy
+   */
+  public final void setTermBuffer(String buffer) {
+    termText = null;
+    int length = buffer.length();
+    char[] newCharBuffer = growTermBuffer(length);
+    if (newCharBuffer != null) {
+      termBuffer = newCharBuffer;
+    }
+    buffer.getChars(0, length, termBuffer, 0);
+    termLength = length;
+  }
+
+  /** Copies the contents of buffer, starting at offset and continuing
+   *  for length characters, into the termBuffer array.
+   *  @param buffer the buffer to copy
+   *  @param offset the index in the buffer of the first character to copy
+   *  @param length the number of characters to copy
+   */
+  public final void setTermBuffer(String buffer, int offset, int length) {
+    assert offset <= buffer.length();
+    assert offset + length <= buffer.length();
+    termText = null;
+    char[] newCharBuffer = growTermBuffer(length);
+    if (newCharBuffer != null) {
+      termBuffer = newCharBuffer;
+    }
+    buffer.getChars(offset, offset + length, termBuffer, 0);
     termLength = length;
   }
 
@@ -263,21 +423,67 @@ public class Token implements Cloneable {
     return termBuffer;
   }
 
-  /** Grows the termBuffer to at least size newSize.
+  /** Grows the termBuffer to at least size newSize, preserving the
+   *  existing content. Note: If the next operation is to change
+   *  the contents of the term buffer use
+   *  {@link #setTermBuffer(char[], int, int)},
+   *  {@link #setTermBuffer(String)}, or
+   *  {@link #setTermBuffer(String, int, int)}
+   *  to optimally combine the resize with the setting of the termBuffer.
    *  @param newSize minimum size of the new termBuffer
    *  @return newly created termBuffer with length >= newSize
    */
   public char[] resizeTermBuffer(int newSize) {
-    initTermBuffer();
-    if (newSize > termBuffer.length) {
-      int size = termBuffer.length;
-      while(size < newSize)
-        size *= 2;
-      char[] newBuffer = new char[size];
-      System.arraycopy(termBuffer, 0, newBuffer, 0, termBuffer.length);
-      termBuffer = newBuffer;
+    char[] newCharBuffer = growTermBuffer(newSize);
+    if (termBuffer == null) {
+      // If there were termText, then preserve it.
+      // note that if termBuffer is null then newCharBuffer cannot be null
+      assert newCharBuffer != null;
+      if (termText != null) {
+        termText.getChars(0, termText.length(), newCharBuffer, 0);
+      }
+      termBuffer = newCharBuffer;
+    } else if (newCharBuffer != null) {
+      // Note: if newCharBuffer != null then termBuffer needs to grow.
+      // If there were a termBuffer, then preserve it
+      System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
+      termBuffer = newCharBuffer;      
     }
+    termText = null;
     return termBuffer;
+  }
+
+  /** Allocates a buffer char[] of at least newSize
+   *  @param newSize minimum size of the buffer
+   *  @return newly created buffer with length >= newSize or null if the current termBuffer is big enough
+   */
+  private char[] growTermBuffer(int newSize) {
+    if (termBuffer != null) {
+      if (termBuffer.length >= newSize)
+        // Already big enough
+        return null;
+      else
+        // Not big enough; create a new array with slight
+        // over allocation:
+        return new char[ArrayUtil.getNextSize(newSize)];
+    } else {
+
+      // determine the best size
+      // The buffer is always at least MIN_BUFFER_SIZE
+      if (newSize < MIN_BUFFER_SIZE) {
+        newSize = MIN_BUFFER_SIZE;
+      }
+
+      // If there is already a termText, then the size has to be at least that big
+      if (termText != null) {
+        int ttLength = termText.length();
+        if (newSize < ttLength) {
+          newSize = ttLength;
+        }
+      }
+
+      return new char[newSize];
+    }
   }
 
   // TODO: once we remove the deprecated termText() method
@@ -308,9 +514,16 @@ public class Token implements Cloneable {
   }
 
   /** Set number of valid characters (length of the term) in
-   *  the termBuffer array. */
+   *  the termBuffer array. Use this to truncate the termBuffer
+   *  or to synchronize with external manipulation of the termBuffer.
+   *  Note: to grow the size of the array,
+   *  use {@link #resizeTermBuffer(int)} first.
+   *  @param length the truncated length
+   */
   public final void setTermLength(int length) {
     initTermBuffer();
+    if (length > termBuffer.length)
+      throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
     termLength = length;
   }
 
@@ -331,7 +544,8 @@ public class Token implements Cloneable {
   }
 
   /** Returns this Token's ending offset, one greater than the position of the
-    last character corresponding to this token in the source text. */
+    last character corresponding to this token in the source text. The length
+    of the token in the source text is (endOffset - startOffset). */
   public final int endOffset() {
     return endOffset;
   }
@@ -373,8 +587,6 @@ public class Token implements Cloneable {
   public void setFlags(int flags) {
     this.flags = flags;
   }
-
-  
 
   /**
    * Returns this Token's payload.
@@ -424,9 +636,9 @@ public class Token implements Cloneable {
   public Object clone() {
     try {
       Token t = (Token)super.clone();
+      // Do a deep clone
       if (termBuffer != null) {
-        t.termBuffer = null;
-        t.setTermBuffer(termBuffer, 0, termLength);
+        t.termBuffer = (char[]) termBuffer.clone();
       }
       if (payload != null) {
         t.setPayload((Payload) payload.clone());
@@ -435,5 +647,213 @@ public class Token implements Cloneable {
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);  // shouldn't happen
     }
+  }
+
+  /** Makes a clone, but replaces the term buffer &
+   * start/end offset in the process.  This is more
+   * efficient than doing a full clone (and then calling
+   * setTermBuffer) because it saves a wasted copy of the old
+   * termBuffer. */
+  public Token clone(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
+    final Token t = new Token(newTermBuffer, newTermOffset, newTermLength, newStartOffset, newEndOffset);
+    t.positionIncrement = positionIncrement;
+    t.flags = flags;
+    t.type = type;
+    if (payload != null)
+      t.payload = (Payload) payload.clone();
+    return t;
+  }
+
+  public boolean equals(Object obj) {
+    if (obj == this)
+      return true;
+
+    if (obj instanceof Token) {
+      Token other = (Token) obj;
+
+      initTermBuffer();
+      other.initTermBuffer();
+      
+      if (termLength == other.termLength &&
+          startOffset == other.startOffset &&
+          endOffset == other.endOffset && 
+          flags == other.flags &&
+          positionIncrement == other.positionIncrement &&
+          subEqual(type, other.type) &&
+          subEqual(payload, other.payload)) {
+        for(int i=0;i<termLength;i++)
+          if (termBuffer[i] != other.termBuffer[i])
+            return false;
+        return true;
+      } else
+        return false;
+    } else
+      return false;
+  }
+
+  private boolean subEqual(Object o1, Object o2) {
+    if (o1 == null)
+      return o2 == null;
+    else
+      return o1.equals(o2);
+  }
+
+  public int hashCode() {
+    initTermBuffer();
+    int code = termLength;
+    code = code * 31 + startOffset;
+    code = code * 31 + endOffset;
+    code = code * 31 + flags;
+    code = code * 31 + positionIncrement;
+    code = code * 31 + type.hashCode();
+    code = (payload == null ? code : code * 31 + payload.hashCode());
+    code = code * 31 + ArrayUtil.hashCode(termBuffer, 0, termLength);
+    return code;
+  }
+      
+  // like clear() but doesn't clear termBuffer/text
+  private void clearNoTermBuffer() {
+    payload = null;
+    positionIncrement = 1;
+    flags = 0;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(char[], int, int)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset},
+   *  {@link #setType}
+   *  @return this Token instance */
+  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
+    clearNoTermBuffer();
+    payload = null;
+    positionIncrement = 1;
+    setTermBuffer(newTermBuffer, newTermOffset, newTermLength);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = newType;
+    return this;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(char[], int, int)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset}
+   *  {@link #setType} on Token.DEFAULT_TYPE
+   *  @return this Token instance */
+  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
+    clearNoTermBuffer();
+    setTermBuffer(newTermBuffer, newTermOffset, newTermLength);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = DEFAULT_TYPE;
+    return this;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(String)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset}
+   *  {@link #setType}
+   *  @return this Token instance */
+  public Token reinit(String newTerm, int newStartOffset, int newEndOffset, String newType) {
+    clearNoTermBuffer();
+    setTermBuffer(newTerm);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = newType;
+    return this;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(String, int, int)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset}
+   *  {@link #setType}
+   *  @return this Token instance */
+  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
+    clearNoTermBuffer();
+    setTermBuffer(newTerm, newTermOffset, newTermLength);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = newType;
+    return this;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(String)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset}
+   *  {@link #setType} on Token.DEFAULT_TYPE
+   *  @return this Token instance */
+  public Token reinit(String newTerm, int newStartOffset, int newEndOffset) {
+    clearNoTermBuffer();
+    setTermBuffer(newTerm);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = DEFAULT_TYPE;
+    return this;
+  }
+
+  /** Shorthand for calling {@link #clear},
+   *  {@link #setTermBuffer(String, int, int)},
+   *  {@link #setStartOffset},
+   *  {@link #setEndOffset}
+   *  {@link #setType} on Token.DEFAULT_TYPE
+   *  @return this Token instance */
+  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
+    clearNoTermBuffer();
+    setTermBuffer(newTerm, newTermOffset, newTermLength);
+    startOffset = newStartOffset;
+    endOffset = newEndOffset;
+    type = DEFAULT_TYPE;
+    return this;
+  }
+
+  /**
+   * Copy the prototype token's fields into this one. Note: Payloads are shared.
+   * @param prototype
+   */
+  public void reinit(Token prototype) {
+    prototype.initTermBuffer();
+    setTermBuffer(prototype.termBuffer, 0, prototype.termLength);
+    positionIncrement = prototype.positionIncrement;
+    flags = prototype.flags;
+    startOffset = prototype.startOffset;
+    endOffset = prototype.endOffset;
+    type = prototype.type;
+    payload =  prototype.payload;
+  }
+
+  /**
+   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
+   * @param prototype
+   * @param newTerm
+   */
+  public void reinit(Token prototype, String newTerm) {
+    setTermBuffer(newTerm);
+    positionIncrement = prototype.positionIncrement;
+    flags = prototype.flags;
+    startOffset = prototype.startOffset;
+    endOffset = prototype.endOffset;
+    type = prototype.type;
+    payload =  prototype.payload;
+  }
+
+  /**
+   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
+   * @param prototype
+   * @param newTermBuffer
+   * @param offset
+   * @param length
+   */
+  public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
+    setTermBuffer(newTermBuffer, offset, length);
+    positionIncrement = prototype.positionIncrement;
+    flags = prototype.flags;
+    startOffset = prototype.startOffset;
+    endOffset = prototype.endOffset;
+    type = prototype.type;
+    payload =  prototype.payload;
   }
 }

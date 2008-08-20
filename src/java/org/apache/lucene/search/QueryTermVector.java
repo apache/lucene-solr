@@ -17,14 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.TermFreqVector;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.*;
 
 /**
  *
@@ -51,12 +56,11 @@ public class QueryTermVector implements TermFreqVector {
       TokenStream stream = analyzer.tokenStream("", new StringReader(queryString));
       if (stream != null)
       {
-        Token next = null;
         List terms = new ArrayList();
         try {
-          while ((next = stream.next()) != null)
-          {
-            terms.add(next.termText());
+          final Token reusableToken = new Token();
+          for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+            terms.add(nextToken.term());
           }
           processTerms((String[])terms.toArray(new String[terms.size()]));
         } catch (IOException e) {

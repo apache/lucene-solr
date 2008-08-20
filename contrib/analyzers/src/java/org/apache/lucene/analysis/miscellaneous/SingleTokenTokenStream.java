@@ -28,20 +28,23 @@ import java.io.IOException;
 public class SingleTokenTokenStream extends TokenStream {
 
   private boolean exhausted = false;
+  // The token needs to be immutable, so work with clones!
   private Token token;
 
 
   public SingleTokenTokenStream(Token token) {
-    this.token = token;
+    assert token != null;
+    this.token = (Token) token.clone();
   }
 
 
-  public Token next(Token result) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (exhausted) {
       return null;
     }
     exhausted = true;
-    return token;
+    return (Token) token.clone();
   }
 
 
@@ -50,10 +53,10 @@ public class SingleTokenTokenStream extends TokenStream {
   }
 
   public Token getToken() {
-    return token;
+    return (Token) token.clone();
   }
 
   public void setToken(Token token) {
-    this.token = token;
+    this.token = (Token) token.clone();
   }
 }

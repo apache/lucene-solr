@@ -450,23 +450,24 @@ public class TestPayloads extends LuceneTestCase {
             this.offset = offset;
         }
         
-        public Token next(Token token) throws IOException {
-            token = input.next(token);
-            if (token != null) {
+        public Token next(final Token reusableToken) throws IOException {
+            assert reusableToken != null;
+            Token nextToken = input.next(reusableToken);
+            if (nextToken != null) {
                 if (offset + length <= data.length) {
                     Payload p = null;
                     if (p == null) {
                         p = new Payload();
-                        token.setPayload(p);
+                        nextToken.setPayload(p);
                     }
                     p.setData(data, offset, length);
                     offset += length;                
                 } else {
-                    token.setPayload(null);
+                    nextToken.setPayload(null);
                 }
             }
             
-            return token;
+            return nextToken;
         }
     }
     
@@ -536,11 +537,11 @@ public class TestPayloads extends LuceneTestCase {
             first = true;
         }
         
-        public Token next() throws IOException {
-            if (!first) return null;            
-            Token t = new Token(term, 0, 0);
-            t.setPayload(new Payload(payload));
-            return t;        
+        public Token next(final Token reusableToken) throws IOException {
+            if (!first) return null;
+            reusableToken.reinit(term, 0, 0);
+            reusableToken.setPayload(new Payload(payload));
+            return reusableToken;
         }
         
         public void close() throws IOException {

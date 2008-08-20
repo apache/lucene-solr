@@ -79,15 +79,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           final int valueLength = stringValue.length();
-          Token token = perThread.localToken;
-          token.clear();
-          char[] termBuffer = token.termBuffer();
-          if (termBuffer.length < valueLength)
-            termBuffer = token.resizeTermBuffer(valueLength);
-          stringValue.getChars(0, valueLength, termBuffer, 0);
-          token.setTermLength(valueLength);
-          token.setStartOffset(fieldState.offset);
-          token.setEndOffset(fieldState.offset + stringValue.length());
+          Token token = perThread.localToken.reinit(stringValue, fieldState.offset, fieldState.offset + valueLength);
           boolean success = false;
           try {
             consumer.add(token);
@@ -96,7 +88,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
             if (!success)
               docState.docWriter.setAborting();
           }
-          fieldState.offset += stringValue.length();
+          fieldState.offset += valueLength;
           fieldState.length++;
           fieldState.position++;
         } else {                                  // tokenized field

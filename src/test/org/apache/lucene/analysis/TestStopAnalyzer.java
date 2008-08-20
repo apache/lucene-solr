@@ -45,9 +45,9 @@ public class TestStopAnalyzer extends LuceneTestCase {
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
-    Token token = null;
-    while ((token = stream.next()) != null) {
-      assertFalse(inValidTokens.contains(token.termText()));
+    final Token reusableToken = new Token();
+    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+      assertFalse(inValidTokens.contains(nextToken.term()));
     }
   }
 
@@ -60,11 +60,11 @@ public class TestStopAnalyzer extends LuceneTestCase {
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
-    Token token = null;
-    while ((token = stream.next()) != null) {
-      String text = token.termText();
+    final Token reusableToken = new Token();
+    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+      String text = nextToken.term();
       assertFalse(stopWordsSet.contains(text));
-      assertEquals(1,token.getPositionIncrement()); // by default stop tokenizer does not apply increments.
+      assertEquals(1,nextToken.getPositionIncrement()); // by default stop tokenizer does not apply increments.
     }
   }
 
@@ -81,12 +81,12 @@ public class TestStopAnalyzer extends LuceneTestCase {
       int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
       TokenStream stream = newStop.tokenStream("test", reader);
       assertNotNull(stream);
-      Token token = null;
       int i = 0;
-      while ((token = stream.next()) != null) {
-        String text = token.termText();
+      final Token reusableToken = new Token();
+      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+        String text = nextToken.term();
         assertFalse(stopWordsSet.contains(text));
-        assertEquals(expectedIncr[i++],token.getPositionIncrement());
+        assertEquals(expectedIncr[i++],nextToken.getPositionIncrement());
       }
     } finally {
       StopFilter.setEnablePositionIncrementsDefault(defaultEnable);

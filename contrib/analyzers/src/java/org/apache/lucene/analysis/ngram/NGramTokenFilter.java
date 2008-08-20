@@ -63,17 +63,17 @@ public class NGramTokenFilter extends TokenFilter {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws IOException {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (ngrams.size() > 0) {
       return (Token) ngrams.removeFirst();
     }
 
-    Token token = input.next();
-    if (token == null) {
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null)
       return null;
-    }
 
-    ngram(token);
+    ngram(nextToken);
     if (ngrams.size() > 0)
       return (Token) ngrams.removeFirst();
     else
@@ -81,16 +81,13 @@ public class NGramTokenFilter extends TokenFilter {
   }
 
   private void ngram(Token token) { 
-    String inStr = token.termText();
-    int inLen = inStr.length();
+    char[] termBuffer = token.termBuffer();
+    int termLength = token.termLength();
     int gramSize = minGram;
     while (gramSize <= maxGram) {
       int pos = 0;                        // reset to beginning of string
-      while (pos+gramSize <= inLen) {     // while there is input
-        String gram = inStr.substring(pos, pos+gramSize);
-        Token tok = new Token(gram, pos, pos+gramSize);
-//        tok.setPositionIncrement(pos);
-        ngrams.add(tok);
+      while (pos+gramSize <= termLength) {     // while there is input
+        ngrams.add(token.clone(termBuffer, pos, gramSize, pos, pos+gramSize));
         pos++;
       }
       gramSize++;                         // increase n-gram size

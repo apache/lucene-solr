@@ -27,10 +27,11 @@ public class TestLengthFilter extends LuceneTestCase {
     TokenStream stream = new WhitespaceTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"));
     LengthFilter filter = new LengthFilter(stream, 2, 6);
-    assertEquals("short", filter.next().termText());
-    assertEquals("ab", filter.next().termText());
-    assertEquals("foo", filter.next().termText());
-    assertNull(filter.next());
+    final Token reusableToken = new Token();
+    assertEquals("short", filter.next(reusableToken).term());
+    assertEquals("ab", filter.next(reusableToken).term());
+    assertEquals("foo", filter.next(reusableToken).term());
+    assertNull(filter.next(reusableToken));
   }
 
 }

@@ -24,8 +24,9 @@ import java.io.IOException;
   <p>
   This is an abstract class.
   <p>
-  NOTE: subclasses must override at least one of {@link
-  #next()} or {@link #next(Token)}.
+  NOTE: subclasses must override {@link #next(Token)}.  It's
+  also OK to instead override {@link #next()} but that
+  method is now deprecated in favor of {@link #next(Token)}.
   <p>
   NOTE: subclasses overriding {@link #next(Token)} must  
   call {@link Token#clear()}.

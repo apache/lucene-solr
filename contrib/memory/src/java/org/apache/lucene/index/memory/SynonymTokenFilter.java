@@ -68,48 +68,51 @@ public class SynonymTokenFilter extends TokenFilter {
   }
   
   /** Returns the next token in the stream, or null at EOS. */
-  public Token next() throws IOException {
-    Token token;
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     while (todo > 0 && index < stack.length) { // pop from stack
-      token = createToken(stack[index++], current);
-      if (token != null) {
+      Token nextToken = createToken(stack[index++], current, reusableToken);
+      if (nextToken != null) {
         todo--;
-        return token;
+        return nextToken;
       }
     }
     
-    token = input.next();
-    if (token == null) return null; // EOS; iterator exhausted
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null) return null; // EOS; iterator exhausted
     
-    stack = synonyms.getSynonyms(token.termText()); // push onto stack
+    stack = synonyms.getSynonyms(nextToken.term()); // push onto stack
     if (stack.length > maxSynonyms) randomize(stack);
     index = 0;
-    current = token;
+    current = (Token) nextToken.clone();
     todo = maxSynonyms;
-    return token;
+    return nextToken;
   }
   
   /**
    * Creates and returns a token for the given synonym of the current input
-   * token; Override for custom (stateless or stateful) behaviour, if desired.
+   * token; Override for custom (stateless or stateful) behavior, if desired.
    * 
    * @param synonym 
    *            a synonym for the current token's term
    * @param current
    *            the current token from the underlying child stream
+   * @param reusableToken
+   *            the token to reuse
    * @return a new token, or null to indicate that the given synonym should be
    *         ignored
    */
-  protected Token createToken(String synonym, Token current) {
-    Token token = new Token(
-      synonym, current.startOffset(), current.endOffset(), SYNONYM_TOKEN_TYPE);
-    token.setPositionIncrement(0);
-    return token;
+  protected Token createToken(String synonym, Token current, final Token reusableToken) {
+    reusableToken.reinit(current, synonym);
+    reusableToken.setTermBuffer(synonym);
+    reusableToken.setType(SYNONYM_TOKEN_TYPE);
+    reusableToken.setPositionIncrement(0);
+    return reusableToken;
   }
   
   /**
    * Randomize synonyms to later sample a subset. Uses constant random seed
-   * for reproducability. Uses "DRand", a simple, fast, uniform pseudo-random
+   * for reproducibility. Uses "DRand", a simple, fast, uniform pseudo-random
    * number generator with medium statistical quality (multiplicative
    * congruential method), producing integers in the range [Integer.MIN_VALUE,
    * Integer.MAX_VALUE].

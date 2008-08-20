@@ -53,13 +53,9 @@ public class TestElision extends TestCase {
   private List filtre(TokenFilter filter) {
     List tas = new ArrayList();
     try {
-      boolean encore = true;
-      Token token;
-      while (encore) {
-        token = filter.next();
-        encore = token != null;
-        if (token != null)
-          tas.add(token.termText());
+      final Token reusableToken = new Token();
+      for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+        tas.add(nextToken.term());
       }
     } catch (IOException e) {
       e.printStackTrace();

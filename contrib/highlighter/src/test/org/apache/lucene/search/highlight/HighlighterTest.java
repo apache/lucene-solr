@@ -1127,21 +1127,22 @@ public class HighlighterTest extends TestCase implements Formatter {
       {
         lst = new ArrayList();
         Token t;
-        t = new Token("hi", 0, 2);
+        t = createToken("hi", 0, 2);
         lst.add(t);
-        t = new Token("hispeed", 0, 8);
+        t = createToken("hispeed", 0, 8);
         lst.add(t);
-        t = new Token("speed", 3, 8);
+        t = createToken("speed", 3, 8);
         t.setPositionIncrement(0);
         lst.add(t);
-        t = new Token("10", 8, 10);
+        t = createToken("10", 8, 10);
         lst.add(t);
-        t = new Token("foo", 11, 14);
+        t = createToken("foo", 11, 14);
         lst.add(t);
         iter = lst.iterator();
       }
 
-      public Token next() throws IOException {
+      public Token next(final Token reusableToken) throws IOException {
+        assert reusableToken != null;
         return iter.hasNext() ? (Token) iter.next() : null;
       }
     };
@@ -1156,21 +1157,22 @@ public class HighlighterTest extends TestCase implements Formatter {
       {
         lst = new ArrayList();
         Token t;
-        t = new Token("hispeed", 0, 8);
+        t = createToken("hispeed", 0, 8);
         lst.add(t);
-        t = new Token("hi", 0, 2);
+        t = createToken("hi", 0, 2);
         t.setPositionIncrement(0);
         lst.add(t);
-        t = new Token("speed", 3, 8);
+        t = createToken("speed", 3, 8);
         lst.add(t);
-        t = new Token("10", 8, 10);
+        t = createToken("10", 8, 10);
         lst.add(t);
-        t = new Token("foo", 11, 14);
+        t = createToken("foo", 11, 14);
         lst.add(t);
         iter = lst.iterator();
       }
 
-      public Token next() throws IOException {
+      public Token next(final Token reusableToken) throws IOException {
+        assert reusableToken != null;
         return iter.hasNext() ? (Token) iter.next() : null;
       }
     };
@@ -1407,6 +1409,13 @@ public class HighlighterTest extends TestCase implements Formatter {
     super.tearDown();
   }
 
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
+    return token;
+  }
+
 }
 
 // ===================================================================
@@ -1453,31 +1462,32 @@ class SynonymTokenizer extends TokenStream {
     this.synonyms = synonyms;
   }
 
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (currentRealToken == null) {
-      Token nextRealToken = realStream.next();
+      Token nextRealToken = realStream.next(reusableToken);
       if (nextRealToken == null) {
         return null;
       }
-      String expansions = (String) synonyms.get(nextRealToken.termText());
+      String expansions = (String) synonyms.get(nextRealToken.term());
       if (expansions == null) {
         return nextRealToken;
       }
       st = new StringTokenizer(expansions, ",");
       if (st.hasMoreTokens()) {
-        currentRealToken = nextRealToken;
+        currentRealToken = (Token) nextRealToken.clone();
       }
       return currentRealToken;
     } else {
-      String nextExpandedValue = st.nextToken();
-      Token expandedToken = new Token(nextExpandedValue, currentRealToken.startOffset(),
-          currentRealToken.endOffset());
-      expandedToken.setPositionIncrement(0);
+      reusableToken.reinit(st.nextToken(),
+                           currentRealToken.startOffset(),
+                           currentRealToken.endOffset());
+      reusableToken.setPositionIncrement(0);
       if (!st.hasMoreTokens()) {
         currentRealToken = null;
         st = null;
       }
-      return expandedToken;
+      return reusableToken;
     }
   }
 

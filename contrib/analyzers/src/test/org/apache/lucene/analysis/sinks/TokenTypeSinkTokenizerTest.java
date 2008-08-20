@@ -16,12 +16,16 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.payloads.NumericPayloadTokenFilter;
-
 import java.io.IOException;
 import java.io.StringReader;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.TeeTokenFilter;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 public class TokenTypeSinkTokenizerTest extends TestCase {
 
@@ -42,14 +46,14 @@ public class TokenTypeSinkTokenizerTest extends TestCase {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
     TeeTokenFilter ttf = new TeeTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))), sink);
-    Token tok = new Token();
     boolean seenDogs = false;
-    while ((tok = ttf.next(tok)) != null) {
-      if (tok.termText().equals("dogs")) {
+    final Token reusableToken = new Token();
+    for (Token nextToken = ttf.next(reusableToken); nextToken != null; nextToken = ttf.next(reusableToken)) {
+      if (nextToken.term().equals("dogs")) {
         seenDogs = true;
-        assertTrue(tok.type() + " is not equal to " + "D", tok.type().equals("D") == true);
+        assertTrue(nextToken.type() + " is not equal to " + "D", nextToken.type().equals("D") == true);
       } else {
-        assertTrue(tok.type() + " is not null and it should be", tok.type().equals("word"));
+        assertTrue(nextToken.type() + " is not null and it should be", nextToken.type().equals("word"));
       }
     }
     assertTrue(seenDogs + " does not equal: " + true, seenDogs == true);
@@ -61,12 +65,13 @@ public class TokenTypeSinkTokenizerTest extends TestCase {
       super(input);
     }
 
-    public Token next(Token result) throws IOException {
-      result = input.next(result);
-      if (result != null && result.termText().equals("dogs")) {
-        result.setType("D");
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null && nextToken.term().equals("dogs")) {
+        nextToken.setType("D");
       }
-      return result;
+      return nextToken;
     }
   }
 }

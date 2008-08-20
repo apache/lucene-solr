@@ -62,7 +62,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
       return false;
     }
 
-    WeightedSpanTerm wSpanTerm = spanScorer.getWeightedSpanTerm(new String(token.termBuffer(), 0, token.termLength()));
+    WeightedSpanTerm wSpanTerm = spanScorer.getWeightedSpanTerm(token.term());
 
     if (wSpanTerm != null) {
       List positionSpans = wSpanTerm.getPositionSpans();

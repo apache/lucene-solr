@@ -59,16 +59,13 @@ public class NGramTokenizerTest extends TestCase {
     public void testUnigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
         
-        Token token = null;
-        do { 
-            token = tokenizer.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+        final Token reusableToken = new Token();
+        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
+          tokens.add(nextToken.toString());
+//        System.out.println(token.term());
+//        System.out.println(token);
+//        Thread.sleep(1000);
+      }
 
         assertEquals(5, tokens.size());
         ArrayList exp = new ArrayList();
@@ -78,17 +75,13 @@ public class NGramTokenizerTest extends TestCase {
 
     public void testBigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 2, 2);
-        
-        Token token = null;
-        do { 
-            token = tokenizer.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+        final Token reusableToken = new Token();
+        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
+          tokens.add(nextToken.toString());
+//        System.out.println(token.term());
+//        System.out.println(token);
+//        Thread.sleep(1000);
+      }
 
         assertEquals(4, tokens.size());
         ArrayList exp = new ArrayList();
@@ -98,17 +91,13 @@ public class NGramTokenizerTest extends TestCase {
 
     public void testNgrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 3);
-        
-        Token token = null;
-        do { 
-            token = tokenizer.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+        final Token reusableToken = new Token();
+        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
+          tokens.add(nextToken.toString());
+//        System.out.println(token.term());
+//        System.out.println(token);
+//        Thread.sleep(1000);
+      }
 
         assertEquals(12, tokens.size());
         ArrayList exp = new ArrayList();
@@ -120,17 +109,14 @@ public class NGramTokenizerTest extends TestCase {
 
     public void testOversizedNgrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
-        
-        Token token = null;
-        do { 
-            token = tokenizer.next();
-            if (token != null) {
-                tokens.add(token.toString());
-//                System.out.println(token.termText());
-//                System.out.println(token);
-//                Thread.sleep(1000);
-            }
-        } while (token != null);
+
+        final Token reusableToken = new Token();
+        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
+          tokens.add(nextToken.toString());
+//        System.out.println(token.term());
+//        System.out.println(token);
+//        Thread.sleep(1000);
+      }
 
         assertTrue(tokens.isEmpty());
     }

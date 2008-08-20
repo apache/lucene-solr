@@ -111,19 +111,20 @@ public final class StopFilter extends TokenFilter {
   }
 
   /**
-   * Returns the next input Token whose termText() is not a stop word.
+   * Returns the next input Token whose term() is not a stop word.
    */
-  public final Token next(Token result) throws IOException {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     // return the first non-stop word found
     int skippedPositions = 0;
-    while((result = input.next(result)) != null) {
-      if (!stopWords.contains(result.termBuffer(), 0, result.termLength)) {
+    for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+      if (!stopWords.contains(nextToken.termBuffer(), 0, nextToken.termLength())) {
         if (enablePositionIncrements) {
-          result.setPositionIncrement(result.getPositionIncrement() + skippedPositions);
+          nextToken.setPositionIncrement(nextToken.getPositionIncrement() + skippedPositions);
         }
-        return result;
+        return nextToken;
       }
-      skippedPositions += result.getPositionIncrement();
+      skippedPositions += nextToken.getPositionIncrement();
     }
     // reached EOS -- return null
     return null;

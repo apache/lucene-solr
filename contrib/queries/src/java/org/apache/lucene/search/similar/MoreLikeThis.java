@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -808,10 +809,11 @@ public final class MoreLikeThis {
 		throws IOException
 	{
 		   TokenStream ts = analyzer.tokenStream(fieldName, r);
-			org.apache.lucene.analysis.Token token;
 			int tokenCount=0;
-			while ((token = ts.next()) != null) { // for every token
-				String word = token.termText();
+			// for every token
+                        final Token reusableToken = new Token();
+			for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+				String word = nextToken.term();
 				tokenCount++;
 				if(tokenCount>maxNumTokensParsed)
 				{
@@ -872,7 +874,7 @@ public final class MoreLikeThis {
 	 * For an easier method to call see {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
      *
      * @param r the reader that has the content of the document
-	 * @return the most intresting words in the document ordered by score, with the highest scoring, or best entry, first
+	 * @return the most interesting words in the document ordered by score, with the highest scoring, or best entry, first
 	 *
 	 * @see #retrieveInterestingTerms
      */

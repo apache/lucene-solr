@@ -40,31 +40,38 @@ public class ThaiWordFilter extends TokenFilter {
     breaker = BreakIterator.getWordInstance(new Locale("th"));
   }
   
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (thaiToken != null) {
-      String text = thaiToken.termText();
       int start = breaker.current();
       int end = breaker.next();
       if (end != BreakIterator.DONE) {
-        return new Token(text.substring(start, end), 
-            thaiToken.startOffset()+start, thaiToken.startOffset()+end, thaiToken.type());
+        reusableToken.reinit(thaiToken, thaiToken.termBuffer(), start, end - start);
+        reusableToken.setStartOffset(thaiToken.startOffset()+start);
+        reusableToken.setEndOffset(thaiToken.endOffset()+end);
+        return reusableToken;
       }
       thaiToken = null;
     }
-    Token tk = input.next();
-    if (tk == null) {
+
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null || nextToken.termLength() == 0) {
       return null;
     }
-    String text = tk.termText();
+
+    String text = nextToken.term();
     if (UnicodeBlock.of(text.charAt(0)) != UnicodeBlock.THAI) {
-      return new Token(text.toLowerCase(), tk.startOffset(), tk.endOffset(), tk.type());
+      nextToken.setTermBuffer(text.toLowerCase());
+      return nextToken;
     }
-    thaiToken = tk;
+
+    thaiToken = (Token) nextToken.clone();
     breaker.setText(text);
     int end = breaker.next();
     if (end != BreakIterator.DONE) {
-      return new Token(text.substring(0, end), 
-          thaiToken.startOffset(), thaiToken.startOffset()+end, thaiToken.type());
+      nextToken.setTermBuffer(text, 0, end);
+      nextToken.setEndOffset(nextToken.startOffset() + end);
+      return nextToken;
     }
     return null;
   }

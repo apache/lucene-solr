@@ -42,12 +42,13 @@ public class GreekAnalyzerTest extends TestCase {
 	 */
 	private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+                final Token reusableToken = new Token();
 		for (int i=0; i<output.length; i++) {
-			Token t = ts.next();
-			assertNotNull(t);
-			assertEquals(t.termText(), output[i]);
+		        Token nextToken = ts.next(reusableToken);
+			assertNotNull(nextToken);
+			assertEquals(nextToken.term(), output[i]);
 		}
-		assertNull(ts.next());
+		assertNull(ts.next(reusableToken));
 		ts.close();
 	}
 

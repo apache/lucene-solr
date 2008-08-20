@@ -44,11 +44,12 @@ public abstract class CharTokenizer extends Tokenizer {
     return c;
   }
 
-  public final Token next(Token token) throws IOException {
-    token.clear();
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    reusableToken.clear();
     int length = 0;
     int start = bufferIndex;
-    char[] buffer = token.termBuffer();
+    char[] buffer = reusableToken.termBuffer();
     while (true) {
 
       if (bufferIndex >= dataLen) {
@@ -70,7 +71,7 @@ public abstract class CharTokenizer extends Tokenizer {
         if (length == 0)			           // start of token
           start = offset + bufferIndex - 1;
         else if (length == buffer.length)
-          buffer = token.resizeTermBuffer(1+length);
+          buffer = reusableToken.resizeTermBuffer(1+length);
 
         buffer[length++] = normalize(c); // buffer it, normalized
 
@@ -81,10 +82,10 @@ public abstract class CharTokenizer extends Tokenizer {
         break;                           // return 'em
     }
 
-    token.termLength = length;
-    token.startOffset = start;
-    token.endOffset = start+length;
-    return token;
+    reusableToken.setTermLength(length);
+    reusableToken.setStartOffset(start);
+    reusableToken.setEndOffset(start+length);
+    return reusableToken;
   }
 
   public void reset(Reader input) throws IOException {

@@ -31,27 +31,29 @@ import java.io.IOException;
   <li>{@link TokenFilter}, a TokenStream
   whose input is another TokenStream.
   </ul>
-  NOTE: subclasses must override at least one of {@link
-  #next()} or {@link #next(Token)}.
+  NOTE: subclasses must override {@link #next(Token)}.  It's
+  also OK to instead override {@link #next()} but that
+  method is now deprecated in favor of {@link #next(Token)}.
   */
 
 public abstract class TokenStream {
 
   /** Returns the next token in the stream, or null at EOS.
-   *  The returned Token is a "full private copy" (not
+   *  @deprecated The returned Token is a "full private copy" (not
    *  re-used across calls to next()) but will be slower
    *  than calling {@link #next(Token)} instead.. */
   public Token next() throws IOException {
-    Token result = next(new Token());
+    final Token reusableToken = new Token();
+    Token nextToken = next(reusableToken);
 
-    if (result != null) {
-      Payload p = result.getPayload();
+    if (nextToken != null) {
+      Payload p = nextToken.getPayload();
       if (p != null) {
-        result.setPayload((Payload) p.clone());
+        nextToken.setPayload((Payload) p.clone());
       }
     }
 
-    return result;
+    return nextToken;
   }
 
   /** Returns the next token in the stream, or null at EOS.
@@ -71,11 +73,21 @@ public abstract class TokenStream {
    *   <li>A producer must call {@link Token#clear()}
    *       before setting the fields in it & returning it</li>
    *  </ul>
+   *  Also, the producer must make no assumptions about a
+   *  Token after it has been returned: the caller may
+   *  arbitrarily change it.  If the producer needs to hold
+   *  onto the token for subsequent calls, it must clone()
+   *  it before storing it.
    *  Note that a {@link TokenFilter} is considered a consumer.
-   *  @param result a Token that may or may not be used to return
+   *  @param reusableToken a Token that may or may not be used to
+   *  return; this parameter should never be null (the callee
+   *  is not required to check for null before using it, but it is a
+   *  good idea to assert that it is not null.)
    *  @return next token in the stream or null if end-of-stream was hit
    */
-  public Token next(Token result) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    // We don't actually use inputToken, but still add this assert
+    assert reusableToken != null;
     return next();
   }
 
@@ -84,7 +96,12 @@ public abstract class TokenStream {
    *  implement this method. Reset() is not needed for
    *  the standard indexing process. However, if the Tokens 
    *  of a TokenStream are intended to be consumed more than 
-   *  once, it is necessary to implement reset(). 
+   *  once, it is necessary to implement reset().  Note that
+   *  if your TokenStream caches tokens and feeds them back
+   *  again after a reset, it is imperative that you
+   *  clone the tokens when you store them away (on the
+   *  first pass) as well as when you return them (on future
+   *  passes after reset()).
    */
   public void reset() throws IOException {}
   

@@ -17,13 +17,27 @@ package org.apache.lucene.wordnet;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.FSDirectory;
 
 
 /**
@@ -86,10 +100,9 @@ public class SynLookup {
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
-		org.apache.lucene.analysis.Token t;
-		while ( (t = ts.next()) != null)
-		{
-			String word = t.termText();
+                final Token reusableToken = new Token();
+		for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+			String word = nextToken.term();
 			if ( already.add( word))
 				top.add( word);
 		}

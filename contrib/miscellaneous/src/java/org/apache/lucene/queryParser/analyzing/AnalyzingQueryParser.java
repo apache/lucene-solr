@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
@@ -105,21 +106,23 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
 
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    org.apache.lucene.analysis.Token t;
+    final Token reusableToken = new Token();
+    Token nextToken;
 
     int countTokens = 0;
     while (true) {
       try {
-        t = source.next();
+        nextToken = source.next(reusableToken);
       } catch (IOException e) {
-        t = null;
+        nextToken = null;
       }
-      if (t == null) {
+      if (nextToken == null) {
         break;
       }
-      if (!"".equals(t.termText())) {
+      String term = nextToken.term();
+      if (!"".equals(term)) {
         try {
-          tlist.set(countTokens++, t.termText());
+          tlist.set(countTokens++, term);
         } catch (IndexOutOfBoundsException ioobe) {
           countTokens = -1;
         }
@@ -189,18 +192,19 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
     List tlist = new ArrayList();
-    org.apache.lucene.analysis.Token t;
+    final Token reusableToken = new Token();
+    Token nextToken;
 
     while (true) {
       try {
-        t = source.next();
+        nextToken = source.next(reusableToken);
       } catch (IOException e) {
-        t = null;
+        nextToken = null;
       }
-      if (t == null) {
+      if (nextToken == null) {
         break;
       }
-      tlist.add(t.termText());
+      tlist.add(nextToken.term());
     }
 
     try {
@@ -238,14 +242,15 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    org.apache.lucene.analysis.Token t;
+    final Token reusableToken = new Token();
+    Token nextToken;
     boolean multipleTokens = false;
 
     try {
-      t = source.next();
-      multipleTokens = source.next() != null;
+      nextToken = source.next(reusableToken);
+      multipleTokens = source.next(reusableToken) != null;
     } catch (IOException e) {
-      t = null;
+      nextToken = null;
     }
 
     try {
@@ -259,7 +264,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
           + " - tokens were added");
     }
 
-    return (t == null) ? null : super.getFuzzyQuery(field, t.termText(), minSimilarity);
+    return (nextToken == null) ? null : super.getFuzzyQuery(field, nextToken.term(), minSimilarity);
   }
 
   /**
@@ -270,18 +275,20 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the terms
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(part1));
-    org.apache.lucene.analysis.Token t;
+    final Token reusableToken = new Token();
+    Token nextToken;
+    Token multipleToken;
     boolean multipleTokens = false;
 
     // part1
     try {
-      t = source.next();
-      if (t != null) {
-        part1 = t.termText();
+      nextToken = source.next(reusableToken);
+      if (nextToken != null) {
+        part1 = nextToken.term();
       }
-      multipleTokens = source.next() != null;
+      multipleTokens = source.next(reusableToken) != null;
     } catch (IOException e) {
-      t = null;
+      nextToken = null;
     }
     try {
       source.close();
@@ -293,16 +300,16 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
           + " - tokens were added to part1");
     }
 
-    source = getAnalyzer().tokenStream(field, new StringReader(part2));
     // part2
+    source = getAnalyzer().tokenStream(field, new StringReader(part2));
     try {
-      t = source.next();
-      if (t != null) {
-        part2 = t.termText();
+      nextToken = source.next(reusableToken);
+      if (nextToken != null) {
+        part2 = nextToken.term();
       }
-      multipleTokens = source.next() != null;
+      multipleTokens = source.next(reusableToken) != null;
     } catch (IOException e) {
-      t = null;
+      nextToken = null;
     }
     try {
       source.close();

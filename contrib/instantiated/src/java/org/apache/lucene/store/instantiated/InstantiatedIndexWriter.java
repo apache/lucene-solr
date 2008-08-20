@@ -520,12 +520,10 @@ public class InstantiatedIndexWriter {
           } else {
             tokenStream = analyzer.tokenStream(field.name(), new StringReader(field.stringValue()));
           }
-          Token next = tokenStream.next();
 
-          while (next != null) {
-            next.setTermText(next.termText().intern()); // todo: not sure this needs to be interned?
-            tokens.add(next); // the vector will be built on commit.
-            next = tokenStream.next();
+          final Token reusableToken = new Token();
+          for (Token nextToken = tokenStream.next(reusableToken); nextToken != null; nextToken = tokenStream.next(reusableToken)) {
+            tokens.add((Token) nextToken.clone()); // the vector will be built on commit.
             fieldSetting.fieldLength++;
             if (fieldSetting.fieldLength > maxFieldLength) {
               break;
@@ -533,7 +531,10 @@ public class InstantiatedIndexWriter {
           }
         } else {
           // untokenized
-          tokens.add(new Token(field.stringValue().intern(), 0, field.stringValue().length(), "untokenized"));
+          String fieldVal = field.stringValue();
+          Token token = new Token(0, fieldVal.length(), "untokenized");
+          token.setTermBuffer(fieldVal);
+          tokens.add(token);
           fieldSetting.fieldLength++;
         }
       }
@@ -567,10 +568,10 @@ public class InstantiatedIndexWriter {
 
       for (Token token : eField_Tokens.getValue()) {
 
-        TermDocumentInformationFactory termDocumentInformationFactory = termDocumentInformationFactoryByTermText.get(token.termText());
+        TermDocumentInformationFactory termDocumentInformationFactory = termDocumentInformationFactoryByTermText.get(token.term());
         if (termDocumentInformationFactory == null) {
           termDocumentInformationFactory = new TermDocumentInformationFactory();
-          termDocumentInformationFactoryByTermText.put(token.termText(), termDocumentInformationFactory);
+          termDocumentInformationFactoryByTermText.put(token.term(), termDocumentInformationFactory);
         }
         //termDocumentInformationFactory.termFrequency++;
 

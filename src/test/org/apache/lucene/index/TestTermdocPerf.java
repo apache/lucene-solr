@@ -40,11 +40,12 @@ class RepeatingTokenStream extends TokenStream {
   Token t;
 
    public RepeatingTokenStream(String val) {
-     t = new Token(val,0,val.length());
+     t = new Token(0,val.length());
+     t.setTermBuffer(val);
    }
 
-   public Token next() throws IOException {
-     return --num<0 ? null : t;
+   public Token next(final Token reusableToken) throws IOException {
+     return --num<0 ? null : (Token) t.clone();
    }
 }
 

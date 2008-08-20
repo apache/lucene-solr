@@ -37,25 +37,20 @@ public final class RussianLowerCaseFilter extends TokenFilter
         this.charset = charset;
     }
 
-    public final Token next() throws java.io.IOException
+    public final Token next(final Token reusableToken) throws java.io.IOException
     {
-        Token t = input.next();
+        assert reusableToken != null;
+        Token nextToken = input.next(reusableToken);
 
-        if (t == null)
+        if (nextToken == null)
             return null;
 
-        String txt = t.termText();
-
-        char[] chArray = txt.toCharArray();
-        for (int i = 0; i < chArray.length; i++)
+        char[] chArray = nextToken.termBuffer();
+        int chLen = nextToken.termLength();
+        for (int i = 0; i < chLen; i++)
         {
             chArray[i] = RussianCharsets.toLowerCase(chArray[i], charset);
         }
-
-        String newTxt = new String(chArray);
-        // create new token
-        Token newToken = new Token(newTxt, t.startOffset(), t.endOffset());
-
-        return newToken;
+        return nextToken;
     }
 }

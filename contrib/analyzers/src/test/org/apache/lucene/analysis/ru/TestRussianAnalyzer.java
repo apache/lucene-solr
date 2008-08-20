@@ -17,12 +17,17 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
+
 import junit.framework.TestCase;
 
-import java.io.*;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Test case for RussianAnalyzer.
@@ -72,22 +77,26 @@ public class TestRussianAnalyzer extends TestCase
                 sampleUnicode,
                 RussianCharsets.UnicodeRussian);
 
+        final Token reusableToken = new Token();
+        final Token reusableSampleToken = new Token();
+        Token nextToken;
+        Token nextSampleToken;
         for (;;)
         {
-            Token token = in.next();
+            nextToken = in.next(reusableToken);
 
-            if (token == null)
+            if (nextToken == null)
             {
                 break;
             }
 
-            Token sampleToken = sample.next();
+            nextSampleToken = sample.next(reusableSampleToken);
             assertEquals(
                 "Unicode",
-                token.termText(),
-                sampleToken == null
+                nextToken.term(),
+                nextSampleToken == null
                 ? null
-                : sampleToken.termText());
+                : nextSampleToken.term());
         }
 
         inWords.close();
@@ -109,22 +118,26 @@ public class TestRussianAnalyzer extends TestCase
                 sampleKOI8,
                 RussianCharsets.KOI8);
 
+        final Token reusableToken = new Token();
+        final Token reusableSampleToken = new Token();
+        Token nextToken;
+        Token nextSampleToken;
         for (;;)
         {
-            Token token = in.next();
+            nextToken = in.next(reusableToken);
 
-            if (token == null)
+            if (nextToken == null)
             {
                 break;
             }
 
-            Token sampleToken = sample.next();
+            nextSampleToken = sample.next(reusableSampleToken);
             assertEquals(
                 "KOI8",
-                token.termText(),
-                sampleToken == null
+                nextToken.term(),
+                nextSampleToken == null
                 ? null
-                : sampleToken.termText());
+                : nextSampleToken.term());
 
         }
 
@@ -146,22 +159,26 @@ public class TestRussianAnalyzer extends TestCase
                 sample1251,
                 RussianCharsets.CP1251);
 
+        final Token reusableToken = new Token();
+        final Token reusableSampleToken = new Token();
+        Token nextToken;
+        Token nextSampleToken;
         for (;;)
         {
-            Token token = in.next();
+          nextToken = in.next(reusableToken);
 
-            if (token == null)
+            if (nextToken == null)
             {
                 break;
             }
 
-            Token sampleToken = sample.next();
+            nextSampleToken = sample.next(reusableSampleToken);
             assertEquals(
                 "1251",
-                token.termText(),
-                sampleToken == null
+                nextToken.term(),
+                nextSampleToken == null
                 ? null
-                : sampleToken.termText());
+                : nextSampleToken.term());
 
         }
 
@@ -175,9 +192,10 @@ public class TestRussianAnalyzer extends TestCase
         RussianAnalyzer ra = new RussianAnalyzer();
         TokenStream stream = ra.tokenStream("", reader);
 
+        final Token reusableToken = new Token();
         try {
-            assertEquals("text", stream.next().termText());
-            assertNotNull("RussianAnalyzer's tokenizer skips numbers from input text", stream.next());
+            assertEquals("text", stream.next(reusableToken).term());
+            assertNotNull("RussianAnalyzer's tokenizer skips numbers from input text", stream.next(reusableToken));
         }
         catch (IOException e)
         {

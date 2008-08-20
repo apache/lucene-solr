@@ -38,15 +38,16 @@ public class TokenOffsetPayloadTokenFilter extends TokenFilter {
     super(input);
   }
 
-  public Token next(Token result) throws IOException {
-    result = input.next(result);
-    if (result != null){
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken != null){
       byte[] data = new byte[8];
-      PayloadHelper.encodeInt(result.startOffset(), data, 0);
-      PayloadHelper.encodeInt(result.endOffset(), data, 4);
+      PayloadHelper.encodeInt(nextToken.startOffset(), data, 0);
+      PayloadHelper.encodeInt(nextToken.endOffset(), data, 4);
       Payload payload = new Payload(data);
-      result.setPayload(payload);
+      nextToken.setPayload(payload);
     }
-    return result;
+    return nextToken;
   }
 }

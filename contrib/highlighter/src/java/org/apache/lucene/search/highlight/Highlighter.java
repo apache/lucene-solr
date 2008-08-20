@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -217,7 +218,7 @@ public class Highlighter
 
 		try
 		{
-			org.apache.lucene.analysis.Token token;
+                  final Token reusableToken = new Token();
 			String tokenText;
 			int startOffset;
 			int endOffset;
@@ -225,10 +226,12 @@ public class Highlighter
 			textFragmenter.start(text);
 
 			TokenGroup tokenGroup=new TokenGroup();
-			token = tokenStream.next();
-			while ((token!= null)&&(token.startOffset()< maxDocCharsToAnalyze))
+			
+			for (Token nextToken = tokenStream.next(reusableToken);
+			     (nextToken!= null)&&(nextToken.startOffset()< maxDocCharsToAnalyze);
+			     nextToken = tokenStream.next(reusableToken))
 			{
-				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(token)))
+				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(nextToken)))
 				{
 					//the current token is distinct from previous tokens -
 					// markup the cached token group info
@@ -244,7 +247,7 @@ public class Highlighter
 					tokenGroup.clear();
 
 					//check if current token marks the start of a new fragment
-					if(textFragmenter.isNewFragment(token))
+					if(textFragmenter.isNewFragment(nextToken))
 					{
 						currentFrag.setScore(fragmentScorer.getFragmentScore());
 						//record stats for a new fragment
@@ -255,13 +258,12 @@ public class Highlighter
 					}
 				}
 
-				tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
+				tokenGroup.addToken(nextToken,fragmentScorer.getTokenScore(nextToken));
 
 //				if(lastEndOffset>maxDocBytesToAnalyze)
 //				{
 //					break;
 //				}
-				token = tokenStream.next();
 			}
 			currentFrag.setScore(fragmentScorer.getFragmentScore());
 

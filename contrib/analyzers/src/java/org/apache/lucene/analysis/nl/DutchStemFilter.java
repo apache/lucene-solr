@@ -38,7 +38,6 @@ public final class DutchStemFilter extends TokenFilter {
   /**
    * The actual token in the input stream.
    */
-  private Token token = null;
   private DutchStemmer stemmer = null;
   private Set exclusions = null;
 
@@ -48,7 +47,7 @@ public final class DutchStemFilter extends TokenFilter {
   }
 
   /**
-   * Builds a DutchStemFilter that uses an exclusiontable.
+   * Builds a DutchStemFilter that uses an exclusion table.
    */
   public DutchStemFilter(TokenStream _in, Set exclusiontable) {
     this(_in);
@@ -66,23 +65,22 @@ public final class DutchStemFilter extends TokenFilter {
   /**
    * @return Returns the next token in the stream, or null at EOS
    */
-  public Token next() throws IOException {
-    if ((token = input.next()) == null) {
+  public Token next(Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null)
       return null;
-    }
 
-    // Check the exclusiontable
-    else if (exclusions != null && exclusions.contains(token.termText())) {
-      return token;
-    } else {
-      String s = stemmer.stem(token.termText());
-      // If not stemmed, dont waste the time creating a new token
-      if (!s.equals(token.termText())) {
-        return new Token(s, token.startOffset(),
-            token.endOffset(), token.type());
-      }
-      return token;
+    String term = nextToken.term();
+
+    // Check the exclusion table.
+    if (exclusions == null || !exclusions.contains(term)) {
+      String s = stemmer.stem(term);
+      // If not stemmed, don't waste the time adjusting the token.
+      if ((s != null) && !s.equals(term))
+        nextToken.setTermBuffer(s);
     }
+    return nextToken;
   }
 
   /**

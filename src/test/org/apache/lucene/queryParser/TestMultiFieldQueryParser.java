@@ -319,7 +319,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     }
 
     private static class EmptyTokenStream extends TokenStream {
-      public Token next() {
+      public Token next(final Token reusableToken) {
         return null;
       }
     }

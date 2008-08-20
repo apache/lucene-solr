@@ -279,6 +279,7 @@ class LuceneMethods {
 
     Analyzer analyzer = new StandardAnalyzer();
     Enumeration fields = doc.fields();
+    final Token reusableToken = new Token();
     while (fields.hasMoreElements()) {
       Field field = (Field) fields.nextElement();
       String fieldName = field.name();
@@ -299,10 +300,10 @@ class LuceneMethods {
           // Tokenize field and add to postingTable
           TokenStream stream = analyzer.tokenStream(fieldName, reader);
           try {
-            for (Token t = stream.next(); t != null; t = stream.next()) {
-              position += (t.getPositionIncrement() - 1);
+            for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+              position += (nextToken.getPositionIncrement() - 1);
               position++;
-              String name = t.termText();
+              String name = nextToken.term();
               Integer Count = (Integer) tokenHash.get(name);
               if (Count == null) { // not in there yet
                 tokenHash.put(name, new Integer(1)); //first one

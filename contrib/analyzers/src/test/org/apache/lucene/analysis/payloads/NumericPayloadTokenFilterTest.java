@@ -43,20 +43,20 @@ public class NumericPayloadTokenFilterTest extends TestCase {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
     NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))), 3, "D");
-    Token tok = new Token();
     boolean seenDogs = false;
-    while ((tok = nptf.next(tok)) != null){
-      if (tok.termText().equals("dogs")){
+    final Token reusableToken = new Token();
+    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
+      if (nextToken.term().equals("dogs")){
         seenDogs = true;
-        assertTrue(tok.type() + " is not equal to " + "D", tok.type().equals("D") == true);
-        assertTrue("tok.getPayload() is null and it shouldn't be", tok.getPayload() != null);
-        byte [] bytes = tok.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
-        assertTrue(bytes.length + " does not equal: " + tok.getPayload().length(), bytes.length == tok.getPayload().length());
-        assertTrue(tok.getPayload().getOffset() + " does not equal: " + 0, tok.getPayload().getOffset() == 0);
+        assertTrue(nextToken.type() + " is not equal to " + "D", nextToken.type().equals("D") == true);
+        assertTrue("nextToken.getPayload() is null and it shouldn't be", nextToken.getPayload() != null);
+        byte [] bytes = nextToken.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
+        assertTrue(bytes.length + " does not equal: " + nextToken.getPayload().length(), bytes.length == nextToken.getPayload().length());
+        assertTrue(nextToken.getPayload().getOffset() + " does not equal: " + 0, nextToken.getPayload().getOffset() == 0);
         float pay = PayloadHelper.decodeFloat(bytes);
         assertTrue(pay + " does not equal: " + 3, pay == 3);
       } else {
-        assertTrue(tok.type() + " is not null and it should be", tok.type().equals("word"));
+        assertTrue(nextToken.type() + " is not null and it should be", nextToken.type().equals("word"));
       }
     }
     assertTrue(seenDogs + " does not equal: " + true, seenDogs == true);
@@ -67,12 +67,13 @@ public class NumericPayloadTokenFilterTest extends TestCase {
       super(input);
     }
 
-    public Token next(Token result) throws IOException {
-      result = input.next(result);
-      if (result != null && result.termText().equals("dogs")) {
-        result.setType("D");
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null && nextToken.term().equals("dogs")) {
+        nextToken.setType("D");
       }
-      return result;
+      return nextToken;
     }
   }
 

@@ -17,20 +17,26 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
+import java.io.IOException;
+import java.io.Reader;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
-import java.io.IOException;
-import java.io.Reader;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private RAMDirectory dir;
@@ -134,34 +140,30 @@ public class TestDocumentWriter extends LuceneTestCase {
           boolean first=true;
           Token buffered;
 
-          public Token next() throws IOException {
-            return input.next();
-          }
-
-          public Token next(Token result) throws IOException {
+          public Token next(final Token reusableToken) throws IOException {
             if (buffered != null) {
-              Token t = buffered;
+              Token nextToken = buffered;
               buffered=null;
-              return t;
+              return nextToken;
             }
-            Token t = input.next(result);
-            if (t==null) return null;
-            if (Character.isDigit(t.termBuffer()[0])) {
-              t.setPositionIncrement(t.termBuffer()[0] - '0');
+            Token nextToken = input.next(reusableToken);
+            if (nextToken==null) return null;
+            if (Character.isDigit(nextToken.termBuffer()[0])) {
+              nextToken.setPositionIncrement(nextToken.termBuffer()[0] - '0');
             }
             if (first) {
               // set payload on first position only
-              t.setPayload(new Payload(new byte[]{100}));
+              nextToken.setPayload(new Payload(new byte[]{100}));
               first = false;
             }
 
             // index a "synonym" for every token
-            buffered = (Token)t.clone();
+            buffered = (Token)nextToken.clone();
             buffered.setPayload(null);
             buffered.setPositionIncrement(0);
             buffered.setTermBuffer(new char[]{'b'}, 0, 1);
 
-            return t;
+            return nextToken;
           }
         };
       }
@@ -199,11 +201,12 @@ public class TestDocumentWriter extends LuceneTestCase {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
       private int index = 0;
       
-      public Token next() throws IOException {
+      public Token next(final Token reusableToken) throws IOException {
+        assert reusableToken != null;
         if (index == tokens.length) {
           return null;
         } else {
-          return new Token(tokens[index++], 0, 0);
+          return reusableToken.reinit(tokens[index++], 0, 0);
         }        
       }
       

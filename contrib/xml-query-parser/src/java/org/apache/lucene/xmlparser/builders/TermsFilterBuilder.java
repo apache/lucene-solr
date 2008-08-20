@@ -59,20 +59,18 @@ public class TermsFilterBuilder implements FilterBuilder
 
 		try
 		{
-			Token token = ts.next();
+                  final Token reusableToken = new Token();
 			Term term = null;
-			while (token != null)
-			{
+	                for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
 				if (term == null)
 				{
-					term = new Term(fieldName, token.termText());
+					term = new Term(fieldName, nextToken.term());
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(token.termText()); 
+					term = term.createTerm(nextToken.term()); 
 				}
 				tf.addTerm(term);
-				token = ts.next();
 			}
 		} 
 		catch (IOException ioe)

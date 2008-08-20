@@ -49,13 +49,14 @@ public class TestPositionIncrement extends LuceneTestCase {
           private final int[] INCREMENTS = {1, 2, 1, 0, 1};
           private int i = 0;
 
-          public Token next() {
+          public Token next(final Token reusableToken) {
+            assert reusableToken != null;
             if (i == TOKENS.length)
               return null;
-            Token t = new Token(TOKENS[i], i, i);
-            t.setPositionIncrement(INCREMENTS[i]);
+            reusableToken.reinit(TOKENS[i], i, i);
+            reusableToken.setPositionIncrement(INCREMENTS[i]);
             i++;
-            return t;
+            return reusableToken;
           }
         };
       }
@@ -204,11 +205,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     Analyzer analyzer = new WhitespaceAnalyzer();
     TokenStream ts = analyzer.tokenStream("field",
                                 new StringReader("one two three four five"));
-
-    while (true) {
-      Token token = ts.next();
-      if (token == null) break;
-      assertEquals(token.termText(), 1, token.getPositionIncrement());
+    final Token reusableToken = new Token();
+    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+      assertEquals(nextToken.term(), 1, nextToken.getPositionIncrement());
     }
   }
 }

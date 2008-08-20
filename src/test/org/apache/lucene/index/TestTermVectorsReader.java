@@ -118,20 +118,17 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   private class MyTokenStream extends TokenStream {
     int tokenUpto;
-    public Token next() {
+    public Token next(final Token reusableToken) {
       if (tokenUpto >= tokens.length)
         return null;
       else {
-        final Token t = new Token();
         final TestToken testToken = tokens[tokenUpto++];
-        t.setTermText(testToken.text);
+        reusableToken.reinit(testToken.text, testToken.startOffset, testToken.endOffset);
         if (tokenUpto > 1)
-          t.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
+          reusableToken.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
         else
-          t.setPositionIncrement(testToken.pos+1);
-        t.setStartOffset(testToken.startOffset);
-        t.setEndOffset(testToken.endOffset);
-        return t;
+          reusableToken.setPositionIncrement(testToken.pos+1);
+        return reusableToken;
       }
     }
   }

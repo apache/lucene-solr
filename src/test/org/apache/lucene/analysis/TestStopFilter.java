@@ -37,17 +37,19 @@ public class TestStopFilter extends LuceneTestCase {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopWords);
-    assertEquals("Now", stream.next().termText());
-    assertEquals("The", stream.next().termText());
-    assertEquals(null, stream.next());
+    final Token reusableToken = new Token();
+    assertEquals("Now", stream.next(reusableToken).term());
+    assertEquals("The", stream.next(reusableToken).term());
+    assertEquals(null, stream.next(reusableToken));
   }
 
   public void testIgnoreCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopWords, true);
-    assertEquals("Now", stream.next().termText());
-    assertEquals(null,stream.next());
+    final Token reusableToken = new Token();
+    assertEquals("Now", stream.next(reusableToken).term());
+    assertEquals(null,stream.next(reusableToken));
   }
 
   public void testStopFilt() throws IOException {
@@ -55,9 +57,10 @@ public class TestStopFilter extends LuceneTestCase {
     String[] stopWords = new String[] { "is", "the", "Time" };
     Set stopSet = StopFilter.makeStopSet(stopWords);
     TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
-    assertEquals("Now", stream.next().termText());
-    assertEquals("The", stream.next().termText());
-    assertEquals(null, stream.next());
+    final Token reusableToken = new Token();
+    assertEquals("Now", stream.next(reusableToken).term());
+    assertEquals("The", stream.next(reusableToken).term());
+    assertEquals(null, stream.next(reusableToken));
   }
 
   /**
@@ -109,14 +112,15 @@ public class TestStopFilter extends LuceneTestCase {
   private void doTestStopPositons(StopFilter stpf, boolean enableIcrements) throws IOException {
     log("---> test with enable-increments-"+(enableIcrements?"enabled":"disabled"));
     stpf.setEnablePositionIncrements(enableIcrements);
+    final Token reusableToken = new Token();
     for (int i=0; i<20; i+=3) {
-      Token t = stpf.next();
-      log("Token "+i+": "+t);
+      Token nextToken = stpf.next(reusableToken);
+      log("Token "+i+": "+nextToken);
       String w = English.intToEnglish(i).trim();
-      assertEquals("expecting token "+i+" to be "+w,w,t.termText());
-      assertEquals("all but first token must have position increment of 3",enableIcrements?(i==0?1:3):1,t.getPositionIncrement());
+      assertEquals("expecting token "+i+" to be "+w,w,nextToken.term());
+      assertEquals("all but first token must have position increment of 3",enableIcrements?(i==0?1:3):1,nextToken.getPositionIncrement());
     }
-    assertNull(stpf.next());
+    assertNull(stpf.next(reusableToken));
   }
   
   // print debug info depending on VERBOSE

@@ -42,11 +42,12 @@ public class TestCachingTokenFilter extends LuceneTestCase {
     TokenStream stream = new TokenStream() {
       private int index = 0;
       
-      public Token next() throws IOException {
+      public Token next(final Token reusableToken) throws IOException {
+        assert reusableToken != null;
         if (index == tokens.length) {
           return null;
         } else {
-          return new Token(tokens[index++], 0, 0);
+          return reusableToken.reinit(tokens[index++], 0, 0);
         }        
       }
       
@@ -91,10 +92,10 @@ public class TestCachingTokenFilter extends LuceneTestCase {
   
   private void checkTokens(TokenStream stream) throws IOException {
     int count = 0;
-    Token token;
-    while ((token = stream.next()) != null) {
+    final Token reusableToken = new Token();
+    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
       assertTrue(count < tokens.length);
-      assertEquals(tokens[count], token.termText());
+      assertEquals(tokens[count], nextToken.term());
       count++;
     }
     

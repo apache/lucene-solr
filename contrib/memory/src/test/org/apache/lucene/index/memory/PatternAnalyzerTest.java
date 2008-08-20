@@ -197,9 +197,9 @@ public class PatternAnalyzerTest extends TestCase {
   
   private List getTokens(TokenStream stream) throws IOException {
     ArrayList tokens = new ArrayList();
-    Token token;
-    while ((token = stream.next()) != null) {
-      tokens.add(token);
+    final Token reusableToken = new Token();
+    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+      tokens.add(nextToken.clone());
     }
     return tokens;
   }
@@ -211,7 +211,7 @@ public class PatternAnalyzerTest extends TestCase {
       for (; i < size; i++) {
         Token t1 = (Token) tokens1.get(i);
         Token t2 = (Token) tokens2.get(i);
-        if (!(t1.termText().equals(t2.termText()))) throw new IllegalStateException("termText");
+        if (!(t1.term().equals(t2.term()))) throw new IllegalStateException("termText");
         if (t1.startOffset() != t2.startOffset()) throw new IllegalStateException("startOffset");
         if (t1.endOffset() != t2.endOffset()) throw new IllegalStateException("endOffset");
         if (!(t1.type().equals(t2.type()))) throw new IllegalStateException("type");
@@ -222,8 +222,8 @@ public class PatternAnalyzerTest extends TestCase {
     catch (IllegalStateException e) {
       if (size > 0) {
         System.out.println("i=" + i + ", size=" + size);
-        System.out.println("t1[size]='" + ((Token) tokens1.get(size-1)).termText() + "'");
-        System.out.println("t2[size]='" + ((Token) tokens2.get(size-1)).termText() + "'");
+        System.out.println("t1[size]='" + ((Token) tokens1.get(size-1)).term() + "'");
+        System.out.println("t2[size]='" + ((Token) tokens2.get(size-1)).term() + "'");
       }
       throw e;
     }
@@ -234,7 +234,7 @@ public class PatternAnalyzerTest extends TestCase {
     String str = "[";
     for (int i=0; i < tokens.size(); i++) {
       Token t1 = (Token) tokens.get(i);
-      str = str + "'" + t1.termText() + "', ";
+      str = str + "'" + t1.term() + "', ";
     }
     return str + "]";
   }

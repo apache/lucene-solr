@@ -19,7 +19,9 @@ package org.apache.lucene.analysis.cn;
 
 
 import java.io.Reader;
-import org.apache.lucene.analysis.*;
+
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Tokenizer;
 
 
 /**
@@ -75,17 +77,19 @@ public final class ChineseTokenizer extends Tokenizer {
 
     }
 
-    private final Token flush() {
+    private final Token flush(final Token token) {
 
         if (length>0) {
-            //System.out.println(new String(buffer, 0, length));
-            return new Token(new String(buffer, 0, length), start, start+length);
+            //System.out.println(new String(buffer, 0,
+            //length));
+          return token.reinit(buffer, 0, length, start, start+length);
         }
         else
             return null;
     }
 
-    public final Token next() throws java.io.IOException {
+    public final Token next(final Token reusableToken) throws java.io.IOException {
+        assert reusableToken != null;
 
         length = 0;
         start = offset;
@@ -101,7 +105,7 @@ public final class ChineseTokenizer extends Tokenizer {
                 bufferIndex = 0;
             }
 
-            if (dataLen == -1) return flush();
+            if (dataLen == -1) return flush(reusableToken);
             else
                 c = ioBuffer[bufferIndex++];
 
@@ -112,20 +116,20 @@ public final class ChineseTokenizer extends Tokenizer {
             case Character.LOWERCASE_LETTER:
             case Character.UPPERCASE_LETTER:
                 push(c);
-                if (length == MAX_WORD_LEN) return flush();
+                if (length == MAX_WORD_LEN) return flush(reusableToken);
                 break;
 
             case Character.OTHER_LETTER:
                 if (length>0) {
                     bufferIndex--;
                     offset--;
-                    return flush();
+                    return flush(reusableToken);
                 }
                 push(c);
-                return flush();
+                return flush(reusableToken);
 
             default:
-                if (length>0) return flush();
+                if (length>0) return flush(reusableToken);
                 break;
             }
         }

@@ -16,21 +16,31 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.*;
+import java.io.IOException;
+import java.io.Reader;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
-
-import java.io.IOException;
-import java.io.Reader;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBoostingTermQuery extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -62,22 +72,23 @@ public class TestBoostingTermQuery extends LuceneTestCase {
       this.fieldName = fieldName;
     }
 
-    public Token next() throws IOException {
-      Token result = input.next();
-      if (result != null) {
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
+      Token nextToken = input.next(reusableToken);
+      if (nextToken != null) {
         if (fieldName.equals("field")) {
-          result.setPayload(new Payload(payloadField));
+          nextToken.setPayload(new Payload(payloadField));
         } else if (fieldName.equals("multiField")) {
           if (numSeen % 2 == 0) {
-            result.setPayload(new Payload(payloadMultiField1));
+            nextToken.setPayload(new Payload(payloadMultiField1));
           } else {
-            result.setPayload(new Payload(payloadMultiField2));
+            nextToken.setPayload(new Payload(payloadMultiField2));
           }
           numSeen++;
         }
 
       }
-      return result;
+      return nextToken;
     }
   }
 

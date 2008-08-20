@@ -108,6 +108,12 @@ API Changes
 16. LUCENE-1334: Add new constructor for Term: Term(String fieldName)
     which defaults term text to "".  (DM Smith via Mike McCandless)
 
+17. LUCENE-1333: Added Token.reinit(*) APIs to re-initialize (reuse) a
+    Token.  Also added term() method to return a String, with a
+    performance penalty clearly documented.  Also implemented
+    hashCode() and equals() in Token, and fixed all core and contrib
+    analyzers to use the re-use APIs.  (DM Smith via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

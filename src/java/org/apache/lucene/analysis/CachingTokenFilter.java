@@ -40,11 +40,12 @@ public class CachingTokenFilter extends TokenFilter {
     super(input);
   }
   
-  public Token next() throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (cache == null) {
       // fill cache lazily
       cache = new LinkedList();
-      fillCache();
+      fillCache(reusableToken);
       iterator = cache.iterator();
     }
     
@@ -52,8 +53,9 @@ public class CachingTokenFilter extends TokenFilter {
       // the cache is exhausted, return null
       return null;
     }
-    
-    return (Token) iterator.next();
+    // Since the TokenFilter can be reset, the tokens need to be preserved as immutable.
+    Token nextToken = (Token) iterator.next();
+    return (Token) nextToken.clone();
   }
   
   public void reset() throws IOException {
@@ -62,10 +64,9 @@ public class CachingTokenFilter extends TokenFilter {
     }
   }
   
-  private void fillCache() throws IOException {
-    Token token;
-    while ( (token = input.next()) != null) {
-      cache.add(token);
+  private void fillCache(final Token reusableToken) throws IOException {
+    for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
+      cache.add(nextToken.clone());
     }
   }
 

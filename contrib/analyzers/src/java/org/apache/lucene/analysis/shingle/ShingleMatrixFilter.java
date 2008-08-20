@@ -17,14 +17,21 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.index.Payload;
-
-import java.io.IOException;
-import java.util.*;
 
 
 /**
@@ -298,7 +305,8 @@ public class ShingleMatrixFilter extends TokenStream {
 
   private Matrix matrix;
 
-  public Token next(Token token) throws IOException {
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (matrix == null) {
       matrix = new Matrix();
       // fill matrix with maximumShingleSize columns
@@ -318,7 +326,7 @@ public class ShingleMatrixFilter extends TokenStream {
         if (ignoringSinglePrefixOrSuffixShingle
             && currentShingleLength == 1
             && (currentPermutationRows.get(currentPermutationTokensStartOffset).getColumn().isFirst() || currentPermutationRows.get(currentPermutationTokensStartOffset).getColumn().isLast())) {
-          return next(token);
+          return next(reusableToken);
         }
 
         int termLength = 0;
@@ -336,21 +344,21 @@ public class ShingleMatrixFilter extends TokenStream {
 
         // only produce shingles that not already has been created
         if (!shinglesSeen.add(shingle)) {
-          return next(token);
+          return next(reusableToken);
         }
 
         // shingle token factory
-        StringBuilder sb = new StringBuilder(termLength + 10); // paranormal abillity to forsay the future.
+        StringBuilder sb = new StringBuilder(termLength + 10); // paranormal ability to foresee the future.
         for (Token shingleToken : shingle) {
           if (spacerCharacter != null && sb.length() > 0) {
             sb.append(spacerCharacter);
           }
           sb.append(shingleToken.termBuffer(), 0, shingleToken.termLength());
         }
-        token.setTermText(sb.toString());
-        updateToken(token, shingle, currentPermutationTokensStartOffset, currentPermutationRows, currentPermuationTokens);
+        reusableToken.setTermBuffer(sb.toString());
+        updateToken(reusableToken, shingle, currentPermutationTokensStartOffset, currentPermutationRows, currentPermuationTokens);
 
-        return token;
+        return reusableToken;
 
       } else {
 
@@ -360,7 +368,7 @@ public class ShingleMatrixFilter extends TokenStream {
           // reset shingle size and move one step to the right in the current tokens permutation
           currentPermutationTokensStartOffset++;
           currentShingleLength = minimumShingleSize - 1;
-          return next(token);
+          return next(reusableToken);
         }
 
 
@@ -411,7 +419,7 @@ public class ShingleMatrixFilter extends TokenStream {
         }
 
         nextTokensPermutation();
-        return next(token);
+        return next(reusableToken);
 
       }
     }
@@ -426,7 +434,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
     nextTokensPermutation();
 
-    return next(token);
+    return next(reusableToken);
   }
 
   /**

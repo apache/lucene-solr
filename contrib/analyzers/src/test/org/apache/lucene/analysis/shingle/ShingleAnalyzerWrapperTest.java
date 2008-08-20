@@ -156,11 +156,11 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
 
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("this sentence"));
-    Token token;
     int j = -1;
-    while ((token = ts.next()) != null) {
-      j += token.getPositionIncrement();
-      String termText = new String(token.termBuffer(), 0, token.termLength());
+    final Token reusableToken = new Token();
+    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+      j += nextToken.getPositionIncrement();
+      String termText = nextToken.term();
       q.add(new Term("content", termText), j);
     }
 
@@ -182,9 +182,9 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
 
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("test sentence"));
-    Token token;
-    while ((token = ts.next()) != null) {
-      String termText =  new String(token.termBuffer(), 0, token.termLength());
+    final Token reusableToken = new Token();
+    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
+      String termText =  nextToken.term();
       q.add(new TermQuery(new Term("content", termText)),
             BooleanClause.Occur.SHOULD);
     }

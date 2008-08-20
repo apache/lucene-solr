@@ -70,11 +70,12 @@ class AnalysisTest {
     Date start = new Date();
 
     int count = 0;
-    for (Token t = stream.next(); t!=null; t = stream.next()) {
+    final Token reusableToken = new Token();
+    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
       if (verbose) {
-	System.out.println("Text=" + new String(t.termBuffer(), 0, t.termLength())
-			   + " start=" + t.startOffset()
-			   + " end=" + t.endOffset());
+	System.out.println("Text=" + nextToken.term()
+			   + " start=" + nextToken.startOffset()
+			   + " end=" + nextToken.endOffset());
       }
       count++;
     }

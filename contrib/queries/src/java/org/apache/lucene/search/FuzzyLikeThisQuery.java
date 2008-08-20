@@ -104,18 +104,19 @@ public class FuzzyLikeThisQuery extends Query
     {
         if(f.queryString==null) return;
         TokenStream ts=analyzer.tokenStream(f.fieldName,new StringReader(f.queryString));
-        Token token=ts.next();
+        final Token reusableToken = new Token();
         int corpusNumDocs=reader.numDocs();
         Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet processedTerms=new HashSet();
-        while(token!=null)
-        {            
-        	if(!processedTerms.contains(token.termText()))
+        for (Token nextToken = ts.next(reusableToken); nextToken!=null; nextToken = ts.next(reusableToken))
+        {
+                String term = nextToken.term();
+        	if(!processedTerms.contains(term))
         	{
-        		processedTerms.add(token.termText());
+        		processedTerms.add(term);
                 ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
                 float minScore=0;
-                Term startTerm=internSavingTemplateTerm.createTerm(token.termText());
+                Term startTerm=internSavingTemplateTerm.createTerm(term);
                 FuzzyTermEnum fe=new FuzzyTermEnum(reader,startTerm,f.minSimilarity,f.prefixLength);
                 TermEnum origEnum = reader.terms(startTerm);
                 int df=0;
@@ -162,8 +163,7 @@ public class FuzzyLikeThisQuery extends Query
                   q.insert(st);
                 }                            
         	}
-            token=ts.next();
-        }        
+        }     
     }
             
     public Query rewrite(IndexReader reader) throws IOException

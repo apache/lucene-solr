@@ -30,25 +30,32 @@ public class TestPrefixAndSuffixAwareTokenFilter extends TestCase {
   public void test() throws IOException {
 
     PrefixAndSuffixAwareTokenFilter ts = new PrefixAndSuffixAwareTokenFilter(
-        new SingleTokenTokenStream(new Token("^", 0, 0)),
+        new SingleTokenTokenStream(createToken("^", 0, 0)),
         new WhitespaceTokenizer(new StringReader("hello world")),
-        new SingleTokenTokenStream(new Token("$", 0, 0)));
+        new SingleTokenTokenStream(createToken("$", 0, 0)));
 
-    assertNext(ts, "^", 0, 0);
-    assertNext(ts, "hello", 0, 5);
-    assertNext(ts, "world", 6, 11);
-    assertNext(ts, "$", 11, 11);
-    assertNull(ts.next());
+    Token token = new Token();
+    assertNext(ts, token, "^", 0, 0);
+    assertNext(ts, token, "hello", 0, 5);
+    assertNext(ts, token, "world", 6, 11);
+    assertNext(ts, token, "$", 11, 11);
+    assertNull(ts.next(token));
   }
 
 
-  private Token assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    Token token = ts.next();
-    assertNotNull(token);
-    assertEquals(text, new String(token.termBuffer(), 0, token.termLength()));
-    assertEquals(startOffset, token.startOffset());
-    assertEquals(endOffset, token.endOffset());
+  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int startOffset, int endOffset) throws IOException {
+    Token nextToken = ts.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals(text, nextToken.term());
+    assertEquals(startOffset, nextToken.startOffset());
+    assertEquals(endOffset, nextToken.endOffset());
+    return nextToken;
+  }
+
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
     return token;
   }
-
 }

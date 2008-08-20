@@ -35,7 +35,8 @@ public class ShingleFilterTest extends TestCase {
       this.testToken = testToken;
     }
 
-    public Token next() throws IOException {
+    public Token next(final Token reusableToken) throws IOException {
+      assert reusableToken != null;
       if (index < testToken.length) {
         return testToken[index++];
       } else {
@@ -49,28 +50,28 @@ public class ShingleFilterTest extends TestCase {
   }
 
   public static final Token[] TEST_TOKEN = new Token[] {
-      new Token("please", 0, 6),
-      new Token("divide", 7, 13),
-      new Token("this", 14, 18),
-      new Token("sentence", 19, 27),
-      new Token("into", 28, 32),
-      new Token("shingles", 33, 39),
+      createToken("please", 0, 6),
+      createToken("divide", 7, 13),
+      createToken("this", 14, 18),
+      createToken("sentence", 19, 27),
+      createToken("into", 28, 32),
+      createToken("shingles", 33, 39),
   };
 
   public static Token[] testTokenWithHoles;
 
   public static final Token[] BI_GRAM_TOKENS = new Token[] {
-    new Token("please", 0, 6),
-    new Token("please divide", 0, 13),
-    new Token("divide", 7, 13),
-    new Token("divide this", 7, 18),
-    new Token("this", 14, 18),
-    new Token("this sentence", 14, 27),
-    new Token("sentence", 19, 27),
-    new Token("sentence into", 19, 32),
-    new Token("into", 28, 32),
-    new Token("into shingles", 28, 39),
-    new Token("shingles", 33, 39),
+    createToken("please", 0, 6),
+    createToken("please divide", 0, 13),
+    createToken("divide", 7, 13),
+    createToken("divide this", 7, 18),
+    createToken("this", 14, 18),
+    createToken("this sentence", 14, 27),
+    createToken("sentence", 19, 27),
+    createToken("sentence into", 19, 32),
+    createToken("into", 28, 32),
+    createToken("into shingles", 28, 39),
+    createToken("shingles", 33, 39),
   };
 
   public static final int[] BI_GRAM_POSITION_INCREMENTS = new int[] {
@@ -83,17 +84,17 @@ public class ShingleFilterTest extends TestCase {
   };
 
   public static final Token[] BI_GRAM_TOKENS_WITH_HOLES = new Token[] {
-    new Token("please", 0, 6),
-    new Token("please divide", 0, 13),
-    new Token("divide", 7, 13),
-    new Token("divide _", 7, 19),
-    new Token("_", 19, 19),
-    new Token("_ sentence", 19, 27),
-    new Token("sentence", 19, 27),
-    new Token("sentence _", 19, 33),
-    new Token("_", 33, 33),
-    new Token("_ shingles", 33, 39),
-    new Token("shingles", 33, 39),
+    createToken("please", 0, 6),
+    createToken("please divide", 0, 13),
+    createToken("divide", 7, 13),
+    createToken("divide _", 7, 19),
+    createToken("_", 19, 19),
+    createToken("_ sentence", 19, 27),
+    createToken("sentence", 19, 27),
+    createToken("sentence _", 19, 33),
+    createToken("_", 33, 33),
+    createToken("_ shingles", 33, 39),
+    createToken("shingles", 33, 39),
   };
 
   public static final int[] BI_GRAM_POSITION_INCREMENTS_WITH_HOLES = new int[] {
@@ -101,21 +102,21 @@ public class ShingleFilterTest extends TestCase {
   };
 
   public static final Token[] TRI_GRAM_TOKENS = new Token[] {
-    new Token("please", 0, 6),
-    new Token("please divide", 0, 13),
-    new Token("please divide this", 0, 18),
-    new Token("divide", 7, 13),
-    new Token("divide this", 7, 18),
-    new Token("divide this sentence", 7, 27),
-    new Token("this", 14, 18),
-    new Token("this sentence", 14, 27),
-    new Token("this sentence into", 14, 32),
-    new Token("sentence", 19, 27),
-    new Token("sentence into", 19, 32),
-    new Token("sentence into shingles", 19, 39),
-    new Token("into", 28, 32),
-    new Token("into shingles", 28, 39),
-    new Token("shingles", 33, 39)
+    createToken("please", 0, 6),
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("divide", 7, 13),
+    createToken("divide this", 7, 18),
+    createToken("divide this sentence", 7, 27),
+    createToken("this", 14, 18),
+    createToken("this sentence", 14, 27),
+    createToken("this sentence into", 14, 32),
+    createToken("sentence", 19, 27),
+    createToken("sentence into", 19, 32),
+    createToken("sentence into shingles", 19, 39),
+    createToken("into", 28, 32),
+    createToken("into shingles", 28, 39),
+    createToken("shingles", 33, 39)
   };
 
   public static final int[] TRI_GRAM_POSITION_INCREMENTS = new int[] {
@@ -135,10 +136,10 @@ public class ShingleFilterTest extends TestCase {
   protected void setUp() throws Exception {
     super.setUp();
     testTokenWithHoles = new Token[] {
-      new Token("please", 0, 6),
-      new Token("divide", 7, 13),
-      new Token("sentence", 19, 27),
-      new Token("shingles", 33, 39),
+      createToken("please", 0, 6),
+      createToken("divide", 7, 13),
+      createToken("sentence", 19, 27),
+      createToken("shingles", 33, 39),
     };
 
     testTokenWithHoles[2].setPositionIncrement(2);
@@ -168,22 +169,27 @@ public class ShingleFilterTest extends TestCase {
     throws IOException {
 
     TokenStream filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
-    Token token;
     int i = 0;
-
-    while ((token = filter.next()) != null) {
-      String termText = new String(token.termBuffer(), 0, token.termLength());
-      String goldText
-        = new String(tokensToCompare[i].termBuffer(), 0, tokensToCompare[i].termLength());
+    final Token reusableToken = new Token();
+    for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
+      String termText = nextToken.term();
+      String goldText = tokensToCompare[i].term();
       assertEquals("Wrong termText", goldText, termText);
       assertEquals("Wrong startOffset for token \"" + termText + "\"",
-          tokensToCompare[i].startOffset(), token.startOffset());
+          tokensToCompare[i].startOffset(), nextToken.startOffset());
       assertEquals("Wrong endOffset for token \"" + termText + "\"",
-          tokensToCompare[i].endOffset(), token.endOffset());
+          tokensToCompare[i].endOffset(), nextToken.endOffset());
       assertEquals("Wrong positionIncrement for token \"" + termText + "\"",
-          positionIncrements[i], token.getPositionIncrement());
-      assertEquals("Wrong type for token \"" + termText + "\"", types[i], token.type());
+          positionIncrements[i], nextToken.getPositionIncrement());
+      assertEquals("Wrong type for token \"" + termText + "\"", types[i], nextToken.type());
       i++;
     }
+  }
+
+  private static Token createToken(String term, int start, int offset)
+  {
+    Token token = new Token(start, offset);
+    token.setTermBuffer(term);
+    return token;
   }
 }

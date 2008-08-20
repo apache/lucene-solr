@@ -115,30 +115,30 @@ public class EdgeNGramTokenFilter extends TokenFilter {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws IOException {
+  public final Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
     if (ngrams.size() > 0) {
       return (Token) ngrams.removeFirst();
     }
 
-    Token token = input.next();
-    if (token == null) {
+    Token nextToken = input.next(reusableToken);
+    if (nextToken == null)
       return null;
-    }
 
-    ngram(token);
+    ngram(nextToken);
     if (ngrams.size() > 0)
       return (Token) ngrams.removeFirst();
     else
       return null;
   }
 
-  private void ngram(Token token) {
-    String inStr = token.termText();
-    int inLen = inStr.length();
+  private void ngram(final Token token) {
+    int termLength = token.termLength();
+    char[] termBuffer = token.termBuffer();
     int gramSize = minGram;
     while (gramSize <= maxGram) {
       // if the remaining input is too short, we can't generate any n-grams
-      if (gramSize > inLen) {
+      if (gramSize > termLength) {
         return;
       }
 
@@ -147,13 +147,13 @@ public class EdgeNGramTokenFilter extends TokenFilter {
         return;
       }
 
-      Token tok;
-      if (side == Side.FRONT) {
-        tok = new Token(inStr.substring(0, gramSize), 0, gramSize);
-      }
-      else {
-        tok = new Token(inStr.substring(inLen-gramSize), inLen-gramSize, inLen);
-      }
+      // grab gramSize chars from front or back
+      int start = side == Side.FRONT ? 0 : termLength - gramSize;
+      int end = start + gramSize;
+      Token tok = (Token) token.clone();
+      tok.setStartOffset(start);
+      tok.setEndOffset(end);
+      tok.setTermBuffer(termBuffer, start, gramSize);
       ngrams.add(tok);
       gramSize++;
     }

@@ -42,16 +42,17 @@ public final class LengthFilter extends TokenFilter {
   }
 
   /**
-   * Returns the next input Token whose termText() is the right len
+   * Returns the next input Token whose term() is the right len
    */
-  public final Token next(Token result) throws IOException
+  public final Token next(final Token reusableToken) throws IOException
   {
+    assert reusableToken != null;
     // return the first non-stop word found
-    for (Token token = input.next(result); token != null; token = input.next(result))
+    for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken))
     {
-      int len = token.termLength();
+      int len = nextToken.termLength();
       if (len >= min && len <= max) {
-          return token;
+          return nextToken;
       }
       // note: else we ignore it but should we index each part of it?
     }

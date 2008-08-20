@@ -41,11 +41,12 @@ public class NumericPayloadTokenFilter extends TokenFilter {
     this.typeMatch = typeMatch;
   }
 
-  public Token next(Token result) throws IOException {
-    result = input.next(result);
-    if (result != null && result.type().equals(typeMatch)){
-      result.setPayload(thePayload);
+  public Token next(final Token reusableToken) throws IOException {
+    assert reusableToken != null;
+    Token nextToken = input.next(reusableToken);
+    if (nextToken != null && nextToken.type().equals(typeMatch)){
+      nextToken.setPayload(thePayload);
     }
-    return result;
+    return nextToken;
   }
 }

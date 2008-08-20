@@ -1457,14 +1457,12 @@ protected SimpleCharStream input_stream;
 private final int[] jjrounds = new int[28];
 private final int[] jjstateSet = new int[56];
 protected char curChar;
-public HTMLParserTokenManager(SimpleCharStream stream)
-{
+public HTMLParserTokenManager(SimpleCharStream stream){
    if (SimpleCharStream.staticFlag)
       throw new Error("ERROR: Cannot use a static CharStream class with a non-static lexical analyzer.");
    input_stream = stream;
 }
-public HTMLParserTokenManager(SimpleCharStream stream, int lexState)
-{
+public HTMLParserTokenManager(SimpleCharStream stream, int lexState){
    this(stream);
    SwitchTo(lexState);
 }

@@ -48,7 +48,7 @@ public class TokenTypeSinkTokenizer extends SinkTokenizer {
   public void add(Token t) {
     //check to see if this is a Category
     if (t != null && typeToMatch.equals(t.type())){
-      lst.add(t.clone());
+      super.add(t);
     }
   }
 }
