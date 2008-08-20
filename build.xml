@@ -634,7 +634,9 @@
   </target>
 
   <!-- make a distribution -->
-  <target name="package"
+  <target name="package" depends="generate-maven-artifacts"/>
+
+  <target name="create-package"
           description="Packages the Solr Distribution files and Documentation."
           depends="dist, example, javadoc, dist-src, dist-javadoc">
 
@@ -684,7 +686,7 @@
 
   </target>
 
-  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package">
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
     <sequential>
 
       <mkdir dir="${maven.build.dir}"/>
