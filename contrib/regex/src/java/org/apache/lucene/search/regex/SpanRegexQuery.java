@@ -27,6 +27,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.search.spans.PayloadSpans;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -73,6 +74,10 @@ public class SpanRegexQuery extends SpanQuery implements RegexQueryCapable {
   }
 
   public Spans getSpans(IndexReader reader) throws IOException {
+    throw new UnsupportedOperationException("Query should have been rewritten");
+  }
+
+  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
     throw new UnsupportedOperationException("Query should have been rewritten");
   }
 

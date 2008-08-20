@@ -232,6 +232,8 @@ New features
 17. LUCENE-1297: Allow other string distance measures for the SpellChecker
     (Thomas Morton via Otis Gospodnetic)
 
+18. LUCENE-1001: Provide access to Payloads via Spans.  All existing Span Query implementations in Lucene implement. (Mark Miller, Grant Ingersoll)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

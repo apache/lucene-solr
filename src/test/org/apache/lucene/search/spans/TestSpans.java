@@ -46,7 +46,6 @@ public class TestSpans extends LuceneTestCase {
     }
     writer.close();
     searcher = new IndexSearcher(directory);
-//System.out.println("set up " + getName());
   }
 
   private String[] docFields = {
@@ -190,6 +189,105 @@ public class TestSpans extends LuceneTestCase {
 
     assertFalse("third range", spans.next());
   }
+
+
+  public void testSpanNearUnOrdered() throws Exception {
+
+    //See http://www.gossamer-threads.com/lists/lucene/java-dev/52270 for discussion about this test
+    SpanNearQuery snq;
+    snq = new SpanNearQuery(
+                              new SpanQuery[] {
+                                makeSpanTermQuery("u1"),
+                                makeSpanTermQuery("u2") },
+                              0,
+                              false);
+    Spans spans = snq.getSpans(searcher.getIndexReader());
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 4, spans.doc());
+    assertEquals("start", 1, spans.start());
+    assertEquals("end", 3, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 5, spans.doc());
+    assertEquals("start", 2, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 8, spans.doc());
+    assertEquals("start", 2, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 9, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 2, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 10, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 2, spans.end());
+    assertTrue("Has next and it shouldn't: " + spans.doc(), spans.next() == false);
+
+    SpanNearQuery u1u2 = new SpanNearQuery(new SpanQuery[]{makeSpanTermQuery("u1"),
+                                makeSpanTermQuery("u2")}, 0, false);
+    snq = new SpanNearQuery(
+                              new SpanQuery[] {
+                                u1u2,
+                                makeSpanTermQuery("u2")
+                              },
+                              1,
+                              false);
+    spans = snq.getSpans(searcher.getIndexReader());
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 4, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 3, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    //unordered spans can be subsets
+    assertEquals("doc", 4, spans.doc());
+    assertEquals("start", 1, spans.start());
+    assertEquals("end", 3, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 5, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 5, spans.doc());
+    assertEquals("start", 2, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 8, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 4, spans.end());
+
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 8, spans.doc());
+    assertEquals("start", 2, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 9, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 2, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 9, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 4, spans.end());
+
+    assertTrue("Does not have next and it should", spans.next());
+    assertEquals("doc", 10, spans.doc());
+    assertEquals("start", 0, spans.start());
+    assertEquals("end", 2, spans.end());
+
+    assertTrue("Has next and it shouldn't", spans.next() == false);
+  }
+
 
 
   private Spans orSpans(String[] terms) throws Exception {

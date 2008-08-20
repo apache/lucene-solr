@@ -79,4 +79,9 @@ public class SpanTermQuery extends SpanQuery {
     return new TermSpans(reader.termPositions(term), term);
   }
 
+
+  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
+    return (PayloadSpans) getSpans(reader);
+  }
+
 }

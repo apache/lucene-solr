@@ -154,19 +154,22 @@ public class SpanOrQuery extends SpanQuery {
     }
   }
 
+  public PayloadSpans getPayloadSpans(final IndexReader reader) throws IOException {
+    return (PayloadSpans)getSpans(reader);
+  }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return ((SpanQuery)clauses.get(0)).getSpans(reader);
+      return ((SpanQuery)clauses.get(0)).getPayloadSpans(reader);
 
-    return new Spans() {
+    return new PayloadSpans() {
         private SpanQueue queue = null;
 
         private boolean initSpanQueue(int target) throws IOException {
           queue = new SpanQueue(clauses.size());
           Iterator i = clauses.iterator();
           while (i.hasNext()) {
-            Spans spans = ((SpanQuery)i.next()).getSpans(reader);
+            PayloadSpans spans = ((SpanQuery)i.next()).getPayloadSpans(reader);
             if (   ((target == -1) && spans.next())
                 || ((target != -1) && spans.skipTo(target))) {
               queue.put(spans);
@@ -193,7 +196,7 @@ public class SpanOrQuery extends SpanQuery {
           return queue.size() != 0;
         }
 
-        private Spans top() { return (Spans)queue.top(); }
+        private PayloadSpans top() { return (PayloadSpans)queue.top(); }
 
         public boolean skipTo(int target) throws IOException {
           if (queue == null) {
@@ -215,7 +218,23 @@ public class SpanOrQuery extends SpanQuery {
         public int start() { return top().start(); }
         public int end() { return top().end(); }
 
-        public String toString() {
+      // TODO: Remove warning after API has been finalized
+      public Collection/*<byte[]>*/ getPayload() throws IOException {
+        ArrayList result = null;
+        PayloadSpans theTop = top();
+        if (theTop != null && theTop.isPayloadAvailable()) {
+          result = new ArrayList(theTop.getPayload());
+        }
+        return result;
+      }
+
+      // TODO: Remove warning after API has been finalized
+     public boolean isPayloadAvailable() {
+        PayloadSpans top = top();
+        return top != null && top.isPayloadAvailable();
+      }
+
+      public String toString() {
           return "spans("+SpanOrQuery.this+")@"+
             ((queue == null)?"START"
              :(queue.size()>0?(doc()+":"+start()+"-"+end()):"END"));

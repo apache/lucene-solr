@@ -102,7 +102,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = new Field("noPayLoad", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED);
+      Field noPayloadField = new Field(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED);
       //noPayloadField.setBoost(0);
       doc.add(noPayloadField);
       doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
@@ -130,7 +130,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
       ScoreDoc doc = hits.scoreDocs[i];
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
-    CheckHits.checkExplanations(query, "field", searcher, true);
+    CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
     Spans spans = query.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
@@ -143,7 +143,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
-    BoostingTermQuery query = new BoostingTermQuery(new Term("multiField", "seventy"));
+    BoostingTermQuery query = new BoostingTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -180,7 +180,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   }
 
   public void testNoMatch() throws Exception {
-    BoostingTermQuery query = new BoostingTermQuery(new Term("field", "junk"));
+    BoostingTermQuery query = new BoostingTermQuery(new Term(PayloadHelper.FIELD, "junk"));
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 0, hits.totalHits == 0);
@@ -188,8 +188,8 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   }
 
   public void testNoPayload() throws Exception {
-    BoostingTermQuery q1 = new BoostingTermQuery(new Term("noPayLoad", "zero"));
-    BoostingTermQuery q2 = new BoostingTermQuery(new Term("noPayLoad", "foo"));
+    BoostingTermQuery q1 = new BoostingTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"));
+    BoostingTermQuery q2 = new BoostingTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"));
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
     BooleanQuery query = new BooleanQuery();
@@ -200,7 +200,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 1, hits.totalHits == 1);
     int[] results = new int[1];
     results[0] = 0;//hits.scoreDocs[0].doc;
-    CheckHits.checkHitCollector(query, "noPayLoad", searcher, results);
+    CheckHits.checkHitCollector(query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
   // must be static for weight serialization tests 

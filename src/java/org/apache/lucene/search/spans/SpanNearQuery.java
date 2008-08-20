@@ -120,14 +120,18 @@ public class SpanNearQuery extends SpanQuery {
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
-      return new SpanOrQuery(getClauses()).getSpans(reader);
+      return new SpanOrQuery(getClauses()).getPayloadSpans(reader);
 
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return ((SpanQuery)clauses.get(0)).getSpans(reader);
+      return ((SpanQuery)clauses.get(0)).getPayloadSpans(reader);
 
     return inOrder
-            ? (Spans) new NearSpansOrdered(this, reader)
-            : (Spans) new NearSpansUnordered(this, reader);
+            ? (PayloadSpans) new NearSpansOrdered(this, reader)
+            : (PayloadSpans) new NearSpansUnordered(this, reader);
+  }
+
+  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
+    return (PayloadSpans) getSpans(reader);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

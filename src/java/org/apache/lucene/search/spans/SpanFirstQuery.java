@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -65,11 +66,15 @@ public class SpanFirstQuery extends SpanQuery {
   
   public void extractTerms(Set terms) {
 	    match.extractTerms(terms);
-  }  
+  }
+
+  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
+    return (PayloadSpans) getSpans(reader);
+  }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
-    return new Spans() {
-        private Spans spans = match.getSpans(reader);
+    return new PayloadSpans() {
+        private PayloadSpans spans = match.getPayloadSpans(reader);
 
         public boolean next() throws IOException {
           while (spans.next()) {                  // scan to next match
@@ -83,17 +88,29 @@ public class SpanFirstQuery extends SpanQuery {
           if (!spans.skipTo(target))
             return false;
 
-          if (spans.end() <= end)                 // there is a match
-            return true;
+          return spans.end() <= end || next();
 
-          return next();                          // scan to next match
         }
 
         public int doc() { return spans.doc(); }
         public int start() { return spans.start(); }
         public int end() { return spans.end(); }
 
-        public String toString() {
+      // TODO: Remove warning after API has been finalized
+      public Collection/*<byte[]>*/ getPayload() throws IOException {
+        ArrayList result = null;
+        if (spans.isPayloadAvailable()) {
+          result = new ArrayList(spans.getPayload());
+        }
+        return result;//TODO: any way to avoid the new construction?
+      }
+
+      // TODO: Remove warning after API has been finalized
+     public boolean isPayloadAvailable() {
+        return spans.isPayloadAvailable();
+      }
+
+      public String toString() {
           return "spans(" + SpanFirstQuery.this.toString() + ")";
         }
 

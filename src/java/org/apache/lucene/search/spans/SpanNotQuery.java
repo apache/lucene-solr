@@ -17,14 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.util.Collection;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery. */
 public class SpanNotQuery extends SpanQuery {
@@ -70,8 +70,8 @@ public class SpanNotQuery extends SpanQuery {
 
 
   public Spans getSpans(final IndexReader reader) throws IOException {
-    return new Spans() {
-        private Spans includeSpans = include.getSpans(reader);
+    return new PayloadSpans() {
+        private PayloadSpans includeSpans = include.getPayloadSpans(reader);
         private boolean moreInclude = true;
 
         private Spans excludeSpans = exclude.getSpans(reader);
@@ -131,11 +131,29 @@ public class SpanNotQuery extends SpanQuery {
         public int start() { return includeSpans.start(); }
         public int end() { return includeSpans.end(); }
 
-        public String toString() {
+      // TODO: Remove warning after API has been finalizedb
+      public Collection/*<byte[]>*/ getPayload() throws IOException {
+        ArrayList result = null;
+        if (includeSpans.isPayloadAvailable()) {
+          result = new ArrayList(includeSpans.getPayload());
+        }
+        return result;
+      }
+
+      // TODO: Remove warning after API has been finalized
+     public boolean isPayloadAvailable() {
+        return includeSpans.isPayloadAvailable();
+      }
+
+      public String toString() {
           return "spans(" + SpanNotQuery.this.toString() + ")";
         }
 
       };
+  }
+
+  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
+    return (PayloadSpans) getSpans(reader);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

@@ -20,12 +20,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Collection;
 
 /**
  * Expert:
  * Public for extension only
  */
-public class TermSpans implements Spans {
+public class TermSpans implements PayloadSpans {
   protected TermPositions positions;
   protected Term term;
   protected int doc;
@@ -87,6 +89,18 @@ public class TermSpans implements Spans {
 
   public int end() {
     return position + 1;
+  }
+
+  // TODO: Remove warning after API has been finalized
+  public Collection/*<byte[]>*/ getPayload() throws IOException {
+    byte [] bytes = new byte[positions.getPayloadLength()]; 
+    bytes = positions.getPayload(bytes, 0);
+    return Collections.singletonList(bytes);
+  }
+
+  // TODO: Remove warning after API has been finalized
+ public boolean isPayloadAvailable() {
+    return positions.isPayloadAvailable();
   }
 
   public String toString() {

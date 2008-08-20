@@ -17,12 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import org.apache.lucene.index.IndexReader;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-
-import org.apache.lucene.index.IndexReader;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Collection;
 
 /** A Spans that is formed from the ordered subspans of a SpanNearQuery
  * where the subspans do not overlap and have a maximum slop between them.
@@ -42,13 +44,13 @@ import org.apache.lucene.index.IndexReader;
  * <pre>t1 t2 .. t3      </pre>
  * <pre>      t1 .. t2 t3</pre>
  */
-class NearSpansOrdered implements Spans {
+class NearSpansOrdered implements PayloadSpans {
   private final int allowedSlop;
   private boolean firstTime = true;
   private boolean more = false;
 
   /** The spans in the same order as the SpanNearQuery */
-  private final Spans[] subSpans;
+  private final PayloadSpans[] subSpans;
 
   /** Indicates that all subSpans have same doc() */
   private boolean inSameDoc = false;
@@ -56,8 +58,9 @@ class NearSpansOrdered implements Spans {
   private int matchDoc = -1;
   private int matchStart = -1;
   private int matchEnd = -1;
+  private List/*<byte[]>*/ matchPayload;
 
-  private final Spans[] subSpansByDoc;
+  private final PayloadSpans[] subSpansByDoc;
   private final Comparator spanDocComparator = new Comparator() {
     public int compare(Object o1, Object o2) {
       return ((Spans)o1).doc() - ((Spans)o2).doc();
@@ -74,10 +77,11 @@ class NearSpansOrdered implements Spans {
     }
     allowedSlop = spanNearQuery.getSlop();
     SpanQuery[] clauses = spanNearQuery.getClauses();
-    subSpans = new Spans[clauses.length];
-    subSpansByDoc = new Spans[clauses.length];
+    subSpans = new PayloadSpans[clauses.length];
+    matchPayload = new LinkedList();
+    subSpansByDoc = new PayloadSpans[clauses.length];
     for (int i = 0; i < clauses.length; i++) {
-      subSpans[i] = clauses[i].getSpans(reader);
+      subSpans[i] = clauses[i].getPayloadSpans(reader);
       subSpansByDoc[i] = subSpans[i]; // used in toSameDoc()
     }
     query = spanNearQuery; // kept for toString() only.
@@ -92,6 +96,16 @@ class NearSpansOrdered implements Spans {
   // inherit javadocs
   public int end() { return matchEnd; }
 
+  // TODO: Remove warning after API has been finalized
+  public Collection/*<byte[]>*/ getPayload() throws IOException {
+    return matchPayload;
+  }
+
+  // TODO: Remove warning after API has been finalized
+ public boolean isPayloadAvailable() {
+    return matchPayload.isEmpty() == false;
+  }
+
   // inherit javadocs
   public boolean next() throws IOException {
     if (firstTime) {
@@ -104,6 +118,7 @@ class NearSpansOrdered implements Spans {
       }
       more = true;
     }
+    matchPayload.clear();
     return advanceAfterOrdered();
   }
 
@@ -126,6 +141,7 @@ class NearSpansOrdered implements Spans {
         return false;
       }
     }
+    matchPayload.clear();
     return advanceAfterOrdered();
   }
   
@@ -218,11 +234,19 @@ class NearSpansOrdered implements Spans {
   private boolean shrinkToAfterShortestMatch() throws IOException {
     matchStart = subSpans[subSpans.length - 1].start();
     matchEnd = subSpans[subSpans.length - 1].end();
+    if (subSpans[subSpans.length - 1].isPayloadAvailable()) {
+      matchPayload.addAll(subSpans[subSpans.length - 1].getPayload());
+    }
     int matchSlop = 0;
     int lastStart = matchStart;
     int lastEnd = matchEnd;
     for (int i = subSpans.length - 2; i >= 0; i--) {
-      Spans prevSpans = subSpans[i];
+      PayloadSpans prevSpans = subSpans[i];
+      
+      if (subSpans[i].isPayloadAvailable()) {
+        matchPayload.addAll(0, subSpans[i].getPayload());
+      }
+      
       int prevStart = prevSpans.start();
       int prevEnd = prevSpans.end();
       while (true) { // Advance prevSpans until after (lastStart, lastEnd)
@@ -248,6 +272,7 @@ class NearSpansOrdered implements Spans {
       if (matchStart > prevEnd) { // Only non overlapping spans add to slop.
         matchSlop += (matchStart - prevEnd);
       }
+
       /* Do not break on (matchSlop > allowedSlop) here to make sure
        * that subSpans[0] is advanced after the match, if any.
        */

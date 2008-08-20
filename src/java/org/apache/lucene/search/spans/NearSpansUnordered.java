@@ -17,15 +17,17 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.util.List;
-import java.util.ArrayList;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
-class NearSpansUnordered implements Spans {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+
+class NearSpansUnordered implements PayloadSpans {
   private SpanNearQuery query;
 
   private List ordered = new ArrayList();         // spans in query order
@@ -60,13 +62,13 @@ class NearSpansUnordered implements Spans {
 
 
   /** Wraps a Spans, and can be used to form a linked list. */
-  private class SpansCell implements Spans {
-    private Spans spans;
+  private class SpansCell implements PayloadSpans {
+    private PayloadSpans spans;
     private SpansCell next;
     private int length = -1;
     private int index;
 
-    public SpansCell(Spans spans, int index) {
+    public SpansCell(PayloadSpans spans, int index) {
       this.spans = spans;
       this.index = index;
     }
@@ -99,6 +101,15 @@ class NearSpansUnordered implements Spans {
     public int doc() { return spans.doc(); }
     public int start() { return spans.start(); }
     public int end() { return spans.end(); }
+                    // TODO: Remove warning after API has been finalized
+    public Collection/*<byte[]>*/ getPayload() throws IOException {
+      return new ArrayList(spans.getPayload());
+    }
+
+    // TODO: Remove warning after API has been finalized
+   public boolean isPayloadAvailable() {
+      return spans.isPayloadAvailable();
+    }
 
     public String toString() { return spans.toString() + "#" + index; }
   }
@@ -113,7 +124,7 @@ class NearSpansUnordered implements Spans {
     queue = new CellQueue(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       SpansCell cell =
-        new SpansCell(clauses[i].getSpans(reader), i);
+        new SpansCell(clauses[i].getPayloadSpans(reader), i);
       ordered.add(cell);
     }
   }
@@ -197,6 +208,34 @@ class NearSpansUnordered implements Spans {
   public int start() { return min().start(); }
   public int end() { return max.end(); }
 
+  // TODO: Remove warning after API has been finalized
+  /**
+   * WARNING: The List is not necessarily in order of the the positions
+   * @return
+   * @throws IOException
+   */
+  public Collection/*<byte[]>*/ getPayload() throws IOException {
+    Set/*<byte[]*/ matchPayload = new HashSet();
+    for (SpansCell cell = first; cell != null; cell = cell.next) {
+      if (cell.isPayloadAvailable()) {
+        matchPayload.addAll(cell.getPayload());
+      }
+    }
+    return matchPayload;
+  }
+
+  // TODO: Remove warning after API has been finalized
+ public boolean isPayloadAvailable() {
+   SpansCell pointer = min();
+   do {
+     if(pointer.isPayloadAvailable()) {
+       return true;
+     }
+     pointer = pointer.next;
+   } while(pointer.next != null);
+
+   return false;
+  }
 
   public String toString() {
     return getClass().getName() + "("+query.toString()+")@"+
@@ -214,7 +253,7 @@ class NearSpansUnordered implements Spans {
     }
   }
 
-  private void addToList(SpansCell cell) {
+  private void addToList(SpansCell cell) throws IOException {
     if (last != null) {			  // add next to end of list
       last.next = cell;
     } else
@@ -230,7 +269,7 @@ class NearSpansUnordered implements Spans {
     last.next = null;
   }
 
-  private void queueToList() {
+  private void queueToList() throws IOException {
     last = first = null;
     while (queue.top() != null) {
       addToList((SpansCell)queue.pop());
