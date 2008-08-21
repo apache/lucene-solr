@@ -306,6 +306,20 @@ public class HighlighterTest extends AbstractSolrTestCase {
            "//lst[@name='1']/arr[@name='t_text1']/str[.='<em>random</em> words for highlighting tests']",
            "//lst[@name='1']/arr[@name='t_text2']/str[.='more random <em>words</em> for second field']"
            );
+
+     // test case for un-optimized index
+     assertU(adoc("t_text1", "random words for highlighting tests", "id", "2",
+             "t_text2", "more random words for second field"));
+     assertU(delI("1"));
+     assertU(commit());
+     sumLRF = h.getRequestFactory(
+           "standard", 0, 200, args);
+     assertQ("Test RequireFieldMatch on un-optimized index",
+           sumLRF.makeRequest("t_text1:random OR t_text2:words"),
+           "//lst[@name='highlighting']/lst[@name='2']",
+           "//lst[@name='2']/arr[@name='t_text1']/str[.='<em>random</em> words for highlighting tests']",
+           "//lst[@name='2']/arr[@name='t_text2']/str[.='more random <em>words</em> for second field']"
+           );
   }
 
   public void testCustomSimpleFormatterHighlight() {
