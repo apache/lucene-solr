@@ -17,12 +17,13 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import junit.framework.TestCase;
+
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSingleTokenTokenFilter extends LuceneTestCase {
+public class TestSingleTokenTokenFilter extends TestCase {
 
   public void test() throws IOException {
     Token token = new Token();
