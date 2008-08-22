@@ -61,16 +61,6 @@ class DismaxQParser extends QParser {
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
 
-  /** shorten the class references for utilities */
-  private static class U extends SolrPluginUtils {
-    /* :NOOP */
-  }
-
-  /** shorten the class references for utilities */
-  private static interface DMP extends DisMaxParams {
-    /* :NOOP */
-  }
-
 
   public DismaxQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -91,13 +81,13 @@ class DismaxQParser extends QParser {
 
     IndexSchema schema = req.getSchema();
 
-    queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
-    Map<String,Float> phraseFields = U.parseFieldBoosts(solrParams.getParams(DMP.PF));
+    queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
+    Map<String,Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
 
-    float tiebreaker = solrParams.getFloat(DMP.TIE, 0.0f);
+    float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
-    int pslop = solrParams.getInt(DMP.PS, 0);
-    int qslop = solrParams.getInt(DMP.QS, 0);
+    int pslop = solrParams.getInt(DisMaxParams.PS, 0);
+    int qslop = solrParams.getInt(DisMaxParams.QS, 0);
 
     /* a generic parser for parsing regular lucene queries */
     QueryParser p = schema.getSolrQueryParser(null);
@@ -105,15 +95,15 @@ class DismaxQParser extends QParser {
     /* a parser for dealing with user input, which will convert
      * things to DisjunctionMaxQueries
      */
-    U.DisjunctionMaxQueryParser up =
-      new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
+    SolrPluginUtils.DisjunctionMaxQueryParser up =
+      new SolrPluginUtils.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
     up.addAlias(IMPOSSIBLE_FIELD_NAME,
                 tiebreaker, queryFields);
     up.setPhraseSlop(qslop);
 
     /* for parsing sloppy phrases using DisjunctionMaxQueries */
-    U.DisjunctionMaxQueryParser pp =
-      new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
+    SolrPluginUtils.DisjunctionMaxQueryParser pp =
+      new SolrPluginUtils.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
     pp.addAlias(IMPOSSIBLE_FIELD_NAME,
                 tiebreaker, phraseFields);
     pp.setPhraseSlop(pslop);
@@ -130,7 +120,7 @@ class DismaxQParser extends QParser {
     altUserQuery = null;
     if( userQuery == null || userQuery.trim().length() < 1 ) {
       // If no query is specified, we may have an alternate
-      String altQ = solrParams.get( DMP.ALTQ );
+      String altQ = solrParams.get( DisMaxParams.ALTQ );
       if (altQ != null) {
         altQParser = subQuery(altQ, null);
         altUserQuery = altQParser.parse();
@@ -141,17 +131,17 @@ class DismaxQParser extends QParser {
     }
     else {
       // There is a valid query string
-      userQuery = U.partialEscape(U.stripUnbalancedQuotes(userQuery)).toString();
-      userQuery = U.stripIllegalOperators(userQuery).toString();
+      userQuery = SolrPluginUtils.partialEscape(SolrPluginUtils.stripUnbalancedQuotes(userQuery)).toString();
+      userQuery = SolrPluginUtils.stripIllegalOperators(userQuery).toString();
 
-      String minShouldMatch = solrParams.get(DMP.MM, "100%");
+      String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
       Query dis = up.parse(userQuery);
       parsedUserQuery = dis;
 
       if (dis instanceof BooleanQuery) {
         BooleanQuery t = new BooleanQuery();
-        U.flattenBooleanQuery(t, (BooleanQuery)dis);
-        U.setMinShouldMatch(t, minShouldMatch);
+        SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)dis);
+        SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
         parsedUserQuery = t;
       }
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
@@ -175,8 +165,8 @@ class DismaxQParser extends QParser {
 
 
     /* * * Boosting Query * * */
-    boostParams = solrParams.getParams(DMP.BQ);
-    //List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
+    boostParams = solrParams.getParams(DisMaxParams.BQ);
+    //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries=null;
     if (boostParams!=null && boostParams.length>0) {
       boostQueries = new ArrayList<Query>();
@@ -209,7 +199,7 @@ class DismaxQParser extends QParser {
 
     /* * * Boosting Functions * * */
 
-    String[] boostFuncs = solrParams.getParams(DMP.BF);
+    String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
         if(null == boostFunc || "".equals(boostFunc)) continue;

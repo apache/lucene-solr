@@ -52,10 +52,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   long handlerStart = System.currentTimeMillis();
   protected boolean httpCaching = true;
 
-  /** shorten the class references for utilities */
-  private static class U extends SolrPluginUtils {
-    /* :NOOP */
-  }
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named:
@@ -130,7 +126,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
     try {
-      U.setDefaults(req,defaults,appends,invariants);
+      SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
       // count timeouts
