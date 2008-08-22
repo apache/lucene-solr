@@ -34,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * @version $Id$
@@ -160,7 +161,18 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
       }
       
       case PERSIST: {
-        do_persist = true;
+        String fileName = params.get( CoreAdminParams.FILE );
+        if (fileName != null) {
+          java.io.File file = new java.io.File(fileName);
+          cores.persistFile(file);
+          rsp.add("saved", file.getAbsolutePath());
+          do_persist = false;
+        }
+        else if (!cores.isPersistent()) {
+          throw new SolrException (SolrException.ErrorCode.FORBIDDEN, "Persistence is not enabled");
+        }
+        else
+          do_persist = true;
         break;
       }
 

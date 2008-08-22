@@ -77,6 +77,33 @@ public class CoreAdminRequest extends SolrRequest
       return params;
     }
   }
+    //a persist core request
+  public static class Persist extends CoreAdminRequest {
+    protected String fileName = null;
+    
+    public Persist() {
+      action = CoreAdminAction.PERSIST;
+    }
+    
+    public void setFileName(String name) {
+      fileName = name;
+    }
+    public String getFileName() {
+      return fileName;
+    }
+    @Override
+    public SolrParams getParams() {
+      if( action == null ) {
+        throw new RuntimeException( "no action specified!" );
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set( CoreAdminParams.ACTION, action.toString() );
+      if (fileName != null) {
+        params.set( CoreAdminParams.FILE, fileName);
+      }
+      return params;
+    }
+  }
   
   public CoreAdminRequest()
   {
@@ -197,6 +224,13 @@ public class CoreAdminRequest extends SolrRequest
     req.setCoreName( name );
     req.setInstanceDir(instanceDir);
     return req.process( server );
+  }
+    
+  public static CoreAdminResponse persist(String fileName, SolrServer server) throws SolrServerException, IOException 
+  {
+    CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();
+    req.setFileName(fileName);
+    return req.process(server);
   }
 }
 

@@ -46,6 +46,9 @@ public interface CoreAdminParams
   
   /** Specifies a core instance dir. */
   public final static String INSTANCE_DIR = "instanceDir";
+
+  /** If you specify a file, what is its name **/
+  public final static String FILE = "file";
   
   public enum CoreAdminAction {
     STATUS,  

@@ -45,6 +45,8 @@ Changes in runtime behavior
 
  6. SOLR-430: Added support for reading SpellCheckComponent's responses. (shalin)
 
+ 7. SOLR-718: Support persisting solr.xml through SolrJ (Henri Biestro via shalin)
+
 Bug Fixes
 
 Other Changes
