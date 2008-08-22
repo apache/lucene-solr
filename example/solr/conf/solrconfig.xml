@@ -527,7 +527,7 @@
       <str name="name">file</str>
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
-      <str name="indexDir">./spellcheckerFile</str>
+      <str name="spellcheckIndexDir">./spellcheckerFile</str>
     </lst>
   </searchComponent>
 
