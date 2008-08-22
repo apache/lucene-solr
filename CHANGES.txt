@@ -392,6 +392,9 @@ Optimizations
 
  8. SOLR-624: Only take snapshots if there are differences to the index (Richard Trey Hyde via gsingers)
 
+ 9. SOLR-587: Delete by Query performance greatly improved by using
+    new underlying Lucene IndexWriter implementation.  (yonik)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
