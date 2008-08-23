@@ -76,7 +76,7 @@ public class TestSolrProperties {
         log.warning("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
       }
     }
-    File persistedFile = new File("solr-persist.xml");
+    File persistedFile = new File(getSolrHome() + File.separator + "solr-persist.xml");
     persistedFile.delete();
   }
 

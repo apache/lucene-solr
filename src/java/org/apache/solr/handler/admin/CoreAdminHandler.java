@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.Date;
 
 import org.apache.solr.common.SolrException;
@@ -163,7 +164,7 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
       case PERSIST: {
         String fileName = params.get( CoreAdminParams.FILE );
         if (fileName != null) {
-          java.io.File file = new java.io.File(fileName);
+          File file = new File(cores.getConfigFile().getParentFile(), fileName);
           cores.persistFile(file);
           rsp.add("saved", file.getAbsolutePath());
           do_persist = false;
