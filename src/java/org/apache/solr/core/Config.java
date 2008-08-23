@@ -102,7 +102,7 @@ public class Config {
       javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       doc = builder.parse(lis);
 
-    	DOMUtil.substituteSystemProperties(doc);
+        DOMUtil.substituteProperties(doc, loader.getCoreProperties());
     } catch( SolrException e ){
     	SolrException.log(log,"Error in "+name,e);
     	throw e;
@@ -111,7 +111,7 @@ public class Config {
       if (lis != is)  lis.close();
     }
   }
-  
+
   /**
    * @since solr 1.3
    */

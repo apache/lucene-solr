@@ -27,10 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 import java.nio.charset.Charset;
 
@@ -71,6 +68,28 @@ public class SolrResourceLoader implements ResourceLoader
   private final List<ResourceLoaderAware> waitingForResources = new ArrayList<ResourceLoaderAware>();
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
+  private final Properties coreProperties;
+
+  /**
+   * <p>
+   * This loader will delegate to the context classloader when possible,
+   * otherwise it will attempt to resolve resources using any jar files
+   * found in the "lib/" directory in the specified instance directory.
+   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
+   * <p>
+   */
+  public SolrResourceLoader( String instanceDir, ClassLoader parent, Properties coreProperties )
+  {
+    if( instanceDir == null ) {
+      this.instanceDir = SolrResourceLoader.locateInstanceDir();
+    } else{
+      this.instanceDir = normalizeDir(instanceDir);
+    }
+    log.info("Solr home set to '" + this.instanceDir + "'");
+    this.classLoader = createClassLoader(new File(this.instanceDir + "lib/"), parent);
+    this.coreProperties = coreProperties;
+  }
+
   /**
    * <p>
    * This loader will delegate to the context classloader when possible,
@@ -81,13 +100,7 @@ public class SolrResourceLoader implements ResourceLoader
    */
   public SolrResourceLoader( String instanceDir, ClassLoader parent )
   {
-    if( instanceDir == null ) {
-      this.instanceDir = SolrResourceLoader.locateInstanceDir();
-    } else{
-      this.instanceDir = normalizeDir(instanceDir);
-    }
-    log.info("Solr home set to '" + this.instanceDir + "'");
-    this.classLoader = createClassLoader(new File(this.instanceDir + "lib/"), parent);
+    this(instanceDir, parent, null);
   }
     
   static ClassLoader createClassLoader(File f, ClassLoader loader) {
@@ -113,7 +126,7 @@ public class SolrResourceLoader implements ResourceLoader
 
   public SolrResourceLoader( String instanceDir )
   {
-    this( instanceDir, null );
+    this( instanceDir, null, null );
   }
   
   /** Ensures a directory name allways ends with a '/'. */
@@ -127,6 +140,10 @@ public class SolrResourceLoader implements ResourceLoader
   
   public String getDataDir()    {
     return dataDir;
+  }
+
+  public Properties getCoreProperties() {
+    return coreProperties;
   }
 
   /** Opens a schema resource by its name.

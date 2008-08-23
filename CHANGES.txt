@@ -345,6 +345,10 @@ New Features
 
 69. SOLR-506: Emitting HTTP Cache headers can be enabled or disabled through configuration
               on a per-handler basis (shalin)
+
+70. SOLR-716: Added support for properties in configuration files. Properties can be specified in solr.xml
+              and can be used in solrconfig.xml and schema.xml
+              (Henri Biestro, hossman, ryan, shalin) 
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This

@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import java.util.Properties;
 
 /**
  * A Solr core descriptor
@@ -29,6 +30,7 @@ public class CoreDescriptor implements Cloneable {
   protected String configName;
   protected String schemaName;
   private final CoreContainer coreContainer;
+  private Properties coreProperties;
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
@@ -51,6 +53,15 @@ public class CoreDescriptor implements Cloneable {
     this.schemaName = descr.schemaName;
     this.name = descr.name;
     coreContainer = descr.coreContainer;
+  }
+
+  private Properties initImplicitProperties() {
+    Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
+    implicitProperties.setProperty("solr.core.name", name);
+    implicitProperties.setProperty("solr.core.instanceDir", instanceDir);
+    implicitProperties.setProperty("solr.core.configName", configName);
+    implicitProperties.setProperty("solr.core.schemaName", schemaName);
+    return implicitProperties;
   }
   
   /**@return the default config name. */
@@ -104,5 +115,33 @@ public class CoreDescriptor implements Cloneable {
 
   public CoreContainer getCoreContainer() {
     return coreContainer;
+  }
+
+  /**
+   * Get this core's properties
+   * 
+   * @return a shallow copy of this core's properties
+   */
+  public Properties getCoreProperties() {
+    Properties p = new Properties();
+    if (coreProperties != null)
+      p.putAll(coreProperties);
+    return p;
+  }
+
+  /**
+   * Set this core's properties. Please note that some implicit values will be added to the
+   * Properties instance passed into this method. This means that the Properties instance
+   * set to this method will have different (less) key/value pairs than the Properties
+   * instance returned by #getCoreProperties method.
+   * 
+   * @param coreProperties
+   */
+  public void setCoreProperties(Properties coreProperties) {
+    if (this.coreProperties == null) {
+      Properties p = initImplicitProperties();
+      this.coreProperties = new Properties(p);
+      this.coreProperties.putAll(coreProperties);
+    }
   }
 }

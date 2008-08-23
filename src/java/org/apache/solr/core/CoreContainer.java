@@ -30,6 +30,8 @@ import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
@@ -60,8 +62,13 @@ public class CoreContainer
   protected ClassLoader libLoader = null;
   protected SolrResourceLoader loader = null;
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
+  protected Properties containerProperties;
   
   public CoreContainer() {
+  }
+
+  public Properties getContainerProperties() {
+    return containerProperties;
   }
   
   // Helper class to initialize the CoreContainer
@@ -178,6 +185,13 @@ public class CoreContainer
         coreAdminHandler = this.createMultiCoreHandler();
       }
 
+      try {
+        containerProperties = readProperties(cfg, ((NodeList) cfg.evaluate("solr", XPathConstants.NODESET)).item(0));
+      } catch (Throwable e) {
+        SolrConfig.severeErrors.add(e);
+        SolrException.logOnce(log,null,e);
+      }
+
       NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
 
       for (int i=0; i<nodes.getLength(); i++) {
@@ -187,6 +201,7 @@ public class CoreContainer
           List<String> aliases = StrUtils.splitSmart(names,',');
           String name = aliases.get(0);
           CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
+          p.setCoreProperties(readProperties(cfg, node));
 
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
@@ -220,7 +235,18 @@ public class CoreContainer
       }
     }
   }
-  
+
+  private Properties readProperties(Config cfg, Node node) throws XPathExpressionException {
+    XPath xpath = cfg.getXPath();
+    NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
+    Properties properties = new Properties();
+    for (int i=0; i<props.getLength(); i++) {
+      Node prop = props.item(i);
+      properties.setProperty(DOMUtil.getAttr(prop, "name"), DOMUtil.getAttr(prop, "value"));
+    }
+    return properties;
+  }
+
   /**
    * Stops all cores.
    */
@@ -291,7 +317,7 @@ public class CoreContainer
     String instanceDir = idir.getPath();
     
     // Initialize the solr config
-    SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader);
+    SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, dcore.getCoreProperties());
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     IndexSchema schema = new IndexSchema(config, dcore.getSchemaName(), null);
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
@@ -395,7 +421,8 @@ public class CoreContainer
 
   
   /** Gets a core by name and increase its refcount.
-   * @see SolrCore.open() @see SolrCore.close()
+   * @see SolrCore#open() 
+   * @see SolrCore#close() 
    * @param name the core name
    * @return the core if found
    */
@@ -563,6 +590,10 @@ public class CoreContainer
     writer.write('\'');
     writer.write(">\n");
 
+    if (containerProperties != null && !containerProperties.isEmpty())  {
+      writeProperties(writer, containerProperties);
+    }
+
     Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
 
     synchronized(cores) {
@@ -609,9 +640,25 @@ public class CoreContainer
       XML.escapeAttributeValue(opt, writer);
       writer.write('\'');
     }
-    writer.write("/>\n"); // core
+    if (dcore.getCoreProperties() == null || dcore.getCoreProperties().isEmpty())
+      writer.write("/>\n"); // core
+    else  {
+      writer.write(">\n");
+      writeProperties(writer, dcore.getCoreProperties());
+      writer.write("</core>");
+    }
   }
-  
+
+  private void writeProperties(Writer writer, Properties props) throws IOException {
+    for (Map.Entry<Object, Object> entry : props.entrySet()) {
+      writer.write("<property name='");
+      XML.escapeAttributeValue(entry.getKey().toString(), writer);
+      writer.write("' value='");
+      XML.escapeAttributeValue(entry.getValue().toString(), writer);
+      writer.write("' />\n");
+    }
+  }
+
   /** Copies a src file to a dest file:
    *  used to circumvent the platform discrepancies regarding renaming files.
    */

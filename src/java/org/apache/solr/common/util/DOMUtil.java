@@ -17,11 +17,7 @@
 
 package org.apache.solr.common.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.solr.common.SolrException;
 import org.w3c.dom.NamedNodeMap;
@@ -205,17 +201,17 @@ public class DOMUtil {
       break;
 
     case Node.ATTRIBUTE_NODE: /* fall through */
-      /* Putting Attribute nodes in this section does not exactly 
-         match the definition of how textContent should behave 
-         according to the DOM Level-3 Core documentation - which 
-         specifies that the Attr's children should have their 
-         textContent concated (Attr's can have a single child which 
+      /* Putting Attribute nodes in this section does not exactly
+         match the definition of how textContent should behave
+         according to the DOM Level-3 Core documentation - which
+         specifies that the Attr's children should have their
+         textContent concated (Attr's can have a single child which
          is either Text node or an EntityRefrence).  In practice,
-         DOM implementations do not seem to use child nodes of 
+         DOM implementations do not seem to use child nodes of
          Attributes, storing the "text" directly as the nodeValue.
-         Fortunately, the DOM Spec indicates that when Attr.nodeValue 
-         is read, it should return the nodeValue from the child Node, 
-         so this approach should work both for strict implementations, 
+         Fortunately, the DOM Spec indicates that when Attr.nodeValue
+         is read, it should return the nodeValue from the child Node,
+         so this approach should work both for strict implementations,
          and implementations actually encountered.
       */
     case Node.TEXT_NODE: /* fall through */
@@ -242,6 +238,19 @@ public class DOMUtil {
    * @param node DOM node to walk for substitutions
    */
   public static void substituteSystemProperties(Node node) {
+    substituteProperties(node, null);
+  }
+
+  /**
+   * Replaces ${property[:default value]} references in all attributes
+   * and text nodes of supplied node.  If the property is not defined neither in the
+   * given Properties instance nor in System.getProperty and no
+   * default value is provided, a runtime exception is thrown.
+   *
+   * @param node DOM node to walk for substitutions
+   * @param properties the Properties instance from which a value can be looked up
+   */
+  public static void substituteProperties(Node node, Properties properties) {
     // loop through child nodes
     Node child;
     Node next = node.getFirstChild();
@@ -252,15 +261,15 @@ public class DOMUtil {
 
       // handle child by node type
       if (child.getNodeType() == Node.TEXT_NODE) {
-        child.setNodeValue(substituteSystemProperty(child.getNodeValue()));
+        child.setNodeValue(substituteProperty(child.getNodeValue(), properties));
       } else if (child.getNodeType() == Node.ELEMENT_NODE) {
         // handle child elements with recursive call
         NamedNodeMap attributes = child.getAttributes();
         for (int i = 0; i < attributes.getLength(); i++) {
           Node attribute = attributes.item(i);
-          attribute.setNodeValue(substituteSystemProperty(attribute.getNodeValue()));
+          attribute.setNodeValue(substituteProperty(attribute.getNodeValue(), properties));
         }
-        substituteSystemProperties(child);
+        substituteProperties(child, properties);
       }
     }
   }
@@ -269,7 +278,7 @@ public class DOMUtil {
    * This method borrowed from Ant's PropertyHelper.replaceProperties:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
    */
-  private static String substituteSystemProperty(String value) {
+  private static String substituteProperty(String value, Properties coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
     }
@@ -292,7 +301,12 @@ public class DOMUtil {
           defaultValue = propertyName.substring(colon_index + 1);
           propertyName = propertyName.substring(0,colon_index);
         }
-        fragment = System.getProperty(propertyName,defaultValue);
+        if (coreProperties != null) {
+          fragment = coreProperties.getProperty(propertyName);
+        }
+        if (fragment == null) {
+          fragment = System.getProperty(propertyName, defaultValue);
+        }
         if (fragment == null) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "No system property or default value specified for " + propertyName);
         }
