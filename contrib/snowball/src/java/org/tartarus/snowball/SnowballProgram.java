@@ -1,30 +1,21 @@
-package net.sf.snowball;
 
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+package org.tartarus.snowball;
 import java.lang.reflect.InvocationTargetException;
 
-public class SnowballProgram {
+/**
+ * This is the rev 500 of the Snowball SVN trunk,
+ * but modified:
+ * made abstract and introduced abstract method stem
+ * to avoid expensive 
+ */
+public abstract class SnowballProgram {
     protected SnowballProgram()
     {
 	current = new StringBuffer();
 	setCurrent("");
     }
+
+    public abstract boolean stem();
 
     /**
      * Set the current string.
@@ -44,7 +35,15 @@ public class SnowballProgram {
      */
     public String getCurrent()
     {
-	return current.toString();
+        String result = current.toString();
+        // Make a new StringBuffer.  If we reuse the old one, and a user of
+        // the library keeps a reference to the buffer returned (for example,
+        // by converting it to a String in a way which doesn't force a copy),
+        // the buffer size will not decrease, and we will risk wasting a large
+        // amount of memory.
+        // Thanks to Wolfram Esser for spotting this problem.
+        current = new StringBuffer();
+        return result;
     }
 
     // current string
@@ -334,7 +333,7 @@ public class SnowballProgram {
     protected int replace_s(int c_bra, int c_ket, String s)
     {
 	int adjustment = s.length() - (c_ket - c_bra);
-	current.replace(bra, ket, s);
+	current.replace(c_bra, c_ket, s);
 	limit += adjustment;
 	if (cursor >= c_ket) cursor += adjustment;
 	else if (cursor > c_bra) cursor = c_bra;
@@ -424,5 +423,4 @@ extern void debug(struct SN_env * z, int number, int line_count)
 */
 
 };
-
 

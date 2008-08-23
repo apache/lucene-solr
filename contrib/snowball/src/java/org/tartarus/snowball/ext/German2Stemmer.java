@@ -1,8 +1,8 @@
 // This file was generated automatically by the Snowball to Java compiler
 
-package net.sf.snowball.ext;
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.Among;
+package org.tartarus.snowball.ext;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.Among;
 
 /**
  * Generated class implementing code defined by a snowball script.
@@ -66,10 +66,12 @@ public class German2Stemmer extends SnowballProgram {
 
         private static final char g_st_ending[] = {117, 30, 4 };
 
+        private int I_x;
         private int I_p2;
         private int I_p1;
 
         private void copy_from(German2Stemmer other) {
+            I_x = other.I_x;
             I_p2 = other.I_p2;
             I_p1 = other.I_p1;
             super.copy_from(other);
@@ -224,10 +226,26 @@ public class German2Stemmer extends SnowballProgram {
         }
 
         private boolean r_mark_regions() {
+            int v_1;
             // (, line 48
             I_p1 = limit;
             I_p2 = limit;
-            // gopast, line 53
+            // test, line 53
+            v_1 = cursor;
+            // (, line 53
+            // hop, line 53
+            {
+                int c = cursor + 3;
+                if (0 > c || c > limit)
+                {
+                    return false;
+                }
+                cursor = c;
+            }
+            // setmark x, line 53
+            I_x = cursor;
+            cursor = v_1;
+            // gopast, line 55
             golab0: while(true)
             {
                 lab1: do {
@@ -243,7 +261,7 @@ public class German2Stemmer extends SnowballProgram {
                 }
                 cursor++;
             }
-            // gopast, line 53
+            // gopast, line 55
             golab2: while(true)
             {
                 lab3: do {
@@ -259,18 +277,18 @@ public class German2Stemmer extends SnowballProgram {
                 }
                 cursor++;
             }
-            // setmark p1, line 53
+            // setmark p1, line 55
             I_p1 = cursor;
-            // try, line 54
+            // try, line 56
             lab4: do {
-                // (, line 54
-                if (!(I_p1 < 3))
+                // (, line 56
+                if (!(I_p1 < I_x))
                 {
                     break lab4;
                 }
-                I_p1 = 3;
+                I_p1 = I_x;
             } while (false);
-            // gopast, line 55
+            // gopast, line 57
             golab5: while(true)
             {
                 lab6: do {
@@ -286,7 +304,7 @@ public class German2Stemmer extends SnowballProgram {
                 }
                 cursor++;
             }
-            // gopast, line 55
+            // gopast, line 57
             golab7: while(true)
             {
                 lab8: do {
@@ -302,7 +320,7 @@ public class German2Stemmer extends SnowballProgram {
                 }
                 cursor++;
             }
-            // setmark p2, line 55
+            // setmark p2, line 57
             I_p2 = cursor;
             return true;
         }
@@ -310,53 +328,53 @@ public class German2Stemmer extends SnowballProgram {
         private boolean r_postlude() {
             int among_var;
             int v_1;
-            // repeat, line 59
+            // repeat, line 61
             replab0: while(true)
             {
                 v_1 = cursor;
                 lab1: do {
-                    // (, line 59
-                    // [, line 61
+                    // (, line 61
+                    // [, line 63
                     bra = cursor;
-                    // substring, line 61
+                    // substring, line 63
                     among_var = find_among(a_1, 6);
                     if (among_var == 0)
                     {
                         break lab1;
                     }
-                    // ], line 61
+                    // ], line 63
                     ket = cursor;
                     switch(among_var) {
                         case 0:
                             break lab1;
                         case 1:
-                            // (, line 62
-                            // <-, line 62
+                            // (, line 64
+                            // <-, line 64
                             slice_from("y");
                             break;
                         case 2:
-                            // (, line 63
-                            // <-, line 63
+                            // (, line 65
+                            // <-, line 65
                             slice_from("u");
                             break;
                         case 3:
-                            // (, line 64
-                            // <-, line 64
+                            // (, line 66
+                            // <-, line 66
                             slice_from("a");
                             break;
                         case 4:
-                            // (, line 65
-                            // <-, line 65
+                            // (, line 67
+                            // <-, line 67
                             slice_from("o");
                             break;
                         case 5:
-                            // (, line 66
-                            // <-, line 66
+                            // (, line 68
+                            // <-, line 68
                             slice_from("u");
                             break;
                         case 6:
-                            // (, line 67
-                            // next, line 67
+                            // (, line 69
+                            // next, line 69
                             if (cursor >= limit)
                             {
                                 break lab1;
@@ -399,22 +417,22 @@ public class German2Stemmer extends SnowballProgram {
             int v_7;
             int v_8;
             int v_9;
-            // (, line 77
-            // do, line 78
+            // (, line 79
+            // do, line 80
             v_1 = limit - cursor;
             lab0: do {
-                // (, line 78
-                // [, line 79
+                // (, line 80
+                // [, line 81
                 ket = cursor;
-                // substring, line 79
+                // substring, line 81
                 among_var = find_among_b(a_2, 7);
                 if (among_var == 0)
                 {
                     break lab0;
                 }
-                // ], line 79
+                // ], line 81
                 bra = cursor;
-                // call R1, line 79
+                // call R1, line 81
                 if (!r_R1())
                 {
                     break lab0;
@@ -423,37 +441,37 @@ public class German2Stemmer extends SnowballProgram {
                     case 0:
                         break lab0;
                     case 1:
-                        // (, line 81
-                        // delete, line 81
+                        // (, line 83
+                        // delete, line 83
                         slice_del();
                         break;
                     case 2:
-                        // (, line 84
+                        // (, line 86
                         if (!(in_grouping_b(g_s_ending, 98, 116)))
                         {
                             break lab0;
                         }
-                        // delete, line 84
+                        // delete, line 86
                         slice_del();
                         break;
                 }
             } while (false);
             cursor = limit - v_1;
-            // do, line 88
+            // do, line 90
             v_2 = limit - cursor;
             lab1: do {
-                // (, line 88
-                // [, line 89
+                // (, line 90
+                // [, line 91
                 ket = cursor;
-                // substring, line 89
+                // substring, line 91
                 among_var = find_among_b(a_3, 4);
                 if (among_var == 0)
                 {
                     break lab1;
                 }
-                // ], line 89
+                // ], line 91
                 bra = cursor;
-                // call R1, line 89
+                // call R1, line 91
                 if (!r_R1())
                 {
                     break lab1;
@@ -462,17 +480,17 @@ public class German2Stemmer extends SnowballProgram {
                     case 0:
                         break lab1;
                     case 1:
-                        // (, line 91
-                        // delete, line 91
+                        // (, line 93
+                        // delete, line 93
                         slice_del();
                         break;
                     case 2:
-                        // (, line 94
+                        // (, line 96
                         if (!(in_grouping_b(g_st_ending, 98, 116)))
                         {
                             break lab1;
                         }
-                        // hop, line 94
+                        // hop, line 96
                         {
                             int c = cursor - 3;
                             if (limit_backward > c || c > limit)
@@ -481,27 +499,27 @@ public class German2Stemmer extends SnowballProgram {
                             }
                             cursor = c;
                         }
-                        // delete, line 94
+                        // delete, line 96
                         slice_del();
                         break;
                 }
             } while (false);
             cursor = limit - v_2;
-            // do, line 98
+            // do, line 100
             v_3 = limit - cursor;
             lab2: do {
-                // (, line 98
-                // [, line 99
+                // (, line 100
+                // [, line 101
                 ket = cursor;
-                // substring, line 99
+                // substring, line 101
                 among_var = find_among_b(a_5, 8);
                 if (among_var == 0)
                 {
                     break lab2;
                 }
-                // ], line 99
+                // ], line 101
                 bra = cursor;
-                // call R2, line 99
+                // call R2, line 101
                 if (!r_R2())
                 {
                     break lab2;
@@ -510,28 +528,28 @@ public class German2Stemmer extends SnowballProgram {
                     case 0:
                         break lab2;
                     case 1:
-                        // (, line 101
-                        // delete, line 101
+                        // (, line 103
+                        // delete, line 103
                         slice_del();
-                        // try, line 102
+                        // try, line 104
                         v_4 = limit - cursor;
                         lab3: do {
-                            // (, line 102
-                            // [, line 102
+                            // (, line 104
+                            // [, line 104
                             ket = cursor;
-                            // literal, line 102
+                            // literal, line 104
                             if (!(eq_s_b(2, "ig")))
                             {
                                 cursor = limit - v_4;
                                 break lab3;
                             }
-                            // ], line 102
+                            // ], line 104
                             bra = cursor;
-                            // not, line 102
+                            // not, line 104
                             {
                                 v_5 = limit - cursor;
                                 lab4: do {
-                                    // literal, line 102
+                                    // literal, line 104
                                     if (!(eq_s_b(1, "e")))
                                     {
                                         break lab4;
@@ -541,23 +559,23 @@ public class German2Stemmer extends SnowballProgram {
                                 } while (false);
                                 cursor = limit - v_5;
                             }
-                            // call R2, line 102
+                            // call R2, line 104
                             if (!r_R2())
                             {
                                 cursor = limit - v_4;
                                 break lab3;
                             }
-                            // delete, line 102
+                            // delete, line 104
                             slice_del();
                         } while (false);
                         break;
                     case 2:
-                        // (, line 105
-                        // not, line 105
+                        // (, line 107
+                        // not, line 107
                         {
                             v_6 = limit - cursor;
                             lab5: do {
-                                // literal, line 105
+                                // literal, line 107
                                 if (!(eq_s_b(1, "e")))
                                 {
                                     break lab5;
@@ -566,24 +584,24 @@ public class German2Stemmer extends SnowballProgram {
                             } while (false);
                             cursor = limit - v_6;
                         }
-                        // delete, line 105
+                        // delete, line 107
                         slice_del();
                         break;
                     case 3:
-                        // (, line 108
-                        // delete, line 108
+                        // (, line 110
+                        // delete, line 110
                         slice_del();
-                        // try, line 109
+                        // try, line 111
                         v_7 = limit - cursor;
                         lab6: do {
-                            // (, line 109
-                            // [, line 110
+                            // (, line 111
+                            // [, line 112
                             ket = cursor;
-                            // or, line 110
+                            // or, line 112
                             lab7: do {
                                 v_8 = limit - cursor;
                                 lab8: do {
-                                    // literal, line 110
+                                    // literal, line 112
                                     if (!(eq_s_b(2, "er")))
                                     {
                                         break lab8;
@@ -591,45 +609,45 @@ public class German2Stemmer extends SnowballProgram {
                                     break lab7;
                                 } while (false);
                                 cursor = limit - v_8;
-                                // literal, line 110
+                                // literal, line 112
                                 if (!(eq_s_b(2, "en")))
                                 {
                                     cursor = limit - v_7;
                                     break lab6;
                                 }
                             } while (false);
-                            // ], line 110
+                            // ], line 112
                             bra = cursor;
-                            // call R1, line 110
+                            // call R1, line 112
                             if (!r_R1())
                             {
                                 cursor = limit - v_7;
                                 break lab6;
                             }
-                            // delete, line 110
+                            // delete, line 112
                             slice_del();
                         } while (false);
                         break;
                     case 4:
-                        // (, line 114
-                        // delete, line 114
+                        // (, line 116
+                        // delete, line 116
                         slice_del();
-                        // try, line 115
+                        // try, line 117
                         v_9 = limit - cursor;
                         lab9: do {
-                            // (, line 115
-                            // [, line 116
+                            // (, line 117
+                            // [, line 118
                             ket = cursor;
-                            // substring, line 116
+                            // substring, line 118
                             among_var = find_among_b(a_4, 2);
                             if (among_var == 0)
                             {
                                 cursor = limit - v_9;
                                 break lab9;
                             }
-                            // ], line 116
+                            // ], line 118
                             bra = cursor;
-                            // call R2, line 116
+                            // call R2, line 118
                             if (!r_R2())
                             {
                                 cursor = limit - v_9;
@@ -640,8 +658,8 @@ public class German2Stemmer extends SnowballProgram {
                                     cursor = limit - v_9;
                                     break lab9;
                                 case 1:
-                                    // (, line 118
-                                    // delete, line 118
+                                    // (, line 120
+                                    // delete, line 120
                                     slice_del();
                                     break;
                             }
@@ -658,43 +676,43 @@ public class German2Stemmer extends SnowballProgram {
             int v_2;
             int v_3;
             int v_4;
-            // (, line 128
-            // do, line 129
+            // (, line 130
+            // do, line 131
             v_1 = cursor;
             lab0: do {
-                // call prelude, line 129
+                // call prelude, line 131
                 if (!r_prelude())
                 {
                     break lab0;
                 }
             } while (false);
             cursor = v_1;
-            // do, line 130
+            // do, line 132
             v_2 = cursor;
             lab1: do {
-                // call mark_regions, line 130
+                // call mark_regions, line 132
                 if (!r_mark_regions())
                 {
                     break lab1;
                 }
             } while (false);
             cursor = v_2;
-            // backwards, line 131
+            // backwards, line 133
             limit_backward = cursor; cursor = limit;
-            // do, line 132
+            // do, line 134
             v_3 = limit - cursor;
             lab2: do {
-                // call standard_suffix, line 132
+                // call standard_suffix, line 134
                 if (!r_standard_suffix())
                 {
                     break lab2;
                 }
             } while (false);
             cursor = limit - v_3;
-            cursor = limit_backward;            // do, line 133
+            cursor = limit_backward;            // do, line 135
             v_4 = cursor;
             lab3: do {
-                // call postlude, line 133
+                // call postlude, line 135
                 if (!r_postlude())
                 {
                     break lab3;

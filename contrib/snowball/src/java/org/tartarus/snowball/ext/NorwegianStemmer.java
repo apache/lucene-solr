@@ -1,8 +1,8 @@
 // This file was generated automatically by the Snowball to Java compiler
 
-package net.sf.snowball.ext;
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.Among;
+package org.tartarus.snowball.ext;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.Among;
 
 /**
  * Generated class implementing code defined by a snowball script.
@@ -62,39 +62,57 @@ public class NorwegianStemmer extends SnowballProgram {
 
         private static final char g_v[] = {17, 65, 16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 128 };
 
-        private static final char g_s_ending[] = {119, 127, 149, 1 };
+        private static final char g_s_ending[] = {119, 125, 149, 1 };
 
+        private int I_x;
         private int I_p1;
 
         private void copy_from(NorwegianStemmer other) {
+            I_x = other.I_x;
             I_p1 = other.I_p1;
             super.copy_from(other);
         }
 
         private boolean r_mark_regions() {
             int v_1;
+            int v_2;
             // (, line 26
             I_p1 = limit;
-            // goto, line 30
+            // test, line 30
+            v_1 = cursor;
+            // (, line 30
+            // hop, line 30
+            {
+                int c = cursor + 3;
+                if (0 > c || c > limit)
+                {
+                    return false;
+                }
+                cursor = c;
+            }
+            // setmark x, line 30
+            I_x = cursor;
+            cursor = v_1;
+            // goto, line 31
             golab0: while(true)
             {
-                v_1 = cursor;
+                v_2 = cursor;
                 lab1: do {
                     if (!(in_grouping(g_v, 97, 248)))
                     {
                         break lab1;
                     }
-                    cursor = v_1;
+                    cursor = v_2;
                     break golab0;
                 } while (false);
-                cursor = v_1;
+                cursor = v_2;
                 if (cursor >= limit)
                 {
                     return false;
                 }
                 cursor++;
             }
-            // gopast, line 30
+            // gopast, line 31
             golab2: while(true)
             {
                 lab3: do {
@@ -110,16 +128,16 @@ public class NorwegianStemmer extends SnowballProgram {
                 }
                 cursor++;
             }
-            // setmark p1, line 30
+            // setmark p1, line 31
             I_p1 = cursor;
-            // try, line 31
+            // try, line 32
             lab4: do {
-                // (, line 31
-                if (!(I_p1 < 3))
+                // (, line 32
+                if (!(I_p1 < I_x))
                 {
                     break lab4;
                 }
-                I_p1 = 3;
+                I_p1 = I_x;
             } while (false);
             return true;
         }
@@ -128,10 +146,11 @@ public class NorwegianStemmer extends SnowballProgram {
             int among_var;
             int v_1;
             int v_2;
-            // (, line 36
-            // setlimit, line 37
+            int v_3;
+            // (, line 37
+            // setlimit, line 38
             v_1 = limit - cursor;
-            // tomark, line 37
+            // tomark, line 38
             if (cursor < I_p1)
             {
                 return false;
@@ -140,39 +159,57 @@ public class NorwegianStemmer extends SnowballProgram {
             v_2 = limit_backward;
             limit_backward = cursor;
             cursor = limit - v_1;
-            // (, line 37
-            // [, line 37
+            // (, line 38
+            // [, line 38
             ket = cursor;
-            // substring, line 37
+            // substring, line 38
             among_var = find_among_b(a_0, 29);
             if (among_var == 0)
             {
                 limit_backward = v_2;
                 return false;
             }
-            // ], line 37
+            // ], line 38
             bra = cursor;
             limit_backward = v_2;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 43
-                    // delete, line 43
+                    // (, line 44
+                    // delete, line 44
                     slice_del();
                     break;
                 case 2:
-                    // (, line 45
-                    if (!(in_grouping_b(g_s_ending, 98, 122)))
-                    {
-                        return false;
-                    }
-                    // delete, line 45
+                    // (, line 46
+                    // or, line 46
+                    lab0: do {
+                        v_3 = limit - cursor;
+                        lab1: do {
+                            if (!(in_grouping_b(g_s_ending, 98, 122)))
+                            {
+                                break lab1;
+                            }
+                            break lab0;
+                        } while (false);
+                        cursor = limit - v_3;
+                        // (, line 46
+                        // literal, line 46
+                        if (!(eq_s_b(1, "k")))
+                        {
+                            return false;
+                        }
+                        if (!(out_grouping_b(g_v, 97, 248)))
+                        {
+                            return false;
+                        }
+                    } while (false);
+                    // delete, line 46
                     slice_del();
                     break;
                 case 3:
-                    // (, line 47
-                    // <-, line 47
+                    // (, line 48
+                    // <-, line 48
                     slice_from("er");
                     break;
             }
@@ -183,13 +220,13 @@ public class NorwegianStemmer extends SnowballProgram {
             int v_1;
             int v_2;
             int v_3;
-            // (, line 51
-            // test, line 52
-            v_1 = limit - cursor;
             // (, line 52
-            // setlimit, line 53
+            // test, line 53
+            v_1 = limit - cursor;
+            // (, line 53
+            // setlimit, line 54
             v_2 = limit - cursor;
-            // tomark, line 53
+            // tomark, line 54
             if (cursor < I_p1)
             {
                 return false;
@@ -198,28 +235,28 @@ public class NorwegianStemmer extends SnowballProgram {
             v_3 = limit_backward;
             limit_backward = cursor;
             cursor = limit - v_2;
-            // (, line 53
-            // [, line 53
+            // (, line 54
+            // [, line 54
             ket = cursor;
-            // substring, line 53
+            // substring, line 54
             if (find_among_b(a_1, 2) == 0)
             {
                 limit_backward = v_3;
                 return false;
             }
-            // ], line 53
+            // ], line 54
             bra = cursor;
             limit_backward = v_3;
             cursor = limit - v_1;
-            // next, line 58
+            // next, line 59
             if (cursor <= limit_backward)
             {
                 return false;
             }
             cursor--;
-            // ], line 58
+            // ], line 59
             bra = cursor;
-            // delete, line 58
+            // delete, line 59
             slice_del();
             return true;
         }
@@ -228,10 +265,10 @@ public class NorwegianStemmer extends SnowballProgram {
             int among_var;
             int v_1;
             int v_2;
-            // (, line 61
-            // setlimit, line 62
+            // (, line 62
+            // setlimit, line 63
             v_1 = limit - cursor;
-            // tomark, line 62
+            // tomark, line 63
             if (cursor < I_p1)
             {
                 return false;
@@ -240,25 +277,25 @@ public class NorwegianStemmer extends SnowballProgram {
             v_2 = limit_backward;
             limit_backward = cursor;
             cursor = limit - v_1;
-            // (, line 62
-            // [, line 62
+            // (, line 63
+            // [, line 63
             ket = cursor;
-            // substring, line 62
+            // substring, line 63
             among_var = find_among_b(a_2, 11);
             if (among_var == 0)
             {
                 limit_backward = v_2;
                 return false;
             }
-            // ], line 62
+            // ], line 63
             bra = cursor;
             limit_backward = v_2;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 66
-                    // delete, line 66
+                    // (, line 67
+                    // delete, line 67
                     slice_del();
                     break;
             }
@@ -270,44 +307,44 @@ public class NorwegianStemmer extends SnowballProgram {
             int v_2;
             int v_3;
             int v_4;
-            // (, line 71
-            // do, line 73
+            // (, line 72
+            // do, line 74
             v_1 = cursor;
             lab0: do {
-                // call mark_regions, line 73
+                // call mark_regions, line 74
                 if (!r_mark_regions())
                 {
                     break lab0;
                 }
             } while (false);
             cursor = v_1;
-            // backwards, line 74
+            // backwards, line 75
             limit_backward = cursor; cursor = limit;
-            // (, line 74
-            // do, line 75
+            // (, line 75
+            // do, line 76
             v_2 = limit - cursor;
             lab1: do {
-                // call main_suffix, line 75
+                // call main_suffix, line 76
                 if (!r_main_suffix())
                 {
                     break lab1;
                 }
             } while (false);
             cursor = limit - v_2;
-            // do, line 76
+            // do, line 77
             v_3 = limit - cursor;
             lab2: do {
-                // call consonant_pair, line 76
+                // call consonant_pair, line 77
                 if (!r_consonant_pair())
                 {
                     break lab2;
                 }
             } while (false);
             cursor = limit - v_3;
-            // do, line 77
+            // do, line 78
             v_4 = limit - cursor;
             lab3: do {
-                // call other_suffix, line 77
+                // call other_suffix, line 78
                 if (!r_other_suffix())
                 {
                     break lab3;

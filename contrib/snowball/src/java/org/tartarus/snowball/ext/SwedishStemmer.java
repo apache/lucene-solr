@@ -1,8 +1,8 @@
 // This file was generated automatically by the Snowball to Java compiler
 
-package net.sf.snowball.ext;
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.Among;
+package org.tartarus.snowball.ext;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.Among;
 
 /**
  * Generated class implementing code defined by a snowball script.
@@ -71,30 +71,48 @@ public class SwedishStemmer extends SnowballProgram {
 
         private static final char g_s_ending[] = {119, 127, 149 };
 
+        private int I_x;
         private int I_p1;
 
         private void copy_from(SwedishStemmer other) {
+            I_x = other.I_x;
             I_p1 = other.I_p1;
             super.copy_from(other);
         }
 
         private boolean r_mark_regions() {
             int v_1;
+            int v_2;
             // (, line 26
             I_p1 = limit;
+            // test, line 29
+            v_1 = cursor;
+            // (, line 29
+            // hop, line 29
+            {
+                int c = cursor + 3;
+                if (0 > c || c > limit)
+                {
+                    return false;
+                }
+                cursor = c;
+            }
+            // setmark x, line 29
+            I_x = cursor;
+            cursor = v_1;
             // goto, line 30
             golab0: while(true)
             {
-                v_1 = cursor;
+                v_2 = cursor;
                 lab1: do {
                     if (!(in_grouping(g_v, 97, 246)))
                     {
                         break lab1;
                     }
-                    cursor = v_1;
+                    cursor = v_2;
                     break golab0;
                 } while (false);
-                cursor = v_1;
+                cursor = v_2;
                 if (cursor >= limit)
                 {
                     return false;
@@ -122,11 +140,11 @@ public class SwedishStemmer extends SnowballProgram {
             // try, line 31
             lab4: do {
                 // (, line 31
-                if (!(I_p1 < 3))
+                if (!(I_p1 < I_x))
                 {
                     break lab4;
                 }
-                I_p1 = 3;
+                I_p1 = I_x;
             } while (false);
             return true;
         }

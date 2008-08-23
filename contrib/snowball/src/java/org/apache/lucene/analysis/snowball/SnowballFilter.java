@@ -18,41 +18,41 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.ext.EnglishStemmer;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.tartarus.snowball.SnowballProgram;
 
-/** A filter that stems words using a Snowball-generated stemmer.
+/**
+ * A filter that stems words using a Snowball-generated stemmer.
  *
- * Available stemmers are listed in {@link net.sf.snowball.ext}.  The name of a
- * stemmer is the part of the class name before "Stemmer", e.g., the stemmer in
- * {@link EnglishStemmer} is named "English".
+ * Available stemmers are listed in {@link org.tartarus.snowball.ext}.
  */
-
 public class SnowballFilter extends TokenFilter {
-  private static final Object [] EMPTY_ARGS = new Object[0];
 
   private SnowballProgram stemmer;
-  private Method stemMethod;
 
-  /** Construct the named stemming filter.
+  public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
+    super(input);
+    this.stemmer = stemmer;
+  }
+
+  /**
+   * Construct the named stemming filter.
+   *
+   * Available stemmers are listed in {@link org.tartarus.snowball.ext}.
+   * The name of a stemmer is the part of the class name before "Stemmer",
+   * e.g., the stemmer in {@link org.tartarus.snowball.ext.EnglishStemmer} is named "English".
    *
    * @param in the input tokens to stem
    * @param name the name of a stemmer
    */
   public SnowballFilter(TokenStream in, String name) {
     super(in);
-    try {
-      Class stemClass =
-        Class.forName("net.sf.snowball.ext." + name + "Stemmer");
+    try {      
+      Class stemClass = Class.forName("org.tartarus.snowball.ext." + name + "Stemmer");
       stemmer = (SnowballProgram) stemClass.newInstance();
-      // why doesn't the SnowballProgram class have an (abstract?) stem method?
-      stemMethod = stemClass.getMethod("stem", new Class[0]);
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
@@ -66,11 +66,7 @@ public class SnowballFilter extends TokenFilter {
       return null;
     String originalTerm = nextToken.term();
     stemmer.setCurrent(originalTerm);
-    try {
-      stemMethod.invoke(stemmer, EMPTY_ARGS);
-    } catch (Exception e) {
-      throw new RuntimeException(e.toString());
-    }
+    stemmer.stem();
     String finalTerm = stemmer.getCurrent();
     // Don't bother updating, if it is unchanged.
     if (!originalTerm.equals(finalTerm))

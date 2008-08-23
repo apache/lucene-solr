@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.snowball;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.*;
 
-import net.sf.snowball.ext.*;
-
 import java.io.Reader;
 import java.util.Set;
 
@@ -30,7 +28,7 @@ import java.util.Set;
  *
  * Available stemmers are listed in {@link net.sf.snowball.ext}.  The name of a
  * stemmer is the part of the class name before "Stemmer", e.g., the stemmer in
- * {@link EnglishStemmer} is named "English".
+ * {@link org.tartarus.snowball.ext.EnglishStemmer} is named "English".
  */
 public class SnowballAnalyzer extends Analyzer {
   private String name;

@@ -1,8 +1,8 @@
 // This file was generated automatically by the Snowball to Java compiler
 
-package net.sf.snowball.ext;
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.Among;
+package org.tartarus.snowball.ext;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.Among;
 
 /**
  * Generated class implementing code defined by a snowball script.
@@ -29,6 +29,7 @@ public class PortugueseStemmer extends SnowballProgram {
         };
 
         private Among a_3[] = {
+            new Among ( "ante", -1, 1, "", this),
             new Among ( "avel", -1, 1, "", this),
             new Among ( "\u00EDvel", -1, 1, "", this)
         };
@@ -41,6 +42,7 @@ public class PortugueseStemmer extends SnowballProgram {
 
         private Among a_5[] = {
             new Among ( "ica", -1, 1, "", this),
+            new Among ( "\u00E2ncia", -1, 1, "", this),
             new Among ( "\u00EAncia", -1, 4, "", this),
             new Among ( "ira", -1, 9, "", this),
             new Among ( "adora", -1, 1, "", this),
@@ -50,8 +52,9 @@ public class PortugueseStemmer extends SnowballProgram {
             new Among ( "eza", -1, 1, "", this),
             new Among ( "log\u00EDa", -1, 2, "", this),
             new Among ( "idade", -1, 7, "", this),
+            new Among ( "ante", -1, 1, "", this),
             new Among ( "mente", -1, 6, "", this),
-            new Among ( "amente", 10, 5, "", this),
+            new Among ( "amente", 12, 5, "", this),
             new Among ( "\u00E1vel", -1, 1, "", this),
             new Among ( "\u00EDvel", -1, 1, "", this),
             new Among ( "uci\u00F3n", -1, 3, "", this),
@@ -75,6 +78,7 @@ public class PortugueseStemmer extends SnowballProgram {
             new Among ( "idades", -1, 7, "", this),
             new Among ( "uciones", -1, 3, "", this),
             new Among ( "adores", -1, 1, "", this),
+            new Among ( "antes", -1, 1, "", this),
             new Among ( "a\u00E7o~es", -1, 1, "", this),
             new Among ( "icos", -1, 1, "", this),
             new Among ( "ismos", -1, 1, "", this),
@@ -574,7 +578,7 @@ public class PortugueseStemmer extends SnowballProgram {
             // [, line 77
             ket = cursor;
             // substring, line 77
-            among_var = find_among_b(a_5, 42);
+            among_var = find_among_b(a_5, 45);
             if (among_var == 0)
             {
                 return false;
@@ -585,235 +589,235 @@ public class PortugueseStemmer extends SnowballProgram {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 91
-                    // call R2, line 92
+                    // (, line 92
+                    // call R2, line 93
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // delete, line 92
+                    // delete, line 93
                     slice_del();
                     break;
                 case 2:
-                    // (, line 96
-                    // call R2, line 97
+                    // (, line 97
+                    // call R2, line 98
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // <-, line 97
+                    // <-, line 98
                     slice_from("log");
                     break;
                 case 3:
-                    // (, line 100
-                    // call R2, line 101
+                    // (, line 101
+                    // call R2, line 102
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // <-, line 101
+                    // <-, line 102
                     slice_from("u");
                     break;
                 case 4:
-                    // (, line 104
-                    // call R2, line 105
+                    // (, line 105
+                    // call R2, line 106
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // <-, line 105
+                    // <-, line 106
                     slice_from("ente");
                     break;
                 case 5:
-                    // (, line 108
-                    // call R1, line 109
+                    // (, line 109
+                    // call R1, line 110
                     if (!r_R1())
                     {
                         return false;
                     }
-                    // delete, line 109
+                    // delete, line 110
                     slice_del();
-                    // try, line 110
+                    // try, line 111
                     v_1 = limit - cursor;
                     lab0: do {
-                        // (, line 110
-                        // [, line 111
+                        // (, line 111
+                        // [, line 112
                         ket = cursor;
-                        // substring, line 111
+                        // substring, line 112
                         among_var = find_among_b(a_2, 4);
                         if (among_var == 0)
                         {
                             cursor = limit - v_1;
                             break lab0;
                         }
-                        // ], line 111
+                        // ], line 112
                         bra = cursor;
-                        // call R2, line 111
+                        // call R2, line 112
                         if (!r_R2())
                         {
                             cursor = limit - v_1;
                             break lab0;
                         }
-                        // delete, line 111
+                        // delete, line 112
                         slice_del();
                         switch(among_var) {
                             case 0:
                                 cursor = limit - v_1;
                                 break lab0;
                             case 1:
-                                // (, line 112
-                                // [, line 112
+                                // (, line 113
+                                // [, line 113
                                 ket = cursor;
-                                // literal, line 112
+                                // literal, line 113
                                 if (!(eq_s_b(2, "at")))
                                 {
                                     cursor = limit - v_1;
                                     break lab0;
                                 }
-                                // ], line 112
+                                // ], line 113
                                 bra = cursor;
-                                // call R2, line 112
+                                // call R2, line 113
                                 if (!r_R2())
                                 {
                                     cursor = limit - v_1;
                                     break lab0;
                                 }
-                                // delete, line 112
+                                // delete, line 113
                                 slice_del();
                                 break;
                         }
                     } while (false);
                     break;
                 case 6:
-                    // (, line 120
-                    // call R2, line 121
+                    // (, line 121
+                    // call R2, line 122
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // delete, line 121
+                    // delete, line 122
                     slice_del();
-                    // try, line 122
+                    // try, line 123
                     v_2 = limit - cursor;
                     lab1: do {
-                        // (, line 122
-                        // [, line 123
+                        // (, line 123
+                        // [, line 124
                         ket = cursor;
-                        // substring, line 123
-                        among_var = find_among_b(a_3, 2);
+                        // substring, line 124
+                        among_var = find_among_b(a_3, 3);
                         if (among_var == 0)
                         {
                             cursor = limit - v_2;
                             break lab1;
                         }
-                        // ], line 123
+                        // ], line 124
                         bra = cursor;
                         switch(among_var) {
                             case 0:
                                 cursor = limit - v_2;
                                 break lab1;
                             case 1:
-                                // (, line 125
-                                // call R2, line 125
+                                // (, line 127
+                                // call R2, line 127
                                 if (!r_R2())
                                 {
                                     cursor = limit - v_2;
                                     break lab1;
                                 }
-                                // delete, line 125
+                                // delete, line 127
                                 slice_del();
                                 break;
                         }
                     } while (false);
                     break;
                 case 7:
-                    // (, line 131
-                    // call R2, line 132
+                    // (, line 133
+                    // call R2, line 134
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // delete, line 132
+                    // delete, line 134
                     slice_del();
-                    // try, line 133
+                    // try, line 135
                     v_3 = limit - cursor;
                     lab2: do {
-                        // (, line 133
-                        // [, line 134
+                        // (, line 135
+                        // [, line 136
                         ket = cursor;
-                        // substring, line 134
+                        // substring, line 136
                         among_var = find_among_b(a_4, 3);
                         if (among_var == 0)
                         {
                             cursor = limit - v_3;
                             break lab2;
                         }
-                        // ], line 134
+                        // ], line 136
                         bra = cursor;
                         switch(among_var) {
                             case 0:
                                 cursor = limit - v_3;
                                 break lab2;
                             case 1:
-                                // (, line 137
-                                // call R2, line 137
+                                // (, line 139
+                                // call R2, line 139
                                 if (!r_R2())
                                 {
                                     cursor = limit - v_3;
                                     break lab2;
                                 }
-                                // delete, line 137
+                                // delete, line 139
                                 slice_del();
                                 break;
                         }
                     } while (false);
                     break;
                 case 8:
-                    // (, line 143
-                    // call R2, line 144
+                    // (, line 145
+                    // call R2, line 146
                     if (!r_R2())
                     {
                         return false;
                     }
-                    // delete, line 144
+                    // delete, line 146
                     slice_del();
-                    // try, line 145
+                    // try, line 147
                     v_4 = limit - cursor;
                     lab3: do {
-                        // (, line 145
-                        // [, line 146
+                        // (, line 147
+                        // [, line 148
                         ket = cursor;
-                        // literal, line 146
+                        // literal, line 148
                         if (!(eq_s_b(2, "at")))
                         {
                             cursor = limit - v_4;
                             break lab3;
                         }
-                        // ], line 146
+                        // ], line 148
                         bra = cursor;
-                        // call R2, line 146
+                        // call R2, line 148
                         if (!r_R2())
                         {
                             cursor = limit - v_4;
                             break lab3;
                         }
-                        // delete, line 146
+                        // delete, line 148
                         slice_del();
                     } while (false);
                     break;
                 case 9:
-                    // (, line 150
-                    // call RV, line 151
+                    // (, line 152
+                    // call RV, line 153
                     if (!r_RV())
                     {
                         return false;
                     }
-                    // literal, line 151
+                    // literal, line 153
                     if (!(eq_s_b(1, "e")))
                     {
                         return false;
                     }
-                    // <-, line 152
+                    // <-, line 154
                     slice_from("ir");
                     break;
             }
@@ -824,9 +828,9 @@ public class PortugueseStemmer extends SnowballProgram {
             int among_var;
             int v_1;
             int v_2;
-            // setlimit, line 157
+            // setlimit, line 159
             v_1 = limit - cursor;
-            // tomark, line 157
+            // tomark, line 159
             if (cursor < I_pV)
             {
                 return false;
@@ -835,25 +839,25 @@ public class PortugueseStemmer extends SnowballProgram {
             v_2 = limit_backward;
             limit_backward = cursor;
             cursor = limit - v_1;
-            // (, line 157
-            // [, line 158
+            // (, line 159
+            // [, line 160
             ket = cursor;
-            // substring, line 158
+            // substring, line 160
             among_var = find_among_b(a_6, 120);
             if (among_var == 0)
             {
                 limit_backward = v_2;
                 return false;
             }
-            // ], line 158
+            // ], line 160
             bra = cursor;
             switch(among_var) {
                 case 0:
                     limit_backward = v_2;
                     return false;
                 case 1:
-                    // (, line 177
-                    // delete, line 177
+                    // (, line 179
+                    // delete, line 179
                     slice_del();
                     break;
             }
@@ -863,28 +867,28 @@ public class PortugueseStemmer extends SnowballProgram {
 
         private boolean r_residual_suffix() {
             int among_var;
-            // (, line 181
-            // [, line 182
+            // (, line 183
+            // [, line 184
             ket = cursor;
-            // substring, line 182
+            // substring, line 184
             among_var = find_among_b(a_7, 7);
             if (among_var == 0)
             {
                 return false;
             }
-            // ], line 182
+            // ], line 184
             bra = cursor;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 185
-                    // call RV, line 185
+                    // (, line 187
+                    // call RV, line 187
                     if (!r_RV())
                     {
                         return false;
                     }
-                    // delete, line 185
+                    // delete, line 187
                     slice_del();
                     break;
             }
@@ -896,46 +900,46 @@ public class PortugueseStemmer extends SnowballProgram {
             int v_1;
             int v_2;
             int v_3;
-            // (, line 189
-            // [, line 190
+            // (, line 191
+            // [, line 192
             ket = cursor;
-            // substring, line 190
+            // substring, line 192
             among_var = find_among_b(a_8, 4);
             if (among_var == 0)
             {
                 return false;
             }
-            // ], line 190
+            // ], line 192
             bra = cursor;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 192
-                    // call RV, line 192
+                    // (, line 194
+                    // call RV, line 194
                     if (!r_RV())
                     {
                         return false;
                     }
-                    // delete, line 192
+                    // delete, line 194
                     slice_del();
-                    // [, line 192
+                    // [, line 194
                     ket = cursor;
-                    // or, line 192
+                    // or, line 194
                     lab0: do {
                         v_1 = limit - cursor;
                         lab1: do {
-                            // (, line 192
-                            // literal, line 192
+                            // (, line 194
+                            // literal, line 194
                             if (!(eq_s_b(1, "u")))
                             {
                                 break lab1;
                             }
-                            // ], line 192
+                            // ], line 194
                             bra = cursor;
-                            // test, line 192
+                            // test, line 194
                             v_2 = limit - cursor;
-                            // literal, line 192
+                            // literal, line 194
                             if (!(eq_s_b(1, "g")))
                             {
                                 break lab1;
@@ -944,34 +948,34 @@ public class PortugueseStemmer extends SnowballProgram {
                             break lab0;
                         } while (false);
                         cursor = limit - v_1;
-                        // (, line 193
-                        // literal, line 193
+                        // (, line 195
+                        // literal, line 195
                         if (!(eq_s_b(1, "i")))
                         {
                             return false;
                         }
-                        // ], line 193
+                        // ], line 195
                         bra = cursor;
-                        // test, line 193
+                        // test, line 195
                         v_3 = limit - cursor;
-                        // literal, line 193
+                        // literal, line 195
                         if (!(eq_s_b(1, "c")))
                         {
                             return false;
                         }
                         cursor = limit - v_3;
                     } while (false);
-                    // call RV, line 193
+                    // call RV, line 195
                     if (!r_RV())
                     {
                         return false;
                     }
-                    // delete, line 193
+                    // delete, line 195
                     slice_del();
                     break;
                 case 2:
-                    // (, line 194
-                    // <-, line 194
+                    // (, line 196
+                    // <-, line 196
                     slice_from("c");
                     break;
             }
@@ -989,47 +993,47 @@ public class PortugueseStemmer extends SnowballProgram {
             int v_8;
             int v_9;
             int v_10;
-            // (, line 199
-            // do, line 200
+            // (, line 201
+            // do, line 202
             v_1 = cursor;
             lab0: do {
-                // call prelude, line 200
+                // call prelude, line 202
                 if (!r_prelude())
                 {
                     break lab0;
                 }
             } while (false);
             cursor = v_1;
-            // do, line 201
+            // do, line 203
             v_2 = cursor;
             lab1: do {
-                // call mark_regions, line 201
+                // call mark_regions, line 203
                 if (!r_mark_regions())
                 {
                     break lab1;
                 }
             } while (false);
             cursor = v_2;
-            // backwards, line 202
+            // backwards, line 204
             limit_backward = cursor; cursor = limit;
-            // (, line 202
-            // do, line 203
+            // (, line 204
+            // do, line 205
             v_3 = limit - cursor;
             lab2: do {
-                // (, line 203
-                // or, line 207
+                // (, line 205
+                // or, line 209
                 lab3: do {
                     v_4 = limit - cursor;
                     lab4: do {
-                        // (, line 204
-                        // and, line 205
+                        // (, line 206
+                        // and, line 207
                         v_5 = limit - cursor;
-                        // (, line 204
-                        // or, line 204
+                        // (, line 206
+                        // or, line 206
                         lab5: do {
                             v_6 = limit - cursor;
                             lab6: do {
-                                // call standard_suffix, line 204
+                                // call standard_suffix, line 206
                                 if (!r_standard_suffix())
                                 {
                                     break lab6;
@@ -1037,47 +1041,47 @@ public class PortugueseStemmer extends SnowballProgram {
                                 break lab5;
                             } while (false);
                             cursor = limit - v_6;
-                            // call verb_suffix, line 204
+                            // call verb_suffix, line 206
                             if (!r_verb_suffix())
                             {
                                 break lab4;
                             }
                         } while (false);
                         cursor = limit - v_5;
-                        // do, line 205
+                        // do, line 207
                         v_7 = limit - cursor;
                         lab7: do {
-                            // (, line 205
-                            // [, line 205
+                            // (, line 207
+                            // [, line 207
                             ket = cursor;
-                            // literal, line 205
+                            // literal, line 207
                             if (!(eq_s_b(1, "i")))
                             {
                                 break lab7;
                             }
-                            // ], line 205
+                            // ], line 207
                             bra = cursor;
-                            // test, line 205
+                            // test, line 207
                             v_8 = limit - cursor;
-                            // literal, line 205
+                            // literal, line 207
                             if (!(eq_s_b(1, "c")))
                             {
                                 break lab7;
                             }
                             cursor = limit - v_8;
-                            // call RV, line 205
+                            // call RV, line 207
                             if (!r_RV())
                             {
                                 break lab7;
                             }
-                            // delete, line 205
+                            // delete, line 207
                             slice_del();
                         } while (false);
                         cursor = limit - v_7;
                         break lab3;
                     } while (false);
                     cursor = limit - v_4;
-                    // call residual_suffix, line 207
+                    // call residual_suffix, line 209
                     if (!r_residual_suffix())
                     {
                         break lab2;
@@ -1085,20 +1089,20 @@ public class PortugueseStemmer extends SnowballProgram {
                 } while (false);
             } while (false);
             cursor = limit - v_3;
-            // do, line 209
+            // do, line 211
             v_9 = limit - cursor;
             lab8: do {
-                // call residual_form, line 209
+                // call residual_form, line 211
                 if (!r_residual_form())
                 {
                     break lab8;
                 }
             } while (false);
             cursor = limit - v_9;
-            cursor = limit_backward;            // do, line 211
+            cursor = limit_backward;            // do, line 213
             v_10 = cursor;
             lab9: do {
-                // call postlude, line 211
+                // call postlude, line 213
                 if (!r_postlude())
                 {
                     break lab9;

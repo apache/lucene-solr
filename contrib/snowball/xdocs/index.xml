@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <document>
 <properties>
-<author email="cutting@apache.org">Doug Cutting</author>
 <title>Overview - Snowball Stemmers for Lucene</title>
 </properties>
 <body>
@@ -10,14 +9,6 @@
 <p>
 This project provides pre-compiled version of the Snowball stemmers
 together with classes integrating them with the Lucene search engine.
-</p>
-</section>
-
-<section name="Download">
-<p>
-Releases of the stemmers are available
-<a href="http://jakarta.apache.org/builds/jakarta-lucene-sandbox/snowball/">
-here</a>
 </p>
 </section>
 

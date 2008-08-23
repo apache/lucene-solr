@@ -1,8 +1,8 @@
 // This file was generated automatically by the Snowball to Java compiler
 
-package net.sf.snowball.ext;
-import net.sf.snowball.SnowballProgram;
-import net.sf.snowball.Among;
+package org.tartarus.snowball.ext;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.Among;
 
 /**
  * Generated class implementing code defined by a snowball script.
@@ -129,9 +129,9 @@ public class FinnishStemmer extends SnowballProgram {
 
         private static final char g_AEI[] = {17, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8 };
 
-        private static final char g_v[] = {17, 65, 16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
+        private static final char g_V1[] = {17, 65, 16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
-        private static final char g_V[] = {17, 65, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
+        private static final char g_V2[] = {17, 65, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
         private static final char g_particle_end[] = {17, 97, 24, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
@@ -159,7 +159,7 @@ public class FinnishStemmer extends SnowballProgram {
             {
                 v_1 = cursor;
                 lab1: do {
-                    if (!(in_grouping(g_v, 97, 246)))
+                    if (!(in_grouping(g_V1, 97, 246)))
                     {
                         break lab1;
                     }
@@ -177,7 +177,7 @@ public class FinnishStemmer extends SnowballProgram {
             golab2: while(true)
             {
                 lab3: do {
-                    if (!(out_grouping(g_v, 97, 246)))
+                    if (!(out_grouping(g_V1, 97, 246)))
                     {
                         break lab3;
                     }
@@ -196,7 +196,7 @@ public class FinnishStemmer extends SnowballProgram {
             {
                 v_3 = cursor;
                 lab5: do {
-                    if (!(in_grouping(g_v, 97, 246)))
+                    if (!(in_grouping(g_V1, 97, 246)))
                     {
                         break lab5;
                     }
@@ -214,7 +214,7 @@ public class FinnishStemmer extends SnowballProgram {
             golab6: while(true)
             {
                 lab7: do {
-                    if (!(out_grouping(g_v, 97, 246)))
+                    if (!(out_grouping(g_V1, 97, 246)))
                     {
                         break lab7;
                     }
@@ -414,14 +414,14 @@ public class FinnishStemmer extends SnowballProgram {
             {
                 return false;
             }
-            if (!(in_grouping_b(g_V, 97, 246)))
+            if (!(in_grouping_b(g_V2, 97, 246)))
             {
                 return false;
             }
             return true;
         }
 
-        private boolean r_case() {
+        private boolean r_case_ending() {
             int among_var;
             int v_1;
             int v_2;
@@ -545,11 +545,11 @@ public class FinnishStemmer extends SnowballProgram {
                     break;
                 case 8:
                     // (, line 119
-                    if (!(in_grouping_b(g_v, 97, 246)))
+                    if (!(in_grouping_b(g_V1, 97, 246)))
                     {
                         return false;
                     }
-                    if (!(out_grouping_b(g_v, 97, 246)))
+                    if (!(out_grouping_b(g_V1, 97, 246)))
                     {
                         return false;
                     }
@@ -690,7 +690,7 @@ public class FinnishStemmer extends SnowballProgram {
             bra = cursor;
             // test, line 162
             v_3 = limit - cursor;
-            if (!(in_grouping_b(g_v, 97, 246)))
+            if (!(in_grouping_b(g_V1, 97, 246)))
             {
                 limit_backward = v_2;
                 return false;
@@ -810,7 +810,7 @@ public class FinnishStemmer extends SnowballProgram {
                 }
                 // ], line 175
                 bra = cursor;
-                if (!(out_grouping_b(g_v, 97, 246)))
+                if (!(out_grouping_b(g_V1, 97, 246)))
                 {
                     break lab1;
                 }
@@ -881,7 +881,7 @@ public class FinnishStemmer extends SnowballProgram {
             {
                 v_9 = limit - cursor;
                 lab7: do {
-                    if (!(out_grouping_b(g_v, 97, 246)))
+                    if (!(out_grouping_b(g_V1, 97, 246)))
                     {
                         break lab7;
                     }
@@ -966,8 +966,8 @@ public class FinnishStemmer extends SnowballProgram {
             // do, line 190
             v_4 = limit - cursor;
             lab3: do {
-                // call case, line 190
-                if (!r_case())
+                // call case_ending, line 190
+                if (!r_case_ending())
                 {
                     break lab3;
                 }

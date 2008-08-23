@@ -8,6 +8,8 @@ Changes in runtime behavior
 
 API Changes
 
+ 1. 
+
  (None)
 
 Bug fixes
@@ -22,6 +24,13 @@ Bug fixes
 New features
 
  1. LUCENE-1320: ShingleMatrixFilter, multidimensional shingle token filter. (Karl Wettin)
+
+ 2. LUCENE-1142: Updated Snowball package, org.tartarus distribution revision 500.
+    Introducing Hungarian, Turkish and Romanian support, updated older stemmers
+    and optimized (reflectionless) SnowballFilter.
+    IMPORTANT NOTICE ON BACKWARDS COMPATIBILITY: an index created using the 2.3.2 (or older)
+    might not be compatible with these updated classes as some algorithms have changed.
+    (Karl Wettin)
 
 Documentation
 
