@@ -1,0 +1,36 @@
+Lucene contrib change Log
+
+======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+ (None)
+
+API Changes
+
+ (None)
+
+Bug fixes
+
+ 1. LUCENE-1312: Added full support for InstantiatedIndexReader#getFieldNames()
+    and tests that assert that deleted documents behaves as they should (they did).
+    (Jason Rutherglen, Karl Wettin)
+
+ 2. LUCENE-1318: InstantiatedIndexReader.norms(String, b[], int) didn't treat
+    the array offset right. (Jason Rutherglen via Karl Wettin)
+
+New features
+
+ 1. LUCENE-1320: ShingleMatrixFilter, multidimensional shingle token filter. (Karl Wettin)
+
+Documentation
+
+ (None)
+
+Build
+
+ (None)
+
+Test Cases
+
+ (None)
