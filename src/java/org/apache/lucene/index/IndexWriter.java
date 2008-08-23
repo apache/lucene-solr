@@ -3015,7 +3015,7 @@ public class IndexWriter {
       try {
         synchronized(this) {
           if (segmentInfos.size() == 1){ // add existing index, if any
-            sReader = SegmentReader.get(segmentInfos.info(0));
+            sReader = SegmentReader.get(true, segmentInfos.info(0));
             merger.add(sReader);
           }
         }
@@ -3974,7 +3974,7 @@ public class IndexWriter {
 
       for (int i = 0; i < numSegments; i++) {
         SegmentInfo si = sourceSegmentsClone.info(i);
-        IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE, merge.mergeDocStores); // no need to set deleter (yet)
+        IndexReader reader = SegmentReader.get(true, si, MERGE_READ_BUFFER_SIZE, merge.mergeDocStores); // no need to set deleter (yet)
         merger.add(reader);
         totDocCount += reader.numDocs();
       }

@@ -1329,4 +1329,61 @@ public class TestIndexReader extends LuceneTestCase
       r2.close();
       d.close();
     }      
+
+    public void testReadOnly() throws Throwable {
+      RAMDirectory d = new MockRAMDirectory();
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      addDocumentWithFields(writer);
+      writer.commit();
+      addDocumentWithFields(writer);
+      writer.close();
+
+      IndexReader r = IndexReader.open(d, true);
+      try {
+        r.deleteDocument(0);
+        fail();
+      } catch (UnsupportedOperationException uoe) {
+        // expected
+      }
+      
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      addDocumentWithFields(writer);
+      writer.close();
+
+      // Make sure reopen is still readonly:
+      IndexReader r2 = r.reopen();
+      r.close();
+
+      assertFalse(r == r2);
+
+      try {
+        r2.deleteDocument(0);
+        fail();
+      } catch (UnsupportedOperationException uoe) {
+        // expected
+      }
+
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.optimize();
+      writer.close();
+
+      // Make sure reopen to a single segment is still readonly:
+      IndexReader r3 = r2.reopen();
+      r2.close();
+      
+      assertFalse(r == r2);
+
+      try {
+        r3.deleteDocument(0);
+        fail();
+      } catch (UnsupportedOperationException uoe) {
+        // expected
+      }
+
+      // Make sure write lock isn't held
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.close();
+
+      r3.close();
+    }
 }

@@ -61,6 +61,7 @@ class SegmentReader extends DirectoryIndexReader {
   private boolean rollbackNormsDirty = false;
   private boolean rollbackUndeleteAll = false;
   private int rollbackPendingDeleteCount;
+  private boolean readOnly;
 
   IndexInput freqStream;
   IndexInput proxStream;
@@ -191,12 +192,38 @@ class SegmentReader extends DirectoryIndexReader {
     }
   }
 
+  private static Class READONLY_IMPL;
+  static {
+    try {
+      String name =
+        System.getProperty("org.apache.lucene.ReadOnlySegmentReader.class",
+                           ReadOnlySegmentReader.class.getName());
+      READONLY_IMPL = Class.forName(name);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("cannot load ReadOnlySegmentReader class: " + e, e);
+    } catch (SecurityException se) {
+      try {
+        READONLY_IMPL = Class.forName(ReadOnlySegmentReader.class.getName());
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException("cannot load default ReadOnlySegmentReader class: " + e, e);
+      }
+    }
+  }
+
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
+    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(boolean readOnly, SegmentInfo si) throws CorruptIndexException, IOException {
+    return get(readOnly, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -204,7 +231,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws IOException if there is a low-level IO error
    */
   static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
+    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
   }
 
   /**
@@ -212,7 +239,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, readBufferSize, true);
+    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, readBufferSize, true);
   }
 
   /**
@@ -220,16 +247,24 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws IOException if there is a low-level IO error
    */
   static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false, readBufferSize, doOpenStores);
+    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, readBufferSize, doOpenStores);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(SegmentInfos sis, SegmentInfo si,
+  static SegmentReader get(boolean readOnly, SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
+    return get(readOnly, si.dir, si, null, false, false, readBufferSize, doOpenStores);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(boolean readOnly, SegmentInfos sis, SegmentInfo si,
                                   boolean closeDir) throws CorruptIndexException, IOException {
-    return get(si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE, true);
+    return get(readOnly, si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -241,14 +276,16 @@ class SegmentReader extends DirectoryIndexReader {
                                   boolean closeDir, boolean ownDir,
                                   int readBufferSize)
     throws CorruptIndexException, IOException {
-    return get(dir, si, sis, closeDir, ownDir, readBufferSize, true);
+    return get(READ_ONLY_DEFAULT, dir, si, sis, closeDir, ownDir, readBufferSize, true);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(Directory dir, SegmentInfo si,
+  public static SegmentReader get(boolean readOnly,
+                                  Directory dir,
+                                  SegmentInfo si,
                                   SegmentInfos sis,
                                   boolean closeDir, boolean ownDir,
                                   int readBufferSize,
@@ -256,11 +293,14 @@ class SegmentReader extends DirectoryIndexReader {
     throws CorruptIndexException, IOException {
     SegmentReader instance;
     try {
-      instance = (SegmentReader)IMPL.newInstance();
+      if (readOnly)
+        instance = (SegmentReader)READONLY_IMPL.newInstance();
+      else
+        instance = (SegmentReader)IMPL.newInstance();
     } catch (Exception e) {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
-    instance.init(dir, sis, closeDir);
+    instance.init(dir, sis, closeDir, readOnly);
     instance.initialize(si, readBufferSize, doOpenStores);
     return instance;
   }
@@ -381,10 +421,13 @@ class SegmentReader extends DirectoryIndexReader {
       } else { 
         // segment not referenced anymore, reopen not possible
         // or segment format changed
-        newReader = SegmentReader.get(infos, infos.info(0), false);
+        newReader = SegmentReader.get(readOnly, infos, infos.info(0), false);
       }
     } else {
-      return new MultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null);
+      if (readOnly)
+        return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null);
+      else
+        return new MultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, false);
     }
     
     return newReader;
@@ -412,9 +455,15 @@ class SegmentReader extends DirectoryIndexReader {
     
 
       // clone reader
-    SegmentReader clone = new SegmentReader();
+    SegmentReader clone;
+    if (readOnly) 
+      clone = new ReadOnlySegmentReader();
+    else
+      clone = new SegmentReader();
+
     boolean success = false;
     try {
+      clone.readOnly = readOnly;
       clone.directory = directory;
       clone.si = si;
       clone.segment = segment;

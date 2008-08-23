@@ -43,21 +43,24 @@ abstract class DirectoryIndexReader extends IndexReader {
   private SegmentInfos segmentInfos;
   private Lock writeLock;
   private boolean stale;
-  private HashSet synced = new HashSet();
+  private final HashSet synced = new HashSet();
 
   /** Used by commit() to record pre-commit state in case
    * rollback is necessary */
   private boolean rollbackHasChanges;
   private SegmentInfos rollbackSegmentInfos;
 
+  protected boolean readOnly;
+
   
-  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory)
+  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory, boolean readOnly)
     throws IOException {
     this.directory = directory;
     this.segmentInfos = segmentInfos;
     this.closeDirectory = closeDirectory;
+    this.readOnly = readOnly;
 
-    if (segmentInfos != null) {
+    if (!readOnly && segmentInfos != null) {
       // We assume that this segments_N was previously
       // properly sync'd:
       for(int i=0;i<segmentInfos.size();i++) {
@@ -72,16 +75,16 @@ abstract class DirectoryIndexReader extends IndexReader {
   protected DirectoryIndexReader() {}
   
   DirectoryIndexReader(Directory directory, SegmentInfos segmentInfos,
-      boolean closeDirectory) throws IOException {
+                       boolean closeDirectory, boolean readOnly) throws IOException {
     super();
-    init(directory, segmentInfos, closeDirectory);
+    init(directory, segmentInfos, closeDirectory, readOnly);
   }
   
   static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, closeDirectory, deletionPolicy, null);
+    return open(directory, closeDirectory, deletionPolicy, null, false);
   }
 
-  static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit) throws CorruptIndexException, IOException {
+  static DirectoryIndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
 
     SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
 
@@ -93,9 +96,11 @@ abstract class DirectoryIndexReader extends IndexReader {
         DirectoryIndexReader reader;
 
         if (infos.size() == 1) {          // index is optimized
-          reader = SegmentReader.get(infos, infos.info(0), closeDirectory);
+          reader = SegmentReader.get(readOnly, infos, infos.info(0), closeDirectory);
+        } else if (readOnly) {
+          reader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory);
         } else {
-          reader = new MultiSegmentReader(directory, infos, closeDirectory);
+          reader = new MultiSegmentReader(directory, infos, closeDirectory, false);
         }
         reader.setDeletionPolicy(deletionPolicy);
         return reader;
@@ -131,7 +136,7 @@ abstract class DirectoryIndexReader extends IndexReader {
         DirectoryIndexReader newReader = doReopen(infos);
         
         if (DirectoryIndexReader.this != newReader) {
-          newReader.init(directory, infos, closeDirectory);
+          newReader.init(directory, infos, closeDirectory, readOnly);
           newReader.deletionPolicy = deletionPolicy;
         }
 

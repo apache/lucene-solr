@@ -42,8 +42,9 @@ class MultiSegmentReader extends DirectoryIndexReader {
   private boolean hasDeletions = false;
 
   /** Construct reading the named set of readers. */
-  MultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory) throws IOException {
-    super(directory, sis, closeDirectory);
+  MultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory, boolean readOnly) throws IOException {
+    super(directory, sis, closeDirectory, readOnly);
+
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
     // reverse because IndexWriter merges & deletes
@@ -52,7 +53,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
     SegmentReader[] readers = new SegmentReader[sis.size()];
     for (int i = sis.size()-1; i >= 0; i--) {
       try {
-        readers[i] = SegmentReader.get(sis.info(i));
+        readers[i] = SegmentReader.get(readOnly, sis.info(i));
       } catch (IOException e) {
         // Close all readers we had opened:
         for(i++;i<sis.size();i++) {
@@ -70,9 +71,9 @@ class MultiSegmentReader extends DirectoryIndexReader {
   }
 
   /** This contructor is only used for {@link #reopen()} */
-  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache) throws IOException {
-    super(directory, infos, closeDirectory);
-    
+  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean readOnly) throws IOException {
+    super(directory, infos, closeDirectory, readOnly);
+
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
     Map segmentReaders = new HashMap();
@@ -106,7 +107,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = SegmentReader.get(infos.info(i));
+          newReader = SegmentReader.get(readOnly, infos.info(i));
         } else {
           newReader = (SegmentReader) newReaders[i].reopenSegment(infos.info(i));
         }
@@ -196,11 +197,12 @@ class MultiSegmentReader extends DirectoryIndexReader {
   protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException {
     if (infos.size() == 1) {
       // The index has only one segment now, so we can't refresh the MultiSegmentReader.
-      // Return a new SegmentReader instead
-      SegmentReader newReader = SegmentReader.get(infos, infos.info(0), false);
-      return newReader;
+      // Return a new [ReadOnly]SegmentReader instead
+      return SegmentReader.get(readOnly, infos, infos.info(0), false);
+    } else if (readOnly) {
+      return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache);
     } else {
-      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache);
+      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false);
     }            
   }
 
@@ -259,7 +261,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
 
   public boolean isDeleted(int n) {
     // Don't call ensureOpen() here (it could affect performance)
-    int i = readerIndex(n);                           // find segment num
+    final int i = readerIndex(n);                           // find segment num
     return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
@@ -287,7 +289,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
     return readerIndex(n, this.starts, this.subReaders.length);
   }
   
-  static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
+  final static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
     int lo = 0;                                      // search starts array
     int hi = numSubReaders - 1;                  // for first element less
 

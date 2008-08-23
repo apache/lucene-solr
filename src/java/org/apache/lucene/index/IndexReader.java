@@ -45,16 +45,32 @@ import java.util.Collection;
  opened already, but it cannot be used to delete documents from the index then.
 
  <p>
- NOTE: for backwards API compatibility, several methods are not listed 
+ <b>NOTE</b>: for backwards API compatibility, several methods are not listed 
  as abstract, but have no useful implementations in this base class and 
  instead always throw UnsupportedOperationException.  Subclasses are 
  strongly encouraged to override these methods, but in many cases may not 
  need to.
  </p>
 
+ <p>
+
+ <b>NOTE</b>: as of 2.4, it's possible to open a read-only
+ IndexReader using one of the static open methods that
+ accepts the boolean readOnly parameter.  Such a reader has
+ better concurrency as it's not necessary to synchronize on
+ the isDeleted method.  Currently the default for readOnly
+ is false, meaning if not specified you will get a
+ read/write IndexReader.  But in 3.0 this default will
+ change to true, meaning you must explicitly specify false
+ if you want to make changes with the resulting IndexReader.
+ </p>
+
  @version $Id$
 */
 public abstract class IndexReader {
+
+  // NOTE: in 3.0 this will change to true
+  final static boolean READ_ONLY_DEFAULT = false;
 
   /**
    * Constants describing field properties, for example used for
@@ -181,46 +197,61 @@ public abstract class IndexReader {
     }
   }
 
-  /** Returns an IndexReader reading the index in an FSDirectory in the named
-   path.
+  /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
+   path.  <b>NOTE</b>: starting in 3.0 this will return a readOnly IndexReader.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null);
+    return open(FSDirectory.getDirectory(path), true, null, null, READ_ONLY_DEFAULT);
   }
 
-  /** Returns an IndexReader reading the index in an FSDirectory in the named
-   * path.
+  /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
+   * path.  <b>NOTE</b>: starting in 3.0 this will return a readOnly IndexReader.
    * @param path the path to the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null);
+    return open(FSDirectory.getDirectory(path), true, null, null, READ_ONLY_DEFAULT);
   }
 
-  /** Returns an IndexReader reading the index in the given Directory.
+  /** Returns a read/write IndexReader reading the index in
+   * the given Directory. <b>NOTE</b>: starting in 3.0 this
+   * will return a readOnly IndexReader.
    * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, false, null, null);
+    return open(directory, false, null, null, READ_ONLY_DEFAULT);
   }
 
-  /** Expert: returns an IndexReader reading the index in the given
-   * {@link IndexCommit}.
+  /** Returns a read/write or read only IndexReader reading the index in the given Directory.
+   * @param directory the index directory
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(directory, false, null, null, readOnly);
+  }
+
+  /** Expert: returns a read/write IndexReader reading the index in the given
+   * {@link IndexCommit}.  <b>NOTE</b>: starting in 3.0 this
+   * will return a readOnly IndexReader.
    * @param commit the commit point to open
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, null, commit);
+    return open(commit.getDirectory(), false, null, commit, READ_ONLY_DEFAULT);
   }
 
-  /** Expert: returns an IndexReader reading the index in the given
+  /** Expert: returns a read/write IndexReader reading the index in the given
    * Directory, with a custom {@link IndexDeletionPolicy}.
+   * <b>NOTE</b>: starting in 3.0 this will return a
+   * readOnly IndexReader.
    * @param directory the index directory
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
@@ -229,11 +260,29 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, false, deletionPolicy, null);
+    return open(directory, false, deletionPolicy, null, READ_ONLY_DEFAULT);
   }
 
-  /** Expert: returns an IndexReader reading the index in the given
-   * Directory, using a specific commit and with a custom {@link IndexDeletionPolicy}.
+  /** Expert: returns a read/write or read only IndexReader reading the index in the given
+   * Directory, with a custom {@link IndexDeletionPolicy}.
+   * <b>NOTE</b>: starting in 3.0 this will return a
+   * readOnly IndexReader.
+   * @param directory the index directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(directory, false, deletionPolicy, null, readOnly);
+  }
+
+  /** Expert: returns a read/write IndexReader reading the index in the given
+   * Directory, using a specific commit and with a custom
+   * {@link IndexDeletionPolicy}.  <b>NOTE</b>: starting in
+   * 3.0 this will return a readOnly IndexReader.
    * @param commit the specific {@link IndexCommit} to open;
    * see {@link IndexReader#listCommits} to list all commits
    * in a directory
@@ -244,11 +293,27 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, deletionPolicy, commit);
+    return open(commit.getDirectory(), false, deletionPolicy, commit, READ_ONLY_DEFAULT);
   }
 
-  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit) throws CorruptIndexException, IOException {
-    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy, commit);
+  /** Expert: returns a read/write or read only IndexReader reading the index in the given
+   * Directory, using a specific commit and with a custom {@link IndexDeletionPolicy}.
+   * @param commit the specific {@link IndexCommit} to open;
+   * see {@link IndexReader#listCommits} to list all commits
+   * in a directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), false, deletionPolicy, commit, readOnly);
+  }
+
+  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
+    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy, commit, readOnly);
   }
 
   /**
@@ -637,7 +702,7 @@ public abstract class IndexReader {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized  void setNorm(int doc, String field, byte value)
+  public synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
@@ -762,7 +827,7 @@ public abstract class IndexReader {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
     hasChanges = true;
@@ -793,7 +858,7 @@ public abstract class IndexReader {
    *  be obtained)
    * @throws IOException if there is a low-level IO error
    */
-  public final int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     TermDocs docs = termDocs(term);
     if (docs == null) return 0;
@@ -819,7 +884,7 @@ public abstract class IndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+  public synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
     acquireWriteLock();
     hasChanges = true;

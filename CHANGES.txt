@@ -114,6 +114,14 @@ API Changes
     hashCode() and equals() in Token, and fixed all core and contrib
     analyzers to use the re-use APIs.  (DM Smith via Mike McCandless)
 
+18. LUCENE-1329: Add optional readOnly boolean when opening an
+    IndexReader.  A readOnly reader is not allowed to make changes
+    (deletions, norms) to the index; in exchanged, the isDeleted
+    method, often a bottleneck when searching with many threads, is
+    not synchronized.  The default for readOnly is still false, but in
+    3.0 the default will become true.  (Jason Rutherglen via Mike
+    McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 
