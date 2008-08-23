@@ -585,14 +585,15 @@ public class CoreContainer
       writer.write("false'");
     }
     writer.write(">\n");
-    writer.write("<cores adminPath='");
-    XML.escapeAttributeValue(adminPath, writer);
-    writer.write('\'');
-    writer.write(">\n");
 
     if (containerProperties != null && !containerProperties.isEmpty())  {
       writeProperties(writer, containerProperties);
     }
+
+    writer.write("<cores adminPath='");
+    XML.escapeAttributeValue(adminPath, writer);
+    writer.write('\'');
+    writer.write(">\n");
 
     Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
 
