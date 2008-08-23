@@ -2748,58 +2748,9 @@ public class IndexWriter {
   }
 
   /** Merges all segments from an array of indexes into this index.
-   *
-   * <p>This may be used to parallelize batch indexing.  A large document
-   * collection can be broken into sub-collections.  Each sub-collection can be
-   * indexed in parallel, on a different thread, process or machine.  The
-   * complete index can then be created by merging sub-collection indexes
-   * with this method.
-   *
-   * <p><b>NOTE:</b> the index in each Directory must not be
-   * changed (opened by a writer) while this method is
-   * running.  This method does not acquire a write lock in
-   * each input Directory, so it is up to the caller to
-   * enforce this.
-   *
-   * <p><b>NOTE:</b> while this is running, any attempts to
-   * add or delete documents (with another thread) will be
-   * paused until this method completes.
-   *
-   * <p>After this completes, the index is optimized.
-   *
-   * <p>This method is transactional in how Exceptions are
-   * handled: it does not commit a new segments_N file until
-   * all indexes are added.  This means if an Exception
-   * occurs (for example disk full), then either no indexes
-   * will have been added or they all will have been.</p>
-   *
-   * <p>If an Exception is hit, it's still possible that all
-   * indexes were successfully added.  This happens when the
-   * Exception is hit when trying to build a CFS file.  In
-   * this case, one segment in the index will be in non-CFS
-   * format, even when using compound file format.</p>
-   *
-   * <p>Also note that on an Exception, the index may still
-   * have been partially or fully optimized even though none
-   * of the input indexes were added. </p>
-   *
-   * <p>Note that this requires temporary free space in the
-   * Directory up to 2X the sum of all input indexes
-   * (including the starting index).  If readers/searchers
-   * are open against the starting index, then temporary
-   * free space required will be higher by the size of the
-   * starting index (see {@link #optimize()} for details).
-   * </p>
-   *
-   * <p>Once this completes, the final size of the index
-   * will be less than the sum of all input index sizes
-   * (including the starting index).  It could be quite a
-   * bit smaller (if there were many pending deletes) or
-   * just slightly smaller.</p>
-   *
-   * <p>See <a target="_top"
-   * href="http://issues.apache.org/jira/browse/LUCENE-702">LUCENE-702</a>
-   * for details.</p>
+   * @deprecated Use {@link #addIndexesNoOptimize} instead,
+   * then separately call {@link #optimize} afterwards if
+   * you need to.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -2863,11 +2814,14 @@ public class IndexWriter {
   }
 
   /**
-   * Merges all segments from an array of indexes into this index.
-   * <p>
-   * This is similar to addIndexes(Directory[]). However, no optimize()
-   * is called either at the beginning or at the end. Instead, merges
-   * are carried out as necessary.
+   * Merges all segments from an array of indexes into this
+   * index.
+   *
+   * <p>This may be used to parallelize batch indexing.  A large document
+   * collection can be broken into sub-collections.  Each sub-collection can be
+   * indexed in parallel, on a different thread, process or machine.  The
+   * complete index can then be created by merging sub-collection indexes
+   * with this method.
    *
    * <p><b>NOTE:</b> the index in each Directory must not be
    * changed (opened by a writer) while this method is
@@ -2879,14 +2833,29 @@ public class IndexWriter {
    * add or delete documents (with another thread) will be
    * paused until this method completes.
    *
-   * <p>
-   * This requires this index not be among those to be added, and the
-   * upper bound* of those segment doc counts not exceed maxMergeDocs.
+   * <p>This method is transactional in how Exceptions are
+   * handled: it does not commit a new segments_N file until
+   * all indexes are added.  This means if an Exception
+   * occurs (for example disk full), then either no indexes
+   * will have been added or they all will have been.</p>
    *
-   * <p>See {@link #addIndexes(Directory[])} for
-   * details on transactional semantics, temporary free
-   * space required in the Directory, and non-CFS segments
-   * on an Exception.</p>
+   * <p>Note that this requires temporary free space in the
+   * Directory up to 2X the sum of all input indexes
+   * (including the starting index).  If readers/searchers
+   * are open against the starting index, then temporary
+   * free space required will be higher by the size of the
+   * starting index (see {@link #optimize()} for details).
+   * </p>
+   *
+   * <p>Once this completes, the final size of the index
+   * will be less than the sum of all input index sizes
+   * (including the starting index).  It could be quite a
+   * bit smaller (if there were many pending deletes) or
+   * just slightly smaller.</p>
+   * 
+   * <p>
+   * This requires this index not be among those to be added.
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -3019,7 +2988,7 @@ public class IndexWriter {
    * add or delete documents (with another thread) will be
    * paused until this method completes.
    *
-   * <p>See {@link #addIndexes(Directory[])} for
+   * <p>See {@link #addIndexesNoOptimize(Directory[])} for
    * details on transactional semantics, temporary free
    * space required in the Directory, and non-CFS segments
    * on an Exception.</p>
