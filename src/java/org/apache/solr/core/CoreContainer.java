@@ -202,7 +202,7 @@ public class CoreContainer
 
           for (int a=1; a<aliases.size(); a++) {
             core.open();
-            register(aliases.get(i), core, false);
+            register(aliases.get(a), core, false);
           }
 
           register(name, core, false);
