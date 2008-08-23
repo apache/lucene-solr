@@ -402,7 +402,7 @@ public class CharArrayMap<V> extends AbstractMap<String, V>
     try {
       map = (CharArrayMap<V>)super.clone();
       map.keys = keys.clone();
-      map.values = keys.clone();
+      map.values = values.clone();
     } catch (CloneNotSupportedException e) {
       // impossible
     }
