@@ -46,7 +46,8 @@ See http://forrest.apache.org/docs/linking.html for more info
     <tutorial    label="Tutorial"         href="tutorial.html" />
     <wiki        label="Docs (Wiki)" href="ext:wiki" />
     <faq         label="FAQ"              href="ext:faq" />
-    <apidocs     label="javadoc"          href="api/index.html" />    
+    <apidocs     label="All Javadoc"     href="api/index.html" />
+    <apidocs     label="SolrJ Javadoc"     href="api/solrj/index.html" />
   </docs>
 
   <resources label="Resources">

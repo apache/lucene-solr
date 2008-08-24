@@ -26,11 +26,14 @@
       <p>
         Solr is an open source enterprise search server based on the
         <a href="http://lucene.apache.org/java/">Lucene Java</a> search library, with XML/HTTP and JSON APIs,
-        hit highlighting, faceted search, caching, replication, and a web administration interface.
+        hit highlighting, faceted search, caching, replication, a web administration interface and many more features.
         It runs in a Java servlet container such as <a href="http://tomcat.apache.org">Tomcat</a>.
       </p>
       <p>
         See the complete <a href="features.html">feature list</a> for more details, then check out the <a href="tutorial.html">tutorial</a>.
+      </p>
+      <p>
+        For more information about Solr, please see the <a href="http://wiki.apache.org/solr">Solr wiki</a>.
       </p>
     </section>
 
