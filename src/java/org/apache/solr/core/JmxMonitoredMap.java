@@ -184,7 +184,9 @@ public class JmxMonitoredMap<K, V> extends
           throws MalformedObjectNameException {
     Hashtable<String, String> map = new Hashtable<String, String>();
     map.put("type", key);
-    map.put("id", infoBean.getName());
+    if (infoBean.getName() != null && !"".equals(infoBean.getName())) {
+      map.put("id", infoBean.getName());
+    }
     return ObjectName.getInstance(jmxRootName, map);
   }
 
