@@ -544,5 +544,13 @@ public class TestPhraseQuery extends LuceneTestCase {
     //assertTrue("reversed scores higher in palindrome",score1+SCORE_COMP_THRESH<score3);
     //assertEquals("ordered or reversed does not matter",score2, score3, SCORE_COMP_THRESH);
   }
+
+  // LUCENE-1280
+  public void testEmptyPhraseQuery() throws Throwable {
+    final PhraseQuery q1 = new PhraseQuery();
+    final BooleanQuery q2 = new BooleanQuery();
+    q2.add(new PhraseQuery(), BooleanClause.Occur.MUST);
+    q2.toString();
+  }
   
 }

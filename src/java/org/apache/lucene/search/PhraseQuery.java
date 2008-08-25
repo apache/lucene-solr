@@ -256,7 +256,7 @@ public class PhraseQuery extends Query {
   /** Prints a user-readable version of this query. */
   public String toString(String f) {
     StringBuffer buffer = new StringBuffer();
-    if (!field.equals(f)) {
+    if (field != null && !field.equals(f)) {
       buffer.append(field);
       buffer.append(":");
     }
