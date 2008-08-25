@@ -32,6 +32,9 @@ New features
     might not be compatible with these updated classes as some algorithms have changed.
     (Karl Wettin)
 
+ 3. LUCENE-1016: TermVectorAccessor, transparent vector space access via stored vectors
+    or by resolving the inverted index. (Karl Wettin) 
+
 Documentation
 
  (None)
