@@ -123,7 +123,10 @@ document.write("Last Published: " + document.lastModified);
 <a href="http://wiki.apache.org/solr/FAQ">FAQ</a>
 </div>
 <div class="menuitem">
-<a href="api/index.html">javadoc</a>
+<a href="api/index.html">All Javadoc</a>
+</div>
+<div class="menuitem">
+<a href="api/solrj/index.html">SolrJ Javadoc</a>
 </div>
 </div>
 <div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
@@ -221,6 +224,8 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Comprehensive HTML Administration Interfaces </li>
     
+<li> Server statistics exposed over JMX for monitoring </li>
+    
 <li> Scalability - Efficient Replication to other Solr Search Servers </li>
     
 <li> Flexible and Adaptable with XML configuration </li>
@@ -231,7 +236,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
 
-<a name="N1002F"></a><a name="Solr+Uses+the+Lucene+Search+Library+and+Extends+it%21"></a>
+<a name="N10032"></a><a name="Solr+Uses+the+Lucene+Search+Library+and+Extends+it%21"></a>
 <h2 class="boxed">Solr Uses the Lucene Search Library and Extends it!</h2>
 <div class="section">
 <ul>
@@ -256,16 +261,22 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Fast Incremental Updates and Snapshot Distribution </li>
     
+<li> Distributed search with sharded index on multiple hosts </li>
+    
 <li> XML and CSV/delimited-text update formats </li>
+    
+<li> Easy ways to pull in data from databases and XML files from local disk and HTTP sources </li>
+    
+<li> Multiple search indices </li>
   
 </ul>
 </div>
 
 
-<a name="N1005A"></a><a name="Detailed+Features"></a>
+<a name="N10066"></a><a name="Detailed+Features"></a>
 <h2 class="boxed">Detailed Features</h2>
 <div class="section">
-<a name="N10060"></a><a name="Schema"></a>
+<a name="N1006C"></a><a name="Schema"></a>
 <h3 class="boxed">Schema</h3>
 <ul>
       
@@ -286,7 +297,7 @@ document.write("Last Published: " + document.lastModified);
 <li>Many additional text analysis components including word splitting, regex and sounds-like filters</li>
     
 </ul>
-<a name="N10081"></a><a name="Query"></a>
+<a name="N1008D"></a><a name="Query"></a>
 <h3 class="boxed">Query</h3>
 <ul>
       
@@ -300,6 +311,10 @@ document.write("Last Published: " + document.lastModified);
       
 <li>Faceted Searching based on unique field values and explicit queries</li>
       
+<li>Spelling suggestions for user queries</li>
+      
+<li>More Like This suggestions for given document</li>
+      
 <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
       
 <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
@@ -309,7 +324,7 @@ document.write("Last Published: " + document.lastModified);
 <li>Performance Optimizations</li>
     
 </ul>
-<a name="N100A5"></a><a name="Core"></a>
+<a name="N100B7"></a><a name="Core"></a>
 <h3 class="boxed">Core</h3>
 <ul>
       
@@ -330,7 +345,7 @@ document.write("Last Published: " + document.lastModified);
 <li>"Luke" request handler for corpus information</li>
     
 </ul>
-<a name="N100C6"></a><a name="Caching"></a>
+<a name="N100D8"></a><a name="Caching"></a>
 <h3 class="boxed">Caching</h3>
 <ul>
       
@@ -364,7 +379,7 @@ document.write("Last Published: " + document.lastModified);
 <li>User level caching with autowarming support</li>
     
 </ul>
-<a name="N100EB"></a><a name="Replication"></a>
+<a name="N100FD"></a><a name="Replication"></a>
 <h3 class="boxed">Replication</h3>
 <ul>
       
@@ -375,7 +390,7 @@ document.write("Last Published: " + document.lastModified);
 <li>Configurable distribution interval allows tradeoff between timeliness and cache utilization</li>
     
 </ul>
-<a name="N100FD"></a><a name="Admin+Interface"></a>
+<a name="N1010F"></a><a name="Admin+Interface"></a>
 <h3 class="boxed">Admin Interface</h3>
 <ul>
       
