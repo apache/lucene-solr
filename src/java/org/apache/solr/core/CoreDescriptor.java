@@ -117,16 +117,8 @@ public class CoreDescriptor implements Cloneable {
     return coreContainer;
   }
 
-  /**
-   * Get this core's properties
-   * 
-   * @return a shallow copy of this core's properties
-   */
   public Properties getCoreProperties() {
-    Properties p = new Properties();
-    if (coreProperties != null)
-      p.putAll(coreProperties);
-    return p;
+    return coreProperties;
   }
 
   /**
