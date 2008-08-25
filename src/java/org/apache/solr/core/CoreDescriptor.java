@@ -117,7 +117,7 @@ public class CoreDescriptor implements Cloneable {
     return coreContainer;
   }
 
-  public Properties getCoreProperties() {
+  Properties getCoreProperties() {
     return coreProperties;
   }
 
@@ -129,7 +129,7 @@ public class CoreDescriptor implements Cloneable {
    * 
    * @param coreProperties
    */
-  public void setCoreProperties(Properties coreProperties) {
+  void setCoreProperties(Properties coreProperties) {
     if (this.coreProperties == null) {
       Properties p = initImplicitProperties();
       this.coreProperties = new Properties(p);
