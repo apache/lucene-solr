@@ -614,6 +614,7 @@ Other Changes
 
 23. SOLR-692: Migrated to stable released builds of StAX API 1.0.1 and StAX 1.2.0 (shalin)
 24. Upgraded to Lucene 2.4-dev (r686801) (yonik)
+24. Upgraded to Lucene 2.4-dev (r688745) 27-Aug-2008 (yonik)
 
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on

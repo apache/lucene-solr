@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
+import org.tartarus.snowball.SnowballProgram;
 
 /**
  * Factory for SnowballFilters, with configurable language
@@ -31,16 +32,29 @@ import org.apache.lucene.analysis.snowball.SnowballFilter;
  */
 public class SnowballPorterFilterFactory extends BaseTokenFilterFactory {
   private String language = "English";
-  
+  private Class stemClass;
+
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
     final String cfgLanguage = args.get("language");
     if(cfgLanguage!=null) language = cfgLanguage;
+
+    try {
+      stemClass = Class.forName("org.tartarus.snowball.ext." + language + "Stemmer");
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException("Can't find class for stemmer language " + language, e);
+    }
   }
   
   public SnowballFilter create(TokenStream input) {
-    return new SnowballFilter(input,language);
+    SnowballProgram program;
+    try {
+      program = (SnowballProgram)stemClass.newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " +stemClass, e);
+    }
+    return new SnowballFilter(input, program);
   }
 }
 
