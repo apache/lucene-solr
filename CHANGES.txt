@@ -29,6 +29,10 @@ IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
+The Porter snowball based stemmers in Lucene were updated (LUCENE-1142),
+and are not guaranteed to be backward compatible at the index level
+(the stem of certain words may have changed).  Re-indexing is recommended.
+
 Older Apache Solr installations can be upgraded by replacing
 the relevant war file with the new version.  No changes to configuration
 files should be needed.  
