@@ -399,6 +399,11 @@ Optimizations
  9. SOLR-587: Delete by Query performance greatly improved by using
     new underlying Lucene IndexWriter implementation.  (yonik)
 
+10. SOLR-730: Use read-only IndexReaders that don't synchronize
+    isDeleted().  This will speed up function queries and *:* queries
+    as well as improve their scalability on multi-CPU systems.
+    (Mark Miller via yonik)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)

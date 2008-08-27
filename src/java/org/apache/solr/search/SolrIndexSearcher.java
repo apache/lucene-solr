@@ -104,7 +104,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     this(core, schema,name,r, false, enableCache);
   }
 
-  private SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
