@@ -346,7 +346,7 @@ public class CoreContainer
     return lst;
   }
 
-  /**
+  /** This method is currently experimental.
    * @return a Collection of the names that a specific core is mapped to.
    */
   public Collection<String> getCoreNames(SolrCore core) {
