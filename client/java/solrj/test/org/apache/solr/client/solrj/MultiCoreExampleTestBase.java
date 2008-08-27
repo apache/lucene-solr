@@ -137,6 +137,20 @@ SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
+    // test that reload affects aliases
+    CoreAdminRequest.reloadCore("core1", coreadmin);
+
+    // this is only an effective test for embedded, where we have
+    // direct access to the core container.
+    SolrCore c1 = cores.getCore("core1");
+    SolrCore c2 = cores.getCore("corefoo");
+    assertTrue(c1 == c2);
+    if (c1 != null) c1.close();
+    if (c2 != null) c2.close();
+
+    // retest core query
+    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
+
     // test close
     CoreAdminRequest.unloadCore("corefoo",coreadmin);
     try {
