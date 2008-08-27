@@ -105,7 +105,11 @@ public class DocSlice extends DocSetBase implements DocList {
         return nextDoc();
       }
 
+      /**
+       * The remove  operation is not supported by this Iterator.
+       */
       public void remove() {
+        throw new UnsupportedOperationException("The remove  operation is not supported by this Iterator.");
       }
 
       public int nextDoc() {
