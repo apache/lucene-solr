@@ -767,7 +767,7 @@
   </target>
 
   <target name="nightly"
-          depends="test, package">
+          depends="test, create-package">
      <!-- no description, don't advertise -->
   </target>
 
