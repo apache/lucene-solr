@@ -396,6 +396,10 @@ Changes in runtime behavior
 
  3. SOLR-647: reference count the SolrCore uses to prevent a premature
     close while a core is still in use.  (Henri Biestro, Noble Paul, yonik)
+
+ 4. SOLR-737: SolrQueryParser now uses a ConstantScoreQuery for wildcard
+    queries that prevent an exception from being thrown when the number
+    of matching terms exceeds the BooleanQuery clause limit.  (yonik)
     
 Optimizations
  1. SOLR-276: improve JSON writer speed. (yonik)

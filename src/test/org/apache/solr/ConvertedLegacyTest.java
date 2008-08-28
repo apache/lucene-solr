@@ -812,6 +812,9 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             );
     // val_s:* %//*[@numFound="8"]
 
+    // test wildcard query
+    assertQ(req("val_s:a*p*") ,"//*[@numFound='3']");
+    assertQ(req("val_s:p?a*") ,"//*[@numFound='3']");
 
     assertU("<delete><query>id:[100 TO 110]</query></delete>");
 
