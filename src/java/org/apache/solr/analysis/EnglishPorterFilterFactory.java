@@ -75,12 +75,12 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implement
  */
 class EnglishPorterFilter extends TokenFilter {
   private final CharArraySet protWords;
-  private net.sf.snowball.ext.EnglishStemmer stemmer;
+  private org.tartarus.snowball.ext.EnglishStemmer stemmer;
 
   public EnglishPorterFilter(TokenStream source, CharArraySet protWords) {
     super(source);
     this.protWords = protWords;
-    stemmer = new net.sf.snowball.ext.EnglishStemmer();
+    stemmer = new org.tartarus.snowball.ext.EnglishStemmer();
   }
 
 

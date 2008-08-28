@@ -29,6 +29,10 @@ IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves
 should be upgraded before the master!  If the master were to be updated
 first, the older searchers would not be able to read the new index format.
 
+The Porter snowball based stemmers in Lucene were updated (LUCENE-1142),
+and are not guaranteed to be backward compatible at the index level
+(the stem of certain words may have changed).  Re-indexing is recommended.
+
 Older Apache Solr installations can be upgraded by replacing
 the relevant war file with the new version.  No changes to configuration
 files should be needed.  
@@ -399,6 +403,11 @@ Optimizations
  9. SOLR-587: Delete by Query performance greatly improved by using
     new underlying Lucene IndexWriter implementation.  (yonik)
 
+10. SOLR-730: Use read-only IndexReaders that don't synchronize
+    isDeleted().  This will speed up function queries and *:* queries
+    as well as improve their scalability on multi-CPU systems.
+    (Mark Miller via yonik)
+
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
@@ -614,6 +623,7 @@ Other Changes
 
 23. SOLR-692: Migrated to stable released builds of StAX API 1.0.1 and StAX 1.2.0 (shalin)
 24. Upgraded to Lucene 2.4-dev (r686801) (yonik)
+24. Upgraded to Lucene 2.4-dev (r688745) 27-Aug-2008 (yonik)
 
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on

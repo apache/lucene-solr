@@ -346,7 +346,7 @@ public class CoreContainer
     return lst;
   }
 
-  /**
+  /** This method is currently experimental.
    * @return a Collection of the names that a specific core is mapped to.
    */
   public Collection<String> getCoreNames(SolrCore core) {
@@ -381,7 +381,17 @@ public class CoreContainer
     if (core == null)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
-    register(name, create(core.getCoreDescriptor()), false);
+    SolrCore newCore = create(core.getCoreDescriptor());
+
+    // point all aliases to the reloaded core
+    for (String alias : getCoreNames(core)) {
+      if (!name.equals(alias)) {
+        newCore.open();
+        register(alias, newCore, false);
+      }
+    }
+
+    register(name, newCore, false);
   }
     
   

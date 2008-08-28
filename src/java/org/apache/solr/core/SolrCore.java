@@ -260,7 +260,12 @@ public final class SolrCore implements SolrInfoMBean {
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(this, schema, name,getIndexDir(),false);
+    return newSearcher(name, false);
+  }
+  
+  // gets a non-caching searcher
+  public SolrIndexSearcher newSearcher(String name, boolean readOnly) throws IOException {
+    return new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), readOnly), true, false);
   }
 
 
@@ -852,6 +857,10 @@ public final class SolrCore implements SolrInfoMBean {
    * be registered before running the event handlers (a slow searcher is better than no searcher).
    *
    * <p>
+   * These searchers contain read-only IndexReaders. To access a non read-only IndexReader,
+   * see newSearcher(String name, boolean readOnly).
+   *
+   * <p>
    * If <tt>forceNew==true</tt> then
    *  A new searcher will be opened and registered regardless of whether there is already
    *    a registered searcher or other searchers in the process of being created.
@@ -935,7 +944,7 @@ public final class SolrCore implements SolrInfoMBean {
     // if this fails, we need to decrement onDeckSearchers again.
     SolrIndexSearcher tmp;
     try {
-      tmp = new SolrIndexSearcher(this, schema, "main", getIndexDir(), true);
+      tmp = new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), true), true, true);
     } catch (Throwable th) {
       synchronized(searcherLock) {
         onDeckSearchers--;

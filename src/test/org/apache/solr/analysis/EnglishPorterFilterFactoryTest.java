@@ -16,8 +16,8 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import net.sf.snowball.ext.EnglishStemmer;
 import org.apache.solr.common.ResourceLoader;
+import org.tartarus.snowball.ext.EnglishStemmer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +30,7 @@ import java.util.Collections;
 public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
 
   public void test() throws IOException {
-    EnglishStemmer stemmer = new net.sf.snowball.ext.EnglishStemmer();
+    EnglishStemmer stemmer = new EnglishStemmer();
     String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
     StringBuilder gold = new StringBuilder();
     for (int i = 0; i < test.length; i++) {
@@ -49,7 +49,7 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
   }
 
   public void testProtected() throws Exception {
-    EnglishStemmer stemmer = new net.sf.snowball.ext.EnglishStemmer();
+    EnglishStemmer stemmer = new EnglishStemmer();
     String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
     StringBuilder gold = new StringBuilder();
     for (int i = 0; i < test.length; i++) {
