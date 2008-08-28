@@ -59,8 +59,6 @@ public class SystemInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
-
     rsp.add( "core", getCoreInfo( req.getCore() ) );
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );

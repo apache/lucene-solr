@@ -43,9 +43,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
 {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
-    
+  {    
     SimpleOrderedMap<Object> system = new SimpleOrderedMap<Object>();
     rsp.add( "system", system );
 

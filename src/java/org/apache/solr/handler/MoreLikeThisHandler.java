@@ -81,8 +81,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
-
     SolrParams params = req.getParams();
     SolrIndexSearcher searcher = req.getSearcher();
     

@@ -91,9 +91,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
-  {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
-    
+  {    
     IndexSchema schema = req.getSchema();
     SolrIndexSearcher searcher = req.getSearcher();
     IndexReader reader = searcher.getReader();

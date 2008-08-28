@@ -77,7 +77,6 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     SolrParams params = req.getParams();
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams != null) {

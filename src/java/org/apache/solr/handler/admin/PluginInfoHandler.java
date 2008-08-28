@@ -45,7 +45,6 @@ public class PluginInfoHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
     SolrParams params = req.getParams();
     
     boolean stats = params.getBool( "stats", false );
