@@ -372,12 +372,12 @@ public class DataImporter {
     new Thread() {
       @Override
       public void run() {
-        rumCmd(reqParams, sw, variables);
+        runCmd(reqParams, sw, variables);
       }
     }.start();
   }
 
-  void rumCmd(RequestParams reqParams, SolrWriter sw,
+  void runCmd(RequestParams reqParams, SolrWriter sw,
               Map<String, String> variables) {
     String command = reqParams.command;
     if (command.equals("full-import")) {

@@ -58,7 +58,7 @@ public class TestDocBuilder {
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.rumCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi, Collections.EMPTY_MAP);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(0, swi.docs.size());
@@ -91,7 +91,7 @@ public class TestDocBuilder {
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.rumCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi, Collections.EMPTY_MAP);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(1, swi.docs.size());
@@ -136,7 +136,7 @@ public class TestDocBuilder {
       MockDataSource.setIterator("select * from x", l.iterator());
       ent.dataSrc = new MockDataSource();
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.rumCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi, Collections.EMPTY_MAP);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(3, swi.docs.size());

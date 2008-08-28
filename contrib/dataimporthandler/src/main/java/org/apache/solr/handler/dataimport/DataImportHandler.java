@@ -170,7 +170,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     }
 
     if (command != null && DataImporter.ABORT_CMD.equals(command)) {
-      importer.rumCmd(requestParams, null, null);
+      importer.runCmd(requestParams, null, null);
     } else if (importer.getStatus() != DataImporter.Status.IDLE) {
       message = DataImporter.MSG.CMD_RUNNING;
     } else if (command != null) {
@@ -187,7 +187,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         if (requestParams.debug) {
           if (debugEnabled) {
             // Synchronous request for the debug mode
-            importer.rumCmd(requestParams, sw, variables);
+            importer.runCmd(requestParams, sw, variables);
             rsp.add("mode", "debug");
             rsp.add("documents", debugDocuments);
             if (debugLogger != null)
