@@ -270,20 +270,20 @@ public class DataImporter {
       key.dataSrc = new MockDataSource();
       return;
     }
-    key.dataSrc = getDataSourceInstance(key);
+    key.dataSrc = getDataSourceInstance(key, key.dataSource, null);
   }
 
-  DataSource getDataSourceInstance(DataConfig.Entity key) {
-    Properties p = dataSourceProps.get(key.dataSource);
+  DataSource getDataSourceInstance(DataConfig.Entity key, String name, Context ctx ) {
+    Properties p = dataSourceProps.get(name);
     if (p == null)
-      p = config.dataSources.get(key.dataSource);
+      p = config.dataSources.get(name);
     if (p == null)
       p = dataSourceProps.get(null);// for default data source
     if (p == null)
       p = config.dataSources.get(null);
     if (p == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "No dataSource :" + key.dataSource + " available for entity :"
+              "No dataSource :" + name + " available for entity :"
                       + key.name);
     String impl = p.getProperty(TYPE);
     DataSource dataSrc = null;
@@ -300,8 +300,10 @@ public class DataImporter {
     try {
       Properties copyProps = new Properties();
       copyProps.putAll(p);
-      dataSrc.init(new ContextImpl(key, null, dataSrc, 0,
-              Collections.EMPTY_MAP, new HashMap(), null, this), copyProps);
+      if(ctx == null)
+        ctx = new ContextImpl(key, null, dataSrc, 0,
+              Collections.EMPTY_MAP, new HashMap(), null, this);
+      dataSrc.init(ctx, copyProps);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Failed to initialize DataSource: " + key.dataSource, e);

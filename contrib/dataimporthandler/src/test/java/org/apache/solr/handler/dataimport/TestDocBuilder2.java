@@ -19,9 +19,11 @@ package org.apache.solr.handler.dataimport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -63,6 +65,27 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     super.runFullImport(loadDataConfig("single-entity-data-config.xml"));
 
     assertQ(req("id:1"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testContext() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(loadDataConfig("data-config-with-transformer.xml"));
+  }
+
+  public static class MockTransformer extends Transformer {
+    public Object transformRow(Map<String, Object> row, Context context) {
+      Assert.assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
+      return row;
+    }
+  }
+
+  public static class MockDataSource2 extends MockDataSource  {
+    
   }
 
 }

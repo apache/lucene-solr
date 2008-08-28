@@ -32,6 +32,9 @@ Bug Fixes
               use the complete string for parsing. Failure to do so will result in an exception.
               (Stefan Oestreicher via shalin)
 
+2. SOLR-729:  Context.getDataSource(String) gives current entity's DataSource instance regardless of argument.
+              (Noble Paul, shalin)
+
 Other Changes
 
 
