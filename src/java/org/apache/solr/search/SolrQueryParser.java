@@ -22,6 +22,8 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
@@ -144,4 +146,12 @@ public class SolrQueryParser extends QueryParser {
     return new ConstantScorePrefixQuery(t);
   }
 
+  protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+    Query q = super.getWildcardQuery(field, termStr);
+    if (q instanceof WildcardQuery) {
+      // use a constant score query to avoid overflowing clauses
+      return new ConstantScoreQuery(new WildcardFilter(((WildcardQuery)q).getTerm()));
+    }
+    return q;
+  }
 }
