@@ -63,7 +63,7 @@ public class ContextImpl extends Context {
   }
 
   public DataSource getDataSource(String name) {
-    return dataImporter.getDataSourceInstance(entity);
+    return dataImporter.getDataSourceInstance(entity, name, this);
   }
 
   public boolean isRootEntity() {

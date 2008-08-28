@@ -72,18 +72,21 @@ public abstract class Context {
   public abstract VariableResolver getVariableResolver();
 
   /**
-   * Gets the datasource instance defined for this entity.
+   * Gets the datasource instance defined for this entity. Do not close() this instance.
+   * Transformers should use the getDataSource(String name) method.
    *
    * @return a new DataSource instance as configured for the current entity
    * @see org.apache.solr.handler.dataimport.DataSource
+   * @see #getDataSource(String)
    */
   public abstract DataSource getDataSource();
 
   /**
-   * Gets a new DataSource instance with a name.
-   *
+   * Gets a new DataSource instance with a name. Ensure that you close() this after use
+   * because this is created just for this method call.
+   *  
    * @param name Name of the dataSource as defined in the dataSource tag
-   * @return a new DataSource instance as configured for the named entity
+   * @return a new DataSource instance
    * @see org.apache.solr.handler.dataimport.DataSource
    */
   public abstract DataSource getDataSource(String name);
