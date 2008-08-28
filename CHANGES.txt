@@ -122,6 +122,9 @@ API Changes
     3.0 the default will become true.  (Jason Rutherglen via Mike
     McCandless)
 
+19. LUCENE-1367: Add IndexCommit.isDeleted().  (Shalin Shekhar Mangar
+    via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

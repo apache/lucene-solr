@@ -401,6 +401,9 @@ abstract class DirectoryIndexReader extends IndexReader {
     public long getGeneration() {
       return generation;
     }
+    public boolean isDeleted() {
+      return false;
+    }
   }
 
   /**

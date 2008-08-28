@@ -74,6 +74,10 @@ public abstract class IndexCommit implements IndexCommitPoint {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
 
+  public boolean isDeleted() {
+    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
+  }
+
   /**
    * Returns true if this commit is an optimized index.
    */

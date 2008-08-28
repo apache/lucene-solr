@@ -89,7 +89,9 @@ public class TestDeletionPolicy extends LuceneTestCase
       // On init, delete all commit points:
       Iterator it = commits.iterator();
       while(it.hasNext()) {
-        ((IndexCommit) it.next()).delete();
+        final IndexCommit commit = (IndexCommit) it.next();
+        commit.delete();
+        assertTrue(commit.isDeleted());
       }
     }
     public void onCommit(List commits) {

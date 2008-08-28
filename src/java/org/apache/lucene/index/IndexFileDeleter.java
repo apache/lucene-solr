@@ -637,6 +637,10 @@ final class IndexFileDeleter {
       }
     }
 
+    public boolean isDeleted() {
+      return deleted;
+    }
+
     public int compareTo(Object obj) {
       CommitPoint commit = (CommitPoint) obj;
       if (gen < commit.gen) {
