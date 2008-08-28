@@ -148,9 +148,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase
           + " ["+adminFile.getAbsolutePath()+"]" );
     }
     
-    // Add a warning
-    RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-    
     // Show a directory listing
     if( adminFile.isDirectory() ) {
       

@@ -102,9 +102,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
-  {
-    RequestHandlerUtils.addExperimentalFormatWarning( rsp );
-    
+  {    
     SolrParams params = req.getParams();
     UpdateRequestProcessorChain processingChain = 
       req.getCore().getUpdateProcessingChain( params.get( UpdateParams.UPDATE_PROCESSOR ) );
