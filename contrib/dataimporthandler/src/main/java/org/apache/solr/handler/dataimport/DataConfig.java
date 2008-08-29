@@ -262,7 +262,7 @@ public class DataConfig {
                   DataImportHandlerException.SEVERE,
                   "<function> must have a 'name' and 'class' attributes");
         try {
-          evaluators.put(func, (Evaluator) DocBuilder.loadClass(clz)
+          evaluators.put(func, (Evaluator) DocBuilder.loadClass(clz, null)
                   .newInstance());
         } catch (Exception exp) {
           throw new DataImportHandlerException(

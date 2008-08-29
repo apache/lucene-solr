@@ -137,6 +137,6 @@ public class ContextImpl extends Context {
 
 
   public SolrCore getSolrCore() {
-    return dataImporter.getCore();
+    return dataImporter == null ? null : dataImporter.getCore();
   }
 }
