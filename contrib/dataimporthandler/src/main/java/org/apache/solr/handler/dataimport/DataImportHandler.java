@@ -300,9 +300,6 @@ public class DataImportHandler extends RequestHandlerBase implements
       }
 
 
-      public Class loadClass(String name) throws ClassNotFoundException {
-        return loader.findClass(name);
-      }
 
       public SolrDoc getSolrDocInstance() {
         return new SolrDocumentWrapper();

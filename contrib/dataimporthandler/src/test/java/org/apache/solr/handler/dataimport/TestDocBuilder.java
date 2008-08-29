@@ -38,7 +38,7 @@ public class TestDocBuilder {
 
   @Test
   public void loadClass() throws Exception {
-    Class clz = DocBuilder.loadClass("RegexTransformer");
+    Class clz = DocBuilder.loadClass("RegexTransformer", null);
     Assert.assertNotNull(clz);
   }
 

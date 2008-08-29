@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.core.SolrCore;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -232,7 +234,7 @@ public class DocBuilder {
                              Map<String, Object> pk, DataConfig.Entity entity, boolean isRoot,
                              ContextImpl parentCtx) {
 
-    EntityProcessor entityProcessor = getEntityProcessor(entity);
+    EntityProcessor entityProcessor = getEntityProcessor(entity, dataImporter.getCore());
     DataSource ds = entity.dataSrc;
     if (verboseDebug) {
       ds = DebugLogger.wrapDs(ds);
@@ -415,7 +417,7 @@ public class DocBuilder {
     }
   }
 
-  public static EntityProcessor getEntityProcessor(DataConfig.Entity entity) {
+  public static EntityProcessor getEntityProcessor(DataConfig.Entity entity, SolrCore core) {
     if (entity.processor != null)
       return entity.processor;
     EntityProcessor entityProcessor;
@@ -423,7 +425,7 @@ public class DocBuilder {
       entityProcessor = new SqlEntityProcessor();
     } else {
       try {
-        entityProcessor = (EntityProcessor) loadClass(entity.proc)
+        entityProcessor = (EntityProcessor) loadClass(entity.proc, core)
                 .newInstance();
       } catch (Exception e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
@@ -469,7 +471,7 @@ public class DocBuilder {
 
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
     resolver.addNamespace(null, (Map) entity.allAttributes);
-    EntityProcessor entityProcessor = getEntityProcessor(entity);
+    EntityProcessor entityProcessor = getEntityProcessor(entity, context.getCore());
     entityProcessor.init(new ContextImpl(entity, resolver, entity.dataSrc,
             Context.FIND_DELTA, requestParameters.requestParams, session, null,
             dataImporter));
@@ -506,7 +508,7 @@ public class DocBuilder {
     myModifiedPks.addAll(deltaSet);
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
     if (parentEntity != null && parentEntity.isDocRoot) {
-      EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity);
+      EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity, context.getCore());
       parentEntityProcessor.init(new ContextImpl(parentEntity, resolver,
               parentEntity.dataSrc, Context.FIND_DELTA,
               requestParameters.requestParams, session, null, dataImporter));
@@ -570,18 +572,17 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  static Class loadClass(String name) throws ClassNotFoundException {
-    DocBuilder inst = INSTANCE.get();
+  static Class loadClass(String name, SolrCore core) throws ClassNotFoundException {
     try {
-      return inst != null ?
-              inst.writer.loadClass(name) :
+      return core != null ?
+              core.getResourceLoader().findClass(name) :
               Class.forName(name);
     } catch (Exception e) {
       try {
         String n = DocBuilder.class.getPackage().getName() + "." + name;
-        return inst != null ?
-                inst.writer.loadClass(n) :
-                Class.forName(n);
+        return core != null ?
+                core.getResourceLoader().findClass(n) :
+              Class.forName(n);
       } catch (Exception e1) {
         throw new ClassNotFoundException("Unable to load " + name + " or " + DocBuilder.class.getPackage().getName() + "." + name, e);
       }

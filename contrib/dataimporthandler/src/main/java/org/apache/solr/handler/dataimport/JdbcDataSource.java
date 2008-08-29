@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrException;
+
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -97,26 +99,39 @@ public class JdbcDataSource extends
                                        final Properties initProps) {
 
     final String url = initProps.getProperty(URL);
-    String driver = initProps.getProperty(DRIVER);
+    final String driver = initProps.getProperty(DRIVER);
 
     if (url == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "JDBC URL cannot be null");
 
-    try {
-      if (driver != null)
-        Class.forName(driver);
-    } catch (ClassNotFoundException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "driver could not be loaded");
+    if (driver != null) {
+      try {
+        DocBuilder.loadClass(driver, context.getSolrCore());
+      } catch (ClassNotFoundException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not load driver: " + driver, e);
+      }
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
     }
+
     factory = new Callable<Connection>() {
       public Connection call() throws Exception {
         LOG.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);
         long start = System.currentTimeMillis();
-        Connection c = DriverManager.getConnection(url, initProps);
+        Connection c = null;
+        try {
+          c = DriverManager.getConnection(url, initProps);
+        } catch (SQLException e) {
+          // DriverManager does not allow you to use a driver which is not loaded through
+          // the class loader of the class which is trying to make the connection.
+          // This is a workaround for cases where the user puts the driver jar in the
+          // solr.home/lib or solr.home/core/lib directories.
+          Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
+          c = d.connect(url, initProps);
+        }
         LOG.info("Time taken for getConnection(): "
                 + (System.currentTimeMillis() - start));
         return c;

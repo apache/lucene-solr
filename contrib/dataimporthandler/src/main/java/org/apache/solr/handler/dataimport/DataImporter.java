@@ -82,7 +82,7 @@ public class DataImporter {
   DataImporter() {
   }
 
-  public DataImporter(String dataConfig, SolrCore core,
+  DataImporter(String dataConfig, SolrCore core,
                       Map<String, Properties> ds) {
     if (dataConfig == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
@@ -236,31 +236,31 @@ public class DataImporter {
 
   }
 
-  public DataConfig getConfig() {
+  DataConfig getConfig() {
     return config;
   }
 
-  public Date getIndexStartTime() {
+  Date getIndexStartTime() {
     return indexStartTime;
   }
 
-  public void setIndexStartTime(Date indextStartTime) {
+  void setIndexStartTime(Date indextStartTime) {
     this.indexStartTime = indextStartTime;
   }
 
-  public Date getLastIndexTime() {
+  Date getLastIndexTime() {
     return lastIndexTime;
   }
 
-  public void setLastIndexTime(Date lastIndexTime) {
+  void setLastIndexTime(Date lastIndexTime) {
     this.lastIndexTime = lastIndexTime;
   }
 
-  public void store(Object key, Object value) {
+  void store(Object key, Object value) {
     store.put(key, value);
   }
 
-  public Object retrieve(Object key) {
+  Object retrieve(Object key) {
     return store.get(key);
   }
 
@@ -291,7 +291,7 @@ public class DataImporter {
       dataSrc = new JdbcDataSource();
     } else {
       try {
-        dataSrc = (DataSource) DocBuilder.loadClass(impl).newInstance();
+        dataSrc = (DataSource) DocBuilder.loadClass(impl, getCore()).newInstance();
       } catch (Exception e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 "Invalid type for data source: " + impl, e);
@@ -406,11 +406,11 @@ public class DataImporter {
 
   }
 
-  public DocBuilder getDocBuilder() {
+  DocBuilder getDocBuilder() {
     return docBuilder;
   }
 
-  public static final ThreadLocal<AtomicLong> QUERY_COUNT = new ThreadLocal<AtomicLong>() {
+  static final ThreadLocal<AtomicLong> QUERY_COUNT = new ThreadLocal<AtomicLong>() {
     protected AtomicLong initialValue() {
       return new AtomicLong();
     }
@@ -516,7 +516,7 @@ public class DataImporter {
   }
 
 
-  public SolrCore getCore() {
+  SolrCore getCore() {
     return core;
   }
 

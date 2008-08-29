@@ -35,6 +35,9 @@ Bug Fixes
 2. SOLR-729:  Context.getDataSource(String) gives current entity's DataSource instance regardless of argument.
               (Noble Paul, shalin)
 
+3. SOLR-726:  Jdbc Drivers and DataSources fail to load if placed in multicore sharedLib or core's lib directory.
+              (Noble Paul, shalin)
+
 Other Changes
 
 

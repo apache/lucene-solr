@@ -230,10 +230,6 @@ public abstract class SolrWriter {
     return this.getStartTime();
   }
 
-  public Class loadClass(String name) throws ClassNotFoundException {
-    return Class.forName(name);
-  }
-
   /**
    * <p>
    * Stores the last indexed time into the <code>IMPORTER_PROPERTIES</code>

@@ -93,7 +93,7 @@ public class EntityProcessorBase extends EntityProcessor {
         continue;
       }
       try {
-        Class clazz = DocBuilder.loadClass(trans);
+        Class clazz = DocBuilder.loadClass(trans, context.getSolrCore());
         if (clazz.newInstance() instanceof Transformer) {
           transformers.add((Transformer) clazz.newInstance());
         } else {
