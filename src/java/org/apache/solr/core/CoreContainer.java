@@ -457,6 +457,7 @@ public class CoreContainer
   /**
    * Ensures there is a valid core to handle MultiCore admin taks and
    * increase its refcount.
+   * @see SolrCore#close() 
    * @return the acquired admin core, null if no core is available
    */               
   public SolrCore getAdminCore() {
