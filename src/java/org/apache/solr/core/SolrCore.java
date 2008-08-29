@@ -586,20 +586,24 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   /**
-   * Close all resources allocated by the core.
-   *  1. searcher
-   *  2. updateHandler
-   *  3. all CloseHooks will be notified
-   *  4. All MBeans will be unregistered from MBeanServer if JMX was enabled
+   * Close all resources allocated by the core...
+   * <ul>
+   *   <li>searcher</li>
+   *   <li>updateHandler</li>
+   *   <li>all CloseHooks will be notified</li>
+   *   <li>All MBeans will be unregistered from MBeanServer if JMX was enabled
+   *       </li>
+   * </ul>
    * <p>
-   * This should always be called when the core is obtained through:
-   * @see CoreContainer.getCore
-   * @see CoreContainer.getAdminCore
+   * This should always be called when the core is obtained through {@link CoreContainer#getCore} or {@link CoreContainer#getAdminCore}
    * </p>
+   * <p>
    * The actual close is performed if the core usage count is 1.
    * (A core is created with a usage count of 1).
    * If usage count is > 1, the usage count is decreased by 1.
-   * If usage count is &lt; 0, this is an error and a runtime exception is thrown.
+   * If usage count is &lt; 0, this is an error and a runtime exception 
+   * is thrown.
+   * </p>
    */
   public void close() {
     int count = refCount.decrementAndGet();
