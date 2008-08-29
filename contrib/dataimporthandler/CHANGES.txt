@@ -36,7 +36,7 @@ Bug Fixes
               (Noble Paul, shalin)
 
 3. SOLR-726:  Jdbc Drivers and DataSources fail to load if placed in multicore sharedLib or core's lib directory.
-              (Noble Paul, shalin)
+              (Walter Ferrara, Noble Paul, shalin)
 
 Other Changes
 
