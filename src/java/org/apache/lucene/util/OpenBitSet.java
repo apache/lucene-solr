@@ -172,7 +172,6 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
 
 
  /** Returns true or false for the specified bit index
-  * The index should be less than the OpenBitSet size
   */
   public boolean get(long index) {
     int i = (int)(index >> 6);             // div 64
@@ -182,8 +181,9 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
     return (bits[i] & bitmask) != 0;
   }
 
-  /** Returns true or false for the specified bit index.  Allows specifying
-   * an index outside the current size. */
+  /** Returns true or false for the specified bit index.
+   * The index should be less than the OpenBitSet size.
+   */
   public boolean fastGet(long index) {
     int i = (int)(index >> 6);               // div 64
     int bit = (int)index & 0x3f;           // mod 64
