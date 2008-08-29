@@ -18,10 +18,12 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.util.OpenBitSet;
 
 import java.util.BitSet;
 import java.io.IOException;
@@ -38,6 +40,7 @@ public class PrefixFilter extends Filter {
 
   Term getPrefix() { return prefix; }
 
+  @Override
   public BitSet bits(IndexReader reader) throws IOException {
     final BitSet bitSet = new BitSet(reader.maxDoc());
     new PrefixGenerator(prefix) {
@@ -46,6 +49,36 @@ public class PrefixFilter extends Filter {
       }
     }.generate(reader);
     return bitSet;
+  }
+
+ @Override
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+    new PrefixGenerator(prefix) {
+      public void handleDoc(int doc) {
+        bitSet.set(doc);
+      }
+    }.generate(reader);
+    return bitSet;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof PrefixFilter && ((PrefixFilter)o).prefix.equals(this.prefix);
+  }
+
+  @Override
+  public int hashCode() {
+    return 0xcecf7fe2 + prefix.hashCode();
+  }
+
+  @Override
+  public String toString () {
+    StringBuilder sb = new StringBuilder();
+    sb.append("PrefixFilter(");
+    sb.append(prefix.toString());
+    sb.append(")");
+    return sb.toString();
   }
 }
 

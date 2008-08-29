@@ -46,6 +46,7 @@ public class WildcardFilter extends Filter {
   /**
    * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
    */
+  @Override
   public BitSet bits(IndexReader reader) throws IOException {
     final BitSet bitSet = new BitSet(reader.maxDoc());
     new WildcardGenerator(term) {
@@ -56,6 +57,7 @@ public class WildcardFilter extends Filter {
     return bitSet;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
     new WildcardGenerator(term) {
@@ -66,6 +68,17 @@ public class WildcardFilter extends Filter {
     return bitSet;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof WildcardFilter && ((WildcardFilter)o).term.equals(this.term);
+  }
+
+  @Override  
+  public int hashCode() {
+    return term.hashCode();
+  }
+
+  @Override
   public String toString () {
     StringBuilder sb = new StringBuilder();
     sb.append("WildcardFilter(");
