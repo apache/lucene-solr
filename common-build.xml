@@ -38,6 +38,14 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
+  <!-- 
+    we attempt to exec svnversion to get details build information
+    for jar manifests.  this property can be set at runtime to an
+    explicit path as needed, or ant will just try to find it in the
+    default PATH. (this is useful for Hudson)
+  -->
+  <property name="svnversion.exe" value="svnversion" />
+
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.5" />
 
@@ -280,7 +288,7 @@
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest">
      <!-- If possible, include the svnversion -->
-     <exec dir="." executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
+     <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false">
       <arg line="."/>
      </exec>
 
