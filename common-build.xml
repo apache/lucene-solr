@@ -96,7 +96,7 @@
   <!-- The version suffix of the Lucene artifacts checked into "lib" -->
   <property name="lucene_version" value="2.4-dev"/>
   <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="1.3-SNAPSHOT"/>
+  <property name="maven_version" value="1.4-SNAPSHOT"/>
 
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
