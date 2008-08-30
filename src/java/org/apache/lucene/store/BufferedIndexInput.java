@@ -27,7 +27,7 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   private int bufferSize = BUFFER_SIZE;
 
-  private byte[] buffer;
+  protected byte[] buffer;
 
   private long bufferStart = 0;			  // position in file of buffer
   private int bufferLength = 0;			  // end of valid bytes
@@ -49,7 +49,7 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   /** Change the buffer size used by this IndexInput */
   public void setBufferSize(int newSize) {
-    assert buffer == null || bufferSize == buffer.length;
+    assert buffer == null || bufferSize == buffer.length: "buffer=" + buffer + " bufferSize=" + bufferSize + " buffer.length=" + (buffer != null ? buffer.length : 0);
     if (newSize != bufferSize) {
       checkBufferSize(newSize);
       bufferSize = newSize;
@@ -68,9 +68,14 @@ public abstract class BufferedIndexInput extends IndexInput {
         bufferStart += bufferPosition;
         bufferPosition = 0;
         bufferLength = numToCopy;
-        buffer = newBuffer;
+        newBuffer(newBuffer);
       }
     }
+  }
+
+  protected void newBuffer(byte[] newBuffer) {
+    // Subclasses can do something here
+    buffer = newBuffer;
   }
 
   /** Returns buffer size.  @see #setBufferSize */
@@ -146,7 +151,7 @@ public abstract class BufferedIndexInput extends IndexInput {
       throw new IOException("read past EOF");
 
     if (buffer == null) {
-      buffer = new byte[bufferSize];		  // allocate buffer lazily
+      newBuffer(new byte[bufferSize]);  // allocate buffer lazily
       seekInternal(bufferStart);
     }
     readInternal(buffer, 0, newLength);

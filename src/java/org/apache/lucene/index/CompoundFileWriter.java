@@ -225,7 +225,7 @@ final class CompoundFileWriter {
 
             while(remainder > 0) {
                 int len = (int) Math.min(chunk, remainder);
-                is.readBytes(buffer, 0, len);
+                is.readBytes(buffer, 0, len, false);
                 os.writeBytes(buffer, len);
                 remainder -= len;
                 if (checkAbort != null)

@@ -175,9 +175,9 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         Term aaa = new Term("content", "aaa");
         Term bbb = new Term("content", "bbb");
         Term ccc = new Term("content", "ccc");
-        assertEquals(reader.docFreq(ccc), 37);
+        assertEquals(37, reader.docFreq(ccc));
         reader.deleteDocument(0);
-        assertEquals(reader.docFreq(aaa), 37);
+        assertEquals(37, reader.docFreq(aaa));
         dir.tweakBufferSizes();
         reader.deleteDocument(4);
         assertEquals(reader.docFreq(bbb), 37);
@@ -205,7 +205,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       List allIndexInputs = new ArrayList();
 
-      Random rand = new Random();
+      Random rand = new Random(788);
 
       private Directory dir;
 
@@ -220,12 +220,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       public void tweakBufferSizes() {
         Iterator it = allIndexInputs.iterator();
-        int count = 0;
+        //int count = 0;
         while(it.hasNext()) {
           BufferedIndexInput bii = (BufferedIndexInput) it.next();
           int bufferSize = 1024+(int) Math.abs(rand.nextInt() % 32768);
           bii.setBufferSize(bufferSize);
-          count++;
+          //count++;
         }
         //System.out.println("tweak'd " + count + " buffer sizes");
       }

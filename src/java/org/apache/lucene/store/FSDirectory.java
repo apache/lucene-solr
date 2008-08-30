@@ -541,10 +541,10 @@ public class FSDirectory extends Directory {
 
   protected static class FSIndexInput extends BufferedIndexInput {
   
-    private static class Descriptor extends RandomAccessFile {
+    protected static class Descriptor extends RandomAccessFile {
       // remember if the file is open, so that we don't try to close it
       // more than once
-      private boolean isOpen;
+      protected volatile boolean isOpen;
       long position;
       final long length;
       
@@ -570,7 +570,7 @@ public class FSDirectory extends Directory {
       }
     }
   
-    private final Descriptor file;
+    protected final Descriptor file;
     boolean isClone;
   
     public FSIndexInput(File path) throws IOException {
@@ -633,7 +633,7 @@ public class FSDirectory extends Directory {
   
     // remember if the file is open, so that we don't try to close it
     // more than once
-    private boolean isOpen;
+    private volatile boolean isOpen;
 
     public FSIndexOutput(File path) throws IOException {
       file = new RandomAccessFile(path, "rw");
