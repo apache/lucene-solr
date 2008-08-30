@@ -125,6 +125,11 @@ API Changes
 19. LUCENE-1367: Add IndexCommit.isDeleted().  (Shalin Shekhar Mangar
     via Mike McCandless)
 
+20. LUCENE-1061: Factored out all "new XXXQuery(...)" in
+    QueryParser.java into protected methods newXXXQuery(...) so that
+    subclasses can create their own subclasses of each Query type.
+    (John Wang via Mike McCandless)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

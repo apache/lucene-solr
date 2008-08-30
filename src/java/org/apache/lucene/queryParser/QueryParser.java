@@ -166,7 +166,7 @@ public class QueryParser implements QueryParserConstants {
     try {
           // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(field);
-      return res!=null ? res : new BooleanQuery();
+      return res!=null ? res : newBooleanQuery(false);
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
@@ -453,11 +453,11 @@ public class QueryParser implements QueryParserConstants {
       required   = (!prohibited && conj != CONJ_OR);
     }
     if (required && !prohibited)
-      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.MUST));
+      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.MUST));
     else if (!required && !prohibited)
-      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.SHOULD));
+      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.SHOULD));
     else if (!required && prohibited)
-      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.MUST_NOT));
+      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.MUST_NOT));
     else
       throw new RuntimeException("Clause cannot be both required and prohibited");
   }
@@ -503,15 +503,15 @@ public class QueryParser implements QueryParserConstants {
       return null;
     else if (v.size() == 1) {
       nextToken = (org.apache.lucene.analysis.Token) v.elementAt(0);
-      return new TermQuery(new Term(field, nextToken.term()));
+      return newTermQuery(new Term(field, nextToken.term()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
-          BooleanQuery q = new BooleanQuery(true);
+          BooleanQuery q = newBooleanQuery(true);
           for (int i = 0; i < v.size(); i++) {
             nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
-            TermQuery currentQuery = new TermQuery(
+            Query currentQuery = newTermQuery(
                 new Term(field, nextToken.term()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
@@ -519,7 +519,7 @@ public class QueryParser implements QueryParserConstants {
         }
         else {
           // phrase query:
-          MultiPhraseQuery mpq = new MultiPhraseQuery();
+          MultiPhraseQuery mpq = newMultiPhraseQuery();
           mpq.setSlop(phraseSlop);
           List multiTerms = new ArrayList();
           int position = -1;
@@ -545,7 +545,7 @@ public class QueryParser implements QueryParserConstants {
         }
       }
       else {
-        PhraseQuery pq = new PhraseQuery();
+        PhraseQuery pq = newPhraseQuery();
         pq.setSlop(phraseSlop);
         int position = -1;
         for (int i = 0; i < v.size(); i++) {
@@ -628,16 +628,109 @@ public class QueryParser implements QueryParserConstants {
     }
     catch (Exception e) { }
 
+    return newRangeQuery(field, part1, part2, inclusive);
+  }
+
+ /**
+  * Builds a new BooleanQuery instance
+  * @param disableCoord disable coord
+  * @return new BooleanQuery instance
+  */
+  protected BooleanQuery newBooleanQuery(boolean disableCoord) {
+    return new BooleanQuery(disableCoord);
+  }
+
+ /**
+  * Builds a new BooleanClause instance
+  * @param q sub query
+  * @param occur how this clause should occur when matching documents
+  * @return new BooleanClause instance
+  */
+  protected BooleanClause newBooleanClause(Query q, BooleanClause.Occur occur) {
+    return new BooleanClause(q, occur);
+  }
+
+  /**
+   * Builds a new TermQuery instance
+   * @param term term
+   * @return new TermQuery instance
+   */
+  protected Query newTermQuery(Term term){
+    return new TermQuery(term);
+  }
+
+  /**
+   * Builds a new PhraseQuery instance
+   * @return new PhraseQuery instance
+   */
+  protected PhraseQuery newPhraseQuery(){
+    return new PhraseQuery();
+  }
+
+  /**
+   * Builds a new MultiPhraseQuery instance
+   * @return new MultiPhraseQuery instance
+   */
+  protected MultiPhraseQuery newMultiPhraseQuery(){
+    return new MultiPhraseQuery();
+  }
+
+  /**
+   * Builds a new PrefixQuery instance
+   * @param prefix Prefix term
+   * @return new PrefixQuery instance
+   */
+  protected Query newPrefixQuery(Term prefix){
+    return new PrefixQuery(prefix);
+  }
+
+  /**
+   * Builds a new FuzzyQuery instance
+   * @param term Term
+   * @param minimumSimilarity minimum similarity
+   * @param prefixLength prefix length
+   * @return new FuzzyQuery Instance
+   */
+  protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
+    return new FuzzyQuery(term,minimumSimilarity,prefixLength);
+  }
+
+  /**
+   * Builds a new RangeQuery instance
+   * @param field Field
+   * @param part1 min
+   * @param part2 max
+   * @param inclusive true if range is inclusive
+   * @return new RangeQuery instance
+   */
+  protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
     if(useOldRangeQuery)
     {
-            return new RangeQuery(new Term(field, part1),
-                          new Term(field, part2),
-                          inclusive);
+      return new RangeQuery(new Term(field, part1),
+                            new Term(field, part2),
+                            inclusive);
     }
     else
     {
       return new ConstantScoreRangeQuery(field,part1,part2,inclusive,inclusive);
     }
+  }
+
+  /**
+   * Builds a new MatchAllDocsQuery instance
+   * @return new MatchAllDocsQuery instance
+   */
+  protected Query newMatchAllDocsQuery() {
+    return new MatchAllDocsQuery();
+  }
+
+  /**
+   * Builds a new WildcardQuery instance
+   * @param t wildcard term
+   * @return new WildcardQuery instance
+   */
+  protected Query newWildcardQuery(Term t) {
+    return new WildcardQuery(t);
   }
 
   /**
@@ -677,7 +770,7 @@ public class QueryParser implements QueryParserConstants {
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
-    BooleanQuery query = new BooleanQuery(disableCoord);
+    BooleanQuery query = newBooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
       query.add((BooleanClause)clauses.elementAt(i));
     }
@@ -708,7 +801,7 @@ public class QueryParser implements QueryParserConstants {
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
     if ("*".equals(field)) {
-      if ("*".equals(termStr)) return new MatchAllDocsQuery();
+      if ("*".equals(termStr)) return newMatchAllDocsQuery();
     }
     if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
       throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
@@ -716,7 +809,7 @@ public class QueryParser implements QueryParserConstants {
       termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
-    return new WildcardQuery(t);
+    return newWildcardQuery(t);
   }
 
   /**
@@ -750,7 +843,7 @@ public class QueryParser implements QueryParserConstants {
       termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
-    return new PrefixQuery(t);
+    return newPrefixQuery(t);
   }
 
 
@@ -771,7 +864,7 @@ public class QueryParser implements QueryParserConstants {
       termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
+    return newFuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
   }
 
   /**
@@ -1321,6 +1414,12 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  final private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   final private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1334,12 +1433,6 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
-    return false;
-  }
-
-  final private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
     return false;
   }
 
