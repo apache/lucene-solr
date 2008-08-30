@@ -187,24 +187,15 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         message("  consider merge " + merge.segString(dir));
       
-        if (merge.isExternal) {
-          message("    merge involves segments from an external directory; now run in foreground");
-        } else {
-          assert mergeThreadCount() < maxThreadCount;
+        assert mergeThreadCount() < maxThreadCount;
 
-          // OK to spawn a new merge thread to handle this
-          // merge:
-          final MergeThread merger = getMergeThread(writer, merge);
-          mergeThreads.add(merger);
-          message("    launch new thread [" + merger.getName() + "]");
-          merger.start();
-          continue;
-        }
+        // OK to spawn a new merge thread to handle this
+        // merge:
+        final MergeThread merger = getMergeThread(writer, merge);
+        mergeThreads.add(merger);
+        message("    launch new thread [" + merger.getName() + "]");
+        merger.start();
       }
-
-      // This merge involves segments outside our index
-      // Directory so we must merge in foreground
-      doMerge(merge);
     }
   }
 

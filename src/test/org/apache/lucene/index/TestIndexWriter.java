@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.io.File;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -125,7 +126,7 @@ public class TestIndexWriter extends LuceneTestCase
         writer.close();
     }
 
-    private void addDoc(IndexWriter writer) throws IOException
+    private static void addDoc(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
         doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
@@ -436,6 +437,10 @@ public class TestIndexWriter extends LuceneTestCase
                        "input index disk usage = " + inputDiskUsage + " bytes",
                        (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
           }
+
+          // Make sure we don't hit disk full during close below:
+          dir.setMaxSizeInBytes(0);
+          dir.setRandomIOExceptionRate(0.0, 0);
 
           writer.close();
 
@@ -2338,6 +2343,9 @@ public class TestIndexWriter extends LuceneTestCase
       IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
 
+      // We expect AlreadyClosedException
+      cms.setSuppressExceptions();
+
       writer.setMergeScheduler(cms);
       writer.setMaxBufferedDocs(10);
       writer.setMergeFactor(4);
@@ -2891,7 +2899,7 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMergeScheduler(new SerialMergeScheduler());
       writer.setMergePolicy(new LogDocMergePolicy());
 
-      Directory[] indexDirs = { dir};
+      Directory[] indexDirs = {new MockRAMDirectory(dir)};
       writer.addIndexes(indexDirs);
       writer.close();
     }
@@ -3730,6 +3738,278 @@ public class TestIndexWriter extends LuceneTestCase
     assertEquals(0, reader.numDocs());
     reader.close();
     dir.close();
+  }
+
+  private abstract static class RunAddIndexesThreads {
+
+    Directory dir, dir2;
+    final static int NUM_INIT_DOCS = 17;
+    IndexWriter writer2;
+    final List failures = new ArrayList();
+    volatile boolean didClose;
+    final IndexReader[] readers;
+    final int NUM_COPY;
+    final static int NUM_THREADS = 5;
+    final Thread[] threads = new Thread[NUM_THREADS];
+    final ConcurrentMergeScheduler cms;
+
+    public RunAddIndexesThreads(int numCopy) throws Throwable {
+      NUM_COPY = numCopy;
+      dir = new MockRAMDirectory();
+      IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      for (int i = 0; i < NUM_INIT_DOCS; i++)
+        addDoc(writer);
+      writer.close();
+
+      dir2 = new MockRAMDirectory();
+      writer2 = new IndexWriter(dir2, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+      cms = (ConcurrentMergeScheduler) writer2.getMergeScheduler();
+
+      readers = new IndexReader[NUM_COPY];
+      for(int i=0;i<NUM_COPY;i++)
+        readers[i] = IndexReader.open(dir);
+    }
+
+    void launchThreads(final int numIter) {
+
+      for(int i=0;i<NUM_THREADS;i++) {
+        threads[i] = new Thread() {
+            public void run() {
+              try {
+
+                final Directory[] dirs = new Directory[NUM_COPY];
+                for(int k=0;k<NUM_COPY;k++)
+                  dirs[k] = new MockRAMDirectory(dir);
+
+                int j=0;
+
+                while(true) {
+                  // System.out.println(Thread.currentThread().getName() + ": iter j=" + j);
+                  if (numIter > 0 && j == numIter)
+                    break;
+                  doBody(j++, dirs);
+                }
+              } catch (Throwable t) {
+                handle(t);
+              }
+            }
+          };
+      }
+
+      for(int i=0;i<NUM_THREADS;i++)
+        threads[i].start();
+    }
+
+    void joinThreads() {
+      for(int i=0;i<NUM_THREADS;i++)
+        try {
+          threads[i].join();
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+    }
+
+    void close(boolean doWait) throws Throwable {
+      didClose = true;
+      writer2.close(doWait);
+    }
+
+    void closeDir() throws Throwable {
+      for(int i=0;i<NUM_COPY;i++)
+        readers[i].close();
+      dir2.close();
+    }
+
+    abstract void doBody(int j, Directory[] dirs) throws Throwable;
+    abstract void handle(Throwable t);
+  }
+
+  private class CommitAndAddIndexes extends RunAddIndexesThreads {
+    public CommitAndAddIndexes(int numCopy) throws Throwable {
+      super(numCopy);
+    }
+
+    void handle(Throwable t) {
+      t.printStackTrace(System.out);
+      synchronized(failures) {
+        failures.add(t);
+      }
+    }
+
+    void doBody(int j, Directory[] dirs) throws Throwable {
+      switch(j%4) {
+      case 0:
+        writer2.addIndexes(dirs);
+        break;
+      case 1:
+        writer2.addIndexesNoOptimize(dirs);
+        break;
+      case 2:
+        writer2.addIndexes(readers);
+        break;
+      case 3:
+        writer2.commit();
+      }
+    }
+  }
+
+  // LUCENE-1335: test simultaneous addIndexes & commits
+  // from multiple threads
+  public void testAddIndexesWithThreads() throws Throwable {
+
+    final int NUM_ITER = 12;
+    final int NUM_COPY = 3;
+    CommitAndAddIndexes c = new CommitAndAddIndexes(NUM_COPY);
+    c.launchThreads(NUM_ITER);
+
+    for(int i=0;i<100;i++)
+      addDoc(c.writer2);
+
+    c.joinThreads();
+
+    assertEquals(100+NUM_COPY*(3*NUM_ITER/4)*c.NUM_THREADS*c.NUM_INIT_DOCS, c.writer2.numDocs());
+
+    c.close(true);
+
+    assertTrue(c.failures.size() == 0);
+
+    _TestUtil.checkIndex(c.dir2);
+
+    IndexReader reader = IndexReader.open(c.dir2);
+    assertEquals(100+NUM_COPY*(3*NUM_ITER/4)*c.NUM_THREADS*c.NUM_INIT_DOCS, reader.numDocs());
+    reader.close();
+
+    c.closeDir();
+  }
+
+  private class CommitAndAddIndexes2 extends CommitAndAddIndexes {
+    public CommitAndAddIndexes2(int numCopy) throws Throwable {
+      super(numCopy);
+    }
+
+    void handle(Throwable t) {
+      if (!(t instanceof AlreadyClosedException) && !(t instanceof NullPointerException)) {
+        t.printStackTrace(System.out);
+        synchronized(failures) {
+          failures.add(t);
+        }
+      }
+    }
+  }
+
+  // LUCENE-1335: test simultaneous addIndexes & close
+  public void testAddIndexesWithClose() throws Throwable {
+    final int NUM_COPY = 3;
+    CommitAndAddIndexes2 c = new CommitAndAddIndexes2(NUM_COPY);
+    //c.writer2.setInfoStream(System.out);
+    c.launchThreads(-1);
+
+    // Close w/o first stopping/joining the threads
+    c.close(true);
+    //c.writer2.close();
+
+    c.joinThreads();
+
+    _TestUtil.checkIndex(c.dir2);
+
+    c.closeDir();
+
+    assertTrue(c.failures.size() == 0);
+  }
+
+  private class CommitAndAddIndexes3 extends RunAddIndexesThreads {
+    public CommitAndAddIndexes3(int numCopy) throws Throwable {
+      super(numCopy);
+    }
+
+    void doBody(int j, Directory[] dirs) throws Throwable {
+      switch(j%5) {
+      case 0:
+        writer2.addIndexes(dirs);
+        break;
+      case 1:
+        writer2.addIndexesNoOptimize(dirs);
+        break;
+      case 2:
+        writer2.addIndexes(readers);
+        break;
+      case 3:
+        writer2.optimize();
+      case 4:
+        writer2.commit();
+      }
+    }
+
+    void handle(Throwable t) {
+      boolean report = true;
+
+      if (t instanceof AlreadyClosedException || t instanceof MergePolicy.MergeAbortedException || t instanceof NullPointerException) {
+        report = !didClose;
+      } else if (t instanceof IOException)  {
+        Throwable t2 = t.getCause();
+        if (t2 instanceof MergePolicy.MergeAbortedException) {
+          report = !didClose;
+        }
+      }
+      if (report) {
+        t.printStackTrace(System.out);
+        synchronized(failures) {
+          failures.add(t);
+        }
+      }
+    }
+  }
+
+  // LUCENE-1335: test simultaneous addIndexes & close
+  public void testAddIndexesWithCloseNoWait() throws Throwable {
+
+    final int NUM_COPY = 50;
+    CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
+    c.launchThreads(-1);
+
+    try {
+      Thread.sleep(500);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+
+    // Close w/o first stopping/joining the threads
+    c.close(false);
+
+    c.joinThreads();
+
+    _TestUtil.checkIndex(c.dir2);
+
+    c.closeDir();
+
+    assertTrue(c.failures.size() == 0);
+  }
+
+  // LUCENE-1335: test simultaneous addIndexes & close
+  public void testAddIndexesWithRollback() throws Throwable {
+    
+    final int NUM_COPY = 50;
+    CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
+    c.launchThreads(-1);
+
+    try {
+      Thread.sleep(500);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+
+    // Close w/o first stopping/joining the threads
+    c.didClose = true;
+    c.writer2.rollback();
+
+    c.joinThreads();
+
+    _TestUtil.checkIndex(c.dir2);
+
+    c.closeDir();
+
+    assertTrue(c.failures.size() == 0);
   }
 
   // LUCENE-1347

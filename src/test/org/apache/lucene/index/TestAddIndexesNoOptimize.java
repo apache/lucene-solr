@@ -340,7 +340,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(4);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux, aux });
+    writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
     assertEquals(1060, writer.docCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -369,7 +369,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMaxBufferedDocs(4);
     writer.setMergeFactor(4);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux, aux });
+    writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
     assertEquals(1020, writer.docCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();

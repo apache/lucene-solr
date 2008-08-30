@@ -30,8 +30,7 @@ import java.io.PrintStream;
 import java.util.Vector;
 
 final class SegmentInfos extends Vector {
-  
-  
+
   /** The file format version, a negative number. */
   /* Works since counter, the old 1st entry, is always >= 0 */
   public static final int FORMAT = -1;
@@ -825,5 +824,20 @@ final class SegmentInfos extends Vector {
   public final void commit(Directory dir) throws IOException {
     prepareCommit(dir);
     finishCommit(dir);
+  }
+
+  synchronized String segString(Directory directory) {
+    StringBuffer buffer = new StringBuffer();
+    final int count = size();
+    for(int i = 0; i < count; i++) {
+      if (i > 0) {
+        buffer.append(' ');
+      }
+      final SegmentInfo info = info(i);
+      buffer.append(info.segString(directory));
+      if (info.dir != directory)
+        buffer.append("**");
+    }
+    return buffer.toString();
   }
 }
