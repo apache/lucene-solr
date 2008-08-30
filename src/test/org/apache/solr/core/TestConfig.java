@@ -68,7 +68,7 @@ public class TestConfig extends AbstractSolrTestCase {
   public void testAutomaticDeprecationSupport()
   {
     // make sure the "admin/file" handler is registered
-    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler( "admin/file" );
+    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler( "/admin/file" );
     assertTrue( "file handler should have been automatically registered", handler!=null );
 
     //System.out.println( handler.getHiddenFiles() );

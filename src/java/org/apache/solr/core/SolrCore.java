@@ -1395,7 +1395,7 @@ public final class SolrCore implements SolrInfoMBean {
       log.warning( 
           "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
           "update your config to use the ShowFileRequestHandler." );
-      if( getRequestHandler( "admin/file" ) == null ) {
+      if( getRequestHandler( "/admin/file" ) == null ) {
         NamedList<String> invariants = new NamedList<String>();
         
         // Hide everything...
@@ -1418,7 +1418,7 @@ public final class SolrCore implements SolrInfoMBean {
         args.add( "invariants", invariants );
         ShowFileRequestHandler handler = new ShowFileRequestHandler();
         handler.init( args );
-        reqHandlers.register("admin/file", handler);
+        reqHandlers.register("/admin/file", handler);
 
         log.warning( "adding ShowFileRequestHandler with hidden files: "+hide );
       }
