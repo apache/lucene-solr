@@ -35,7 +35,7 @@ import org.apache.lucene.index.Payload;
 
 
 /**
- * <p>A ShingleFilter constructs shingles (token n-grams) from a token stream.
+ * <p>A ShingleMatrixFilter constructs shingles (token n-grams) from a token stream.
  * In other words, it creates combinations of tokens as a single token.
  *
  * <p>For example, the sentence "please divide this sentence into shingles"
@@ -96,7 +96,7 @@ import org.apache.lucene.index.Payload;
  * or if each column contains a great number of rows.
  *
  * <p>The problem is that in order avoid producing duplicates
- * the filter needs to keep track of any shingle already produced and returned to the consumer
+ * the filter needs to keep track of any shingle already produced and returned to the consumer.
  *
  * There is a bit of resource management to handle this
  * but it would of course be much better if the filter was written
@@ -105,7 +105,6 @@ import org.apache.lucene.index.Payload;
  * <p>The filter also has basic support for calculating weights for the shingles
  * based on the weights of the tokens from the input stream, output shingle size, et c.
  * See {@link #calculateShingleWeight(org.apache.lucene.analysis.Token, java.util.List, int, java.util.List, java.util.List)}.
- *
  */
 public class ShingleMatrixFilter extends TokenStream {
 
