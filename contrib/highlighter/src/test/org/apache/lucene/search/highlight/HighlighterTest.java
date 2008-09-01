@@ -998,9 +998,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     String encodedSnippet = highlighter.getBestFragments(tokenStream, rawDocContent, 1, "");
     // An ugly bit of XML creation:
-    String xhtml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<!DOCTYPE html\n"
-        + "PUBLIC \"//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
-        + "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+    String xhtml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n"
         + "<head>\n" + "<title>My Test HTML Document</title>\n" + "</head>\n" + "<body>\n" + "<h2>"
         + encodedSnippet + "</h2>\n" + "</body>\n" + "</html>";
