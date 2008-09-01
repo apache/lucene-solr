@@ -39,6 +39,8 @@ import java.io.StringWriter;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -61,6 +63,37 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     super.tearDown();
 
   }
+
+  // tests the performance of dynamic field creation and
+  // field property testing.
+  /***
+  public void testFieldPerf() {
+    IndexSchema schema = h.getCore().getSchema();
+    SchemaField[] fields = schema.getDynamicFieldPrototypes();
+    boolean createNew = false;
+
+    long start = System.currentTimeMillis();
+    int ret = 0;
+    for (int i=0; i<10000000; i++) {
+      for (SchemaField f : fields) {
+        if (createNew) f = new SchemaField(f, "fakename");
+        if (f.indexed()) ret += 1;
+        if (f.isCompressed()) ret += 2;
+        if (f.isRequired()) ret += 3;
+        if (f.multiValued()) ret += 4;
+        if (f.omitNorms()) ret += 5;
+        if (f.sortMissingFirst()) ret += 6;
+        if (f.sortMissingLast())ret += 7;
+        if (f.stored()) ret += 8;
+        if (f.storeTermOffsets()) ret += 9;
+        if (f.storeTermPositions()) ret += 10;
+        if (f.storeTermVector()) ret += 11;
+      }
+    }
+    long end = System.currentTimeMillis();
+    System.out.println("ret=" + ret + " time="+ (end-start));
+  }
+  ***/
   
   public void testIgnoredFields() throws Exception {
     lrf.args.put("version","2.0");
