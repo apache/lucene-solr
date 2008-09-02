@@ -1,0 +1,26 @@
+<dataConfig>
+	<dataSource type="HttpDataSource" />
+	<document>
+		<entity name="slashdot"
+				pk="link"
+				url="http://rss.slashdot.org/Slashdot/slashdot"
+				processor="XPathEntityProcessor"
+				forEach="/RDF/channel | /RDF/item"
+				transformer="DateFormatTransformer">
+				
+			<field column="source" xpath="/RDF/channel/title" commonField="true" />
+			<field column="source-link" xpath="/RDF/channel/link" commonField="true" />
+			<field column="subject" xpath="/RDF/channel/subject" commonField="true" />
+			
+			<field column="title" xpath="/RDF/item/title" />
+			<field column="link" xpath="/RDF/item/link" />
+			<field column="description" xpath="/RDF/item/description" />
+			<field column="creator" xpath="/RDF/item/creator" />
+			<field column="item-subject" xpath="/RDF/item/subject" />
+			<field column="date" xpath="/RDF/item/date" dateTimeFormat="yyyy-MM-dd'T'hh:mm:ss" />
+			<field column="slash-department" xpath="/RDF/item/department" />
+			<field column="slash-section" xpath="/RDF/item/section" />
+			<field column="slash-comments" xpath="/RDF/item/comments" />
+		</entity>
+	</document>
+</dataConfig>
