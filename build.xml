@@ -659,7 +659,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="dist/**"
-        excludes="*.tgz *.zip *.md5" />
+        excludes="*.tgz *.zip *.md5 ${dist}/*src-* ${dist}/*docs-*" />
       <tarfileset dir="${build.docs}"
         prefix="${fullnamever}/docs/" />
     </tar>
@@ -676,7 +676,7 @@
     <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="${dest}/${fullnamever}" 
         prefix="${fullnamever}" 
-        excludes="**/*.sh **/bin/ src/scripts/" />
+        excludes="**/*.sh **/bin/ src/scripts/ ${dist}/*-src-* ${dist}/*-docs-*" />
       <zipfileset dir="${dest}/${fullnamever}" 
         prefix="${fullnamever}" 
         includes="**/*.sh **/bin/ src/scripts/"
