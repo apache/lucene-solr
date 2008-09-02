@@ -463,17 +463,17 @@ public class CoreContainer
   public SolrCore getAdminCore() {
     synchronized (cores) {
       SolrCore core = adminCore != null ? adminCore.get() : null;
-      if (core != null) {
+      if (core != null && !core.isClosed()) {
         core.open();
       } else {
         for (SolrCore c : cores.values()) {
           if (c != null) {
             core = c;
             core.open();
+            setAdminCore(core);
             break;
           }
         }
-        setAdminCore(core);
       }
       return core;
     }
