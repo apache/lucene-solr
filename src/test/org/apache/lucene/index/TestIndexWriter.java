@@ -4087,24 +4087,31 @@ public class TestIndexWriter extends LuceneTestCase
         // different fields, so bulk merge of stored fields
         // cannot run:
         IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), i==0, IndexWriter.MaxFieldLength.UNLIMITED);
-        w.setMergeFactor(5);
-        w.setMergeScheduler(new SerialMergeScheduler());
-        Document doc = new Document();
-        doc.add(new Field("test1", "this is some data that will be compressed this this this", Field.Store.COMPRESS, Field.Index.NO));
-        doc.add(new Field("test2", new byte[20], Field.Store.COMPRESS));
-        doc.add(new Field("field" + i, "random field", Field.Store.NO, Field.Index.TOKENIZED));
-        w.addDocument(doc);
-        w.close();
+        try {
+          w.setMergeFactor(5);
+          w.setMergeScheduler(new SerialMergeScheduler());
+          Document doc = new Document();
+          doc.add(new Field("test1", "this is some data that will be compressed this this this", Field.Store.COMPRESS, Field.Index.NO));
+          doc.add(new Field("test2", new byte[20], Field.Store.COMPRESS));
+          doc.add(new Field("field" + i, "random field", Field.Store.NO, Field.Index.TOKENIZED));
+          w.addDocument(doc);
+        } finally {
+          w.close();
+        }
       }
 
       byte[] cmp = new byte[20];
 
       IndexReader r = IndexReader.open(dir);
-      for(int i=0;i<5;i++) {
-        Document doc = r.document(i);
-        assertEquals("this is some data that will be compressed this this this", doc.getField("test1").stringValue());
-        byte[] b = doc.getField("test2").binaryValue();
-        assertTrue(Arrays.equals(b, cmp));
+      try {
+        for(int i=0;i<5;i++) {
+          Document doc = r.document(i);
+          assertEquals("this is some data that will be compressed this this this", doc.getField("test1").stringValue());
+          byte[] b = doc.getField("test2").binaryValue();
+          assertTrue(Arrays.equals(b, cmp));
+        }
+      } finally {
+        r.close();
       }
     } finally {
       dir.close();

@@ -108,6 +108,7 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
+    assert b != null;
     while (len > 0) {
       if (bufferPosition ==  bufferLength) {
         currentBufferIndex++;
