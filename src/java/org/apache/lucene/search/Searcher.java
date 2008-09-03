@@ -136,6 +136,16 @@ public abstract class Searcher implements Searchable {
     return search(createWeight(query), filter, n);
   }
 
+  /** Finds the top <code>n</code>
+   * hits for <code>query</code>.
+   *
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs search(Query query, int n)
+    throws IOException {
+    return search(query, null, n);
+  }
+
   /** Returns an Explanation that describes how <code>doc</code> scored against
    * <code>query</code>.
    *
