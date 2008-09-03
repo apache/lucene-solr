@@ -1339,10 +1339,12 @@ public final class SolrCore implements SolrInfoMBean {
     for (int i=0; i<QParserPlugin.standardPlugins.length; i+=2) {
      try {
        String name = (String)QParserPlugin.standardPlugins[i];
-       Class<QParserPlugin> clazz = (Class<QParserPlugin>)QParserPlugin.standardPlugins[i+1];
-       QParserPlugin plugin = clazz.newInstance();
-       qParserPlugins.put(name, plugin);
-       plugin.init(null);
+       if (null == qParserPlugins.get(name)) {
+         Class<QParserPlugin> clazz = (Class<QParserPlugin>)QParserPlugin.standardPlugins[i+1];
+         QParserPlugin plugin = clazz.newInstance();
+         qParserPlugins.put(name, plugin);
+         plugin.init(null);
+       }
      } catch (Exception e) {
        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
      }
@@ -1371,9 +1373,11 @@ public final class SolrCore implements SolrInfoMBean {
     for (Map.Entry<String, ValueSourceParser> entry : ValueSourceParser.standardValueSourceParsers.entrySet()) {
       try {
         String name = entry.getKey();
-        ValueSourceParser valueSourceParser = entry.getValue();
-        valueSourceParsers.put(name, valueSourceParser);
-        valueSourceParser.init(null);
+        if (null == valueSourceParsers.get(name)) {
+          ValueSourceParser valueSourceParser = entry.getValue();
+          valueSourceParsers.put(name, valueSourceParser);
+          valueSourceParser.init(null);
+        }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
