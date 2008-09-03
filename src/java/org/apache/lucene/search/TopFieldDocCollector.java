@@ -40,7 +40,7 @@ public class TopFieldDocCollector extends TopDocCollector {
    */
   public TopFieldDocCollector(IndexReader reader, Sort sort, int numHits)
     throws IOException {
-    super(numHits, new FieldSortedHitQueue(reader, sort.fields, numHits));
+    super(new FieldSortedHitQueue(reader, sort.fields, numHits));
   }
 
   // javadoc inherited

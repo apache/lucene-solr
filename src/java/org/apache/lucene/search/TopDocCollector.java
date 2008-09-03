@@ -30,18 +30,31 @@ import org.apache.lucene.util.PriorityQueue;
 public class TopDocCollector extends HitCollector {
 
   private ScoreDoc reusableSD;
-
-  int totalHits;
-  PriorityQueue hq;
+  
+  /** The total number of hits the collector encountered. */
+  protected int totalHits;
+  
+  /** The priority queue which holds the top-scoring documents. */
+  protected PriorityQueue hq;
     
   /** Construct to collect a given number of hits.
    * @param numHits the maximum number of hits to collect
    */
   public TopDocCollector(int numHits) {
-    this(numHits, new HitQueue(numHits));
+    this(new HitQueue(numHits));
   }
 
+  /** @deprecated use TopDocCollector(hq) instead. numHits is not used by this
+   * constructor. It will be removed in a future release.
+   */
   TopDocCollector(int numHits, PriorityQueue hq) {
+    this.hq = hq;
+  }
+
+  /** Constructor to collect the top-scoring documents by using the given PQ.
+   * @hq the PQ to use by this instance.
+   */
+  protected TopDocCollector(PriorityQueue hq) {
     this.hq = hq;
   }
 

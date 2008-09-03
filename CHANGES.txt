@@ -140,6 +140,10 @@ API Changes
 
 22. LUCENE-1371: Added convenience method TopDocs Searcher.search(Query query, int n).
     (Mike McCandless)
+    
+23. LUCENE-1356: Allow easy extensions of TopDocCollector by turning
+    constructor and fields from package to protected. (Shai Erera
+    via Doron Cohen) 
 
 Bug fixes
     
