@@ -130,13 +130,16 @@ API Changes
     subclasses can create their own subclasses of each Query type.
     (John Wang via Mike McCandless)
 
-20. LUCENE-753: Added new Directory implementation
+21. LUCENE-753: Added new Directory implementation
     org.apache.lucene.store.NIOFSDirectory, which uses java.nio's
     FileChannel to do file reads.  On most non-Windows platforms, with
     many threads sharing a single searcher, this may yield sizable
     improvement to query throughput when compared to FSDirectory,
     which only allows a single thread to read from an open file at a
     time.  (Jason Rutherglen via Mike McCandless)
+
+22. LUCENE-1371: Added convenience method TopDocs Searcher.search(Query query, int n).
+    (Mike McCandless)
 
 Bug fixes
     
