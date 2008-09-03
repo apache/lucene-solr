@@ -56,11 +56,10 @@
 
     <!--
      Expert: Turn on Lucene's auto commit capability.
-
-     TODO: Add recommendations on why you would want to do this.
-
+     This causes intermediate segment flushes to write a new lucene
+     index descriptor, enabling it to be opened by an external
+     IndexReader.
      NOTE: Despite the name, this value does not have any relation to Solr's autoCommit functionality
-
      -->
     <!--<luceneAutoCommit>false</luceneAutoCommit>-->
     <!--
@@ -200,7 +199,7 @@
       class="solr.LRUCache"
       size="512"
       initialSize="512"
-      autowarmCount="256"/>
+      autowarmCount="128"/>
 
    <!-- queryResultCache caches results of searches - ordered lists of
          document ids (DocList) based on a query, a sort, and the range
@@ -209,7 +208,7 @@
       class="solr.LRUCache"
       size="512"
       initialSize="512"
-      autowarmCount="256"/>
+      autowarmCount="32"/>
 
   <!-- documentCache caches Lucene Document objects (the stored fields for each document).
        Since Lucene internal document ids are transient, this cache will not be autowarmed.  -->
@@ -299,7 +298,7 @@
     <!-- Maximum number of searchers that may be warming in the background
       concurrently.  An error is returned if this limit is exceeded. Recommend
       1-2 for read-only slaves, higher for masters w/o cache warming. -->
-    <maxWarmingSearchers>4</maxWarmingSearchers>
+    <maxWarmingSearchers>2</maxWarmingSearchers>
 
   </query>
 
@@ -358,7 +357,7 @@
      If no qt is defined, the requestHandler that declares default="true"
      will be used.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true">
+  <requestHandler name="standard" class="solr.SearchHandler" default="true">
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>
@@ -372,11 +371,14 @@
 
 
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
-       for simple user-entered phrases. 
+       for simple user-entered phrases.  It's implementation is now
+       just the standard SearchHandler with a default query type
+       of "dismax". 
        see http://wiki.apache.org/solr/DisMaxRequestHandler
    -->
-  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+  <requestHandler name="dismax" class="solr.SearchHandler" >
     <lst name="defaults">
+     <str name="defType">dismax</str>
      <str name="echoParams">explicit</str>
      <float name="tie">0.01</float>
      <str name="qf">
@@ -410,8 +412,9 @@
   <!-- Note how you can register the same handler multiple times with
        different names (and different init parameters)
     -->
-  <requestHandler name="partitioned" class="solr.DisMaxRequestHandler" >
+  <requestHandler name="partitioned" class="solr.SearchHandler" >
     <lst name="defaults">
+     <str name="defType">dismax</str>
      <str name="echoParams">explicit</str>
      <str name="qf">text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0</str>
      <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
@@ -460,49 +463,41 @@
     </lst>
   </requestHandler>
   
-  <requestHandler name="instock" class="solr.DisMaxRequestHandler" >
-    <!-- for legacy reasons, DisMaxRequestHandler will assume all init
-         params are "defaults" if you don't explicitly specify any defaults.
-      -->
-     <str name="fq">
-        inStock:true
-     </str>
-     <str name="qf">
-        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-     </str>
-     <str name="mm">
-        2&lt;-1 5&lt;-2 6&lt;90%
-     </str>
-  </requestHandler>
 
+  <!--
+   Search components are registered to SolrCore and used by Search Handlers
+   
+   By default, the following components are avaliable:
+    
+   <searchComponent name="query"     class="org.apache.solr.handler.component.QueryComponent" />
+   <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
+   <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
+   <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
+   <searchComponent name="debug"     class="org.apache.solr.handler.component.DebugComponent" />
 
-  <!-- SpellCheckerRequestHandler takes in a word (or several words) as the
-       value of the "q" parameter and returns a list of alternative spelling
-       suggestions.  If invoked with a ...&cmd=rebuild, it will rebuild the
-       spellchecker index.
+   Default configuration in a requestHandler would look like:
+    <arr name="components">
+      <str>query</str>
+      <str>facet</str>
+      <str>mlt</str>
+      <str>highlight</str>
+      <str>debug</str>
+    </arr>
+
+    If you register a searchComponent to one of the standard names, that will be used instead.
+    To insert handlers before or after the 'standard' components, use:
+    
+    <arr name="first-components">
+      <str>myFirstComponentName</str>
+    </arr>
+    
+    <arr name="last-components">
+      <str>myLastComponentName</str>
+    </arr>
   -->
-  <requestHandler name="spellchecker" class="solr.SpellCheckerRequestHandler" startup="lazy">
-    <!-- default values for query parameters -->
-     <lst name="defaults">
-       <int name="suggestionCount">1</int>
-       <float name="accuracy">0.5</float>
-     </lst>
-     
-     <!-- Main init params for handler -->
-     
-     <!-- The directory where your SpellChecker Index should live.   -->
-     <!-- May be absolute, or relative to the Solr "dataDir" directory. -->
-     <!-- If this option is not specified, a RAM directory will be used -->
-     <str name="spellcheckerIndexDir">spell</str>
-     
-     <!-- the field in your schema that you want to be able to build -->
-     <!-- your spell index on. This should be a field that uses a very -->
-     <!-- simple FieldType without a lot of Analysis (ie: string) -->
-     <str name="termSourceField">word</str>
-     
-   </requestHandler>
 
-
+   <!-- The spell check component can return a list of alternative spelling
+  suggestions.  -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
     <str name="queryAnalyzerFieldType">textSpell</str>
@@ -531,6 +526,7 @@
     </lst>
   </searchComponent>
 
+  <!-- a request handler utilizing the spellcheck component -->
   <requestHandler name="/spellCheckCompRH" class="solr.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
@@ -544,65 +540,16 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-
-   <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
-     <lst name="defaults">
-       <str name="mlt.fl">manu,cat</str>
-       <int name="mlt.mindf">1</int>
-     </lst>
-   </requestHandler>
-  
-  
-  <!--
-   
-   Search components are registered to SolrCore and used by Search Handlers
-   
-   By default, the following components are avaliable:
-    
-   <searchComponent name="query"     class="org.apache.solr.handler.component.QueryComponent" />
-   <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
-   <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
-   <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
-   <searchComponent name="debug"     class="org.apache.solr.handler.component.DebugComponent" />
-  
-   If you register a searchComponent to one of the standard names, that will be used instead.
-  
-   -->
  
-  <requestHandler name="/search" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <!--
-    By default, this will register the following components:
-    
-    <arr name="components">
-      <str>query</str>
-      <str>facet</str>
-      <str>mlt</str>
-      <str>highlight</str>
-      <str>debug</str>
-    </arr>
-    
-    To insert handlers before or after the 'standard' components, use:
-    
-    <arr name="first-components">
-      <str>first</str>
-    </arr>
-    
-    <arr name="last-components">
-      <str>last</str>
-    </arr>
-    
-    -->
-  </requestHandler>
-  
+  <!-- a search component that enables you to configure the top results for
+       a given query regardless of the normal lucene scoring.-->
   <searchComponent name="elevator" class="solr.QueryElevationComponent" >
     <!-- pick a fieldType to analyze queries -->
     <str name="queryFieldType">string</str>
     <str name="config-file">elevate.xml</str>
   </searchComponent>
  
+  <!-- a request handler utilizing the elevator component -->
   <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -613,7 +560,6 @@
   </requestHandler>
   
 
-  
   <!-- Update request handler.  
   
        Note: Since solr1.1 requestHandlers requires a valid content type header if posted in 
@@ -728,6 +674,15 @@
   <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter> 
+
+
+  <!-- example of registering a query parser
+  <queryParser name="lucene" class="org.apache.solr.search.LuceneQParserPlugin"/>
+  -->
+
+  <!-- example of registering a custom function parser 
+  <valueSourceParser name="myfunc" class="com.mycompany.MyValueSourceParser" />
+  -->
     
   <!-- config for the admin interface --> 
   <admin>
