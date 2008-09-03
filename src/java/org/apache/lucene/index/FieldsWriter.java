@@ -197,6 +197,7 @@ final class FieldsWriter
           // optimized case for merging, the data
           // is already compressed
           data = field.getBinaryValue();
+          assert data != null;
           len = field.getBinaryLength();
           offset = field.getBinaryOffset();  
         } else {

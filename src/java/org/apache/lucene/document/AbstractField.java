@@ -218,7 +218,10 @@ public abstract class AbstractField implements Fieldable {
   }
   
   public byte[] getBinaryValue(byte[] result){
-    return isBinary ? (byte[]) fieldsData : null;
+    if (isBinary || fieldsData instanceof byte[])
+      return (byte[]) fieldsData;
+    else
+      return null;
   }
 
   /**
@@ -227,8 +230,16 @@ public abstract class AbstractField implements Fieldable {
    * @return length of byte[] segment that represents this Field value
    */
   public int getBinaryLength() {
-     return binaryLength;
-    }
+    if (isBinary) {
+      if (!isCompressed)
+        return binaryLength;
+      else
+        return ((byte[]) fieldsData).length;
+    } else if (fieldsData instanceof byte[])
+      return ((byte[]) fieldsData).length;
+    else
+      return 0;
+  }
 
   /**
    * Returns offset into byte[] segment that is used as value, if Field is not binary
