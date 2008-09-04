@@ -2333,9 +2333,7 @@ public class IndexWriter {
 
     if (doWait) {
       synchronized(this) {
-        while(optimizeMergesPending()) {
-          doWait();
-
+        while(true) {
           if (mergeExceptions.size() > 0) {
             // Forward any exceptions in background merge
             // threads to the current thread:
@@ -2351,6 +2349,11 @@ public class IndexWriter {
               }
             }
           }
+
+          if (optimizeMergesPending())
+            doWait();
+          else
+            break;
         }
       }
 
