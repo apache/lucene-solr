@@ -42,19 +42,24 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDeletionPolicy extends LuceneTestCase
 {
-  private void verifyCommitOrder(List commits) {
+  private void verifyCommitOrder(List commits) throws IOException {
     final IndexCommit firstCommit = ((IndexCommit) commits.get(0));
     long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
     assertEquals(last, firstCommit.getGeneration());
     long lastVersion = firstCommit.getVersion();
+    long lastTimestamp = firstCommit.getTimestamp();
     for(int i=1;i<commits.size();i++) {
       final IndexCommit commit = ((IndexCommit) commits.get(i));
       long now = SegmentInfos.generationFromSegmentsFileName(commit.getSegmentsFileName());
       long nowVersion = commit.getVersion();
+      long nowTimestamp = commit.getTimestamp();
       assertTrue("SegmentInfos commits are out-of-order", now > last);
       assertTrue("SegmentInfos versions are out-of-order", nowVersion > lastVersion);
+      assertTrue("SegmentInfos timestamps are out-of-order: now=" + nowTimestamp + " vs last=" + lastTimestamp, nowTimestamp >= lastTimestamp);
       assertEquals(now, commit.getGeneration());
       last = now;
+      lastVersion = nowVersion;
+      lastTimestamp = nowTimestamp;
     }
   }
 
@@ -62,7 +67,7 @@ public class TestDeletionPolicy extends LuceneTestCase
     int numOnInit;
     int numOnCommit;
     Directory dir;
-    public void onInit(List commits) {
+    public void onInit(List commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
     }
@@ -83,7 +88,7 @@ public class TestDeletionPolicy extends LuceneTestCase
   class KeepNoneOnInitDeletionPolicy implements IndexDeletionPolicy {
     int numOnInit;
     int numOnCommit;
-    public void onInit(List commits) {
+    public void onInit(List commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
       // On init, delete all commit points:
@@ -94,7 +99,7 @@ public class TestDeletionPolicy extends LuceneTestCase
         assertTrue(commit.isDeleted());
       }
     }
-    public void onCommit(List commits) {
+    public void onCommit(List commits) throws IOException {
       verifyCommitOrder(commits);
       int size = commits.size();
       // Delete all but last one:
@@ -116,14 +121,14 @@ public class TestDeletionPolicy extends LuceneTestCase
       this.numToKeep = numToKeep;
     }
 
-    public void onInit(List commits) {
+    public void onInit(List commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
       // do no deletions on init
       doDeletes(commits, false);
     }
 
-    public void onCommit(List commits) {
+    public void onCommit(List commits) throws IOException {
       verifyCommitOrder(commits);
       doDeletes(commits, true);
     }

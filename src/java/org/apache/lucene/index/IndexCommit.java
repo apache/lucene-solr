@@ -112,4 +112,12 @@ public abstract class IndexCommit implements IndexCommitPoint {
   public long getGeneration() {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
+
+  /** Convenience method that returns the last modified time
+   *  of the segments_N file corresponding to this index
+   *  commit, equivalent to
+   *  getDirectory().fileModified(getSegmentsFileName()). */
+  public long getTimestamp() throws IOException {
+    return getDirectory().fileModified(getSegmentsFileName());
+  }
 }
