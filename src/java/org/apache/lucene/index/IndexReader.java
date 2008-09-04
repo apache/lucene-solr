@@ -746,7 +746,7 @@ public abstract class IndexReader {
 
   /** Returns an enumeration of all terms starting at a given term. If
    * the given term does not exist, the enumeration is positioned at the
-   * first term greater than the supplied therm. The enumeration is
+   * first term greater than the supplied term. The enumeration is
    * ordered by Term.compareTo(). Each term is greater than all that
    * precede it in the enumeration.
    * @throws IOException if there is a low-level IO error
