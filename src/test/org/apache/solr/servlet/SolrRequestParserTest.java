@@ -99,7 +99,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
   public void testStreamURL() throws Exception
   {
     boolean ok = false;
-    String url = "http://svn.apache.org/repos/asf/lucene/solr/trunk/";
+    String url = "http://www.apache.org/dist/lucene/solr/";
     String txt = null;
     try {
       txt = IOUtils.toString( new URL(url).openStream() );
