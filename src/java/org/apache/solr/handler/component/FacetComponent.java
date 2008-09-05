@@ -359,7 +359,7 @@ public class  FacetComponent extends SearchComponent
         counts = dff.getSorted();
       }
 
-      int end = Math.min(dff.offset + dff.limit, counts.length);
+      int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
       for (int i=dff.offset; i<end; i++) {
         if (counts[i].count < dff.minCount) break;
         fieldCounts.add(counts[i].name, num(counts[i].count));
@@ -540,7 +540,7 @@ class DistribFieldFacet extends FieldFacet {
     // the largest possible missing term is 0 if we received less
     // than the number requested (provided mincount==0 like it should be for
     // a shard request)
-    if (numRequested !=0 && numReceived < numRequested) {
+    if (numRequested<0 || numRequested != 0 && numReceived < numRequested) {
       last = 0;
     }
 
