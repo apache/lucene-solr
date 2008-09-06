@@ -45,7 +45,7 @@ public class StandardAnalyzer extends Analyzer {
 
   private static boolean defaultReplaceInvalidAcronym;
 
-  // Default to false (fixed the bug), unless the system prop is set
+  // Default to true (fixed the bug), unless the system prop is set
   static {
     final String v = System.getProperty("org.apache.lucene.analysis.standard.StandardAnalyzer.replaceInvalidAcronym");
     if (v == null || v.equals("true"))

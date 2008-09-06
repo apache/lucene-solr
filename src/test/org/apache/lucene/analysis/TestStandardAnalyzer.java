@@ -132,14 +132,15 @@ public class TestStandardAnalyzer extends LuceneTestCase {
   }
 
   public void testDomainNames() throws Exception {
+    // Don't reuse a because we alter its state (setReplaceInvalidAcronym)
+    StandardAnalyzer a2 = new StandardAnalyzer();
     // domain names
-    assertAnalyzesTo(a, "www.nutch.org", new String[]{"www.nutch.org"});
+    assertAnalyzesTo(a2, "www.nutch.org", new String[]{"www.nutch.org"});
     //Notice the trailing .  See https://issues.apache.org/jira/browse/LUCENE-1068.
     // the following should be recognized as HOST:
-    assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
-    ((StandardAnalyzer) a).setReplaceInvalidAcronym(false);
-    assertAnalyzesTo(a, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
-    ((StandardAnalyzer) a).setReplaceInvalidAcronym(true);
+    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
+    a2.setReplaceInvalidAcronym(false);
+    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
   }
 
   public void testEMailAddresses() throws Exception {
