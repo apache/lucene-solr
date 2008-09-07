@@ -39,7 +39,7 @@
         <title>SOLR Info</title>
       </head>
       <body>
-        <a href="">
+        <a href=".">
           <img border="0" align="right" height="61" width="142" src="solr-head.gif" alt="SOLR"/>
         </a>
         <h1>Solr Admin (<xsl:value-of select="solr/meta/collection" />)</h1>
