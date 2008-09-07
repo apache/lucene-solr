@@ -186,7 +186,7 @@ public class TestDoc extends LuceneTestCase {
       merger.closeReaders();
       
       if (useCompoundFile) {
-        Vector filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        List filesToDelete = merger.createCompoundFile(merged + ".cfs");
         for (Iterator iter = filesToDelete.iterator(); iter.hasNext();)
           directory.deleteFile((String) iter.next());
       }

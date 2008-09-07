@@ -17,10 +17,11 @@ package org.apache.lucene.demo.html;
  * limitations under the License.
  */
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Entities {
-  static final Hashtable decoder = new Hashtable(300);
+  static final Map decoder = new HashMap(300);
   static final String[]  encoder = new String[0x100];
 
   static final String decode(String entity) {

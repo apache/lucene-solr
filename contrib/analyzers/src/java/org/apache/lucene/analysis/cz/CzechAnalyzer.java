@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.*;
-import java.util.Hashtable;
 import java.util.HashSet;
 import java.util.Set;
 

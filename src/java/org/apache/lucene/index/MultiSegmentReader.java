@@ -17,18 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.store.Directory;
-
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.store.Directory;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -36,7 +36,7 @@ import java.util.Set;
 class MultiSegmentReader extends DirectoryIndexReader {
   protected SegmentReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
-  private Hashtable normsCache = new Hashtable();
+  private Map normsCache = new HashMap();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -149,17 +149,18 @@ class MultiSegmentReader extends DirectoryIndexReader {
     
     // try to copy unchanged norms from the old normsCache to the new one
     if (oldNormsCache != null) {
-      Iterator it = oldNormsCache.keySet().iterator();
+      Iterator it = oldNormsCache.entrySet().iterator();
       while (it.hasNext()) {
-        String field = (String) it.next();
+        Map.Entry entry = (Map.Entry) it.next();
+        String field = (String) entry.getKey();
         if (!hasNorms(field)) {
           continue;
         }
-        
-        byte[] oldBytes = (byte[]) oldNormsCache.get(field);
-  
+
+        byte[] oldBytes = (byte[]) entry.getValue();
+
         byte[] bytes = new byte[maxDoc()];
-        
+
         for (int i = 0; i < subReaders.length; i++) {
           Integer oldReaderIndex = ((Integer) segmentReaders.get(subReaders[i].getSegmentName()));
 
@@ -175,7 +176,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
             subReaders[i].norms(field, bytes, starts[i]);
           }
         }
-        
+
         normsCache.put(field, bytes);      // update cache
       }
     }
@@ -353,7 +354,9 @@ class MultiSegmentReader extends DirectoryIndexReader {
 
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
-    normsCache.remove(field);                         // clear cache
+    synchronized (normsCache) {
+      normsCache.remove(field);                         // clear cache      
+    }
     int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }

@@ -28,8 +28,9 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import junit.framework.TestCase;
@@ -350,7 +351,7 @@ public class MemoryIndexTest extends TestCase {
   private String[] readLines(File file) throws Exception {
     BufferedReader reader = new BufferedReader(new InputStreamReader(
         new FileInputStream(file))); 
-    ArrayList lines = new ArrayList();
+    List lines = new ArrayList();
     String line;  
     while ((line = reader.readLine()) != null) {
       String t = line.trim(); 
@@ -373,9 +374,9 @@ public class MemoryIndexTest extends TestCase {
   
   private MemoryIndex createMemoryIndex(Document doc) {
     MemoryIndex index = new MemoryIndex();
-    Enumeration iter = doc.fields();
-    while (iter.hasMoreElements()) {
-      Field field = (Field) iter.nextElement();
+    Iterator iter = doc.getFields().iterator();
+    while (iter.hasNext()) {
+      Field field = (Field) iter.next();
       index.addField(field.name(), field.stringValue(), analyzer);
     }
     return index;

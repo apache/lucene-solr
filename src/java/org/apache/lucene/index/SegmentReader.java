@@ -18,14 +18,15 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -695,8 +696,8 @@ class SegmentReader extends DirectoryIndexReader {
       undeleteAll = true;
   }
 
-  Vector files() throws IOException {
-    return new Vector(si.files());
+  List files() throws IOException {
+    return new ArrayList(si.files());
   }
 
   public TermEnum terms() {

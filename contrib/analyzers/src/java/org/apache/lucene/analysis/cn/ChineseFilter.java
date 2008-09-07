@@ -17,7 +17,8 @@ package org.apache.lucene.analysis.cn;
  * limitations under the License.
  */
 
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
@@ -54,12 +55,12 @@ public final class ChineseFilter extends TokenFilter {
     };
 
 
-    private Hashtable stopTable;
+    private Map stopTable;
 
     public ChineseFilter(TokenStream in) {
         super(in);
 
-        stopTable = new Hashtable(STOP_WORDS.length);
+        stopTable = new HashMap(STOP_WORDS.length);
         for (int i = 0; i < STOP_WORDS.length; i++)
             stopTable.put(STOP_WORDS[i], STOP_WORDS[i]);
     }

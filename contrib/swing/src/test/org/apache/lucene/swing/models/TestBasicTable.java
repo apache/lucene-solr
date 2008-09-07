@@ -17,6 +17,7 @@ package org.apache.lucene.swing.models;
  */
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.table.TableModel;
 
@@ -28,7 +29,7 @@ import junit.framework.TestCase;
 public class TestBasicTable extends TestCase {
     private TableModel baseTableModel;
     private TableSearcher tableSearcher;
-    private ArrayList list;
+    private List list;
 
     protected void setUp() throws Exception {
         list = new ArrayList();

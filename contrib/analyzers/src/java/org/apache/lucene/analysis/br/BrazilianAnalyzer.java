@@ -17,6 +17,13 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -24,12 +31,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Hashtable;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Analyzer for Brazilian language. Supports an external list of stopwords (words that
@@ -92,7 +93,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
-	public BrazilianAnalyzer( Hashtable stopwords ) {
+	public BrazilianAnalyzer( Map stopwords ) {
 		stoptable = new HashSet(stopwords.keySet());
 	}
 
@@ -112,7 +113,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an exclusionlist from a Hashtable.
 	 */
-	public void setStemExclusionTable( Hashtable exclusionlist ) {
+	public void setStemExclusionTable( Map exclusionlist ) {
 		excltable = new HashSet(exclusionlist.keySet());
 	}
 	/**

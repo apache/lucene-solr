@@ -19,8 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -60,8 +62,8 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("# calls to makeLock is 0 (after instantiating IndexWriter)",
                    lf.makeLockCount >= 1);
         
-        for(Enumeration e = lf.locksCreated.keys(); e.hasMoreElements();) {
-            String lockName = (String) e.nextElement();
+        for(Iterator e = lf.locksCreated.keySet().iterator(); e.hasNext();) {
+            String lockName = (String) e.next();
             MockLockFactory.MockLock lock = (MockLockFactory.MockLock) lf.locksCreated.get(lockName);
             assertTrue("# calls to Lock.obtain is 0 (after instantiating IndexWriter)",
                        lock.lockAttempts > 0);
@@ -522,7 +524,7 @@ public class TestLockFactory extends LuceneTestCase {
     public class MockLockFactory extends LockFactory {
 
         public boolean lockPrefixSet;
-        public Hashtable locksCreated = new Hashtable();
+        public Map locksCreated = Collections.synchronizedMap(new HashMap());
         public int makeLockCount = 0;
 
         public void setLockPrefix(String lockPrefix) {    

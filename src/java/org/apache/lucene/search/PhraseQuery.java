@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.Vector;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.Term;

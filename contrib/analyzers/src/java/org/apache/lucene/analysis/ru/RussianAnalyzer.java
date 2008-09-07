@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.ru;
 
 import java.io.Reader;
 import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -237,7 +237,7 @@ public final class RussianAnalyzer extends Analyzer
      * Builds an analyzer with the given stop words.
      * @todo create a Set version of this ctor
      */
-    public RussianAnalyzer(char[] charset, Hashtable stopwords)
+    public RussianAnalyzer(char[] charset, Map stopwords)
     {
         this.charset = charset;
         stopSet = new HashSet(stopwords.keySet());

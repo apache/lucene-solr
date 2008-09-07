@@ -17,13 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Hashtable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermDocs;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermEnum;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermPositions;
@@ -36,7 +37,7 @@ public class MultiReader extends IndexReader {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
-  private Hashtable normsCache = new Hashtable();
+  private Map normsCache = new HashMap();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -288,7 +289,9 @@ public class MultiReader extends IndexReader {
 
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
-    normsCache.remove(field);                         // clear cache
+    synchronized (normsCache) {
+      normsCache.remove(field);                         // clear cache
+    }
     int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }

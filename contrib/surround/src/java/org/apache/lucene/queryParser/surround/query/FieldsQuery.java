@@ -24,11 +24,11 @@ import org.apache.lucene.search.Query;
 
 public class FieldsQuery extends SrndQuery { /* mostly untested */
   private SrndQuery q;
-  private ArrayList fieldNames;
+  private List fieldNames;
   private final char fieldOp;
   private final String OrOperatorName = "OR"; /* for expanded queries, not normally visible */
   
-  public FieldsQuery(SrndQuery q, ArrayList fieldNames, char fieldOp) {
+  public FieldsQuery(SrndQuery q, List fieldNames, char fieldOp) {
     this.q = q;
     this.fieldNames = fieldNames;
     this.fieldOp = fieldOp;
@@ -49,7 +49,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
     if (fieldNames.size() == 1) { /* single field name: no new queries needed */
       return q.makeLuceneQueryFieldNoBoost((String) fieldNames.get(0), qf);
     } else { /* OR query over the fields */
-      ArrayList queries = new ArrayList();
+      List queries = new ArrayList();
       Iterator fni = getFieldNames().listIterator();
       SrndQuery qc;
       while (fni.hasNext()) {

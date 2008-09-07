@@ -16,15 +16,17 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+
+import javax.swing.AbstractListModel;
 
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  */
 public class BaseListModel extends AbstractListModel {
-    private ArrayList data = new ArrayList();
+    private List data = new ArrayList();
 
     public BaseListModel(Iterator iterator) {
         while (iterator.hasNext()) {

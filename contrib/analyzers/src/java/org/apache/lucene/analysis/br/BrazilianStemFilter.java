@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Set;
 
 /**

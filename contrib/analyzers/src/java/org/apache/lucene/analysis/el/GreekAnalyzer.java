@@ -16,6 +16,7 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -23,7 +24,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.Reader;
 import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -200,7 +201,7 @@ public final class GreekAnalyzer extends Analyzer
     /**
      * Builds an analyzer with the given stop words.
      */
-    public GreekAnalyzer(char[] charset, Hashtable stopwords)
+    public GreekAnalyzer(char[] charset, Map stopwords)
     {
         this.charset = charset;
         stopSet = new HashSet(stopwords.keySet());

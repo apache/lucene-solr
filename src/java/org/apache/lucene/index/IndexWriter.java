@@ -2952,7 +2952,7 @@ public class IndexWriter {
               final SegmentInfo info = sis.info(j);
               docCount += info.docCount;
               assert !segmentInfos.contains(info);
-              segmentInfos.addElement(info);	  // add each info
+              segmentInfos.add(info);	  // add each info
             }
           }
         }
@@ -3077,7 +3077,7 @@ public class IndexWriter {
               SegmentInfo info = sis.info(j);
               assert !segmentInfos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
               docCount += info.docCount;
-              segmentInfos.addElement(info); // add each info
+              segmentInfos.add(info); // add each info
             }
           }
         }
@@ -3287,10 +3287,10 @@ public class IndexWriter {
           }
 
           synchronized(this) {
-            segmentInfos.setSize(0);                      // pop old infos & add new
+            segmentInfos.clear();                      // pop old infos & add new
             info = new SegmentInfo(mergedName, docCount, directory, false, true,
                                    -1, null, false, merger.hasProx());
-            segmentInfos.addElement(info);
+            segmentInfos.add(info);
           }
 
           // Notify DocumentsWriter that the flushed count just increased
@@ -3650,7 +3650,7 @@ public class IndexWriter {
       docWriter.pushDeletes();
 
       if (flushDocs)
-        segmentInfos.addElement(newSegment);
+        segmentInfos.add(newSegment);
 
       if (flushDeletes) {
         flushDeletesCount++;

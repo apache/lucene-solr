@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.index.IndexFileNameFilter;
 
@@ -58,7 +59,7 @@ public class FSDirectory extends Directory {
    * instance from the cache.  See LUCENE-776
    * for some relevant discussion.
    */
-  private static final Hashtable DIRECTORIES = new Hashtable();
+  private static final Map DIRECTORIES = new HashMap();
 
   private static boolean disableLocks = false;
 

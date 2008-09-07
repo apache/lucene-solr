@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -91,7 +91,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public GermanAnalyzer(Hashtable stopwords) {
+  public GermanAnalyzer(Map stopwords) {
     stopSet = new HashSet(stopwords.keySet());
   }
 
@@ -112,7 +112,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an exclusionlist from a Hashtable.
    */
-  public void setStemExclusionTable(Hashtable exclusionlist) {
+  public void setStemExclusionTable(Map exclusionlist) {
     exclusionSet = new HashSet(exclusionlist.keySet());
   }
 

@@ -164,7 +164,7 @@ public class QueryParser implements QueryParserConstants {
   public Query parse(String query) throws ParseException {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
-          // TopLevelQuery is a Query followed by the end-of-input (EOF)
+      // TopLevelQuery is a Query followed by the end-of-input (EOF)
       Query res = TopLevelQuery(field);
       return res!=null ? res : newBooleanQuery(false);
     }
@@ -342,7 +342,6 @@ public class QueryParser implements QueryParserConstants {
     return useOldRangeQuery;
   }
 
-
   /**
    * Set locale used by date range parsing.
    */
@@ -412,13 +411,20 @@ public class QueryParser implements QueryParserConstants {
     return resolution;
   }
 
+  /**
+   * @deprecated use {@link #addClause(List, int, int, Query)} instead.
+   */
   protected void addClause(Vector clauses, int conj, int mods, Query q) {
+    addClause((List) clauses, conj, mods, q);
+  }
+
+  protected void addClause(List clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
     if (clauses.size() > 0 && conj == CONJ_AND) {
-      BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
+      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.MUST);
     }
@@ -428,7 +434,7 @@ public class QueryParser implements QueryParserConstants {
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
       // this modification a OR b would parsed as +a OR b
-      BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
+      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.SHOULD);
     }
@@ -453,11 +459,11 @@ public class QueryParser implements QueryParserConstants {
       required   = (!prohibited && conj != CONJ_OR);
     }
     if (required && !prohibited)
-      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.MUST));
+      clauses.add(newBooleanClause(q, BooleanClause.Occur.MUST));
     else if (!required && !prohibited)
-      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.SHOULD));
+      clauses.add(newBooleanClause(q, BooleanClause.Occur.SHOULD));
     else if (!required && prohibited)
-      clauses.addElement(newBooleanClause(q, BooleanClause.Occur.MUST_NOT));
+      clauses.add(newBooleanClause(q, BooleanClause.Occur.MUST_NOT));
     else
       throw new RuntimeException("Clause cannot be both required and prohibited");
   }
@@ -471,7 +477,7 @@ public class QueryParser implements QueryParserConstants {
     // PhraseQuery, or nothing based on the term count
 
     TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
-    Vector v = new Vector();
+    List list = new ArrayList();
     final org.apache.lucene.analysis.Token reusableToken = new org.apache.lucene.analysis.Token();
     org.apache.lucene.analysis.Token nextToken;
     int positionCount = 0;
@@ -486,7 +492,7 @@ public class QueryParser implements QueryParserConstants {
       }
       if (nextToken == null)
         break;
-      v.addElement(nextToken.clone());
+      list.add(nextToken.clone());
       if (nextToken.getPositionIncrement() != 0)
         positionCount += nextToken.getPositionIncrement();
       else
@@ -499,18 +505,18 @@ public class QueryParser implements QueryParserConstants {
       // ignore
     }
 
-    if (v.size() == 0)
+    if (list.size() == 0)
       return null;
-    else if (v.size() == 1) {
-      nextToken = (org.apache.lucene.analysis.Token) v.elementAt(0);
+    else if (list.size() == 1) {
+      nextToken = (org.apache.lucene.analysis.Token) list.get(0);
       return newTermQuery(new Term(field, nextToken.term()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
           BooleanQuery q = newBooleanQuery(true);
-          for (int i = 0; i < v.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
+          for (int i = 0; i < list.size(); i++) {
+            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
             Query currentQuery = newTermQuery(
                 new Term(field, nextToken.term()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
@@ -523,8 +529,8 @@ public class QueryParser implements QueryParserConstants {
           mpq.setSlop(phraseSlop);
           List multiTerms = new ArrayList();
           int position = -1;
-          for (int i = 0; i < v.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
+          for (int i = 0; i < list.size(); i++) {
+            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
             if (nextToken.getPositionIncrement() > 0 && multiTerms.size() > 0) {
               if (enablePositionIncrements) {
                 mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
@@ -548,8 +554,8 @@ public class QueryParser implements QueryParserConstants {
         PhraseQuery pq = newPhraseQuery();
         pq.setSlop(phraseSlop);
         int position = -1;
-        for (int i = 0; i < v.size(); i++) {
-          nextToken = (org.apache.lucene.analysis.Token) v.elementAt(i);
+        for (int i = 0; i < list.size(); i++) {
+          nextToken = (org.apache.lucene.analysis.Token) list.get(i);
           if (enablePositionIncrements) {
             position += nextToken.getPositionIncrement();
             pq.add(new Term(field, nextToken.term()),position);
@@ -740,13 +746,31 @@ public class QueryParser implements QueryParserConstants {
    * Can be overridden by extending classes, to modify query being
    * returned.
    *
-   * @param clauses Vector that contains {@link BooleanClause} instances
+   * @param clauses List that contains {@link BooleanClause} instances
+   *    to join.
+   *
+   * @return Resulting {@link Query} object.
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getBooleanQuery(List)} instead
+   */
+  protected Query getBooleanQuery(Vector clauses) throws ParseException {
+    return getBooleanQuery((List) clauses, false);
+  }
+
+  /**
+   * Factory method for generating query, given a set of clauses.
+   * By default creates a boolean query composed of clauses passed in.
+   *
+   * Can be overridden by extending classes, to modify query being
+   * returned.
+   *
+   * @param clauses List that contains {@link BooleanClause} instances
    *    to join.
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getBooleanQuery(Vector clauses) throws ParseException {
+  protected Query getBooleanQuery(List clauses) throws ParseException {
     return getBooleanQuery(clauses, false);
   }
 
@@ -757,14 +781,35 @@ public class QueryParser implements QueryParserConstants {
    * Can be overridden by extending classes, to modify query being
    * returned.
    *
-   * @param clauses Vector that contains {@link BooleanClause} instances
+   * @param clauses List that contains {@link BooleanClause} instances
+   *    to join.
+   * @param disableCoord true if coord scoring should be disabled.
+   *
+   * @return Resulting {@link Query} object.
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getBooleanQuery(List, boolean)} instead
+   */
+  protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
+    throws ParseException
+  {
+    return getBooleanQuery((List) clauses, disableCoord);
+  }
+
+  /**
+   * Factory method for generating query, given a set of clauses.
+   * By default creates a boolean query composed of clauses passed in.
+   *
+   * Can be overridden by extending classes, to modify query being
+   * returned.
+   *
+   * @param clauses List that contains {@link BooleanClause} instances
    *    to join.
    * @param disableCoord true if coord scoring should be disabled.
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
+  protected Query getBooleanQuery(List clauses, boolean disableCoord)
     throws ParseException
   {
     if (clauses.size()==0) {
@@ -772,7 +817,7 @@ public class QueryParser implements QueryParserConstants {
     }
     BooleanQuery query = newBooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
-      query.add((BooleanClause)clauses.elementAt(i));
+      query.add((BooleanClause)clauses.get(i));
     }
     return query;
   }
@@ -846,7 +891,6 @@ public class QueryParser implements QueryParserConstants {
     return newPrefixQuery(t);
   }
 
-
    /**
    * Factory method for generating a query (similar to
    * {@link #getWildcardQuery}). Called when parser parses
@@ -872,7 +916,7 @@ public class QueryParser implements QueryParserConstants {
    * removed, or kept only once if there was a double escape.
    * 
    * Supports escaped unicode characters, e. g. translates
-   * <code>A</code> to <code>A</code>.
+   * <code>\\u0041</code> to <code>A</code>.
    * 
    */
   private String discardEscapeChar(String input) throws ParseException {
@@ -1056,7 +1100,7 @@ public class QueryParser implements QueryParserConstants {
   }
 
   final public Query Query(String field) throws ParseException {
-  Vector clauses = new Vector();
+  List clauses = new ArrayList();
   Query q, firstQuery=null;
   int conj, mods;
     mods = Modifiers();

@@ -16,12 +16,14 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
 import java.io.IOException;
-import org.apache.lucene.index.Term;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
 
 public abstract class SimpleTerm
   extends SrndQuery
@@ -78,7 +80,7 @@ public abstract class SimpleTerm
       }
       
       public Query rewrite(IndexReader reader) throws IOException {
-        final ArrayList luceneSubQueries = new ArrayList();
+        final List luceneSubQueries = new ArrayList();
         visitMatchingTerms( reader, fieldName,
             new MatchingTermVisitor() {
               public void visitMatchingTerm(Term term) throws IOException {

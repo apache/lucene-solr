@@ -91,7 +91,7 @@ final class SegmentInfos extends Vector {
   private static PrintStream infoStream;
 
   public final SegmentInfo info(int i) {
-    return (SegmentInfo) elementAt(i);
+    return (SegmentInfo) get(i);
   }
 
   /**
@@ -231,7 +231,7 @@ final class SegmentInfos extends Vector {
       }
       
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        addElement(new SegmentInfo(directory, format, input));
+        add(new SegmentInfo(directory, format, input));
       }
       
       if(format >= 0){    // in old format the version number may be at the end of the file
@@ -337,7 +337,7 @@ final class SegmentInfos extends Vector {
   public Object clone() {
     SegmentInfos sis = (SegmentInfos) super.clone();
     for(int i=0;i<sis.size();i++) {
-      sis.setElementAt(sis.info(i).clone(), i);
+      sis.set(i, sis.info(i).clone());
     }
     return sis;
   }

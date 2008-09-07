@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -111,9 +111,9 @@ public final class FrenchAnalyzer extends Analyzer {
   }
 
   /**
-   * Builds an exclusionlist from a Hashtable.
+   * Builds an exclusionlist from a Map.
    */
-  public void setStemExclusionTable(Hashtable exclusionlist) {
+  public void setStemExclusionTable(Map exclusionlist) {
     excltable = new HashSet(exclusionlist.keySet());
   }
 

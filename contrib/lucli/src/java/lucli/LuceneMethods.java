@@ -57,16 +57,17 @@ package lucli;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-
-import java.util.Hashtable;
-import java.util.Vector;
-import java.util.TreeMap;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import jline.ConsoleReader;
 
@@ -91,15 +92,15 @@ import org.apache.lucene.search.Searcher;
 
 /**
  * Various methods that interact with Lucene and provide info about the 
- * index, search, etc. Parts addapted from Lucene demo.
+ * index, search, etc. Parts adapted from Lucene demo.
  */
 class LuceneMethods {
 
   private int numDocs;
   private String indexName; //directory of this index
   private java.util.Iterator fieldIterator;
-  private Vector fields; //Fields as a vector
-  private Vector indexedFields; //Fields as a vector
+  private List fields; //Fields as a vector
+  private List indexedFields; //Fields as a vector
   private String fieldsArray[]; //Fields as an array
   private Searcher searcher;
   private Query query; //current query string
@@ -247,8 +248,8 @@ class LuceneMethods {
 
   private void getFieldInfo() throws IOException {
     IndexReader indexReader = IndexReader.open(indexName);
-    fields = new Vector();
-    indexedFields = new Vector();
+    fields = new ArrayList();
+    indexedFields = new ArrayList();
 
     //get the list of all field names
     fieldIterator = indexReader.getFieldNames(FieldOption.ALL).iterator();
@@ -274,14 +275,14 @@ class LuceneMethods {
   private void invertDocument(Document doc)
     throws IOException {
 
-    Hashtable tokenHash = new Hashtable();
+    Map tokenMap = new HashMap();
     final int maxFieldLength = 10000;
 
     Analyzer analyzer = new StandardAnalyzer();
-    Enumeration fields = doc.fields();
+    Iterator fields = doc.getFields().iterator();
     final Token reusableToken = new Token();
-    while (fields.hasMoreElements()) {
-      Field field = (Field) fields.nextElement();
+    while (fields.hasNext()) {
+      Field field = (Field) fields.next();
       String fieldName = field.name();
 
 
@@ -304,12 +305,12 @@ class LuceneMethods {
               position += (nextToken.getPositionIncrement() - 1);
               position++;
               String name = nextToken.term();
-              Integer Count = (Integer) tokenHash.get(name);
+              Integer Count = (Integer) tokenMap.get(name);
               if (Count == null) { // not in there yet
-                tokenHash.put(name, new Integer(1)); //first one
+                tokenMap.put(name, new Integer(1)); //first one
               } else {
                 int count = Count.intValue();
-                tokenHash.put(name, new Integer(count + 1));
+                tokenMap.put(name, new Integer(count + 1));
               }
               if (position > maxFieldLength) break;
             }
@@ -320,7 +321,7 @@ class LuceneMethods {
 
       }
     }
-    Entry[] sortedHash = getSortedHashtableEntries(tokenHash);
+    Entry[] sortedHash = getSortedMapEntries(tokenMap);
     for (int ii = 0; ii < sortedHash.length && ii < 10; ii++) {
       Entry currentEntry = sortedHash[ii];
       message((ii + 1) + ":" + currentEntry.getKey() + " " + currentEntry.getValue());
@@ -353,17 +354,16 @@ class LuceneMethods {
     indexReader.close();
   }
 
-  /** Sort Hashtable values
-   * @param h the hashtable we're sorting
+  /** Sort Map values
+   * @param m the map we're sorting
    * from http://developer.java.sun.com/developer/qow/archive/170/index.jsp
    */
-
   public static Entry[]
-    getSortedHashtableEntries(Hashtable h) {
-    Set set = h.entrySet();
+    getSortedMapEntries(Map m) {
+    Set set = m.entrySet();
     Entry[] entries =
       (Entry[]) set.toArray(
-        new Entry[set.size()]);
+          new Entry[set.size()]);
     Arrays.sort(entries, new Comparator() {
       public int compare(Object o1, Object o2) {
         Object v1 = ((Entry) o1).getValue();

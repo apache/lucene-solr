@@ -16,16 +16,18 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+
+import javax.swing.table.AbstractTableModel;
 
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  */
 public class BaseTableModel extends AbstractTableModel {
-    private ArrayList columnNames = new ArrayList();
-    private ArrayList rows = new ArrayList();
+    private List columnNames = new ArrayList();
+    private List rows = new ArrayList();
 
     public BaseTableModel(Iterator data) {
         columnNames.add("Name");

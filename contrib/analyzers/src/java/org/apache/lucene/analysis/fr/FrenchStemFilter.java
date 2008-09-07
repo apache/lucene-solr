@@ -20,9 +20,10 @@ package org.apache.lucene.analysis.fr;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+
 import java.io.IOException;
-import java.util.Hashtable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -83,7 +84,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	/**
 	 * Set an alternative exclusion list for this filter.
 	 */
-	public void setExclusionTable( Hashtable exclusiontable ) {
+	public void setExclusionTable( Map exclusiontable ) {
 		exclusions = new HashSet(exclusiontable.keySet());
 	}
 }

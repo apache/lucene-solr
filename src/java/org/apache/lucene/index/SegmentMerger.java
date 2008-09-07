@@ -17,17 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Vector;
-import java.util.Iterator;
-import java.util.Collection;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
-import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -49,7 +50,7 @@ final class SegmentMerger {
   private String segment;
   private int termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
 
-  private Vector readers = new Vector();
+  private List readers = new ArrayList();
   private FieldInfos fieldInfos;
   
   private int mergedDocs;
@@ -93,7 +94,7 @@ final class SegmentMerger {
    * @param reader
    */
   final void add(IndexReader reader) {
-    readers.addElement(reader);
+    readers.add(reader);
   }
 
   /**
@@ -102,7 +103,7 @@ final class SegmentMerger {
    * @return The ith reader to be merged
    */
   final IndexReader segmentReader(int i) {
-    return (IndexReader) readers.elementAt(i);
+    return (IndexReader) readers.get(i);
   }
 
   /**
@@ -152,18 +153,18 @@ final class SegmentMerger {
    */
   final void closeReaders() throws IOException {
     for (int i = 0; i < readers.size(); i++) {  // close readers
-      IndexReader reader = (IndexReader) readers.elementAt(i);
+      IndexReader reader = (IndexReader) readers.get(i);
       reader.close();
     }
   }
 
-  final Vector createCompoundFile(String fileName)
+  final List createCompoundFile(String fileName)
           throws IOException {
     CompoundFileWriter cfsWriter =
       new CompoundFileWriter(directory, fileName, checkAbort);
 
-    Vector files =
-      new Vector(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
+    List files =
+      new ArrayList(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
     
     // Basic files
     for (int i = 0; i < IndexFileNames.COMPOUND_EXTENSIONS.length; i++) {
@@ -229,7 +230,7 @@ final class SegmentMerger {
     // FieldInfos, then we can do a bulk copy of the
     // stored fields:
     for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = (IndexReader) readers.elementAt(i);
+      IndexReader reader = (IndexReader) readers.get(i);
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
@@ -261,14 +262,14 @@ final class SegmentMerger {
       // name -> number mapping are the same.  So, we start
       // with the fieldInfos of the last segment in this
       // case, to keep that numbering.
-      final SegmentReader sr = (SegmentReader) readers.elementAt(readers.size()-1);
+      final SegmentReader sr = (SegmentReader) readers.get(readers.size()-1);
       fieldInfos = (FieldInfos) sr.fieldInfos.clone();
     } else {
       fieldInfos = new FieldInfos();		  // merge field names
     }
 
     for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = (IndexReader) readers.elementAt(i);
+      IndexReader reader = (IndexReader) readers.get(i);
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         for (int j = 0; j < segmentReader.getFieldInfos().size(); j++) {
@@ -307,7 +308,7 @@ final class SegmentMerger {
 
       try {
         for (int i = 0; i < readers.size(); i++) {
-          final IndexReader reader = (IndexReader) readers.elementAt(i);
+          final IndexReader reader = (IndexReader) readers.get(i);
           final SegmentReader matchingSegmentReader = matchingSegmentReaders[i];
           final FieldsReader matchingFieldsReader;
           final boolean hasMatchingReader;
@@ -385,7 +386,7 @@ final class SegmentMerger {
       // are no deletions in any of these segments, so we
       // just sum numDocs() of each segment to get total docCount
       for (int i = 0; i < readers.size(); i++)
-        docCount += ((IndexReader) readers.elementAt(i)).numDocs();
+        docCount += ((IndexReader) readers.get(i)).numDocs();
 
     return docCount;
   }
@@ -418,7 +419,7 @@ final class SegmentMerger {
           hasMatchingReader = false;
           matchingVectorsReader = null;
         }
-        IndexReader reader = (IndexReader) readers.elementAt(r);
+        IndexReader reader = (IndexReader) readers.get(r);
         final boolean hasDeletions = reader.hasDeletions();
         int maxDoc = reader.maxDoc();
         for (int docNum = 0; docNum < maxDoc;) {
@@ -510,7 +511,7 @@ final class SegmentMerger {
     int base = 0;
     final int readerCount = readers.size();
     for (int i = 0; i < readerCount; i++) {
-      IndexReader reader = (IndexReader) readers.elementAt(i);
+      IndexReader reader = (IndexReader) readers.get(i);
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       int[] docMap  = smi.getDocMap();
@@ -750,7 +751,7 @@ final class SegmentMerger {
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
           for (int j = 0; j < readers.size(); j++) {
-            IndexReader reader = (IndexReader) readers.elementAt(j);
+            IndexReader reader = (IndexReader) readers.get(j);
             int maxDoc = reader.maxDoc();
             if (normBuffer == null || normBuffer.length < maxDoc) {
               // the buffer is too small for the current segment
