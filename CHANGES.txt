@@ -1,4 +1,4 @@
-                      Apache Solr Version 1.3-dev
+                      Apache Solr Version 1.3.0
                             Release Notes
 
 Introduction
@@ -21,7 +21,7 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-================== Release 1.3.0 20080903 ==================
+================== Release 1.3.0 ==================
 
 
 Upgrading from Solr 1.2

@@ -57,8 +57,9 @@
        By default, this should be set to "X.Y.N-dev" where X.Y.N is
        "1 greater" then the last version released (on this branch).
     -->
-  <property name="version" value="1.3.0-RC2" />
-  
+  <property name="version" value="1.3.0" />
+  <!-- The version number to assign to the Maven artifacts.  Usually something like 1.3-SNAPSHOT -->
+  <property name="maven_version" value="1.3.0"/>  
   <!-- Solr Specification Version -->
   <!--
        This will be used in the Manifest file, and therefore must
@@ -67,7 +68,9 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="specversion" value="1.3.0-RC2" />
+  <property name="specversion" value="1.3.0" />
+
+
   
     <!-- Type of checksum to compute for distribution files -->
   <property name="checksum.algorithm" value="md5" />
@@ -103,8 +106,7 @@
 
   <!-- The version suffix of the Lucene artifacts checked into "lib" -->
   <property name="lucene_version" value="2.4-dev"/>
-  <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="1.3.0-RC2"/>
+
 
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
