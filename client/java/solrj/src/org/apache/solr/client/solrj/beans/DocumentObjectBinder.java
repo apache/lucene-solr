@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A class to map objects to and from solr documents.
  * 
- * @version $Id: ClientUtils.java 601900 2007-12-06 22:55:47Z ryan $
+ * @version $Id$
  * @since solr 1.3
  */
 public class DocumentObjectBinder {
