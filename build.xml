@@ -685,24 +685,25 @@
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
   </target>
-	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers">
+	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
 		<delete dir="src/site/build"/>
 		<exec executable="forrest" dir="src/site"/>
 		<copy todir="site">
 			<fileset dir="src/site/build/site"/>
 		</copy>
-		<exec executable="svn">
+		<exec executable="svn" dir="site">
 			<arg value="ci"/>
 			<arg value="-m"/>
 			<arg value="&quot;Forrest Entity updates&quot;"/>
 		</exec>
+
 	</target>
 	<target name="svn-up">
 		<exec executable="svn">
 			<arg value="update"/>
 		</exec>
 	</target>
-  <target name="prepare-release" depends="clean, svn-up, build-site, package" description="Prototype helper for Committers">
+  <target name="prepare-release" depends="clean, svn-up, build-site, package" description="Prototype helper for Committers.  Assumes gpg is in the path">
 	<exec executable="gpg">
 	    <arg value="--armor"/>
 	    <arg value="--output"/>
@@ -721,7 +722,7 @@
 		<tarfileset dir="${dist}/maven"/>
     </tar>
 	<tar destfile="${dist}/solr.tar">
-		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar"/>
+		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar" excludes="${fullnamever}.war"/>
 	</tar>
   </target>
 
