@@ -488,9 +488,10 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
           new StringReader(text)));
+      
+      SpanScorer.setHighlightCnstScrRngQuery(true);
       scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME, (CachingTokenFilter) tokenStream);
-      scorer.setHighlightCnstScrRngQuery(true);
-
+      
       Highlighter highlighter = new Highlighter(this, scorer);
 
       ((CachingTokenFilter) tokenStream).reset();

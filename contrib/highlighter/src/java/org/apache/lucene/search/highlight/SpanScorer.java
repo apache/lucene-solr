@@ -25,7 +25,7 @@ public class SpanScorer implements Scorer {
   private float maxTermWeight;
   private int position = -1;
   private String defaultField;
-  private boolean highlightCnstScrRngQuery;
+  private static boolean highlightCnstScrRngQuery;
 
   /**
    * @param query
@@ -184,7 +184,7 @@ public class SpanScorer implements Scorer {
   /**
    * @return whether ConstantScoreRangeQuerys are set to be highlighted
    */
-  public boolean isHighlightCnstScrRngQuery() {
+  public static boolean isHighlightCnstScrRngQuery() {
     return highlightCnstScrRngQuery;
   }
 
@@ -198,12 +198,12 @@ public class SpanScorer implements Scorer {
 
   /**
    * Turns highlighting of ConstantScoreRangeQuery on/off. ConstantScoreRangeQuerys cannot be
-   * highlighted if you rewrite the query first.
+   * highlighted if you rewrite the query first. Must be called before SpanScorer construction.
    * 
    * @param highlightCnstScrRngQuery
    */
-  public void setHighlightCnstScrRngQuery(boolean highlightCnstScrRngQuery) {
-    this.highlightCnstScrRngQuery = highlightCnstScrRngQuery;
+  public static void setHighlightCnstScrRngQuery(boolean highlight) {
+    highlightCnstScrRngQuery = highlight;
   }
 
   /*

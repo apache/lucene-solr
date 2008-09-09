@@ -179,7 +179,7 @@ public class WeightedSpanTermExtractor {
         sp.setBoost(query.getBoost());
         extractWeightedSpanTerms(terms, sp);
       }
-    } else if (query instanceof ConstantScoreRangeQuery) {
+    } else if (highlightCnstScrRngQuery && query instanceof ConstantScoreRangeQuery) {
       ConstantScoreRangeQuery q = (ConstantScoreRangeQuery) query;
       Term lower = new Term(fieldName, q.getLowerVal());
       Term upper = new Term(fieldName, q.getUpperVal());
