@@ -49,13 +49,14 @@ public class TestCheckIndex extends LuceneTestCase {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
 
     CheckIndex.out = new PrintStream(bos);
-    if (!CheckIndex.check(dir, false, null)) {
+    CheckIndexStatus indexStatus = CheckIndex.check(dir, false, null);
+    if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());
       fail();
     }
     final List onlySegments = new ArrayList();
     onlySegments.add("_0");
-    assertTrue(CheckIndex.check(dir, false, onlySegments));
+    assertTrue(CheckIndex.check(dir, false, onlySegments).clean == true);
   }
 }

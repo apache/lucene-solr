@@ -42,7 +42,7 @@ import java.util.ArrayList;
 
 public class CheckIndex {
 
-  public static PrintStream out = System.out;
+  public static PrintStream out = null;
 
   private static class MySegmentTermDocs extends SegmentTermDocs {
 
@@ -63,21 +63,23 @@ public class CheckIndex {
   }
 
   /** Returns true if index is clean, else false.*/
-  public static boolean check(Directory dir, boolean doFix) throws IOException {
+  public static CheckIndexStatus check(Directory dir, boolean doFix) throws IOException {
     return check(dir, doFix, null);
   }
 
   /** Returns true if index is clean, else false.*/
-  public static boolean check(Directory dir, boolean doFix, List onlySegments) throws IOException {
+  public static CheckIndexStatus check(Directory dir, boolean doFix, List onlySegments) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
     SegmentInfos sis = new SegmentInfos();
-    
+    CheckIndexStatus result = new CheckIndexStatus();
+    result.dir = dir;
     try {
       sis.read(dir);
     } catch (Throwable t) {
-      out.println("ERROR: could not read any segments file in directory");
+      msg("ERROR: could not read any segments file in directory");
+      result.missingSegments = true;
       t.printStackTrace(out);
-      return false;
+      return result;
     }
 
     final int numSegments = sis.size();
@@ -86,17 +88,19 @@ public class CheckIndex {
     try {
       input = dir.openInput(segmentsFileName);
     } catch (Throwable t) {
-      out.println("ERROR: could not open segments file in directory");
+      msg("ERROR: could not open segments file in directory");
       t.printStackTrace(out);
-      return false;
+      result.cantOpenSegments = true;
+      return result;
     }
     int format = 0;
     try {
       format = input.readInt();
     } catch (Throwable t) {
-      out.println("ERROR: could not read segment file version in directory");
+      msg("ERROR: could not read segment file version in directory");
       t.printStackTrace(out);
-      return false;
+      result.missingSegmentVersion = true;
+      return result;
     } finally {
       if (input != null)
         input.close();
@@ -128,7 +132,10 @@ public class CheckIndex {
       }
     }
 
-    out.println("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat);
+    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat);
+    result.segmentsFileName = segmentsFileName;
+    result.numSegments = numSegments;
+    result.segmentFormat = sFormat;
 
     if (onlySegments != null) {
       out.print("\nChecking only these segments:");
@@ -136,56 +143,80 @@ public class CheckIndex {
       while (it.hasNext()) {
         out.print(" " + it.next());
       }
-      out.println(":");
+      result.segmentsChecked.addAll(onlySegments);
+      msg(":");
     }
 
     if (skip) {
-      out.println("\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
-      return false;
+      msg("\nERROR: this index appears to be created by a newer version of Lucene than this tool was compiled on; please re-compile this tool on the matching version of Lucene; exiting");
+      result.toolOutOfDate = true;
+      return result;
     }
 
-    SegmentInfos newSIS = (SegmentInfos) sis.clone();
-    newSIS.clear();
-    boolean changed = false;
-    int totLoseDocCount = 0;
-    int numBadSegments = 0;
+
+    result.newSegments = (SegmentInfos) sis.clone();
+    result.newSegments.clear();
+
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = sis.info(i);
       if (onlySegments != null && !onlySegments.contains(info.name))
         continue;
-      out.println("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
+      CheckIndexStatus.SegmentInfoStatus segInfoStat = new CheckIndexStatus.SegmentInfoStatus();
+      result.segmentInfos.add(segInfoStat);
+      msg("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
+      segInfoStat.name = info.name;
+      segInfoStat.docCount = info.docCount;
+
       int toLoseDocCount = info.docCount;
 
       SegmentReader reader = null;
 
       try {
-        out.println("    compound=" + info.getUseCompoundFile());
-        out.println("    hasProx=" + info.getHasProx());
-        out.println("    numFiles=" + info.files().size());
-        out.println("    size (MB)=" + nf.format(info.sizeInBytes()/(1024.*1024.)));
+        msg("    compound=" + info.getUseCompoundFile());
+        segInfoStat.compound = info.getUseCompoundFile();
+        msg("    hasProx=" + info.getHasProx());
+        segInfoStat.hasProx = info.getHasProx();
+        msg("    numFiles=" + info.files().size());
+        segInfoStat.numFiles = info.files().size();
+        msg("    size (MB)=" + nf.format(info.sizeInBytes()/(1024.*1024.)));
+        segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
+
+
         final int docStoreOffset = info.getDocStoreOffset();
         if (docStoreOffset != -1) {
-          out.println("    docStoreOffset=" + docStoreOffset);
-          out.println("    docStoreSegment=" + info.getDocStoreSegment());
-          out.println("    docStoreIsCompoundFile=" + info.getDocStoreIsCompoundFile());
+          msg("    docStoreOffset=" + docStoreOffset);
+          segInfoStat.docStoreOffset = docStoreOffset;
+          msg("    docStoreSegment=" + info.getDocStoreSegment());
+          segInfoStat.docStoreSegment = info.getDocStoreSegment();
+          msg("    docStoreIsCompoundFile=" + info.getDocStoreIsCompoundFile());
+          segInfoStat.docStoreCompoundFile = info.getDocStoreIsCompoundFile();
         }
         final String delFileName = info.getDelFileName();
-        if (delFileName == null)
-          out.println("    no deletions");
-        else
-          out.println("    has deletions [delFileName=" + delFileName + "]");
+        if (delFileName == null){
+          msg("    no deletions");
+          segInfoStat.hasDeletions = false;
+        }
+        else{
+          msg("    has deletions [delFileName=" + delFileName + "]");
+          segInfoStat.hasDeletions = true;
+          segInfoStat.deletionsFileName = delFileName;
+
+        }
         out.print("    test: open reader.........");
         reader = SegmentReader.get(info);
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
-          if (info.docCount - numDocs != info.getDelCount())
+          if (info.docCount - numDocs != info.getDelCount()){
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
-          out.println("OK [" + (info.docCount - numDocs) + " deleted docs]");
+          }
+          segInfoStat.numDeleted = info.docCount - numDocs;
+          msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
-          if (info.getDelCount() != 0)
+          if (info.getDelCount() != 0){
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
-          out.println("OK");
+          }
+          msg("OK");
         }
 
         out.print("    test: fields, norms.......");
@@ -198,8 +229,8 @@ public class CheckIndex {
             throw new RuntimeException("norms for field \"" + fieldName + "\" is length " + b.length + " != maxDoc " + info.docCount);
 
         }
-        out.println("OK [" + fieldNames.size() + " fields]");
-
+        msg("OK [" + fieldNames.size() + " fields]");
+        segInfoStat.numFields = fieldNames.size();
         out.print("    test: terms, freq, prox...");
         final TermEnum termEnum = reader.terms();
         final TermPositions termPositions = reader.termPositions();
@@ -255,7 +286,7 @@ public class CheckIndex {
             throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != num docs seen " + freq0 + " + num docs deleted " + delCount);
         }
 
-        out.println("OK [" + termCount + " terms; " + totFreq + " terms/docs pairs; " + totPos + " tokens]");
+        msg("OK [" + termCount + " terms; " + totFreq + " terms/docs pairs; " + totPos + " tokens]");
 
         out.print("    test: stored fields.......");
         int docCount = 0;
@@ -270,7 +301,7 @@ public class CheckIndex {
         if (docCount != reader.numDocs())
           throw new RuntimeException("docCount=" + docCount + " but saw " + docCount + " undeleted docs");
 
-        out.println("OK [" + totFields + " total field count; avg " + nf.format((((float) totFields)/docCount)) + " fields per doc]");
+        msg("OK [" + totFields + " total field count; avg " + nf.format((((float) totFields)/docCount)) + " fields per doc]");
 
         out.print("    test: term vectors........");
         int totVectors = 0;
@@ -281,22 +312,21 @@ public class CheckIndex {
               totVectors += tfv.length;
           }
 
-        out.println("OK [" + totVectors + " total vector count; avg " + nf.format((((float) totVectors)/docCount)) + " term/freq vector fields per doc]");
-        out.println("");
+        msg("OK [" + totVectors + " total vector count; avg " + nf.format((((float) totVectors)/docCount)) + " term/freq vector fields per doc]");
+        msg("");
 
       } catch (Throwable t) {
-        out.println("FAILED");
+        msg("FAILED");
         String comment;
         if (doFix)
           comment = "will remove reference to this segment (-fix is specified)";
         else
           comment = "would remove reference to this segment (-fix was not specified)";
-        out.println("    WARNING: " + comment + "; full exception:");
+        msg("    WARNING: " + comment + "; full exception:");
         t.printStackTrace(out);
-        out.println("");
-        totLoseDocCount += toLoseDocCount;
-        numBadSegments++;
-        changed = true;
+        msg("");
+        result.totLoseDocCount += toLoseDocCount;
+        result.numBadSegments++;
         continue;
       } finally {
         if (reader != null)
@@ -304,50 +334,25 @@ public class CheckIndex {
       }
 
       // Keeper
-      newSIS.add(info.clone());
+      result.newSegments.add(info.clone());
     }
 
-    if (!changed) {
-      out.println("No problems were detected with this index.\n");
-      return true;
-    } else {
-      out.println("WARNING: " + numBadSegments + " broken segments detected");
-      if (doFix)
-        out.println("WARNING: " + totLoseDocCount + " documents will be lost");
-      else
-        out.println("WARNING: " + totLoseDocCount + " documents would be lost if -fix were specified");
-      out.println();
-    }
+    if (0 == result.numBadSegments) {
+      result.clean = true;
+      msg("No problems were detected with this index.\n");
+    } else
+      msg("WARNING: " + result.numBadSegments + " broken segments (containing " + result.totLoseDocCount + " documents) detected");
 
-    if (doFix) {
-      out.println("NOTE: will write new segments file in 5 seconds; this will remove " + totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
-      for(int i=0;i<5;i++) {
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          i--;
-          continue;
-        }
-          
-        out.println("  " + (5-i) + "...");
-      }
-      out.print("Writing...");
-      try {
-        newSIS.commit(dir);
-      } catch (Throwable t) {
-        out.println("FAILED; exiting");
-        t.printStackTrace(out);
-        return false;
-      }
-      out.println("OK");
-      out.println("Wrote new segments file \"" + newSIS.getCurrentSegmentFileName() + "\"");
-    } else {
-      out.println("NOTE: would write new segments file [-fix was not specified]");
-    }
-    out.println("");
-
-    return false;
+    return result;
+  }
+  
+  /** Repairs the index using previously returned result from
+   *  {@link #check}.  <b>WARNING</b>: this writes a new
+   *  segments file into the index, effectively removing
+   *  all documents in broken segments from the index.  BE
+   *  CAREFUL. */
+  static public void fix(CheckIndexStatus result) throws IOException {
+    result.newSegments.commit(result.dir);
   }
 
   static boolean assertsOn;
@@ -355,6 +360,12 @@ public class CheckIndex {
   private static boolean testAsserts() {
     assertsOn = true;
     return true;
+  }
+
+  private static void msg(String msg) {
+    if (out != null) {
+      out.println(msg);
+    }
   }
 
   public static void main(String[] args) throws Throwable {
@@ -369,14 +380,14 @@ public class CheckIndex {
         i++;
       } else if (args[i].equals("-segment")) {
         if (i == args.length-1) {
-          out.println("ERROR: missing name for -segment option");
+          msg("ERROR: missing name for -segment option");
           System.exit(1);
         }
         onlySegments.add(args[i+1]);
         i += 2;
       } else {
         if (indexPath != null) {
-          out.println("ERROR: unexpected extra argument '" + args[i] + "'");
+          msg("ERROR: unexpected extra argument '" + args[i] + "'");
           System.exit(1);
         }
         indexPath = args[i];
@@ -385,8 +396,8 @@ public class CheckIndex {
     }
 
     if (indexPath == null) {
-      out.println("\nERROR: index path not specified");
-      out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
+      msg("\nERROR: index path not specified");
+      msg("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
@@ -412,31 +423,55 @@ public class CheckIndex {
     if (onlySegments.size() == 0)
       onlySegments = null;
     else if (doFix) {
-      out.println("ERROR: cannot specify both -fix and -segment");
+      msg("ERROR: cannot specify both -fix and -segment");
       System.exit(1);
     }
 
     assert testAsserts();
     if (!assertsOn)
-      out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene', so assertions are enabled");
+      msg("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene', so assertions are enabled");
 
-    out.println("\nOpening index @ " + indexPath + "\n");
+    msg("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
       dir = FSDirectory.getDirectory(indexPath);
     } catch (Throwable t) {
-      out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
+      msg("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(out);
       System.exit(1);
     }
 
-    boolean isClean = check(dir, doFix, onlySegments);
+    CheckIndexStatus result = check(dir, doFix, onlySegments);
+
+    if (!result.clean) {
+      if (!doFix){
+        msg("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -fix were specified\n");
+      } else {
+        msg("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
+        msg("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+        for(int s=0;s<5;s++) {
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            s--;
+            continue;
+          }
+          msg("  " + (5-i) + "...");
+        }
+        msg("Writing...");
+        CheckIndex.fix(result);
+      }
+      msg("OK");
+      msg("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
+    }
+    msg("");
 
     final int exitCode;
-    if (isClean)
+    if (result != null && result.clean == true)
       exitCode = 0;
     else
       exitCode = 1;
     System.exit(exitCode);
-  }    
+  }
 }

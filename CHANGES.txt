@@ -269,6 +269,8 @@ New features
 
 18. LUCENE-1001: Provide access to Payloads via Spans.  All existing Span Query implementations in Lucene implement. (Mark Miller, Grant Ingersoll)
 
+19. LUCENE-1354: Provide programmatic access to CheckIndex (Grant Ingersoll, Mike McCandless)
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use
