@@ -653,7 +653,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
-        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/" />
+        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
