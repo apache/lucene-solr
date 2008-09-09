@@ -813,6 +813,20 @@
           depends="test, create-package">
      <!-- no description, don't advertise -->
   </target>
+ <target name="-taskdef">
+    <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
+      <classpath>
+        <fileset dir="." includes="rat*.jar"/>
+      </classpath>
+    </typedef>
+  </target>
+<target name="rat-sources" depends="-taskdef"
+    description="runs the tasks over src/java excluding the license directory">
+    <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
+      <fileset dir="src/java">
+      </fileset>
+    </rat:report>
+  </target>
 
 </project>
 
