@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2007 The Apache Software Foundation
+ Copyright 2006-2008 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed by
@@ -22,6 +22,12 @@ Tammo Freese (http://www.easymock.org/)
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2008 John Resig, http://jquery.com/
 
+This product includes stax-utils: https://stax-utils.dev.java.net/
+Copyright (c) 2004, Christian Niles, unit12.net
+Copyright (c) 2004, Sun Microsystems, Inc.
+Copyright (c) 2006, John Kristian 
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
+
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
 developed by Codehaus  (http://www.codehaus.org/)
 License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -36,7 +42,7 @@ classes.
 
 For additional credits (generally to people who reported problems)
 see CREDITS file.
-
+---
 
 This product includes software developed by Mort Bay Consulting
 (specifically, Jetty 6.1.3, the bundled servlet container in example)
@@ -71,4 +77,4 @@ Some portions of the code are Copyright:
   1999 Jason Gilbert.
 
 The jboss integration module contains some LGPL code.
-------------------------------------------------------------------
+---
