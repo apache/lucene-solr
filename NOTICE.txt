@@ -11,9 +11,6 @@ including, but not limited to:
   - Apache Lucene Java
   - Apache Tomcat (lib/servlet-api-2.4.jar)
 
-This product includes software developed by Mort Bay Consulting
-(specifically, Jetty 6.1.3, the bundled servlet container in example)
-
 This product includes software developed by Dr Martin Porter,
 Copyright 2001 and and Richard Boulton (for the Java developments),
 Copyright 2002.
@@ -25,8 +22,28 @@ Tammo Freese (http://www.easymock.org/)
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2008 John Resig, http://jquery.com/
 
+This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
+developed by Codehaus  (http://www.codehaus.org/)
+License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+=========================================================================
+==  Woodstox Notice                                                    ==
+=========================================================================
+This product currently only contains code developed by authors
+of specific components, as identified by the source code files.
+
+Since product implements StAX API, it has dependencies to StAX API
+classes.
+
+For additional credits (generally to people who reported problems)
+see CREDITS file.
 
 
+This product includes software developed by Mort Bay Consulting
+(specifically, Jetty 6.1.3, the bundled servlet container in example)
+The jboss integration module is not included.
+=========================================================================
+==     Jetty Notice                                                    ==
+=========================================================================
 ==============================================================
  Jetty Web Container 
  Copyright 1995-2006 Mort Bay Consulting Pty Ltd
@@ -54,3 +71,4 @@ Some portions of the code are Copyright:
   1999 Jason Gilbert.
 
 The jboss integration module contains some LGPL code.
+------------------------------------------------------------------
