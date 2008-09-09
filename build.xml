@@ -823,8 +823,12 @@
 <target name="rat-sources" depends="-taskdef"
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
-      <fileset dir="src/java">
+      <fileset dir="src/java"/>
+      <fileset dir="client">
+        <exclude name="**/CHANGES.*"/>
       </fileset>
+      <fileset dir="contrib/dataimporthandler/src/main/java"/>
+      <fileset dir="contrib/dataimporthandler/src/test/java"/>
     </rat:report>
   </target>
 
