@@ -22,11 +22,14 @@ Tammo Freese (http://www.easymock.org/)
 This product includes the JQuery JavaScript library created by John Resig.
 Copyright (c) 2008 John Resig, http://jquery.com/
 
-This product includes stax-utils: https://stax-utils.dev.java.net/
+This product includes the stax-utils jar: https://stax-utils.dev.java.net/
 Copyright (c) 2004, Christian Niles, unit12.net
 Copyright (c) 2004, Sun Microsystems, Inc.
 Copyright (c) 2006, John Kristian 
 License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
+
+This product includes a JUnit jar: http://junit.sourceforge.net/
+License: Common Public License - v 1.0 (http://junit.sourceforge.net/cpl-v10.html)
 
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
 developed by Codehaus  (http://www.codehaus.org/)
