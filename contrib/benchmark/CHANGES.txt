@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+9/9/08
+ LUCENE-1243: Added new sorting benchmark capabilities.  Also Reopen and commit tasks.  (Mark Miller via Grant Ingersoll)
+
 5/10/08
   LUCENE-1090: remove relative paths assumptions from benchmark code.
   Only build.xml was modified: work-dir definition must remain so  

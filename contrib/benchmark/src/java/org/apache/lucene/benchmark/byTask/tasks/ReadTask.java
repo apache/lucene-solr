@@ -17,8 +17,15 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
@@ -27,11 +34,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.highlight.*;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.util.*;
 
 
 /**
@@ -79,7 +88,13 @@ public abstract class ReadTask extends PerfTask {
       IndexSearcher searcher = new IndexSearcher(ir);
       QueryMaker queryMaker = getQueryMaker();
       Query q = queryMaker.makeQuery();
-      Hits hits = searcher.search(q);
+      Sort sort = getSort();
+      Hits hits;
+      if(sort != null) {
+        hits = searcher.search(q, sort);
+      } else {
+        hits = searcher.search(q);
+      }
       //System.out.println("searched: "+q);
 
       if (withTraverse() && hits != null) {
@@ -139,6 +154,7 @@ public abstract class ReadTask extends PerfTask {
    * Return true if search should be performed.
    */
   public abstract boolean withSearch();
+  
 
   /**
    * Return true if warming should be performed.
@@ -199,6 +215,10 @@ public abstract class ReadTask extends PerfTask {
   protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException {
     TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
     return frag != null ? frag.length : 0;
+  }
+  
+  protected Sort getSort() {
+    return null;
   }
 
   /**
