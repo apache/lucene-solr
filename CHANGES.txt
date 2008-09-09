@@ -658,6 +658,8 @@ Other Changes
 24. Upgraded to Lucene 2.4-dev (r686801) (yonik)
 25. Upgraded to Lucene 2.4-dev (r688745) 27-Aug-2008 (yonik)
 26. Upgraded to Lucene 2.4-dev (r691741) 03-Sep-2008 (yonik)
+27. Replaced the StAX reference implementation with the geronimo
+    StAX API jar, and the Woodstox StAX implementation. (yonik)
 
 Build
  1. SOLR-411.  Changed the names of the Solr JARs to use the defacto standard JAR names based on

@@ -305,7 +305,8 @@
     </fileset>
     <fileset dir="${lib}">
       <include name="commons-io-*.jar" />
-      <include name="stax-*.jar" />
+      <include name="*stax-*.jar" />
+      <include name="wstx-*.jar" />
     </fileset>
     <pathelement location="${dest}/common"/>
   </path>
@@ -597,7 +598,8 @@
       <fileset dir="${lib}">
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
-        <include name="stax-*.jar"/>
+        <include name="*stax-*.jar" />
+        <include name="wstx-*.jar" />
       </fileset>
       <fileset dir="${solrj-dir}/lib">
         <include name="*.jar" />
