@@ -61,7 +61,7 @@ To <b>search the index</b> type:
 </pre>
 
 You'll be prompted for a query.  Type in a swear word and press the enter key.  You'll see that the
-Lucene developers are very well mannered and get no results. Now try entering the word "vector".
+Lucene developers are very well mannered and get no results. Now try entering the word "string".
 That should return a whole bunch of documents.  The results will page at every tenth result and ask
 you whether you want more results.
 </p>
