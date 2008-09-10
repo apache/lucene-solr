@@ -103,13 +103,13 @@ public class TestDateSort extends TestCase {
     Document document = new Document();
 
     // Add the text field.
-    Field textField = new Field(TEXT_FIELD, text, Field.Store.YES, Field.Index.TOKENIZED);
+    Field textField = new Field(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
     document.add(textField);
 
     // Add the date/time field.
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
     Field dateTimeField = new Field(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
-        Field.Index.UN_TOKENIZED);
+        Field.Index.NOT_ANALYZED);
     document.add(dateTimeField);
 
     return document;

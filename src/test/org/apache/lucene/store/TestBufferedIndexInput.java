@@ -163,8 +163,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         writer.setUseCompoundFile(false);
         for(int i=0;i<37;i++) {
           Document doc = new Document();
-          doc.add(new Field("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.TOKENIZED));
-          doc.add(new Field("id", "" + i, Field.Store.YES, Field.Index.TOKENIZED));
+          doc.add(new Field("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(new Field("id", "" + i, Field.Store.YES, Field.Index.ANALYZED));
           writer.addDocument(doc);
         }
         writer.close();

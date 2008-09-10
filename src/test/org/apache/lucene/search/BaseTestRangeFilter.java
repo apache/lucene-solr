@@ -80,7 +80,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
           for (int d = minId; d <= maxId; d++) {
                 Document doc = new Document();
-                doc.add(new Field("id",pad(d), Field.Store.YES, Field.Index.UN_TOKENIZED));
+                doc.add(new Field("id",pad(d), Field.Store.YES, Field.Index.NOT_ANALYZED));
                 int r= rand.nextInt();
                 if (maxR < r) {
                     maxR = r;
@@ -88,8 +88,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
                 if (r < minR) {
                     minR = r;
                 }
-                doc.add(new Field("rand",pad(r), Field.Store.YES, Field.Index.UN_TOKENIZED));
-                doc.add(new Field("body","body", Field.Store.YES, Field.Index.UN_TOKENIZED));
+                doc.add(new Field("rand",pad(r), Field.Store.YES, Field.Index.NOT_ANALYZED));
+                doc.add(new Field("body","body", Field.Store.YES, Field.Index.NOT_ANALYZED));
                 writer.addDocument(doc);
             }
             

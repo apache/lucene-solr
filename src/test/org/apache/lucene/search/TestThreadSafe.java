@@ -120,7 +120,7 @@ public class TestThreadSafe extends LuceneTestCase {
         while (sb.length() < flen) sb.append(' ').append(words[r.nextInt(words.length)]);
         sb.append(" $");
         Field.Store store = Field.Store.YES;  // make random later
-        Field.Index index = Field.Index.TOKENIZED;  // make random later
+        Field.Index index = Field.Index.ANALYZED;  // make random later
         d.add(new Field("f"+i, sb.toString(), store, index));
       }
       iw.addDocument(d);

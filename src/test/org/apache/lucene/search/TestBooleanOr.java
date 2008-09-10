@@ -148,12 +148,12 @@ public class TestBooleanOr extends LuceneTestCase {
 				FIELD_T,
 				"Optimize not deleting all files",
 				Field.Store.YES,
-				Field.Index.TOKENIZED));
+				Field.Index.ANALYZED));
 		d.add(new Field(
 				FIELD_C,
 				"Deleted When I run an optimize in our production environment.",
 				Field.Store.YES,
-				Field.Index.TOKENIZED));
+				Field.Index.ANALYZED));
 
 		//
 		writer.addDocument(d);

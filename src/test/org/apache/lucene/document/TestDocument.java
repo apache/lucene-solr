@@ -121,7 +121,7 @@ public class TestDocument extends LuceneTestCase
   public void testConstructorExceptions()
   {
     new Field("name", "value", Field.Store.YES, Field.Index.NO);  // okay
-    new Field("name", "value", Field.Store.NO, Field.Index.UN_TOKENIZED);  // okay
+    new Field("name", "value", Field.Store.NO, Field.Index.NOT_ANALYZED);  // okay
     try {
       new Field("name", "value", Field.Store.NO, Field.Index.NO);
       fail();
@@ -177,14 +177,14 @@ public class TestDocument extends LuceneTestCase
     private Document makeDocumentWithFields()
     {
         Document doc = new Document();
-        doc.add(new Field(  "keyword",   "test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        doc.add(new Field(  "keyword",   "test2", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        doc.add(new Field(     "text",      "test1", Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field(     "text",      "test2", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field(  "keyword",   "test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field(  "keyword",   "test2", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field(     "text",      "test1", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field(     "text",      "test2", Field.Store.YES, Field.Index.ANALYZED));
         doc.add(new Field("unindexed", "test1", Field.Store.YES, Field.Index.NO));
         doc.add(new Field("unindexed", "test2", Field.Store.YES, Field.Index.NO));
-        doc.add(new Field( "unstored",  "test1", Field.Store.NO, Field.Index.TOKENIZED));
-        doc.add(new Field( "unstored",  "test2", Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field( "unstored",  "test1", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(new Field( "unstored",  "test2", Field.Store.NO, Field.Index.ANALYZED));
         return doc;
     }
 
@@ -222,10 +222,10 @@ public class TestDocument extends LuceneTestCase
 
     public void testFieldSetValue() throws Exception {
 
-      Field field = new Field("id", "id1", Field.Store.YES, Field.Index.UN_TOKENIZED);
+      Field field = new Field("id", "id1", Field.Store.YES, Field.Index.NOT_ANALYZED);
       Document doc = new Document();
       doc.add(field);
-      doc.add(new Field("keyword", "test", Field.Store.YES, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("keyword", "test", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
       RAMDirectory dir = new RAMDirectory();
       IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);

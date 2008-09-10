@@ -149,8 +149,8 @@ public class TestRangeQuery extends LuceneTestCase {
   private void insertDoc(IndexWriter writer, String content) throws IOException {
     Document doc = new Document();
 
-    doc.add(new Field("id", "id" + docCount, Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field("content", content, Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("id", "id" + docCount, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("content", content, Field.Store.NO, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
     docCount++;

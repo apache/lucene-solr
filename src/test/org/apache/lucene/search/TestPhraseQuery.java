@@ -59,19 +59,19 @@ public class TestPhraseQuery extends LuceneTestCase {
                                          IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
-    doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.TOKENIZED));
-    Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.TOKENIZED);
+    doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.ANALYZED));
+    Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.ANALYZED);
     doc.add(repeatedField);
-    doc.add(new Field("palindrome", "one two three two one", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("palindrome", "one two three two one", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.optimize();
@@ -205,7 +205,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
@@ -238,12 +238,12 @@ public class TestPhraseQuery extends LuceneTestCase {
                                          IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("contents", "foobar", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.TOKENIZED)); 
+    doc.add(new Field("contents", "foobar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
     writer.addDocument(doc);
     
     writer.optimize();
@@ -273,15 +273,15 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
                              IndexWriter.MaxFieldLength.LIMITED);
     doc = new Document();
-    doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "woo map entry", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("contents", "woo map entry", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.optimize();
@@ -324,15 +324,15 @@ public class TestPhraseQuery extends LuceneTestCase {
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
-    doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     Document doc2 = new Document();
-    doc2.add(new Field("field", "foo firstname xxx lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc2.add(new Field("field", "foo firstname xxx lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc2);
     
     Document doc3 = new Document();
-    doc3.add(new Field("field", "foo firstname xxx yyy lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc3.add(new Field("field", "foo firstname xxx yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc3);
     
     writer.optimize();

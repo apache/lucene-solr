@@ -49,7 +49,7 @@ public class TestBoolean2 extends LuceneTestCase {
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();

@@ -485,7 +485,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       ArrayList fields = new ArrayList();      
       String idString = getIdString();
-      Field idField =  new Field(idTerm.field(), idString, Field.Store.YES, Field.Index.NO_NORMS);
+      Field idField =  new Field(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
@@ -509,16 +509,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
         
         switch (nextInt(4)) {
           case 0:
-            fields.add(new Field("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NO_NORMS, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, tvVal));
             break;
           case 1:
-            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.TOKENIZED, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.ANALYZED, tvVal));
             break;
           case 2:
             fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
             break;
           case 3:
-            fields.add(new Field("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.TOKENIZED, tvVal));
+            fields.add(new Field("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.ANALYZED, tvVal));
             break;          
         }
       }

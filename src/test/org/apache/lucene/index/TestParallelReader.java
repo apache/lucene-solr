@@ -107,7 +107,7 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = new MockRAMDirectory();
     IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d3 = new Document();
-    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w2.addDocument(d3);
     w2.close();
     
@@ -152,13 +152,13 @@ public class TestParallelReader extends LuceneTestCase {
     // add another document to ensure that the indexes are not optimized
     IndexWriter modifier = new IndexWriter(dir1, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     Document d = new Document();
-    d.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
     modifier.close();
     
     modifier = new IndexWriter(dir2, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     d = new Document();
-    d.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
     modifier.close();
 
@@ -215,16 +215,16 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d1 = new Document();
-    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
-    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.TOKENIZED));
-    d1.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
-    d1.add(new Field("f4", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(new Field("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(d1);
     Document d2 = new Document();
-    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.TOKENIZED));
-    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
-    d2.add(new Field("f3", "v2", Field.Store.YES, Field.Index.TOKENIZED));
-    d2.add(new Field("f4", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(new Field("f3", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(new Field("f4", "v2", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(d2);
     w.close();
 
@@ -245,12 +245,12 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = new MockRAMDirectory();
     IndexWriter w1 = new IndexWriter(dir1, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d1 = new Document();
-    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
-    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w1.addDocument(d1);
     Document d2 = new Document();
-    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.TOKENIZED));
-    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
     w1.addDocument(d2);
     w1.close();
     return dir1;
@@ -260,12 +260,12 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = new RAMDirectory();
     IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d3 = new Document();
-    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
-    d3.add(new Field("f4", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
+    d3.add(new Field("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w2.addDocument(d3);
     Document d4 = new Document();
-    d4.add(new Field("f3", "v2", Field.Store.YES, Field.Index.TOKENIZED));
-    d4.add(new Field("f4", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d4.add(new Field("f3", "v2", Field.Store.YES, Field.Index.ANALYZED));
+    d4.add(new Field("f4", "v2", Field.Store.YES, Field.Index.ANALYZED));
     w2.addDocument(d4);
     w2.close();
     return dir2;

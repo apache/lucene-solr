@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.*;
@@ -158,7 +159,6 @@ public class TestDoc extends LuceneTestCase {
 
       assertEquals(multiFileOutput, singleFileOutput);
    }
-
 
    private SegmentInfo indexDoc(IndexWriter writer, String fileName)
    throws Exception

@@ -258,7 +258,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   private void addDoc(IndexWriter writer, String value) throws IOException
   {
       Document doc = new Document();
-      doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field("content", value, Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
   }
 }

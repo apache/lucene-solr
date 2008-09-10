@@ -56,8 +56,8 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the past
- 	doc.add(new Field("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
- 	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.TOKENIZED));
+ 	doc.add(new Field("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+ 	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.ANALYZED));
   	writer.addDocument(doc);
  	writer.optimize();
 	writer.close();
@@ -117,8 +117,8 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the future
- 	doc.add(new Field("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
- 	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.TOKENIZED));
+ 	doc.add(new Field("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+ 	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.ANALYZED));
   	writer.addDocument(doc);
  	writer.optimize();
 	writer.close();

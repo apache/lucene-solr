@@ -102,7 +102,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         tv = Field.TermVector.WITH_OFFSETS;
       else
         tv = Field.TermVector.YES;
-      doc.add(new Field(testFields[i], "", Field.Store.NO, Field.Index.TOKENIZED, tv));
+      doc.add(new Field(testFields[i], "", Field.Store.NO, Field.Index.ANALYZED, tv));
     }
 
     //Create 5 documents for testing, they all have the same

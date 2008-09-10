@@ -157,7 +157,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       for (int i=0; i<4; i++) {
         for (int j=0; j<M; j++) {
           Document doc = new Document();
-          doc.add(new Field("id", i+"_"+j, Store.YES, Index.UN_TOKENIZED));
+          doc.add(new Field("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
           iwriter.addDocument(doc);
           if (i>0) {
             int k = i-1;
@@ -884,11 +884,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     Document doc = new Document();
     sb.append("a");
     sb.append(n);
-    doc.add(new Field("field1", sb.toString(), Store.YES, Index.TOKENIZED));
+    doc.add(new Field("field1", sb.toString(), Store.YES, Index.ANALYZED));
     sb.append(" b");
     sb.append(n);
     for (int i = 1; i < numFields; i++) {
-      doc.add(new Field("field" + (i+1), sb.toString(), Store.YES, Index.TOKENIZED));
+      doc.add(new Field("field" + (i+1), sb.toString(), Store.YES, Index.ANALYZED));
     }
     return doc;
   }

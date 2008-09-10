@@ -42,10 +42,10 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         doc = new Document();
         doc.add(new Field("field1", "the quick brown fox jumps", Store.YES,
-            Index.TOKENIZED));
+            Index.ANALYZED));
         doc.add(new Field("field2", "the quick brown fox jumps", Store.YES,
-            Index.TOKENIZED));
-        doc.add(new Field("field4", "", Store.NO, Index.TOKENIZED));
+            Index.ANALYZED));
+        doc.add(new Field("field4", "", Store.NO, Index.ANALYZED));
         iw1.addDocument(doc);
 
         iw1.close();
@@ -53,11 +53,11 @@ public class TestParallelTermEnum extends LuceneTestCase {
         IndexWriter iw2 = new IndexWriter(rd2, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
         doc = new Document();
-        doc.add(new Field("field0", "", Store.NO, Index.TOKENIZED));
+        doc.add(new Field("field0", "", Store.NO, Index.ANALYZED));
         doc.add(new Field("field1", "the fox jumps over the lazy dog",
-            Store.YES, Index.TOKENIZED));
+            Store.YES, Index.ANALYZED));
         doc.add(new Field("field3", "the fox jumps over the lazy dog",
-            Store.YES, Index.TOKENIZED));
+            Store.YES, Index.ANALYZED));
         iw2.addDocument(doc);
 
         iw2.close();

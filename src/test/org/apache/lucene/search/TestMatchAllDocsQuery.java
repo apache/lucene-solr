@@ -78,7 +78,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   
   private void addDoc(String text, IndexWriter iw) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("key", text, Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("key", text, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);
   }
 

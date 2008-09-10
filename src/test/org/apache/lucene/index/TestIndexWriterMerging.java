@@ -99,7 +99,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for (int i = start; i < (start + numDocs); i++)
     {
       Document temp = new Document();
-      temp.add(new Field("count", (""+i), Field.Store.YES, Field.Index.UN_TOKENIZED));
+      temp.add(new Field("count", (""+i), Field.Store.YES, Field.Index.NOT_ANALYZED));
 
       writer.addDocument(temp);
     }

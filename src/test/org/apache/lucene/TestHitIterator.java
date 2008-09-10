@@ -46,11 +46,11 @@ public class TestHitIterator extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("field", "iterator test doc 1", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "iterator test doc 1", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("field", "iterator test doc 2", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "iterator test doc 2", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.close();

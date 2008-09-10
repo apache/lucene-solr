@@ -132,8 +132,8 @@ public class TestTransactions extends LuceneTestCase
       for(int j=0; j<10; j++) {
         Document d = new Document();
         int n = RANDOM.nextInt();
-        d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.UN_TOKENIZED));
-        d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.TOKENIZED));
+        d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
 
@@ -176,7 +176,7 @@ public class TestTransactions extends LuceneTestCase
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = RANDOM.nextInt();
-      d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.TOKENIZED));
+      d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(d);
     }
     writer.close();

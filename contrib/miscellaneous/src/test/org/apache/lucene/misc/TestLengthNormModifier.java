@@ -65,15 +65,15 @@ public class TestLengthNormModifier extends TestCase {
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();
 	    d.add(new Field("field", "word",
-			    Field.Store.YES, Field.Index.TOKENIZED));
+			    Field.Store.YES, Field.Index.ANALYZED));
 	    d.add(new Field("nonorm", "word",
-			    Field.Store.YES, Field.Index.NO_NORMS));
+			    Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
 		
 	    for (int j = 1; j <= i; j++) {
 		d.add(new Field("field", "crap",
-				Field.Store.YES, Field.Index.TOKENIZED));
+				Field.Store.YES, Field.Index.ANALYZED));
 		d.add(new Field("nonorm", "more words",
-				Field.Store.YES, Field.Index.NO_NORMS));
+				Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
 	    }
 	    writer.addDocument(d);
 	}

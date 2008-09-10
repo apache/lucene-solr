@@ -125,16 +125,16 @@ implements Serializable {
 			if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
 				Document doc = new Document();
 				doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
-				doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.TOKENIZED));
-				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.UN_TOKENIZED));
-				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.UN_TOKENIZED));
-				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.UN_TOKENIZED));
-				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.UN_TOKENIZED));
-				if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.UN_TOKENIZED));
-        if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.UN_TOKENIZED));
-        if (data[i][8] != null) doc.add (new Field ("double",     data[i][8], Field.Store.NO, Field.Index.UN_TOKENIZED));
-        if (data[i][8] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.UN_TOKENIZED));
-        if (data[i][8] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.UN_TOKENIZED));
+				doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
+				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED));
+				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED));
+				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
+				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
+				if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][8] != null) doc.add (new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][8] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][8] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.setBoost(2);  // produce some scores above 1.0
 				writer.addDocument (doc);
 			}

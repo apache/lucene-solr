@@ -37,7 +37,7 @@ public class TestCheckIndex extends LuceneTestCase {
                                           IndexWriter.MaxFieldLength.LIMITED);      
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
-    doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<19;i++) {
       writer.addDocument(doc);
     }

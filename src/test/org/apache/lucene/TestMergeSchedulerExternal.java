@@ -88,7 +88,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     
     IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);

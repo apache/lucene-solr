@@ -71,7 +71,7 @@ public abstract class BasicDocMaker implements DocMaker {
   protected Config config;
 
   protected Field.Store storeVal = Field.Store.NO;
-  protected Field.Index indexVal = Field.Index.TOKENIZED;
+  protected Field.Index indexVal = Field.Index.ANALYZED;
   protected Field.TermVector termVecVal = Field.TermVector.NO;
   
   private synchronized int incrNumDocsCreated() {
@@ -196,7 +196,7 @@ public abstract class BasicDocMaker implements DocMaker {
     boolean tokenized = config.get("doc.tokenized",true);
     boolean termVec = config.get("doc.term.vector",false);
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
-    indexVal = (tokenized ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED);
+    indexVal = (tokenized ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED);
     boolean termVecPositions = config.get("doc.term.vector.positions",false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets",false);
     if (termVecPositions && termVecOffsets)

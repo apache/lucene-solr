@@ -190,11 +190,11 @@ public class TestIndexReader extends LuceneTestCase
     // new termvector fields
     for (int i = 0; i < 5 * writer.getMergeFactor(); i++) {
       Document doc = new Document();
-        doc.add(new Field("tvnot","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
-        doc.add(new Field("termvector","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
-        doc.add(new Field("tvoffset","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
-        doc.add(new Field("tvposition","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
-        doc.add(new Field("tvpositionoffset","one two two three three three", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        doc.add(new Field("tvnot","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+        doc.add(new Field("termvector","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
+        doc.add(new Field("tvoffset","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
+        doc.add(new Field("tvposition","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+        doc.add(new Field("tvpositionoffset","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
 
         writer.addDocument(doc);
     }
@@ -773,8 +773,8 @@ public class TestIndexReader extends LuceneTestCase
       IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for(int i=0;i<157;i++) {
         Document d = new Document();
-        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
-        d.add(new Field("content", "aaa " + i, Field.Store.NO, Field.Index.TOKENIZED));
+        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        d.add(new Field("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();
@@ -1170,31 +1170,31 @@ public class TestIndexReader extends LuceneTestCase
     private void addDocumentWithFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        doc.add(new Field("text","test1", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("text","test1", Field.Store.YES, Field.Index.ANALYZED));
         doc.add(new Field("unindexed","test1", Field.Store.YES, Field.Index.NO));
-        doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
     private void addDocumentWithDifferentFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("keyword2","test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        doc.add(new Field("text2","test1", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("keyword2","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("text2","test1", Field.Store.YES, Field.Index.ANALYZED));
         doc.add(new Field("unindexed2","test1", Field.Store.YES, Field.Index.NO));
-        doc.add(new Field("unstored2","test1", Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field("unstored2","test1", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
     private void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("tvnot","tvnot", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
-        doc.add(new Field("termvector","termvector", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
-        doc.add(new Field("tvoffset","tvoffset", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
-        doc.add(new Field("tvposition","tvposition", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
-        doc.add(new Field("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        doc.add(new Field("tvnot","tvnot", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+        doc.add(new Field("termvector","termvector", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
+        doc.add(new Field("tvoffset","tvoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
+        doc.add(new Field("tvposition","tvposition", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+        doc.add(new Field("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
         
         writer.addDocument(doc);
     }
@@ -1202,7 +1202,7 @@ public class TestIndexReader extends LuceneTestCase
     private void addDoc(IndexWriter writer, String value) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field("content", value, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
     private void rmDir(File dir) {

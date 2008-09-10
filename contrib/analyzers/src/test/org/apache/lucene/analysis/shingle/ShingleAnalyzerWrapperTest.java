@@ -65,17 +65,17 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
     Document doc;
     doc = new Document();
     doc.add(new Field("content", "please divide this sentence into shingles",
-            Field.Store.YES,Field.Index.TOKENIZED));
+            Field.Store.YES,Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
     doc.add(new Field("content", "just another test sentence",
-                      Field.Store.YES,Field.Index.TOKENIZED));
+                      Field.Store.YES,Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
     doc.add(new Field("content", "a sentence which contains no test",
-                      Field.Store.YES,Field.Index.TOKENIZED));
+                      Field.Store.YES,Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.close();

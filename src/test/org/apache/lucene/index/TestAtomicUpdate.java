@@ -95,8 +95,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
       // Update all 100 docs...
       for(int i=0; i<100; i++) {
         Document d = new Document();
-        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
-        d.add(new Field("contents", English.intToEnglish(i+10*count), Field.Store.NO, Field.Index.TOKENIZED));
+        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        d.add(new Field("contents", English.intToEnglish(i+10*count), Field.Store.NO, Field.Index.ANALYZED));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
       }
     }
@@ -132,8 +132,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {
       Document d = new Document();
-      d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
-      d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.TOKENIZED));
+      d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(d);
     }
     writer.commit();

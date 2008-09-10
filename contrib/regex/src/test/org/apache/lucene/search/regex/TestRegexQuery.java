@@ -39,7 +39,7 @@ public class TestRegexQuery extends TestCase {
       IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
       Document doc = new Document();
-      doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
       writer.optimize();
       writer.close();

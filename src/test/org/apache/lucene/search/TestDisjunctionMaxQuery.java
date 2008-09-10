@@ -86,38 +86,38 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         // d1 is an "ok" match for:  albino elephant
         {
             Document d1 = new Document();
-            d1.add(new Field("id", "d1", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d1"));
-            d1.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
-            d1.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "elephant"));
+            d1.add(new Field("id", "d1", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id", "d1"));
+            d1.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "elephant"));
+            d1.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("dek", "elephant"));
             writer.addDocument(d1);
         }
 
         // d2 is a "good" match for:  albino elephant
         {
             Document d2 = new Document();
-            d2.add(new Field("id", "d2", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d2"));
-            d2.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
-            d2.add(new Field("dek", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "albino"));
-            d2.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "elephant"));
+            d2.add(new Field("id", "d2", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id", "d2"));
+            d2.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "elephant"));
+            d2.add(new Field("dek", "albino", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("dek", "albino"));
+            d2.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("dek", "elephant"));
             writer.addDocument(d2);
         }
 
         // d3 is a "better" match for:  albino elephant
         {
             Document d3 = new Document();
-            d3.add(new Field("id", "d3", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d3"));
-            d3.add(new Field("hed", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "albino"));
-            d3.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
+            d3.add(new Field("id", "d3", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id", "d3"));
+            d3.add(new Field("hed", "albino", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "albino"));
+            d3.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "elephant"));
             writer.addDocument(d3);
         }
 
         // d4 is the "best" match for:  albino elephant
         {
             Document d4 = new Document();
-            d4.add(new Field("id", "d4", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d4"));
-            d4.add(new Field("hed", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "albino"));
-            d4.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
-            d4.add(new Field("dek", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "albino"));
+            d4.add(new Field("id", "d4", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id", "d4"));
+            d4.add(new Field("hed", "albino", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "albino"));
+            d4.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("hed", "elephant"));
+            d4.add(new Field("dek", "albino", Field.Store.YES, Field.Index.ANALYZED));//Field.Text("dek", "albino"));
             writer.addDocument(d4);
         }
 

@@ -256,7 +256,7 @@ public class Syns2Index
             int n = index(word2Nums, num2Words, g, doc);
             if (n > 0)
             {
-				doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.UN_TOKENIZED));
+				doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.NOT_ANALYZED));
                 if ((++row % mod) == 0)
                 {
                     o.println("\trow=" + row + "/" + word2Nums.size() + " doc= " + doc);

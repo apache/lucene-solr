@@ -70,8 +70,8 @@ public class TestParser extends TestCase {
 				String date=line.substring(0,endOfDate).trim();
 				String content=line.substring(endOfDate).trim();
 				org.apache.lucene.document.Document doc =new org.apache.lucene.document.Document();
-				doc.add(new Field("date",date,Field.Store.YES,Field.Index.TOKENIZED));
-				doc.add(new Field("contents",content,Field.Store.YES,Field.Index.TOKENIZED));
+				doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
+				doc.add(new Field("contents",content,Field.Store.YES,Field.Index.ANALYZED));
 				writer.addDocument(doc);
 				line=d.readLine();
 			}			

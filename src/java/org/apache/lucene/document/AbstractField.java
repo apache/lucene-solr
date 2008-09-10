@@ -68,15 +68,19 @@ public abstract class AbstractField implements Fieldable {
     if (index == Field.Index.NO) {
       this.isIndexed = false;
       this.isTokenized = false;
-    } else if (index == Field.Index.TOKENIZED) {
+    } else if (index == Field.Index.ANALYZED) {
       this.isIndexed = true;
       this.isTokenized = true;
-    } else if (index == Field.Index.UN_TOKENIZED) {
+    } else if (index == Field.Index.NOT_ANALYZED) {
       this.isIndexed = true;
       this.isTokenized = false;
-    } else if (index == Field.Index.NO_NORMS) {
+    } else if (index == Field.Index.NOT_ANALYZED_NO_NORMS) {
       this.isIndexed = true;
       this.isTokenized = false;
+      this.omitNorms = true;
+    } else if (index == Field.Index.ANALYZED_NO_NORMS) {
+      this.isIndexed = true;
+      this.isTokenized = true;
       this.omitNorms = true;
     } else {
       throw new IllegalArgumentException("unknown index parameter " + index);

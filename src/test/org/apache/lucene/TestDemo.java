@@ -56,7 +56,7 @@ public class TestDemo extends LuceneTestCase {
     Document doc = new Document();
     String text = "This is the text to be indexed.";
     doc.add(new Field("fieldname", text, Field.Store.YES,
-        Field.Index.TOKENIZED));
+        Field.Index.ANALYZED));
     iwriter.addDocument(doc);
     iwriter.close();
 

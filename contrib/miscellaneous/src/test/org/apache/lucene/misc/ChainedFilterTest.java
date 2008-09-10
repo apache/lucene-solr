@@ -58,9 +58,9 @@ public class ChainedFilterTest extends TestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(new Field("key", "" + (i + 1), Field.Store.YES, Field.Index.UN_TOKENIZED));
-      doc.add(new Field("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.UN_TOKENIZED));
-      doc.add(new Field("date", cal.getTime().toString(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);

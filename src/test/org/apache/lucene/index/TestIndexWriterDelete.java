@@ -52,14 +52,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < keywords.length; i++) {
         Document doc = new Document();
         doc.add(new Field("id", keywords[i], Field.Store.YES,
-                          Field.Index.UN_TOKENIZED));
+                          Field.Index.NOT_ANALYZED));
         doc.add(new Field("country", unindexed[i], Field.Store.YES,
                           Field.Index.NO));
         doc.add(new Field("contents", unstored[i], Field.Store.NO,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         doc
           .add(new Field("city", text[i], Field.Store.YES,
-                         Field.Index.TOKENIZED));
+                         Field.Index.ANALYZED));
         modifier.addDocument(doc);
       }
       modifier.optimize();
@@ -267,11 +267,11 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
     doc.add(new Field("id", String.valueOf(id), Field.Store.YES,
-        Field.Index.UN_TOKENIZED));
+        Field.Index.NOT_ANALYZED));
     doc.add(new Field("value", String.valueOf(value), Field.Store.NO,
-        Field.Index.UN_TOKENIZED));
+        Field.Index.NOT_ANALYZED));
     modifier.addDocument(doc);
   }
 
@@ -311,9 +311,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < 157; i++) {
         Document d = new Document();
         d.add(new Field("id", Integer.toString(i), Field.Store.YES,
-                        Field.Index.UN_TOKENIZED));
+                        Field.Index.NOT_ANALYZED));
         d.add(new Field("content", "aaa " + i, Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();
@@ -383,9 +383,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                 if (updates) {
                   Document d = new Document();
                   d.add(new Field("id", Integer.toString(i), Field.Store.YES,
-                                  Field.Index.UN_TOKENIZED));
+                                  Field.Index.NOT_ANALYZED));
                   d.add(new Field("content", "bbb " + i, Field.Store.NO,
-                                  Field.Index.TOKENIZED));
+                                  Field.Index.ANALYZED));
                   modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
                 } else { // deletes
                   modifier.deleteDocuments(new Term("id", Integer.toString(docId)));
@@ -546,13 +546,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < keywords.length; i++) {
         Document doc = new Document();
         doc.add(new Field("id", keywords[i], Field.Store.YES,
-                          Field.Index.UN_TOKENIZED));
+                          Field.Index.NOT_ANALYZED));
         doc.add(new Field("country", unindexed[i], Field.Store.YES,
                           Field.Index.NO));
         doc.add(new Field("contents", unstored[i], Field.Store.NO,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         doc.add(new Field("city", text[i], Field.Store.YES,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         modifier.addDocument(doc);
       }
       // flush (and commit if ac)
@@ -654,13 +654,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       for (int i = 0; i < keywords.length; i++) {
         Document doc = new Document();
         doc.add(new Field("id", keywords[i], Field.Store.YES,
-                          Field.Index.UN_TOKENIZED));
+                          Field.Index.NOT_ANALYZED));
         doc.add(new Field("country", unindexed[i], Field.Store.YES,
                           Field.Index.NO));
         doc.add(new Field("contents", unstored[i], Field.Store.NO,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         doc.add(new Field("city", text[i], Field.Store.YES,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         try {
           modifier.addDocument(doc);
         } catch (IOException io) {

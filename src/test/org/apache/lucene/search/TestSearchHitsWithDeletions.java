@@ -169,7 +169,7 @@ public class TestSearchHitsWithDeletions extends TestCase {
 
   private static Document createDocument(int id) {
     Document doc = new Document();
-    doc.add(new Field(TEXT_FIELD, "text of document"+id, Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field(TEXT_FIELD, "text of document"+id, Field.Store.YES, Field.Index.ANALYZED));
     return doc;
   }
 

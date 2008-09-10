@@ -69,7 +69,7 @@ public class TestExplanations extends LuceneTestCase {
                                         IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();

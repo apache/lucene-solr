@@ -68,7 +68,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     writer.setMergeScheduler(cms);
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       for(int j=0;j<20;j++) {
@@ -113,7 +113,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     mp.setMinMergeDocs(1000);
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       for(int j=0;j<100;j++) {
@@ -154,7 +154,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
         for(int j=0;j<21;j++) {
           Document doc = new Document();
-          doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.TOKENIZED));
+          doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
           writer.addDocument(doc);
         }
         
@@ -175,7 +175,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     RAMDirectory directory = new MockRAMDirectory();
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
     for(int pass=0;pass<2;pass++) {

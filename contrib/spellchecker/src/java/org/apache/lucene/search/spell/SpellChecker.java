@@ -384,7 +384,7 @@ public class SpellChecker {
 
   private static Document createDocument(String text, int ng1, int ng2) {
     Document doc = new Document();
-    doc.add(new Field(F_WORD, text, Field.Store.YES, Field.Index.UN_TOKENIZED)); // orig term
+    doc.add(new Field(F_WORD, text, Field.Store.YES, Field.Index.NOT_ANALYZED)); // orig term
     addGram(text, doc, ng1, ng2);
     return doc;
   }
@@ -396,14 +396,14 @@ public class SpellChecker {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.UN_TOKENIZED));
+        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (i == 0) {
-          doc.add(new Field("start" + ng, gram, Field.Store.NO, Field.Index.UN_TOKENIZED));
+          doc.add(new Field("start" + ng, gram, Field.Store.NO, Field.Index.NOT_ANALYZED));
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
-        doc.add(new Field("end" + ng, end, Field.Store.NO, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("end" + ng, end, Field.Store.NO, Field.Index.NOT_ANALYZED));
       }
     }
   }

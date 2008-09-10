@@ -129,15 +129,15 @@ public class TestIndexWriter extends LuceneTestCase
     private static void addDoc(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
     private void addDocWithIndex(IndexWriter writer, int index) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("content", "aaa " + index, Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("id", "" + index, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("content", "aaa " + index, Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("id", "" + index, Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
@@ -566,12 +566,12 @@ public class TestIndexWriter extends LuceneTestCase
       // Max length term is 16383, so this contents produces
       // a too-long term:
       String contents = "abc xyz x" + bigTerm + " another term";
-      doc.add(new Field("content", contents, Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
 
       // Make sure we can add another normal document
       doc = new Document();
-      doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
       writer.close();
 
@@ -599,7 +599,7 @@ public class TestIndexWriter extends LuceneTestCase
       // Make sure we can add a document with exactly the
       // maximum length term, and search on that term:
       doc = new Document();
-      doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.ANALYZED));
       StandardAnalyzer sa = new StandardAnalyzer();
       sa.setMaxTokenLength(100000);
       writer  = new IndexWriter(dir, sa, IndexWriter.MaxFieldLength.LIMITED);
@@ -617,7 +617,7 @@ public class TestIndexWriter extends LuceneTestCase
       MockRAMDirectory dir = new MockRAMDirectory();
 
       final Document doc = new Document();
-      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
 
       for(int numDocs=38;numDocs<500;numDocs += 38) {
         IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -655,7 +655,7 @@ public class TestIndexWriter extends LuceneTestCase
       MockRAMDirectory dir = new MockRAMDirectory();
 
       final Document doc = new Document();
-      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
 
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
@@ -1245,12 +1245,12 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMaxBufferedDocs(10);
       for(int j=0;j<100;j++) {
         Document doc = new Document();
-        doc.add(new Field("a"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("b"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("c"+j, "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("d"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("e"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("f"+j, "aaa", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("a"+j, "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("b"+j, "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("c"+j, "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("d"+j, "aaa", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("e"+j, "aaa", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("f"+j, "aaa", Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
       }
       writer.close();
@@ -1277,7 +1277,7 @@ public class TestIndexWriter extends LuceneTestCase
       int lastNumFile = dir.list().length;
       for(int j=0;j<9;j++) {
         Document doc = new Document();
-        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
         int numFile = dir.list().length;
         // Verify that with a tiny RAM buffer we see new
@@ -1300,7 +1300,7 @@ public class TestIndexWriter extends LuceneTestCase
       int lastFlushCount = -1;
       for(int j=1;j<52;j++) {
         Document doc = new Document();
-        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
         _TestUtil.syncConcurrentMerges(writer);
         int flushCount = writer.getFlushCount();
@@ -1354,7 +1354,7 @@ public class TestIndexWriter extends LuceneTestCase
 
       for(int j=1;j<52;j++) {
         Document doc = new Document();
-        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
       }
       
@@ -1416,7 +1416,7 @@ public class TestIndexWriter extends LuceneTestCase
         for(int j=0;j<100;j++) {
           Document doc = new Document();
           for(int k=0;k<100;k++) {
-            doc.add(new Field("field", Integer.toString(rand.nextInt()), Field.Store.YES, Field.Index.TOKENIZED));
+            doc.add(new Field("field", Integer.toString(rand.nextInt()), Field.Store.YES, Field.Index.ANALYZED));
           }
           writer.addDocument(doc);
         }
@@ -1425,7 +1425,7 @@ public class TestIndexWriter extends LuceneTestCase
         // occurs (heavy on byte blocks)
         for(int j=0;j<100;j++) {
           Document doc = new Document();
-          doc.add(new Field("field", "aaa aaa aaa aaa aaa aaa aaa aaa aaa aaa", Field.Store.YES, Field.Index.TOKENIZED));
+          doc.add(new Field("field", "aaa aaa aaa aaa aaa aaa aaa aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED));
           writer.addDocument(doc);
         }
 
@@ -1440,7 +1440,7 @@ public class TestIndexWriter extends LuceneTestCase
           String longTerm = b.toString();
 
           Document doc = new Document();
-          doc.add(new Field("field", longTerm, Field.Store.YES, Field.Index.TOKENIZED));
+          doc.add(new Field("field", longTerm, Field.Store.YES, Field.Index.ANALYZED));
           writer.addDocument(doc);
         }
       }
@@ -1461,7 +1461,7 @@ public class TestIndexWriter extends LuceneTestCase
       // Enable norms for only 1 doc, pre flush
       for(int j=0;j<10;j++) {
         Document doc = new Document();
-        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED); 
+        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED); 
         if (j != 8) {
           f.setOmitNorms(true);
         }
@@ -1482,7 +1482,7 @@ public class TestIndexWriter extends LuceneTestCase
       // Enable norms for only 1 doc, post flush
       for(int j=0;j<27;j++) {
         Document doc = new Document();
-        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED); 
+        Field f = new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED); 
         if (j != 26) {
           f.setOmitNorms(true);
         }
@@ -1514,7 +1514,7 @@ public class TestIndexWriter extends LuceneTestCase
         b.append(" a a a a a a a a");
       }
       Document doc = new Document();
-      doc.add(new Field("field", b.toString(), Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(new Field("field", b.toString(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
       writer.close();
 
@@ -1571,7 +1571,7 @@ public class TestIndexWriter extends LuceneTestCase
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(2);
       Document doc = new Document();
-      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       for(int i=0;i<19;i++)
         writer.addDocument(doc);
       writer.flush(false, true, true);
@@ -1589,7 +1589,7 @@ public class TestIndexWriter extends LuceneTestCase
       Directory dir = new RAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       Document doc = new Document();
-      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
       writer.flush();
       writer.addDocument(new Document());
@@ -1609,7 +1609,7 @@ public class TestIndexWriter extends LuceneTestCase
         IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setMergeScheduler(new ConcurrentMergeScheduler());
         Document doc = new Document();
-        doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
         writer.setMaxBufferedDocs(2);
         writer.setMergeFactor(101);
         for(int i=0;i<200;i++)
@@ -1663,7 +1663,7 @@ public class TestIndexWriter extends LuceneTestCase
     IndexWriter ir = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     
     Document document = new Document();
-    document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     ir.addDocument(document);
     ir.close();
@@ -1675,17 +1675,17 @@ public class TestIndexWriter extends LuceneTestCase
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document document = new Document();
-    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
     document = new Document();
-    document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.ANALYZED,
                            Field.TermVector.NO));
     iw.addDocument(document);
     // Make first segment
     iw.flush();
 
-    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
     // Make 2nd segment
@@ -1701,13 +1701,13 @@ public class TestIndexWriter extends LuceneTestCase
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document document = new Document();
-    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
     iw.flush();
 
     document = new Document();
-    document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.ANALYZED,
                            Field.TermVector.NO));
     iw.addDocument(document);
     // Make first segment
@@ -1715,7 +1715,7 @@ public class TestIndexWriter extends LuceneTestCase
 
     iw.optimize();
 
-    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
     // Make 2nd segment
@@ -1733,7 +1733,7 @@ public class TestIndexWriter extends LuceneTestCase
       MockRAMDirectory dir = new MockRAMDirectory();
       IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       Document document = new Document();
-      document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+      document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
                              Field.TermVector.YES));
       iw.setMaxBufferedDocs(2);
       iw.setMergeFactor(2);
@@ -1775,7 +1775,7 @@ public class TestIndexWriter extends LuceneTestCase
     iw.setMaxBufferedDocs(2);
     iw.setMergeFactor(2);
     Document document = new Document();
-    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.TOKENIZED,
+    document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
                            Field.TermVector.YES));
     for(int i=0;i<177;i++)
       iw.addDocument(document);
@@ -1805,7 +1805,7 @@ public class TestIndexWriter extends LuceneTestCase
     Document doc = new Document();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
     doc.add(new Field("content", contents, Field.Store.NO,
-        Field.Index.TOKENIZED));
+        Field.Index.ANALYZED));
     try {
       writer.addDocument(doc);
       fail("did not hit expected exception");
@@ -1815,13 +1815,13 @@ public class TestIndexWriter extends LuceneTestCase
     // Make sure we can add another normal document
     doc = new Document();
     doc.add(new Field("content", "aa bb cc dd", Field.Store.NO,
-        Field.Index.TOKENIZED));
+        Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     // Make sure we can add another normal document
     doc = new Document();
     doc.add(new Field("content", "aa bb cc dd", Field.Store.NO,
-        Field.Index.TOKENIZED));
+        Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.close();
@@ -1887,7 +1887,7 @@ public class TestIndexWriter extends LuceneTestCase
     Document doc = new Document();
     String contents = "aa bb cc dd ee ff gg hh ii jj kk";
     doc.add(new Field("content", contents, Field.Store.NO,
-        Field.Index.TOKENIZED));
+        Field.Index.ANALYZED));
     boolean hitError = false;
     for(int i=0;i<200;i++) {
       try {
@@ -1939,13 +1939,13 @@ public class TestIndexWriter extends LuceneTestCase
       //writer.setInfoStream(System.out);
       Document doc = new Document();
       doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
       writer.addDocument(doc);
       doc.add(new Field("crash", "this should crash after 4 terms", Field.Store.YES,
-                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       doc.add(new Field("other", "this will not get indexed", Field.Store.YES,
-                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       try {
         writer.addDocument(doc);
         fail("did not hit expected exception");
@@ -1955,7 +1955,7 @@ public class TestIndexWriter extends LuceneTestCase
       if (0 == i) {
         doc = new Document();
         doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                          Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                          Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
         writer.addDocument(doc);
         writer.addDocument(doc);
       }
@@ -1982,7 +1982,7 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMaxBufferedDocs(10);
       doc = new Document();
       doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
       writer.optimize();
@@ -2034,13 +2034,13 @@ public class TestIndexWriter extends LuceneTestCase
                   for(int iter=0;iter<NUM_ITER;iter++) {
                     Document doc = new Document();
                     doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                                      Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
                     writer.addDocument(doc);
                     writer.addDocument(doc);
                     doc.add(new Field("crash", "this should crash after 4 terms", Field.Store.YES,
-                                      Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
                     doc.add(new Field("other", "this will not get indexed", Field.Store.YES,
-                                      Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
                     try {
                       writer.addDocument(doc);
                       fail("did not hit expected exception");
@@ -2050,7 +2050,7 @@ public class TestIndexWriter extends LuceneTestCase
                     if (0 == finalI) {
                       doc = new Document();
                       doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
                       writer.addDocument(doc);
                       writer.addDocument(doc);
                     }
@@ -2100,7 +2100,7 @@ public class TestIndexWriter extends LuceneTestCase
       writer.setMaxBufferedDocs(10);
       Document doc = new Document();
       doc.add(new Field("contents", "here are some contents", Field.Store.YES,
-                        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       for(int j=0;j<17;j++)
         writer.addDocument(doc);
       writer.optimize();
@@ -2140,21 +2140,21 @@ public class TestIndexWriter extends LuceneTestCase
       if (i == 7) {
         // Add empty docs here
         doc.add(new Field("content3", "", Field.Store.NO,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
       } else {
         Field.Store storeVal;
         if (i%2 == 0) {
           doc.add(new Field("content4", contents, Field.Store.YES,
-                            Field.Index.TOKENIZED));
+                            Field.Index.ANALYZED));
           storeVal = Field.Store.YES;
         } else
           storeVal = Field.Store.NO;
         doc.add(new Field("content1", contents, storeVal,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         doc.add(new Field("content3", "", Field.Store.YES,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
         doc.add(new Field("content5", "", storeVal,
-                          Field.Index.TOKENIZED));
+                          Field.Index.ANALYZED));
       }
 
       for(int j=0;j<4;j++)
@@ -2178,7 +2178,7 @@ public class TestIndexWriter extends LuceneTestCase
     RAMDirectory directory = new MockRAMDirectory();
 
     final Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.UN_TOKENIZED);
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
     for(int pass=0;pass<3;pass++) {
@@ -2287,7 +2287,7 @@ public class TestIndexWriter extends LuceneTestCase
     public void run() {
 
       final Document doc = new Document();
-      doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+      doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
 
       int idUpto = 0;
       int fullCount = 0;
@@ -2414,7 +2414,7 @@ public class TestIndexWriter extends LuceneTestCase
     dir.setMaxSizeInBytes(dir.getRecomputedActualSizeInBytes());
     writer.setMaxBufferedDocs(2);
     final Document doc = new Document();
-    doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     try {
       writer.addDocument(doc);
       fail("did not hit disk full");
@@ -2516,7 +2516,7 @@ public class TestIndexWriter extends LuceneTestCase
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     final Document doc = new Document();
-    doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
 
     for(int i=0;i<6;i++)
       writer.addDocument(doc);
@@ -2721,7 +2721,7 @@ public class TestIndexWriter extends LuceneTestCase
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");
-    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
@@ -2876,7 +2876,7 @@ public class TestIndexWriter extends LuceneTestCase
       document = new Document();
       document.add(storedField);
       Field termVectorField = new Field("termVector", "termVector",
-                                        Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                        Field.Store.NO, Field.Index.NOT_ANALYZED,
                                         Field.TermVector.WITH_POSITIONS_OFFSETS);
 
       document.add(termVectorField);
@@ -2930,7 +2930,7 @@ public class TestIndexWriter extends LuceneTestCase
       document = new Document();
       document.add(storedField);
       Field termVectorField = new Field("termVector", "termVector",
-                                        Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                        Field.Store.NO, Field.Index.NOT_ANALYZED,
                                         Field.TermVector.WITH_POSITIONS_OFFSETS);
       document.add(termVectorField);
       writer.addDocument(document);
@@ -2964,7 +2964,7 @@ public class TestIndexWriter extends LuceneTestCase
                                   Field.Index.NO);
     document.add(storedField);
     Field termVectorField = new Field("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
                                       Field.TermVector.WITH_POSITIONS_OFFSETS);
     document.add(termVectorField);
     for(int i=0;i<10;i++)
@@ -3004,7 +3004,7 @@ public class TestIndexWriter extends LuceneTestCase
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");
-    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("field", b.toString(), Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
@@ -3032,7 +3032,7 @@ public class TestIndexWriter extends LuceneTestCase
                                   Field.Index.NO);
     document.add(storedField);
     Field termVectorField = new Field("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
                                       Field.TermVector.WITH_POSITIONS_OFFSETS);
     document.add(termVectorField);
     for(int i=0;i<10;i++)
@@ -3079,7 +3079,7 @@ public class TestIndexWriter extends LuceneTestCase
                                   Field.Index.NO);
     document.add(storedField);
     Field termVectorField = new Field("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
                                       Field.TermVector.WITH_POSITIONS_OFFSETS);
     document.add(termVectorField);
     for(int i=0;i<98;i++)
@@ -3126,7 +3126,7 @@ public class TestIndexWriter extends LuceneTestCase
                                   Field.Index.NO);
     document.add(storedField);
     Field termVectorField = new Field("termVector", "termVector",
-                                      Field.Store.NO, Field.Index.UN_TOKENIZED,
+                                      Field.Store.NO, Field.Index.NOT_ANALYZED,
                                       Field.TermVector.WITH_POSITIONS_OFFSETS);
     document.add(termVectorField);
     for(int i=0;i<98;i++)
@@ -3160,7 +3160,7 @@ public class TestIndexWriter extends LuceneTestCase
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer());
     Document doc = new Document();
-    doc.add(new Field("", "a b c", Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
   }
@@ -3186,7 +3186,7 @@ public class TestIndexWriter extends LuceneTestCase
     MockIndexWriter w = new MockIndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
-                      Field.Index.TOKENIZED));
+                      Field.Index.ANALYZED));
     w.addDocument(doc);
     w.doFail = true;
     try {
@@ -3207,7 +3207,7 @@ public class TestIndexWriter extends LuceneTestCase
     w.setMaxBufferedDocs(2);
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
-                      Field.Index.TOKENIZED));
+                      Field.Index.ANALYZED));
     w.addDocument(doc);
 
     Analyzer analyzer = new Analyzer() {
@@ -3218,7 +3218,7 @@ public class TestIndexWriter extends LuceneTestCase
 
     Document crashDoc = new Document();
     crashDoc.add(new Field("crash", "do it on token 4", Field.Store.YES,
-                           Field.Index.TOKENIZED));
+                           Field.Index.ANALYZED));
     try {
       w.addDocument(crashDoc, analyzer);
       fail("did not hit expected exception");
@@ -3258,7 +3258,7 @@ public class TestIndexWriter extends LuceneTestCase
     w.setMergeScheduler(new ConcurrentMergeScheduler());
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
-                      Field.Index.TOKENIZED));
+                      Field.Index.ANALYZED));
     for(int i=0;i<10;i++)
       try {
         w.addDocument(doc);
@@ -3291,7 +3291,7 @@ public class TestIndexWriter extends LuceneTestCase
     MockIndexWriter3 w = new MockIndexWriter3(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
-                      Field.Index.TOKENIZED));
+                      Field.Index.ANALYZED));
     w.addDocument(doc);
     w.commit();
     assertTrue(w.wasCalled);
@@ -3343,7 +3343,7 @@ public class TestIndexWriter extends LuceneTestCase
     IndexWriter w = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
-                      Field.Index.TOKENIZED));
+                      Field.Index.ANALYZED));
     w.addDocument(doc);
     dir.failOn(failure);
     try {
@@ -3393,7 +3393,7 @@ public class TestIndexWriter extends LuceneTestCase
 
     final int count = utf8Data.length/2;
     for(int i=0;i<count;i++)
-      doc.add(new Field("f" + i, utf8Data[2*i], Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("f" + i, utf8Data[2*i], Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(doc);
     w.close();
 
@@ -4093,7 +4093,7 @@ public class TestIndexWriter extends LuceneTestCase
           Document doc = new Document();
           doc.add(new Field("test1", "this is some data that will be compressed this this this", Field.Store.COMPRESS, Field.Index.NO));
           doc.add(new Field("test2", new byte[20], Field.Store.COMPRESS));
-          doc.add(new Field("field" + i, "random field", Field.Store.NO, Field.Index.TOKENIZED));
+          doc.add(new Field("field" + i, "random field", Field.Store.NO, Field.Index.ANALYZED));
           w.addDocument(doc);
         } finally {
           w.close();

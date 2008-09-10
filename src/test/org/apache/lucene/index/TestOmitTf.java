@@ -60,11 +60,11 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     f2.setOmitTf(true);
     d.add(f2);
         
@@ -109,11 +109,11 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     f2.setOmitTf(true);
     d.add(f2);
 
@@ -163,11 +163,11 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     // this field will have Tf
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f1);
        
     // this field will NOT have Tf
-    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f2);
 
     for(int i=0;i<5;i++)
@@ -212,7 +212,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.setUseCompoundFile(false);
     Document d = new Document();
         
-    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.TOKENIZED);
+    Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
     f1.setOmitTf(true);
     d.add(f1);
 
@@ -249,11 +249,11 @@ public class TestOmitTf extends LuceneTestCase {
       Document d = new Document();
       sb.append(term).append(" ");
       String content  = sb.toString();
-      Field noTf = new Field("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.TOKENIZED);
+      Field noTf = new Field("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
       noTf.setOmitTf(true);
       d.add(noTf);
           
-      Field tf = new Field("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.TOKENIZED);
+      Field tf = new Field("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);
       d.add(tf);
           
       writer.addDocument(d);

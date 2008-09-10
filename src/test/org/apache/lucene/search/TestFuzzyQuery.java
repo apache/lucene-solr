@@ -252,7 +252,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   private void addDoc(String text, IndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("field", text, Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
 

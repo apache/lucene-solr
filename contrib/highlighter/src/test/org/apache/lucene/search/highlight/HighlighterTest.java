@@ -1021,7 +1021,7 @@ public class HighlighterTest extends TestCase implements Formatter {
     RAMDirectory ramDir1 = new RAMDirectory();
     IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true);
     Document d = new Document();
-    Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.TOKENIZED);
+    Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
     writer1.addDocument(d);
     writer1.optimize();
@@ -1032,7 +1032,7 @@ public class HighlighterTest extends TestCase implements Formatter {
     RAMDirectory ramDir2 = new RAMDirectory();
     IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true);
     d = new Document();
-    f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.TOKENIZED);
+    f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
     writer2.addDocument(d);
     writer2.optimize();
@@ -1265,7 +1265,7 @@ public class HighlighterTest extends TestCase implements Formatter {
   
   private Document doc( String f, String v ){
     Document doc = new Document();
-    doc.add( new Field( f, v, Store.YES, Index.TOKENIZED ) );
+    doc.add( new Field( f, v, Store.YES, Index.ANALYZED ) );
     return doc;
   }
   
@@ -1395,7 +1395,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
-    Field f = new Field(FIELD_NAME, text, Field.Store.YES, Field.Index.TOKENIZED);
+    Field f = new Field(FIELD_NAME, text, Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
     writer.addDocument(d);
 

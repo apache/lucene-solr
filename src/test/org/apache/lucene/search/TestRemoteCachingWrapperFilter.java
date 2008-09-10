@@ -58,15 +58,15 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("type", "A", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("type", "A", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     //Need a second document to search for
     doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("type", "B", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("type", "B", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();

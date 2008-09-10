@@ -368,7 +368,7 @@ public class MemoryIndexTest extends TestCase {
   
   private Document createDocument(String content) {
     Document doc = new Document();
-    doc.add(new Field(FIELD_NAME, content, Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field(FIELD_NAME, content, Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
     return doc;
   }
   

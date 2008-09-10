@@ -137,9 +137,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field("content", "bbb " + i, Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
@@ -172,9 +172,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field("content", "bbb " + i, Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -210,9 +210,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field("content", "bbb " + i, Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -434,7 +434,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new Field("content", "aaa", Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
   }
@@ -443,7 +443,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new Field("content", "bbb", Field.Store.NO,
-                        Field.Index.TOKENIZED));
+                        Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
   }
@@ -507,7 +507,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     Document doc = new Document();
     doc.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
-                      Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<60;i++)
       writer.addDocument(doc);
     writer.setMaxBufferedDocs(200);

@@ -76,13 +76,13 @@ implements Serializable {
 	        for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
 	        Document doc = new Document();
 	            if((i%5)!=0) { // some documents must not have an entry in the first sort field
-	                doc.add (new Field("publicationDate_", random.getLuceneDate(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+	                doc.add (new Field("publicationDate_", random.getLuceneDate(), Field.Store.YES, Field.Index.NOT_ANALYZED));
 	            }
 	            if((i%7)==0) { // some documents to match the query (see below) 
-	                doc.add (new Field("content", "test", Field.Store.YES, Field.Index.TOKENIZED));
+	                doc.add (new Field("content", "test", Field.Store.YES, Field.Index.ANALYZED));
 	            }
 	            // every document has a defined 'mandant' field
-	            doc.add(new Field("mandant", Integer.toString(i%3), Field.Store.YES, Field.Index.UN_TOKENIZED));
+	            doc.add(new Field("mandant", Integer.toString(i%3), Field.Store.YES, Field.Index.NOT_ANALYZED));
 	            writer.addDocument (doc);
 	        }
 	        writer.optimize ();

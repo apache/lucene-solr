@@ -122,9 +122,9 @@ public class ListSearcher extends AbstractListModel {
                 //this will allow us to retrive the results later
                 //and map this list model's row to a row in the decorated
                 //list model
-                document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.TOKENIZED));
+                document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.ANALYZED));
                 //add the string representation of the row to the index
-                document.add(new Field(FIELD_NAME, String.valueOf(listModel.getElementAt(row)).toLowerCase(), Field.Store.YES, Field.Index.TOKENIZED));
+                document.add(new Field(FIELD_NAME, String.valueOf(listModel.getElementAt(row)).toLowerCase(), Field.Store.YES, Field.Index.ANALYZED));
                 writer.addDocument(document);
             }
             writer.optimize();

@@ -34,33 +34,33 @@ public class TestTermVectorAccessor extends TestCase {
     Document doc;
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES));
+    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
+    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.NO));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.NO));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.NO));
+    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
     iw.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.NO));
-    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES));
+    doc.add(new Field("a", "a b a c a d a e a f a g a h a", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("b", "a b c b d b e b f b g b h b", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.NO));
+    doc.add(new Field("c", "a c b c d c e c f c g c h c", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES));
     iw.addDocument(doc);
 
     iw.close();

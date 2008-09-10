@@ -38,8 +38,8 @@ public class TestDocBoost extends LuceneTestCase {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
-    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
-    Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     f2.setBoost(2.0f);
 
     Document d1 = new Document();

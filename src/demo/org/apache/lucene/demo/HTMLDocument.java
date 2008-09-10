@@ -49,19 +49,19 @@ public class HTMLDocument {
     // Add the url as a field named "path".  Use a field that is 
     // indexed (i.e. searchable), but don't tokenize the field into words.
     doc.add(new Field("path", f.getPath().replace(dirSep, '/'), Field.Store.YES,
-        Field.Index.UN_TOKENIZED));
+        Field.Index.NOT_ANALYZED));
 
     // Add the last modified date of the file a field named "modified".  
     // Use a field that is indexed (i.e. searchable), but don't tokenize
     // the field into words.
     doc.add(new Field("modified",
         DateTools.timeToString(f.lastModified(), DateTools.Resolution.MINUTE),
-        Field.Store.YES, Field.Index.UN_TOKENIZED));
+        Field.Store.YES, Field.Index.NOT_ANALYZED));
 
     // Add the uid as a field, so that index can be incrementally maintained.
     // This field is not stored with document, it is indexed, but it is not
     // tokenized prior to indexing.
-    doc.add(new Field("uid", uid(f), Field.Store.NO, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("uid", uid(f), Field.Store.NO, Field.Index.NOT_ANALYZED));
 
     FileInputStream fis = new FileInputStream(f);
     HTMLParser parser = new HTMLParser(fis);
@@ -75,7 +75,7 @@ public class HTMLDocument {
     doc.add(new Field("summary", parser.getSummary(), Field.Store.YES, Field.Index.NO));
 
     // Add the title as a field that it can be searched and that is stored.
-    doc.add(new Field("title", parser.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("title", parser.getTitle(), Field.Store.YES, Field.Index.ANALYZED));
 
     // return the document
     return doc;

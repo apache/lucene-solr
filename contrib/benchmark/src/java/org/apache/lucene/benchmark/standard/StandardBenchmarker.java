@@ -258,11 +258,11 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
             for (int i = 0; i < tags.length; i++)
             {
                 doc.add(new Field("tag" + i, tags[i], stored == true ? Field.Store.YES : Field.Store.NO,
-                                  tokenized == true ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
+                                  tokenized == true ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
             }
         }
         doc.add(new Field("file", in.getCanonicalPath(), stored == true ? Field.Store.YES : Field.Store.NO,
-                          tokenized == true ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
+                          tokenized == true ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
         BufferedReader reader = new BufferedReader(new FileReader(in));
         String line = null;
         //First line is the date, 3rd is the title, rest is body
@@ -279,17 +279,17 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
         
         Date date = format.parse(dateStr.trim());
 
-        doc.add(new Field("date", DateTools.dateToString(date, DateTools.Resolution.SECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("date", DateTools.dateToString(date, DateTools.Resolution.SECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         if (title != null)
         {
             doc.add(new Field("title", title, stored == true ? Field.Store.YES : Field.Store.NO,
-                              tokenized == true ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
+                              tokenized == true ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
         }
         if (body.length() > 0)
         {
             doc.add(new Field("body", body.toString(), stored == true ? Field.Store.YES : Field.Store.NO,
-                              tokenized == true ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
+                              tokenized == true ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED, tfv == true ? Field.TermVector.YES : Field.TermVector.NO));
         }
 
         return doc;

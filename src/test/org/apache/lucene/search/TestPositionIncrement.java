@@ -65,7 +65,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(store, analyzer, true,
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document d = new Document();
-    d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
     writer.optimize();
     writer.close();

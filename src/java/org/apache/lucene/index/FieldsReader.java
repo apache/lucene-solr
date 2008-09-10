@@ -405,9 +405,9 @@ final class FieldsReader {
   private Field.Index getIndexType(FieldInfo fi, boolean tokenize) {
     Field.Index index;
     if (fi.isIndexed && tokenize)
-      index = Field.Index.TOKENIZED;
+      index = Field.Index.ANALYZED;
     else if (fi.isIndexed && !tokenize)
-      index = Field.Index.UN_TOKENIZED;
+      index = Field.Index.NOT_ANALYZED;
     else
       index = Field.Index.NO;
     return index;

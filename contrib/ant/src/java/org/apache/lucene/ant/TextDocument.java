@@ -79,8 +79,8 @@ public class TextDocument {
         // make a new, empty document
         Document doc = new Document();
 
-        doc.add(new Field("title", f.getName(), Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(new Field("contents", textDoc.getContents(), Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("title", f.getName(), Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("contents", textDoc.getContents(), Field.Store.YES, Field.Index.ANALYZED));
         doc.add(new Field("rawcontents", textDoc.getContents(), Field.Store.YES, Field.Index.NO));
 
         // return the document

@@ -224,7 +224,7 @@ public class TestPayloadSpans extends TestCase {
     IndexWriter writer = new IndexWriter(directory, analyzer, true);
     writer.setSimilarity(similarity);
     Document doc = new Document();
-    doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   
     writer.close();
@@ -292,7 +292,7 @@ public class TestPayloadSpans extends TestCase {
     for(int i = 0; i < docs.length; i++) {
       doc = new Document();
       String docText = docs[i];
-      doc.add(new Field(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
 

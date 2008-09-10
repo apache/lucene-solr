@@ -51,8 +51,8 @@ public class QueryAutoStopWordAnalyzerTest extends TestCase {
       Document doc = new Document();
       String variedFieldValue = variedFieldValues[i % variedFieldValues.length];
       String repetitiveFieldValue = repetitiveFieldValues[i % repetitiveFieldValues.length];
-      doc.add(new Field("variedField", variedFieldValue, Field.Store.YES, Field.Index.TOKENIZED));
-      doc.add(new Field("repetitiveField", repetitiveFieldValue, Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("variedField", variedFieldValue, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field("repetitiveField", repetitiveFieldValue, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();

@@ -50,8 +50,8 @@ public class TestSpellChecker extends TestCase {
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(new Field("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
-      doc.add(new Field("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.TOKENIZED)); // + word thousand
+      doc.add(new Field("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(new Field("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
       writer.addDocument(doc);
     }
     writer.close();

@@ -63,19 +63,19 @@ public class LineDocMaker extends BasicDocMaker {
       bodyField = new Field(BasicDocMaker.BODY_FIELD,
                             "",
                             storeVal,
-                            Field.Index.TOKENIZED,
+                            Field.Index.ANALYZED,
                             termVecVal);
       titleField = new Field(BasicDocMaker.TITLE_FIELD,
                              "",
                              storeVal,
-                             Field.Index.TOKENIZED,
+                             Field.Index.ANALYZED,
                              termVecVal);
       dateField = new Field(BasicDocMaker.DATE_FIELD,
                             "",
                             storeVal,
-                            Field.Index.TOKENIZED,
+                            Field.Index.ANALYZED,
                             termVecVal);
-      idField = new Field(BasicDocMaker.ID_FIELD, "", Field.Store.YES, Field.Index.NO_NORMS);
+      idField = new Field(BasicDocMaker.ID_FIELD, "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
 
       doc = new Document();
       doc.add(bodyField);
@@ -111,17 +111,17 @@ public class LineDocMaker extends BasicDocMaker {
         Field localTitleField = new Field(BasicDocMaker.TITLE_FIELD,
                                           title,
                                           storeVal,
-                                          Field.Index.TOKENIZED,
+                                          Field.Index.ANALYZED,
                                           termVecVal);
         Field localBodyField = new Field(BasicDocMaker.BODY_FIELD,
                                          body,
                                          storeVal,
-                                         Field.Index.TOKENIZED,
+                                         Field.Index.ANALYZED,
                                          termVecVal);
         Field localDateField = new Field(BasicDocMaker.BODY_FIELD,
                                          date,
                                          storeVal,
-                                         Field.Index.TOKENIZED,
+                                         Field.Index.ANALYZED,
                                          termVecVal);
         Document localDoc = new Document();
         localDoc.add(localBodyField);

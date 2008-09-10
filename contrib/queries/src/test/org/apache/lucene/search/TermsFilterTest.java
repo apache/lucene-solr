@@ -43,7 +43,7 @@ public class TermsFilterTest extends TestCase
 		{
 			Document doc=new Document();
 			int term=i*10; //terms are units of 10;
-			doc.add(new Field(fieldName,""+term,Field.Store.YES,Field.Index.UN_TOKENIZED));
+			doc.add(new Field(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
 			w.addDocument(doc);			
 		}
 		w.close();

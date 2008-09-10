@@ -68,7 +68,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
                                            WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for (int i = 0; i < categories.length; i++) {
         Document doc = new Document();
-        doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
         writer.addDocument(doc);
       }
       writer.close();

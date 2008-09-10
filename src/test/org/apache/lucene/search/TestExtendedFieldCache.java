@@ -43,9 +43,9 @@ public class TestExtendedFieldCache extends LuceneTestCase {
     double theDouble = Double.MAX_VALUE;
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
-      doc.add(new Field("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.UN_TOKENIZED));
-      doc.add(new Field("theDouble", String.valueOf(theDouble--), Field.Store.NO, Field.Index.UN_TOKENIZED));
-      doc.add(new Field("text", English.intToEnglish(i), Field.Store.NO, Field.Index.TOKENIZED));
+      doc.add(new Field("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("theDouble", String.valueOf(theDouble--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("text", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();

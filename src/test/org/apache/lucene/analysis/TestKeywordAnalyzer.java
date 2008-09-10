@@ -43,8 +43,8 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
                                          true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field("description", "Illidium Space Modulator", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("description", "Illidium Space Modulator", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.close();
@@ -69,10 +69,10 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir,new KeywordAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("partnum", "Q37", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("partnum", "Q37", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
 

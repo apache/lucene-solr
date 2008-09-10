@@ -95,8 +95,8 @@ public class HtmlDocument {
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
 
-        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
-        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.TOKENIZED));
+        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.ANALYZED));
+        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.ANALYZED));
 
         return luceneDoc;
     }
@@ -119,8 +119,8 @@ public class HtmlDocument {
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
 
-        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
-        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.TOKENIZED));
+        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.ANALYZED));
+        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.ANALYZED));
 
         String contents = null;
         BufferedReader br =

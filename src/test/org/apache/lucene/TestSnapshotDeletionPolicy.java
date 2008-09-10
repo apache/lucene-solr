@@ -72,7 +72,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     // Force frequent commits
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<7;i++)
       writer.addDocument(doc);
     IndexCommit cp = (IndexCommit) dp.snapshot();
@@ -115,7 +115,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     final Thread t = new Thread() {
         public void run() {
           Document doc = new Document();
-          doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+          doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
           while(System.currentTimeMillis() < stopTime) {
             for(int i=0;i<27;i++) {
               try {
@@ -159,7 +159,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     // final segment, so deletion policy has a chance to
     // delete again:
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
 
     // Make sure we don't have any leftover files in the

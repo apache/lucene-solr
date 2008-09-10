@@ -917,10 +917,10 @@ public class TestQueryParser extends LuceneTestCase {
   private static void addDateDoc(String content, int year, int month,
       int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field("f", content, Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field("f", content, Field.Store.YES, Field.Index.ANALYZED));
     Calendar cal = Calendar.getInstance();
     cal.set(year, month-1, day, hour, minute, second);
-    d.add(new Field("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    d.add(new Field("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
     iw.addDocument(d);
   }
 

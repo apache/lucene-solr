@@ -53,23 +53,23 @@ public class TestLuceneDictionary extends TestCase {
     Document doc;
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new  Field("contents", "Tom", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new  Field("contents", "Tom", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new  Field("contents", "Jerry", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new  Field("contents", "Jerry", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("zzz", "bar", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.optimize();

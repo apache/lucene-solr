@@ -56,10 +56,10 @@ public class TestSimilarity extends LuceneTestCase {
     writer.setSimilarity(new SimpleSimilarity());
     
     Document d1 = new Document();
-    d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
 
     Document d2 = new Document();
-    d2.add(new Field("field", "a b c", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("field", "a b c", Field.Store.YES, Field.Index.ANALYZED));
     
     writer.addDocument(d1);
     writer.addDocument(d2);

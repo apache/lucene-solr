@@ -69,30 +69,49 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * {@link Field.Store stored}. */
     public static final Index NO = new Index("NO");
 
-    /** Index the field's value so it can be searched. An Analyzer will be used
-     * to tokenize and possibly further normalize the text before its
-     * terms will be stored in the index. This is useful for common text.
-     */
-    public static final Index TOKENIZED = new Index("TOKENIZED");
+    /** Index the tokens produced by running the field's
+     * value through an Analyzer.  This is useful for
+     * common text. */
+    public static final Index ANALYZED = new Index("ANALYZED");
+
+    /** @deprecated this has been renamed to {@link #ANALYZED} */
+    public static final Index TOKENIZED = ANALYZED;
 
     /** Index the field's value without using an Analyzer, so it can be searched.
      * As no analyzer is used the value will be stored as a single term. This is
      * useful for unique Ids like product numbers.
      */
-    public static final Index UN_TOKENIZED = new Index("UN_TOKENIZED");
+    public static final Index NOT_ANALYZED = new Index("NOT_ANALYZED");
 
-    /** Index the field's value without an Analyzer, and disable
-     * the storing of norms.  No norms means that index-time boosting
-     * and field length normalization will be disabled.  The benefit is
-     * less memory usage as norms take up one byte per indexed field
-     * for every document in the index.
-     * Note that once you index a given field <i>with</i> norms enabled,
-     * disabling norms will have no effect.  In other words, for NO_NORMS
-     * to have the above described effect on a field, all instances of that
-     * field must be indexed with NO_NORMS from the beginning.
-     */
-    public static final Index NO_NORMS = new Index("NO_NORMS");
+    /** @deprecated This has been renamed to {@link #NOT_ANALYZED} */
+    public static final Index UN_TOKENIZED = NOT_ANALYZED;
 
+    /** Expert: Index the field's value without an Analyzer,
+     * and also disable the storing of norms.  Note that you
+     * can also separately enable/disable norms by calling
+     * {@link #setOmitNorms}.  No norms means that
+     * index-time field and document boosting and field
+     * length normalization are disabled.  The benefit is
+     * less memory usage as norms take up one byte of RAM
+     * per indexed field for every document in the index,
+     * during searching.  Note that once you index a given
+     * field <i>with</i> norms enabled, disabling norms will
+     * have no effect.  In other words, for this to have the
+     * above described effect on a field, all instances of
+     * that field must be indexed with NOT_ANALYZED_NO_NORMS
+     * from the beginning. */
+    public static final Index NOT_ANALYZED_NO_NORMS = new Index("NOT_ANALYZED_NO_NORMS");
+
+    /** @deprecated This has been renamed to
+     *  {@link #NOT_ANALYZED_NO_NORMS} */
+    public static final Index NO_NORMS = NOT_ANALYZED_NO_NORMS;
+
+    /** Expert: Index the tokens produced by running the
+     *  field's value through an Analyzer, and also
+     *  separately disable the storing of norms.  See
+     *  {@link #NOT_ANALYZED_NO_NORMS} for what norms are
+     *  and why you may want to disable them. */
+    public static final Index ANALYZED_NO_NORMS = new Index("ANALYZED_NO_NORMS");
   }
 
   /** Specifies whether and how a field should have term vectors. */
@@ -284,15 +303,19 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (index == Index.NO) {
       this.isIndexed = false;
       this.isTokenized = false;
-    } else if (index == Index.TOKENIZED) {
+    } else if (index == Index.ANALYZED) {
       this.isIndexed = true;
       this.isTokenized = true;
-    } else if (index == Index.UN_TOKENIZED) {
+    } else if (index == Index.NOT_ANALYZED) {
       this.isIndexed = true;
       this.isTokenized = false;
-    } else if (index == Index.NO_NORMS) {
+    } else if (index == Index.NOT_ANALYZED_NO_NORMS) {
       this.isIndexed = true;
       this.isTokenized = false;
+      this.omitNorms = true;
+    } else if (index == Index.ANALYZED_NO_NORMS) {
+      this.isIndexed = true;
+      this.isTokenized = true;
       this.omitNorms = true;
     } else {
       throw new IllegalArgumentException("unknown index parameter " + index);

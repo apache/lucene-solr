@@ -53,23 +53,23 @@ extends LuceneTestCase {
     IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
-    doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add (new Field("sorter", "b", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (new Field("sorter", "b", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two three four", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add (new Field("sorter", "d", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("field", "one two three four", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (new Field("sorter", "d", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two three y", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add (new Field("sorter", "a", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("field", "one two three y", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (new Field("sorter", "a", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     writer.optimize ();

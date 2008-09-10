@@ -57,11 +57,11 @@ public class TestPhrasePrefixQuery
         Document doc3 = new Document();
         Document doc4 = new Document();
         Document doc5 = new Document();
-        doc1.add(new Field("body", "blueberry pie", Field.Store.YES, Field.Index.TOKENIZED));
-        doc2.add(new Field("body", "blueberry strudel", Field.Store.YES, Field.Index.TOKENIZED));
-        doc3.add(new Field("body", "blueberry pizza", Field.Store.YES, Field.Index.TOKENIZED));
-        doc4.add(new Field("body", "blueberry chewing gum", Field.Store.YES, Field.Index.TOKENIZED));
-        doc5.add(new Field("body", "piccadilly circus", Field.Store.YES, Field.Index.TOKENIZED));
+        doc1.add(new Field("body", "blueberry pie", Field.Store.YES, Field.Index.ANALYZED));
+        doc2.add(new Field("body", "blueberry strudel", Field.Store.YES, Field.Index.ANALYZED));
+        doc3.add(new Field("body", "blueberry pizza", Field.Store.YES, Field.Index.ANALYZED));
+        doc4.add(new Field("body", "blueberry chewing gum", Field.Store.YES, Field.Index.ANALYZED));
+        doc5.add(new Field("body", "piccadilly circus", Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc1);
         writer.addDocument(doc2);
         writer.addDocument(doc3);

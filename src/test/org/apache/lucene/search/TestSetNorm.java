@@ -40,7 +40,7 @@ public class TestSetNorm extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
     // add the same document four times
-    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     Document d1 = new Document();
     d1.add(f1);
     writer.addDocument(d1);

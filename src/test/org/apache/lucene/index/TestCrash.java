@@ -41,8 +41,8 @@ public class TestCrash extends LuceneTestCase {
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
 
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("id", "0", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("id", "0", Field.Store.YES, Field.Index.ANALYZED));
     for(int i=0;i<157;i++)
       writer.addDocument(doc);
 

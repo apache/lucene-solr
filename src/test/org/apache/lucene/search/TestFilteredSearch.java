@@ -53,7 +53,7 @@ public class TestFilteredSearch extends TestCase
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
-        doc.add(new Field(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
         writer.addDocument(doc);
       }
       writer.close();

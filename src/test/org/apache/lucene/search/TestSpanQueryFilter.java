@@ -46,7 +46,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),
-              Field.Store.NO, Field.Index.TOKENIZED));
+              Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(document);
     }
     writer.close();

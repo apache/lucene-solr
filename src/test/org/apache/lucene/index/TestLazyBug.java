@@ -78,7 +78,7 @@ public class TestLazyBug extends LuceneTestCase {
                             data[f % data.length] 
                             + '#' + data[r.nextInt(data.length)], 
                             Field.Store.YES, 
-                            Field.Index.TOKENIZED));
+                            Field.Index.ANALYZED));
         }
         writer.addDocument(doc);
       }

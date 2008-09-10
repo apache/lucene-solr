@@ -173,14 +173,14 @@ public class TableSearcher extends AbstractTableModel {
                 //this will allow us to retrive the results later
                 //and map this table model's row to a row in the decorated
                 //table model
-                document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.TOKENIZED));
+                document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.ANALYZED));
                 //iterate through all columns
                 //index the value keyed by the column name
                 //NOTE: there could be a problem with using column names with spaces
                 for (int column=0; column < tableModel.getColumnCount(); column++){
                     String columnName = tableModel.getColumnName(column);
                     String columnValue = String.valueOf(tableModel.getValueAt(row, column)).toLowerCase();
-                    document.add(new Field(columnName, columnValue, Field.Store.YES, Field.Index.TOKENIZED));
+                    document.add(new Field(columnName, columnValue, Field.Store.YES, Field.Index.ANALYZED));
                 }
                 writer.addDocument(document);
             }

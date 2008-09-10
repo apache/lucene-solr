@@ -137,7 +137,7 @@ public class TestSloppyPhraseQuery extends TestCase {
 
   private static Document makeDocument(String docText) {
     Document doc = new Document();
-    Field f = new Field("f", docText, Field.Store.NO, Field.Index.TOKENIZED);
+    Field f = new Field("f", docText, Field.Store.NO, Field.Index.ANALYZED);
     f.setOmitNorms(true);
     doc.add(f);
     return doc;

@@ -97,15 +97,15 @@ public class TestFilterIndexReader extends LuceneTestCase {
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     Document d1 = new Document();
-    d1.add(new Field("default","one two", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(new Field("default","one three", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("default","one three", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(new Field("default","two four", Field.Store.YES, Field.Index.TOKENIZED));
+    d3.add(new Field("default","two four", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d3);
 
     writer.close();

@@ -130,7 +130,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     
     private void add(String s, IndexWriter writer) throws IOException {
       Document doc = new Document();
-      doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     
@@ -193,8 +193,8 @@ public class TestMultiPhraseQuery extends LuceneTestCase
   
   private void add(String s, String type, IndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("type", type, Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("type", type, Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
   }
 

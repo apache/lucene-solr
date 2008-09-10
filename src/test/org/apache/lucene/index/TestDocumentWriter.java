@@ -116,8 +116,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
-    doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
     writer.flush();
@@ -172,7 +172,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
-    doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
     writer.flush();
@@ -243,11 +243,11 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testMixedTermVectorSettingsSameField() throws Exception {
     Document doc = new Document();
     // f1 first without tv then with tv
-    doc.add(new Field("f1", "v1", Store.YES, Index.UN_TOKENIZED, TermVector.NO));
-    doc.add(new Field("f1", "v2", Store.YES, Index.UN_TOKENIZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("f1", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
+    doc.add(new Field("f1", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     // f2 first with tv then without tv
-    doc.add(new Field("f2", "v1", Store.YES, Index.UN_TOKENIZED, TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("f2", "v2", Store.YES, Index.UN_TOKENIZED, TermVector.NO));
+    doc.add(new Field("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
     RAMDirectory ram = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ram, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);

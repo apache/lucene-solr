@@ -41,7 +41,7 @@ public class TestNot extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document d1 = new Document();
-    d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(d1);
     writer.optimize();

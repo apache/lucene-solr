@@ -63,7 +63,7 @@ public class TestTermVectors extends LuceneTestCase {
         termVector = Field.TermVector.YES;
       }
       doc.add(new Field("field", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.TOKENIZED, termVector));
+          Field.Store.YES, Field.Index.ANALYZED, termVector));
       writer.addDocument(doc);
     }
     writer.close();
@@ -95,10 +95,10 @@ public class TestTermVectors extends LuceneTestCase {
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     writer.close();
     IndexReader reader = IndexReader.open(dir);
@@ -342,9 +342,9 @@ public class TestTermVectors extends LuceneTestCase {
   private void setupDoc(Document doc, String text)
   {
     doc.add(new Field("field2", text, Field.Store.YES,
-        Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("field", text, Field.Store.YES,
-        Field.Index.TOKENIZED, Field.TermVector.YES));
+        Field.Index.ANALYZED, Field.TermVector.YES));
     //System.out.println("Document: " + doc);
   }
 
@@ -355,13 +355,13 @@ public class TestTermVectors extends LuceneTestCase {
     for(int i=0;i<100;i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(i),
-                        Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
       writer.addDocument(doc);
     }
     for(int i=0;i<10;i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(100+i),
-                        Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                        Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
     }
 
@@ -386,15 +386,15 @@ public class TestTermVectors extends LuceneTestCase {
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
     doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
+                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
     doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
     doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
+                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
     doc.add(new Field("field", "one",
-                      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+                      Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     writer.close();
 

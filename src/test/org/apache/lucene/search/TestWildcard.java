@@ -142,7 +142,7 @@ public class TestWildcard
     IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
-      doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.optimize();
@@ -200,7 +200,7 @@ public class TestWildcard
     IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field,docs[i],Store.NO,Index.TOKENIZED));
+      doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));
       iw.addDocument(doc);
     }
     iw.close();

@@ -65,23 +65,23 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // creating a document to store
         Document lDoc = new Document();
-        lDoc.add(new Field("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.TOKENIZED));
-        lDoc.add(new Field("id", "doc1", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        lDoc.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        lDoc.add(new Field("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.ANALYZED));
+        lDoc.add(new Field("id", "doc1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc2 = new Document();
         lDoc2.add(new Field("fulltext", "in a galaxy far far away.....",
-            Field.Store.YES, Field.Index.TOKENIZED));
-        lDoc2.add(new Field("id", "doc2", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        lDoc2.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+            Field.Store.YES, Field.Index.ANALYZED));
+        lDoc2.add(new Field("id", "doc2", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc2.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc3 = new Document();
         lDoc3.add(new Field("fulltext", "a bizarre bug manifested itself....",
-            Field.Store.YES, Field.Index.TOKENIZED));
-        lDoc3.add(new Field("id", "doc3", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+            Field.Store.YES, Field.Index.ANALYZED));
+        lDoc3.add(new Field("id", "doc3", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
         IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -204,10 +204,10 @@ public class TestMultiSearcher extends LuceneTestCase
     private static Document createDocument(String contents1, String contents2) {
         Document document=new Document();
         
-        document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.UN_TOKENIZED));
-      document.add(new Field("other", "other contents", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      document.add(new Field("other", "other contents", Field.Store.YES, Field.Index.NOT_ANALYZED));
         if (contents2!=null) {
-            document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.UN_TOKENIZED));
+            document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.NOT_ANALYZED));
         }
         
         return document;

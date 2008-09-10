@@ -40,7 +40,7 @@ public class SingleFieldTestDb {
                                            IndexWriter.MaxFieldLength.LIMITED);
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.TOKENIZED));
+        d.add(new Field(fieldName, docs[j], Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();

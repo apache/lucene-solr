@@ -160,7 +160,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   
   private void add(String value, IndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field(FIELD_NAME, value, Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field(FIELD_NAME, value, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(d);
   }
   

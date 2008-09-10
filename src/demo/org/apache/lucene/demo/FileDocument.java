@@ -47,14 +47,14 @@ public class FileDocument {
 
     // Add the path of the file as a field named "path".  Use a field that is 
     // indexed (i.e. searchable), but don't tokenize the field into words.
-    doc.add(new Field("path", f.getPath(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("path", f.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED));
 
     // Add the last modified date of the file a field named "modified".  Use 
     // a field that is indexed (i.e. searchable), but don't tokenize the field
     // into words.
     doc.add(new Field("modified",
         DateTools.timeToString(f.lastModified(), DateTools.Resolution.MINUTE),
-        Field.Store.YES, Field.Index.UN_TOKENIZED));
+        Field.Store.YES, Field.Index.NOT_ANALYZED));
 
     // Add the contents of the file to a field named "contents".  Specify a Reader,
     // so that the text of the file is tokenized and indexed, but not stored.

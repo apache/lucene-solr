@@ -330,12 +330,12 @@ public class IndexTask extends Task {
                 } else {
                   // Add the path of the file as a field named "path".  Use a Keyword field, so
                   // that the index stores the path, and so that the path is searchable
-                  doc.add(new Field("path", file.getPath(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+                  doc.add(new Field("path", file.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED));
 
                   // Add the last modified date of the file a field named "modified".  Use a
                   // Keyword field, so that it's searchable, but so that no attempt is made
                   // to tokenize the field into words.
-                  doc.add(new Field("modified", DateTools.timeToString(file.lastModified(), DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
+                  doc.add(new Field("modified", DateTools.timeToString(file.lastModified(), DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
 
                   writer.addDocument(doc);
                   totalIndexed++;

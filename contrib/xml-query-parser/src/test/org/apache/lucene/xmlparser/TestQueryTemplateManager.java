@@ -128,7 +128,7 @@ public class TestQueryTemplateManager extends TestCase {
 			if(st.hasMoreTokens())
 			{
 				String value=st.nextToken().trim();
-				result.add(new Field(name,value,Field.Store.YES,Field.Index.TOKENIZED));
+				result.add(new Field(name,value,Field.Store.YES,Field.Index.ANALYZED));
 			}
 		}
 		return result;

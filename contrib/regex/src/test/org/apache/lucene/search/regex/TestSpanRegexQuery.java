@@ -36,13 +36,13 @@ public class TestSpanRegexQuery extends TestCase {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true);
     Document doc = new Document();
-//    doc.add(new Field("field", "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.TOKENIZED));
+//    doc.add(new Field("field", "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
 //    writer.addDocument(doc);
 //    doc = new Document();
-    doc.add(new Field("field", "auto update", Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "auto update", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("field", "first auto update", Field.Store.NO, Field.Index.TOKENIZED));
+    doc.add(new Field("field", "first auto update", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
