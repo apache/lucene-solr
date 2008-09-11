@@ -42,15 +42,15 @@ public class TestShingleMatrixFilter extends TestCase {
 
     TokenStream ts;
 
-    ts = new ShingleMatrixFilter(new EmptyTokenStream(), 1, 2, ' ', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
+    ts = new ShingleMatrixFilter(new EmptyTokenStream(), 1, 2, new Character(' '), false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
     assertNull(ts.next(new Token()));
 
     TokenListStream tls;
-    LinkedList<Token> tokens;
+    LinkedList tokens;
 
     // test a plain old token stream with synonyms translated to rows.
 
-    tokens = new LinkedList<Token>();
+    tokens = new LinkedList();
     tokens.add(createToken("please", 0, 6));
     tokens.add(createToken("divide", 7, 13));
     tokens.add(createToken("this", 14, 18));
@@ -62,7 +62,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     // bi-grams
 
-    ts = new ShingleMatrixFilter(tls, 1, 2, ' ', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
+    ts = new ShingleMatrixFilter(tls, 1, 2, new Character(' '), false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
     Token reusableToken = new Token();
 
@@ -93,11 +93,11 @@ public class TestShingleMatrixFilter extends TestCase {
 
     TokenStream ts;
     TokenListStream tls;
-    LinkedList<Token> tokens;
+    LinkedList tokens;
 
     // test a plain old token stream with synonyms tranlated to rows.
 
-    tokens = new LinkedList<Token>();
+    tokens = new LinkedList();
     tokens.add(tokenFactory("hello", 1, 0, 4));
     tokens.add(tokenFactory("greetings", 0, 0, 4));
     tokens.add(tokenFactory("world", 1, 5, 10));
@@ -108,7 +108,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     // bi-grams
 
-    ts = new ShingleMatrixFilter(tls, 2, 2, '_', false, new ShingleMatrixFilter.TwoDimensionalNonWeightedSynonymTokenSettingsCodec());
+    ts = new ShingleMatrixFilter(tls, 2, 2, new Character('_'), false, new ShingleMatrixFilter.TwoDimensionalNonWeightedSynonymTokenSettingsCodec());
 
     final Token reusableToken = new Token();
     assertNext(ts, reusableToken, "hello_world");
@@ -138,7 +138,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     ShingleMatrixFilter.defaultSettingsCodec = new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec();
 
-    tokens = new LinkedList<Token>();
+    tokens = new LinkedList();
     tokens.add(tokenFactory("hello", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newColumn));
     tokens.add(tokenFactory("greetings", 0, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newRow));
     tokens.add(tokenFactory("world", 1, 1f, 5, 10, ShingleMatrixFilter.TokenPositioner.newColumn));
@@ -152,7 +152,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     // bi-grams, position incrememnt, weight, start offset, end offset
 
-    ts = new ShingleMatrixFilter(tls, 2, 2, '_', false);
+    ts = new ShingleMatrixFilter(tls, 2, 2, new Character('_'), false);
 //
 //    for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
 //      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
@@ -174,7 +174,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     // test unlimited size and allow single boundary token as shingle
     tls.reset();
-    ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, '_', false);
+    ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, new Character('_'), false);
 
 //
 //  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
@@ -224,7 +224,7 @@ public class TestShingleMatrixFilter extends TestCase {
     // test unlimited size but don't allow single boundary token as shingle
 
     tls.reset();
-    ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, '_', true);
+    ts = new ShingleMatrixFilter(tls, 1, Integer.MAX_VALUE, new Character('_'), true);
 //  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
 //      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
 //      token.clear();
@@ -279,7 +279,7 @@ public class TestShingleMatrixFilter extends TestCase {
     //
 
 
-    tokens = new LinkedList<Token>();
+    tokens = new LinkedList();
     tokens.add(tokenFactory("hello", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newColumn));
     tokens.add(tokenFactory("greetings", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newRow));
     tokens.add(tokenFactory("and", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.sameRow));
@@ -292,7 +292,7 @@ public class TestShingleMatrixFilter extends TestCase {
 
     // 2-3 grams
 
-    ts = new ShingleMatrixFilter(tls, 2, 3, '_', false);
+    ts = new ShingleMatrixFilter(tls, 2, 3, new Character('_'), false);
 
 //  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
 //      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
@@ -353,7 +353,7 @@ public class TestShingleMatrixFilter extends TestCase {
     matrix.new Column(tokenFactory("the", 1));
     matrix.new Column(tokenFactory("croud", 1));
 
-    TokenStream ts = new ShingleMatrixFilter(matrix, 2, 4, '_', true, new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec());
+    TokenStream ts = new ShingleMatrixFilter(matrix, 2, 4, new Character('_'), true, new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec());
 
 //  for (Token token = ts.next(new Token()); token != null; token = ts.next(token)) {
 //      System.out.println("assertNext(ts, \"" + token.term() + "\", " + token.getPositionIncrement() + ", " + (token.getPayload() == null ? "1.0" : PayloadHelper.decodeFloat(token.getPayload().getData())) + "f, " + token.startOffset() + ", " + token.endOffset() + ");");
@@ -457,7 +457,7 @@ public class TestShingleMatrixFilter extends TestCase {
     assertNotNull(nextToken);
     assertEquals(text, nextToken.term());
     assertEquals(positionIncrement, nextToken.getPositionIncrement());
-    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()));
+    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()), 0);
     return nextToken;
   }
 
@@ -466,7 +466,7 @@ public class TestShingleMatrixFilter extends TestCase {
     assertNotNull(nextToken);
     assertEquals(text, nextToken.term());
     assertEquals(positionIncrement, nextToken.getPositionIncrement());
-    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()));
+    assertEquals(boost, nextToken.getPayload() == null ? 1f : PayloadHelper.decodeFloat(nextToken.getPayload().getData()), 0);
     assertEquals(startOffset, nextToken.startOffset());
     assertEquals(endOffset, nextToken.endOffset());
     return nextToken;
@@ -491,21 +491,21 @@ public class TestShingleMatrixFilter extends TestCase {
 
   public static class TokenListStream extends TokenStream {
 
-    private Collection<Token> tokens;
+    private Collection tokens;
 
     public TokenListStream(TokenStream ts) throws IOException {
-      tokens = new ArrayList<Token>();
+      tokens = new ArrayList();
       final Token reusableToken = new Token();
       for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
         tokens.add((Token) nextToken.clone());
       }
     }
 
-    public TokenListStream(Collection<Token> tokens) {
+    public TokenListStream(Collection tokens) {
       this.tokens = tokens;
     }
 
-    private Iterator<Token> iterator;
+    private Iterator iterator;
 
     public Token next(final Token reusableToken) throws IOException {
       assert reusableToken != null;

@@ -23,8 +23,8 @@
     Additional Analyzers
   </description>
 
-  <property name="javac.source" value="1.5" />
-  <property name="javac.target" value="1.5" />
-  
+  <property name="javac.source" value="1.4" />
+  <property name="javac.target" value="1.4" />
+
   <import file="../contrib-build.xml"/>
 </project>
