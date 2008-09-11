@@ -103,6 +103,9 @@ prior to using the factory object...
 These lifecycle changes do not affect people who use Solr "out of the
 box" or who have developed their own TokenFilterFactory plugins. More
 info can be found in SOLR-594.
+
+The python client that used to ship with Solr is no longer included in 
+the distribution (see client/python/README.txt).
    
 Detailed Change List
 --------------------
