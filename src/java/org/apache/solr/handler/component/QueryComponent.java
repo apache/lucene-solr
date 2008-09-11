@@ -161,7 +161,7 @@ public class QueryComponent extends SearchComponent
     rb.setResult( result );
 
     rsp.add("response",rb.getResults().docList);
-    rsp.getToLog().add("hits", rb.getResults().docList.size());
+    rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
