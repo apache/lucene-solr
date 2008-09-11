@@ -598,8 +598,8 @@
       <fileset dir="${lib}">
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
-	<include name="*stax-*.jar" />
-	<include name="wstx-*.jar" />
+        <include name="*stax-*.jar" />
+        <include name="wstx-*.jar" />
       </fileset>
       <fileset dir="${solrj-dir}/lib">
         <include name="*.jar" />
@@ -653,7 +653,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
-        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/" />
+        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/ **/target/ client/ruby/flare/ client/python" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
@@ -687,7 +687,8 @@
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
   </target>
-	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
+
+  	<target name="build-site" depends="svn-up, init-forrest-entities" description="Prototype Helper for Committers.  Assumes SVN is in the path">
 		<delete dir="src/site/build"/>
 		<exec executable="forrest" dir="src/site"/>
 		<copy todir="site">
@@ -809,7 +810,7 @@
   </target>
 
   <target name="nightly"
-          depends="test, package">
+          depends="test, create-package">
      <!-- no description, don't advertise -->
   </target>
  <target name="-taskdef">
@@ -821,7 +822,7 @@
   </target>
 <target name="rat-sources" depends="-taskdef"
     description="runs the tasks over src/java excluding the license directory">
-  <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
+    <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
       <fileset dir="client">
         <exclude name="**/CHANGES.*"/>
