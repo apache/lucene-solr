@@ -40,9 +40,9 @@ import org.apache.lucene.index.TermPositions;
  * all-in-memory index store implementation delivers search
  * results up to a 100 times faster than the file-centric RAMDirectory
  * at the cost of greater RAM consumption.
- *
- *  WARNING: This contrib is experimental and the APIs may change without warning.
- *
+ * <p>
+ * WARNING: This contrib is experimental and the APIs may change without warning.
+ * <p>
  * There are no read and write locks in this store.
  * {@link InstantiatedIndexReader} {@link InstantiatedIndexReader#isCurrent()} all the time
  * and {@link org.apache.lucene.store.instantiated.InstantiatedIndexWriter}

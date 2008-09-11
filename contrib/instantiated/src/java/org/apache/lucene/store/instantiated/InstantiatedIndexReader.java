@@ -43,7 +43,7 @@ import org.apache.lucene.store.Directory;
 /**
  * An InstantiatedIndexReader is not a snapshot in time, it is completely in
  * sync with the latest commit to the store!
- * 
+ * <p>
  * Consider using InstantiatedIndex as if it was immutable.
  */
 public class InstantiatedIndexReader extends IndexReader {

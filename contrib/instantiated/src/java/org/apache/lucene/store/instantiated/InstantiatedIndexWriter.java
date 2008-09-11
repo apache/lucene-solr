@@ -46,11 +46,11 @@ import org.apache.lucene.search.Similarity;
 
 /**
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
- * 
+ * <p>
  * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader} is navigating
  * the same instances in memory as this writer is updating so searchers actice while
  * you are committing are bound to throw exceptions.
- *
+ * <p>
  * Consider using InstantiatedIndex as if it was immutable.
  *
  * @see org.apache.lucene.index.IndexWriter 
