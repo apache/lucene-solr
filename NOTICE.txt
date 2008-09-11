@@ -10,11 +10,8 @@ Includes software from other Apache Software Foundation projects,
 including, but not limited to:
   - Apache Lucene Java
   - Apache Tomcat (lib/servlet-api-2.4.jar)
-
-This product includes software developed by Dr Martin Porter,
-Copyright 2001 and and Richard Boulton (for the Java developments),
-Copyright 2002.
-(generated snowball stemmer code in the lucene-snowball jar)
+  - Apache Commons
+  - Apache Geronimo (stax API jar)
 
 This product includes tests written with EasyMock Copyright 2001-2007
 Tammo Freese (http://www.easymock.org/)
@@ -30,6 +27,16 @@ License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 
 This product includes a JUnit jar: http://junit.sourceforge.net/
 License: Common Public License - v 1.0 (http://junit.sourceforge.net/cpl-v10.html)
+
+=========================================================================
+==  Apache Lucene Notice                                               ==
+=========================================================================
+The snowball stemmers in
+  contrib/snowball/src/java/net/sf/snowball
+were developed by Martin Porter and Richard Boulton.
+The full snowball package is available from
+  http://snowball.tartarus.org/
+---
 
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
 developed by Codehaus  (http://www.codehaus.org/)
