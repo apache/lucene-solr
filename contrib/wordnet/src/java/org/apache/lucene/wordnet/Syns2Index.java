@@ -244,9 +244,6 @@ public class Syns2Index
         // override the specific index if it already exists
         IndexWriter writer = new IndexWriter(indexDir, ana, true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setUseCompoundFile(true); // why?
-		// blindly up these parameters for speed
-		writer.setMergeFactor( writer.getMergeFactor() * 2);
-		writer.setMaxBufferedDocs( writer.getMaxBufferedDocs() * 2);
         Iterator i1 = word2Nums.keySet().iterator();
         while (i1.hasNext()) // for each word
         {
