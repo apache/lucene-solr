@@ -818,6 +818,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       try {
         this.task.run();
       } catch (Throwable r) {
+        r.printStackTrace(System.out);
         this.error = r;
       }
     }
