@@ -2540,9 +2540,9 @@ public class IndexWriter {
     else {
       Iterator it = pendingMerges.iterator();
       while(it.hasNext()) {
-        // Advance the merge from pending to running
         MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
         if (merge.isExternal) {
+          // Advance the merge from pending to running
           it.remove();
           runningMerges.add(merge);
           return merge;
