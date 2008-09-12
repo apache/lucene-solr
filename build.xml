@@ -699,8 +699,14 @@
 			<arg value="-m"/>
 			<arg value="&quot;Forrest Entity updates&quot;"/>
 		</exec>
+    <exec executable="svn" dir="src/site">
+                    <arg value="ci"/>
+                    <arg value="-m"/>
+                    <arg value="&quot;Forrest Entity updates&quot;"/>
+            </exec>
+    <antcall target="svn-up"/>
 
-	</target>
+  </target>
 	<target name="svn-up">
 		<exec executable="svn">
 			<arg value="update"/>
@@ -722,7 +728,7 @@
     	<arg value="${dist}/${fullnamever}.zip"/>
 	  </exec>
     <tar destfile="${dist}/solr-maven.tar">
-		<tarfileset dir="${dist}/maven"/>
+		  <tarfileset dir="${dist}/maven" prefix="maven"/>
     </tar>
 	<tar destfile="${dist}/solr.tar">
 		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar" excludes="${fullnamever}.war"/>
