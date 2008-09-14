@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.util.CloseableThreadLocal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -58,7 +59,7 @@ final class FieldsReader {
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
 
-  private ThreadLocal fieldsStreamTL = new ThreadLocal();
+  private CloseableThreadLocal fieldsStreamTL = new CloseableThreadLocal();
 
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE, -1, 0);
@@ -155,11 +156,7 @@ final class FieldsReader {
       if (indexStream != null) {
         indexStream.close();
       }
-      IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
-      if (localFieldsStream != null) {
-        localFieldsStream.close();
-        fieldsStreamTL.set(null);
-      }
+      fieldsStreamTL.close();
       closed = true;
     }
   }

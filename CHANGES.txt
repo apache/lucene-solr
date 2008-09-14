@@ -207,6 +207,11 @@ Bug fixes
 
 15. LUCENE-1351: ISOLatin1AccentFilter now cleans additional ligatures (Cedrik Lime via Grant Ingersoll)
 
+16. LUCENE-1383: Workaround a nasty "leak" in Java's builtin
+    ThreadLocal, to prevent Lucene from causing unexpected
+    OutOfMemoryError in certain situations (notably J2EE
+    applications).  (Chris Lu via Mike McCandless)
+
 New features
 
  1. LUCENE-1137: Added Token.set/getFlags() accessors for passing more information about a Token through the analysis

@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
+import org.apache.lucene.util.CloseableThreadLocal;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
@@ -33,7 +34,7 @@ final class TermInfosReader {
   private String segment;
   private FieldInfos fieldInfos;
 
-  private ThreadLocal threadResources = new ThreadLocal();
+  private CloseableThreadLocal threadResources = new CloseableThreadLocal();
   private SegmentTermEnum origEnum;
   private long size;
 
@@ -143,7 +144,7 @@ final class TermInfosReader {
       origEnum.close();
     if (indexEnum != null)
       indexEnum.close();
-    threadResources.set(null);
+    threadResources.close();
   }
 
   /** Returns the number of term/value pairs in the set. */
