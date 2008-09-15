@@ -81,7 +81,7 @@ import java.util.Iterator;
   large RAM buffer.  Note that flushing just moves the
   internal buffered state in IndexWriter into the index, but
   these changes are not visible to IndexReader until either
-  {@link #commit} or {@link #close} is called.  A flush may
+  {@link #commit()} or {@link #close} is called.  A flush may
   also trigger one or more segment merges which by default
   run with a background thread so as not to block the
   addDocument calls (see <a href="#mergePolicy">below</a>
@@ -103,7 +103,7 @@ import java.util.Iterator;
   as new files, but are not committed (no new
   <code>segments_N</code> file is written referencing the
   new files, nor are the files sync'd to stable storage)
-  until {@link #commit} or {@link #close} is called.  If something
+  until {@link #commit()} or {@link #close} is called.  If something
   goes terribly wrong (for example the JVM crashes), then
   the index will reflect none of the changes made since the
   last commit, or the starting state if commit was not called.
@@ -123,7 +123,7 @@ import java.util.Iterator;
   no guarantee when exactly an auto commit will occur (it
   used to be after every flush, but it is now after every
   completed merge, as of 2.4).  If you want to force a
-  commit, call {@link #commit}, or, close the writer.  Once
+  commit, call {@link #commit()}, or, close the writer.  Once
   a commit has finished, ({@link IndexReader} instances will
   see the changes to the index as of that commit.  When
   running in this mode, be careful not to refresh your
@@ -847,7 +847,7 @@ public class IndexWriter {
    * @deprecated This will be removed in 3.0, when
    * autoCommit will be hardwired to false.  Use {@link
    * #IndexWriter(Directory,Analyzer,MaxFieldLength)}
-   * instead, and call {@link #commit} when needed.
+   * instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -903,7 +903,7 @@ public class IndexWriter {
    * @deprecated This will be removed in 3.0, when
    * autoCommit will be hardwired to false.  Use {@link
    * #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
-   * instead, and call {@link #commit} when needed.
+   * instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -985,7 +985,7 @@ public class IndexWriter {
    * @deprecated This will be removed in 3.0, when
    * autoCommit will be hardwired to false.  Use {@link
    * #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)}
-   * instead, and call {@link #commit} when needed.
+   * instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1076,7 +1076,7 @@ public class IndexWriter {
    * @deprecated This will be removed in 3.0, when
    * autoCommit will be hardwired to false.  Use {@link
    * #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)}
-   * instead, and call {@link #commit} when needed.
+   * instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1611,7 +1611,7 @@ public class IndexWriter {
    * Commits all changes to an index and closes all
    * associated files.  Note that this may be a costly
    * operation, so, try to re-use a single writer instead of
-   * closing and opening a new one.  See {@link #commit} for
+   * closing and opening a new one.  See {@link #commit()} for
    * caveats about write caching done by some IO devices.
    *
    * <p> If an Exception is hit during close, eg due to disk
@@ -3377,10 +3377,10 @@ public class IndexWriter {
    * to the Directory. 
    * <p>Note: while this will force buffered docs to be
    * pushed into the index, it will not make these docs
-   * visible to a reader.  Use {@link #commit} instead
+   * visible to a reader.  Use {@link #commit()} instead
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated please call {@link #commit}) instead
+   * @deprecated please call {@link #commit()}) instead
    */
   public final void flush() throws CorruptIndexException, IOException {  
     flush(true, false, true);
@@ -3429,30 +3429,6 @@ public class IndexWriter {
     finishCommit();
   }
 
-  /**
-   * <p>Commits all pending updates (added & deleted
-   * documents) to the index, and syncs all referenced index
-   * files, such that a reader will see the changes and the
-   * index updates will survive an OS or machine crash or
-   * power loss (though, see the note below).  Note that
-   * this does not wait for any running background merges to
-   * finish.  This may be a costly operation, so you should
-   * test the cost in your application and do it only when
-   * really necessary.</p>
-   *
-   * <p> Note that this operation calls Directory.sync on
-   * the index files.  That call should not return until the
-   * file contents & metadata are on stable storage.  For
-   * FSDirectory, this calls the OS's fsync.  But, beware:
-   * some hardware devices may in fact cache writes even
-   * during fsync, and return before the bits are actually
-   * on stable storage, to give the appearance of faster
-   * performance.  If you have such a device, and it does
-   * not have a battery backup (for example) then on power
-   * loss it may still lose data.  Lucene cannot guarantee
-   * consistency on such devices.  </p>
-   */
-
   private boolean committing;
 
   synchronized private void waitForCommit() {
@@ -3466,6 +3442,29 @@ public class IndexWriter {
     committing = false;
     notifyAll();
   }
+
+  /**
+   * <p>Commits all pending updates (added & deleted
+   * documents) to the index, and syncs all referenced index
+   * files, such that a reader will see the changes and the
+   * index updates will survive an OS or machine crash or
+   * power loss.  Note that this does not wait for any
+   * running background merges to finish.  This may be a
+   * costly operation, so you should test the cost in your
+   * application and do it only when really necessary.</p>
+   *
+   * <p> Note that this operation calls Directory.sync on
+   * the index files.  That call should not return until the
+   * file contents & metadata are on stable storage.  For
+   * FSDirectory, this calls the OS's fsync.  But, beware:
+   * some hardware devices may in fact cache writes even
+   * during fsync, and return before the bits are actually
+   * on stable storage, to give the appearance of faster
+   * performance.  If you have such a device, and it does
+   * not have a battery backup (for example) then on power
+   * loss it may still lose data.  Lucene cannot guarantee
+   * consistency on such devices.  </p>
+   */
 
   public final void commit() throws CorruptIndexException, IOException {
 
