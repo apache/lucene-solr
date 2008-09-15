@@ -23,8 +23,7 @@ import org.apache.lucene.store.IndexOutput;
 
 /**
  * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
- * 
- * @author Aaron Donovan
+ *
  */
 
 public class JEIndexOutput extends IndexOutput {

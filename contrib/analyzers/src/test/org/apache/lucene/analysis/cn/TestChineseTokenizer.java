@@ -24,9 +24,7 @@ import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Token;
 
-/**
- * @author rayt
- */
+
 public class TestChineseTokenizer extends TestCase
 {
     public void testOtherLetterOffset() throws IOException

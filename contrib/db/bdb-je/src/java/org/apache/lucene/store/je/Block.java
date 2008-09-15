@@ -24,8 +24,7 @@ import com.sleepycat.je.DatabaseException;
 
 /**
  * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
- * 
- * @author Aaron Donovan
+ *
  */
 
 public class Block extends Object {

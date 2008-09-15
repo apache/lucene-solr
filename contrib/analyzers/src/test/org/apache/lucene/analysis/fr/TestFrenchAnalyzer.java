@@ -65,7 +65,6 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Test case for FrenchAnalyzer.
  *
- * @author    Jean-François Halleux
  * @version   $version$
  */
 

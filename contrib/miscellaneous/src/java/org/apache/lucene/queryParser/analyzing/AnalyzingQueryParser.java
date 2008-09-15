@@ -39,7 +39,6 @@ import org.apache.lucene.search.Query;
  * become <code>h?user</code> when using this parser and thus no match would be found (i.e.
  * using this parser will be no improvement over QueryParser in such cases). 
  *
- * @author  Ronnie Kolehmainen (ronnie.kolehmainen at ub.uu.se)
  * @version $Revision$, $Date$
  */
 public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryParser {

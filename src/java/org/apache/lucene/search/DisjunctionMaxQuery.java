@@ -37,7 +37,6 @@ import java.util.Set;
  * The tie breaker capability allows results that include the same term in multiple fields to be judged better than results that
  * include this term in only the best of those multiple fields, without confusing this with the better case of two different terms
  * in the multiple fields.
- * @author Chuck Williams
  */
 public class DisjunctionMaxQuery extends Query {
 

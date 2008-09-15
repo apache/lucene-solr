@@ -25,7 +25,6 @@ import junit.framework.TestCase;
 
 /**
  * Tests {@link EdgeNGramTokenizer} for correctness.
- * @author Otis Gospodnetic
  */
 public class EdgeNGramTokenizerTest extends TestCase {
   private StringReader input;

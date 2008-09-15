@@ -47,7 +47,6 @@ import org.apache.lucene.index.IndexWriter;
  * synchronization on directories.</p>
  *
  * @see Directory
- * @author Doug Cutting
  */
 public class FSDirectory extends Directory {
     

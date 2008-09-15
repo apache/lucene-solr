@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.TokenStream;
  *
  * Copyright:    Copyright (c) 2001
  * Company:
- * @author Yiyi Sun
  * @version 1.0
  *
  */

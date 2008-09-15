@@ -196,7 +196,6 @@ hello^2.0
 the^3
 </pre>
 
-@author whoschek.AT.lbl.DOT.gov
 */
 public class MemoryIndexTest extends TestCase {
   

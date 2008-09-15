@@ -58,7 +58,6 @@ Lucene features: CharTokenizer.MAX_WORD_LEN = 255.
 Thus the PatternAnalyzer produces correct output, whereas the WhitespaceAnalyzer 
 silently truncates text, and so the comparison results in assertEquals() don't match up. 
 
-@author whoschek.AT.lbl.DOT.gov
 */
 public class PatternAnalyzerTest extends TestCase {
   

@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
  *
- * @author    Jo&atilde;o Kramer
  */
 public final class BrazilianAnalyzer extends Analyzer {
 

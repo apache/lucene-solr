@@ -26,7 +26,6 @@ import java.util.NoSuchElementException;
  * return a {@link Hit} instance.
  *
  * @deprecated Hits will be removed in Lucene 3.0. Use {@link TopDocCollector} and {@link TopDocs} instead.
- * @author Jeremy Rayner
  */
 public class HitIterator implements Iterator {
   private Hits hits;

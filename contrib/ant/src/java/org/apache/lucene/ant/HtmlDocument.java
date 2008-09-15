@@ -39,7 +39,6 @@ import java.io.StringWriter;
  *  It does this by using JTidy package. It can take input input
  *  from {@link java.io.File} or {@link java.io.InputStream}.
  *
- *@author     Erik Hatcher
  */
 public class HtmlDocument {
     private Element rawDoc;

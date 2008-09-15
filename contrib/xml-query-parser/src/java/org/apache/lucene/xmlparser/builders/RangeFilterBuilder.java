@@ -27,9 +27,7 @@ import org.w3c.dom.Element;
  */
 
 
-/**
- * @author maharwood
- */
+
 public class RangeFilterBuilder implements FilterBuilder {
 
 

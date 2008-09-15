@@ -27,7 +27,6 @@ import java.text.BreakIterator;
 /**
  * TokenFilter that use java.text.BreakIterator to break each 
  * Token that is Thai into separate Token(s) for each Thai word.
- * @author Samphan Raruenrom <samphan@osdev.co.th> for To-Be-One Technology Co., Ltd.
  * @version 0.2
  */
 public class ThaiWordFilter extends TokenFilter {

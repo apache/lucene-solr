@@ -44,8 +44,7 @@ import com.sleepycat.je.Transaction;
  * Tests {@link JEDirectory}.
  * 
  * Adapted from Andi Vajda's org.apache.lucene.db.DbStoreTest.
- * 
- * @author Aaron Donovan
+ *
  */
 public class JEStoreTest extends TestCase {
     protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");

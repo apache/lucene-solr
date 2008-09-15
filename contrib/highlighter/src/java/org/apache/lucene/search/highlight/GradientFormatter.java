@@ -19,8 +19,7 @@ package org.apache.lucene.search.highlight;
 /**
  * Formats text with different color intensity depending on the score of the
  * term.
- * 
- * @author maharwood
+ *
  */
 public class GradientFormatter implements Formatter
 {

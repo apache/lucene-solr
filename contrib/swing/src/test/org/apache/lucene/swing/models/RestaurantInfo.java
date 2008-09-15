@@ -16,9 +16,7 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class RestaurantInfo {
     private int id;
     private String name;

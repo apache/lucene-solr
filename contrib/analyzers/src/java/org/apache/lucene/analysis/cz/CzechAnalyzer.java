@@ -35,7 +35,6 @@ import java.util.Set;
  * A default set of stopwords is used unless an alternative list is specified, the
  * exclusion list is empty by default.
  *
- * @author    Lukas Zapletal [lzap@root.cz]
  */
 public final class CzechAnalyzer extends Analyzer {
 

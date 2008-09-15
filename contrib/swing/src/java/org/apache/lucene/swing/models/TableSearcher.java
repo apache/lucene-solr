@@ -62,7 +62,6 @@ import java.util.ArrayList;
  * at any time by searching with an empty string. Additionally, you can
  * add a button calling the clearSearch() method.
  *
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  */
 public class TableSearcher extends AbstractTableModel {
 

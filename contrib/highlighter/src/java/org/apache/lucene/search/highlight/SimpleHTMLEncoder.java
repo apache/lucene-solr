@@ -17,7 +17,6 @@ package org.apache.lucene.search.highlight;
 
 /**
  * Simple {@link Encoder} implementation to escape text for HTML output
- * @author Nicko Cadell
  *
  */
 public class SimpleHTMLEncoder implements Encoder

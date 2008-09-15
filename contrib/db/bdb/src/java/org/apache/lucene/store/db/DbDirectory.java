@@ -50,7 +50,6 @@ import com.sleepycat.db.DbHandleExtractor;
  * {@link com.sleepycat.db.internal.Db Db} database handles, one for storing file
  * records and another for storing file data blocks.
  *
- * @author Andi Vajda
  */
 
 public class DbDirectory extends Directory {

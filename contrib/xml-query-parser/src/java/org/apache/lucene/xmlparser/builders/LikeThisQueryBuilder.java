@@ -34,9 +34,7 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
-/**
- * @author maharwood
- */
+
 public class LikeThisQueryBuilder implements QueryBuilder {
 
 	private Analyzer analyzer;

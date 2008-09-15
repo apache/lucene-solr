@@ -36,7 +36,6 @@ import java.util.ArrayList;
 /**
  * See table searcher explanation.
  *
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  */
 public class ListSearcher extends AbstractListModel {
     private ListModel listModel;

@@ -33,8 +33,7 @@ import com.sleepycat.je.Transaction;
 
 /**
  * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
- * 
- * @author Aaron Donovan
+ *
  */
 
 public class File extends Object {

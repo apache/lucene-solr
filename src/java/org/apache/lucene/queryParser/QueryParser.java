@@ -94,9 +94,6 @@ import org.apache.lucene.util.Parameter;
  *
  * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
  *
- * @author Brian Goetz
- * @author Peter Halacsy
- * @author Tatu Saloranta
  */
 public class QueryParser implements QueryParserConstants {
 

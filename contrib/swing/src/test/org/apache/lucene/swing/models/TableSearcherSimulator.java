@@ -21,9 +21,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class TableSearcherSimulator {
 
     public TableSearcherSimulator() {

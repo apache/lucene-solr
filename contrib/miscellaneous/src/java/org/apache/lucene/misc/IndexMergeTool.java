@@ -27,7 +27,6 @@ import java.io.IOException;
 /**
  * Merges indices specified on the command line into the index
  * specified as the first command line argument.
- * @author Erik Hatcher
  * @version $Id$
  */
 public class IndexMergeTool {

@@ -18,7 +18,6 @@ package org.apache.lucene.benchmark.stats;
 /**
  * This class holds a set of memory usage values.
  *
- * @author Andrzej Bialecki &lt;ab@getopt.org&gt;
  */
 public class MemUsage {
   public long maxFree, minFree, avgFree;

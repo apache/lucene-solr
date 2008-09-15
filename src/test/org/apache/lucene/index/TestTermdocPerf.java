@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.Random;
 
 /**
- * @author yonik
  * @version $Id$
  */
 

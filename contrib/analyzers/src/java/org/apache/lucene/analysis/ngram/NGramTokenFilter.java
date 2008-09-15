@@ -26,7 +26,6 @@ import java.util.LinkedList;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
- * @author Otis Gospodnetic
  */
 public class NGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;

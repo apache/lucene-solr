@@ -36,8 +36,7 @@ import org.apache.lucene.util._TestUtil;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
- * 
- * @author Daniel Naber
+ *
  */
 public class TestDemo extends LuceneTestCase {
 

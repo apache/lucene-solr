@@ -39,7 +39,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests QueryParser.
- * @author Daniel Naber
  */
 public class TestMultiFieldQueryParser extends LuceneTestCase {
 

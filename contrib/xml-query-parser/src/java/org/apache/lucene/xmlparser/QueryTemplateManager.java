@@ -48,8 +48,7 @@ import org.xml.sax.SAXException;
  * Database applications often adopt similar practices by externalizing SQL in template files that can
  * be easily changed/optimized by a DBA.  
  * The static methods can be used on their own or by creating an instance of this class you can store and 
- * re-use compiled stylesheets for fast use (e.g. in a server environment) 
- * @author Mark Harwood
+ * re-use compiled stylesheets for fast use (e.g. in a server environment)
  */
 public class QueryTemplateManager
 {

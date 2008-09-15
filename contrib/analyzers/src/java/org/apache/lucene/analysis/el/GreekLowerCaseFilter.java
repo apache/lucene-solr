@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Normalizes token text to lower case, analyzing given ("greek") charset.
  *
- * @author  Panagiotis Astithas, past@ebs.gr
  */
 public final class GreekLowerCaseFilter extends TokenFilter
 {

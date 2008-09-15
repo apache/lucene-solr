@@ -27,9 +27,7 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class ListSearcherSimulator {
 
     public ListSearcherSimulator() {

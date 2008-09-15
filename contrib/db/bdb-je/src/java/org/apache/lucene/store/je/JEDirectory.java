@@ -46,8 +46,7 @@ import com.sleepycat.je.Transaction;
  * {@link org.apache.lucene.store.Directory Directory}. It uses two
  * {@link com.sleepycat.je.Database Db} database handles, one for storing file
  * records and another for storing file data blocks.
- * 
- * @author Aaron Donovan
+ *
  */
 
 public class JEDirectory extends Directory {

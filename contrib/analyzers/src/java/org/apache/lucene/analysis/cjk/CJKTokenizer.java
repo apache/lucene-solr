@@ -34,7 +34,6 @@ import java.io.Reader;
  * please search  <a
  * href="http://www.google.com/search?q=word+chinese+segment">google</a>
  *
- * @author Che, Dong
  */
 public final class CJKTokenizer extends Tokenizer {
     //~ Static fields/initializers ---------------------------------------------

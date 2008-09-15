@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 
 /**
  * Tests {@link NGramTokenFilter} for correctness.
- * @author Otis Gospodnetic
  */
 public class NGramTokenFilterTest extends TestCase {
     private TokenStream input;

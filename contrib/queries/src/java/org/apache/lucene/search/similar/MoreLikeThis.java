@@ -143,10 +143,7 @@ import java.util.ArrayList;
  *  - refactor: moved common code into isNoiseWord()
  *  - optimise: when no termvector support available - used maxNumTermsParsed to limit amount of tokenization
  * </pre>
- * 
- * @author David Spencer
- * @author Bruce Ritchie
- * @author Mark Harwood
+ *
  */
 public final class MoreLikeThis {
 

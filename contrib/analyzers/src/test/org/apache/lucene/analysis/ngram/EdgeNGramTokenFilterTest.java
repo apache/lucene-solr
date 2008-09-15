@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
- * @author Otis Gospodnetic
  */
 public class EdgeNGramTokenFilterTest extends TestCase {
   private TokenStream input;

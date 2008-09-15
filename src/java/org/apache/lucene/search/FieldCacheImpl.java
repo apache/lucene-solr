@@ -34,7 +34,6 @@ import java.util.WeakHashMap;
  *
  * <p>Created: May 19, 2004 4:40:36 PM
  *
- * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
  */

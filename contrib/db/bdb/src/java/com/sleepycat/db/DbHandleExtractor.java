@@ -30,7 +30,6 @@ import com.sleepycat.db.internal.DbTxn;
  * that were the entrypoint objects in the pre-4.3 Java API and that wrap the
  * actual Berkeley DB C objects via SWIG.
  *
- * @author Andi Vajda
  */
 
 public class DbHandleExtractor {

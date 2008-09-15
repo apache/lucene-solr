@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
- * @author Mathieu Lecarme<mlecarme@openwide.fr>
  * 
  */
 public class TestElision extends TestCase {

@@ -20,8 +20,7 @@ package org.apache.lucene.ant;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
-/**
- */
+
 public class DocumentHandlerException extends Exception {
     private Throwable cause;
 

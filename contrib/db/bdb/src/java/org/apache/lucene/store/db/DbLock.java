@@ -24,7 +24,6 @@ import org.apache.lucene.store.Lock;
  * trivial as {@link DbDirectory} operations are managed by the Berkeley DB
  * locking system.
  *
- * @author Andi Vajda
  */
 
 public class DbLock extends Lock {

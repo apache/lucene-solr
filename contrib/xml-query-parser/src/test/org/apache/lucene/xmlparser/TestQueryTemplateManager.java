@@ -38,8 +38,7 @@ import org.xml.sax.SAXException;
  */
 /**
  * This class illustrates how form input (such as from a web page or Swing gui) can be
- * turned into Lucene queries using a choice of XSL templates for different styles of queries. 
- * @author maharwood
+ * turned into Lucene queries using a choice of XSL templates for different styles of queries.
  */
 public class TestQueryTemplateManager extends TestCase {
 

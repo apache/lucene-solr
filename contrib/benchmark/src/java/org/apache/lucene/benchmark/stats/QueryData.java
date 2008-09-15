@@ -23,7 +23,6 @@ import org.apache.lucene.benchmark.Constants;
 /**
  * This class holds parameters for a query benchmark.
  *
- * @author Andrzej Bialecki &lt;ab@getopt.org&gt;
  */
 public class QueryData {
   /** Benchmark id */

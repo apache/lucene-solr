@@ -94,7 +94,6 @@ import java.io.Serializable;
  *
  * <p>Created: Feb 12, 2004 10:53:57 AM
  *
- * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
  */

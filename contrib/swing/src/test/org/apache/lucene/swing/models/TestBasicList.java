@@ -24,7 +24,6 @@ import javax.swing.ListModel;
 import junit.framework.TestCase;
 
 /**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  **/
 public class TestBasicList extends TestCase {
     private ListModel baseListModel;

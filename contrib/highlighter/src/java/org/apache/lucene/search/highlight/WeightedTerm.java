@@ -16,8 +16,7 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-/** Lightweight class to hold term and a weight value used for scoring this term 
- * @author Mark Harwood
+/** Lightweight class to hold term and a weight value used for scoring this term
  */
 public class WeightedTerm
 {

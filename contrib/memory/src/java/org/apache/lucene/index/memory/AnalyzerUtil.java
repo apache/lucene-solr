@@ -38,8 +38,7 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Various fulltext analysis utilities avoiding redundant code in several
  * classes.
- * 
- * @author whoschek.AT.lbl.DOT.gov
+ *
  */
 public class AnalyzerUtil {
   

@@ -30,8 +30,7 @@ import java.util.Set;
 
 /**
  * A query that matches all documents.
- * 
- * @author John Wang
+ *
  */
 public class MatchAllDocsQuery extends Query {
 

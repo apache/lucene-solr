@@ -38,8 +38,7 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 /**
  * Hides implementation issues associated with obtaining a TokenStream for use with
  * the higlighter - can obtain from TermFreqVectors with offsets and (optionally) positions or
- * from Analyzer class reparsing the stored content. 
- * @author maharwood
+ * from Analyzer class reparsing the stored content.
  */
 public class TokenSources
 {

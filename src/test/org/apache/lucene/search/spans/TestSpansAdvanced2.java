@@ -29,7 +29,6 @@ import org.apache.lucene.search.*;
  * Some expanded tests to make sure my patch doesn't break other SpanTermQuery
  * functionality.
  *
- * @author Reece Wilton
  */
 public class TestSpansAdvanced2 extends TestSpansAdvanced {
     IndexSearcher searcher2;

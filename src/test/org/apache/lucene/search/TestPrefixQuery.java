@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 /**
  * Tests {@link PrefixQuery} class.
  *
- * @author Erik Hatcher
  */
 public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {

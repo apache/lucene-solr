@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Analyzer for Thai language. It uses java.text.BreakIterator to break words.
- * @author Samphan Raruenrom <samphan@osdev.co.th> for To-Be-One Technology Co., Ltd.
  * @version 0.2
  */
 public class ThaiAnalyzer extends Analyzer {

@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.Token;
 /**
  * {@link Fragmenter} implementation which breaks text up into same-size 
  * fragments with no concerns over spotting sentence boundaries.
- * @author mark@searcharea.co.uk
  */
 public class SimpleFragmenter implements Fragmenter
 {

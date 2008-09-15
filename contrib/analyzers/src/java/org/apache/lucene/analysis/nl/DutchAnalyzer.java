@@ -38,8 +38,7 @@ import java.util.Map;
  * the algorithm (dictionary stemming).
  * A default set of stopwords is used unless an alternative list is specified, the
  * exclusion list is empty by default.
- * 
- * @author Edwin de Jonge
+ *
  */
 public class DutchAnalyzer extends Analyzer {
   /**

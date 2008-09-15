@@ -34,8 +34,7 @@ import org.apache.lucene.util.OpenBitSet;
  * a sequence. An example might be a collection of primary keys from a database query result or perhaps 
  * a choice of "category" labels picked by the end user. As a filter, this is much faster than the 
  * equivalent query (a BooleanQuery with many "should" TermQueries)
- * 
- * @author maharwood
+ *
  */
 public class TermsFilter extends Filter
 {

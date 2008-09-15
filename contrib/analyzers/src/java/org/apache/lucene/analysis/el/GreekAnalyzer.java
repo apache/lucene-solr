@@ -32,7 +32,6 @@ import java.util.Set;
  * that will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  *
- * @author  Panagiotis Astithas, past@ebs.gr
  */
 public final class GreekAnalyzer extends Analyzer
 {

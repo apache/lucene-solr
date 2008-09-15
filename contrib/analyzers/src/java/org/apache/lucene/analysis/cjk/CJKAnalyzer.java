@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * Filters CJKTokenizer with StopFilter.
  *
- * @author Che, Dong
  */
 public class CJKAnalyzer extends Analyzer {
   //~ Static fields/initializers ---------------------------------------------

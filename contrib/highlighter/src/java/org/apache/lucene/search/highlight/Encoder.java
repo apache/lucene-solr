@@ -19,7 +19,6 @@ package org.apache.lucene.search.highlight;
 /**
  * Encodes original text. The Encoder works with the Formatter to generate the output.
  *
- * @author Nicko Cadell
  */
 public interface Encoder
 {

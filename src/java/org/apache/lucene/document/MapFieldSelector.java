@@ -24,7 +24,6 @@ import java.util.Map;
 /**
  * A FieldSelector based on a Map of field names to FieldSelectorResults
  *
- * @author Chuck Williams
  */
 public class MapFieldSelector implements FieldSelector {
     

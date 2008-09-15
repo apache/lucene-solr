@@ -27,7 +27,6 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Test case for PlainTextDictionary
  *
- * @author Daniel Naber
  */
 public class TestPlainTextDictionary extends TestCase {
 

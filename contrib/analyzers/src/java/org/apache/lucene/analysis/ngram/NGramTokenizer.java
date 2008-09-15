@@ -25,7 +25,6 @@ import java.io.Reader;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
- * @author Otis Gospodnetic
  */
 public class NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;

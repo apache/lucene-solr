@@ -23,7 +23,6 @@ package org.apache.lucene.analysis.el;
  * including accented ones. One should be able to add other encoding schemes (see RFC 1947) by adding
  * the definition of a new charset as well as the required logic in the toLowerCase() method.
  *
- * @author  Panagiotis Astithas, past@ebs.gr
  */
 public class GreekCharsets
 {

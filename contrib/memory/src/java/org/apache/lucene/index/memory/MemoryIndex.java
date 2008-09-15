@@ -166,8 +166,7 @@ import org.apache.lucene.search.Similarity;
  * target="_blank"
  * href="http://java.sun.com/developer/technicalArticles/Programming/HPROF.html">
  * hprof tracing </a>).
- * 
- * @author whoschek.AT.lbl.DOT.gov
+ *
  */
 public class MemoryIndex implements Serializable {
 

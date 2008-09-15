@@ -20,7 +20,6 @@ import org.apache.lucene.analysis.Token;
 
 /**
  * Adds to the score for a fragment based on its tokens
- * @author mark@searcharea.co.uk
  */
 public interface Scorer
 {

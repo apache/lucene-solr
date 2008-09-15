@@ -22,7 +22,6 @@ import java.io.File;
 
 /** Native file-based {@link Directory} implementation, using GCJ.
  *
- * @author Doug Cutting
  */
 public class GCJDirectory extends FSDirectory {
 

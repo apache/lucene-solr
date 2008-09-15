@@ -45,8 +45,7 @@ import org.apache.lucene.util.PriorityQueue;
  * TermQuery is used for variants and does not use that variant term's IDF because this would favour rarer 
  * terms eg misspellings. Instead, all variants use the same IDF ranking (the one for the source query 
  * term) and this is factored into the variant's boost. If the source query term does not exist in the
- * index the average IDF of the variants is used. 
- * @author maharwood
+ * index the average IDF of the variants is used.
  */
 public class FuzzyLikeThisQuery extends Query
 {

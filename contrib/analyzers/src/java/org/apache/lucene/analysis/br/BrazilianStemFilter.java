@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * Based on GermanStemFilter
  *
- * @author Jo&atilde;o Kramer
  */
 public final class BrazilianStemFilter extends TokenFilter {
 

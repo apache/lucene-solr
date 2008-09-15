@@ -48,7 +48,6 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
      * same as TestRankingSimilarity in TestRanking.zip from
      * http://issues.apache.org/jira/browse/LUCENE-323
      * </p>
-     * @author Williams
      */
     private static class TestSimilarity extends DefaultSimilarity {
 

@@ -32,8 +32,7 @@ import org.apache.lucene.analysis.TokenFilter;
  * <p>
  * Note that StandardTokenizer sees " ' " as a space, and cuts it out.
  * 
- * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a> 
- * @author <a href="mailto:mlecarme@openwide.fr">Mathieu Lecarme</a>
+ * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
 public class ElisionFilter extends TokenFilter {
   private Set articles = null;

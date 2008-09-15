@@ -25,9 +25,7 @@ import java.io.ObjectOutputStream;
  */
 
 
-/**
- * @author yonik
- */
+
 public class QueryUtils {
 
   /** Check the types of things query objects should be able to do. */

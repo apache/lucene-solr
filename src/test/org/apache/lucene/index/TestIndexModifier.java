@@ -38,8 +38,7 @@ import java.util.Stack;
 /**
  * Tests for the "IndexModifier" class, including accesses from two threads at the
  * same time.
- * 
- * @author Daniel Naber
+ *
  * @deprecated
  */
 public class TestIndexModifier extends LuceneTestCase {

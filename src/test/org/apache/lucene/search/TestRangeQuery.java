@@ -27,9 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 
-/**
- * @author goller
- */
+
 public class TestRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;

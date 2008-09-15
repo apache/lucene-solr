@@ -33,7 +33,6 @@ package org.apache.lucene.search;
  *
  * <p>Created: Feb 11, 2004 1:23:38 PM
  *
- * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
  * @see ScoreDoc

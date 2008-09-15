@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexWriter;
  * release its write lock when trying to open an index which does not yet
  * exist).
  *
- * @author mbogosian
  * @version $Id$
  */
 

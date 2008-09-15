@@ -24,9 +24,7 @@ import com.sleepycat.db.internal.Db;
 import com.sleepycat.db.internal.DbTxn;
 import com.sleepycat.db.DatabaseException;
 
-/**
- * @author Andi Vajda
- */
+
 
 public class Block extends Object {
     protected DatabaseEntry key, data;

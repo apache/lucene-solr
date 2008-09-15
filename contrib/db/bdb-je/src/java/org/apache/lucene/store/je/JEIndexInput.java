@@ -22,8 +22,7 @@ import org.apache.lucene.store.IndexInput;
 
 /**
  * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
- * 
- * @author Aaron Donovan
+ *
  */
 
 public class JEIndexInput extends IndexInput {

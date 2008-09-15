@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 /**
  * A unit test helper class to help with RemoteCachingWrapperFilter testing and
  * assert that it is working correctly.
- * @author Matt Ericson
  */
 public class RemoteCachingWrapperFilterHelper extends RemoteCachingWrapperFilter {
 

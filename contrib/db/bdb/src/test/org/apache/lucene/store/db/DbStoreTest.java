@@ -42,7 +42,6 @@ import org.apache.lucene.store.IndexOutput;
  * Tests {@link DbDirectory}.
  *
  * Adapted from org.apache.lucene.StoreTest with larger files and random bytes.
- * @author Andi Vajda
  */
 public class DbStoreTest extends TestCase {
     protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");

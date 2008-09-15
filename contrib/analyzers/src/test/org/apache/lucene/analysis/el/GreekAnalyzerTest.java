@@ -28,7 +28,6 @@ import junit.framework.TestCase;
 /**
  * A unit test class for verifying the correct operation of the GreekAnalyzer.
  *
- * @author past
  */
 public class GreekAnalyzerTest extends TestCase {
 

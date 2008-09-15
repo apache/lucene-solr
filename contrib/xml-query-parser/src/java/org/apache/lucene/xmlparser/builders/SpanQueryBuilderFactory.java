@@ -22,9 +22,7 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * @author maharwood
- */
+
 public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 
 	HashMap builders=new HashMap();

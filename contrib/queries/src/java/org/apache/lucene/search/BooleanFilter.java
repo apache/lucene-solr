@@ -36,7 +36,6 @@ import org.apache.lucene.util.SortedVIntList;
  * SHOULD Filters are OR'd together
  * The resulting Filter is NOT'd with the NOT Filters
  * The resulting Filter is AND'd with the MUST Filters
- * @author BPDThebault
  */
 
 public class BooleanFilter extends Filter

@@ -88,7 +88,6 @@ import java.io.PrintStream;
  * want to update 20 documents, you should first delete all those documents,
  * then add all the new documents.
  *
- * @author Daniel Naber
  * @deprecated Please use {@link IndexWriter} instead.
  */
 public class IndexModifier {

@@ -34,8 +34,6 @@ import org.apache.lucene.store.FSDirectory;
  * NOTE: This will overwrite any length normalization or field/document boosts.
  * </p>
  *
- * @author Chris Hostetter
- * @author Otis Gospodnetic
  */
 public class FieldNormModifier {
 

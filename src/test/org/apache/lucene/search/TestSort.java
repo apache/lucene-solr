@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
  *
  * <p>Created: Feb 17, 2004 4:55:10 PM
  *
- * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
  */

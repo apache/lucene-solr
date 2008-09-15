@@ -42,7 +42,6 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Unit test for sorting code.
  *
- * @author  Martin Seitz (T-Systems)
  */
 
 public class TestCustomSearcherSort

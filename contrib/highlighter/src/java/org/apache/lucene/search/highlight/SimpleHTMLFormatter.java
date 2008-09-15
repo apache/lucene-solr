@@ -18,7 +18,6 @@ package org.apache.lucene.search.highlight;
 
 /**
  * Simple {@link Formatter} implementation to highlight terms with a pre and post tag
- * @author MAHarwood
  *
  */
 public class SimpleHTMLFormatter implements Formatter

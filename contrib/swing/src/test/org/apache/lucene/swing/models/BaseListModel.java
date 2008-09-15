@@ -22,9 +22,7 @@ import java.util.List;
 
 import javax.swing.AbstractListModel;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class BaseListModel extends AbstractListModel {
     private List data = new ArrayList();
 

@@ -30,7 +30,6 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Tests {@link FuzzyQuery}.
  *
- * @author Daniel Naber
  */
 public class TestFuzzyQuery extends LuceneTestCase {
 

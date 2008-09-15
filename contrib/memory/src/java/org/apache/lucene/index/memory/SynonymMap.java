@@ -67,8 +67,7 @@ import java.util.TreeSet;
  * wolfish:[edacious, esurient, rapacious, ravening, ravenous, voracious, wolflike]
  * xxxx:[]
  * </pre>
- * 
- * @author whoschek.AT.lbl.DOT.gov
+ *
  * @see <a target="_blank"
  *      href="http://www.cogsci.princeton.edu/~wn/man/prologdb.5WN.html">prologdb
  *      man page </a>

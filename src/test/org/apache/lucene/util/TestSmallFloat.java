@@ -20,7 +20,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.Random;
 
 /**
- * @author yonik
  * @version $Id$
  */
 public class TestSmallFloat extends LuceneTestCase {

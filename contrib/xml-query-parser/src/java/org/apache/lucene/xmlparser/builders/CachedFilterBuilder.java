@@ -46,8 +46,7 @@ import org.w3c.dom.Element;
  * 
  * The CoreParser.maxNumCachedFilters property can be used to control the size of the LRU 
  * Cache established during the construction of CoreParser instances.
- * 
- * @author maharwood
+ *
  */
 public class CachedFilterBuilder implements FilterBuilder {
 

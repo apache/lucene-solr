@@ -47,7 +47,6 @@ import org.apache.lucene.analysis.Tokenizer;
  * C4C2, C1C2C3 ... the ChineseTokenizer works, but the
  * CJKTokenizer will not work.
  *
- * @author Yiyi Sun
  * @version 1.0
  *
  */

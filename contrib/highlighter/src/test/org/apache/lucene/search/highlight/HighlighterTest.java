@@ -76,8 +76,7 @@ import org.w3c.dom.NodeList;
 
 /**
  * JUnit Test for Highlighter class.
- * 
- * @author mark@searcharea.co.uk
+ *
  */
 public class HighlighterTest extends TestCase implements Formatter {
   private IndexReader reader;
@@ -1447,8 +1446,7 @@ class SynonymAnalyzer extends Analyzer {
 
 /**
  * Expands a token stream with synonyms (TODO - make the synonyms analyzed by choice of analyzer)
- * 
- * @author MAHarwood
+ *
  */
 class SynonymTokenizer extends TokenStream {
   private TokenStream realStream;

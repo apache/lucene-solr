@@ -34,7 +34,6 @@ import org.apache.lucene.store.RAMDirectory;
  * Tests the span query bug in Lucene. It demonstrates that SpanTermQuerys don't
  * work correctly in a BooleanQuery.
  *
- * @author Reece Wilton
  */
 public class TestSpansAdvanced extends LuceneTestCase {
 

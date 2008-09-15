@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.queryParser.ParseException;
 
 /**
- * @author  Ronnie Kolehmainen (ronnie.kolehmainen at ub.uu.se)
  * @version $Revision$, $Date$
  */
 public class TestAnalyzingQueryParser extends TestCase {

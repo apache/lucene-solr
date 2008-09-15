@@ -26,7 +26,6 @@ import java.io.File;
  *  based on a files extension.  Currently only .html and .txt
  *  files are handled, other extensions ignored.
  *
- *@author     Erik Hatcher
  *@since      October 28, 2001
  *@todo Implement dynamic document type lookup
  */

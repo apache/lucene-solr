@@ -36,8 +36,7 @@ import java.io.IOException;
  * 
  * @see org.apache.lucene.search.function.FieldCacheSource for requirements 
  * on the field.
- *  
- * @author yonik
+ *
  */
 public class FloatFieldSource extends FieldCacheSource {
   private FieldCache.FloatParser parser;

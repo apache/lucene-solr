@@ -31,7 +31,6 @@ import org.w3c.dom.Element;
  * 1) Synchronizing access to "parse" calls on a previously supplied QueryParser
  * or..
  * 2) creating a new QueryParser object for each parse request
- * @author maharwood
  */
 public class UserInputQueryBuilder implements QueryBuilder {
 

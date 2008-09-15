@@ -29,8 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests MatchAllDocsQuery.
- * 
- * @author Daniel Naber
+ *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
 

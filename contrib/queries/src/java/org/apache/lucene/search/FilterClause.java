@@ -24,7 +24,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
  * is used when composed with another filter.
  * (Follows the boolean logic in BooleanClause for composition 
  * of queries.)
- * @author BPDThebault
  */
 
 public class FilterClause implements java.io.Serializable

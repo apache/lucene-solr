@@ -34,7 +34,6 @@ import org.w3c.dom.Element;
  */
 /**
  * Builds a BooleanQuery from all of the terms found in the XML element using the choice of analyzer
- * @author maharwood
  */
 public class TermsQueryBuilder implements QueryBuilder {
 

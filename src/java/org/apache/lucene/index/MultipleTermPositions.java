@@ -27,8 +27,7 @@ import java.util.List;
 
 /**
  * Describe class <code>MultipleTermPositions</code> here.
- * 
- * @author Anders Nielsen
+ *
  * @version 1.0
  */
 public class MultipleTermPositions implements TermPositions {

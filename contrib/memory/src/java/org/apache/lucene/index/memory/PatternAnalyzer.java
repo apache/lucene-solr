@@ -60,8 +60,7 @@ import org.apache.lucene.analysis.TokenStream;
  *     pat.tokenStream("content", "James is running round in the woods"), 
  *     "English"));
  * </pre>
- * 
- * @author whoschek.AT.lbl.DOT.gov
+ *
  */
 public class PatternAnalyzer extends Analyzer {
   

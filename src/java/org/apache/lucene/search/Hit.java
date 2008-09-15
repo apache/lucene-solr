@@ -26,8 +26,7 @@ import org.apache.lucene.index.CorruptIndexException;
  * Wrapper used by {@link HitIterator} to provide a lazily loaded hit
  * from {@link Hits}.
  *
- * @deprecated Hits will be removed in Lucene 3.0. Use {@link TopDocCollector} and {@link TopDocs} instead. 
- * @author Jeremy Rayner
+ * @deprecated Hits will be removed in Lucene 3.0. Use {@link TopDocCollector} and {@link TopDocs} instead.
  */
 public class Hit implements java.io.Serializable {
 

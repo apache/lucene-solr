@@ -20,7 +20,6 @@ package org.apache.lucene.search.highlight;
 /**
  * Low-level class used to record information about a section of a document 
  * with a score.
- * @author MAHarwood
  *
  * 
  */

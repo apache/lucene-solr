@@ -35,7 +35,6 @@ import java.util.TreeSet;
  * 
  * The cache is periodically cleaned up from a separate thread to ensure the
  * cache doesn't exceed the maximum size.
- * @author Matt Ericson
  */
 public class FilterManager {
 

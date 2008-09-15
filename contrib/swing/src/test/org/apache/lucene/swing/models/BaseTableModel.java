@@ -22,9 +22,7 @@ import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class BaseTableModel extends AbstractTableModel {
     private List columnNames = new ArrayList();
     private List rows = new ArrayList();

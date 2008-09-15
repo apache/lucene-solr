@@ -23,9 +23,7 @@ import javax.swing.table.TableModel;
 
 import junit.framework.TestCase;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class TestBasicTable extends TestCase {
     private TableModel baseTableModel;
     private TableSearcher tableSearcher;

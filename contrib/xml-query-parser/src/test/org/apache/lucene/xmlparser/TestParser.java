@@ -33,9 +33,7 @@ import org.apache.lucene.store.RAMDirectory;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * @author maharwood
- */
+
 public class TestParser extends TestCase {
 
 	CoreParser builder;

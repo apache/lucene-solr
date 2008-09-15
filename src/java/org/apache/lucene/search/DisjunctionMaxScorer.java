@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * is generated in document number order.  The score for each document is the maximum of the scores computed
  * by the subquery scorers that generate that document, plus tieBreakerMultiplier times the sum of the scores
  * for the other subqueries that generate the document.
- * @author Chuck Williams
  */
 class DisjunctionMaxScorer extends Scorer {
 

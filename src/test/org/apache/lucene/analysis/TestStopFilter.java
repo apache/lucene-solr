@@ -24,9 +24,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Set;
 
-/**
- * @author yonik
- */
+
 public class TestStopFilter extends LuceneTestCase {
 
   private final static boolean VERBOSE = false;

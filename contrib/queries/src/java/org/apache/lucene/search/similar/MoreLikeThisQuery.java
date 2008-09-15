@@ -35,7 +35,6 @@ import org.apache.lucene.search.similar.MoreLikeThis;
  * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
  * in custom QueryParser extensions. At query.rewrite() time the reader is used to construct the
  * actual MoreLikeThis object and obtain the real Query object.
- * @author maharwood
  */
 public class MoreLikeThisQuery extends Query
 {

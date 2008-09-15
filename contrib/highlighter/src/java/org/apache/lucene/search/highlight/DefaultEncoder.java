@@ -17,7 +17,6 @@ package org.apache.lucene.search.highlight;
 
 /**
  * Simple {@link Encoder} implementation that does not modify the output
- * @author Nicko Cadell
  *
  */
 public class DefaultEncoder implements Encoder

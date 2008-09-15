@@ -24,9 +24,7 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
-/**
- * @author maharwood
- */
+
 public class TermQueryBuilder implements QueryBuilder {
 
 	public Query getQuery(Element e) throws ParserException {

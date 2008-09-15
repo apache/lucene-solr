@@ -33,8 +33,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * Test QueryParser's ability to deal with Analyzers that return more
  * than one token per position or that return tokens with a position
  * increment &gt; 1.
- * 
- * @author Daniel Naber
+ *
  */
 public class TestMultiAnalyzer extends LuceneTestCase {
 

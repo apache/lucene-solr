@@ -21,9 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 
 
-/**
- * @author Andi Vajda
- */
+
 
 public class DbIndexOutput extends IndexOutput {
 

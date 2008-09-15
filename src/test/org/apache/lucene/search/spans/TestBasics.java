@@ -42,7 +42,6 @@ import org.apache.lucene.search.*;
  * all and only the correct documents are returned, thus providing end-to-end
  * testing of the indexing and search code.
  *
- * @author Doug Cutting
  */
 public class TestBasics extends LuceneTestCase {
   private IndexSearcher searcher;

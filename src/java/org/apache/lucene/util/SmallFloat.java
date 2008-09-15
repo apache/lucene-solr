@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 /** Floating point numbers smaller than 32 bits.
  *
- * @author yonik
  * @version $Id$
  */
 public class SmallFloat {

@@ -35,7 +35,6 @@ import org.apache.lucene.store.RAMDirectory;
  * It first creates a simple index and then a couple of instances of LuceneDictionary
  * on different fields and checks if all the right text comes back.
  *
- * @author Christian Mallwitz
  */
 public class TestLuceneDictionary extends TestCase {
 

@@ -28,8 +28,6 @@ import org.apache.lucene.document.Field;
 /**
  * Tests {@link PrefixFilter} class.
  *
- * @author Yura Smolsky
- * @author yonik
  */
 public class TestPrefixFilter extends LuceneTestCase {
   public void testPrefixFilter() throws Exception {

@@ -58,7 +58,6 @@ import org.apache.lucene.index.IndexWriter;
  *
  * This can take 4 minutes to execute and build an index on a "fast" system and the index takes up almost 3 MB.
  *
- * @author Dave Spencer, dave&#064;searchmorph.com
  * @see <a href="http://www.cogsci.princeton.edu/~wn/">WordNet home page</a>
  * @see <a href="http://www.cogsci.princeton.edu/~wn/man/prologdb.5WN.html">prologdb man page</a>
  * @see <a href="http://www.hostmon.com/rfc/advanced.jsp">sample site that uses it</a>

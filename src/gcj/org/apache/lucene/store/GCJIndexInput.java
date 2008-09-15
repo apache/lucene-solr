@@ -22,7 +22,6 @@ import gnu.gcj.RawData;
 
 /** Native file-based {@link IndexInput} implementation, using GCJ.
  *
- * @author Doug Cutting
  */
 public class GCJIndexInput extends IndexInput {
 

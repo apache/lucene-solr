@@ -79,7 +79,6 @@ import org.apache.lucene.util.SortedVIntList;
  * /least computationally-intensive filters first.
  * </p>
  *
- * @author <a href="mailto:kelvint@apache.org">Kelvin Tan</a>
  */
 public class ChainedFilter extends Filter
 {

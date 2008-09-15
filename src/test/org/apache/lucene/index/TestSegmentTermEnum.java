@@ -32,9 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 
-/**
- * @author goller
- */
+
 public class TestSegmentTermEnum extends LuceneTestCase
 {
   Directory dir = new RAMDirectory();

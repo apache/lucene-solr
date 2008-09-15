@@ -31,7 +31,6 @@ import java.util.Set;
  * not be stemmed at all. The used stemmer can be changed at runtime after the
  * filter object is created (as long as it is a FrenchStemmer).
  *
- * @author    Patrick Talbot (based on Gerhard Schwarz work for German)
  */
 public final class FrenchStemFilter extends TokenFilter {
 

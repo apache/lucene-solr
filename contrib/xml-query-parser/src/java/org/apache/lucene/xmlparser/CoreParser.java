@@ -45,7 +45,6 @@ import org.w3c.dom.Element;
  */
 /**
  * Assembles a QueryBuilder which uses only core Lucene Query objects
- * @author Mark
  *
  */
 public class CoreParser implements QueryBuilder

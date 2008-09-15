@@ -30,7 +30,6 @@ import org.apache.lucene.util.PriorityQueue;
  * Class used to markup highlighted terms found in the best sections of a
  * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter},
  * {@link Encoder} and tokenizers.
- * @author mark@searcharea.co.uk
  */
 public class Highlighter
 {
@@ -503,8 +502,7 @@ public class Highlighter
     this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
   }
 
-  /**
-	 */
+  
 	public Fragmenter getTextFragmenter()
 	{
 		return textFragmenter;

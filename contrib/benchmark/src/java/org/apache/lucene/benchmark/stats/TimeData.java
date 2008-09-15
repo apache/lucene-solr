@@ -19,7 +19,6 @@ package org.apache.lucene.benchmark.stats;
 /**
  * This class holds a data point measuring speed of processing.
  *
- * @author Andrzej Bialecki &lt;ab@getopt.org&gt;
  */
 public class TimeData {
   /** Name of the data point - usually one of a data series with the same name */

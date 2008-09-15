@@ -20,9 +20,7 @@ import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
 import org.w3c.dom.Element;
 
-/**
- * @author maharwood
- */
+
 public interface SpanQueryBuilder extends QueryBuilder{
 	
 	public SpanQuery getSpanQuery(Element e) throws ParserException;

@@ -34,7 +34,6 @@ import java.io.IOException;
  * LockFactory}, and can be changed for each Directory
  * instance using {@link #setLockFactory}.
  *
- * @author Doug Cutting
  */
 public abstract class Directory {
 

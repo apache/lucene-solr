@@ -23,7 +23,6 @@ package org.apache.lucene.analysis.fr;
  * refer to http://snowball.sourceforge.net/french/stemmer.html<br>
  * (French stemming algorithm) for details
  *
- * @author    Patrick Talbot
  */
 
 public class FrenchStemmer {

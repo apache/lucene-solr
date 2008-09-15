@@ -28,8 +28,7 @@ import java.util.HashMap;
  *         Loads a text file and adds every line as an entry to a Hashtable. Every line
  *         should contain only one word. If the file is not found or on any error, an
  *         empty table is returned.
- *         
- * @author Gerhard Schwarz
+ *
  * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader} instead
  */
 public class WordlistLoader {

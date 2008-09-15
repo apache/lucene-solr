@@ -34,7 +34,6 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Created on 2005. 2. 9.
  * <br>Adapted to Lucene testcase by Paul Elschot.
- * @author appler@gmail.com
  */
 public class TestBooleanOr extends LuceneTestCase {
 

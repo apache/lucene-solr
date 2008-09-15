@@ -30,9 +30,7 @@ import java.util.*;
   */
 public class BooleanQuery extends Query {
 
-  /**
-
-   */
+  
   private static int maxClauseCount = 1024;
 
   /** Thrown when an attempt is made to add more than {@link

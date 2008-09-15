@@ -18,9 +18,7 @@ package org.apache.lucene.swing.models;
 
 import junit.framework.TestCase;
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */
+
 public class TestUpdatingTable extends TestCase {
     private BaseTableModel baseTableModel;
     private TableSearcher tableSearcher;

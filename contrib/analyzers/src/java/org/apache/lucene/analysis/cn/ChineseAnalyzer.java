@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
  *   build from a ChineseTokenizer, filtered with ChineseFilter.
  * Copyright:   Copyright (c) 2001
  * Company:
- * @author Yiyi Sun
  * @version 1.0
  *
  */

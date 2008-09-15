@@ -26,7 +26,6 @@ import java.util.Iterator;
  * values may contribute to different measurements, so this class provides also
  * some useful methods to separate them.
  *
- * @author Andrzej Bialecki &lt;ab@getopt.org&gt;
  */
 public class TestRunData {
   private String id;

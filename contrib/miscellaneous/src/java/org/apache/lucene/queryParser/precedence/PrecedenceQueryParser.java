@@ -70,9 +70,6 @@ import org.apache.lucene.util.Parameter;
  * documentation</a>.
  * </p>
  *
- * @author Brian Goetz
- * @author Peter Halacsy
- * @author Tatu Saloranta
  */
 
 public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {

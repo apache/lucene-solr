@@ -19,8 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.*;
 
-/**
- */
+
 class SegmentTermVector implements TermFreqVector {
   private String field;
   private String terms[];

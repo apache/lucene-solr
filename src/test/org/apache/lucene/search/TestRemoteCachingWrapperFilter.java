@@ -32,7 +32,6 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Tests that the index is cached on the searcher side of things.
  * NOTE: This is copied from TestRemoteSearchable since it already had a remote index set up.
- * @author Matt Ericson
  */
 public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
   public TestRemoteCachingWrapperFilter(String name) {

@@ -38,8 +38,7 @@ import org.apache.lucene.search.FieldCache;
  * WARNING: The status of the <b>search.function</b> package is experimental. 
  * The APIs introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
- * 
- * @author yonik
+ *
  */
 public abstract class FieldCacheSource extends ValueSource {
   private String field;

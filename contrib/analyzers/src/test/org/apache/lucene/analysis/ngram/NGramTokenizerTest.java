@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 
 /**
  * Tests {@link NGramTokenizer} for correctness.
- * @author Otis Gospodnetic
  */
 public class NGramTokenizerTest extends TestCase {
     private StringReader input;

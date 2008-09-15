@@ -32,7 +32,6 @@ import java.io.Reader;
  * Tests {@link PhraseQuery}.
  *
  * @see TestPositionIncrement
- * @author Erik Hatcher
  */
 public class TestPhraseQuery extends LuceneTestCase {
 

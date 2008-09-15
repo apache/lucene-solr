@@ -21,9 +21,7 @@ import javax.swing.ListModel;
 import junit.framework.TestCase;
 
 
-/**
- * @author Jonathan Simon - jonathan_s_simon@yahoo.com
- */ 
+ 
 public class TestSearchingList extends TestCase {
     private ListModel baseListModel;
     private ListSearcher listSearcher;

@@ -52,7 +52,6 @@ import java.text.ParseException;
 /**
  *  Ant task to index files with Lucene
  *
- *@author Erik Hatcher
  */
 public class IndexTask extends Task {
   /**

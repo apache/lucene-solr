@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
  *
- * @author    Samphan Raruenrom <samphan@osdev.co.th>
  * @version   0.1
  */
 

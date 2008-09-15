@@ -20,7 +20,6 @@ import org.apache.lucene.analysis.Token;
 /**
  * One, or several overlapping tokens, along with the score(s) and the
  * scope of the original text
- * @author MAHarwood
  */
 public class TokenGroup
 {

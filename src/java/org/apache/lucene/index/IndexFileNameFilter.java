@@ -23,8 +23,7 @@ import java.util.HashSet;
 
 /**
  * Filename filter that accept filenames and extensions only created by Lucene.
- * 
- * @author Daniel Naber / Bernhard Messer
+ *
  * @version $rcs = ' $Id: Exp $ ' ;
  */
 public class IndexFileNameFilter implements FilenameFilter {

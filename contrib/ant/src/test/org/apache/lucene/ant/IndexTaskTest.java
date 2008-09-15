@@ -37,7 +37,6 @@ import org.apache.tools.ant.types.FileSet;
 /**
  *  Test cases for index task
  *
- *@author     Erik Hatcher
  */
 public class IndexTaskTest extends TestCase {
     private final static String docHandler =

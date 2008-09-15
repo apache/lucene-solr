@@ -25,7 +25,6 @@ import java.io.IOException;
  *
  * <p>Created: May 19, 2004 11:13:14 AM
  *
- * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
  */
