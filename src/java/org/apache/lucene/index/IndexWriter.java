@@ -871,7 +871,7 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,boolean,Analyzer,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(Directory,Analyzer,MaxFieldLength)} instead.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -931,7 +931,7 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,boolean,Analyzer,boolean,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)} instead.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1010,7 +1010,7 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,boolean,Analyzer,IndexDeletionPolicy,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)} instead.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1107,7 +1107,7 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,boolean,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)} instead.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy)
           throws CorruptIndexException, LockObtainFailedException, IOException {
