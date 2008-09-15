@@ -154,6 +154,8 @@ API Changes
     NO_NORMS becomes NOT_ANALYZED_NO_NORMS and a new ANALYZED_NO_NORMS
     is added.  (Mike McCandless)
 
+24. LUCENE-1131: Added numDeletedDocs method to IndexReader (Otis Gospodnetic)
+
 Bug fixes
     
  1. LUCENE-1134: Fixed BooleanQuery.rewrite to only optimize a single 

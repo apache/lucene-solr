@@ -622,6 +622,11 @@ public abstract class IndexReader {
    */
   public abstract int maxDoc();
 
+  /** Returns the number of deleted documents. */
+  public int numDeletedDocs() {
+    return maxDoc() - numDocs();
+  }
+
   /** Returns the stored fields of the <code>n</code><sup>th</sup>
    <code>Document</code> in this index.
    * @throws CorruptIndexException if the index is corrupt
