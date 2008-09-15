@@ -1,4 +1,5 @@
-                      Apache Solr Version 1.3-dev
+
+Apache Solr Version 1.3-dev
                             Release Notes
 
 Introduction
@@ -48,7 +49,7 @@ Documentation
 
 
 
-================== Release 1.3.0 20080903 (Expected) ==================
+================== Release 1.3.0 20080915 ==================
 
 Upgrading from Solr 1.2
 -----------------------
