@@ -42,17 +42,26 @@ import java.lang.ref.WeakReference;
  *  references are cleared and then GC is freely able to
  *  reclaim space by objects stored in it. */
 
-public final class CloseableThreadLocal {
+public class CloseableThreadLocal {
 
   private ThreadLocal t = new ThreadLocal();
 
   private Map hardRefs = new HashMap();
-
+  
+  protected Object initialValue() {
+    return null;
+  }
+  
   public Object get() {
     WeakReference weakRef = (WeakReference) t.get();
-    if (weakRef == null)
-      return null;
-    else {
+    if (weakRef == null) {
+      Object iv = initialValue();
+      if (iv != null) {
+        set(iv);
+        return iv;
+      } else
+        return null;
+    } else {
       Object v = weakRef.get();
       // This can never be null, because we hold a hard
       // reference to the underlying object:
