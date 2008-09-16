@@ -20,6 +20,10 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -354,5 +358,35 @@ public class TestSpans extends LuceneTestCase {
     tstNextSpans(spans, 11, 4, 5);
     tstNextSpans(spans, 11, 5, 6);
     assertFalse("final next", spans.next());
+  }
+
+  public void testSpanScorerZeroSloppyFreq() throws Exception {
+    boolean ordered = true;
+    int slop = 1;
+
+    final Similarity sim = new DefaultSimilarity() {
+      public float sloppyFreq(int distance) {
+        return 0.0f;
+      }
+    };
+
+    SpanNearQuery snq = new SpanNearQuery(
+                              new SpanQuery[] {
+                                makeSpanTermQuery("t1"),
+                                makeSpanTermQuery("t2") },
+                              slop,
+                              ordered) {
+      public Similarity getSimilarity(Searcher s) {
+        return sim;
+      }
+    };
+
+    Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader());
+
+    assertTrue("first doc", spanScorer.next());
+    assertEquals("first doc number", spanScorer.doc(), 11);
+    float score = spanScorer.score();
+    assertTrue("first doc score should be zero, " + score, score == 0.0f);
+    assertTrue("no second doc", ! spanScorer.next());
   }
 }

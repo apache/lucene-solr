@@ -77,12 +77,12 @@ public class SpanScorer extends Scorer {
     }
     doc = spans.doc();
     freq = 0.0f;
-    while (more && doc == spans.doc()) {
+    do {
       int matchLength = spans.end() - spans.start();
       freq += getSimilarity().sloppyFreq(matchLength);
       more = spans.next();
-    }
-    return more || (freq != 0);
+    } while (more && (doc == spans.doc()));
+    return true;
   }
 
   public int doc() { return doc; }
