@@ -40,19 +40,30 @@
     <section id="news">
       <title>News</title>
 
-      <section>
-        <title>02 October 2007 - Solr at OSSummit Asia</title>
-        <p><a href="http://www.ossummit.com"><img src="http://www.ossummit.com/2007/images/logo.png" class="float-right" alt="OSSummit Asia logo" /></a>
-          Lucene and Solr tutorials!
-        </p>
-        <p>The following talks and trainings are scheduled for the upcoming 2008 OSSummit:</p>
-          <ul>
-            <li><a href="http://www.ossummit.com/2007/program/talk/8">Lucene Boot Camp</a> by Erik Hatcher (originally by Grant Ingersoll).  An all-day training focusing on getting started with Lucene - the core library under Solr.</li>
-            <li><a href="http://www.ossummit.com/2007/program/talk/25">Solr in a Day</a> by Erik Hatcher.  All you need to know to use Solr effectively.</li>
-            <li><a href="http://www.ossummit.com/2007/program/talk/67">Lucene Case Studies</a> by Erik Hatcher.  A rapid series of examples of many Lucene and Solr using applications.</li>
-          </ul>
-      </section>
+       <section><title>15 September 2008 - Solr 1.3.0 Available</title>
+		<p>Solr 1.3.0 is available for public download.  This version contains many enhancements and bug fixes, including distributed search capabilities,
+			Lucene 2.3.x performance improvements and many others.
+		</p>
+		<p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.3.0/CHANGES.txt">release notes</a> for more details.  Download is
+    available from a <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Apache Mirror</a>.</p>
 
+    </section>
+	 <section>
+	        <title>28 August 2008 - Lucene/Solr at ApacheCon New Orleans</title>
+	        <p>
+	         <a title="ApacheCon US 2008" href="http://us.apachecon.com/c/acus2008/"><img src="http://us.apachecon.com/page_attachments/0000/0003/Basic_125x125.jpg" class="float-right" alt="ApacheCon US 2008 Logo" /></a>
+
+	         Lucene will be extremely well represented at
+	         <a href="http://us.apachecon.com/c/acus2008/">ApacheCon US 2008</a>
+	         in New Orleans this November 3-7, 2008:
+	        </p>
+	        <ul>
+	         <li><a href="http://us.apachecon.com/c/acus2008/sessions/69">Lucene Boot Camp</a> - A two day training session, November 3rd &amp; 4th</li>
+	         <li><a href="http://us.apachecon.com/c/acus2008/sessions/91">Solr Boot Camp</a> - A one day training session, November 4th</li>
+	         <!-- not listing all session explicitly since there is evidently still some flux in the schedule -->
+	         <li>An <a href="http://us.apachecon.com/c/acus2008/schedule/2008/11/05">entire day of Lucene sessions</a> on November 5th</li>
+	        </ul>
+	      </section>
 
       <section>
             <title>03 September 2007 - Lucene at ApacheCon Atlanta</title>
