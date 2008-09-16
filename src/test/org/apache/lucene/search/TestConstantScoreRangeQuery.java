@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -27,6 +28,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
+import java.text.Collator;
+import java.util.Locale;
 
 import junit.framework.Assert;
 
@@ -92,10 +95,23 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         return new ConstantScoreRangeQuery(f,l,h,il,ih);
     }
 
+    /** macro for readability */
+    public static Query csrq(String f, String l, String h,
+                             boolean il, boolean ih, Collator c) {
+        return new ConstantScoreRangeQuery(f,l,h,il,ih,c);
+    }
+
     public void testBasics() throws IOException {
       QueryUtils.check(csrq("data","1","6",T,T));
       QueryUtils.check(csrq("data","A","Z",T,T));
       QueryUtils.checkUnequal(csrq("data","1","6",T,T), csrq("data","A","Z",T,T));
+    }
+
+    public void testBasicsCollating() throws IOException {
+      Collator c = Collator.getInstance(Locale.ENGLISH);
+      QueryUtils.check(csrq("data","1","6",T,T,c));
+      QueryUtils.check(csrq("data","A","Z",T,T,c));
+      QueryUtils.checkUnequal(csrq("data","1","6",T,T,c), csrq("data","A","Z",T,T,c));
     }
 
     public void testEqualScores() throws IOException {
@@ -205,7 +221,7 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
     public void testRangeQueryId() throws IOException {
         // NOTE: uses index build in *super* setUp
 
-        IndexReader reader = IndexReader.open(index);
+        IndexReader reader = IndexReader.open(signedIndex.index);
 	IndexSearcher search = new IndexSearcher(reader);
 
         int medId = ((maxId - minId) / 2);
@@ -284,21 +300,105 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         
     }
 
+  
+  public void testRangeQueryIdCollating() throws IOException {
+    // NOTE: uses index build in *super* setUp
+
+    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexSearcher search = new IndexSearcher(reader);
+
+    int medId = ((maxId - minId) / 2);
+        
+    String minIP = pad(minId);
+    String maxIP = pad(maxId);
+    String medIP = pad(medId);
+    
+    int numDocs = reader.numDocs();
+        
+    assertEquals("num of docs", numDocs, 1+ maxId - minId);
+        
+    ScoreDoc[] result;
+        
+    Collator c = Collator.getInstance(Locale.ENGLISH);
+
+    // test id, bounded on both ends
+        
+    result = search.search(csrq("id",minIP,maxIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
+
+    result = search.search(csrq("id",minIP,maxIP,T,F,c), null, numDocs).scoreDocs;
+    assertEquals("all but last", numDocs-1, result.length);
+
+    result = search.search(csrq("id",minIP,maxIP,F,T,c), null, numDocs).scoreDocs;
+    assertEquals("all but first", numDocs-1, result.length);
+        
+    result = search.search(csrq("id",minIP,maxIP,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("all but ends", numDocs-2, result.length);
+    
+    result = search.search(csrq("id",medIP,maxIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("med and up", 1+ maxId-medId, result.length);
+        
+    result = search.search(csrq("id",minIP,medIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("up to med", 1+ medId-minId, result.length);
+
+    // unbounded id
+
+    result = search.search(csrq("id",minIP,null,T,F,c), null, numDocs).scoreDocs;
+    assertEquals("min and up", numDocs, result.length);
+
+    result = search.search(csrq("id",null,maxIP,F,T,c), null, numDocs).scoreDocs;
+    assertEquals("max and down", numDocs, result.length);
+
+    result = search.search(csrq("id",minIP,null,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("not min, but up", numDocs-1, result.length);
+        
+    result = search.search(csrq("id",null,maxIP,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("not max, but down", numDocs-1, result.length);
+        
+    result = search.search(csrq("id",medIP,maxIP,T,F,c), null, numDocs).scoreDocs;
+    assertEquals("med and up, not max", maxId-medId, result.length);
+        
+    result = search.search(csrq("id",minIP,medIP,F,T,c), null, numDocs).scoreDocs;
+    assertEquals("not min, up to med", medId-minId, result.length);
+
+    // very small sets
+
+    result = search.search(csrq("id",minIP,minIP,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("min,min,F,F,c", 0, result.length);
+    result = search.search(csrq("id",medIP,medIP,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("med,med,F,F,c", 0, result.length);
+    result = search.search(csrq("id",maxIP,maxIP,F,F,c), null, numDocs).scoreDocs;
+    assertEquals("max,max,F,F,c", 0, result.length);
+                     
+    result = search.search(csrq("id",minIP,minIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("min,min,T,T,c", 1, result.length);
+    result = search.search(csrq("id",null,minIP,F,T,c), null, numDocs).scoreDocs;
+    assertEquals("nul,min,F,T,c", 1, result.length);
+
+    result = search.search(csrq("id",maxIP,maxIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("max,max,T,T,c", 1, result.length);
+    result = search.search(csrq("id",maxIP,null,T,F,c), null, numDocs).scoreDocs;
+    assertEquals("max,nul,T,T,c", 1, result.length);
+
+    result = search.search(csrq("id",medIP,medIP,T,T,c), null, numDocs).scoreDocs;
+    assertEquals("med,med,T,T,c", 1, result.length);
+  }
+    
+  
     public void testRangeQueryRand() throws IOException {
         // NOTE: uses index build in *super* setUp
 
-        IndexReader reader = IndexReader.open(index);
+        IndexReader reader = IndexReader.open(signedIndex.index);
 	IndexSearcher search = new IndexSearcher(reader);
 
-        String minRP = pad(minR);
-        String maxRP = pad(maxR);
+        String minRP = pad(signedIndex.minR);
+        String maxRP = pad(signedIndex.maxR);
     
         int numDocs = reader.numDocs();
         
         assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
   ScoreDoc[] result;
-        Query q = new TermQuery(new Term("body","body"));
 
         // test extremes, bounded on both ends
         
@@ -347,4 +447,104 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         
     }
 
+    public void testRangeQueryRandCollating() throws IOException {
+        // NOTE: uses index build in *super* setUp
+
+        // using the unsigned index because collation seems to ignore hyphens
+        IndexReader reader = IndexReader.open(unsignedIndex.index);
+        IndexSearcher search = new IndexSearcher(reader);
+
+        String minRP = pad(unsignedIndex.minR);
+        String maxRP = pad(unsignedIndex.maxR);
+    
+        int numDocs = reader.numDocs();
+        
+        assertEquals("num of docs", numDocs, 1+ maxId - minId);
+        
+        ScoreDoc[] result;
+        
+        Collator c = Collator.getInstance(Locale.ENGLISH);
+
+        // test extremes, bounded on both ends
+        
+        result = search.search(csrq("rand",minRP,maxRP,T,T,c), null, numDocs).scoreDocs;
+        assertEquals("find all", numDocs, result.length);
+
+        result = search.search(csrq("rand",minRP,maxRP,T,F,c), null, numDocs).scoreDocs;
+        assertEquals("all but biggest", numDocs-1, result.length);
+
+        result = search.search(csrq("rand",minRP,maxRP,F,T,c), null, numDocs).scoreDocs;
+        assertEquals("all but smallest", numDocs-1, result.length);
+        
+        result = search.search(csrq("rand",minRP,maxRP,F,F,c), null, numDocs).scoreDocs;
+        assertEquals("all but extremes", numDocs-2, result.length);
+    
+        // unbounded
+
+        result = search.search(csrq("rand",minRP,null,T,F,c), null, numDocs).scoreDocs;
+        assertEquals("smallest and up", numDocs, result.length);
+
+        result = search.search(csrq("rand",null,maxRP,F,T,c), null, numDocs).scoreDocs;
+        assertEquals("biggest and down", numDocs, result.length);
+
+        result = search.search(csrq("rand",minRP,null,F,F,c), null, numDocs).scoreDocs;
+        assertEquals("not smallest, but up", numDocs-1, result.length);
+        
+        result = search.search(csrq("rand",null,maxRP,F,F,c), null, numDocs).scoreDocs;
+        assertEquals("not biggest, but down", numDocs-1, result.length);
+        
+        // very small sets
+
+        result = search.search(csrq("rand",minRP,minRP,F,F,c), null, numDocs).scoreDocs;
+        assertEquals("min,min,F,F,c", 0, result.length);
+        result = search.search(csrq("rand",maxRP,maxRP,F,F,c), null, numDocs).scoreDocs;
+        assertEquals("max,max,F,F,c", 0, result.length);
+                     
+        result = search.search(csrq("rand",minRP,minRP,T,T,c), null, numDocs).scoreDocs;
+        assertEquals("min,min,T,T,c", 1, result.length);
+        result = search.search(csrq("rand",null,minRP,F,T,c), null, numDocs).scoreDocs;
+        assertEquals("nul,min,F,T,c", 1, result.length);
+
+        result = search.search(csrq("rand",maxRP,maxRP,T,T,c), null, numDocs).scoreDocs;
+        assertEquals("max,max,T,T,c", 1, result.length);
+        result = search.search(csrq("rand",maxRP,null,T,F,c), null, numDocs).scoreDocs;
+        assertEquals("max,nul,T,T,c", 1, result.length);
+    }
+    
+    public void testFarsi() throws Exception {
+            
+        /* build an index */
+        RAMDirectory farsiIndex = new RAMDirectory();
+        IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(), T, 
+                                             IndexWriter.MaxFieldLength.LIMITED);
+        Document doc = new Document();
+        doc.add(new Field("content","\u0633\u0627\u0628", 
+                          Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("body", "body",
+                          Field.Store.YES, Field.Index.NOT_ANALYZED));
+        writer.addDocument(doc);
+            
+        writer.optimize();
+        writer.close();
+
+        IndexReader reader = IndexReader.open(farsiIndex);
+        IndexSearcher search = new IndexSearcher(reader);
+
+        // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
+        // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
+        // characters properly.
+        Collator c = Collator.getInstance(new Locale("ar"));
+        
+        // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
+        // orders the U+0698 character before the U+0633 character, so the single
+        // index Term below should NOT be returned by a ConstantScoreRangeQuery
+        // with a Farsi Collator (or an Arabic one for the case when Farsi is 
+        // not supported).
+        ScoreDoc[] result = search.search(csrq("content","\u062F", "\u0698", T, T, c), null, 1000).scoreDocs;
+        assertEquals("The index Term should not be included.", 0, result.length);
+
+        result = search.search(csrq("content", "\u0633", "\u0638", T, T, c), null, 1000).scoreDocs;
+        assertEquals("The index Term should be included.", 1, result.length);
+        search.close();
+    }
 }

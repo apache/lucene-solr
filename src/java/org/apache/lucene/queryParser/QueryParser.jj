@@ -28,6 +28,7 @@ package org.apache.lucene.queryParser;
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.DateFormat;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -158,6 +159,10 @@ public class QueryParser {
   DateTools.Resolution dateResolution = null;
   // maps field names to date resolutions
   Map fieldToDateResolution = null;
+
+  // The collator to use when determining range inclusion,
+  // for use when constructing RangeQuerys and ConstantScoreRangeQuerys.
+  Collator rangeCollator = null;
 
   /** The default operator for parsing queries. 
    * Use {@link QueryParser#setDefaultOperator} to change it.
@@ -433,6 +438,35 @@ public class QueryParser {
     }
 
     return resolution;
+  }
+  
+  /** 
+   * Sets the collator used to determine index term inclusion in ranges
+   * specified either for ConstantScoreRangeQuerys or RangeQuerys (if
+   * {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
+   * value.)
+   * <p/>
+   * <strong>WARNING:</strong> Setting the rangeCollator to a non-null
+   * collator using this method will cause every single index Term in the
+   * Field referenced by lowerTerm and/or upperTerm to be examined.
+   * Depending on the number of index Terms in this Field, the operation could
+   * be very slow.
+   *
+   *  @param rc  the collator to use when constructing RangeQuerys
+   *             and ConstantScoreRangeQuerys
+   */
+  public void setRangeCollator(Collator rc) {
+    rangeCollator = rc;
+  }
+  
+  /**
+   * @return the collator used to determine index term inclusion in ranges
+   *  specified either for ConstantScoreRangeQuerys or RangeQuerys (if
+   *  {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
+   *  value.)
+   */
+  public Collator getRangeCollator() {
+    return rangeCollator;
   }
 
   /**
@@ -738,11 +772,12 @@ public class QueryParser {
     {
       return new RangeQuery(new Term(field, part1),
                             new Term(field, part2),
-			    inclusive);
+                            inclusive, rangeCollator);
     }
     else
     {
-      return new ConstantScoreRangeQuery(field,part1,part2,inclusive,inclusive);
+      return new ConstantScoreRangeQuery
+        (field, part1, part2, inclusive, inclusive, rangeCollator);
     }
   }
 

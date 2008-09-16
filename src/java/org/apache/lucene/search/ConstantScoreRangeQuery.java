@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.text.Collator;
 
 /**
  * A range query that returns a constant score equal to its boost for
@@ -42,6 +43,7 @@ public class ConstantScoreRangeQuery extends Query
   private final String upperVal;
   private final boolean includeLower;
   private final boolean includeUpper;
+  private Collator collator;
 
 
   public ConstantScoreRangeQuery(String fieldName, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper)
@@ -65,6 +67,14 @@ public class ConstantScoreRangeQuery extends Query
     this.includeUpper = includeUpper;
   }
 
+  public ConstantScoreRangeQuery(String fieldName, String lowerVal,
+                                 String upperVal, boolean includeLower,
+                                 boolean includeUpper, Collator collator)
+  {
+    this(fieldName, lowerVal, upperVal, includeLower, includeUpper);
+    this.collator = collator;
+  }
+
   /** Returns the field name for this query */
   public String getField() { return fieldName; }
   /** Returns the value of the lower endpoint of this range query, null if open ended */
@@ -78,9 +88,10 @@ public class ConstantScoreRangeQuery extends Query
 
   public Query rewrite(IndexReader reader) throws IOException {
     // Map to RangeFilter semantics which are slightly different...
-    RangeFilter rangeFilt = new RangeFilter(fieldName,
-            lowerVal!=null?lowerVal:"",
-            upperVal, lowerVal==""?false:includeLower, upperVal==null?false:includeUpper);
+    RangeFilter rangeFilt = new RangeFilter
+        (fieldName, lowerVal != null?lowerVal:"", upperVal,
+         lowerVal==""?false:includeLower, upperVal==null?false:includeUpper,
+         collator);
     Query q = new ConstantScoreQuery(rangeFilt);
     q.setBoost(getBoost());
     return q;
@@ -117,6 +128,7 @@ public class ConstantScoreRangeQuery extends Query
         if (this.fieldName != other.fieldName  // interned comparison
             || this.includeLower != other.includeLower
             || this.includeUpper != other.includeUpper
+            || (this.collator != null && ! this.collator.equals(other.collator))
            ) { return false; }
         if (this.lowerVal != null ? !this.lowerVal.equals(other.lowerVal) : other.lowerVal != null) return false;
         if (this.upperVal != null ? !this.upperVal.equals(other.upperVal) : other.upperVal != null) return false;
@@ -134,6 +146,7 @@ public class ConstantScoreRangeQuery extends Query
       h ^= (upperVal != null ? (upperVal.hashCode()) : 0x5a695a69);
       h ^= (includeLower ? 0x665599aa : 0)
          ^ (includeUpper ? 0x99aa5566 : 0);
+      h ^= collator != null ? collator.hashCode() : 0;
       return h;
     }
 }

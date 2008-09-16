@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.text.Collator;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -46,12 +47,18 @@ public class RangeQuery extends Query
     private Term lowerTerm;
     private Term upperTerm;
     private boolean inclusive;
+    private Collator collator;
 
     /** Constructs a query selecting all terms greater than
      * <code>lowerTerm</code> but less than <code>upperTerm</code>.
      * There must be at least one term and either term may be null,
      * in which case there is no bound on that side, but if there are
      * two terms, both terms <b>must</b> be for the same field.
+     *
+     * @param lowerTerm The Term at the lower end of the range
+     * @param upperTerm The Term at the upper end of the range
+     * @param inclusive If true, both <code>lowerTerm</code> and
+     *  <code>upperTerm</code> will themselves be included in the range.
      */
     public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive)
     {
@@ -76,46 +83,107 @@ public class RangeQuery extends Query
         this.inclusive = inclusive;
     }
 
+    /** Constructs a query selecting all terms greater than
+     * <code>lowerTerm</code> but less than <code>upperTerm</code>.
+     * There must be at least one term and either term may be null,
+     * in which case there is no bound on that side, but if there are
+     * two terms, both terms <b>must</b> be for the same field.
+     * <p>
+     * If <code>collator</code> is not null, it will be used to decide whether
+     * index terms are within the given range, rather than using the Unicode code
+     * point order in which index terms are stored.
+     * <p>
+     * <strong>WARNING:</strong> Using this constructor and supplying a non-null
+     * value in the <code>collator</code> parameter will cause every single 
+     * index Term in the Field referenced by lowerTerm and/or upperTerm to be
+     * examined.  Depending on the number of index Terms in this Field, the 
+     * operation could be very slow.
+     *
+     * @param lowerTerm The Term at the lower end of the range
+     * @param upperTerm The Term at the upper end of the range
+     * @param inclusive If true, both <code>lowerTerm</code> and
+     *  <code>upperTerm</code> will themselves be included in the range.
+     * @param collator The collator to use to collate index Terms, to determine
+     *  their membership in the range bounded by <code>lowerTerm</code> and
+     *  <code>upperTerm</code>.
+     */
+    public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive,
+                      Collator collator)
+    {
+        this(lowerTerm, upperTerm, inclusive);
+        this.collator = collator;
+    }
+
     public Query rewrite(IndexReader reader) throws IOException {
 
         BooleanQuery query = new BooleanQuery(true);
-        TermEnum enumerator = reader.terms(lowerTerm);
+        String testField = getField();
+        if (collator != null) {
+            TermEnum enumerator = reader.terms(new Term(testField, ""));
+            String lowerTermText = lowerTerm != null ? lowerTerm.text() : null;
+            String upperTermText = upperTerm != null ? upperTerm.text() : null;
 
-        try {
-
-            boolean checkLower = false;
-            if (!inclusive) // make adjustments to set to exclusive
-                checkLower = true;
-
-            String testField = getField();
-
-            do {
-                Term term = enumerator.term();
-                if (term != null && term.field() == testField) { // interned comparison
-                    if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
-                        checkLower = false;
-                        if (upperTerm != null) {
-                            int compare = upperTerm.text().compareTo(term.text());
-                            /* if beyond the upper term, or is exclusive and
-                             * this is equal to the upper term, break out */
-                            if ((compare < 0) || (!inclusive && compare == 0))
-                                break;
+            try {
+                do {
+                    Term term = enumerator.term();
+                    if (term != null && term.field() == testField) { // interned comparison
+                        if ((lowerTermText == null
+                             || (inclusive ? collator.compare(term.text(), lowerTermText) >= 0
+                                           : collator.compare(term.text(), lowerTermText) > 0))
+                            && (upperTermText == null
+                                || (inclusive ? collator.compare(term.text(), upperTermText) <= 0
+                                              : collator.compare(term.text(), upperTermText) < 0))) {
+                            addTermToQuery(term, query);
                         }
-                        TermQuery tq = new TermQuery(term); // found a match
-                        tq.setBoost(getBoost()); // set the boost
-                        query.add(tq, BooleanClause.Occur.SHOULD); // add to query
                     }
                 }
-                else {
-                    break;
-                }
+                while (enumerator.next());
             }
-            while (enumerator.next());
+            finally {
+                enumerator.close();
+            }
         }
-        finally {
-            enumerator.close();
+        else { // collator is null
+            TermEnum enumerator = reader.terms(lowerTerm);
+
+            try {
+
+                boolean checkLower = false;
+                if (!inclusive) // make adjustments to set to exclusive
+                    checkLower = true;
+
+                do {
+                    Term term = enumerator.term();
+                    if (term != null && term.field() == testField) { // interned comparison
+                        if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
+                            checkLower = false;
+                            if (upperTerm != null) {
+                                int compare = upperTerm.text().compareTo(term.text());
+                                /* if beyond the upper term, or is exclusive and
+                                 * this is equal to the upper term, break out */
+                                if ((compare < 0) || (!inclusive && compare == 0))
+                                    break;
+                            }
+                            addTermToQuery(term, query); // Found a match
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                while (enumerator.next());
+            }
+            finally {
+                enumerator.close();
+            }
         }
         return query;
+    }
+
+    private void addTermToQuery(Term term, BooleanQuery query) {
+        TermQuery tq = new TermQuery(term);
+        tq.setBoost(getBoost()); // set the boost
+        query.add(tq, BooleanClause.Occur.SHOULD); // add to query
     }
 
     /** Returns the field name for this query */
@@ -131,6 +199,9 @@ public class RangeQuery extends Query
 
     /** Returns <code>true</code> if the range query is inclusive */
     public boolean isInclusive() { return inclusive; }
+
+    /** Returns the collator used to determine range inclusion, if any. */
+    public Collator getCollator() { return collator; }
 
 
     /** Prints a user-readable version of this query. */
@@ -159,6 +230,9 @@ public class RangeQuery extends Query
         final RangeQuery other = (RangeQuery) o;
         if (this.getBoost() != other.getBoost()) return false;
         if (this.inclusive != other.inclusive) return false;
+        if (this.collator != null && ! this.collator.equals(other.collator)) 
+            return false;
+
         // one of lowerTerm and upperTerm can be null
         if (this.lowerTerm != null ? !this.lowerTerm.equals(other.lowerTerm) : other.lowerTerm != null) return false;
         if (this.upperTerm != null ? !this.upperTerm.equals(other.upperTerm) : other.upperTerm != null) return false;
@@ -174,6 +248,7 @@ public class RangeQuery extends Query
       h ^= (h << 25) | (h >>> 8);
       h ^= upperTerm != null ? upperTerm.hashCode() : 0;
       h ^= this.inclusive ? 0x2742E74A : 0;
+      h ^= collator != null ? collator.hashCode() : 0; 
       return h;
     }
 }

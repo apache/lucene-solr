@@ -25,6 +25,7 @@ import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.text.Collator;
 
 /**
  * A Filter that restricts search results to a range of values in a given
@@ -42,8 +43,9 @@ public class RangeFilter extends Filter {
     private String upperTerm;
     private boolean includeLower;
     private boolean includeUpper;
+    private Collator collator;
 
-    /**
+  /**
      * @param fieldName The field this range applies to
      * @param lowerTerm The lower bound on this range
      * @param upperTerm The upper bound on this range
@@ -74,7 +76,31 @@ public class RangeFilter extends Filter {
                 ("The upper bound must be non-null to be inclusive");
         }
     }
-    
+
+    /**
+     * <strong>WARNING:</strong> Using this constructor and supplying a non-null
+     * value in the <code>collator</code> parameter will cause every single 
+     * index Term in the Field referenced by lowerTerm and/or upperTerm to be
+     * examined.  Depending on the number of index Terms in this Field, the 
+     * operation could be very slow.
+     *
+     * @param lowerTerm The lower bound on this range
+     * @param upperTerm The upper bound on this range
+     * @param includeLower Does this range include the lower bound?
+     * @param includeUpper Does this range include the upper bound?
+     * @param collator The collator to use when determining range inclusion; set
+     *  to null to use Unicode code point ordering instead of collation.
+     * @throws IllegalArgumentException if both terms are null or if
+     *  lowerTerm is null and includeLower is true (similar for upperTerm
+     *  and includeUpper)
+     */
+    public RangeFilter(String fieldName, String lowerTerm, String upperTerm,
+                       boolean includeLower, boolean includeUpper,
+                       Collator collator) {
+        this(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
+        this.collator = collator;
+    }
+
     /**
      * Constructs a filter for field <code>fieldName</code> matching
      * less than or equal to <code>upperTerm</code>.
@@ -100,7 +126,7 @@ public class RangeFilter extends Filter {
     public BitSet bits(IndexReader reader) throws IOException {
         BitSet bits = new BitSet(reader.maxDoc());
         TermEnum enumerator =
-            (null != lowerTerm
+            (null != lowerTerm && collator == null
              ? reader.terms(new Term(fieldName, lowerTerm))
              : reader.terms(new Term(fieldName)));
         
@@ -110,40 +136,61 @@ public class RangeFilter extends Filter {
                 return bits;
             }
             
-            boolean checkLower = false;
-            if (!includeLower) // make adjustments to set to exclusive
-                checkLower = true;
-        
             TermDocs termDocs = reader.termDocs();
             try {
-                
-                do {
-                    Term term = enumerator.term();
-                    if (term != null && term.field().equals(fieldName)) {
-                        if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
-                            checkLower = false;
-                            if (upperTerm != null) {
-                                int compare = upperTerm.compareTo(term.text());
-                                /* if beyond the upper term, or is exclusive and
-                                 * this is equal to the upper term, break out */
-                                if ((compare < 0) ||
-                                    (!includeUpper && compare==0)) {
-                                    break;
+                if (collator != null) {
+                    do {
+                        Term term = enumerator.term();
+                        if (term != null && term.field().equals(fieldName)) {
+                            if ((lowerTerm == null
+                                 || (includeLower
+                                     ? collator.compare(term.text(), lowerTerm) >= 0
+                                     : collator.compare(term.text(), lowerTerm) > 0))
+                                && (upperTerm == null
+                                    || (includeUpper
+                                        ? collator.compare(term.text(), upperTerm) <= 0
+                                        : collator.compare(term.text(), upperTerm) < 0))) {
+                              /* we have a good term, find the docs */
+                                termDocs.seek(enumerator.term());
+                                while (termDocs.next()) {
+                                    bits.set(termDocs.doc());
                                 }
                             }
-                            /* we have a good term, find the docs */
-                            
-                            termDocs.seek(enumerator.term());
-                            while (termDocs.next()) {
-                                bits.set(termDocs.doc());
-                            }
                         }
-                    } else {
-                        break;
                     }
+                    while (enumerator.next());
+                } else { // collator is null - use Unicode code point ordering
+                    boolean checkLower = false;
+                    if (!includeLower) // make adjustments to set to exclusive
+                        checkLower = true;
+       
+                    do {
+                        Term term = enumerator.term();
+                        if (term != null && term.field().equals(fieldName)) {
+                            if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
+                                checkLower = false;
+                                if (upperTerm != null) {
+                                    int compare = upperTerm.compareTo(term.text());
+                                    /* if beyond the upper term, or is exclusive and
+                                     * this is equal to the upper term, break out */
+                                    if ((compare < 0) ||
+                                        (!includeUpper && compare==0)) {
+                                        break;
+                                    }
+                                }
+                                /* we have a good term, find the docs */
+                            
+                                termDocs.seek(enumerator.term());
+                                while (termDocs.next()) {
+                                    bits.set(termDocs.doc());
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    while (enumerator.next());
                 }
-                while (enumerator.next());
-                
             } finally {
                 termDocs.close();
             }
@@ -162,7 +209,7 @@ public class RangeFilter extends Filter {
         OpenBitSet bits = new OpenBitSet(reader.maxDoc());
         
         TermEnum enumerator =
-            (null != lowerTerm
+            (null != lowerTerm && collator == null
              ? reader.terms(new Term(fieldName, lowerTerm))
              : reader.terms(new Term(fieldName)));
         
@@ -171,40 +218,63 @@ public class RangeFilter extends Filter {
             if (enumerator.term() == null) {
                 return bits;
             }
-            
-            boolean checkLower = false;
-            if (!includeLower) // make adjustments to set to exclusive
-                checkLower = true;
-        
+
             TermDocs termDocs = reader.termDocs();
+
             try {
-                
-                do {
-                    Term term = enumerator.term();
-                    if (term != null && term.field().equals(fieldName)) {
-                        if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
-                            checkLower = false;
-                            if (upperTerm != null) {
-                                int compare = upperTerm.compareTo(term.text());
-                                /* if beyond the upper term, or is exclusive and
-                                 * this is equal to the upper term, break out */
-                                if ((compare < 0) ||
-                                    (!includeUpper && compare==0)) {
-                                    break;
+                if (collator != null) {
+                    do {
+                        Term term = enumerator.term();
+                        if (term != null && term.field().equals(fieldName)) {
+                            if ((lowerTerm == null
+                                 || (includeLower
+                                     ? collator.compare(term.text(), lowerTerm) >= 0
+                                     : collator.compare(term.text(), lowerTerm) > 0))
+                                && (upperTerm == null
+                                    || (includeUpper
+                                        ? collator.compare(term.text(), upperTerm) <= 0
+                                        : collator.compare(term.text(), upperTerm) < 0))) {
+                                /* we have a good term, find the docs */
+                                termDocs.seek(enumerator.term());
+                                while (termDocs.next()) {
+                                    bits.set(termDocs.doc());
                                 }
                             }
-                            /* we have a good term, find the docs */
-                            
-                            termDocs.seek(enumerator.term());
-                            while (termDocs.next()) {
-                                bits.set(termDocs.doc());
-                            }
                         }
-                    } else {
-                        break;
                     }
+                    while (enumerator.next());
+                } else { // collator is null - use Unicode code point ordering
+                    boolean checkLower = false;
+                    if (!includeLower) // make adjustments to set to exclusive
+                        checkLower = true;
+        
+                    do {
+                        Term term = enumerator.term();
+                        if (term != null && term.field().equals(fieldName)) {
+                            if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
+                                checkLower = false;
+                                if (upperTerm != null) {
+                                    int compare = upperTerm.compareTo(term.text());
+                                    /* if beyond the upper term, or is exclusive and
+                                     * this is equal to the upper term, break out */
+                                    if ((compare < 0) ||
+                                        (!includeUpper && compare==0)) {
+                                        break;
+                                    }
+                                }
+                                /* we have a good term, find the docs */
+                            
+                                termDocs.seek(enumerator.term());
+                                while (termDocs.next()) {
+                                    bits.set(termDocs.doc());
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    while (enumerator.next());
                 }
-                while (enumerator.next());
                 
             } finally {
                 termDocs.close();
@@ -241,6 +311,7 @@ public class RangeFilter extends Filter {
         if (!this.fieldName.equals(other.fieldName)
             || this.includeLower != other.includeLower
             || this.includeUpper != other.includeUpper
+            || (this.collator != null && ! this.collator.equals(other.collator))
            ) { return false; }
         if (this.lowerTerm != null ? !this.lowerTerm.equals(other.lowerTerm) : other.lowerTerm != null) return false;
         if (this.upperTerm != null ? !this.upperTerm.equals(other.upperTerm) : other.upperTerm != null) return false;
@@ -255,6 +326,7 @@ public class RangeFilter extends Filter {
       h ^= (upperTerm != null ? (upperTerm.hashCode()) : 0x91BEC2C2);
       h ^= (includeLower ? 0xD484B933 : 0)
          ^ (includeUpper ? 0x6AE423AC : 0);
+      h ^= collator != null ? collator.hashCode() : 0;
       return h;
     }
 }

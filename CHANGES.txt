@@ -283,6 +283,8 @@ New features
 
 19. LUCENE-1354: Provide programmatic access to CheckIndex (Grant Ingersoll, Mike McCandless)
 
+20. LUCENE-1279: Add support for Collators to RangeFilter/Query and Query Parser.  (Steve Rowe via Grant Ingersoll) 
+
 Optimizations
 
  1. LUCENE-705: When building a compound file, use

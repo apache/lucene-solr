@@ -4,6 +4,7 @@ package org.apache.lucene.queryParser;
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.DateFormat;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -131,6 +132,10 @@ public class QueryParser implements QueryParserConstants {
   DateTools.Resolution dateResolution = null;
   // maps field names to date resolutions
   Map fieldToDateResolution = null;
+
+  // The collator to use when determining range inclusion,
+  // for use when constructing RangeQuerys and ConstantScoreRangeQuerys.
+  Collator rangeCollator = null;
 
   /** The default operator for parsing queries. 
    * Use {@link QueryParser#setDefaultOperator} to change it.
@@ -406,6 +411,35 @@ public class QueryParser implements QueryParserConstants {
     }
 
     return resolution;
+  }
+
+  /** 
+   * Sets the collator used to determine index term inclusion in ranges
+   * specified either for ConstantScoreRangeQuerys or RangeQuerys (if
+   * {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
+   * value.)
+   * <p/>
+   * <strong>WARNING:</strong> Setting the rangeCollator to a non-null
+   * collator using this method will cause every single index Term in the
+   * Field referenced by lowerTerm and/or upperTerm to be examined.
+   * Depending on the number of index Terms in this Field, the operation could
+   * be very slow.
+   *
+   *  @param rc  the collator to use when constructing RangeQuerys
+   *             and ConstantScoreRangeQuerys
+   */
+  public void setRangeCollator(Collator rc) {
+    rangeCollator = rc;
+  }
+
+  /**
+   * @return the collator used to determine index term inclusion in ranges
+   *  specified either for ConstantScoreRangeQuerys or RangeQuerys (if
+   *  {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
+   *  value.)
+   */
+  public Collator getRangeCollator() {
+    return rangeCollator;
   }
 
   /**
@@ -711,11 +745,12 @@ public class QueryParser implements QueryParserConstants {
     {
       return new RangeQuery(new Term(field, part1),
                             new Term(field, part2),
-                            inclusive);
+                            inclusive, rangeCollator);
     }
     else
     {
-      return new ConstantScoreRangeQuery(field,part1,part2,inclusive,inclusive);
+      return new ConstantScoreRangeQuery
+        (field, part1, part2, inclusive, inclusive, rangeCollator);
     }
   }
 
@@ -1448,26 +1483,26 @@ public class QueryParser implements QueryParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final private boolean jj_2_1(int xla) {
+  private boolean jj_2_1(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_1(); }
     catch(LookaheadSuccess ls) { return true; }
     finally { jj_save(0, xla); }
   }
 
-  final private boolean jj_3R_3() {
+  private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
 
-  final private boolean jj_3R_2() {
+  private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
 
-  final private boolean jj_3_1() {
+  private boolean jj_3_1() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3R_2()) {
@@ -1477,31 +1512,34 @@ public class QueryParser implements QueryParserConstants {
     return false;
   }
 
+  /** Generated Token Manager. */
   public QueryParserTokenManager token_source;
-  public Token token, jj_nt;
+  /** Current token. */
+  public Token token;
+  /** Next token. */
+  public Token jj_nt;
   private int jj_ntk;
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
-  public boolean lookingAhead = false;
-  private boolean jj_semLA;
   private int jj_gen;
   final private int[] jj_la1 = new int[23];
   static private int[] jj_la1_0;
   static private int[] jj_la1_1;
   static {
-      jj_la1_0();
-      jj_la1_1();
+      jj_la1_init_0();
+      jj_la1_init_1();
    }
-   private static void jj_la1_0() {
+   private static void jj_la1_init_0() {
       jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x3ed3f00,0x90000,0x20000,0x3ed2000,0x2690000,0x100000,0x100000,0x20000,0x30000000,0x4000000,0x30000000,0x20000,0x0,0x40000000,0x0,0x20000,0x100000,0x20000,0x3ed0000,};
    }
-   private static void jj_la1_1() {
+   private static void jj_la1_init_1() {
       jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3,0x0,0x3,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
+  /** Constructor with user supplied CharStream. */
   public QueryParser(CharStream stream) {
     token_source = new QueryParserTokenManager(stream);
     token = new Token();
@@ -1511,6 +1549,7 @@ public class QueryParser implements QueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Reinitialise. */
   public void ReInit(CharStream stream) {
     token_source.ReInit(stream);
     token = new Token();
@@ -1520,6 +1559,7 @@ public class QueryParser implements QueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Constructor with generated Token Manager. */
   public QueryParser(QueryParserTokenManager tm) {
     token_source = tm;
     token = new Token();
@@ -1529,6 +1569,7 @@ public class QueryParser implements QueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Reinitialise. */
   public void ReInit(QueryParserTokenManager tm) {
     token_source = tm;
     token = new Token();
@@ -1538,7 +1579,7 @@ public class QueryParser implements QueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
-  final private Token jj_consume_token(int kind) throws ParseException {
+  private Token jj_consume_token(int kind) throws ParseException {
     Token oldToken;
     if ((oldToken = token).next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -1564,7 +1605,7 @@ public class QueryParser implements QueryParserConstants {
 
   static private final class LookaheadSuccess extends java.lang.Error { }
   final private LookaheadSuccess jj_ls = new LookaheadSuccess();
-  final private boolean jj_scan_token(int kind) {
+  private boolean jj_scan_token(int kind) {
     if (jj_scanpos == jj_lastpos) {
       jj_la--;
       if (jj_scanpos.next == null) {
@@ -1585,6 +1626,8 @@ public class QueryParser implements QueryParserConstants {
     return false;
   }
 
+
+/** Get the next Token. */
   final public Token getNextToken() {
     if (token.next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -1593,8 +1636,9 @@ public class QueryParser implements QueryParserConstants {
     return token;
   }
 
+/** Get the specific Token. */
   final public Token getToken(int index) {
-    Token t = lookingAhead ? jj_scanpos : token;
+    Token t = token;
     for (int i = 0; i < index; i++) {
       if (t.next != null) t = t.next;
       else t = t.next = token_source.getNextToken();
@@ -1602,14 +1646,14 @@ public class QueryParser implements QueryParserConstants {
     return t;
   }
 
-  final private int jj_ntk() {
+  private int jj_ntk() {
     if ((jj_nt=token.next) == null)
       return (jj_ntk = (token.next=token_source.getNextToken()).kind);
     else
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.Vector jj_expentries = new java.util.Vector();
+  private java.util.List jj_expentries = new java.util.ArrayList();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -1624,31 +1668,26 @@ public class QueryParser implements QueryParserConstants {
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      boolean exists = false;
-      for (java.util.Enumeration e = jj_expentries.elements(); e.hasMoreElements();) {
-        int[] oldentry = (int[])(e.nextElement());
+      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+        int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
-          exists = true;
           for (int i = 0; i < jj_expentry.length; i++) {
             if (oldentry[i] != jj_expentry[i]) {
-              exists = false;
-              break;
+              continue jj_entries_loop;
             }
           }
-          if (exists) break;
+          jj_expentries.add(jj_expentry);
+          break jj_entries_loop;
         }
       }
-      if (!exists) jj_expentries.addElement(jj_expentry);
       if (pos != 0) jj_lasttokens[(jj_endpos = pos) - 1] = kind;
     }
   }
 
+  /** Generate ParseException. */
   public ParseException generateParseException() {
-    jj_expentries.removeAllElements();
+    jj_expentries.clear();
     boolean[] la1tokens = new boolean[34];
-    for (int i = 0; i < 34; i++) {
-      la1tokens[i] = false;
-    }
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -1669,7 +1708,7 @@ public class QueryParser implements QueryParserConstants {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
-        jj_expentries.addElement(jj_expentry);
+        jj_expentries.add(jj_expentry);
       }
     }
     jj_endpos = 0;
@@ -1677,18 +1716,20 @@ public class QueryParser implements QueryParserConstants {
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.elementAt(i);
+      exptokseq[i] = (int[])jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }
 
+  /** Enable tracing. */
   final public void enable_tracing() {
   }
 
+  /** Disable tracing. */
   final public void disable_tracing() {
   }
 
-  final private void jj_rescan_token() {
+  private void jj_rescan_token() {
     jj_rescan = true;
     for (int i = 0; i < 1; i++) {
     try {
@@ -1707,7 +1748,7 @@ public class QueryParser implements QueryParserConstants {
     jj_rescan = false;
   }
 
-  final private void jj_save(int index, int xla) {
+  private void jj_save(int index, int xla) {
     JJCalls p = jj_2_rtns[index];
     while (p.gen > jj_gen) {
       if (p.next == null) { p = p.next = new JJCalls(); break; }

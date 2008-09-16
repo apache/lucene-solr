@@ -32,12 +32,30 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     public static final boolean F = false;
     public static final boolean T = true;
     
-    RAMDirectory index = new RAMDirectory();
     Random rand = new Random(101); // use a set seed to test is deterministic
-    
-    int maxR = Integer.MIN_VALUE;
-    int minR = Integer.MAX_VALUE;
 
+    /** 
+     * Collation interacts badly with hyphens -- collation produces different
+     * ordering than Unicode code-point ordering -- so two indexes are created:
+     * one which can't have negative random integers, for testing collated 
+     * ranges, and the other which can have negative random integers, for all
+     * other tests. 
+     */
+    class TestIndex { 
+        int maxR;
+        int minR;
+        boolean allowNegativeRandomInts;
+        RAMDirectory index = new RAMDirectory();
+
+        TestIndex(int minR, int maxR, boolean allowNegativeRandomInts) {
+            this.minR = minR;
+            this.maxR = maxR;
+            this.allowNegativeRandomInts = allowNegativeRandomInts;
+        }
+    }
+    TestIndex signedIndex = new TestIndex(Integer.MAX_VALUE, Integer.MIN_VALUE, true);
+    TestIndex unsignedIndex = new TestIndex(Integer.MAX_VALUE, 0, false);
+    
     int minId = 0;
     int maxId = 10000;
 
@@ -65,28 +83,31 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
     public BaseTestRangeFilter(String name) {
 	super(name);
-        build();
+        build(signedIndex);
+        build(unsignedIndex);
     }
     public BaseTestRangeFilter() {
-        build();
+        build(signedIndex);
+        build(unsignedIndex);
     }
     
-    private void build() {
+    private void build(TestIndex index) {
         try {
             
             /* build an index */
-            IndexWriter writer = new IndexWriter(index, new SimpleAnalyzer(), T, 
+            IndexWriter writer = new IndexWriter(index.index, new SimpleAnalyzer(), T, 
                                                  IndexWriter.MaxFieldLength.LIMITED);
 
           for (int d = minId; d <= maxId; d++) {
                 Document doc = new Document();
                 doc.add(new Field("id",pad(d), Field.Store.YES, Field.Index.NOT_ANALYZED));
-                int r= rand.nextInt();
-                if (maxR < r) {
-                    maxR = r;
+                int r= index.allowNegativeRandomInts 
+                       ? rand.nextInt() : rand.nextInt(Integer.MAX_VALUE);
+                if (index.maxR < r) {
+                    index.maxR = r;
                 }
-                if (r < minR) {
-                    minR = r;
+                  if (r < index.minR) {
+                    index.minR = r;
                 }
                 doc.add(new Field("rand",pad(r), Field.Store.YES, Field.Index.NOT_ANALYZED));
                 doc.add(new Field("body","body", Field.Store.YES, Field.Index.NOT_ANALYZED));

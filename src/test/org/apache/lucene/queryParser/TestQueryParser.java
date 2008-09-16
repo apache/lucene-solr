@@ -20,6 +20,7 @@ package org.apache.lucene.queryParser;
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
+import java.text.Collator;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -428,6 +429,51 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
+  }
+    
+  public void testFarsiRangeCollating() throws Exception {
+    
+    RAMDirectory ramDir = new RAMDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(), true, 
+                                     IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("content","\u0633\u0627\u0628", 
+                      Field.Store.YES, Field.Index.UN_TOKENIZED));
+    iw.addDocument(doc);
+    iw.close();
+    IndexSearcher is = new IndexSearcher(ramDir);
+
+    QueryParser qp = new QueryParser("content", new WhitespaceAnalyzer());
+
+    // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
+    // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
+    // characters properly.
+    Collator c = Collator.getInstance(new Locale("ar"));
+    qp.setRangeCollator(c);
+
+    // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
+    // orders the U+0698 character before the U+0633 character, so the single
+    // index Term below should NOT be returned by a ConstantScoreRangeQuery
+    // with a Farsi Collator (or an Arabic one for the case when Farsi is not
+    // supported).
+      
+    // Test ConstantScoreRangeQuery
+    qp.setUseOldRangeQuery(false);
+    ScoreDoc[] result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
+    assertEquals("The index Term should not be included.", 0, result.length);
+
+    result = is.search(qp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
+    assertEquals("The index Term should be included.", 1, result.length);
+
+    // Test RangeQuery
+    qp.setUseOldRangeQuery(true);
+    result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
+    assertEquals("The index Term should not be included.", 0, result.length);
+
+    result = is.search(qp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
+    assertEquals("The index Term should be included.", 1, result.length);
+
+    is.close();
   }
   
   /** for testing legacy DateField support */

@@ -26,6 +26,8 @@ import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
+import java.util.Locale;
+import java.text.Collator;
 
 
 public class TestRangeQuery extends LuceneTestCase {
@@ -130,6 +132,78 @@ public class TestRangeQuery extends LuceneTestCase {
     assertFalse("queries with different inclusive are not equal", query.equals(other));
   }
 
+  public void testExclusiveCollating() throws Exception {
+    Query query = new RangeQuery(new Term("content", "A"),
+                                 new Term("content", "C"),
+                                 false, Collator.getInstance(Locale.ENGLISH));
+    initializeIndex(new String[] {"A", "B", "C", "D"});
+    IndexSearcher searcher = new IndexSearcher(dir);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D, only B in range", 1, hits.length);
+    searcher.close();
+
+    initializeIndex(new String[] {"A", "B", "D"});
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,D, only B in range", 1, hits.length);
+    searcher.close();
+
+    addDoc("C");
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("C added, still only B in range", 1, hits.length);
+    searcher.close();
+  }
+
+  public void testInclusiveCollating() throws Exception {
+    Query query = new RangeQuery(new Term("content", "A"),
+                                 new Term("content", "C"),
+                                 true, Collator.getInstance(Locale.ENGLISH));
+
+    initializeIndex(new String[]{"A", "B", "C", "D"});
+    IndexSearcher searcher = new IndexSearcher(dir);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D - A,B,C in range", 3, hits.length);
+    searcher.close();
+
+    initializeIndex(new String[]{"A", "B", "D"});
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,D - A and B in range", 2, hits.length);
+    searcher.close();
+
+    addDoc("C");
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("C added - A, B, C in range", 3, hits.length);
+    searcher.close();
+  }
+
+  public void testFarsi() throws Exception {
+    // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
+    // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
+    // characters properly.
+    Collator collator = Collator.getInstance(new Locale("ar"));
+    Query query = new RangeQuery(new Term("content", "\u062F"),
+                                 new Term("content", "\u0698"),
+                                 true, collator);
+    // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
+    // orders the U+0698 character before the U+0633 character, so the single
+    // index Term below should NOT be returned by a RangeQuery with a Farsi
+    // Collator (or an Arabic one for the case when Farsi is not supported).
+    initializeIndex(new String[]{ "\u0633\u0627\u0628"});
+    IndexSearcher searcher = new IndexSearcher(dir);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("The index Term should not be included.", 0, hits.length);
+
+    query = new RangeQuery(new Term("content", "\u0633"),
+                           new Term("content", "\u0638"),
+                           true, collator);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("The index Term should be included.", 1, hits.length);
+    searcher.close();
+  }
+
   private void initializeIndex(String[] values) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < values.length; i++) {
@@ -154,6 +228,3 @@ public class TestRangeQuery extends LuceneTestCase {
     docCount++;
   }
 }
-
-
-
