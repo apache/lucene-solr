@@ -4584,6 +4584,14 @@ public class IndexWriter {
 
       synchronized(this) {
 
+        // sizeInBytes > 0 means this is an autoCommit at
+        // the end of a merge.  If at this point stopMerges
+        // is true (which means a rollback() or
+        // rollbackTransaction() is waiting for us to
+        // finish), we skip the commit to avoid deadlock
+        if (sizeInBytes > 0 && stopMerges)
+          return;
+
         // Wait for any running addIndexes to complete
         // first, then block any from running until we've
         // copied the segmentInfos we intend to sync:
