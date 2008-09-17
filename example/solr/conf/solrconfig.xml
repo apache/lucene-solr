@@ -583,7 +583,7 @@
 
   <!-- 
    Admin Handlers - This will register all the standard admin RequestHandlers.  Adding 
-   this single handler is equivolent to registering:
+   this single handler is equivalent to registering:
    
   <requestHandler name="/admin/luke"       class="org.apache.solr.handler.admin.LukeRequestHandler" />
   <requestHandler name="/admin/system"     class="org.apache.solr.handler.admin.SystemInfoHandler" />
