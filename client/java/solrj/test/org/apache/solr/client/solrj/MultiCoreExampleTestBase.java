@@ -46,7 +46,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   @Override public void setUp() throws Exception {
     super.setUp();
     cores = h.getCoreContainer();
-SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
+    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
   }
 
