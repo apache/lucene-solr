@@ -947,8 +947,22 @@ public final class SolrCore implements SolrInfoMBean {
     // open the index synchronously
     // if this fails, we need to decrement onDeckSearchers again.
     SolrIndexSearcher tmp;
+    RefCounted<SolrIndexSearcher> newestSearcher = null;
+
     try {
-      tmp = new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), true), true, true);
+      newestSearcher = getNewestSearcher(false);
+      if (newestSearcher != null) {
+        IndexReader currentReader = newestSearcher.get().getReader();
+        IndexReader newReader = currentReader.reopen();
+
+        if(newReader == currentReader) {
+          currentReader.incRef();
+        }
+        
+        tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
+      } else {
+        tmp = new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), true), true, true);
+      }
     } catch (Throwable th) {
       synchronized(searcherLock) {
         onDeckSearchers--;
@@ -958,8 +972,12 @@ public final class SolrCore implements SolrInfoMBean {
       }
       // need to close the searcher here??? we shouldn't have to.
       throw new RuntimeException(th);
+    } finally {
+      if (newestSearcher != null) {
+        newestSearcher.decref();
+      }
     }
-
+    
     final SolrIndexSearcher newSearcher=tmp;
 
     RefCounted<SolrIndexSearcher> currSearcherHolder=null;

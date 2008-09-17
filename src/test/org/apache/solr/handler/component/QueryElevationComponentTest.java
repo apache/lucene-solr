@@ -226,6 +226,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     
     // now change the file
     writeFile( f, "bbb", "B" );
+    assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());
     
     reader = core.getSearcher().get().getReader();

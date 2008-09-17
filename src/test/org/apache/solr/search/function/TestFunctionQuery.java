@@ -194,6 +194,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1","UTF-8");
+    assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
@@ -229,6 +230,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       makeExternalFile(field, sb.toString(),"UTF-8");
 
       // make it visible
+      assertU(adoc("id", "10001")); // will get same reader if no index change
       assertU(commit());
 
       // test it
