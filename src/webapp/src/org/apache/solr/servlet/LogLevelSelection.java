@@ -227,13 +227,15 @@ public final class LogLevelSelection extends HttpServlet {
     }
     for (Level l : LEVELS) {
       if (l == null) {
+        // avoid NPE
         continue;
       }
       if (logger.isLoggable(l)) {
-        level = l;
+        // return first level loggable
+        return l;
       }
     }
-    return level != null ? level : Level.OFF;
+    return Level.OFF;
   }
 
   private static class LogWrapper

@@ -38,6 +38,7 @@ Optimizations
 Bug Fixes
 ----------------------
 
+ 1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
 
 Build
 ----------------------
