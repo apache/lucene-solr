@@ -19,7 +19,7 @@ Build
 
 Test Cases
 
-======================= Release 2.4 (estimated: 2008-09-30) =======================
+======================= Release 2.4.0 (estimated: 2008-09-30) =======================
 
 NOTE:  In a minor change to Lucene's backward compatibility policy, we are now allowing the Fieldable interface to have
 changes, within reason, and made on a case-by-case basis.  If an application implements it's own Fieldable, please be aware
