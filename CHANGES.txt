@@ -30,7 +30,12 @@ Detailed Change List
 ----------------------
 
 New Features
-----------------------
+ 1. SOLR-560: Use SLF4J logging API rather then JDK logging.  The packaged .war file is
+    shipped with a JDK logging implementation, so logging configuration for the .war should
+    be identical to solr 1.3.  However, if you are using the .jar file, you can select 
+    which logging implementation to use by dropping a different binding.  
+    See: http://www.slf4j.org/  (ryan)
+    
 
 Optimizations
 ----------------------

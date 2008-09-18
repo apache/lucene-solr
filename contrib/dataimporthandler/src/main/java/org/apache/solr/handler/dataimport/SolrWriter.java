@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.lucene.document.Document;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -27,8 +26,8 @@ import java.io.*;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -42,8 +41,7 @@ import java.util.logging.Logger;
  * @since solr 1.3
  */
 public abstract class SolrWriter {
-  private static final Logger LOG = Logger
-          .getLogger(SolrWriter.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
 
   static final String IMPORTER_PROPERTIES = "dataimport.properties";
 
@@ -68,10 +66,10 @@ public abstract class SolrWriter {
       command.overwriteCommitted = true;
       processor.processAdd(command);
     } catch (IOException e) {
-      LOG.log(Level.SEVERE, "Exception while adding: " + d, e);
+      log.error( "Exception while adding: " + d, e);
       return false;
     } catch (Exception e) {
-      LOG.log(Level.WARNING, "Error creating document : " + d, e);
+      log.warn( "Error creating document : " + d, e);
       return false;
     }
 
@@ -80,14 +78,14 @@ public abstract class SolrWriter {
 
   public void deleteDoc(Object id) {
     try {
-      LOG.info("deleted from document to Solr: " + id);
+      log.info("deleted from document to Solr: " + id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.id = id.toString();
       delCmd.fromPending = true;
       delCmd.fromCommitted = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      LOG.log(Level.SEVERE, "Exception while deleteing: " + id, e);
+      log.error( "Exception while deleteing: " + id, e);
     }
   }
 
@@ -120,7 +118,7 @@ public abstract class SolrWriter {
       filePath += SolrWriter.IMPORTER_PROPERTIES;
       propOutput = new FileOutputStream(filePath);
       props.store(propOutput, null);
-      LOG.info("Wrote last indexed time to " + SolrWriter.IMPORTER_PROPERTIES);
+      log.info("Wrote last indexed time to " + SolrWriter.IMPORTER_PROPERTIES);
     } catch (FileNotFoundException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Unable to persist Index Start Time", e);
@@ -145,10 +143,9 @@ public abstract class SolrWriter {
       propInput = new FileInputStream(configDir
               + SolrWriter.IMPORTER_PROPERTIES);
       props.load(propInput);
-      LOG.info("Read " + SolrWriter.IMPORTER_PROPERTIES);
+      log.info("Read " + SolrWriter.IMPORTER_PROPERTIES);
     } catch (Exception e) {
-      LOG.log(Level.WARNING, "Unable to read: "
-              + SolrWriter.IMPORTER_PROPERTIES);
+      log.warn( "Unable to read: " + SolrWriter.IMPORTER_PROPERTIES);
     } finally {
       try {
         if (propInput != null)
@@ -163,14 +160,14 @@ public abstract class SolrWriter {
 
   public void deleteByQuery(String query) {
     try {
-      LOG.info("Deleting documents from Solr with query: " + query);
+      log.info("Deleting documents from Solr with query: " + query);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.query = query;
       delCmd.fromCommitted = true;
       delCmd.fromPending = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      LOG.log(Level.SEVERE, "Exception while deleting by query: " + query, e);
+      log.error( "Exception while deleting by query: " + query, e);
     }
   }
 
@@ -179,7 +176,7 @@ public abstract class SolrWriter {
       CommitUpdateCommand commit = new CommitUpdateCommand(optimize);
       processor.processCommit(commit);
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "Exception while solr commit.", e);
+      log.error( "Exception while solr commit.", e);
     }
   }
 

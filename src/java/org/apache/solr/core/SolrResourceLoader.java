@@ -28,7 +28,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.nio.charset.Charset;
 
 import javax.naming.Context;
@@ -54,7 +55,7 @@ import org.apache.solr.spelling.SpellingQueryConverter;
  */ 
 public class SolrResourceLoader implements ResourceLoader
 {
-  public static final Logger log = Logger.getLogger(SolrResourceLoader.class.getName());
+  public static final Logger log = LoggerFactory.getLogger(SolrResourceLoader.class);
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
@@ -263,7 +264,7 @@ public class SolrResourceLoader implements ResourceLoader
       for (String subpackage : subpackages) {
         try {
           String name = base + '.' + subpackage + newName;
-          log.finest("Trying class name " + name);
+          log.trace("Trying class name " + name);
           return Class.forName(name, true, classLoader);
         } catch (ClassNotFoundException e1) {
           // ignore... assume first exception is best.
@@ -354,7 +355,7 @@ public class SolrResourceLoader implements ResourceLoader
     } catch (NamingException e) {
       log.info("No /"+project+"/home in JNDI");
     } catch( RuntimeException ex ) {
-      log.warning("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
+      log.warn("Odd RuntimeException while testing for JNDI: " + ex.getMessage());
     } 
     
     // Now try system property

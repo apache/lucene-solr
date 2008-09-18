@@ -29,7 +29,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -51,8 +52,7 @@ import java.util.logging.Logger;
  * @since solr 1.3
  */
 public class XPathEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = Logger.getLogger(XPathEntityProcessor.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
 
   protected List<String> placeHolderVariables;
 

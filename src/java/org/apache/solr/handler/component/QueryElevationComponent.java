@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -77,7 +78,7 @@ import org.w3c.dom.NodeList;
  */
 public class QueryElevationComponent extends SearchComponent implements SolrCoreAware
 {
-  private static Logger log = Logger.getLogger(QueryElevationComponent.class.getName());
+  private static Logger log = LoggerFactory.getLogger(QueryElevationComponent.class);
   
   // Constants used in solrconfig.xml
   static final String FIELD_TYPE = "queryFieldType";

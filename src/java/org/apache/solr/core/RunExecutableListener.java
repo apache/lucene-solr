@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.logging.Level;
 
 /**
  */
@@ -66,9 +65,9 @@ class RunExecutableListener extends AbstractSolrEventListener {
     int ret = 0;
 
     try {
-      boolean doLog = log.isLoggable(Level.FINE);
+      boolean doLog = log.isDebugEnabled();
       if (doLog) {
-        log.fine("About to exec " + cmd[0]);
+        log.debug("About to exec " + cmd[0]);
       }
       Process proc = Runtime.getRuntime().exec(cmd, envp ,dir);
 
@@ -81,7 +80,7 @@ class RunExecutableListener extends AbstractSolrEventListener {
       }
 
       if (wait && doLog) {
-        log.fine("Executable " + cmd[0] + " returned " + ret);
+        log.debug("Executable " + cmd[0] + " returned " + ret);
       }
 
     } catch (IOException e) {

@@ -39,7 +39,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Takes a string (e.g. a query string) as the value of the "q" parameter
@@ -196,7 +197,7 @@ pre.code
 @Deprecated
 public class SpellCheckerRequestHandler extends RequestHandlerBase implements SolrCoreAware {
 
-  private static Logger log = Logger.getLogger(SpellCheckerRequestHandler.class.getName());
+  private static Logger log = LoggerFactory.getLogger(SpellCheckerRequestHandler.class);
   
   private SpellChecker spellChecker;
   

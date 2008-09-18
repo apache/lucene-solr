@@ -24,8 +24,8 @@ import org.apache.lucene.index.IndexReader;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.net.URL;
 
 import org.apache.solr.util.OpenBitSet;
@@ -45,10 +45,10 @@ import org.apache.solr.request.SolrQueryResponse;
  */
 @Deprecated
 public class TestRequestHandler implements SolrRequestHandler {
-  private static Logger log = Logger.getLogger(SolrIndexSearcher.class.getName());
+  private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
 
   public void init(NamedList args) {
-    SolrCore.log.log(Level.INFO, "Unused request handler arguments:" + args);
+    SolrCore.log.info( "Unused request handler arguments:" + args);
   }
 
   // use test instead of assert since asserts may be turned off

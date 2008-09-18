@@ -20,7 +20,6 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -53,8 +52,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    boolean doLog = LogUpdateProcessor.log.isLoggable(Level.INFO);
-    // LogUpdateProcessor.log.severe("Will Log=" + doLog);
+    boolean doLog = LogUpdateProcessor.log.isInfoEnabled();
+    // LogUpdateProcessor.log.error("Will Log=" + doLog);
     if( doLog ) {
       // only create the log processor if we will use it
       return new LogUpdateProcessor(req, rsp, this, next);

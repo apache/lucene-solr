@@ -34,7 +34,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.IOException;
@@ -248,8 +247,7 @@ public class SolrConfig extends Config {
         try {
           return valueOf(s.toUpperCase());
         } catch (Exception e) {
-          log.log(Level.WARNING,
-                  "Unrecognized value for lastModFrom: " + s, e);
+          log.warn( "Unrecognized value for lastModFrom: " + s, e);
           return BOGUS;
         }
       }
@@ -282,10 +280,9 @@ public class SolrConfig extends Config {
             ? Long.valueOf(ttlStr)
             : null;
         } catch (Exception e) {
-          log.log(Level.WARNING,
-                  "Ignoring exception while attempting to " +
-                  "extract max-age from cacheControl config: " +
-                  cacheControlHeader, e);
+          log.warn( "Ignoring exception while attempting to " +
+                    "extract max-age from cacheControl config: " +
+                    cacheControlHeader, e);
         }
       }
       maxAge = tmp;

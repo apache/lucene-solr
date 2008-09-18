@@ -39,7 +39,8 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.HttpClient;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -54,7 +55,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
-  protected static Logger log = Logger.getLogger(SearchHandler.class.getName());
+  protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
   protected List<SearchComponent> components = null;
 
@@ -133,7 +134,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception, ParseException, InstantiationException, IllegalAccessException
   {
     // int sleep = req.getParams().getInt("sleep",0);
-    // if (sleep > 0) {log.severe("SLEEPING for " + sleep);  Thread.sleep(sleep);}
+    // if (sleep > 0) {log.error("SLEEPING for " + sleep);  Thread.sleep(sleep);}
     ResponseBuilder rb = new ResponseBuilder();
     rb.req = req;
     rb.rsp = rsp;

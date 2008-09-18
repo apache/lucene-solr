@@ -21,7 +21,8 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.xpath.XPathConstants;
 
@@ -43,7 +44,7 @@ import org.w3c.dom.Node;
 /**
  */
 final class RequestHandlers {
-  public static Logger log = Logger.getLogger(RequestHandlers.class.getName());
+  public static Logger log = LoggerFactory.getLogger(RequestHandlers.class);
 
   public static final String DEFAULT_HANDLER_NAME="standard";
   protected final SolrCore core;

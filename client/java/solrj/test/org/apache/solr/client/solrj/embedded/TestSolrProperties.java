@@ -35,14 +35,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Id$
  * @since solr 1.3
  */
 public class TestSolrProperties {
-  protected static Logger log = Logger.getLogger(TestSolrProperties.class.getName());
+  protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
   protected CoreContainer cores = null;
 
   public String getSolrHome() {
@@ -73,7 +74,7 @@ public class TestSolrProperties {
       log.info("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
     } else {
       if (!AbstractSolrTestCase.recurseDelete(dataDir)) {
-        log.warning("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+        log.warn("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
       }
     }
     File persistedFile = new File(getSolrHome() + File.separator + "solr-persist.xml");

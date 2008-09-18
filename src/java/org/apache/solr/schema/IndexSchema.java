@@ -45,7 +45,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <code>IndexSchema</code> contains information about the valid fields in an index
@@ -56,7 +57,7 @@ import java.util.logging.Logger;
 public final class IndexSchema {
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
 
-  final static Logger log = Logger.getLogger(IndexSchema.class.getName());
+  final static Logger log = LoggerFactory.getLogger(IndexSchema.class);
   private final SolrConfig solrConfig;
   private final String resourceName;
   private String name;
@@ -386,7 +387,7 @@ public final class IndexSchema {
 
       Node nd = (Node) xpath.evaluate("/schema/@name", document, XPathConstants.NODE);
       if (nd==null) {
-        log.warning("schema has no name!");
+        log.warn("schema has no name!");
       } else {
         name = nd.getNodeValue();
         log.info("Schema name=" + name);
@@ -429,7 +430,7 @@ public final class IndexSchema {
 
         @Override
         protected FieldType register(String name, FieldType plugin) throws Exception {
-          log.finest("fieldtype defined: " + plugin );
+          log.trace("fieldtype defined: " + plugin );
           return fieldTypes.put( name, plugin );
         }
       };
@@ -453,7 +454,7 @@ public final class IndexSchema {
         NamedNodeMap attrs = node.getAttributes();
 
         String name = DOMUtil.getAttr(attrs,"name","field definition");
-        log.finest("reading field def "+name);
+        log.trace("reading field def "+name);
         String type = DOMUtil.getAttr(attrs,"type","field " + name);
 
         FieldType ft = fieldTypes.get(type);
@@ -479,13 +480,13 @@ public final class IndexSchema {
             SolrConfig.severeErrors.add( t );
           }
           
-          log.fine("field defined: " + f);
+          log.debug("field defined: " + f);
           if( f.getDefaultValue() != null ) {
-            log.fine(name+" contains default value: " + f.getDefaultValue());
+            log.debug(name+" contains default value: " + f.getDefaultValue());
             fieldsWithDefaultValue.add( f );
           }
           if (f.isRequired()) {
-            log.fine(name+" is required in this schema");
+            log.debug(name+" is required in this schema");
             requiredFields.add(f);
           }
         } else if (node.getNodeName().equals("dynamicField")) {
@@ -505,7 +506,7 @@ public final class IndexSchema {
           }
           if( !dup ) {
             dFields.add(new DynamicField(f));
-            log.fine("dynamic field defined: " + f);
+            log.debug("dynamic field defined: " + f);
           }
         } else {
           // we should never get here
@@ -523,7 +524,7 @@ public final class IndexSchema {
     // the largest string possible.
     Collections.sort(dFields);
 
-    log.finest("Dynamic Field Ordering:" + dFields);
+    log.trace("Dynamic Field Ordering:" + dFields);
 
     // stuff it in a normal array for faster access
     dynamicFields = (DynamicField[])dFields.toArray(new DynamicField[dFields.size()]);
@@ -536,7 +537,7 @@ public final class IndexSchema {
           return Similarity.getDefault();
         }
       };
-      log.fine("using default similarity");
+      log.debug("using default similarity");
     } else {
       final Object obj = solrConfig.getResourceLoader().newInstance(((Element) node).getAttribute("class"));
       if (obj instanceof SimilarityFactory) {
@@ -552,12 +553,12 @@ public final class IndexSchema {
           }
         };
       }
-      log.fine("using similarity factory" + similarityFactory.getClass().getName());
+      log.debug("using similarity factory" + similarityFactory.getClass().getName());
     }
 
     node = (Node) xpath.evaluate("/schema/defaultSearchField/text()", document, XPathConstants.NODE);
     if (node==null) {
-      log.warning("no default search field specified in schema.");
+      log.warn("no default search field specified in schema.");
     } else {
       defaultSearchFieldName=node.getNodeValue().trim();
       // throw exception if specified, but not found or not indexed
@@ -573,7 +574,7 @@ public final class IndexSchema {
 
     node = (Node) xpath.evaluate("/schema/solrQueryParser/@defaultOperator", document, XPathConstants.NODE);
     if (node==null) {
-      log.fine("using default query parser operator (OR)");
+      log.debug("using default query parser operator (OR)");
     } else {
       queryParserDefaultOperator=node.getNodeValue().trim();
       log.info("query parser default operator is "+queryParserDefaultOperator);
@@ -581,7 +582,7 @@ public final class IndexSchema {
 
     node = (Node) xpath.evaluate("/schema/uniqueKey/text()", document, XPathConstants.NODE);
     if (node==null) {
-      log.warning("no uniqueKey specified in schema.");
+      log.warn("no uniqueKey specified in schema.");
     } else {
       uniqueKeyField=getIndexedField(node.getNodeValue().trim());
       uniqueKeyFieldName=uniqueKeyField.getName();
@@ -615,7 +616,7 @@ public final class IndexSchema {
       
       for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet())    {
         if (entry.getValue() > 1 && !entry.getKey().multiValued())  {
-          log.warning("Field " + entry.getKey().name + " is not multivalued "+
+          log.warn("Field " + entry.getKey().name + " is not multivalued "+
                       "and destination for multiple copyFields ("+
                       entry.getValue()+")");
         }
@@ -648,7 +649,7 @@ public final class IndexSchema {
     boolean sourceIsPattern = isWildCard(source);
     boolean destIsPattern   = isWildCard(dest);
 
-    log.fine("copyField source='"+source+"' dest='"+dest+"'");
+    log.debug("copyField source='"+source+"' dest='"+dest+"'");
     SchemaField d = getField(dest);
 
     if(sourceIsPattern) {
@@ -700,7 +701,7 @@ public final class IndexSchema {
       temp[temp.length -1] = dcopy;
       dynamicCopyFields = temp;
     }
-    log.finest("Dynamic Copy Field:" + dcopy );
+    log.trace("Dynamic Copy Field:" + dcopy );
   }
 
   private static Object[] append(Object[] orig, Object item) {

@@ -20,7 +20,8 @@ package org.apache.solr.search;
 import org.apache.solr.core.SolrInfoMBean;
 
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 
@@ -30,7 +31,7 @@ import java.io.IOException;
  * @version $Id$
  */
 public interface SolrCache extends SolrInfoMBean {
-  public final static Logger log = Logger.getLogger(SolrCache.class.getName());
+  public final static Logger log = LoggerFactory.getLogger(SolrCache.class);
 
 
   /**

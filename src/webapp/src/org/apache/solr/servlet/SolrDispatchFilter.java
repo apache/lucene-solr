@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.WeakHashMap;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -47,7 +47,7 @@ import org.apache.solr.servlet.cache.Method;
  */
 public class SolrDispatchFilter implements Filter
 {
-  final Logger log = Logger.getLogger(SolrDispatchFilter.class.getName());
+  final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
 
   protected CoreContainer cores;
   protected String pathPrefix = null; // strip this from the beginning of a path
@@ -72,7 +72,7 @@ public class SolrDispatchFilter implements Filter
     }
     catch( Throwable t ) {
       // catch this so our filter still works
-      log.log(Level.SEVERE, "Could not start SOLR. Check solr/home property", t);
+      log.error( "Could not start SOLR. Check solr/home property", t);
       SolrConfig.severeErrors.add( t );
       SolrCore.log( t );
     }
@@ -275,7 +275,7 @@ public class SolrDispatchFilter implements Filter
             }
           }
         }
-        log.fine("no handler or core retrieved for " + path + ", follow through...");
+        log.debug("no handler or core retrieved for " + path + ", follow through...");
       } 
       catch (Throwable ex) {
         sendError( (HttpServletResponse)response, ex );
@@ -320,7 +320,7 @@ public class SolrDispatchFilter implements Filter
 
       // non standard codes have undefined results with various servers
       if( code < 100 ) {
-        log.warning( "invalid return code: "+code );
+        log.warn( "invalid return code: "+code );
         code = 500;
       }
     }

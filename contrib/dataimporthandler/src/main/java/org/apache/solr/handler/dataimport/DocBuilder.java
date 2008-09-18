@@ -23,8 +23,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -41,8 +41,7 @@ import java.util.logging.Logger;
 public class DocBuilder {
   public static final String DOC_BOOST = "$docBoost";
 
-  private static final Logger LOG = Logger
-          .getLogger(DocBuilder.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
 
   private DataImporter dataImporter;
 
@@ -330,7 +329,7 @@ public class DocBuilder {
             if (e.getErrCode() == DataImportHandlerException.SKIP) {
               importStatistics.skipDocCount.getAndIncrement();
             } else {
-              LOG.log(Level.SEVERE, "Exception while processing: "
+              LOG.error( "Exception while processing: "
                       + entity.name + " document : " + doc, e);
             }
             if (e.getErrCode() == DataImportHandlerException.SEVERE)

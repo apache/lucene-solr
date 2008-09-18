@@ -25,7 +25,8 @@ import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
@@ -37,13 +38,13 @@ import java.io.IOException;
 
 
 public class SolrIndexWriter extends IndexWriter {
-  private static Logger log = Logger.getLogger(SolrIndexWriter.class.getName());
+  private static Logger log = LoggerFactory.getLogger(SolrIndexWriter.class);
 
   String name;
   IndexSchema schema;
 
   private void init(String name, IndexSchema schema, SolrIndexConfig config) throws IOException {
-    log.fine("Opened Writer " + name);
+    log.debug("Opened Writer " + name);
     this.name = name;
     this.schema = schema;
     setSimilarity(schema.getSimilarity());
@@ -83,7 +84,7 @@ public class SolrIndexWriter extends IndexWriter {
     String rawLockType = (null == config) ? null : config.lockType;
     if (null == rawLockType) {
       // we default to "simple" for backwards compatiblitiy
-      log.warning("No lockType configured for " + path + " assuming 'simple'");
+      log.warn("No lockType configured for " + path + " assuming 'simple'");
       rawLockType = "simple";
     }
     final String lockType = rawLockType.toLowerCase().trim();
@@ -98,7 +99,7 @@ public class SolrIndexWriter extends IndexWriter {
         d.setLockFactory(new SingleInstanceLockFactory());
     } else if ("none".equals(lockType)) {
       // recipie for disaster
-      log.severe("CONFIGURATION WARNING: locks are disabled on " + path);      
+      log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
       d.setLockFactory(new NoLockFactory());
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -149,7 +150,7 @@ public class SolrIndexWriter extends IndexWriter {
    */
 
   public void close() throws IOException {
-    log.fine("Closing Writer " + name);
+    log.debug("Closing Writer " + name);
     super.close();
   }
 

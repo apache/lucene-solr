@@ -20,7 +20,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.HighlightParams;
@@ -33,7 +34,7 @@ import org.apache.solr.util.SolrPluginUtils;
 
 public abstract class SolrHighlighter
 {
-	public static Logger log = Logger.getLogger(SolrHighlighter.class.getName());
+	public static Logger log = LoggerFactory.getLogger(SolrHighlighter.class);
 
 	// Thread safe registry
 	protected final Map<String,SolrFormatter> formatters =

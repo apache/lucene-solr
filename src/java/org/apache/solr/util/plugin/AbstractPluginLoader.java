@@ -19,7 +19,8 @@ package org.apache.solr.util.plugin;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -37,7 +38,7 @@ import org.w3c.dom.NodeList;
  */
 public abstract class AbstractPluginLoader<T>
 {
-  public static Logger log = Logger.getLogger(AbstractPluginLoader.class.getName());
+  public static Logger log = LoggerFactory.getLogger(AbstractPluginLoader.class);
   
   private final String type;
   private final boolean preRegister;

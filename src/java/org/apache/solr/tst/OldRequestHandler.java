@@ -21,7 +21,6 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.document.Document;
 
 import java.util.List;
-import java.util.logging.Level;
 import java.io.IOException;
 import java.net.URL;
 
@@ -45,7 +44,7 @@ public class OldRequestHandler implements SolrRequestHandler {
   long numErrors;
   
   public void init(NamedList args) {
-    SolrCore.log.log(Level.INFO, "Unused request handler arguments:" + args);
+    SolrCore.log.info( "Unused request handler arguments:" + args);
   }
 
 

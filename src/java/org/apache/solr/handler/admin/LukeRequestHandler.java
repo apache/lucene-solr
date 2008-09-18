@@ -29,8 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -82,7 +82,7 @@ import org.apache.solr.search.SolrQueryParser;
  */
 public class LukeRequestHandler extends RequestHandlerBase 
 {
-  private static Logger log = Logger.getLogger(LukeRequestHandler.class.getName());
+  private static Logger log = LoggerFactory.getLogger(LukeRequestHandler.class);
   
   public static final String NUMTERMS = "numTerms";
   public static final String DOC_ID = "docId";
@@ -261,7 +261,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           }
         }
         catch( Exception ex ) {
-          log.log( Level.WARNING, "error writing term vector", ex );
+          log.warn( "error writing term vector", ex );
         }
       }
       
@@ -322,7 +322,7 @@ public class LukeRequestHandler extends RequestHandlerBase
             }
           }
           catch( Exception ex ) {
-            log.warning( "error reading field: "+fieldName );
+            log.warn( "error reading field: "+fieldName );
           }
           // Find one document so we can get the fieldable
         }

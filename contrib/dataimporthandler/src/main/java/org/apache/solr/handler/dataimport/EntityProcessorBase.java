@@ -18,8 +18,8 @@ package org.apache.solr.handler.dataimport;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -37,8 +37,7 @@ import java.util.logging.Logger;
  * @since solr 1.3
  */
 public class EntityProcessorBase extends EntityProcessor {
-  private static final Logger LOG = Logger.getLogger(EntityProcessorBase.class
-          .getName());
+  private static final Logger log = LoggerFactory.getLogger(EntityProcessorBase.class);
 
   protected String entityName;
 
@@ -102,14 +101,14 @@ public class EntityProcessorBase extends EntityProcessor {
             String msg = "Transformer :"
                     + trans
                     + "does not implement Transformer interface or does not have a transformRow(Map m)method";
-            LOG.log(Level.SEVERE, msg);
+            log.error( msg);
             throw new DataImportHandlerException(
                     DataImportHandlerException.SEVERE, msg);
           }
           transformers.add(new ReflectionTransformer(meth, clazz, trans));
         }
       } catch (Exception e) {
-        LOG.log(Level.SEVERE, "Unable to load Transformer: " + aTransArr, e);
+        log.error( "Unable to load Transformer: " + aTransArr, e);
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 e);
       }
@@ -139,8 +138,7 @@ public class EntityProcessorBase extends EntityProcessor {
       try {
         return meth.invoke(o, aRow);
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "method invocation failed on transformer : "
-                + trans, e);
+        log.warn("method invocation failed on transformer : "+ trans, e);
         throw new DataImportHandlerException(DataImportHandlerException.WARN, e);
       }
     }
@@ -176,9 +174,7 @@ public class EntityProcessorBase extends EntityProcessor {
             } else if (o instanceof List) {
               tmpRows.addAll((List) o);
             } else {
-              LOG
-                      .log(Level.SEVERE,
-                              "Transformer must return Map<String, Object> or a List<Map<String, Object>>");
+              log.error("Transformer must return Map<String, Object> or a List<Map<String, Object>>");
             }
           }
           rows = tmpRows;
@@ -193,16 +189,14 @@ public class EntityProcessorBase extends EntityProcessor {
           } else if (o instanceof List) {
             rows = (List) o;
           } else {
-            LOG
-                    .log(Level.SEVERE,
-                            "Transformer must return Map<String, Object> or a List<Map<String, Object>>");
+            log.error( "Transformer must return Map<String, Object> or a List<Map<String, Object>>");
           }
         }
 
       } catch (DataImportHandlerException e) {
         throw e;
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "transformer threw error", e);
+        log.warn( "transformer threw error", e);
         throw new DataImportHandlerException(DataImportHandlerException.WARN, e);
       }
     }
@@ -232,7 +226,7 @@ public class EntityProcessorBase extends EntityProcessor {
       query = null;
       return null;
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "getNext() failed for query '" + query + "'", e);
+      log.error( "getNext() failed for query '" + query + "'", e);
       rowIterator = null;
       query = null;
       throw new DataImportHandlerException(DataImportHandlerException.WARN, e);

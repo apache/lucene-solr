@@ -30,13 +30,14 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.namespace.QName;
 import java.io.*;
 import java.util.List;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Id$
  */
 public class Config {
-  public static final Logger log = Logger.getLogger(Config.class.getName());
+  public static final Logger log = LoggerFactory.getLogger(Config.class);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
@@ -170,12 +171,12 @@ public class Config {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.fine(name + " missing optional " + path);
+          log.debug(name + " missing optional " + path);
           return null;
         }
       }
 
-      log.finest(name + ":" + path + "=" + nd);
+      log.trace(name + ":" + path + "=" + nd);
       return nd;
 
     } catch (XPathExpressionException e) {
@@ -195,7 +196,7 @@ public class Config {
 
     String txt = DOMUtil.getText(nd);
 
-    log.fine(name + ' '+path+'='+txt);
+    log.debug(name + ' '+path+'='+txt);
     return txt;
 
     /******

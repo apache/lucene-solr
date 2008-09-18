@@ -22,7 +22,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -44,7 +45,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
  */
 public class XMLResponseParser extends ResponseParser
 {
-  public static Logger log = Logger.getLogger(XMLResponseParser.class.getName());
+  public static Logger log = LoggerFactory.getLogger(XMLResponseParser.class);
 
   // reuse the factory among all parser instances so things like string caches
   // won't be duplicated
@@ -63,7 +64,7 @@ public class XMLResponseParser extends ResponseParser
     catch( IllegalArgumentException ex ) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.fine( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
+      log.debug( "Unable to set the 'reuse-instance' property for the input factory: "+factory );
     }
   }
 

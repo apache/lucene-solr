@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -43,8 +43,8 @@ import java.util.logging.Logger;
  * @since solr 1.3
  */
 public class DateFormatTransformer extends Transformer {
-  private static final Logger LOG = Logger
-          .getLogger(DateFormatTransformer.class.getName());
+  private static final Logger LOG = LoggerFactory
+          .getLogger(DateFormatTransformer.class);
 
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> aRow, Context context) {
@@ -70,7 +70,7 @@ public class DateFormatTransformer extends Transformer {
           aRow.put(column, process(value, fmt));
         }
       } catch (ParseException e) {
-        LOG.log(Level.WARNING, "Could not parse a Date field ", e);
+        LOG.warn( "Could not parse a Date field ", e);
       }
     }
     return aRow;

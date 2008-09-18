@@ -30,7 +30,6 @@ import org.apache.lucene.search.Query;
 import java.util.HashSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 import java.io.IOException;
 import java.net.URL;
 
@@ -136,8 +135,8 @@ public class DirectUpdateHandler extends UpdateHandler {
     try {
       Term term = new Term(idField.getName(), indexedId);
       num = ir.deleteDocuments(term);
-      if (core.log.isLoggable(Level.FINEST)) {
-        core.log.finest( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
+      if (core.log.isTraceEnabled()) {
+        core.log.trace( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
       }
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -204,8 +203,8 @@ public class DirectUpdateHandler extends UpdateHandler {
       totDeleted = deleter.deleted;
     }
 
-    if (core.log.isLoggable(Level.FINE)) {
-      core.log.fine(core.getLogId()+"docs deleted:" + totDeleted);
+    if (core.log.isDebugEnabled()) {
+      core.log.debug(core.getLogId()+"docs deleted:" + totDeleted);
     }
 
   }

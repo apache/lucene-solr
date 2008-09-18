@@ -26,7 +26,8 @@ import org.apache.lucene.search.HitCollector;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Vector;
 import java.io.IOException;
 
@@ -50,7 +51,7 @@ import javax.xml.xpath.XPathConstants;
  */
 
 public abstract class UpdateHandler implements SolrInfoMBean {
-  protected final static Logger log = Logger.getLogger(UpdateHandler.class.getName());
+  protected final static Logger log = LoggerFactory.getLogger(UpdateHandler.class);
 
   protected final SolrCore core;
   protected final IndexSchema schema;

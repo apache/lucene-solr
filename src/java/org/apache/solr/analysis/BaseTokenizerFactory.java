@@ -18,7 +18,8 @@
 package org.apache.solr.analysis;
 
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -27,7 +28,7 @@ import java.util.logging.Logger;
  * @version $Id$
  */
 public abstract class BaseTokenizerFactory implements TokenizerFactory {
-  final static Logger log = Logger.getLogger(BaseTokenizerFactory.class.getName());
+  public static final Logger log = LoggerFactory.getLogger(BaseTokenizerFactory.class);
   
   /** The init args */
   protected Map<String,String> args;

@@ -188,7 +188,7 @@ public class FileFloatSource extends ValueSource {
       is = VersionedFile.getLatestFile(ffs.dataDir, fname);
     } catch (IOException e) {
       // log, use defaults
-      SolrCore.log.severe("Error opening external value source file: " +e);
+      SolrCore.log.error("Error opening external value source file: " +e);
       return vals;
     }
 
@@ -251,7 +251,7 @@ public class FileFloatSource extends ValueSource {
           fval=Float.parseFloat(val);
         } catch (Exception e) {
           if (++otherErrors<=10) {
-            SolrCore.log.severe( "Error loading external value source + fileName + " + e
+            SolrCore.log.error( "Error loading external value source + fileName + " + e
               + (otherErrors<10 ? "" : "\tSkipping future errors for this file.")                    
             );
           }
@@ -325,7 +325,7 @@ public class FileFloatSource extends ValueSource {
       }
     } catch (IOException e) {
       // log, use defaults
-      SolrCore.log.severe("Error loading external value source: " +e);
+      SolrCore.log.error("Error loading external value source: " +e);
     } finally {
       // swallow exceptions on close so we don't override any
       // exceptions that happened in the loop

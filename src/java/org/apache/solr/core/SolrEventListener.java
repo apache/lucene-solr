@@ -20,13 +20,14 @@ package org.apache.solr.core;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Id$
  */
 public interface SolrEventListener {
-  static final Logger log = Logger.getLogger(SolrCore.class.getName());
+  static final Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   public void init(NamedList args);
 

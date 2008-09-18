@@ -32,8 +32,8 @@ import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -51,8 +51,7 @@ public class DataImporter {
     IDLE, RUNNING_FULL_DUMP, RUNNING_DELTA_DUMP, JOB_FAILED
   }
 
-  private static final Logger LOG = Logger.getLogger(DataImporter.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
 
   private Status status = Status.IDLE;
 
@@ -335,7 +334,7 @@ public class DataImporter {
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (RuntimeException e) {
-      LOG.log(Level.SEVERE, "Full Import failed", e);
+      LOG.error( "Full Import failed", e);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();
@@ -360,7 +359,7 @@ public class DataImporter {
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (RuntimeException e) {
-      LOG.log(Level.SEVERE, "Delta Import Failed", e);
+      LOG.error( "Delta Import Failed", e);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();

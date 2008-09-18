@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -51,7 +52,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 
 public class SolrRequestParsers 
 {
-  final Logger log = Logger.getLogger(SolrRequestParsers.class.getName());
+  final Logger log = LoggerFactory.getLogger(SolrRequestParsers.class);
   
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";

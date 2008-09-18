@@ -34,7 +34,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 import java.io.IOException;
 import java.net.URL;
 
@@ -516,7 +515,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         autoCommitCount++;
       } 
       catch (Exception e) {
-        log.severe( "auto commit error..." );
+        log.error( "auto commit error..." );
         e.printStackTrace();
       }
       finally {

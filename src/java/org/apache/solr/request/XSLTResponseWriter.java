@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -50,7 +51,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   public static final int XSLT_CACHE_DEFAULT = 60;
   private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
-  private static final Logger log = Logger.getLogger(XSLTResponseWriter.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(XSLTResponseWriter.class);
   
   public void init(NamedList n) {
       final SolrParams p = SolrParams.toSolrParams(n);

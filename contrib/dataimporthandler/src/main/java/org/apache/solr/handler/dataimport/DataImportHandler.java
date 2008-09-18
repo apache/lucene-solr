@@ -38,8 +38,8 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -63,8 +63,7 @@ import java.util.logging.Logger;
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
-  private static final Logger LOG = Logger.getLogger(DataImportHandler.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(DataImportHandler.class);
 
   private DataImporter importer;
 
@@ -110,7 +109,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       }
     } catch (Throwable e) {
       SolrConfig.severeErrors.add(e);
-      LOG.log(Level.SEVERE, DataImporter.MSG.LOAD_EXP, e);
+      LOG.error( DataImporter.MSG.LOAD_EXP, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               DataImporter.MSG.INVALID_CONFIG, e);
     }
@@ -287,7 +286,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
           return super.upload(document);
         } catch (RuntimeException e) {
-          LOG.log(Level.SEVERE, "Exception while adding: " + d, e);
+          LOG.error( "Exception while adding: " + d, e);
           return false;
         }
       }

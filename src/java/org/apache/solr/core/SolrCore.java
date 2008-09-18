@@ -63,7 +63,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.net.URL;
 
 
@@ -73,7 +74,7 @@ import java.net.URL;
 public final class SolrCore implements SolrInfoMBean {
   public static final String version="1.0";  
 
-  public static Logger log = Logger.getLogger(SolrCore.class.getName());
+  public static Logger log = LoggerFactory.getLogger(SolrCore.class);
 
   private String name;
   private String logid; // used to show what name is set
@@ -106,7 +107,7 @@ public final class SolrCore implements SolrInfoMBean {
         boolean_query_max_clause_count = solrConfig.booleanQueryMaxClauseCount;
         BooleanQuery.setMaxClauseCount(boolean_query_max_clause_count);
       } else if (boolean_query_max_clause_count != solrConfig.booleanQueryMaxClauseCount ) {
-        log.fine("BooleanQuery.maxClauseCount= " +boolean_query_max_clause_count+ ", ignoring " +solrConfig.booleanQueryMaxClauseCount);
+        log.debug("BooleanQuery.maxClauseCount= " +boolean_query_max_clause_count+ ", ignoring " +solrConfig.booleanQueryMaxClauseCount);
       }
     }
   }
@@ -284,14 +285,14 @@ public final class SolrCore implements SolrInfoMBean {
         // if it didn't exist already...
         Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), solrConfig.mainIndexConfig);
         if (dir != null && IndexWriter.isLocked(dir)) {
-          log.warning(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+          log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
           IndexWriter.unlock(dir);
         }
       }
 
       // Create the index if it doesn't exist.
       if(!indexExists) {
-        log.warning(logid+"Solr index directory '" + dirFile + "' doesn't exist."
+        log.warn(logid+"Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
@@ -610,7 +611,7 @@ public final class SolrCore implements SolrInfoMBean {
     if (count > 0) return;
     if (count < 0) {
       //throw new RuntimeException("Too many closes on " + this);
-      log.severe("Too many close {count:"+count+"} on " + this + ". Please report this exception to solr-user@lucene.apache.org");
+      log.error("Too many close {count:"+count+"} on " + this + ". Please report this exception to solr-user@lucene.apache.org");
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
@@ -653,7 +654,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   protected void finalize() {
     if (getOpenCount() != 0) {
-      log.severe("REFCOUNT ERROR: unreferenced " + this + " (" + getName() + ") has a reference count of " + getOpenCount());
+      log.error("REFCOUNT ERROR: unreferenced " + this + " (" + getName() + ") has a reference count of " + getOpenCount());
     }
   }
 
@@ -931,12 +932,12 @@ public final class SolrCore implements SolrInfoMBean {
       onDeckSearchers++;
       if (onDeckSearchers < 1) {
         // should never happen... just a sanity check
-        log.severe(logid+"ERROR!!! onDeckSearchers is " + onDeckSearchers);
+        log.error(logid+"ERROR!!! onDeckSearchers is " + onDeckSearchers);
         onDeckSearchers=1;  // reset
       } else if (onDeckSearchers > maxWarmingSearchers) {
         onDeckSearchers--;
         String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
-        log.warning(logid+""+ msg);
+        log.warn(logid+""+ msg);
         // HTTP 503==service unavailable, or 409==Conflict
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg,true);
       } else if (onDeckSearchers > 1) {
@@ -1121,7 +1122,7 @@ public final class SolrCore implements SolrInfoMBean {
         }
         if (onDeckSearchers < 0) {
           // sanity check... should never happen
-          log.severe(logid+"ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
+          log.error(logid+"ERROR!!! onDeckSearchers after decrement=" + onDeckSearchers);
           onDeckSearchers=0; // try and recover
         }
         // if we failed, we need to wake up at least one waiter to continue the process
@@ -1151,7 +1152,7 @@ public final class SolrCore implements SolrInfoMBean {
           }
           resource.close();
         } catch (IOException e) {
-          log.severe("Error closing searcher:" + SolrException.toStr(e));
+          log.error("Error closing searcher:" + SolrException.toStr(e));
         }
       }
     };
@@ -1208,7 +1209,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
-      log.warning(logid+"Null Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warn(logid+"Null Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getQueryType() + "'", true);
     }
     // setup response header and handle request
@@ -1240,7 +1241,7 @@ public final class SolrCore implements SolrInfoMBean {
   public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrRequestHandler handler = getRequestHandler(req.getQueryType());
     if (handler==null) {
-      log.warning(logid+"Unknown Request Handler '" + req.getQueryType() +"' :" + req);
+      log.warn(logid+"Unknown Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
     }
     execute(handler, req, rsp);
@@ -1414,7 +1415,7 @@ public final class SolrCore implements SolrInfoMBean {
     // TODO -- this should be removed in deprecation release...
     String gettable = solrConfig.get("admin/gettableFiles", null );
     if( gettable != null ) {
-      log.warning( 
+      log.warn( 
           "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
           "update your config to use the ShowFileRequestHandler." );
       if( getRequestHandler( "/admin/file" ) == null ) {
@@ -1442,7 +1443,7 @@ public final class SolrCore implements SolrInfoMBean {
         handler.init( args );
         reqHandlers.register("/admin/file", handler);
 
-        log.warning( "adding ShowFileRequestHandler with hidden files: "+hide );
+        log.warn( "adding ShowFileRequestHandler with hidden files: "+hide );
       }
     }
   } 

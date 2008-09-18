@@ -33,7 +33,8 @@ import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.Reader;
@@ -45,7 +46,7 @@ import java.io.IOException;
  * @version $Id$
  */
 public abstract class FieldType extends FieldProperties {
-  public static final Logger log = Logger.getLogger(FieldType.class.getName());
+  public static final Logger log = LoggerFactory.getLogger(FieldType.class);
 
   /** The name of the type (not the name of the field) */
   protected String typeName;
@@ -182,7 +183,7 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
     if (!field.indexed() && !field.stored()) {
-        log.finest("Ignoring unindexed/unstored field: " + field);
+        log.trace("Ignoring unindexed/unstored field: " + field);
         return null;
     }
 
@@ -364,7 +365,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public void setAnalyzer(Analyzer analyzer) {
     this.analyzer = analyzer;
-    log.finest("FieldType: " + typeName + ".setAnalyzer(" + analyzer.getClass().getName() + ")" );
+    log.trace("FieldType: " + typeName + ".setAnalyzer(" + analyzer.getClass().getName() + ")" );
   }
 
   /**
@@ -373,7 +374,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public void setQueryAnalyzer(Analyzer analyzer) {
     this.queryAnalyzer = analyzer;
-    log.finest("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
+    log.trace("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
   }
 
   /**

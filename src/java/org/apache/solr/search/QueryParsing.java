@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 /**
@@ -74,8 +73,8 @@ public class QueryParsing {
     try {
       Query query = schema.getSolrQueryParser(defaultField).parse(qs);
 
-      if (SolrCore.log.isLoggable(Level.FINEST)) {
-        SolrCore.log.finest("After QueryParser:" + query);
+      if (SolrCore.log.isTraceEnabled() ) {
+        SolrCore.log.trace("After QueryParser:" + query);
       }
 
       return query;
@@ -102,8 +101,8 @@ public class QueryParsing {
       }
       Query query = parser.parse(qs);
 
-      if (SolrCore.log.isLoggable(Level.FINEST)) {
-        SolrCore.log.finest("After QueryParser:" + query);
+      if (SolrCore.log.isTraceEnabled() ) {
+        SolrCore.log.trace("After QueryParser:" + query);
       }
 
       return query;

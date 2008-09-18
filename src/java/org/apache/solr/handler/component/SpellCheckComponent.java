@@ -27,8 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.xpath.XPathConstants;
 
@@ -67,7 +67,7 @@ import org.w3c.dom.NodeList;
  * @since solr 1.3
  */
 public class SpellCheckComponent extends SearchComponent implements SolrCoreAware, SpellingParams {
-  private static final Logger LOG = Logger.getLogger(SpellCheckComponent.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(SpellCheckComponent.class);
 
   public static final boolean DEFAULT_ONLY_MORE_POPULAR = false;
 
@@ -235,7 +235,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
       String collVal = collation.toString();
       if (collVal.equals(origQuery) == false) {
-        LOG.fine("Collation:" + collation);
+        LOG.debug("Collation:" + collation);
         result.add("collation", collVal);
       }
     }
@@ -295,7 +295,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       //ensure that there is at least one query converter defined
       if (queryConverters.size() == 0) {
-        LOG.warning("No queryConverter defined, using default converter");
+        LOG.warn("No queryConverter defined, using default converter");
         queryConverters.put("queryConverter", new SpellingQueryConverter());
       }
 
@@ -335,7 +335,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
                   + checker.getDictionaryName());
           checker.reload();
         } catch (IOException e) {
-          LOG.log(Level.SEVERE, "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
+          log.error( "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
         }
       } else {
         // newSearcher event
@@ -343,7 +343,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           LOG.info("Building spell index for spell checker: " + checker.getDictionaryName());
           checker.build(core, newSearcher);
         } catch (Exception e) {
-          LOG.log(Level.SEVERE,
+          log.error(
                   "Exception in building spell check index for spellchecker: " + checker.getDictionaryName(), e);
         }
       }
@@ -369,17 +369,17 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getVersion() {
-    return "$Revision:$";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 
 }

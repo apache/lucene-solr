@@ -23,7 +23,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -52,7 +53,7 @@ import org.apache.solr.schema.FieldType;
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
-  public static final Logger LOG = Logger.getLogger(AbstractLuceneSpellChecker.class.getName());
+  public static final Logger log = LoggerFactory.getLogger(AbstractLuceneSpellChecker.class);
   
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";
@@ -120,7 +121,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       analyzer = fieldType.getQueryAnalyzer();
     }
     if (analyzer == null)   {
-      LOG.info("Using WhitespaceAnalzyer for dictionary: " + name);
+      log.info("Using WhitespaceAnalzyer for dictionary: " + name);
       analyzer = new WhitespaceAnalyzer();
     }
     return name;

@@ -19,7 +19,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -38,7 +39,7 @@ import org.apache.solr.request.XMLResponseWriter;
  */
 @Deprecated
 public class SolrUpdateServlet extends HttpServlet {
-  final Logger log = Logger.getLogger(SolrUpdateServlet.class.getName());
+  final Logger log = LoggerFactory.getLogger(SolrUpdateServlet.class);
 
   XmlUpdateRequestHandler legacyUpdateHandler;
   XMLResponseWriter xmlResponseWriter;
@@ -69,7 +70,7 @@ public class SolrUpdateServlet extends HttpServlet {
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
 
     if( request.getQueryString() != null ) {
-      log.warning( 
+      log.warn( 
           "The @Deprecated SolrUpdateServlet does not accept query parameters: "+request.getQueryString()+"\n"
           +"  If you are using solrj, make sure to register a request handler to /update rather then use this servlet.\n"
           +"  Add: <requestHandler name=\"/update\" class=\"solr.XmlUpdateRequestHandler\" > to your solrconfig.xml\n\n" );

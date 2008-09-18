@@ -17,7 +17,8 @@
 
 package org.apache.solr.util;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.solr.common.util.NamedList;
 
@@ -28,7 +29,7 @@ import org.apache.solr.common.util.NamedList;
 @Deprecated
 public class DisMaxParams extends CommonParams implements org.apache.solr.common.params.DisMaxParams {
 
-  public static Logger log = Logger.getLogger(DisMaxParams.class.getName());
+  public static Logger log = LoggerFactory.getLogger(DisMaxParams.class);
 
 
   /** query and init param for filtering query
@@ -104,7 +105,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof Float) {
         tiebreaker = ((Float)tmp).floatValue();
       } else {
-        log.severe("init param is not a float: " + TIE);
+        log.error("init param is not a float: " + TIE);
       }
     }
 
@@ -113,7 +114,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         qf = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + QF);
+        log.error("init param is not a str: " + QF);
       }
     }
 
@@ -122,7 +123,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         pf = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + PF);
+        log.error("init param is not a str: " + PF);
       }
     }
 
@@ -132,7 +133,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         mm = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + MM);
+        log.error("init param is not a str: " + MM);
       }
     }
         
@@ -141,7 +142,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof Integer) {
         pslop = ((Integer)tmp).intValue();
       } else {
-        log.severe("init param is not an int: " + PS);
+        log.error("init param is not an int: " + PS);
       }
     }
 
@@ -150,7 +151,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         bq = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + BQ);
+        log.error("init param is not a str: " + BQ);
       }
     }
  
@@ -159,7 +160,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         bf = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + BF);
+        log.error("init param is not a str: " + BF);
       }
     }
  
@@ -168,7 +169,7 @@ public class DisMaxParams extends CommonParams implements org.apache.solr.common
       if (tmp instanceof String) {
         fq = tmp.toString();
       } else {
-        log.severe("init param is not a str: " + FQ);
+        log.error("init param is not a str: " + FQ);
       }
     }
                 

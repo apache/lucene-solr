@@ -17,8 +17,8 @@
 package org.apache.solr.handler.dataimport;
 
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,8 +40,7 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class RegexTransformer extends Transformer {
-  private static final Logger LOG = Logger.getLogger(RegexTransformer.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(RegexTransformer.class);
 
   @SuppressWarnings("unchecked")
   public Map<String, Object> transformRow(Map<String, Object> row,
@@ -112,8 +111,7 @@ public class RegexTransformer extends Transformer {
           try {
             l.add(m.group(i));
           } catch (Exception e) {
-            LOG.log(Level.WARNING, "Parsing failed for field : " + columnName,
-                    e);
+            LOG.warn("Parsing failed for field : " + columnName, e);
           }
         }
         return l;

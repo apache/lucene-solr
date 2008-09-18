@@ -21,8 +21,8 @@ import org.apache.solr.common.SolrException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -42,8 +42,7 @@ import java.util.logging.Logger;
  */
 public class JdbcDataSource extends
         DataSource<Iterator<Map<String, Object>>> {
-  private static final Logger LOG = Logger.getLogger(JdbcDataSource.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(JdbcDataSource.class);
 
   private Callable<Connection> factory;
 
@@ -71,7 +70,7 @@ public class JdbcDataSource extends
         if (batchSize == -1)
           batchSize = Integer.MIN_VALUE;
       } catch (NumberFormatException e) {
-        LOG.log(Level.WARNING, "Invalid batch size: " + bsz);
+        LOG.warn( "Invalid batch size: " + bsz);
       }
     }
 
@@ -145,7 +144,7 @@ public class JdbcDataSource extends
   }
 
   private void logError(String msg, Exception e) {
-    LOG.log(Level.WARNING, msg, e);
+    LOG.warn( msg, e);
   }
 
   private List<String> readFieldNames(ResultSetMetaData metaData)
@@ -174,12 +173,12 @@ public class JdbcDataSource extends
         stmt = c.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(batchSize);
-        LOG.finer("Executing SQL: " + query);
+        LOG.debug("Executing SQL: " + query);
         long start = System.currentTimeMillis();
         if (stmt.execute(query)) {
           resultSet = stmt.getResultSet();
         }
-        LOG.finest("Time taken for sql :"
+        LOG.trace("Time taken for sql :"
                 + (System.currentTimeMillis() - start));
         colNames = readFieldNames(resultSet.getMetaData());
       } catch (Exception e) {

@@ -18,8 +18,8 @@ package org.apache.solr.handler.dataimport;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,8 +42,7 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class SqlEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = Logger.getLogger(SqlEntityProcessor.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(SqlEntityProcessor.class);
 
   protected DataSource<Iterator<Map<String, Object>>> dataSource;
 
@@ -61,7 +60,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
     } catch (DataImportHandlerException e) {
       throw e;
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "The query failed '" + q + "'", e);
+      LOG.error( "The query failed '" + q + "'", e);
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, e);
     }
   }

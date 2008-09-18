@@ -22,8 +22,8 @@ import java.io.Reader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class HttpDataSource extends DataSource<Reader> {
-  Logger LOG = Logger.getLogger(HttpDataSource.class.getName());
+  Logger LOG = LoggerFactory.getLogger(HttpDataSource.class);
 
   private String baseUrl;
 
@@ -68,14 +68,14 @@ public class HttpDataSource extends DataSource<Reader> {
       try {
         connectionTimeout = Integer.parseInt(cTimeout);
       } catch (NumberFormatException e) {
-        LOG.log(Level.WARNING, "Invalid connection timeout: " + cTimeout);
+        LOG.warn( "Invalid connection timeout: " + cTimeout);
       }
     }
     if (rTimeout != null) {
       try {
         readTimeout = Integer.parseInt(rTimeout);
       } catch (NumberFormatException e) {
-        LOG.log(Level.WARNING, "Invalid read timeout: " + rTimeout);
+        LOG.warn( "Invalid read timeout: " + rTimeout);
       }
     }
 
@@ -111,7 +111,7 @@ public class HttpDataSource extends DataSource<Reader> {
       DataImporter.QUERY_COUNT.get().incrementAndGet();
       return new InputStreamReader(in, enc);
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "Exception thrown while getting data", e);
+      LOG.error( "Exception thrown while getting data", e);
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Exception in invoking url " + url, e);
     }

@@ -19,8 +19,8 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -47,7 +47,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  **/
 public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
-  private static final Logger log = Logger.getLogger(FileBasedSpellChecker.class.getName());
+  private static final Logger log = LoggerFactory.getLogger(FileBasedSpellChecker.class);
 
   public static final String SOURCE_FILE_CHAR_ENCODING = "characterEncoding";
 
@@ -118,7 +118,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
 
     } catch (IOException e) {
-      log.log(Level.SEVERE, "Unable to load spellings", e);
+      log.error( "Unable to load spellings", e);
     } finally {
       try {
         if (searcher != null)

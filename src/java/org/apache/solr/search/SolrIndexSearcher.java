@@ -35,8 +35,8 @@ import org.apache.solr.util.OpenBitSet;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -54,7 +54,7 @@ import java.util.logging.Logger;
 // NOTE: as of Lucene 1.9, this has changed!
 
 public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
-  private static Logger log = Logger.getLogger(SolrIndexSearcher.class.getName());
+  private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
 
@@ -195,7 +195,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       }
       log.info(sb.toString());
     } else {
-      log.fine("Closing " + name);
+      log.debug("Closing " + name);
     }
     core.getInfoRegistry().remove(name);
     try {
@@ -888,7 +888,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         searcher.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -920,7 +920,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         searcher.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -966,7 +966,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         searcher.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -1089,7 +1089,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -1119,7 +1119,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -1161,7 +1161,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
-        log.warning( "Query: " + query + "; " + x.getMessage() );
+        log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
 
@@ -1510,7 +1510,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    */
   public void warm(SolrIndexSearcher old) throws IOException {
     // Make sure this is first!  filters can help queryResults execute!
-    boolean logme = log.isLoggable(Level.INFO);
+    boolean logme = log.isInfoEnabled();
     long warmingStartTime = System.currentTimeMillis();
     // warm the caches in order...
     for (int i=0; i<cacheList.length; i++) {

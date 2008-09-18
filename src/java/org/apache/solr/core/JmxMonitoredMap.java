@@ -27,8 +27,8 @@ import javax.management.remote.JMXServiceURL;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -46,7 +46,7 @@ import java.util.logging.Logger;
  */
 public class JmxMonitoredMap<K, V> extends
         ConcurrentHashMap<String, SolrInfoMBean> {
-  private static final Logger LOG = Logger.getLogger(JmxMonitoredMap.class
+  private static final Logger LOG = LoggerFactory.getLogger(JmxMonitoredMap.class
           .getName());
 
   private MBeanServer server = null;
@@ -136,7 +136,7 @@ public class JmxMonitoredMap<K, V> extends
         SolrDynamicMBean mbean = new SolrDynamicMBean(infoBean);
         server.registerMBean(mbean, name);
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "Failed to register info bean: " + key, e);
+        LOG.warn( "Failed to register info bean: " + key, e);
       }
     }
 
@@ -156,7 +156,7 @@ public class JmxMonitoredMap<K, V> extends
       try {
         unregister((String) key, infoBean);
       } catch (RuntimeException e) {
-        LOG.log(Level.WARNING, "Failed to unregister info bean: " + key, e);
+        LOG.warn( "Failed to unregister info bean: " + key, e);
       }
     }
     return super.remove(key);
@@ -231,7 +231,7 @@ public class JmxMonitoredMap<K, V> extends
           }
         }
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "Could not getStatistics on info bean "
+        LOG.warn( "Could not getStatistics on info bean "
                 + infoBean.getName(), e);
       }
 
@@ -272,7 +272,7 @@ public class JmxMonitoredMap<K, V> extends
         try {
           list.add(new Attribute(attribute, getAttribute(attribute)));
         } catch (Exception e) {
-          LOG.warning("Could not get attibute " + attribute);
+          LOG.warn("Could not get attibute " + attribute);
         }
       }
 

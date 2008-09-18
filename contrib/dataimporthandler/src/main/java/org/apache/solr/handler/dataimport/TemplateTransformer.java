@@ -19,7 +19,8 @@ package org.apache.solr.handler.dataimport;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -47,8 +48,7 @@ import java.util.logging.Logger;
  */
 public class TemplateTransformer extends Transformer {
 
-  private static final Logger LOG = Logger.getLogger(TemplateTransformer.class
-          .getName());
+  private static final Logger LOG = LoggerFactory.getLogger(TemplateTransformer.class);
 
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
@@ -86,7 +86,7 @@ public class TemplateTransformer extends Transformer {
       List<String> variables = TemplateString.getVariables(expr);
       for (String v : variables) {
         if (resolver.resolve(v) == null) {
-          LOG.warning("Unable to resolve variable: " + v
+          LOG.warn("Unable to resolve variable: " + v
                   + " while parsing expression: " + expr);
           resolvable = false;
         }

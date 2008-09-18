@@ -20,7 +20,8 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -44,7 +45,7 @@ import org.apache.solr.request.SolrRequestHandler;
 @Deprecated
 public class SolrServlet extends HttpServlet {
     
-  final Logger log = Logger.getLogger(SolrServlet.class.getName());
+  final Logger log = LoggerFactory.getLogger(SolrServlet.class);
   private boolean hasMulticore = false;
     
   public void init() throws ServletException {
@@ -78,7 +79,7 @@ public class SolrServlet extends HttpServlet {
 
       SolrRequestHandler handler = core.getRequestHandler(solrReq.getQueryType());
       if (handler==null) {
-        log.warning("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
+        log.warn("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
       }
       core.execute(handler, solrReq, solrRsp );

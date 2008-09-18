@@ -19,8 +19,8 @@ package org.apache.solr.util.xslt;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
@@ -51,11 +51,11 @@ public class TransformerProvider {
   
   /** singleton */
   private TransformerProvider() {
-    log = Logger.getLogger(TransformerProvider.class.getName());
+    log = LoggerFactory.getLogger(TransformerProvider.class.getName());
     
     // tell'em: currently, we only cache the last used XSLT transform, and blindly recompile it
     // once cacheLifetimeSeconds expires
-    log.warning(
+    log.warn(
         "The TransformerProvider's simplistic XSLT caching mechanism is not appropriate "
         + "for high load scenarios, unless a single XSLT transform is used"
         + " and xsltCacheLifetimeSeconds is set to a sufficiently high value."
@@ -69,8 +69,8 @@ public class TransformerProvider {
     // For now, the Templates are blindly reloaded once cacheExpires is over.
     // It'd be better to check the file modification time to reload only if needed.
     if(lastTemplates!=null && filename.equals(lastFilename) && System.currentTimeMillis() < cacheExpires) {
-      if(log.isLoggable(Level.FINE)) {
-        log.fine("Using cached Templates:" + filename);
+      if(log.isDebugEnabled()) {
+        log.debug("Using cached Templates:" + filename);
       }
     } else {
       lastTemplates = getTemplates(solrConfig.getResourceLoader(), filename,cacheLifetimeSeconds);
@@ -81,7 +81,7 @@ public class TransformerProvider {
     try {
       result = lastTemplates.newTransformer();
     } catch(TransformerConfigurationException tce) {
-      log.throwing(getClass().getName(), "getTransformer", tce);
+      log.error(getClass().getName(), "getTransformer", tce);
       final IOException ioe = new IOException("newTransformer fails ( " + lastFilename + ")");
       ioe.initCause(tce);
       throw ioe;
@@ -96,13 +96,13 @@ public class TransformerProvider {
     Templates result = null;
     lastFilename = null;
     try {
-      if(log.isLoggable(Level.FINE)) {
-        log.fine("compiling XSLT templates:" + filename);
+      if(log.isDebugEnabled()) {
+        log.debug("compiling XSLT templates:" + filename);
       }
       final InputStream xsltStream = loader.openResource("xslt/" + filename);
       result = tFactory.newTemplates(new StreamSource(xsltStream));
     } catch (Exception e) {
-      log.throwing(getClass().getName(), "newTemplates", e);
+      log.error(getClass().getName(), "newTemplates", e);
       final IOException ioe = new IOException("Unable to initialize Templates '" + filename + "'");
       ioe.initCause(e);
       throw ioe;

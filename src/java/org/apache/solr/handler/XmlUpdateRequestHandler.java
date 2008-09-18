@@ -22,7 +22,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.io.File;
 import java.util.HashMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javanet.staxutils.BaseXMLInputFactory;
 
@@ -58,7 +59,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
  */
 public class XmlUpdateRequestHandler extends RequestHandlerBase
 {
-  public static Logger log = Logger.getLogger(XmlUpdateRequestHandler.class.getName());
+  public static Logger log = LoggerFactory.getLogger(XmlUpdateRequestHandler.class);
 
   public static final String UPDATE_PROCESSOR = "update.processor";
 
@@ -96,7 +97,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     catch( IllegalArgumentException ex ) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.fine( "Unable to set the 'reuse-instance' property for the input chain: "+inputFactory );
+      log.debug( "Unable to set the 'reuse-instance' property for the input chain: "+inputFactory );
     }
   }
   
@@ -154,7 +155,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         case XMLStreamConstants.START_ELEMENT:
           String currTag = parser.getLocalName();
           if (currTag.equals(ADD)) {
-            log.finest("SolrCore.update(add)");
+            log.trace("SolrCore.update(add)");
             
             addCmd = new AddUpdateCommand();
             boolean overwrite=true;  // the default
@@ -173,7 +174,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
               } else if ( OVERWRITE_COMMITTED.equals(attrName) ) {
                 overwriteCommitted = StrUtils.parseBoolean(attrVal);
               } else {
-                log.warning("Unknown attribute id in add:" + attrName);
+                log.warn("Unknown attribute id in add:" + attrName);
               }
             }
             
@@ -190,13 +191,13 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
             addCmd.allowDups          = !overwrite;
           } 
           else if ("doc".equals(currTag)) {
-            log.finest("adding doc...");
+            log.trace("adding doc...");
             addCmd.clear();
             addCmd.solrDoc = readDoc( parser );
             processor.processAdd(addCmd);
           } 
           else if ( COMMIT.equals(currTag) || OPTIMIZE.equals(currTag)) {
-            log.finest("parsing " + currTag);
+            log.trace("parsing " + currTag);
 
             CommitUpdateCommand cmd = new CommitUpdateCommand(OPTIMIZE.equals(currTag));
 
@@ -214,7 +215,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
                 cmd.maxOptimizeSegments = Integer.parseInt(attrVal);
               }
                 else {
-                log.warning("unexpected attribute commit/@" + attrName);
+                log.warn("unexpected attribute commit/@" + attrName);
               }
             }
 
@@ -226,7 +227,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
             processor.processCommit( cmd );
           } // end commit
           else if (DELETE.equals(currTag)) {
-            log.finest("parsing delete");
+            log.trace("parsing delete");
             processDelete( processor, parser);
           } // end delete
           break;
@@ -251,7 +252,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       } else if ("fromCommitted".equals(attrName)) {
         deleteCmd.fromCommitted = StrUtils.parseBoolean(attrVal);
       } else {
-        log.warning("unexpected attribute delete/@" + attrName);
+        log.warn("unexpected attribute delete/@" + attrName);
       }
     }
 
@@ -262,7 +263,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       case XMLStreamConstants.START_ELEMENT:
         String mode = parser.getLocalName();
         if (!("id".equals(mode) || "query".equals(mode))) {
-          log.warning("unexpected XML tag /delete/" + mode);
+          log.warn("unexpected XML tag /delete/" + mode);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag /delete/" + mode);
         }
@@ -278,7 +279,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         } else if( "delete".equals( currTag ) ) {
           return;
         } else {
-          log.warning("unexpected XML tag /delete/" + currTag);
+          log.warn("unexpected XML tag /delete/" + currTag);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag /delete/" + currTag);
         }
@@ -309,7 +310,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       if ("boost".equals(attrName)) {
         doc.setDocumentBoost(  Float.parseFloat(parser.getAttributeValue(i)) );
       } else {
-        log.warning("Unknown attribute doc/@" + attrName);
+        log.warn("Unknown attribute doc/@" + attrName);
       }
     }
     
@@ -343,7 +344,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         text.setLength(0);
         String localName = parser.getLocalName();
         if (!"field".equals(localName)) {
-          log.warning("unexpected XML tag doc/" + localName);
+          log.warn("unexpected XML tag doc/" + localName);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag doc/" + localName);
         }
@@ -359,7 +360,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
           } else if ("null".equals(attrName)) {
             isNull = StrUtils.parseBoolean(attrVal);
           } else {
-            log.warning("Unknown attribute doc/field/@" + attrName);
+            log.warn("Unknown attribute doc/field/@" + attrName);
           }
         }
         break;
@@ -399,7 +400,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         SolrException.logOnce(log, "Error processing \"legacy\" update command", ex);
         XML.writeXML(output, "result", SolrException.toStr(ex), "status", "1");
       } catch (Exception ee) {
-        log.severe("Error writing to output stream: " + ee);
+        log.error("Error writing to output stream: " + ee);
       }
     }
   }

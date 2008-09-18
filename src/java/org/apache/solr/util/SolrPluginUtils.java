@@ -39,9 +39,7 @@ import org.apache.solr.search.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;
     
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -821,7 +819,7 @@ public class SolrPluginUtils {
       /* we definitely had some sort of sort string from the user,
        * but no SortSpec came out of it
        */
-      SolrCore.log.log(Level.WARNING,"Invalid sort \""+sort+"\" was specified, ignoring", sortE);
+      SolrCore.log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
       return null;
     }
         

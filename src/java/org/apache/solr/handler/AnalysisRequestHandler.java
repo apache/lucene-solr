@@ -43,7 +43,8 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -51,7 +52,7 @@ import java.util.logging.Logger;
  **/
 public class AnalysisRequestHandler extends RequestHandlerBase {
 
-  public static Logger log = Logger.getLogger(AnalysisRequestHandler.class.getName());
+  public static Logger log = LoggerFactory.getLogger(AnalysisRequestHandler.class);
 
   private XMLInputFactory inputFactory;
 
@@ -72,7 +73,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
     catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.fine("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
+      log.debug("Unable to set the 'reuse-instance' property for the input factory: " + inputFactory);
     }
   }
 
@@ -107,7 +108,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
         case XMLStreamConstants.START_ELEMENT: {
           String currTag = parser.getLocalName();
           if ("doc".equals(currTag)) {
-            log.finest("Tokenizing doc...");
+            log.trace("Tokenizing doc...");
 
             SolrInputDocument doc = readDoc(parser);
             SchemaField uniq = schema.getUniqueKeyField();
@@ -181,7 +182,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
           text.setLength(0);
           String localName = parser.getLocalName();
           if (!"field".equals(localName)) {
-            log.warning("unexpected XML tag doc/" + localName);
+            log.warn("unexpected XML tag doc/" + localName);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                     "unexpected XML tag doc/" + localName);
           }

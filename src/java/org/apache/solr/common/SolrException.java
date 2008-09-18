@@ -17,7 +17,8 @@
 
 package org.apache.solr.common;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 
@@ -129,14 +130,14 @@ public class SolrException extends RuntimeException {
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
-    log.severe(toStr(e));
+    log.error(toStr(e));
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
   }
 
   public static void log(Logger log, String msg, Throwable e) {
-    log.severe(msg + ':' + toStr(e));
+    log.error(msg + ':' + toStr(e));
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
