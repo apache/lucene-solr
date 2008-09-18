@@ -37,11 +37,22 @@
   <packaging>jar</packaging>
 
   <dependencies>
-<!--
-      I believe that solr-common has no dependencies outside
-      of the JRE 1.5.  Feel free to modify if I've missed 
-      something that belongs here.
--->
+
+    <dependency>
+	  <groupId>org.slf4j</groupId>
+	  <artifactId>slf4j-api</artifactId>
+	  <version>1.5.3</version>
+	</dependency> 
+	
+	<!--
+	Your app will need an slf4j implementation, it does not matter which one...
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.5.3</version>
+    </dependency>
+    -->
+
   </dependencies>
   
 </project>
