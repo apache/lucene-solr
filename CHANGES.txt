@@ -50,6 +50,13 @@ Changes in runtime behavior
     that take an autoCommit argument have been deprecated) (Mike
     McCandless)
 
+ 3. LUCENE-1335: IndexWriter.addIndexes(Directory[]) and
+    addIndexesNoOptimize no longer allow the same Directory instance
+    to be passed in more than once.  Internally, IndexWriter uses
+    Directory and segment name to uniquely identify segments, so
+    adding the same Directory more than once was causing duplicates
+    which led to problems (Mike McCandless)
+
 API Changes
 
  1. LUCENE-1084: Changed all IndexWriter constructors to take an
