@@ -188,8 +188,9 @@ public final class Document implements java.io.Serializable {
 
   /** Returns a List of all the fields in a document.
    * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
-   * <i>not</i> available in documents retrieved from the index, e.g. with {@link
-   * Hits#doc(int)}, {@link Searcher#doc(int)} or {@link IndexReader#document(int)}.
+   * <i>not</i> available in documents retrieved from the
+   * index, e.g. {@link Searcher#doc(int)} or {@link
+   * IndexReader#document(int)}.
    */
   public final List getFields() {
     return fields;

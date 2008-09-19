@@ -52,7 +52,7 @@ public class TopDocCollector extends HitCollector {
   }
 
   /** Constructor to collect the top-scoring documents by using the given PQ.
-   * @hq the PQ to use by this instance.
+   * @param hq the PQ to use by this instance.
    */
   protected TopDocCollector(PriorityQueue hq) {
     this.hq = hq;
