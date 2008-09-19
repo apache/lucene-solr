@@ -181,7 +181,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return facet minimum count or default of 1
    */
   public int getFacetMinCount() {
-    return this.getInt(FacetParams.FACET_LIMIT, 1);
+    return this.getInt(FacetParams.FACET_MINCOUNT, 1);
   }
 
   public SolrQuery setMissing(String fld) {

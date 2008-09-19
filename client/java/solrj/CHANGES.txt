@@ -8,7 +8,31 @@ solrj is a java client for the solr search engine.
 
 $Id$
 
-================== Release 1.3-dev ==================
+================== Release 1.4-dev ==================
+Upgrading from Solr 1.3
+-----------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Optimizations
+----------------------
+
+
+Bug Fixes
+----------------------
+
+ 1. SOLR-778: SolrQuery#getFacetMinCount() returns value of facet limit
+              (Kohei Taketa via shalin)
+
+Documentation
+----------------------
+
+
+================== Release 1.3.0 20080915 ==================
 
 Status
 ------
