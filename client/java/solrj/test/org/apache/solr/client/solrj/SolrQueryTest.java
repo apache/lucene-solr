@@ -96,4 +96,22 @@ public class SolrQueryTest extends TestCase {
     q.setFacetSort(false);
     assertFalse("expected set value to be false", q.getFacetSort());
   }
+
+  public void testSettersGetters() {
+      SolrQuery q = new SolrQuery("foo");
+      assertEquals(10, q.setFacetLimit(10).getFacetLimit());
+      assertEquals(10, q.setFacetMinCount(10).getFacetMinCount());
+      assertEquals(true, q.setFacetSort(true).getFacetSort());
+      assertEquals(10, q.setHighlightSnippets(10).getHighlightSnippets());
+      assertEquals(10, q.setHighlightFragsize(10).getHighlightFragsize());
+      assertEquals(true, q.setHighlightRequireFieldMatch(true).getHighlightRequireFieldMatch());
+      assertEquals("foo", q.setHighlightSimplePre("foo").getHighlightSimplePre());
+      assertEquals("foo", q.setHighlightSimplePost("foo").getHighlightSimplePost());
+      assertEquals(true, q.setHighlight(true).getHighlight());
+      assertEquals("foo", q.setQuery("foo").getQuery());
+      assertEquals(10, q.setRows(10).getRows().intValue());
+      assertEquals(10, q.setStart(10).getStart().intValue());
+      assertEquals("foo", q.setQueryType("foo").getQueryType());
+      assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
+  }
 }

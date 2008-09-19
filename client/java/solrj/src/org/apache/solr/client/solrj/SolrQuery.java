@@ -261,7 +261,7 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  public boolean setHighlightRequireFieldMatch() {
+  public boolean getHighlightRequireFieldMatch() {
     return this.getBool(HighlightParams.FIELD_MATCH, false);
   }
 
