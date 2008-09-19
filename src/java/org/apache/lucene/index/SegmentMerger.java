@@ -659,7 +659,7 @@ final class SegmentMerger {
           freqOutput.writeVInt(freq);		  // write frequency in doc
         }
         
-        /** See {@link DocumentWriter#writePostings(Posting[], String) for 
+        /** See {@link DocumentWriter#writePostings(Posting[], String)} for 
          *  documentation about the encoding of positions and payloads
          */
         int lastPosition = 0;			  // write position deltas
