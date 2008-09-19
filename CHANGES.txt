@@ -50,7 +50,8 @@ Bug Fixes
 
 Build
 ----------------------
-
+ 1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
+ 
 
 Documentation
 ----------------------

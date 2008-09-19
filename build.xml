@@ -712,21 +712,47 @@
 			<arg value="update"/>
 		</exec>
 	</target>
-  <target name="prepare-release" depends="clean, svn-up, build-site, package" description="Prototype helper for Committers.  Assumes gpg is in the path">
-	<exec executable="gpg">
-	    <arg value="--armor"/>
-	    <arg value="--output"/>
-	    <arg value="${dist}/${fullnamever}.tgz.asc"/>
-		<arg value="--detach-sig"/>
-    	<arg value="${dist}/${fullnamever}.tgz"/>
-	  </exec>
-	<exec executable="gpg">
-	    <arg value="--armor"/>
-	    <arg value="--output"/>
-	    <arg value="${dist}/${fullnamever}.zip.asc"/>
-		<arg value="--detach-sig"/>
-    	<arg value="${dist}/${fullnamever}.zip"/>
-	  </exec>
+
+  <target name="clean-dist-signatures">
+    <delete failonerror="false">
+      <fileset dir="${dist}">
+        <include name="**/*.asc"/>
+      </fileset>
+    </delete>
+  </target>
+  <target name="sign-artifacts" depends="clean-dist-signatures">
+    <!--<input message="Enter signature passphrase" addproperty="passphrase"/>
+    <touch file="${user.home}/.pwd.txt"/>
+    <chmod file="${user.home}/.pwd.txt" perm="600"/>
+    <echo file="${user.home}/.pwd.txt">${passphrase}</echo>-->
+    <sign-artifact input.file="${dist}/${fullnamever}.tgz" output.file="${dist}/${fullnamever}.tgz.asc"/>
+    <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc"/>
+
+    <!-- Maven artifacts -->
+    <sign-maven-artifacts artifact.id="solr-common"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-commons-csv"/>
+    <sign-maven-artifacts artifact.id="solr-core"/>
+    <sign-maven-artifacts artifact.id="solr-dataimporthandler"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-core"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-highlighter"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-queries"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker"/>
+    <sign-maven-artifacts artifact.id="solr-solrj"/>
+
+    <!-- Thes are special since there are no jars, just poms -->
+    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${maven_version}/solr-lucene-contrib-${maven_version}.pom"/>
+
+    <!--<delete file="${user.home}/.pwd.txt"/>-->
+  </target>
+
+
+
+
+  <target name="prepare-release" depends="clean, svn-up, build-site, package, sign-artifacts" description="Prototype helper for Committers.  Assumes gpg is in the path">
+
     <tar destfile="${dist}/solr-maven.tar">
 		  <tarfileset dir="${dist}/maven" prefix="maven"/>
     </tar>
@@ -737,6 +763,14 @@
 
   <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, create-package">
     <sequential>
+
+      <!--
+
+       !!!!!!!!!!
+       NOTE:  If you add new artifacts, please make sure you also add to the sign-artifacts target
+       so that they get signed during release.
+      !!!!!!!
+       -->
 
       <mkdir dir="${maven.build.dir}"/>
       <mkdir dir="${maven.dist.dir}"/>

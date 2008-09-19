@@ -101,6 +101,8 @@
   <property name="maven.build.dir" value="${basedir}/build/maven"/>
   <property name="maven.dist.dir" value="${basedir}/dist/maven"/>
 
+  <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
+
   <!-- The version suffix of the Lucene artifacts checked into "lib" -->
   <property name="lucene_version" value="2.4-dev"/>
   <!-- The version number to assign to the Maven artifacts. -->
@@ -266,6 +268,51 @@
       </artifact:deploy>
     </sequential>
   </macrodef>
+
+  <macrodef name="sign-artifact" description="Signs the artifact">
+    <attribute name="input.file"/>
+    <attribute name="output.file" default="@{input.file}.asc"/>
+    <!--<attribute name="password.file" default="${user.home}/.pwd.txt"/>-->
+    <sequential>
+      <echo >Signing @{input.file} Sig File: @{output.file}</echo><!--Pass: @{password.file}-->
+
+      <exec executable="gpg" > <!--input="@{password.file}"-->
+        <arg value="--armor"/>
+        <arg value="--output"/>
+        <arg value="@{output.file}"/>
+        <arg value="--detach-sig"/>
+        <arg value="@{input.file}"/>
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <!--
+   We need to sign:
+   The POM
+   The library jar
+   The sources jar
+   the javadoc jar
+   -->
+  <macrodef name="sign-maven-artifacts" description="Signs maven artifacts">
+    <attribute name="artifact.id"/>
+    <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
+    <attribute name="maven.version" default="${maven_version}"/>
+    <sequential>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar"/>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="sign-maven-dependency-artifacts" description="Signs maven artifacts">
+    <attribute name="artifact.id"/>
+    <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
+    <attribute name="maven.version" default="${maven_version}"/>
+    <sequential>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"/>
+    </sequential>
+  </macrodef>
+
 
   <target name="clean-contrib"
 	          description="Cleans all contrib modules and their tests">
