@@ -66,7 +66,7 @@ public class PayloadSpanUtil {
    * Query should be rewritten for wild/fuzzy support.
    * 
    * @param query
-   * @return
+   * @return payloads Collection
    * @throws IOException
    */
   public Collection getPayloadsForQuery(Query query) throws IOException {

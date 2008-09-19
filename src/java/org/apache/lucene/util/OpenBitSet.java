@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 /** An "open" BitSet implementation that allows direct access to the array of words
  * storing the bits.
  * <p/>
- * Unlike java.util.bitet, the fact that bits are packed into an array of longs
+ * Unlike java.util.bitset, the fact that bits are packed into an array of longs
  * is part of the interface.  This allows efficient implementation of other algorithms
  * by someone other than the author.  It also allows one to efficiently implement
  * alternate serialization or interchange formats.
