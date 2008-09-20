@@ -123,7 +123,7 @@
 		e.g. <jmx agentId="myAgent" />
 		
 		If you want to start a new MBeanServer, specify the serviceUrl
-		e.g <jmx serviceurl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr" />
+		e.g <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr" />
 		
 		For more details see http://wiki.apache.org/solr/SolrJmx
   -->
