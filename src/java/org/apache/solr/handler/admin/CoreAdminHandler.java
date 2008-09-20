@@ -35,7 +35,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.common.util.StrUtils;
 
 /**
  * @version $Id$
@@ -210,8 +209,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
     if (core != null) {
       try {
         info.add("name", core.getName());
-        info.add("instanceDir", core.getResourceLoader().getInstanceDir());
-        info.add("dataDir", core.getDataDir());
+        info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
+        info.add("dataDir", normalizePath(core.getDataDir()));
         info.add("startTime", new Date(core.getStartTime()));
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
@@ -222,6 +221,14 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
       }
     }
     return info;
+  }
+
+  private static String normalizePath(String path)  {
+    if (path == null)
+      return null;
+    path = path.replace('/', File.separatorChar);
+    path = path.replace('\\', File.separatorChar);
+    return path;
   }
   
   
