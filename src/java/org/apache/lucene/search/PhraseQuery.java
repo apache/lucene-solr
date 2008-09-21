@@ -35,6 +35,7 @@ public class PhraseQuery extends Query {
   private String field;
   private ArrayList terms = new ArrayList(4);
   private ArrayList positions = new ArrayList(4);
+  private int maxPosition = 0;
   private int slop = 0;
 
   /** Constructs an empty phrase query. */
@@ -87,6 +88,7 @@ public class PhraseQuery extends Query {
 
       terms.add(term);
       positions.add(new Integer(position));
+      if (position > maxPosition) maxPosition = position;
   }
 
   /** Returns the set of terms in this phrase. */
@@ -261,10 +263,27 @@ public class PhraseQuery extends Query {
     }
 
     buffer.append("\"");
+    String[] pieces = new String[maxPosition + 1];
     for (int i = 0; i < terms.size(); i++) {
-      buffer.append(((Term)terms.get(i)).text());
-      if (i != terms.size()-1)
-  buffer.append(" ");
+      int pos = ((Integer)positions.get(i)).intValue();
+      String s = pieces[pos];
+      if (s == null) {
+        s = ((Term)terms.get(i)).text();
+      } else {
+        s = s + "|" + ((Term)terms.get(i)).text();
+      }
+      pieces[pos] = s;
+    }
+    for (int i = 0; i < pieces.length; i++) {
+      if (i > 0) {
+        buffer.append(' ');
+      }
+      String s = pieces[i];
+      if (s == null) {
+        buffer.append('?');
+      } else {
+        buffer.append(s);
+      }
     }
     buffer.append("\"");
 

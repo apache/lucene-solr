@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -353,6 +354,17 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals(0.31, hits[2].score, 0.01);
     assertEquals(2, hits[2].doc);
     QueryUtils.check(query,searcher);        
+  }
+  
+  public void testToString() throws Exception {
+    StopAnalyzer analyzer = new StopAnalyzer();
+    StopFilter.setEnablePositionIncrementsDefault(true);
+    QueryParser qp = new QueryParser("field", analyzer);
+    qp.setEnablePositionIncrements(true);
+    PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
+    assertEquals("field:\"? hi ? ? ? test\"", q.toString());
+    q.add(new Term("field", "hello"), 1);
+    assertEquals("field:\"? hi|hello ? ? ? test\"", q.toString());
   }
 
   public void testWrappedPhrase() throws IOException {

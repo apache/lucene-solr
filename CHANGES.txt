@@ -57,6 +57,11 @@ Changes in runtime behavior
     adding the same Directory more than once was causing duplicates
     which led to problems (Mike McCandless)
 
+ 4. LUCENE-1396: Improve PhraseQuery.toString() so that gaps in the
+    positions are indicated with a ? and multiple terms at the same
+    position are joined with a |.  (Andrzej Bialecki via Mike
+    McCandless)
+
 API Changes
 
  1. LUCENE-1084: Changed all IndexWriter constructors to take an
