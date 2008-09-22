@@ -60,9 +60,9 @@ import java.util.Iterator;
   <p>In either case, documents are added with <a
   href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a>
   and removed with <a
-  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments</b></a>
+  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments(Term)</b></a>
   or <a
-  href="#deleteDocuments(org.apache.lucene.search.Query)"><b>deleteDocuments</b></a>.
+  href="#deleteDocuments(org.apache.lucene.search.Query)"><b>deleteDocuments(Query)</b></a>.
   A document can be updated with <a href="#updateDocument(org.apache.lucene.index.Term, org.apache.lucene.document.Document)"><b>updateDocument</b></a> 
   (which just deletes and then adds the entire document).
   When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
@@ -88,43 +88,46 @@ import java.util.Iterator;
   for changing the {@link MergeScheduler}).</p>
 
   <a name="autoCommit"></a>
-  <p>[<b>Deprecated</b>: Note that in 3.0, IndexWriter will
-  no longer accept autoCommit=true (it will be hardwired to
-  false).  You can always call {@link IndexWriter#commit()} yourself
-  when needed].  The optional <code>autoCommit</code> argument to the <a
+  <p>The optional <code>autoCommit</code> argument to the <a
   href="#IndexWriter(org.apache.lucene.store.Directory,
   boolean,
   org.apache.lucene.analysis.Analyzer)"><b>constructors</b></a>
   controls visibility of the changes to {@link IndexReader}
   instances reading the same index.  When this is
   <code>false</code>, changes are not visible until {@link
-  #close()} is called.  Note that changes will still be
+  #close()} or {@link #commit()} is called.  Note that changes will still be
   flushed to the {@link org.apache.lucene.store.Directory}
   as new files, but are not committed (no new
   <code>segments_N</code> file is written referencing the
   new files, nor are the files sync'd to stable storage)
-  until {@link #commit()} or {@link #close} is called.  If something
+  until {@link #close()} or {@link #commit()} is called.  If something
   goes terribly wrong (for example the JVM crashes), then
   the index will reflect none of the changes made since the
   last commit, or the starting state if commit was not called.
-  You can also call {@link #abort}, which closes the writer
+  You can also call {@link #rollback}, which closes the writer
   without committing any changes, and removes any index
   files that had been flushed but are now unreferenced.
   This mode is useful for preventing readers from refreshing
   at a bad time (for example after you've done all your
   deletes but before you've done your adds).  It can also be
   used to implement simple single-writer transactional
-  semantics ("all or none").</p>
+  semantics ("all or none").  You can do a two-phase commit
+  by calling {@link #prepareCommit()}
+  followed by {@link #commit()}. This is necessary when
+  Lucene is working with an external resource (for example,
+  a database) and both must either commit or rollback the
+  transaction.</p>
 
   <p>When <code>autoCommit</code> is <code>true</code> then
-  the writer will periodically commit on its own.  This is
-  the default, to match the behavior before 2.2.  However,
-  in 3.0, autoCommit will be hardwired to false.  There is
+  the writer will periodically commit on its own.  [<b>Deprecated</b>: Note that in 3.0, IndexWriter will
+  no longer accept autoCommit=true (it will be hardwired to
+  false).  You can always call {@link IndexWriter#commit()} yourself
+  when needed]. There is
   no guarantee when exactly an auto commit will occur (it
   used to be after every flush, but it is now after every
   completed merge, as of 2.4).  If you want to force a
   commit, call {@link #commit()}, or, close the writer.  Once
-  a commit has finished, ({@link IndexReader} instances will
+  a commit has finished, newly opened {@link IndexReader} instances will
   see the changes to the index as of that commit.  When
   running in this mode, be careful not to refresh your
   readers while optimize or segment merges are taking place
@@ -137,8 +140,9 @@ import java.util.Iterator;
   are not visible until the reader is re-opened.</p>
 
   <p>If an index will not have more documents added for a while and optimal search
-  performance is desired, then the <a href="#optimize()"><b>optimize</b></a>
-  method should be called before the index is closed.</p>
+  performance is desired, then either the full <a href="#optimize()"><b>optimize</b></a>
+  method or partial {@link #optimize(int)} method should be
+  called before the index is closed.</p>
 
   <p>Opening an <code>IndexWriter</code> creates a lock file for the directory in use. Trying to open
   another <code>IndexWriter</code> on the same directory will lead to a
@@ -2451,7 +2455,7 @@ public class IndexWriter {
    *  expungeDeletes to remove all unused data in the index
    *  associated with the deleted documents.  To see how
    *  many deletions you have pending in your index, call
-   *  {@link IndexReader#maxDoc - IndexReader#numDocs}.
+   *  {@link IndexReader#numDeletedDocs}
    *  This saves disk space and memory usage while
    *  searching.  expungeDeletes should be somewhat faster
    *  than optimize since it does not insist on reducing the
@@ -3464,6 +3468,8 @@ public class IndexWriter {
    * not have a battery backup (for example) then on power
    * loss it may still lose data.  Lucene cannot guarantee
    * consistency on such devices.  </p>
+   *
+   * @see #prepareCommit
    */
 
   public final void commit() throws CorruptIndexException, IOException {
