@@ -87,7 +87,15 @@
   <property name="junit.excludes" value=""/>
 
   <property name="manifest.file" location="${common.dir}/build/MANIFEST.MF"/>
-	
+
+  <!-- 
+    we attempt to exec svnversion to get details build information
+    for jar manifests.  this property can be set at runtime to an
+    explicit path as needed, or ant will just try to find it in the
+    default PATH. (this is useful for Hudson)
+  -->
+  <property name="svnversion.exe" value="svnversion" />
+  
   <condition property="build-1-5-contrib">
      <equals arg1="1.5" arg2="${ant.java.version}" />
   </condition>
@@ -299,7 +307,7 @@
   	<element name="metainf-includes" optional="yes"/>
     <sequential>
       <!-- If possible, include the svnversion -->
-      <exec dir="." executable="svnversion"
+      <exec dir="." executable="${svnversion.exe}"
             outputproperty="svnversion" failifexecutionfails="false">
         <arg line="."/>
       </exec>
