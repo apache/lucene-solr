@@ -273,11 +273,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       } catch (Throwable exc) {
 
-        if (merge != null) {
-          merge.setException(exc);
-          writer.addMergeException(merge);
-        }
-
         // Ignore the exception if it was due to abort:
         if (!(exc instanceof MergePolicy.MergeAbortedException)) {
           synchronized(ConcurrentMergeScheduler.this) {

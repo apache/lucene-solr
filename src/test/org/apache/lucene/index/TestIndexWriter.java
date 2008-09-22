@@ -4118,4 +4118,29 @@ public class TestIndexWriter extends LuceneTestCase
       _TestUtil.rmDir(indexDir);
     }
   }
+
+  public void testOptimizeExceptions() throws IOException {
+    RAMDirectory startDir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(startDir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);    
+    w.setMaxBufferedDocs(2);
+    w.setMergeFactor(100);
+    for(int i=0;i<27;i++)
+      addDoc(w);
+    w.close();
+
+    for(int i=0;i<200;i++) {
+      MockRAMDirectory dir = new MockRAMDirectory(startDir);
+      w = new IndexWriter(dir, false, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+      ((ConcurrentMergeScheduler) w.getMergeScheduler()).setSuppressExceptions();
+      dir.setRandomIOExceptionRate(0.5, 100);
+      try {
+        w.optimize();
+      } catch (IOException ioe) {
+        if (ioe.getCause() == null)
+          fail("optimize threw IOException without root cause");
+      }
+      w.close();
+      dir.close();
+    }
+  }
 }
