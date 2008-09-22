@@ -3919,6 +3919,33 @@ public class IndexWriter {
     }
   }
 
+  final private void handleMergeException(Throwable t, MergePolicy.OneMerge merge) throws IOException {
+    // Set the exception on the merge, so if
+    // optimize() is waiting on us it sees the root
+    // cause exception:
+    merge.setException(t);
+    addMergeException(merge);
+
+    if (t instanceof MergePolicy.MergeAbortedException) {
+      // We can ignore this exception (it happens when
+      // close(false) or rollback is called), unless the
+      // merge involves segments from external directories,
+      // in which case we must throw it so, for example, the
+      // rollbackTransaction code in addIndexes* is
+      // executed.
+      if (merge.isExternal)
+        throw (MergePolicy.MergeAbortedException) t;
+    } else if (t instanceof IOException)
+      throw (IOException) t;
+    else if (t instanceof RuntimeException)
+      throw (RuntimeException) t;
+    else if (t instanceof Error)
+      throw (Error) t;
+    else
+      // Should not get here
+      throw new RuntimeException(t);
+  }
+
   /**
    * Merges the indicated segments, replacing them in the stack with a
    * single segment.
@@ -3939,17 +3966,8 @@ public class IndexWriter {
 
           mergeMiddle(merge);
           success = true;
-        } catch (MergePolicy.MergeAbortedException e) {
-          merge.setException(e);
-          addMergeException(merge);
-
-          // We can ignore this exception, unless the merge
-          // involves segments from external directories, in
-          // which case we must throw it so, for example, the
-          // rollbackTransaction code in addIndexes* is
-          // executed.
-          if (merge.isExternal)
-            throw e;
+        } catch (Throwable t) {
+          handleMergeException(t, merge);
         }
       } finally {
         synchronized(this) {
@@ -3960,7 +3978,6 @@ public class IndexWriter {
             if (!success) {
               if (infoStream != null)
                 message("hit exception during merge");
-              addMergeException(merge);
               if (merge.info != null && !segmentInfos.contains(merge.info))
                 deleter.refresh(merge.info.name);
             }
@@ -4340,14 +4357,15 @@ public class IndexWriter {
             // remove the partially created CFS:
             success = true;
           } else
-            throw ioe;
+            handleMergeException(ioe, merge);
         }
+      } catch (Throwable t) {
+        handleMergeException(t, merge);
       } finally {
         if (!success) {
           if (infoStream != null)
             message("hit exception creating compound file during merge");
           synchronized(this) {
-            addMergeException(merge);
             deleter.deleteFile(compoundFileName);
           }
         }
@@ -4393,6 +4411,7 @@ public class IndexWriter {
   }
 
   synchronized void addMergeException(MergePolicy.OneMerge merge) {
+    assert merge.getException() != null;
     if (!mergeExceptions.contains(merge) && mergeGen == merge.mergeGen)
       mergeExceptions.add(merge);
   }
