@@ -225,16 +225,16 @@ class NearSpansUnordered implements PayloadSpans {
   }
 
   // TODO: Remove warning after API has been finalized
- public boolean isPayloadAvailable() {
-   SpansCell pointer = min();
-   do {
-     if(pointer.isPayloadAvailable()) {
-       return true;
-     }
-     pointer = pointer.next;
-   } while(pointer.next != null);
+  public boolean isPayloadAvailable() {
+    SpansCell pointer = min();
+    while (pointer != null) {
+      if (pointer.isPayloadAvailable()) {
+        return true;
+      }
+      pointer = pointer.next;
+    }
 
-   return false;
+    return false;
   }
 
   public String toString() {
