@@ -23,9 +23,14 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -388,5 +393,64 @@ public class TestSpans extends LuceneTestCase {
     float score = spanScorer.score();
     assertTrue("first doc score should be zero, " + score, score == 0.0f);
     assertTrue("no second doc", ! spanScorer.next());
+  }
+
+  // LUCENE-1404
+  private void addDoc(IndexWriter writer, String id, String text) throws IOException {
+    final Document doc = new Document();
+    doc.add( new Field("id", id, Field.Store.YES, Field.Index.UN_TOKENIZED) );
+    doc.add( new Field("text", text, Field.Store.YES, Field.Index.TOKENIZED) );
+    writer.addDocument(doc);
+  }
+
+  // LUCENE-1404
+  private int hitCount(Searcher searcher, String word) throws Throwable {
+    return searcher.search(new TermQuery(new Term("text", word)), 10).totalHits;
+  }
+
+  // LUCENE-1404
+  private SpanQuery createSpan(String value) {
+    return new SpanTermQuery(new Term("text", value));
+  }                     
+  
+  // LUCENE-1404
+  private SpanQuery createSpan(int slop, boolean ordered, SpanQuery[] clauses) {
+    return new SpanNearQuery(clauses, slop, ordered);
+  }
+
+  // LUCENE-1404
+  private SpanQuery createSpan(int slop, boolean ordered, String term1, String term2) {
+    return createSpan(slop, ordered, new SpanQuery[] {createSpan(term1), createSpan(term2)});
+  }
+
+  // LUCENE-1404
+  public void testNPESpanQuery() throws Throwable {
+    final Directory dir = new MockRAMDirectory();
+    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(new String[0]), IndexWriter.MaxFieldLength.LIMITED);
+
+    // Add documents
+    addDoc(writer, "1", "the big dogs went running to the market");
+    addDoc(writer, "2", "the cat chased the mouse, then the cat ate the mouse quickly");
+    
+    // Commit
+    writer.close();
+
+    // Get searcher
+    final IndexReader reader = IndexReader.open(dir);
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    // Control (make sure docs indexed)
+    assertEquals(2, hitCount(searcher, "the"));
+    assertEquals(1, hitCount(searcher, "cat"));
+    assertEquals(1, hitCount(searcher, "dogs"));
+    assertEquals(0, hitCount(searcher, "rabbit"));
+
+    // This throws exception (it shouldn't)
+    assertEquals(1,
+                 searcher.search(createSpan(0, true,                                 
+                                            new SpanQuery[] {createSpan(4, false, "chased", "cat"),
+                                                             createSpan("ate")}), 10).totalHits);
+    reader.close();
+    dir.close();
   }
 }
