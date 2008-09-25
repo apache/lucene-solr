@@ -23,7 +23,6 @@ import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 /**

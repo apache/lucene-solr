@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
-import java.util.BitSet;
 
 /** Implements search over a single IndexReader.
  *
