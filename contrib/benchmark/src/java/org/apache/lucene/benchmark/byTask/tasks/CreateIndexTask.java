@@ -97,7 +97,8 @@ public class CreateIndexTask extends PerfTask {
     Config config = runData.getConfig();
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
                                          runData.getConfig().get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT),
-                                         runData.getAnalyzer());
+                                         runData.getAnalyzer(),
+                                         true);
     CreateIndexTask.setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;
