@@ -47,9 +47,9 @@ public class TestCheckIndex extends LuceneTestCase {
     reader.close();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-
-    CheckIndex.out = new PrintStream(bos);
-    CheckIndexStatus indexStatus = CheckIndex.check(dir, false, null);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(new PrintStream(bos));
+    CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());
@@ -57,6 +57,7 @@ public class TestCheckIndex extends LuceneTestCase {
     }
     final List onlySegments = new ArrayList();
     onlySegments.add("_0");
-    assertTrue(CheckIndex.check(dir, false, onlySegments).clean == true);
+    
+    assertTrue(checker.checkIndex(onlySegments).clean == true);
   }
 }

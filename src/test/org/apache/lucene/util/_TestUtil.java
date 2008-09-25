@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.CheckIndexStatus;
 import org.apache.lucene.store.Directory;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -60,10 +59,10 @@ public class _TestUtil {
    *  true is returned. */
   public static boolean checkIndex(Directory dir) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    CheckIndex.out = new PrintStream(bos);
 
-    //TODO: fix this
-    CheckIndexStatus indexStatus = CheckIndex.check(dir, false, null);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(new PrintStream(bos));
+    CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());

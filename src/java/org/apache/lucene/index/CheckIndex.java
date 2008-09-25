@@ -29,20 +29,165 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import org.apache.lucene.document.Fieldable;          // for javadoc
 
 /**
- * Basic tool to check the health of an index and write a
- * new segments file that removes reference to problematic
- * segments.  There are many more checks that this tool
- * could do but does not yet, eg: reconstructing a segments
- * file by looking for all loadable segments (if no segments
- * file is found), removing specifically specified segments,
- * listing files that exist but are not referenced, etc.
+ * Basic tool and API to check the health of an index and
+ * write a new segments file that removes reference to
+ * problematic segments.
+ * 
+ * <p>As this tool checks every byte in the index, on a large
+ * index it can take quite a long time to run.
+ *
+ * <p><b>WARNING</b>: this tool and API is new and
+ * experimental and is subject to suddenly change in the
+ * next release.  Please make a complete backup of your
+ * index before using this to fix your index!
  */
-
 public class CheckIndex {
 
+  /** Default PrintStream for all CheckIndex instances.
+   *  @deprecated Use {@link #setInfoStream} per instance,
+   *  instead. */
   public static PrintStream out = null;
+
+  private PrintStream infoStream;
+  private Directory dir;
+
+  /**
+   * Returned from {@link #checkIndex()} detailing the health and status of the index.
+   *
+   * <p><b>WARNING</b>: this API is new and experimental and is
+   * subject to suddenly change in the next release.
+   **/
+
+  public static class Status {
+
+    /** True if no problems were found with the index. */
+    public boolean clean;
+
+    /** True if we were unable to locate and load the segments_N file. */
+    public boolean missingSegments;
+
+    /** True if we were unable to open the segments_N file. */
+    public boolean cantOpenSegments;
+
+    /** True if we were unable to read the version number from segments_N file. */
+    public boolean missingSegmentVersion;
+
+    /** Name of latest segments_N file in the index. */
+    public String segmentsFileName;
+
+    /** Number of segments in the index. */
+    public int numSegments;
+
+    /** String description of the version of the index. */
+    public String segmentFormat;
+
+    /** Empty unless you passed specific segments list to check as optional 3rd argument.
+     *  @see CheckIndex#checkIndex(List) */
+    public List/*<String>*/ segmentsChecked = new ArrayList();
+  
+    /** True if the index was created with a newer version of Lucene than the CheckIndex tool. */
+    public boolean toolOutOfDate;
+
+    /** List of {@link SegmentInfoStatus} instances, detailing status of each segment. */
+    public List/*<SegmentInfoStatus*/ segmentInfos = new ArrayList();
+  
+    /** Directory index is in. */
+    public Directory dir;
+
+    /** SegmentInfos instance containing only segments that
+     *  had no problems (this is used with the {@link
+     *  CheckIndex#fix} method to repair the index. */
+    SegmentInfos newSegments;
+
+    /** How many documents will be lost to bad segments. */
+    public int totLoseDocCount;
+
+    /** How many bad segments were found. */
+    public int numBadSegments;
+
+    /** True if we checked only specific segments ({@link
+     * #checkIndex(List)}) was called with non-null
+     * argument). */
+    public boolean partial;
+
+    /** Holds the status of each segment in the index.
+     *  See {@link #segmentInfos}.
+     *
+     * <p><b>WARNING</b>: this API is new and experimental and is
+     * subject to suddenly change in the next release.
+     */
+    public static class SegmentInfoStatus {
+      /** Name of the segment. */
+      public String name;
+
+      /** Document count (does not take deletions into account). */
+      public int docCount;
+
+      /** True if segment is compound file format. */
+      public boolean compound;
+
+      /** Number of files referenced by this segment. */
+      public int numFiles;
+
+      /** Net size (MB) of the files referenced by this
+       *  segment. */
+      public double sizeMB;
+
+      /** Doc store offset, if this segment shares the doc
+       *  store files (stored fields and term vectors) with
+       *  other segments.  This is -1 if it does not share. */
+      public int docStoreOffset = -1;
+    
+      /** String of the shared doc store segment, or null if
+       *  this segment does not share the doc store files. */
+      public String docStoreSegment;
+
+      /** True if the shared doc store files are compound file
+       *  format. */
+      public boolean docStoreCompoundFile;
+
+      /** True if this segment has pending deletions. */
+      public boolean hasDeletions;
+
+      /** Name of the current deletions file name. */
+      public String deletionsFileName;
+    
+      /** Number of deleted documents. */
+      public int numDeleted;
+
+      /** True if we were able to open a SegmentReader on this
+       *  segment. */
+      public boolean openReaderPassed;
+
+      /** Number of fields in this segment. */
+      int numFields;
+
+      /** True if at least one of the fields in this segment
+       *  does not omitTf.
+       *  @see Fieldable#setOmitTf */
+      public boolean hasProx;
+    }
+  }
+
+  /** Create a new CheckIndex on the directory. */
+  public CheckIndex(Directory dir) {
+    this.dir = dir;
+    infoStream = out;
+  }
+
+  /** Set infoStream where messages should go.  If null, no
+   *  messages are printed */
+  public void setInfoStream(PrintStream out) {
+    infoStream = out;
+  }
+
+  private void msg(String msg) {
+    if (infoStream != null)
+      infoStream.println(msg);
+  }
 
   private static class MySegmentTermDocs extends SegmentTermDocs {
 
@@ -62,23 +207,60 @@ public class CheckIndex {
     }
   }
 
-  /** Returns true if index is clean, else false.*/
-  public static CheckIndexStatus check(Directory dir, boolean doFix) throws IOException {
+  /** Returns true if index is clean, else false. 
+   *  @deprecated Please instantiate a CheckIndex and then use {@link #checkIndex()} instead */
+  public static boolean check(Directory dir, boolean doFix) throws IOException {
     return check(dir, doFix, null);
   }
 
-  /** Returns true if index is clean, else false.*/
-  public static CheckIndexStatus check(Directory dir, boolean doFix, List onlySegments) throws IOException {
+  /** Returns true if index is clean, else false.
+   *  @deprecated Please instantiate a CheckIndex and then use {@link #checkIndex(List)} instead */
+  public static boolean check(Directory dir, boolean doFix, List onlySegments) throws IOException {
+    CheckIndex checker = new CheckIndex(dir);
+    Status status = checker.checkIndex(onlySegments);
+    if (doFix && !status.clean)
+      checker.fixIndex(status);
+
+    return status.clean;
+  }
+
+  /** Returns a {@link Status} instance detailing
+   *  the state of the index.
+   *
+   *  <p>As this method checks every byte in the index, on a large
+   *  index it can take quite a long time to run.
+   *
+   *  <p><b>WARNING</b>: make sure
+   *  you only call this when the index is not opened by any
+   *  writer. */
+  public Status checkIndex() throws IOException {
+    return checkIndex(null);
+  }
+
+  /** Returns a {@link Status} instance detailing
+   *  the state of the index.
+   * 
+   *  @param onlySegments list of specific segment names to check
+   *
+   *  <p>As this method checks every byte in the specified
+   *  segments, on a large index it can take quite a long
+   *  time to run.
+   *
+   *  <p><b>WARNING</b>: make sure
+   *  you only call this when the index is not opened by any
+   *  writer. */
+  public Status checkIndex(List onlySegments) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
     SegmentInfos sis = new SegmentInfos();
-    CheckIndexStatus result = new CheckIndexStatus();
+    Status result = new Status();
     result.dir = dir;
     try {
       sis.read(dir);
     } catch (Throwable t) {
       msg("ERROR: could not read any segments file in directory");
       result.missingSegments = true;
-      t.printStackTrace(out);
+      if (infoStream != null)
+        t.printStackTrace(infoStream);
       return result;
     }
 
@@ -89,7 +271,8 @@ public class CheckIndex {
       input = dir.openInput(segmentsFileName);
     } catch (Throwable t) {
       msg("ERROR: could not open segments file in directory");
-      t.printStackTrace(out);
+      if (infoStream != null)
+        t.printStackTrace(infoStream);
       result.cantOpenSegments = true;
       return result;
     }
@@ -98,7 +281,8 @@ public class CheckIndex {
       format = input.readInt();
     } catch (Throwable t) {
       msg("ERROR: could not read segment file version in directory");
-      t.printStackTrace(out);
+      if (infoStream != null)
+        t.printStackTrace(infoStream);
       result.missingSegmentVersion = true;
       return result;
     } finally {
@@ -138,10 +322,13 @@ public class CheckIndex {
     result.segmentFormat = sFormat;
 
     if (onlySegments != null) {
-      out.print("\nChecking only these segments:");
+      result.partial = true;
+      if (infoStream != null)
+        infoStream.print("\nChecking only these segments:");
       Iterator it = onlySegments.iterator();
       while (it.hasNext()) {
-        out.print(" " + it.next());
+        if (infoStream != null)
+          infoStream.print(" " + it.next());
       }
       result.segmentsChecked.addAll(onlySegments);
       msg(":");
@@ -161,7 +348,7 @@ public class CheckIndex {
       final SegmentInfo info = sis.info(i);
       if (onlySegments != null && !onlySegments.contains(info.name))
         continue;
-      CheckIndexStatus.SegmentInfoStatus segInfoStat = new CheckIndexStatus.SegmentInfoStatus();
+      Status.SegmentInfoStatus segInfoStat = new Status.SegmentInfoStatus();
       result.segmentInfos.add(segInfoStat);
       msg("  " + (1+i) + " of " + numSegments + ": name=" + info.name + " docCount=" + info.docCount);
       segInfoStat.name = info.name;
@@ -200,9 +387,9 @@ public class CheckIndex {
           msg("    has deletions [delFileName=" + delFileName + "]");
           segInfoStat.hasDeletions = true;
           segInfoStat.deletionsFileName = delFileName;
-
         }
-        out.print("    test: open reader.........");
+        if (infoStream != null)
+          infoStream.print("    test: open reader.........");
         reader = SegmentReader.get(info);
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
@@ -219,7 +406,8 @@ public class CheckIndex {
           msg("OK");
         }
 
-        out.print("    test: fields, norms.......");
+        if (infoStream != null)
+          infoStream.print("    test: fields, norms.......");
         Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         Iterator it = fieldNames.iterator();
         while(it.hasNext()) {
@@ -231,7 +419,8 @@ public class CheckIndex {
         }
         msg("OK [" + fieldNames.size() + " fields]");
         segInfoStat.numFields = fieldNames.size();
-        out.print("    test: terms, freq, prox...");
+        if (infoStream != null)
+          infoStream.print("    test: terms, freq, prox...");
         final TermEnum termEnum = reader.terms();
         final TermPositions termPositions = reader.termPositions();
 
@@ -288,7 +477,8 @@ public class CheckIndex {
 
         msg("OK [" + termCount + " terms; " + totFreq + " terms/docs pairs; " + totPos + " tokens]");
 
-        out.print("    test: stored fields.......");
+        if (infoStream != null)
+          infoStream.print("    test: stored fields.......");
         int docCount = 0;
         long totFields = 0;
         for(int j=0;j<info.docCount;j++)
@@ -303,7 +493,8 @@ public class CheckIndex {
 
         msg("OK [" + totFields + " total field count; avg " + nf.format((((float) totFields)/docCount)) + " fields per doc]");
 
-        out.print("    test: term vectors........");
+        if (infoStream != null)
+          infoStream.print("    test: term vectors........");
         int totVectors = 0;
         for(int j=0;j<info.docCount;j++)
           if (!reader.isDeleted(j)) {
@@ -318,12 +509,10 @@ public class CheckIndex {
       } catch (Throwable t) {
         msg("FAILED");
         String comment;
-        if (doFix)
-          comment = "will remove reference to this segment (-fix is specified)";
-        else
-          comment = "would remove reference to this segment (-fix was not specified)";
+        comment = "fixIndex() would remove reference to this segment";
         msg("    WARNING: " + comment + "; full exception:");
-        t.printStackTrace(out);
+        if (infoStream != null)
+          t.printStackTrace(infoStream);
         msg("");
         result.totLoseDocCount += toLoseDocCount;
         result.numBadSegments++;
@@ -346,29 +535,70 @@ public class CheckIndex {
     return result;
   }
   
-  /** Repairs the index using previously returned result from
-   *  {@link #check}.  <b>WARNING</b>: this writes a new
-   *  segments file into the index, effectively removing
-   *  all documents in broken segments from the index.  BE
-   *  CAREFUL. */
-  static public void fix(CheckIndexStatus result) throws IOException {
+  /** Repairs the index using previously returned result
+   *  from {@link #checkIndex}.  Note that this does not
+   *  remove any of the unreferenced files after it's done;
+   *  you must separately open an {@link IndexWriter}, which
+   *  deletes unreferenced files when it's created.
+   *
+   * <p><b>WARNING</b>: this writes a
+   *  new segments file into the index, effectively removing
+   *  all documents in broken segments from the index.
+   *  BE CAREFUL.
+   *
+   * <p><b>WARNING</b>: Make sure you only call this when the
+   *  index is not opened  by any writer. */
+  public void fixIndex(Status result) throws IOException {
+    if (result.partial)
+      throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.commit(result.dir);
   }
 
-  static boolean assertsOn;
+  private static boolean assertsOn;
 
   private static boolean testAsserts() {
     assertsOn = true;
     return true;
   }
 
-  private static void msg(String msg) {
-    if (out != null) {
-      out.println(msg);
-    }
+  private static boolean assertsOn() {
+    assert testAsserts();
+    return assertsOn;
   }
 
-  public static void main(String[] args) throws Throwable {
+  /** Command-line interface to check and fix an index.
+
+    <p>
+    Run it like this:
+    <pre>
+    java -ea:org.apache.lucene... org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]
+    </pre>
+    <ul>
+    <li><code>-fix</code>: actually write a new segments_N file, removing any problematic segments
+
+    <li><code>-segment X</code>: only check the specified
+    segment(s).  This can be specified multiple times,
+    to check more than one segment, eg <code>-segment _2
+    -segment _a</code>.  You can't use this with the -fix
+    option.
+    </ul>
+
+    <p><b>WARNING</b>: <code>-fix</code> should only be used on an emergency basis as it will cause
+                       documents (perhaps many) to be permanently removed from the index.  Always make
+                       a backup copy of your index before running this!  Do not run this tool on an index
+                       that is actively being written to.  You have been warned!
+
+    <p>                Run without -fix, this tool will open the index, report version information
+                       and report any exceptions it hits and what action it would take if -fix were
+                       specified.  With -fix, this tool will remove any segments that have issues and
+                       write a new segments_N file.  This means all documents contained in the affected
+                       segments will be removed.
+
+    <p>
+                       This tool exits with exit code 1 if the index cannot be opened or has any
+                       corruption, else 0.
+   */
+  public static void main(String[] args) throws IOException {
 
     boolean doFix = false;
     List onlySegments = new ArrayList();
@@ -380,14 +610,14 @@ public class CheckIndex {
         i++;
       } else if (args[i].equals("-segment")) {
         if (i == args.length-1) {
-          msg("ERROR: missing name for -segment option");
+          System.out.println("ERROR: missing name for -segment option");
           System.exit(1);
         }
         onlySegments.add(args[i+1]);
         i += 2;
       } else {
         if (indexPath != null) {
-          msg("ERROR: unexpected extra argument '" + args[i] + "'");
+          System.out.println("ERROR: unexpected extra argument '" + args[i] + "'");
           System.exit(1);
         }
         indexPath = args[i];
@@ -396,8 +626,8 @@ public class CheckIndex {
     }
 
     if (indexPath == null) {
-      msg("\nERROR: index path not specified");
-      msg("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
+      System.out.println("\nERROR: index path not specified");
+      System.out.println("\nUsage: java org.apache.lucene.index.CheckIndex pathToIndex [-fix] [-segment X] [-segment Y]\n" +
                          "\n" +
                          "  -fix: actually write a new segments_N file, removing any problematic segments\n" +
                          "  -segment X: only check the specified segments.  This can be specified multiple\n" + 
@@ -415,40 +645,42 @@ public class CheckIndex {
                          "write a new segments_N file.  This means all documents contained in the affected\n" +
                          "segments will be removed.\n" +
                          "\n" +
-                         "This tool exits with exit code 1 if the index cannot be opened or has has any\n" +
+                         "This tool exits with exit code 1 if the index cannot be opened or has any\n" +
                          "corruption, else 0.\n");
       System.exit(1);
     }
 
+    if (!assertsOn())
+      System.out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
+
     if (onlySegments.size() == 0)
       onlySegments = null;
     else if (doFix) {
-      msg("ERROR: cannot specify both -fix and -segment");
+      System.out.println("ERROR: cannot specify both -fix and -segment");
       System.exit(1);
     }
 
-    assert testAsserts();
-    if (!assertsOn)
-      msg("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene', so assertions are enabled");
-
-    msg("\nOpening index @ " + indexPath + "\n");
+    System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
       dir = FSDirectory.getDirectory(indexPath);
     } catch (Throwable t) {
-      msg("ERROR: could not open directory \"" + indexPath + "\"; exiting");
-      t.printStackTrace(out);
+      System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
+      t.printStackTrace(System.out);
       System.exit(1);
     }
 
-    CheckIndexStatus result = check(dir, doFix, onlySegments);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(System.out);
+
+    Status result = checker.checkIndex(onlySegments);
 
     if (!result.clean) {
-      if (!doFix){
-        msg("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -fix were specified\n");
+      if (!doFix) {
+        System.out.println("WARNING: would write new segments file, and " + result.totLoseDocCount + " documents would be lost, if -fix were specified\n");
       } else {
-        msg("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
-        msg("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
+        System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
+        System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
         for(int s=0;s<5;s++) {
           try {
             Thread.sleep(1000);
@@ -457,15 +689,15 @@ public class CheckIndex {
             s--;
             continue;
           }
-          msg("  " + (5-i) + "...");
+          System.out.println("  " + (5-s) + "...");
         }
-        msg("Writing...");
-        CheckIndex.fix(result);
+        System.out.println("Writing...");
+        checker.fixIndex(result);
+        System.out.println("OK");
+        System.out.println("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
       }
-      msg("OK");
-      msg("Wrote new segments file \"" + result.newSegments.getCurrentSegmentFileName() + "\"");
     }
-    msg("");
+    System.out.println("");
 
     final int exitCode;
     if (result != null && result.clean == true)
