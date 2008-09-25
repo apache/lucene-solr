@@ -109,7 +109,7 @@ final class SegmentInfo {
     this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.hasProx = hasProx;
     delCount = 0;
-    assert docStoreOffset == -1 || docStoreSegment != null;
+    assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
   }
 
   /**

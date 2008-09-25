@@ -425,7 +425,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
-    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create, IndexWriter.MaxFieldLength.LIMITED);
+    final IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), create);
     writer.setMergePolicy(new LogDocMergePolicy());
     return writer;
   }
@@ -499,7 +499,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   public void testHangOnClose() throws IOException {
 
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergePolicy(new LogByteSizeMergePolicy());
     writer.setMaxBufferedDocs(5);
     writer.setUseCompoundFile(false);
@@ -525,7 +525,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.close();
 
     Directory dir2 = new MockRAMDirectory();
-    writer = new IndexWriter(dir2, false, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir2, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
     writer.setMergePolicy(lmp);

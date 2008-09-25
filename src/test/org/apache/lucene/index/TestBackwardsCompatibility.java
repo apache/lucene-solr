@@ -257,7 +257,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     Directory dir = FSDirectory.getDirectory(dirName);
 
     // open writer
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -295,7 +295,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
     writer.optimize();
     writer.close();
 
@@ -345,7 +345,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
     writer.optimize();
     writer.close();
 
@@ -402,7 +402,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
         boolean autoCommit = 0 == pass;
  
-        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
         writer.setRAMBufferSizeMB(16.0);
         for(int i=0;i<35;i++) {
           addDoc(writer, i);
