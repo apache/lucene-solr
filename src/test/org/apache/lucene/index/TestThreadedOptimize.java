@@ -53,7 +53,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
   public void runTest(Directory directory, boolean autoCommit, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, autoCommit, ANALYZER, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, autoCommit, ANALYZER, true);
     writer.setMaxBufferedDocs(2);
     if (merger != null)
       writer.setMergeScheduler(merger);
@@ -120,7 +120,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       if (!autoCommit) {
         writer.close();
-        writer = new IndexWriter(directory, autoCommit, ANALYZER, false, IndexWriter.MaxFieldLength.LIMITED);
+        writer = new IndexWriter(directory, autoCommit, ANALYZER, false);
         writer.setMaxBufferedDocs(2);
       }
 

@@ -125,7 +125,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMaxBufferedDocsChange() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), true);
     writer.setMaxBufferedDocs(101);
     writer.setMergeFactor(101);
     writer.setMergePolicy(new LogDocMergePolicy());
@@ -139,7 +139,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       }
       writer.close();
 
-      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), false);
       writer.setMaxBufferedDocs(101);
       writer.setMergeFactor(101);
       writer.setMergePolicy(new LogDocMergePolicy());
@@ -167,7 +167,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMergeDocCount0() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), true);
     writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(100);
@@ -182,7 +182,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     reader.deleteDocuments(new Term("content", "aaa"));
     reader.close();
 
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), false);
     writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(5);

@@ -114,7 +114,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Random r = new java.util.Random(17);
 
     public MockIndexWriter(Directory dir, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
-      super(dir, false, a, create, mfl);
+      super(dir, a, create, mfl);
     }
 
     boolean testPoint(String name) {

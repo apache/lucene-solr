@@ -67,7 +67,8 @@ API Changes
  1. LUCENE-1084: Changed all IndexWriter constructors to take an
     explicit parameter for maximum field size.  Deprecated all the
     pre-existing constructors; these will be removed in release 3.0.
-    (Steven Rowe via Mike McCandless)
+    NOTE: these new constructors set autoCommit to false.  (Steven
+    Rowe via Mike McCandless)
 
  2. LUCENE-584: Changed Filter API to return a DocIdSet instead of a
     java.util.BitSet. This allows using more efficient data structures

@@ -121,7 +121,7 @@ import java.util.Iterator;
   <p>When <code>autoCommit</code> is <code>true</code> then
   the writer will periodically commit on its own.  [<b>Deprecated</b>: Note that in 3.0, IndexWriter will
   no longer accept autoCommit=true (it will be hardwired to
-  false).  You can always call {@link IndexWriter#commit()} yourself
+  false).  You can always call {@link #commit()} yourself
   when needed]. There is
   no guarantee when exactly an auto commit will occur (it
   used to be after every flush, but it is now after every
@@ -523,8 +523,11 @@ public class IndexWriter {
    * Text will be analyzed with <code>a</code>.  If <code>create</code>
    * is true, then a new, empty index will be created in
    * <code>path</code>, replacing the index already there,
-   * if any.  Note that autoCommit defaults to true, but
-   * starting in 3.0 it will be hardwired to false.
+   * if any.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
@@ -544,7 +547,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, true, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit());
   }
 
   /**
@@ -567,7 +570,9 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(String,Analyzer,boolean,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(String,Analyzer,boolean,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -579,8 +584,10 @@ public class IndexWriter {
    * Text will be analyzed with <code>a</code>.  If <code>create</code>
    * is true, then a new, empty index will be created in
    * <code>path</code>, replacing the index already there, if any.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
@@ -600,7 +607,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, true, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit());
   }
 
   /**
@@ -623,7 +630,9 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(File,Analyzer,boolean,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(File,Analyzer,boolean,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -635,8 +644,10 @@ public class IndexWriter {
    * Text will be analyzed with <code>a</code>.  If <code>create</code>
    * is true, then a new, empty index will be created in
    * <code>d</code>, replacing the index already there, if any.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -656,7 +667,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, null, true, mfl.getLimit());
+    init(d, a, create, false, null, false, mfl.getLimit());
   }
 
   /**
@@ -678,7 +689,8 @@ public class IndexWriter {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
+   * @deprecated This constructor will be removed in the 3.0
+   *  release, and call {@link #commit()} when needed.
    *  Use {@link #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)} instead.
    */
   public IndexWriter(Directory d, Analyzer a, boolean create)
@@ -691,8 +703,10 @@ public class IndexWriter {
    * <code>path</code>, first creating it if it does not
    * already exist.  Text will be analyzed with
    * <code>a</code>.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
@@ -708,7 +722,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, true, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit());
   }
 
   /**
@@ -726,7 +740,8 @@ public class IndexWriter {
    * @throws IOException if the directory cannot be
    *  read/written to or if there is any other low-level
    *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
+   * @deprecated This constructor will be removed in the 3.0
+   *  release, and call {@link #commit()} when needed.
    *  Use {@link #IndexWriter(String,Analyzer,MaxFieldLength)} instead.
    */
   public IndexWriter(String path, Analyzer a)
@@ -739,8 +754,10 @@ public class IndexWriter {
    * <code>path</code>, first creating it if it does not
    * already exist.  Text will be analyzed with
    * <code>a</code>.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
@@ -756,7 +773,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, true, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit());
   }
 
   /**
@@ -775,7 +792,8 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(File,Analyzer,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(File,Analyzer,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(File path, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -787,8 +805,10 @@ public class IndexWriter {
    * <code>d</code>, first creating it if it does not
    * already exist.  Text will be analyzed with
    * <code>a</code>.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -804,7 +824,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, null, true, mfl.getLimit());
+    init(d, a, false, null, false, mfl.getLimit());
   }
 
   /**
@@ -823,7 +843,9 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,Analyzer,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(Directory,Analyzer,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -839,34 +861,6 @@ public class IndexWriter {
    * @param d the index directory
    * @param autoCommit see <a href="#autoCommit">above</a>
    * @param a the analyzer to use
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
-   *   via the MaxFieldLength constructor.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be
-   *  read/written to or if there is any other low-level
-   *  IO error
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit will be hardwired to false.  Use {@link
-   * #IndexWriter(Directory,Analyzer,MaxFieldLength)}
-   * instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, MaxFieldLength mfl)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, null, autoCommit, mfl.getLimit());
-  }
-
-  /**
-   * Constructs an IndexWriter for the index in
-   * <code>d</code>, first creating it if it does not
-   * already exist.  Text will be analyzed with
-   * <code>a</code>.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -875,7 +869,9 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,Analyzer,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(Directory,Analyzer,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -894,38 +890,6 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
-   *   via the MaxFieldLength constructor.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist and <code>create</code> is
-   *  <code>false</code> or if there is any other low-level
-   *  IO error
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit will be hardwired to false.  Use {@link
-   * #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
-   * instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl)
-       throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, null, autoCommit, mfl.getLimit());
-  }
-
-  /**
-   * Constructs an IndexWriter for the index in <code>d</code>.
-   * Text will be analyzed with <code>a</code>.  If <code>create</code>
-   * is true, then a new, empty index will be created in
-   * <code>d</code>, replacing the index already there, if any.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param create <code>true</code> to create the index or overwrite
-   *  the existing one; <code>false</code> to append to the existing
-   *  index
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -935,7 +899,9 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -947,8 +913,10 @@ public class IndexWriter {
    * IndexDeletionPolicy}, for the index in <code>d</code>,
    * first creating it if it does not already exist.  Text
    * will be analyzed with <code>a</code>.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -964,36 +932,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, deletionPolicy, true, mfl.getLimit());
-  }
-
-  /**
-   * Expert: constructs an IndexWriter with a custom {@link
-   * IndexDeletionPolicy}, for the index in <code>d</code>,
-   * first creating it if it does not already exist.  Text
-   * will be analyzed with <code>a</code>.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
-   *   via the MaxFieldLength constructor.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be
-   *  read/written to or if there is any other low-level
-   *  IO error
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit will be hardwired to false.  Use {@link
-   * #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)}
-   * instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, deletionPolicy, autoCommit, mfl.getLimit());
+    init(d, a, false, deletionPolicy, false, mfl.getLimit());
   }
 
   /**
@@ -1014,7 +953,9 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1028,8 +969,10 @@ public class IndexWriter {
    * <code>create</code> is true, then a new, empty index
    * will be created in <code>d</code>, replacing the index
    * already there, if any.
-   * Note that autoCommit defaults to true, but starting in 3.0
-   * it will be hardwired to false.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -1049,42 +992,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, deletionPolicy, true, mfl.getLimit());
-  }
-
-  /**
-   * Expert: constructs an IndexWriter with a custom {@link
-   * IndexDeletionPolicy}, for the index in <code>d</code>.
-   * Text will be analyzed with <code>a</code>.  If
-   * <code>create</code> is true, then a new, empty index
-   * will be created in <code>d</code>, replacing the index
-   * already there, if any.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param create <code>true</code> to create the index or overwrite
-   *  the existing one; <code>false</code> to append to the existing
-   *  index
-   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
-   *   via the MaxFieldLength constructor.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist and <code>create</code> is
-   *  <code>false</code> or if there is any other low-level
-   *  IO error
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit will be hardwired to false.  Use {@link
-   * #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)}
-   * instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
-       throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, deletionPolicy, autoCommit, mfl.getLimit());
+    init(d, a, create, false, deletionPolicy, false, mfl.getLimit());
   }
 
   /**
@@ -1111,7 +1019,9 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)} instead.
+   *  Use {@link
+   *  #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)}
+   *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy)
           throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1309,7 +1219,7 @@ public class IndexWriter {
    * documents are large, be sure to set this value high enough to accomodate
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
-   * By default, no more than {@link IndexWriter#DEFAULT_MAX_FIELD_LENGTH} terms
+   * By default, no more than {@link #DEFAULT_MAX_FIELD_LENGTH} terms
    * will be indexed for a field.
    */
   public void setMaxFieldLength(int maxFieldLength) {
@@ -2594,7 +2504,7 @@ public class IndexWriter {
       }
       success = true;
     } finally {
-      // Releaes the write lock if our caller held it, on
+      // Release the write lock if our caller held it, on
       // hitting an exception
       if (!success && haveWriteLock)
         releaseWrite();
@@ -4795,7 +4705,7 @@ public class IndexWriter {
 
   /**
    * Specifies maximum field length in {@link IndexWriter} constructors.
-   * {@link IndexWriter#setMaxFieldLength(int)} overrides the value set by
+   * {@link #setMaxFieldLength(int)} overrides the value set by
    * the constructor.
    */
   public static final class MaxFieldLength {
@@ -4838,7 +4748,7 @@ public class IndexWriter {
 
     /**
      *  Sets the maximum field length to 
-     * {@link IndexWriter#DEFAULT_MAX_FIELD_LENGTH} 
+     * {@link #DEFAULT_MAX_FIELD_LENGTH} 
      * */
     public static final MaxFieldLength LIMITED
         = new MaxFieldLength("LIMITED", DEFAULT_MAX_FIELD_LENGTH);

@@ -50,7 +50,7 @@ public class OpenIndexTask extends PerfTask {
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
                                          config.get("autocommit", DEFAULT_AUTO_COMMIT),
                                          runData.getAnalyzer(),
-                                         false, IndexWriter.MaxFieldLength.LIMITED);
+                                         false);
     CreateIndexTask.setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;

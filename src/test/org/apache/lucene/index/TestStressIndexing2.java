@@ -40,8 +40,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   public class MockIndexWriter extends IndexWriter {
 
-    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
-      super(dir, autoCommit, a, create, mfl);
+    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create) throws IOException {
+      super(dir, autoCommit, a, create);
     }
 
     boolean testPoint(String name) {
@@ -103,7 +103,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map docs = new HashMap();
     for(int iter=0;iter<3;iter++) {
-      IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
       w.setUseCompoundFile(false);
 
       /***
