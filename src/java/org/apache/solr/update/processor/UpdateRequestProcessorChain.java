@@ -25,14 +25,14 @@ import org.apache.solr.request.SolrQueryResponse;
  * 
  * This is the default implementation and can be configured via solrconfig.xml with:
  * 
- * <updateRequestProcessors name="key" default="true">
- *   <processor class="PathToClass1" />
- *   <processor class="PathToClass2" />
- *   <processor class="solr.LogUpdateProcessorFactory" >
- *     <int name="maxNumToLog">100</int>
- *   </processor>
- *   <processor class="solr.RunUpdateProcessorFactory" />
- * </updateRequestProcessors>
+ * &lt;updateRequestProcessors name="key" default="true"&gt;
+ *   &lt;processor class="PathToClass1" /&gt;
+ *   &lt;processor class="PathToClass2" /&gt;
+ *   &lt;processor class="solr.LogUpdateProcessorFactory" &gt;
+ *     &lt;int name="maxNumToLog"&gt;100&lt;/int&gt;
+ *   &lt;/processor&gt;
+ *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
+ * &lt;/updateRequestProcessors&gt;
  * 
  * @since solr 1.3
  */
