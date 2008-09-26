@@ -171,6 +171,6 @@ public class SolrInputDocument implements Iterable<SolrInputField>, Serializable
   @Override
   public String toString()
   {
-    return "SolrInputDocumnt["+_fields+"]";
+    return "SolrInputDocument["+_fields+"]";
   }
 }
