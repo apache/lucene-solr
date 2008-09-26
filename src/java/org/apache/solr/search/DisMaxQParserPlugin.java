@@ -151,7 +151,7 @@ class DismaxQParser extends QParser {
 
       /* build up phrase boosting queries */
 
-      /* if the userQuery already has some quotes, stip them out.
+      /* if the userQuery already has some quotes, strip them out.
        * we've already done the phrases they asked for in the main
        * part of the query, this is to boost docs that may not have
        * matched those phrases but do match looser phrases.
