@@ -44,7 +44,7 @@ public interface ContentStream {
    *     // use the stream...
    *   }
    *   finally {
-   *     IOUtils.closeQuietly(reader);
+   *     IOUtils.closeQuietly(stream);
    *   }
    *  </pre>
    *  
