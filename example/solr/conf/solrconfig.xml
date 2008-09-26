@@ -485,7 +485,7 @@
     </arr>
 
     If you register a searchComponent to one of the standard names, that will be used instead.
-    To insert handlers before or after the 'standard' components, use:
+    To insert components before or after the 'standard' components, use:
     
     <arr name="first-components">
       <str>myFirstComponentName</str>
