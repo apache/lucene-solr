@@ -32,27 +32,30 @@ import org.apache.solr.search.function.ValueSource;
 
 /**
  * Utility Field used for random sorting.  It should not be passed a value.
- * 
+ * <p>
  * This random sorting implementation uses the dynamic field name to set the
  * random 'seed'.  To get random sorting order, you need to use a random
  * dynamic field name.  For example, you will need to configure schema.xml:
- * 
- * <types>
+ * <pre>
+ * &lt;types&gt;
  *  ...
- *  <fieldType name="random" class="solr.RandomSortField" />
+ *  &lt;fieldType name="random" class="solr.RandomSortField" /&gt;
  *  ... 
- * </types>
- * <fields>
+ * &lt;/types&gt;
+ * &lt;fields&gt;
  *  ...
- *  <dynamicField name="random*" type="rand" indexed="true" stored="false"/>
+ *  &lt;dynamicField name="random*" type="rand" indexed="true" stored="false"/&gt;
  *  ...
- * </fields>
+ * &lt;/fields&gt;
+ * </pre>
  * 
- *  http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_1234%20desc
- *  http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_2345%20desc
- *  http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_ABDC%20desc
- *  http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_21%20desc
- *  
+ * Examples of queries:
+ * <ul>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_1234%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_2345%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_ABDC%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_21%20desc</li>
+ * </ul>
  * Note that multiple calls to the same URL will return the same sorting order.
  * 
  * @version $Id$

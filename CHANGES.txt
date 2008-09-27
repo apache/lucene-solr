@@ -57,7 +57,7 @@ Build
 
 Documentation
 ----------------------
-
+ 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas Lalevée via koji)
 
 
 
