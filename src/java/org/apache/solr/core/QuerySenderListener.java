@@ -33,7 +33,7 @@ class QuerySenderListener extends AbstractSolrEventListener {
   public QuerySenderListener(SolrCore core) {
     super(core);
   }
-  
+
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
@@ -69,8 +69,8 @@ class QuerySenderListener extends AbstractSolrEventListener {
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
       }
-      log.info("QuerySenderListener done.");
     }
+    log.info("QuerySenderListener done.");
   }
 
 
