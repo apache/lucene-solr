@@ -5,7 +5,7 @@
     Lucene Berkeley DB integration
   </description>
 
-  <property name="db.version" value="4.3.29" />
+  <property name="db.version" value="4.7.25" />
 
   <path id="db.jar">
     <pathelement location="lib/db-${db.version}.jar" />
