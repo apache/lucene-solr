@@ -349,7 +349,7 @@ Documentation
   1. LUCENE-1236:  Added some clarifying remarks to EdgeNGram*.java (Hiroaki Kawai via Grant Ingersoll)
   
   2. LUCENE-1157 and LUCENE-1256: HTML changes log, created automatically 
-     from CHANGES.txt. This HTML file is curretly visible only via developers page.     
+     from CHANGES.txt. This HTML file is currently visible only via developers page.     
      (Steven Rowe via Doron Cohen)
 
   3. LUCENE-1349: Fieldable can now be changed without breaking backward compatibility rules (within reason.  See the note at
