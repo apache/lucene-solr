@@ -5,10 +5,10 @@
     Lucene Berkeley DB Java Edition integration
   </description>
 
-  <property name="je.version" value="2.0.90" />
+  <property name="je.version" value="3.3.69" />
 
   <path id="je.jar">
-    <pathelement location="lib/je-${je.version}/lib/je.jar" />
+    <pathelement location="lib/je-${je.version}/lib/je-${je.version}.jar" />
   </path>
 
   <available classname="com.sleepycat.je.Database" property="je.jar.exists">
@@ -29,7 +29,7 @@
          dest="lib/je-${je.version}.zip" />
     <unzip src="lib/je-${je.version}.zip" dest="lib">
       <patternset>
-        <include name="je-${je.version}/lib/je.jar" />
+        <include name="je-${je.version}/lib/je-${je.version}.jar" />
       </patternset>
     </unzip>
   </target>

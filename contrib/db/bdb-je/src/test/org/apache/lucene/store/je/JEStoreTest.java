@@ -108,7 +108,7 @@ public class JEStoreTest extends TestCase {
             env.close();
     }
 
-    public void tesBytes() throws Exception {
+    public void testBytes() throws Exception {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
@@ -482,7 +482,7 @@ public class JEStoreTest extends TestCase {
         }
     }
 
-    public void tesArrays() throws Exception {
+    public void testArrays() throws Exception {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
