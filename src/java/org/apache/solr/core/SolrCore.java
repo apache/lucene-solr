@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
@@ -47,6 +48,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.Node;
@@ -90,7 +92,8 @@ public final class SolrCore implements SolrInfoMBean {
   private final Map<String,SearchComponent> searchComponents;
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
-  
+  private IndexDeletionPolicyWrapper solrDelPolicy;
+
   public long getStartTime() { return startTime; }
 
   /**
@@ -198,6 +201,17 @@ public final class SolrCore implements SolrInfoMBean {
     return infoRegistry;
   }
 
+  private void initDeletionPolicy() {
+    String className = solrConfig.get("mainIndex/deletionPolicy/@class", SolrDeletionPolicy.class.getName());
+    IndexDeletionPolicy delPolicy = createInstance(className, IndexDeletionPolicy.class, "Deletion Policy for SOLR");
+
+    Node node = (Node) solrConfig.evaluate("mainIndex/deletionPolicy", XPathConstants.NODE);
+    if (node != null) {
+      if (delPolicy instanceof NamedListInitializedPlugin)
+        ((NamedListInitializedPlugin) delPolicy).init(DOMUtil.childNodesToNamedList(node));
+    }
+    solrDelPolicy = new IndexDeletionPolicyWrapper(delPolicy);
+  }
 
   public List<SolrEventListener> parseListener(String path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
@@ -430,7 +444,9 @@ public final class SolrCore implements SolrInfoMBean {
       booleanQueryMaxClauseCount();
   
       parseListeners();
-  
+
+      initDeletionPolicy();
+
       initIndex();
       
       initWriters();
@@ -1452,6 +1468,9 @@ public final class SolrCore implements SolrInfoMBean {
     return coreDescriptor;
   }
 
+  public IndexDeletionPolicyWrapper getDeletionPolicy(){
+    return solrDelPolicy;
+  }
 
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info

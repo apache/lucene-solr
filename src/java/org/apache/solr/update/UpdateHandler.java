@@ -120,7 +120,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   protected SolrIndexWriter createMainIndexWriter(String name, boolean removeAllExisting) throws IOException {
-    return new SolrIndexWriter(name,core.getIndexDir(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig);
+    return new SolrIndexWriter(name,core.getIndexDir(), removeAllExisting, schema, core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
   }
 
   protected final Term idTerm(String readableId) {

@@ -113,18 +113,46 @@
          This is not needed if lock type is 'none' or 'single'
      -->
     <unlockOnStartup>false</unlockOnStartup>
+
+    <!--
+        Custom deletion policies can specified here. The class must
+        implement org.apache.lucene.index.IndexDeletionPolicy.
+
+        http://lucene.apache.org/java/2_3_2/api/org/apache/lucene/index/IndexDeletionPolicy.html
+
+        The standard Solr IndexDeletionPolicy implementation supports deleting
+        index commit points on number of commits, age of commit point and
+        optimized status.
+
+        The latest commit point should always be preserved regardless
+        of the criteria.
+    -->
+    <deletionPolicy class="solr.SolrDeletionPolicy">
+      <!-- Keep only optimized commit points -->
+      <str name="keepOptimizedOnly">false</str>
+      <!-- The maximum number of commit points to be kept -->
+      <str name="maxCommitsToKeep">1</str>
+      <!--
+          Delete all commit points once they have reached the given age.
+          Supports DateMathParser syntax e.g.
+          
+          <str name="maxCommitAge">30MINUTES</str>
+          <str name="maxCommitAge">1DAY</str>
+      -->
+    </deletionPolicy>
+
   </mainIndex>
-  
+
   <!--	Enables JMX if and only if an existing MBeanServer is found, use 
   		this if you want to configure JMX through JVM parameters. Remove
   		this to disable exposing Solr configuration and statistics to JMX.
-  		
+
 		If you want to connect to a particular server, specify the agentId
 		e.g. <jmx agentId="myAgent" />
-		
+
 		If you want to start a new MBeanServer, specify the serviceUrl
 		e.g <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr" />
-		
+
 		For more details see http://wiki.apache.org/solr/SolrJmx
   -->
   <jmx />
@@ -180,7 +208,7 @@
         queries.  An exception is thrown if exceeded.  -->
     <maxBooleanClauses>1024</maxBooleanClauses>
 
-    
+
     <!-- Cache used by SolrIndexSearcher for filters (DocSets),
          unordered sets of *all* documents that match a query.
          When a new searcher is opened, its caches may be prepopulated
@@ -256,7 +284,7 @@
          then documents 0 through 49 will be collected and cached.  Any further
          requests in that range can be satisfied via the cache.  -->
     <queryResultWindowSize>50</queryResultWindowSize>
-    
+
     <!-- Maximum number of documents to cache for any entry in the
          queryResultCache. -->
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
@@ -310,7 +338,7 @@
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
-        
+
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
          To get the behaviour of Solr 1.2 (ie: no caching related headers)
@@ -326,7 +354,7 @@
             You can change it to lastModFrom="dirLastMod" if you want the
             value to exactly corrispond to when the physical index was last
             modified.
-               
+
             etagSeed="..." is an option you can change to force the ETag
             header (and validation against If-None-Match requests) to be
             differnet even if the index has not changed (ie: when making
@@ -338,7 +366,7 @@
        <!-- If you include a <cacheControl> directive, it will be used to
             generate a Cache-Control header, as well as an Expires header
             if the value contains "max-age="
-               
+
             By default, no Cache-Control header is generated.
 
             You can use the <cacheControl> option even if you have set
@@ -347,8 +375,8 @@
        <!-- <cacheControl>max-age=30, public</cacheControl> -->
     </httpCaching>
   </requestDispatcher>
-  
-      
+
+
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the path or the qt (query type) param.
      Names starting with a '/' are accessed with the a path equal to the 
@@ -361,7 +389,7 @@
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>
-       <!-- 
+       <!--
        <int name="rows">10</int>
        <str name="fl">*</str>
        <str name="version">2.1</str>
@@ -398,7 +426,7 @@
      </str>
      <int name="ps">100</int>
      <str name="q.alt">*:*</str>
-     <!-- example highlighter config, enable per-query with hl=true -->     
+     <!-- example highlighter config, enable per-query with hl=true -->
      <str name="hl.fl">text features name</str>
      <!-- for this field, we want no fragmenting, just highlighting -->
      <str name="f.name.hl.fragsize">0</str>
@@ -462,7 +490,7 @@
       <str name="facet.query">price:[500 TO *]</str>
     </lst>
   </requestHandler>
-  
+
 
   <!--
    Search components are registered to SolrCore and used by Search Handlers
@@ -540,7 +568,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
- 
+
   <!-- a search component that enables you to configure the top results for
        a given query regardless of the normal lucene scoring.-->
   <searchComponent name="elevator" class="solr.QueryElevationComponent" >
@@ -548,7 +576,7 @@
     <str name="queryFieldType">string</str>
     <str name="config-file">elevate.xml</str>
   </searchComponent>
- 
+
   <!-- a request handler utilizing the elevator component -->
   <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
@@ -558,14 +586,14 @@
       <str>elevator</str>
     </arr>
   </requestHandler>
-  
+
 
   <!-- Update request handler.  
-  
-       Note: Since solr1.1 requestHandlers requires a valid content type header if posted in 
+
+       Note: Since solr1.1 requestHandlers requires a valid content type header if posted in
        the body. For example, curl now requires: -H 'Content-type:text/xml; charset=utf-8'
        The response format differs from solr1.1 formatting and returns a standard error code.
-       
+
        To enable solr1.1 behavior, remove the /update handler or change its path
     -->
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
@@ -575,7 +603,7 @@
    for debugging and as a token server for other types of applications
    -->
   <requestHandler name="/analysis" class="solr.AnalysisRequestHandler" />
-  
+
 
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
@@ -601,7 +629,7 @@
   </requestHandler>
   -->
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
-  
+
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="PingRequestHandler">
     <lst name="defaults">
@@ -610,7 +638,7 @@
       <str name="echoParams">all</str>
     </lst>
   </requestHandler>
-    
+
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
     <lst name="defaults">
@@ -618,7 +646,7 @@
      <str name="echoHandler">true</str>
     </lst>
   </requestHandler>
-  
+
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <!-- This could most likely be commented out in the "default" case -->
@@ -634,12 +662,12 @@
       <!-- slightly smaller fragsizes work better because of slop -->
       <int name="hl.fragsize">70</int>
       <!-- allow 50% slop on fragment sizes -->
-      <float name="hl.regex.slop">0.5</float> 
+      <float name="hl.regex.slop">0.5</float>
       <!-- a basic sentence pattern -->
       <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
     </lst>
    </fragmenter>
-   
+
    <!-- Configure the standard formatter -->
    <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
     <lst name="defaults">
@@ -648,8 +676,8 @@
     </lst>
    </formatter>
   </highlighting>
-  
-  
+
+
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered
     writer.
@@ -673,7 +701,7 @@
    -->
   <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
-  </queryResponseWriter> 
+  </queryResponseWriter>
 
 
   <!-- example of registering a query parser
@@ -683,11 +711,11 @@
   <!-- example of registering a custom function parser 
   <valueSourceParser name="myfunc" class="com.mycompany.MyValueSourceParser" />
   -->
-    
-  <!-- config for the admin interface --> 
+
+  <!-- config for the admin interface -->
   <admin>
     <defaultQuery>solr</defaultQuery>
-    
+
     <!-- configure a healthcheck file for servers behind a loadbalancer
     <healthcheck type="file">server-enabled</healthcheck>
     -->

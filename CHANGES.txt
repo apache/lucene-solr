@@ -35,6 +35,12 @@ New Features
     be identical to solr 1.3.  However, if you are using the .jar file, you can select 
     which logging implementation to use by dropping a different binding.  
     See: http://www.slf4j.org/  (ryan)
+
+ 2. SOLR-617: Allow configurable index deletion policy and provide a default implementation which
+    allows deletion of commit points on various criteria such as number of commits, age of commit
+    point and optimized status.
+    See http://lucene.apache.org/java/2_3_2/api/org/apache/lucene/index/IndexDeletionPolicy.html
+    (yonik, Noble Paul, Akshay Ukey via shalin)
     
 
 Optimizations

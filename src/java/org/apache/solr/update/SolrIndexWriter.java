@@ -17,10 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
@@ -117,6 +114,12 @@ public class SolrIndexWriter extends IndexWriter {
     super(getDirectory(path, config), config.luceneAutoCommit, schema.getAnalyzer(), create);
     init(name, schema, config);
   }
+
+  public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy) throws IOException {
+    super(getDirectory(path, config), schema.getAnalyzer(), create, delPolicy, new MaxFieldLength(IndexWriter.DEFAULT_MAX_FIELD_LENGTH));
+    init(name, schema, config);
+  }
+
 
   /**
    * use DocumentBuilder now...
