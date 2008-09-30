@@ -19,7 +19,7 @@ Build
 
 Test Cases
 
-======================= Release 2.4.0 (estimated: 2008-09-30) =======================
+======================= Release 2.4.0 (2008-10-03) =======================
 
 Changes in backwards compatibility policy
 
