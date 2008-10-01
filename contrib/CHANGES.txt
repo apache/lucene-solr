@@ -1,6 +1,6 @@
 Lucene contrib change Log
 
-======================= Trunk (not yet released) =======================
+======================= 2.4.0 2008-10-06 =======================
 
 Changes in runtime behavior
 
