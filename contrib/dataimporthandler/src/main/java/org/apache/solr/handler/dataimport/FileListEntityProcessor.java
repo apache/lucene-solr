@@ -79,7 +79,8 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     File dir = new File(baseDir);
     if (!dir.isDirectory())
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "'baseDir' should point to a directory");
+              "'baseDir' value: " + baseDir + " is not a directory");
+
     String r = context.getEntityAttribute(RECURSIVE);
     if (r != null)
       recursive = Boolean.parseBoolean(r);
