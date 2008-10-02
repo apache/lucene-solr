@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -140,7 +139,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   protected final Lock iwAccess, iwCommit;
 
   protected IndexWriter writer;
-  protected SolrIndexSearcher searcher;
 
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
@@ -156,7 +154,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   private void deleteAll() throws IOException {
     core.log.info(core.getLogId()+"REMOVING ALL DOCUMENTS FROM INDEX");
     closeWriter();
-    closeSearcher();
     writer = createMainIndexWriter("DirectUpdateHandler2", true);
   }
 
@@ -176,22 +173,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       // if an exception causes the writelock to not be
       // released, we could try and delete it here
       writer=null;
-    }
-  }
-
-  protected void openSearcher() throws IOException {
-    if (searcher==null) {
-      searcher = core.newSearcher("DirectUpdateHandler2");
-    }
-  }
-
-  protected void closeSearcher() throws IOException {
-    try {
-      if (searcher!=null) searcher.close();
-    } finally {
-      // if an exception causes a lock to not be
-      // released, we could try to delete it.
-      searcher=null;
     }
   }
 
@@ -216,7 +197,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       // protected with iwCommit (which iwAccess excludes from this block).
       synchronized (this) {
         // adding document -- prep writer
-        closeSearcher();
         openWriter();
         tracker.addedDocument();
       } // end synchronized block
@@ -267,7 +247,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     iwCommit.lock();
     try {
-      closeSearcher();
       openWriter();
       writer.deleteDocuments(idTerm.createTerm(idFieldType.toInternal(cmd.id)));
     } finally {
@@ -307,7 +286,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
        if (delAll) {
          deleteAll();
        } else {
-        closeSearcher();
         openWriter();
         writer.deleteDocuments(q);         
        }
@@ -349,12 +327,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       log.info("start "+cmd);
 
       if (cmd.optimize) {
-        closeSearcher();
         openWriter();
         writer.optimize(cmd.maxOptimizeSegments);
       }
 
-      closeSearcher();
       closeWriter();
 
       callPostCommitCallbacks();
@@ -405,7 +381,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         tracker.pending = null;
       }
       tracker.scheduler.shutdown(); 
-      closeSearcher();
       closeWriter();
     } finally {
       iwCommit.unlock();
