@@ -141,26 +141,25 @@ public class FuzzyLikeThisQuery extends Query
                     }
                 }
                 while(fe.next());
-                if(numVariants==0)
+                if(numVariants>0)
                 {
-                    //no variants to rank here
-                    break;
+	                int avgDf=totalVariantDocFreqs/numVariants;
+	                if(df==0)//no direct match we can use as df for all variants 
+	                {
+	                    df=avgDf; //use avg df of all variants
+	                }
+	                
+	                // take the top variants (scored by edit distance) and reset the score
+	                // to include an IDF factor then add to the global queue for ranking 
+	                // overall top query terms
+	                int size = variantsQ.size();
+	                for(int i = 0; i < size; i++)
+	                {
+	                  ScoreTerm st = (ScoreTerm) variantsQ.pop();
+	                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
+	                  q.insert(st);
+	                }                            
                 }
-                int avgDf=totalVariantDocFreqs/numVariants;
-                if(df==0)//no direct match we can use as df for all variants 
-                {
-                    df=avgDf; //use avg df of all variants
-                }
-                
-                // take the top variants (scored by edit distance) and reset the score
-                // to include an IDF factor then add to the global queue for ranking overall top query terms
-                int size = variantsQ.size();
-                for(int i = 0; i < size; i++)
-                {
-                  ScoreTerm st = (ScoreTerm) variantsQ.pop();
-                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
-                  q.insert(st);
-                }                            
         	}
         }     
     }
