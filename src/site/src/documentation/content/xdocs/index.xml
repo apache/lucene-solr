@@ -40,6 +40,10 @@
     <section id="news">
       <title>News</title>
 
+       <section><title>03 October 2008 - Solr Logo Contest</title>
+	<p>By popular demand, Solr is holding a contest to pick a new Solr logo.  Details about how to submit an entry can be found <a href="http://wiki.apache.org/solr/LogoContest">on the wiki</a>.  The Deadline for submissions is November 20th, 2008 @ 11:59PM GMT.
+	</p>
+       </section>
        <section><title>15 September 2008 - Solr 1.3.0 Available</title>
 		<p>Solr 1.3.0 is available for public download.  This version contains many enhancements and bug fixes, including distributed search capabilities,
 			Lucene 2.3.x performance improvements and many others.
