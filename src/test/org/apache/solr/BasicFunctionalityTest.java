@@ -21,6 +21,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.solr.common.params.AppendedSolrParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -297,14 +298,14 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
     SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
-    assertEquals("string value", req.getParam("string"));
-    assertEquals("array", req.getParam("array"));
+    assertEquals("string value", req.getParams().get("string"));
+    assertEquals("array", req.getParams().get("array"));
 
-    String[] stringParams = req.getParams("string");
+    String[] stringParams = req.getParams().getParams("string");
     assertEquals(1, stringParams.length);
     assertEquals("string value", stringParams[0]);
 
-    String[] arrayParams = req.getParams("array");
+    String[] arrayParams = req.getParams().getParams("array");
     assertEquals(2, arrayParams.length);
     assertEquals("array", arrayParams[0]);
     assertEquals("value", arrayParams[1]);
@@ -337,7 +338,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   
   public void testTermVectorFields() {
     
-    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile());
+    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
     Field luf; // Lucene field
 
@@ -506,7 +507,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }   
   public void testCompressableFieldType() {
     
-    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile());
+    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
     SchemaField f; // Solr field type
     Field luf; // Lucene field
 
@@ -538,7 +539,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
    
     SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(req, rsp);
+    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = (DocList) rsp.getValues().get("response");
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
@@ -558,7 +559,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
     SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(req, rsp);
+    core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = (DocList) rsp.getValues().get("response");
     DocIterator di = dl.iterator();    

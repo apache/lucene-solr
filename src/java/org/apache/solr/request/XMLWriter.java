@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -61,18 +62,18 @@ final public class XMLWriter {
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
 
-    String ver = req.getParam("version");
+    String ver = req.getParams().get(CommonParams.VERSION);
 
     writer.write(XML_START1);
 
-    String stylesheet = req.getParam("stylesheet");
+    String stylesheet = req.getParams().get("stylesheet");
     if (stylesheet != null && stylesheet.length() > 0) {
       writer.write(XML_STYLESHEET);
       writer.write(stylesheet);
       writer.write(XML_STYLESHEET_END);
     }
 
-    String noSchema = req.getParam("noSchema");
+    String noSchema = req.getParams().get("noSchema");
     // todo - change when schema becomes available?
     if (false && noSchema == null)
       writer.write(XML_START2_SCHEMA);
@@ -87,7 +88,7 @@ final public class XMLWriter {
     XMLWriter xw = new XMLWriter(writer, req.getSchema(), req, ver);
     xw.defaultFieldList = rsp.getReturnFields();
 
-    String indent = req.getParam("indent");
+    String indent = req.getParams().get("indent");
     if (indent != null) {
       if ("".equals(indent) || "off".equals(indent)) {
         xw.setIndent(false);

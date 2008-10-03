@@ -178,7 +178,7 @@ public class SolrPluginUtils {
   public static int setReturnFields(SolrQueryRequest req,
                                     SolrQueryResponse res) {
 
-    return setReturnFields(req.getParam(FL), res);
+    return setReturnFields(req.getParams().get(org.apache.solr.common.params.CommonParams.FL), res);
   }
 
   /**
@@ -380,14 +380,14 @@ public class SolrPluginUtils {
                                           DocList results)
     throws IOException {
 
-    String debug = req.getParam(org.apache.solr.common.params.CommonParams.DEBUG_QUERY);
+    String debug = req.getParams().get(org.apache.solr.common.params.CommonParams.DEBUG_QUERY);
 
     NamedList dbg = null;
     if (debug!=null) {
       dbg = new SimpleOrderedMap();
 
       /* userQuery may have been pre-processes .. expose that */
-      dbg.add("rawquerystring", req.getQueryString());
+      dbg.add("rawquerystring", req.getParams().get(org.apache.solr.common.params.CommonParams.Q));
       dbg.add("querystring", userQuery);
 
       /* QueryParsing.toString isn't perfect, use it to see converted
@@ -399,7 +399,7 @@ public class SolrPluginUtils {
 
       dbg.add("explain", getExplainList
               (query, results, req.getSearcher(), req.getSchema()));
-      String otherQueryS = req.getParam("explainOther");
+      String otherQueryS = req.getParams().get(org.apache.solr.common.params.CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
           (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
@@ -802,7 +802,7 @@ public class SolrPluginUtils {
    */
   public static Sort getSort(SolrQueryRequest req) {
 
-    String sort = req.getParam(org.apache.solr.common.params.CommonParams.SORT);
+    String sort = req.getParams().get(org.apache.solr.common.params.CommonParams.SORT);
     if (null == sort || sort.equals("")) {
       return null;
     }

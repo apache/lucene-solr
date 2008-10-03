@@ -300,7 +300,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     TokenStream tokens = analyzer.tokenStream( null, new StringReader( query ) );
     Token token = tokens.next();
     while( token != null ) {
-      norm.append( token.termText() );
+      norm.append( new String(token.termBuffer(), 0, token.termLength()) );
       token = tokens.next();
     }
     return norm.toString();

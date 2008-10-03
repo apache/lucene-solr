@@ -131,7 +131,7 @@ class FindClasses {
     try {
       for (int i =0; i < jars.length; i++) {
         jarFiles[i] = new JarFile(jars[i]);
-        urls[i] = jars[i].toURL();
+        urls[i] = jars[i].toURI().toURL();
       }
     } catch (MalformedURLException e) {
       throw new RuntimeException

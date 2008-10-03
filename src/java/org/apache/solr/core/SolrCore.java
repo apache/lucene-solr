@@ -39,7 +39,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
-import org.apache.solr.update.DirectUpdateHandler;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
@@ -487,7 +487,7 @@ public final class SolrCore implements SolrInfoMBean {
         getSearcher(false,false,null);
   
         updateHandler = createUpdateHandler(
-          solrConfig.get("updateHandler/@class", DirectUpdateHandler.class.getName())
+          solrConfig.get("updateHandler/@class", DirectUpdateHandler2.class.getName())
         );
 
         infoRegistry.put("updateHandler", updateHandler);
@@ -1225,8 +1225,8 @@ public final class SolrCore implements SolrInfoMBean {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
-      log.warn(logid+"Null Request Handler '" + req.getQueryType() +"' :" + req);
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getQueryType() + "'", true);
+      log.warn(logid+"Null Request Handler '" + req.getParams().get(CommonParams.QT) +"' :" + req);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getParams().get(CommonParams.QT) + "'", true);
     }
     // setup response header and handle request
     final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
@@ -1355,7 +1355,7 @@ public final class SolrCore implements SolrInfoMBean {
    * 'wt' parameter, attempts to find that one; otherwise return the default writer.
    */
   public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
-    return getQueryResponseWriter(request.getParam("wt")); 
+    return getQueryResponseWriter(request.getParams().get(CommonParams.WT)); 
   }
 
   private final Map<String, QParserPlugin> qParserPlugins = new HashMap<String, QParserPlugin>();

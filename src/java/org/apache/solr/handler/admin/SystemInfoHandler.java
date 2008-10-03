@@ -73,7 +73,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
     IndexSchema schema = core.getSchema();
-    info.add( "schema", schema != null ? schema.getName():"no schema!" );
+    info.add( "schema", schema != null ? schema.getSchemaName():"no schema!" );
     
     // Host
     InetAddress addr = InetAddress.getLocalHost();

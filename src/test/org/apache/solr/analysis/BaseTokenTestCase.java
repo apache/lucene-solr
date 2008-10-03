@@ -37,10 +37,10 @@ public abstract class BaseTokenTestCase extends AnalysisTestCase
     StringBuffer out = new StringBuffer();
     Token t = in.next();
     if (null != t)
-      out.append(t.termText());
+      out.append(new String(t.termBuffer(), 0, t.termLength()));
     
     for (t = in.next(); null != t; t = in.next()) {
-      out.append(" ").append(t.termText());
+      out.append(" ").append(new String(t.termBuffer(), 0, t.termLength()));
     }
     in.close();
     return out.toString();
@@ -49,7 +49,7 @@ public abstract class BaseTokenTestCase extends AnalysisTestCase
   public List<String> tok2str(Iterable<Token> tokLst) {
     ArrayList<String> lst = new ArrayList<String>();
     for ( Token t : tokLst ) {
-      lst.add( t.termText());
+      lst.add( new String(t.termBuffer(), 0, t.termLength()));
     }
     return lst;
   }
@@ -70,7 +70,7 @@ public abstract class BaseTokenTestCase extends AnalysisTestCase
     for (Iterator iter = a.iterator(); iter.hasNext();) {
       Token tok = (Token)iter.next();
       pos += tok.getPositionIncrement();
-      if (!tokAt(b, tok.termText(), pos
+      if (!tokAt(b, new String(tok.termBuffer(), 0, tok.termLength()), pos
               , checkOff ? tok.startOffset() : -1
               , checkOff ? tok.endOffset() : -1
               )) 
@@ -85,7 +85,7 @@ public abstract class BaseTokenTestCase extends AnalysisTestCase
     for (Iterator iter = lst.iterator(); iter.hasNext();) {
       Token tok = (Token)iter.next();
       pos += tok.getPositionIncrement();
-      if (pos==tokPos && tok.termText().equals(val)
+      if (pos==tokPos && new String(tok.termBuffer(), 0, tok.termLength()).equals(val)
           && (startOff==-1 || tok.startOffset()==startOff)
           && (endOff  ==-1 || tok.endOffset()  ==endOff  )
            )

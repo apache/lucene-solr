@@ -95,11 +95,10 @@ public class LegacyDateFieldTest extends TestCase {
     assertItoR("1995-12-31T23:59:59Z",     "1995-12-31T23:59:59");
   }
   public void testFormatter() {
-    DateFormat fmt = f.getThreadLocalDateFormat();
-    assertEquals("1970-01-01T00:00:00.005", fmt.format(new Date(5)));
+    assertEquals("1970-01-01T00:00:00.005", f.formatDate(new Date(5)));
     // all of this is broken behavior
-    assertEquals("1970-01-01T00:00:00.000", fmt.format(new Date(0)));
-    assertEquals("1970-01-01T00:00:00.370", fmt.format(new Date(370)));
-    assertEquals("1970-01-01T00:00:00.900", fmt.format(new Date(900)));
+    assertEquals("1970-01-01T00:00:00.000", f.formatDate(new Date(0)));
+    assertEquals("1970-01-01T00:00:00.370", f.formatDate(new Date(370)));
+    assertEquals("1970-01-01T00:00:00.900", f.formatDate(new Date(900)));
   }
 }

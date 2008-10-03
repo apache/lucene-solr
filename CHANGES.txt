@@ -41,6 +41,9 @@ New Features
     point and optimized status.
     See http://lucene.apache.org/java/2_3_2/api/org/apache/lucene/index/IndexDeletionPolicy.html
     (yonik, Noble Paul, Akshay Ukey via shalin)
+ 
+ 3. SOLR-657: Replace deprecated calls with the non-deprecated equivalents
+    (Lars Kotthoff via ryan)
     
 
 Optimizations
@@ -55,6 +58,7 @@ Bug Fixes
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
 
  2. SOLR-771: CoreAdminHandler STATUS should display 'normalized' paths (koji, hossman, shalin)
+
 
 Build
 ----------------------

@@ -18,6 +18,7 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.document.Document;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.SolrDocument;
@@ -54,7 +55,7 @@ public abstract class TextResponseWriter {
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;
-    String indent = req.getParam("indent");
+    String indent = req.getParams().get("indent");
     if (indent != null && !"".equals(indent) && !"off".equals(indent)) {
       doIndent=true;
     }

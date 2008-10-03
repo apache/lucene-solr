@@ -97,7 +97,7 @@ public class FieldQParserPlugin extends QParserPlugin {
           return null;
         else if (lst.size() == 1) {
           t = lst.get(0);
-          return new TermQuery(new Term(field, t.termText()));
+          return new TermQuery(new Term(field, new String(t.termBuffer(), 0, t.termLength())));
         } else {
           if (severalTokensAtSamePosition) {
             if (positionCount == 1) {
@@ -106,7 +106,7 @@ public class FieldQParserPlugin extends QParserPlugin {
               for (int i = 0; i < lst.size(); i++) {
                 t = (org.apache.lucene.analysis.Token) lst.get(i);
                 TermQuery currentQuery = new TermQuery(
-                        new Term(field, t.termText()));
+                        new Term(field, new String(t.termBuffer(), 0, t.termLength())));
                 q.add(currentQuery, BooleanClause.Occur.SHOULD);
               }
               return q;
@@ -122,7 +122,7 @@ public class FieldQParserPlugin extends QParserPlugin {
                   mpq.add((Term[])multiTerms.toArray(new Term[0]));
                   multiTerms.clear();
                 }
-                multiTerms.add(new Term(field, t.termText()));
+                multiTerms.add(new Term(field, new String(t.termBuffer(), 0, t.termLength())));
               }
               mpq.add((Term[])multiTerms.toArray(new Term[0]));
               return mpq;
@@ -132,7 +132,8 @@ public class FieldQParserPlugin extends QParserPlugin {
             PhraseQuery q = new PhraseQuery();
             q.setSlop(phraseSlop);
             for (int i = 0; i < lst.size(); i++) {
-              q.add(new Term(field, lst.get(i).termText()));
+              Token token = lst.get(i);
+              q.add(new Term(field, new String(token.termBuffer(), 0, token.termLength())));
             }
             return q;
           }

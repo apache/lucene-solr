@@ -37,7 +37,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
 
   public void testRequireUniqueKey() throws Exception 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     
     UpdateHandler updater = core.getUpdateHandler();
     

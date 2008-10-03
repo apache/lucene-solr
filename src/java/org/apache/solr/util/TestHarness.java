@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
@@ -117,7 +118,7 @@ public class TestHarness {
       public TestHarness( String dataDirectory,
                           SolrConfig solrConfig,
                           String schemaFile) {
-     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile));
+     this( dataDirectory, solrConfig, new IndexSchema(solrConfig, schemaFile, null));
    }
    /**
     * @param dataDirectory path for index data, will not be cleaned up
@@ -300,7 +301,7 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(SolrQueryRequest req) throws IOException, Exception {
-    return query(req.getQueryType(), req);
+    return query(req.getParams().get(CommonParams.QT), req);
   }
 
   /**

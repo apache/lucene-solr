@@ -134,7 +134,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     List<String> tokList = new ArrayList<String>();
     try {
       for( Token token = ts.next(); token != null; token = ts.next() ){
-        String text = token.termText();
+        String text = new String(token.termBuffer(), 0, token.termLength());
         if( text.length() > 0 )
           tokList.add( text );
       }

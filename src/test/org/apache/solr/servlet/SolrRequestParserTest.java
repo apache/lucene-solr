@@ -56,7 +56,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     String body2 = "qwertasdfgzxcvb";
     String body3 = "1234567890";
     
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     
     Map<String,String[]> args = new HashMap<String, String[]>();
     args.put( CommonParams.STREAM_BODY, new String[] {body1} );
@@ -110,7 +110,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
       return;
     }
 
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     
     Map<String,String[]> args = new HashMap<String, String[]>();
     args.put( CommonParams.STREAM_URL, new String[] {url} );

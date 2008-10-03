@@ -35,7 +35,7 @@ public class HighlighterConfigTest extends AbstractSolrTestCase {
 	  
 	  public void testConfig()
 	  {
-	    SolrHighlighter highlighter = SolrCore.getSolrCore().getHighlighter();
+	    SolrHighlighter highlighter = h.getCore().getHighlighter();
 	    System.out.println( "highlighter" );
 
 	    assertTrue( highlighter instanceof DummyHighlighter );

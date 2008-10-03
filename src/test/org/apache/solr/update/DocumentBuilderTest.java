@@ -51,7 +51,7 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
 
   public void testNullField() 
   {
-    SolrCore core = SolrCore.getSolrCore();
+    SolrCore core = h.getCore();
     
     // make sure a null value is not indexed
     SolrInputDocument doc = new SolrInputDocument();

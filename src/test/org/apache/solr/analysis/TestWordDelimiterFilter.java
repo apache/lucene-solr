@@ -147,17 +147,18 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
 
     int i=0;
     for(Token t; (t=wdf.next())!=null;) {
-      if (t.termText().equals("foo")) {
+      String termText = new String(t.termBuffer(), 0, t.termLength());
+      if (termText.equals("foo")) {
         assertEquals(5, t.startOffset());
         assertEquals(8, t.endOffset());
         i++;
       }
-      if (t.termText().equals("bar")) {
+      if (termText.equals("bar")) {
         assertEquals(9, t.startOffset());
         assertEquals(12, t.endOffset());
         i++;
       }
-      if (t.termText().equals("foobar")) {
+      if (termText.equals("foobar")) {
         assertEquals(5, t.startOffset());
         assertEquals(12, t.endOffset());
         i++;

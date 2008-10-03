@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -47,7 +48,7 @@ class QuerySenderListener extends AbstractSolrEventListener {
         };
 
         SolrQueryResponse rsp = new SolrQueryResponse();
-        core.execute(req,rsp);
+        core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
         // Retrieve the Document instances (not just the ids) to warm
         // the OS disk cache, and any Solr document cache.  Only the top

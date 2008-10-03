@@ -325,7 +325,7 @@ class MultiValueTokenStream extends TokenStream {
     }
     // create an modified token which is the offset into the concatenated
     // string of all values
-    Token offsetToken = new Token(nextToken.termText(), 
+    Token offsetToken = new Token(new String(nextToken.termBuffer(), 0, nextToken.termLength()), 
                                   nextToken.startOffset() + curOffset,
                                   nextToken.endOffset() + curOffset);
     offsetToken.setPositionIncrement(nextToken.getPositionIncrement() + extra*10);

@@ -65,7 +65,7 @@ public class TestPatternTokenizerFactory extends AnalysisTestCase
         int i=0;
         for( Token t = stream.next(); null != t; t = stream.next() ) 
         {
-          assertEquals( "split: "+test[1] + " "+i, split[i++], t.termText() );
+          assertEquals( "split: "+test[1] + " "+i, split[i++], new String(t.termBuffer(), 0, t.termLength()) );
         }
       }
     } 

@@ -99,11 +99,10 @@ public class DateFieldTest extends LegacyDateFieldTest {
   }
   
   public void testFormatter() {
-    DateFormat fmt = f.getThreadLocalDateFormat();
-    assertEquals("1970-01-01T00:00:00.005", fmt.format(new Date(5)));
-    assertEquals("1970-01-01T00:00:00",     fmt.format(new Date(0)));
-    assertEquals("1970-01-01T00:00:00.37",  fmt.format(new Date(370)));
-    assertEquals("1970-01-01T00:00:00.9",   fmt.format(new Date(900)));
+    assertEquals("1970-01-01T00:00:00.005", f.formatDate(new Date(5)));
+    assertEquals("1970-01-01T00:00:00",     f.formatDate(new Date(0)));
+    assertEquals("1970-01-01T00:00:00.37",  f.formatDate(new Date(370)));
+    assertEquals("1970-01-01T00:00:00.9",   f.formatDate(new Date(900)));
 
   }
 
