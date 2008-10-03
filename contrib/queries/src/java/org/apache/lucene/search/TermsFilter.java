@@ -48,8 +48,38 @@ public class TermsFilter extends Filter
 	{
 		terms.add(term);
 	}
+	
+	
 
 	/* (non-Javadoc)
+	 * @see org.apache.lucene.search.Filter#bits(org.apache.lucene.index.IndexReader)
+	 */
+	public BitSet bits(IndexReader reader) throws IOException
+	{
+		BitSet result=new BitSet(reader.maxDoc());
+        TermDocs td = reader.termDocs();
+        try
+        {
+            for (Iterator iter = terms.iterator(); iter.hasNext();)
+            {
+                Term term = (Term) iter.next();
+                td.seek(term);
+                while (td.next())
+                {
+                    result.set(td.doc());
+                }
+            }
+        }
+        finally
+        {
+            td.close();
+        }
+        return result;
+	}
+
+
+
+/* (non-Javadoc)
    * @see org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.IndexReader)
 	 */
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException
