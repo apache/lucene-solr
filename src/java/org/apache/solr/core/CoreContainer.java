@@ -266,7 +266,10 @@ public class CoreContainer
   }
 
   /**
-   * Registers a SolrCore descriptor in the registry.
+   * Registers a SolrCore descriptor in the registry using the specified name.
+   *
+   * If returnPrev==false, the old core, if different, is closed.
+   *
    * @return a previous core having the same name if it existed and returnPrev==true
    */
   public SolrCore register(String name, SolrCore core, boolean returnPrev) {
@@ -299,6 +302,15 @@ public class CoreContainer
     }
   }
 
+
+  /**
+   * Registers a SolrCore descriptor in the registry using the core's name.
+   * If returnPrev==false, the old core, if different, is closed.
+   * @return a previous core having the same name if it existed and returnPrev==true
+   */
+  public SolrCore register(SolrCore core, boolean returnPrev) {
+    return register(core.getName(), core, returnPrev);
+  }
 
   /**
    * Creates a new core based on a descriptor but does not register it.
