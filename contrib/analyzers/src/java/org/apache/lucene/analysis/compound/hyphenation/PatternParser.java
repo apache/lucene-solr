@@ -266,8 +266,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   //
   // EntityResolver methods
   //
-  public InputSource resolveEntity(String publicId, String systemId)
-  throws SAXException, IOException {
+  public InputSource resolveEntity(String publicId, String systemId) {
     return HyphenationDTDGenerator.generateDTD();
   }
 
