@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.common.params.FacetParams;
+
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
@@ -113,5 +115,18 @@ public class SolrQueryTest extends TestCase {
       assertEquals(10, q.setStart(10).getStart().intValue());
       assertEquals("foo", q.setQueryType("foo").getQueryType());
       assertEquals(10, q.setTimeAllowed(10).getTimeAllowed().intValue());
+      
+      // non-standard
+      assertEquals("foo", q.setFacetPrefix("foo").get( FacetParams.FACET_PREFIX, null ) );
+      assertEquals("foo", q.setFacetPrefix("a", "foo").getFieldParam( "a", FacetParams.FACET_PREFIX, null ) );
+
+      assertEquals( Boolean.TRUE, q.setMissing(Boolean.TRUE.toString()).getBool( FacetParams.FACET_MISSING ) );
+      assertEquals( Boolean.FALSE, q.setFacetMissing( Boolean.FALSE ).getBool( FacetParams.FACET_MISSING ) );      
+      assertEquals( "true", q.setParam( "xxx", true ).getParams( "xxx" )[0] );
+  }
+  
+  public void testOrder() {
+    assertEquals( SolrQuery.ORDER.asc, SolrQuery.ORDER.desc.reverse() );
+    assertEquals( SolrQuery.ORDER.desc, SolrQuery.ORDER.asc.reverse() );
   }
 }

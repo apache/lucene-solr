@@ -184,9 +184,16 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(FacetParams.FACET_MINCOUNT, 1);
   }
 
-  public SolrQuery setMissing(String fld) {
-    this.set(FacetParams.FACET_MISSING, fld);
+  public SolrQuery setFacetMissing(Boolean v) {
+    this.set(FacetParams.FACET_MISSING, v);
     return this;
+  }
+
+  /**
+   * @deprecated use {@link #setFacetMissing(String)}
+   */
+  public SolrQuery setMissing(String fld) {
+    return setFacetMissing(Boolean.valueOf(fld));
   }
 
   /** get facet sort
