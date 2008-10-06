@@ -168,6 +168,11 @@ public abstract class Directory {
    * If a file in src already exists in dest then the
    * one in dest will be blindly overwritten.
    *
+   * <p><b>NOTE:</b> the source directory cannot change
+   * while this method is running.  Otherwise the results
+   * are undefined and you could easily hit a
+   * FileNotFoundException.
+   *
    * @param src source directory
    * @param dest destination directory
    * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
