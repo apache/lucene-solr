@@ -100,7 +100,8 @@ public class  FacetComponent extends SearchComponent
         // scalability.
         for (ShardRequest sreq : rb.outgoing) {
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS)!=0
-                  && sreq.shards != null & sreq.shards.length==1
+                  && sreq.shards != null 
+                  && sreq.shards.length==1
                   && sreq.shards[0].equals(shard))
           {
             refine = sreq;
