@@ -1440,8 +1440,10 @@ public final class SolrCore implements SolrInfoMBean {
         // Hide everything...
         Set<String> hide = new HashSet<String>();
         File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
-        for( String file : configdir.list() ) {
-          hide.add( file.toUpperCase() );
+        if( configdir.exists() && configdir.isDirectory() ) {
+          for( String file : configdir.list() ) {
+            hide.add( file.toUpperCase() );
+          }
         }
         
         // except the "gettable" list
