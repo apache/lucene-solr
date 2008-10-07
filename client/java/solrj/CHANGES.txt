@@ -18,6 +18,8 @@ Detailed Change List
 New Features
 ----------------------
 
+ 1. SOLR-794: added escape() method to ClientUtils. (koji) 
+
 Optimizations
 ----------------------
 

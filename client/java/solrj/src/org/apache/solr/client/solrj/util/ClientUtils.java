@@ -191,15 +191,32 @@ public class ClientUtils
   private static final Pattern escapePattern = Pattern.compile( "(\\W)" );
   
   /**
-   * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping Special Characters
+   * Non-word characters are escaped by a preceding <code>\</code>.
    */
   public static String escapeQueryChars( String input ) 
   {
     Matcher matcher = escapePattern.matcher( input );
     return matcher.replaceAll( "\\\\$1" );
   }
-  
 
+  /**
+   * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping Special Characters
+   */
+  public static String escape(String s) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      // These characters are part of the query syntax and must be escaped
+      if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+        || c == '*' || c == '?' || c == '|' || c == '&') {
+        sb.append('\\');
+      }
+      sb.append(c);
+    }
+    return sb.toString();
+  }
+  
   public static String toQueryString( SolrParams params, boolean xml ) {
     StringBuilder sb = new StringBuilder(128);
     try {
