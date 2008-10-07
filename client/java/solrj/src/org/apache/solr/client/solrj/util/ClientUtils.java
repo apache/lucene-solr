@@ -187,29 +187,19 @@ public class ClientUtils
       return (DateFormat) proto.clone();
     }
   }
-  
-  private static final Pattern escapePattern = Pattern.compile( "(\\W)" );
-  
-  /**
-   * Non-word characters are escaped by a preceding <code>\</code>.
-   */
-  public static String escapeQueryChars( String input ) 
-  {
-    Matcher matcher = escapePattern.matcher( input );
-    return matcher.replaceAll( "\\\\$1" );
-  }
 
   /**
    * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping Special Characters
    */
-  public static String escape(String s) {
+  public static String escapeQueryChars(String s) {
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       // These characters are part of the query syntax and must be escaped
       if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
         || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-        || c == '*' || c == '?' || c == '|' || c == '&') {
+        || c == '*' || c == '?' || c == '|' || c == '&'
+        || Character.isWhitespace(c)) {
         sb.append('\\');
       }
       sb.append(c);

@@ -18,8 +18,6 @@ Detailed Change List
 New Features
 ----------------------
 
- 1. SOLR-794: added escape() method to ClientUtils. (koji) 
-
 Optimizations
 ----------------------
 
@@ -33,6 +31,9 @@ Bug Fixes
  2. SOLR-779: SolrQuery#setHighlightRequireFieldMatch() should be renamed to
     SolrQuery#getHighlightRequireFieldMatch()
     (Kohei Taketa, Lars Kotthoff via koji)
+
+ 3. SOLR-794: ClientUtils.escapeQueryChars escapes chars a bit aggressive
+    (ryan, koji)
 
 Documentation
 ----------------------
