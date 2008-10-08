@@ -1,6 +1,10 @@
 Lucene Change Log
 $Id$
 
+======================= 2.4.x branch (not yet released) =======================
+
+Bug fixes
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy
