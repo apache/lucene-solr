@@ -374,8 +374,9 @@ public final class SolrCore implements SolrInfoMBean {
     synchronized( SolrCore.class ) {
       if( instance == null ) {
         try {
-          // sets 'instance' to the latest solr core
-          instance = new SolrCore( null, null, new SolrConfig(), null, null);
+          // sets 'instance' to the latest solr core          
+          CoreContainer.Initializer init = new CoreContainer.Initializer();
+          instance = init.initialize().getCore("");
         } catch(Exception xany) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "error creating core", xany );
