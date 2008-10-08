@@ -347,7 +347,7 @@
 
   <target name="test" depends="compile-test" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
-    <junit printsummary="off" haltonfailure="no"
+    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
       errorProperty="tests.failed" failureProperty="tests.failed">
       <classpath refid="junit.classpath"/>
       <assertions>
