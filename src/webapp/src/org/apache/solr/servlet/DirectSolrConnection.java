@@ -29,8 +29,11 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -101,16 +104,19 @@ public class DirectSolrConnection
       }
     }
     
-    // Initialize SolrConfig
-    SolrConfig config = null;
+    if( instanceDir == null ) {
+      instanceDir = SolrResourceLoader.locateInstanceDir();
+    }
+    
+    // Initialize 
     try {
-      config = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
-      instanceDir = config.getResourceLoader().getInstanceDir();
-
-      // If the Data directory is specified, initialize SolrCore directly
-      IndexSchema schema = new IndexSchema(config, instanceDir+"/conf/schema.xml", null);
-      core = new SolrCore( null, dataDir, config, schema, null );
-      parser = new SolrRequestParsers( config );
+      CoreContainer cores = new CoreContainer(new SolrResourceLoader(instanceDir));
+      SolrConfig solrConfig = new SolrConfig(instanceDir, SolrConfig.DEFAULT_CONF_FILE, null);
+      CoreDescriptor dcore = new CoreDescriptor(cores, "", solrConfig.getResourceLoader().getInstanceDir());
+      IndexSchema indexSchema = new IndexSchema(solrConfig, instanceDir+"/conf/schema.xml", null);
+      core = new SolrCore( null, dataDir, solrConfig, indexSchema, dcore);
+      cores.register("", core, false);
+      parser = new SolrRequestParsers( solrConfig );
     } 
     catch (Exception ee) {
       throw new RuntimeException(ee);
