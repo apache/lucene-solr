@@ -104,7 +104,7 @@
   <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
 
   <!-- The version suffix of the Lucene artifacts checked into "lib" -->
-  <property name="lucene_version" value="2.4-dev"/>
+  <property name="lucene_version" value="2.4.0"/>
   <!-- The version number to assign to the Maven artifacts. -->
   <property name="maven_version" value="1.4-SNAPSHOT"/>
 
