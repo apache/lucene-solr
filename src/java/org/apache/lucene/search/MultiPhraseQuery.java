@@ -311,7 +311,7 @@ public class MultiPhraseQuery extends Query {
     MultiPhraseQuery other = (MultiPhraseQuery)o;
     return this.getBoost() == other.getBoost()
       && this.slop == other.slop
-      && this.termArrays.equals(other.termArrays)
+      && termArraysEquals(this.termArrays, other.termArrays)
       && this.positions.equals(other.positions);
   }
 
@@ -319,8 +319,52 @@ public class MultiPhraseQuery extends Query {
   public int hashCode() {
     return Float.floatToIntBits(getBoost())
       ^ slop
-      ^ termArrays.hashCode()
+      ^ termArraysHashCode()
       ^ positions.hashCode()
       ^ 0x4AC65113;
+  }
+  
+  // Breakout calculation of the termArrays hashcode
+  private int termArraysHashCode() {
+    int hashCode = 1;
+    Iterator iterator = termArrays.iterator();
+    while (iterator.hasNext()) {
+      Term[] termArray = (Term[]) iterator.next();
+      hashCode = 31 * hashCode
+          + (termArray == null ? 0 : arraysHashCode(termArray));
+    }
+    return hashCode;
+  }
+
+  private int arraysHashCode(Term[] termArray) {
+      if (termArray == null)
+          return 0;
+
+      int result = 1;
+
+      for (int i = 0; i < termArray.length; i++) {
+        Term term = termArray[i];
+        result = 31 * result + (term == null ? 0 : term.hashCode());
+      }
+
+      return result;
+  }
+
+  // Breakout calculation of the termArrays equals
+  private boolean termArraysEquals(List termArrays1, List termArrays2) {
+    if (termArrays1.size() != termArrays2.size()) {
+      return false;
+    }
+    ListIterator iterator1 = termArrays1.listIterator();
+    ListIterator iterator2 = termArrays2.listIterator();
+    while (iterator1.hasNext()) {
+      Term[] termArray1 = (Term[]) iterator1.next();
+      Term[] termArray2 = (Term[]) iterator2.next();
+      if (!(termArray1 == null ? termArray2 == null : Arrays.equals(termArray1,
+          termArray2))) {
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -9,6 +9,10 @@ API Changes
 
 Bug fixes
 
+1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
+   implementation - Leads to Solr Cache misses. 
+   (Todd Feak, Mark Miller via yonik)
+
 New features
 
 Optimizations

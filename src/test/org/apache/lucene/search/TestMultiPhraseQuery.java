@@ -191,6 +191,35 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     searcher.close();
   }
   
+  public void testHashCodeAndEquals(){
+    MultiPhraseQuery query1 = new MultiPhraseQuery();
+    MultiPhraseQuery query2 = new MultiPhraseQuery();
+    
+    assertEquals(query1.hashCode(), query2.hashCode());
+    assertEquals(query1,query2);
+    
+    Term term1= new Term("someField","someText");
+    
+    query1.add(term1);
+    query2.add(term1);
+    
+    assertEquals(query1.hashCode(), query2.hashCode());
+    assertEquals(query1,query2);
+    
+    Term term2= new Term("someField","someMoreText");
+    
+    query1.add(term2);
+    
+    assertFalse(query1.hashCode()==query2.hashCode());
+    assertFalse(query1.equals(query2));
+    
+    query2.add(term2);
+    
+    assertEquals(query1.hashCode(), query2.hashCode());
+    assertEquals(query1,query2);
+  }
+
+  
   private void add(String s, String type, IndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
