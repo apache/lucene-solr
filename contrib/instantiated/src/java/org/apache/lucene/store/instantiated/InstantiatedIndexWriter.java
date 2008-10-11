@@ -48,7 +48,7 @@ import org.apache.lucene.search.Similarity;
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
  * <p>
  * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader} is navigating
- * the same instances in memory as this writer is updating so searchers actice while
+ * the same instances in memory as this writer is updating so searchers active while
  * you are committing are bound to throw exceptions.
  * <p>
  * Consider using InstantiatedIndex as if it was immutable.
@@ -126,7 +126,8 @@ public class InstantiatedIndexWriter {
 
   /**
    * If non-null, information about merges and a message when
-   * maxFieldLength is reached will be printed to this.
+   * maxFieldLength is reached could be printed to this -- currently
+   * not yet implemented.
    */
   public void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
