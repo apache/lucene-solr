@@ -141,25 +141,15 @@
                         repository for miscellaneous classes.</a>
                 </p>
             </section>
-            <section id="GData-Server"><title>GData-Server</title>
+
+            <section id="InstantiatedIndex"><title>InstantiatedIndex</title>
                 <p>
-                     Apache - Lucene based serverside implementation of <a href="http://code.google.com/apis/gdata/">Google's GData</a> protocol. GData-Server provides an extendable
-                     full featured gdata feed server to add, remove, update ATOM 1.0 and RSS 2.0 feeds.
-                     Feeds are searchable via a defined HTTP GET parameter based query language like the Lucnene query syntax.
-                    </p>
+                   RAM-based index that enables much faster searching than RAMDirectory.
+	        </p>
                 <p>
-
-                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/gdata-server/"
-                       title="Source repositiory">The
-                         repository for GData-server files and sources.</a>
-                    <br/>
-                    <br/>
-
-                    <a href="http://wiki.apache.org/lucene-java/GdataServer"
-                       title="GData-Server wiki">GData - Server wiki</a>
-
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/instantiated/">The
+                        repository for instantiated index.</a>
                 </p>
-
             </section>
 
         </section>

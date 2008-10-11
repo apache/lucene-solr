@@ -54,6 +54,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
 		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
 		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
+		    <javadoc-contrib-instantiated label="Instantiated" href="ext:javadocs-contrib-instantiated"/>
 		    <javadoc-contrib-lucli label="Lucli" href="ext:javadocs-contrib-lucli"/>
 		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
 		    <javadoc-contrib-misc label="Miscellaneous" href="ext:javadocs-contrib-misc"/>
@@ -100,6 +101,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
 	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
+	<javadocs-contrib-instantiated href="api/contrib-instantiated/index.html"/>
 	<javadocs-contrib-lucli href="api/contrib-lucli/index.html"/>
 	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
 	<javadocs-contrib-misc href="api/contrib-misc/index.html"/>
