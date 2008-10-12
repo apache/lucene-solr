@@ -37,6 +37,8 @@ import org.apache.lucene.util._TestUtil;
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
  *
+ * Please try to keep src/java/overview.html up-to-date when making changes
+ * to this class.
  */
 public class TestDemo extends LuceneTestCase {
 
@@ -46,10 +48,8 @@ public class TestDemo extends LuceneTestCase {
 
     // Store the index in memory:
     Directory directory = new RAMDirectory();
-    // To store an index on disk, use this instead (note that the 
-    // parameter true will overwrite the index in that directory
-    // if one exists):
-    //Directory directory = FSDirectory.getDirectory("/tmp/testindex", true);
+    // To store an index on disk, use this instead:
+    //Directory directory = FSDirectory.getDirectory("/tmp/testindex");
     IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
                                           new IndexWriter.MaxFieldLength(25000));
     Document doc = new Document();
