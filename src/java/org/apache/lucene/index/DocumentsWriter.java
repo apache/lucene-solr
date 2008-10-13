@@ -184,6 +184,51 @@ final class DocumentsWriter {
       this.next = next;
     }
   };
+  
+  /**
+   * The IndexingChain must define the {@link #getChain(DocumentsWriter)} method
+   * which returns the DocConsumer that the DocumentsWriter calls to process the
+   * documents. 
+   */
+  abstract static class IndexingChain {
+    abstract DocConsumer getChain(DocumentsWriter documentsWriter);
+  }
+  
+  static final IndexingChain DefaultIndexingChain = new IndexingChain() {
+
+    DocConsumer getChain(DocumentsWriter documentsWriter) {
+      /*
+      This is the current indexing chain:
+
+      DocConsumer / DocConsumerPerThread
+        --> code: DocFieldProcessor / DocFieldProcessorPerThread
+          --> DocFieldConsumer / DocFieldConsumerPerThread / DocFieldConsumerPerField
+            --> code: DocFieldConsumers / DocFieldConsumersPerThread / DocFieldConsumersPerField
+              --> code: DocInverter / DocInverterPerThread / DocInverterPerField
+                --> InvertedDocConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
+                  --> code: TermsHash / TermsHashPerThread / TermsHashPerField
+                    --> TermsHashConsumer / TermsHashConsumerPerThread / TermsHashConsumerPerField
+                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerThread / FreqProxTermsWriterPerField
+                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerThread / TermVectorsTermsWriterPerField
+                --> InvertedDocEndConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
+                  --> code: NormsWriter / NormsWriterPerThread / NormsWriterPerField
+              --> code: StoredFieldsWriter / StoredFieldsWriterPerThread / StoredFieldsWriterPerField
+    */
+
+    // Build up indexing chain:
+
+      final TermsHashConsumer termVectorsWriter = new TermVectorsTermsWriter(documentsWriter);
+      final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
+
+      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriter, true, freqProxWriter,
+                                                           new TermsHash(documentsWriter, false, termVectorsWriter, null));
+      final NormsWriter normsWriter = new NormsWriter();
+      final DocInverter docInverter = new DocInverter(termsHash, normsWriter);
+      final StoredFieldsWriter fieldsWriter = new StoredFieldsWriter(documentsWriter);
+      final DocFieldConsumers docFieldConsumers = new DocFieldConsumers(docInverter, fieldsWriter);
+      return new DocFieldProcessor(documentsWriter, docFieldConsumers);
+    }
+  };
 
   final DocConsumer consumer;
 
@@ -228,48 +273,23 @@ final class DocumentsWriter {
 
   private boolean closed;
 
-  DocumentsWriter(Directory directory, IndexWriter writer) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarity = writer.getSimilarity();
     flushedDocCount = writer.maxDoc();
 
-    /*
-      This is the current indexing chain:
-
-      DocConsumer / DocConsumerPerThread
-        --> code: DocFieldProcessor / DocFieldProcessorPerThread
-          --> DocFieldConsumer / DocFieldConsumerPerThread / DocFieldConsumerPerField
-            --> code: DocFieldConsumers / DocFieldConsumersPerThread / DocFieldConsumersPerField
-              --> code: DocInverter / DocInverterPerThread / DocInverterPerField
-                --> InvertedDocConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: TermsHash / TermsHashPerThread / TermsHashPerField
-                    --> TermsHashConsumer / TermsHashConsumerPerThread / TermsHashConsumerPerField
-                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerThread / FreqProxTermsWriterPerField
-                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerThread / TermVectorsTermsWriterPerField
-                --> InvertedDocEndConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: NormsWriter / NormsWriterPerThread / NormsWriterPerField
-              --> code: StoredFieldsWriter / StoredFieldsWriterPerThread / StoredFieldsWriterPerField
-    */
-
-    // TODO FI: this should be something the user can pass in
-    // Build up indexing chain:
-    final TermsHashConsumer termVectorsWriter = new TermVectorsTermsWriter(this);
-    final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
-
-    final InvertedDocConsumer  termsHash = new TermsHash(this, true, freqProxWriter,
-                                                         new TermsHash(this, false, termVectorsWriter, null));
-    final NormsWriter normsWriter = new NormsWriter();
-    final DocInverter docInverter = new DocInverter(termsHash, normsWriter);
-    final StoredFieldsWriter fieldsWriter = new StoredFieldsWriter(this);
-    final DocFieldConsumers docFieldConsumers = new DocFieldConsumers(docInverter, fieldsWriter);
-    consumer = docFieldProcessor = new DocFieldProcessor(this, docFieldConsumers);
+    consumer = indexingChain.getChain(this);
+    if (consumer instanceof DocFieldProcessor) {
+      docFieldProcessor = (DocFieldProcessor) consumer;
+    }
   }
 
   /** Returns true if any of the fields in the current
    *  buffered docs have omitTf==false */
   boolean hasProx() {
-    return docFieldProcessor.fieldInfos.hasProx();
+    return (docFieldProcessor != null) ? docFieldProcessor.fieldInfos.hasProx()
+                                       : true;
   }
 
   /** If non-null, various details of indexing are printed

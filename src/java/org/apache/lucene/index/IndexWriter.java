@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -994,7 +995,43 @@ public class IndexWriter {
        throws CorruptIndexException, LockObtainFailedException, IOException {
     init(d, a, create, false, deletionPolicy, false, mfl.getLimit());
   }
-
+  
+  /**
+   * Expert: constructs an IndexWriter with a custom {@link
+   * IndexDeletionPolicy} and {@link IndexingChain}, 
+   * for the index in <code>d</code>.
+   * Text will be analyzed with <code>a</code>.  If
+   * <code>create</code> is true, then a new, empty index
+   * will be created in <code>d</code>, replacing the index
+   * already there, if any.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
+   *
+   * @param d the index directory
+   * @param a the analyzer to use
+   * @param create <code>true</code> to create the index or overwrite
+   *  the existing one; <code>false</code> to append to the existing
+   *  index
+   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @param indexingChain the {@link DocConsumer} chain to be used to 
+   *  process documents
+   * @param mfl whether or not to limit field lengths
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be read/written to, or
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
+   */
+  IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexingChain indexingChain)
+       throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, create, false, deletionPolicy, false, mfl.getLimit(), indexingChain);
+  }
+  
   /**
    * Expert: constructs an IndexWriter with a custom {@link
    * IndexDeletionPolicy}, for the index in <code>d</code>.
@@ -1028,16 +1065,30 @@ public class IndexWriter {
     init(d, a, create, false, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH);
   }
 
-  private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength)
+  private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, 
+      boolean autoCommit, int maxFieldLength) 
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, closeDir, deletionPolicy, autoCommit, maxFieldLength, DocumentsWriter.DefaultIndexingChain);
+  }
+  
+  private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, 
+      boolean autoCommit, int maxFieldLength, IndexingChain indexingChain)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(d)) {
-      init(d, a, false, closeDir, deletionPolicy, autoCommit, maxFieldLength);
+      init(d, a, false, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain);
     } else {
-      init(d, a, true, closeDir, deletionPolicy, autoCommit, maxFieldLength);
+      init(d, a, true, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain);
     }
   }
 
-  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength)
+  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, 
+      IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength)
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, create, closeDir, deletionPolicy, autoCommit, maxFieldLength, DocumentsWriter.DefaultIndexingChain);
+  }
+  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, 
+      IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength,
+      IndexingChain indexingChain)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     this.closeDir = closeDir;
     directory = d;
@@ -1084,7 +1135,7 @@ public class IndexWriter {
       this.autoCommit = autoCommit;
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this);
+      docWriter = new DocumentsWriter(directory, this, indexingChain);
       docWriter.setInfoStream(infoStream);
       docWriter.setMaxFieldLength(maxFieldLength);
 

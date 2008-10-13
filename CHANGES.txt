@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -6,6 +6,11 @@ $Id$
 Changes in runtime behavior
 
 API Changes
+
+1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
+   package-protected for now, so we don't have to officially support it.
+   Yet, it will give us the possibility to try out different consumers in
+   in the chain. (Michael Busch)
 
 Bug fixes
 
