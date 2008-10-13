@@ -51,6 +51,7 @@ import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -61,7 +62,9 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -174,11 +177,47 @@ public final class SolrCore implements SolrInfoMBean {
   public String getDataDir() {
     return dataDir;
   }
-  
+
   public String getIndexDir() {
-    return dataDir + "index/";
+    if (_searcher == null)
+      return dataDir + "index/";
+    SolrIndexSearcher searcher = _searcher.get();
+    return searcher.getIndexDir() == null ? dataDir + "index/" : searcher.getIndexDir();
   }
-  
+
+
+  /**
+   * Returns the indexdir as given in index.properties. If index.properties exists in dataDir and
+   * there is a property <i>index</i> available and it points to a valid directory
+   * in dataDir that is returned Else dataDir/index is returned. Only called for creating new indexSearchers
+   * and indexwriters. Use the getIndexDir() method to know the active index directory
+   *
+   * @return the indexdir as given in index.properties
+   */
+  public String getNewIndexDir() {
+    String result = dataDir + "index/";
+    File propsFile = new File(dataDir + "index.properties");
+    if (propsFile.exists()) {
+      Properties p = new Properties();
+      InputStream is = null;
+      try {
+        is = new FileInputStream(propsFile);
+        p.load(is);
+      } catch (IOException e) {
+        /*no op*/
+      } finally {
+        IOUtils.closeQuietly(is);
+      }
+      String s = p.getProperty("index");
+      if (s != null && s.trim().length() > 0) {
+        File tmp = new File(dataDir + s);
+        if (tmp.exists() && tmp.isDirectory())
+          result = dataDir + s;
+      }
+    }
+    return result;
+  }
+
   public String getName() {
     return name;
   }
@@ -290,7 +329,7 @@ public final class SolrCore implements SolrInfoMBean {
   // currently only called with SolrCore.class lock held
   void initIndex() {
     try {
-      File dirFile = new File(getIndexDir());
+      File dirFile = new File(getNewIndexDir());
       boolean indexExists = dirFile.canRead();
       boolean firstTime = dirs.add(dirFile.getCanonicalPath());
       boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
@@ -971,15 +1010,20 @@ public final class SolrCore implements SolrInfoMBean {
       newestSearcher = getNewestSearcher(false);
       if (newestSearcher != null) {
         IndexReader currentReader = newestSearcher.get().getReader();
-        IndexReader newReader = currentReader.reopen();
+        String newIndexDir = getNewIndexDir();
+        if(new File(getIndexDir()).equals(new File(newIndexDir)))  {
+          IndexReader newReader = currentReader.reopen();
 
-        if(newReader == currentReader) {
-          currentReader.incRef();
+          if(newReader == currentReader) {
+            currentReader.incRef();
+          }
+
+          tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
+        } else  {
+          tmp = new SolrIndexSearcher(this, schema, "main", newIndexDir, true);
         }
-        
-        tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
       } else {
-        tmp = new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), true), true, true);
+        tmp = new SolrIndexSearcher(this, schema, "main", getNewIndexDir(), true);
       }
     } catch (Throwable th) {
       synchronized(searcherLock) {

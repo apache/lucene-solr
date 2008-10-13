@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -57,6 +58,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
+  private String indexDir;
 
   private final String name;
   private long openTime = System.currentTimeMillis();
@@ -110,6 +112,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
 
     log.info("Opening " + this.name);
+
+    if (r.directory() instanceof FSDirectory) {
+      FSDirectory fsDirectory = (FSDirectory) r.directory();
+      indexDir = fsDirectory.getFile().getAbsolutePath();
+    }
 
     reader = r;
     searcher = new IndexSearcher(r);
@@ -309,6 +316,14 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public int docFreq(Term term) throws IOException {
     return searcher.docFreq(term);
+  }
+
+  /**
+   * @return the indexDir on which this searcher is opened
+   * @see org.apache.solr.search.SolrIndexSearcher#SolrIndexSearcher(org.apache.solr.core.SolrCore, org.apache.solr.schema.IndexSchema, String, String, boolean)
+   */
+  public String getIndexDir() {
+    return indexDir;
   }
 
   /* ********************** Document retrieval *************************/

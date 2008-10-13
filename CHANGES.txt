@@ -45,6 +45,9 @@ New Features
  
  3. SOLR-657: Replace deprecated calls with the non-deprecated equivalents
     (Lars Kotthoff via ryan)
+
+ 4. SOLR-658: Allow Solr to load index from arbitrary directory in dataDir
+    (Noble Paul, Akshay Ukey via shalin)
     
 
 Optimizations
