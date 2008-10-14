@@ -49,6 +49,10 @@ New Features
  4. SOLR-658: Allow Solr to load index from arbitrary directory in dataDir
     (Noble Paul, Akshay Ukey via shalin)
     
+ 5. SOLR-793: Add 'commitWithin' argument to the update add command.  This behaves
+    similar to the global autoCommit maxTime argument except that it is set for 
+    each request.  (ryan)
+    
 
 Optimizations
 ----------------------

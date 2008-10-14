@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.io.Writer;
 import java.io.File;
 import java.util.HashMap;
@@ -72,6 +73,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String WAIT_FLUSH = "waitFlush";
   
   public static final String OVERWRITE = "overwrite";
+  public static final String COMMIT_WITHIN = "commitWithin"; 
   public static final String OVERWRITE_COMMITTED = "overwriteCommitted"; // @Deprecated
   public static final String OVERWRITE_PENDING = "overwritePending";  // @Deprecated
   public static final String ALLOW_DUPS = "allowDups"; 
@@ -120,6 +122,12 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       for( ContentStream stream : req.getContentStreams() ) {
         Reader reader = stream.getReader();
         try {
+          if( log.isTraceEnabled() ) {
+            String body = IOUtils.toString( reader );
+            log.trace( "body", body );
+            reader = new StringReader( body );
+          }
+          
           XMLStreamReader parser = inputFactory.createXMLStreamReader(reader);
           this.processUpdate( processor, parser );
         }
@@ -169,6 +177,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
                 overwrite = StrUtils.parseBoolean(attrVal);
               } else if (ALLOW_DUPS.equals(attrName)) {
                 overwrite = !StrUtils.parseBoolean(attrVal);
+              } else if ( COMMIT_WITHIN.equals(attrName) ) {
+                addCmd.commitWithin = Integer.parseInt( attrVal );
               } else if ( OVERWRITE_PENDING.equals(attrName) ) {
                 overwritePending = StrUtils.parseBoolean(attrVal);
               } else if ( OVERWRITE_COMMITTED.equals(attrName) ) {

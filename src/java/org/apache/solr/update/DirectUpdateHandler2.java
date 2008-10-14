@@ -198,7 +198,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       synchronized (this) {
         // adding document -- prep writer
         openWriter();
-        tracker.addedDocument();
+        tracker.addedDocument( cmd.commitWithin );
       } // end synchronized block
 
       // this is the only unsynchronized code in the iwAccess block, which
@@ -424,7 +424,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       SolrCore.log.info("AutoCommit: " + this);
     }
 
-    /** schedeule individual commits */
+    /** schedule individual commits */
     public synchronized void scheduleCommitWithin(long commitMaxTime) 
     {
       // Check if there is a commit already scheduled for longer then this time
@@ -443,30 +443,19 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     
     /** Indicate that documents have been added
      */
-    public void addedDocument() {
+    public void addedDocument( int commitWithin ) {
       docsSinceCommit++;
       lastAddedTime = System.currentTimeMillis();
       // maxDocs-triggered autoCommit
       if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
-        if (pending != null && 
-            pending.getDelay(TimeUnit.MILLISECONDS) > DOC_COMMIT_DELAY_MS) {
-          // another commit is pending, but too far away (probably due to
-          // maxTime)
-          pending.cancel(false);
-          pending = null;
-        }
-        if (pending == null) {
-          // 1/4 second seems fast enough for anyone using maxDocs
-          pending = scheduler.schedule(this, DOC_COMMIT_DELAY_MS, 
-                                       TimeUnit.MILLISECONDS);
-        }
-      }
-      // maxTime-triggered autoCommit
-      if( pending == null && timeUpperBound > 0 ) { 
-        // Don't start a new event if one is already waiting 
-        pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
+        scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
       }
       
+      // maxTime-triggered autoCommit
+      long ctime = (commitWithin>0) ? commitWithin : timeUpperBound;
+      if( ctime > 0 ) {
+        scheduleCommitWithin( ctime );
+      }
     }
 
     /** Inform tracker that a commit has occurred, cancel any pending commits */

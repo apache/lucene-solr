@@ -29,6 +29,7 @@ import junit.framework.Assert;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField;
@@ -149,7 +150,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     Assert.assertEquals(2, response.getResults().getNumFound() );
     Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
   }
-  
+
 
   /**
    * query the example
@@ -195,7 +196,41 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     rsp = server.query( query );
     Assert.assertEquals( 2, rsp.getResults().getNumFound() );
     System.out.println( rsp.getResults() );
+    
   }
+  
+  /**
+   * query the example
+   */
+  public void testCommitWithin() throws Exception
+  {    
+    // make sure it is empty...
+    SolrServer server = getSolrServer();
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    QueryResponse rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+
+    // Now try a timed commit...
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField( "id", "id3", 1.0f );
+    doc3.addField( "name", "doc3", 1.0f );
+    doc3.addField( "price", 10 );
+    UpdateRequest up = new UpdateRequest();
+    up.add( doc3 );
+    up.setCommitWithin( 10 );
+    up.process( server );
+    
+    rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+    
+    Thread.sleep( 500 ); // wait 1/2 seconds...
+
+    // now check that it comes out...
+    rsp = server.query( new SolrQuery( "id:id3") );
+    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+  }
+  
   
   protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
   {

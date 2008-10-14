@@ -42,6 +42,10 @@ public class AddUpdateCommand extends UpdateCommand {
    public boolean allowDups;
    public boolean overwritePending;
    public boolean overwriteCommitted;
+   
+   
+   public int commitWithin = -1;
+   
 
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {

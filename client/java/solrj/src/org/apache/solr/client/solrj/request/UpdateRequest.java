@@ -51,6 +51,7 @@ public class UpdateRequest extends SolrRequest
   private List<String> deleteQuery = null;
 
   private ModifiableSolrParams params;
+  private int commitWithin = -1;
   
   public UpdateRequest()
   {
@@ -163,7 +164,12 @@ public class UpdateRequest extends SolrRequest
   public String getXML() throws IOException {
     StringWriter writer = new StringWriter();
     if( documents != null && documents.size() > 0 ) {
-      writer.write("<add>");
+      if( commitWithin > 0 ) {
+        writer.write("<add commitWithin=\""+commitWithin+"\">");
+      }
+      else {
+        writer.write("<add>");
+      }
       for (SolrInputDocument doc : documents ) {
         if( doc != null ) {
           ClientUtils.writeXML( doc, writer );
@@ -244,5 +250,13 @@ public class UpdateRequest extends SolrRequest
 
   public void setWaitSearcher(boolean waitSearcher) {
     setParam( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
+  }
+
+  public int getCommitWithin() {
+    return commitWithin;
+  }
+
+  public void setCommitWithin(int commitWithin) {
+    this.commitWithin = commitWithin;
   }
 }
