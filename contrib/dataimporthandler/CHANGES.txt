@@ -27,6 +27,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
+1. SOLR-800:  Deep copy collections to avoid ConcurrentModificationException in XPathEntityprocessor while streaming
+              (Kyle Morrison, Noble Paul via shalin)
 
 Documentation
 ----------------------

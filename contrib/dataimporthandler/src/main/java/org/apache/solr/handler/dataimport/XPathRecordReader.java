@@ -146,7 +146,7 @@ public class XPathRecordReader {
           }
           if (event == END_ELEMENT) {
             if (isRecord)
-              handler.handle(new HashMap<String, Object>(values), forEachPath);
+              handler.handle(getDeepCopy(values), forEachPath);
             if (recordStarted && !isRecord
                     && !childrenFound.containsAll(childNodes)) {
               for (Node n : childNodes) {
@@ -314,6 +314,18 @@ public class XPathRecordReader {
       childNodes.add(n);
       return n;
     }
+  }
+
+  private Map<String, Object> getDeepCopy(Map<String, Object> values) {
+    Map<String, Object> result = new HashMap<String, Object>();
+    for (Map.Entry<String, Object> entry : values.entrySet()) {
+      if (entry.getValue() instanceof List) {
+        result.put(entry.getKey(),new ArrayList((List) entry.getValue()));
+      } else{
+        result.put(entry.getKey(),entry.getValue());
+      }
+    }
+    return result;
   }
 
   static XMLInputFactory factory = XMLInputFactory.newInstance();
