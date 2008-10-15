@@ -62,6 +62,8 @@ Optimizations
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
     index that haven't changed. (Mark Miller via yonik)
 
+ 2. SOLR-808: Write string keys in Maps as extern strings in the javabin format. (Noble Paul via shalin)
+
 
 Bug Fixes
 ----------------------

@@ -495,7 +495,12 @@ public class NamedListCodec {
           throws IOException {
     writeTag(MAP, val.size());
     for (Map.Entry entry : (Set<Map.Entry>) val.entrySet()) {
-      writeVal(entry.getKey());
+      Object key = entry.getKey();
+      if (key instanceof String) {
+        writeExternString((String) key);
+      } else {
+        writeVal(key);
+      }
       writeVal(entry.getValue());
     }
   }
