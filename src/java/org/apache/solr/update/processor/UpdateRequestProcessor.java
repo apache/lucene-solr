@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 
 
 /**
@@ -58,6 +59,14 @@ public abstract class UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException
   {
     if (next != null) next.processCommit(cmd);
+  }
+
+  /**
+   * @since Solr 1.4
+   */
+  public void processRollback(RollbackUpdateCommand cmd) throws IOException
+  {
+    if (next != null) next.processRollback(cmd);
   }
 
   public void finish() throws IOException {

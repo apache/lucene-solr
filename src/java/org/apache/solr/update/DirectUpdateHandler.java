@@ -188,7 +188,7 @@ public class DirectUpdateHandler extends UpdateHandler {
     if (!cmd.fromPending && !cmd.fromCommitted)
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
     if (!cmd.fromPending || !cmd.fromCommitted)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported: " + cmd);
 
     Query q = QueryParsing.parseQuery(cmd.query, schema);
 
@@ -262,6 +262,13 @@ public class DirectUpdateHandler extends UpdateHandler {
     return;
   }
 
+  /**
+   * @since Solr 1.4
+   */
+  public void rollback(RollbackUpdateCommand cmd) throws IOException {
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+        "DirectUpdateHandler doesn't support rollback. Use DirectUpdateHandler2 instead.");
+  }
 
 
   ///////////////////////////////////////////////////////////////////

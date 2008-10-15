@@ -52,6 +52,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
@@ -69,6 +70,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   public static final String DELETE = "delete";
   public static final String OPTIMIZE = "optimize";
   public static final String COMMIT = "commit";
+  public static final String ROLLBACK = "rollback";
   public static final String WAIT_SEARCHER = "waitSearcher";
   public static final String WAIT_FLUSH = "waitFlush";
   
@@ -113,8 +115,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     UpdateRequestProcessor processor = processingChain.createProcessor(req, rsp);
     Iterable<ContentStream> streams = req.getContentStreams();
     if( streams == null ) {
-      if( !RequestHandlerUtils.handleCommit(processor, params, false) ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
+      if (!RequestHandlerUtils.handleCommit(processor, params, false) && !RequestHandlerUtils.handleRollback(processor, params, false)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
       }
     }
     else {
@@ -138,6 +140,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       
       // Perhaps commit from the parameters
       RequestHandlerUtils.handleCommit( processor, params, false );
+      // Perhaps rollback from the parameters
+      RequestHandlerUtils.handleRollback( processor, params, false );
     }
     
     // finish the request
@@ -236,6 +240,13 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
             }
             processor.processCommit( cmd );
           } // end commit
+          else if ( ROLLBACK.equals(currTag) ) {
+            log.trace("parsing " + currTag);
+
+            RollbackUpdateCommand cmd = new RollbackUpdateCommand();
+
+            processor.processRollback( cmd );
+          } // end rollback
           else if (DELETE.equals(currTag)) {
             log.trace("parsing delete");
             processDelete( processor, parser);

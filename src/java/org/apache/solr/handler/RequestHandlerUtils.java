@@ -26,6 +26,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 /**
@@ -102,6 +103,25 @@ public class RequestHandlerUtils
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
       cmd.maxOptimizeSegments = params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
       processor.processCommit( cmd );
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @since Solr 1.4
+   */
+  public static boolean handleRollback( UpdateRequestProcessor processor, SolrParams params, boolean force ) throws IOException
+  {
+    if( params == null ) {
+      params = new MapSolrParams( new HashMap<String, String>() ); 
+    }
+    
+    boolean rollback = params.getBool( UpdateParams.ROLLBACK, false );
+    
+    if( rollback || force ) {
+      RollbackUpdateCommand cmd = new RollbackUpdateCommand();
+      processor.processRollback( cmd );
       return true;
     }
     return false;

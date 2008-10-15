@@ -17,12 +17,19 @@
 
 package org.apache.solr.update;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
@@ -74,5 +81,183 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     }
     catch( SolrException ex ) { } // expected
   }
+
+  public void testUncommit() throws Exception {
+    addSimpleDoc("A");
+
+    // search - not committed - "A" should not be found.
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "id:A" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args) );
+    assertQ("\"A\" should not be found.", req
+            ,"//*[@numFound='0']"
+            );
+  }
+
+  public void testAddCommit() throws Exception {
+    addSimpleDoc("A");
+
+    // commit "A"
+    SolrCore core = h.getCore();
+    UpdateHandler updater = core.getUpdateHandler();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+
+    // search - "A" should be found.
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "id:A" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("\"A\" should be found.", req
+            ,"//*[@numFound='1']"
+            ,"//result/doc[1]/int[@name='id'][.='A']"
+            );
+  }
+
+  public void testDeleteCommit() throws Exception {
+    addSimpleDoc("A");
+    addSimpleDoc("B");
+
+    // commit "A", "B"
+    SolrCore core = h.getCore();
+    UpdateHandler updater = core.getUpdateHandler();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+
+    // search - "A","B" should be found.
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "id:A OR id:B" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("\"A\" and \"B\" should be found.", req
+            ,"//*[@numFound='2']"
+            ,"//result/doc[1]/int[@name='id'][.='A']"
+            ,"//result/doc[2]/int[@name='id'][.='B']"
+            );
+
+    // delete "B"
+    deleteSimpleDoc("B");
+
+    // search - "A","B" should be found.
+    assertQ("\"A\" and \"B\" should be found.", req
+            ,"//*[@numFound='2']"
+            ,"//result/doc[1]/int[@name='id'][.='A']"
+            ,"//result/doc[2]/int[@name='id'][.='B']"
+            );
+ 
+    // commit
+    updater.commit(cmtCmd);
+    
+    // search - "B" should not be found.
+    assertQ("\"B\" should not be found.", req
+        ,"//*[@numFound='1']"
+        ,"//result/doc[1]/int[@name='id'][.='A']"
+        );
+  }
+
+  public void testAddRollback() throws Exception {
+    addSimpleDoc("A");
+
+    // commit "A"
+    SolrCore core = h.getCore();
+    UpdateHandler updater = core.getUpdateHandler();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+
+    addSimpleDoc("B");
+
+    // rollback "B"
+    RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
+    updater.rollback(rbkCmd);
+    updater.commit(cmtCmd);
+    
+    // search - "B" should not be found.
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "id:A OR id:B" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("\"B\" should not be found.", req
+            ,"//*[@numFound='1']"
+            ,"//result/doc[1]/int[@name='id'][.='A']"
+            );
+  }
+
+  public void testDeleteRollback() throws Exception {
+    addSimpleDoc("A");
+    addSimpleDoc("B");
+
+    // commit "A", "B"
+    SolrCore core = h.getCore();
+    UpdateHandler updater = core.getUpdateHandler();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+
+    // search - "A","B" should be found.
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( CommonParams.Q, "id:A OR id:B" );
+    args.put( "indent", "true" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("\"A\" and \"B\" should be found.", req
+            ,"//*[@numFound='2']"
+            ,"//result/doc[1]/int[@name='id'][.='A']"
+            ,"//result/doc[2]/int[@name='id'][.='B']"
+            );
+
+    // delete "B"
+    deleteSimpleDoc("B");
+    
+    // search - "A","B" should be found.
+    assertQ("\"A\" and \"B\" should be found.", req
+        ,"//*[@numFound='2']"
+        ,"//result/doc[1]/int[@name='id'][.='A']"
+        ,"//result/doc[2]/int[@name='id'][.='B']"
+        );
+
+    // rollback "B"
+    RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
+    updater.rollback(rbkCmd);
+    updater.commit(cmtCmd);
+    
+    // search - "B" should be found.
+    assertQ("\"B\" should be found.", req
+        ,"//*[@numFound='2']"
+        ,"//result/doc[1]/int[@name='id'][.='A']"
+        ,"//result/doc[2]/int[@name='id'][.='B']"
+        );
+  }
   
+  private void addSimpleDoc(String id) throws Exception {
+    SolrCore core = h.getCore();
+    
+    UpdateHandler updater = core.getUpdateHandler();
+    
+    AddUpdateCommand cmd = new AddUpdateCommand();
+    cmd.overwriteCommitted = true;
+    cmd.overwritePending = true;
+    cmd.allowDups = false;
+    
+    // Add a document
+    cmd.doc = new Document();
+    cmd.doc.add( new Field( "id", id, Store.YES, Index.UN_TOKENIZED ) );
+    updater.addDoc( cmd );
+  }
+  
+  private void deleteSimpleDoc(String id) throws Exception {
+    SolrCore core = h.getCore();
+    
+    UpdateHandler updater = core.getUpdateHandler();
+    
+    // Delete the document
+    DeleteUpdateCommand cmd = new DeleteUpdateCommand();
+    cmd.id = id;
+    cmd.fromCommitted = true;
+    cmd.fromPending = true;
+    
+    updater.delete(cmd);
+  }
 }

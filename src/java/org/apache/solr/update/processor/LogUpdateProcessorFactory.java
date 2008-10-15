@@ -29,6 +29,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 
 /**
  * A logging processor.  This keeps track of all commands that have passed through
@@ -129,6 +130,16 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     if (next != null) next.processCommit(cmd);
     
     toLog.add(cmd.optimize ? "optimize" : "commit", "");
+  }
+
+  /**
+   * @since Solr 1.4
+   */
+  @Override
+  public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
+    if (next != null) next.processRollback(cmd);
+    
+    toLog.add("rollback", "");
   }
 
 

@@ -140,6 +140,17 @@ public class UpdateRequest extends SolrRequest
     params.set( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
     return this;
   }
+
+  /**
+   * @since Solr 1.4
+   */
+  public UpdateRequest rollback() {
+    if (params == null)
+      params = new ModifiableSolrParams();
+
+    params.set( UpdateParams.ROLLBACK, "true" );
+    return this;
+  }
   
 
   public void setParam(String param, String value) {

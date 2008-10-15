@@ -156,6 +156,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;
   public abstract void deleteByQuery(DeleteUpdateCommand cmd) throws IOException;
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
+  public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
   public abstract void close() throws IOException;
 
 

@@ -37,8 +37,11 @@ public interface UpdateParams
   /** Commit everything after the command completes */
   public static String COMMIT = "commit";
   
-  /** Commit everything after the command completes */
+  /** Optimize the index and commit everything after the command completes */
   public static String OPTIMIZE = "optimize";
+  
+  /** Rollback update commands */
+  public static String ROLLBACK = "rollback";
 
   /** Select the update processor to use.  A RequestHandler may or may not respect this parameter */
   public static final String UPDATE_PROCESSOR = "update.processor";

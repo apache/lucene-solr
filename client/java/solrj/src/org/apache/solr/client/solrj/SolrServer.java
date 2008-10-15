@@ -92,7 +92,11 @@ public abstract class SolrServer implements Serializable
   public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher, int maxSegments ) throws SolrServerException, IOException {
     return new UpdateRequest().setAction( UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher, maxSegments ).process( this );
   }
-
+  
+  public UpdateResponse rollback() throws SolrServerException, IOException {
+    return new UpdateRequest().rollback().process( this );
+  }
+  
   public UpdateResponse deleteById(String id) throws SolrServerException, IOException {
     return new UpdateRequest().deleteById( id ).process( this );
   }

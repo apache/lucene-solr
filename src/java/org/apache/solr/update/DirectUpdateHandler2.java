@@ -125,6 +125,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong deleteByQueryCommandsCumulative= new AtomicLong();
   AtomicLong commitCommands= new AtomicLong();
   AtomicLong optimizeCommands= new AtomicLong();
+  AtomicLong rollbackCommands= new AtomicLong();
   AtomicLong numDocsPending= new AtomicLong();
   AtomicLong numErrors = new AtomicLong();
   AtomicLong numErrorsCumulative = new AtomicLong();
@@ -174,6 +175,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       // released, we could try and delete it here
       writer=null;
     }
+  }
+
+  // must only be called when iwCommit lock held
+  protected void rollbackWriter() throws IOException {
+    numDocsPending.set(0);
+    if (writer!=null) writer.rollback();
   }
 
   public int addDoc(AddUpdateCommand cmd) throws IOException {
@@ -370,6 +377,38 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
+  /**
+   * @since Solr 1.4
+   */
+  public void rollback(RollbackUpdateCommand cmd) throws IOException {
+
+    rollbackCommands.incrementAndGet();
+
+    boolean error=true;
+    iwCommit.lock();
+    try {
+      log.info("start "+cmd);
+
+      rollbackWriter();
+
+      //callPostRollbackCallbacks();
+
+      // reset commit tracking
+      tracker.didRollback();
+
+      log.info("end_rollback");
+
+      error=false;
+    }
+    finally {
+      iwCommit.unlock();
+      addCommands.set(0);
+      deleteByIdCommands.set(0);
+      deleteByQueryCommands.set(0);
+      numErrors.set(error ? 1 : 0);
+    }
+  }
+
 
   public void close() throws IOException {
     log.info("closing " + this);
@@ -467,6 +506,15 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       docsSinceCommit = 0;
     }
 
+    /** Inform tracker that a rollback has occurred, cancel any pending commits */
+    public void didRollback() {
+      if( pending != null ) {
+        pending.cancel(false);
+        pending = null; // let it start another one
+      }
+      docsSinceCommit = 0;
+    }
+
     /** This is the worker part for the ScheduledFuture **/
     public synchronized void run() {
       long started = System.currentTimeMillis();
@@ -556,6 +604,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
     lst.add("autocommits", tracker.autoCommitCount);
     lst.add("optimizes", optimizeCommands.get());
+    lst.add("rollbacks", rollbackCommands.get());
     lst.add("docsPending", numDocsPending.get());
     // pset.size() not synchronized, but it should be fine to access.
     // lst.add("deletesPending", pset.size());

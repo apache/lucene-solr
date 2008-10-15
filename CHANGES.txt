@@ -52,6 +52,9 @@ New Features
  5. SOLR-793: Add 'commitWithin' argument to the update add command.  This behaves
     similar to the global autoCommit maxTime argument except that it is set for 
     each request.  (ryan)
+
+ 6. SOLR-670: Add support for rollbacks in UpdateHandler. This allows user to rollback all changes
+    since the last commit. (Noble Paul, koji via shalin)
     
 
 Optimizations

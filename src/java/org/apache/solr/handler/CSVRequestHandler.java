@@ -59,8 +59,8 @@ public class CSVRequestHandler extends RequestHandlerBase {
 
       Iterable<ContentStream> streams = req.getContentStreams();
       if( streams == null ) {
-        if( !RequestHandlerUtils.handleCommit(processor, params, false) ) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
+        if (!RequestHandlerUtils.handleCommit(processor, params, false) && !RequestHandlerUtils.handleRollback(processor, params, false)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
         }
       }
       else {
@@ -77,6 +77,7 @@ public class CSVRequestHandler extends RequestHandlerBase {
 
         // Perhaps commit from the parameters
         RequestHandlerUtils.handleCommit( processor, params, false );
+        RequestHandlerUtils.handleRollback(processor,  params, false );
       }
     } finally {
       // finish the request
