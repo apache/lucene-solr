@@ -29,10 +29,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -46,6 +44,7 @@ public class ResponseBuilder
   public SolrQueryResponse rsp;
   public boolean doHighlights;
   public boolean doFacets;
+  public boolean doStats;
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
@@ -130,6 +129,7 @@ public class ResponseBuilder
   /* private... components that don't own these shouldn't use them */
   SolrDocumentList _responseDocs;
   FacetInfo _facetInfo;
+  StatsInfo _statsInfo;
 
   /**
    * Utility function to add debugging info.  This will make sure a valid 

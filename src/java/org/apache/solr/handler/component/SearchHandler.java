@@ -66,6 +66,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     names.add( FacetComponent.COMPONENT_NAME );
     names.add( MoreLikeThisComponent.COMPONENT_NAME );
     names.add( HighlightComponent.COMPONENT_NAME );
+    names.add( StatsComponent.COMPONENT_NAME );
     names.add( DebugComponent.COMPONENT_NAME );
     return names;
   }

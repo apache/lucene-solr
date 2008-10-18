@@ -63,6 +63,11 @@ public abstract class FieldType extends FieldProperties {
     return (properties & TOKENIZED) != 0;
   }
 
+  /** Returns true if fields can have multiple values */
+  public boolean isMultiValued() {
+    return (properties & MULTIVALUED) != 0;
+  }
+
   /** subclasses should initialize themselves with the args provided
    * and remove valid arguments.  leftover arguments will cause an exception.
    * Common boolean properties have already been handled.

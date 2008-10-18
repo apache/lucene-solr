@@ -803,6 +803,7 @@ public final class SolrCore implements SolrInfoMBean {
     standardcomponents.put( FacetComponent.COMPONENT_NAME,        FacetComponent.class        );
     standardcomponents.put( MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class );
     standardcomponents.put( HighlightComponent.COMPONENT_NAME,    HighlightComponent.class    );
+    standardcomponents.put( StatsComponent.COMPONENT_NAME,        StatsComponent.class        );
     standardcomponents.put( DebugComponent.COMPONENT_NAME,        DebugComponent.class        );
     for( Map.Entry<String, Class<? extends SearchComponent>> entry : standardcomponents.entrySet() ) {
       if( components.get( entry.getKey() ) == null ) {

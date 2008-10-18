@@ -21,6 +21,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.StatsParams;
 
 
 /**
@@ -320,6 +321,30 @@ public class SolrQuery extends ModifiableSolrParams
 
   public String getSortField() {
     return this.get(CommonParams.SORT);
+  }
+  
+  public void setGetFieldStatistics( boolean v )
+  {
+    this.set( StatsParams.STATS, v );
+  }
+  
+  public void setGetFieldStatistics( String field, boolean twopass )
+  {
+    this.set( StatsParams.STATS, true );
+    this.add( StatsParams.STATS_FIELD, field );
+    this.set( "f."+field+"."+StatsParams.STATS_TWOPASS, twopass+"" );
+  }
+  
+  public void addStatsFieldFacets( String field, String ... facets )
+  {
+    if( field == null ) {
+      this.add( StatsParams.STATS_FACET, facets );
+    }
+    else {
+      for( String f : facets ) {
+        this.add( "f."+field+"."+StatsParams.STATS_FACET, f );
+      }
+    }
   }
 
   public SolrQuery setFilterQueries(String ... fq) {

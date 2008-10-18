@@ -35,6 +35,7 @@ public class ShardRequest {
   public final static int PURPOSE_GET_FIELDS      = 0x40;
   public final static int PURPOSE_GET_HIGHLIGHTS  = 0x80;
   public final static int PURPOSE_GET_DEBUG       =0x100;
+  public final static int PURPOSE_GET_STATS       =0x200;
 
   public int purpose;  // the purpose of this request
 

@@ -17,10 +17,10 @@
 
 package org.apache.solr.analysis;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.core.SolrConfig;
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
@@ -80,6 +80,13 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     
     try {
       encoder = clazz.newInstance();
+      
+      // Try to set the maxCodeLength
+      String v = args.get( "maxCodeLength" );
+      if( v != null ) {
+        Method setter = encoder.getClass().getMethod( "setMaxCodeLength", Integer.class );
+        setter.invoke( encoder, Integer.parseInt( v ) );
+      }
     } 
     catch (Exception e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e );

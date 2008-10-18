@@ -29,6 +29,7 @@ import junit.framework.Assert;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -318,7 +319,112 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     rsp = luke.process( server );
     assertNotNull( rsp.getFieldTypeInfo() ); 
   }
-  
+
+  public void testStatistics() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    
+    int i=0;               // 0   1   2   3   4   5   6   7   8   9 
+    int[] nums = new int[] { 23, 26, 38, 46, 55, 63, 77, 84, 92, 94 };
+    for( int num : nums ) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField( "id", "doc"+i++ );
+      doc.setField( "name", "doc: "+num );
+      doc.setField( "popularity", num );
+      server.add( doc );
+    }
+    server.commit();
+    assertNumFound( "*:*", nums.length ); // make sure they all got in
+    
+    SolrQuery query = new SolrQuery( "*:*" );
+    query.setRows( 0 );
+    query.setGetFieldStatistics( "popularity", true );
+    
+    QueryResponse rsp = server.query( query );
+    FieldStatsInfo stats = rsp.getFieldStatsInfo().get( "popularity" );
+    assertNotNull( stats );
+    
+    assertEquals( 23.0, stats.getMin() );
+    assertEquals( 94.0, stats.getMax() );
+    assertEquals( new Long(nums.length), stats.getCount() );
+    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals( (nums[4]+nums[5])/2.0, stats.getMedian() );
+    assertEquals( "26.4", stats.getStddev().toString().substring(0,4) );
+    
+    // now lets try again with a new set...  (odd median)
+    //----------------------------------------------------
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    nums = new int[] { 5, 7, 10, 19, 20 };
+    for( int num : nums ) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField( "id", "doc"+i++ );
+      doc.setField( "name", "doc: "+num );
+      doc.setField( "popularity", num );
+      server.add( doc );
+    }
+    server.commit();
+    assertNumFound( "*:*", nums.length ); // make sure they all got in
+    
+    rsp = server.query( query );
+    stats = rsp.getFieldStatsInfo().get( "popularity" );
+    assertNotNull( stats );
+    
+    assertEquals( 5.0, stats.getMin() );
+    assertEquals( 20.0, stats.getMax() );
+    assertEquals( new Long(nums.length), stats.getCount() );
+    assertEquals( new Long(0), stats.getMissing() );
+    assertEquals( 10.0, stats.getMedian() );
+    
+    // Now try again with faceting
+    //---------------------------------
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    nums = new int[] { 1, 2, 3, 4, 5, 10, 11, 12, 13, 14 };
+    for( i=0; i<nums.length; i++ ) {
+      int num = nums[i];
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.setField( "id", "doc"+i );
+      doc.setField( "name", "doc: "+num );
+      doc.setField( "popularity", num );
+      doc.setField( "inStock", i < 5 );
+      server.add( doc );
+    }
+    server.commit();
+    assertNumFound( "inStock:true",  5 ); // make sure they all got in
+    assertNumFound( "inStock:false", 5 ); // make sure they all got in
+
+    // facet on 'inStock'
+    query.addStatsFieldFacets( "popularity", "inStock" );
+    rsp = server.query( query );
+    stats = rsp.getFieldStatsInfo().get( "popularity" );
+    assertNotNull( stats );
+    
+    List<FieldStatsInfo> facets = stats.getFacets().get( "inStock" );
+    assertNotNull( facets );
+    assertEquals( 2, facets.size() );
+    FieldStatsInfo inStockF = facets.get(0);
+    FieldStatsInfo inStockT = facets.get(1);
+    if( "true".equals( inStockF.getName() ) ) {
+      FieldStatsInfo tmp = inStockF;
+      inStockF = inStockT;
+      inStockT = tmp;
+    }
+
+    // make sure half went to each
+    assertEquals( inStockF.getCount(), inStockT.getCount() );
+    assertEquals( stats.getCount().longValue(), inStockF.getCount()+inStockT.getCount() );
+
+    assertTrue( "check that min max faceted ok", inStockF.getMin() > inStockT.getMax() );
+    assertEquals( "they have the same distribution", inStockF.getStddev(), inStockT.getStddev() );
+  }
 
   public void testPingHandler() throws Exception
   {    

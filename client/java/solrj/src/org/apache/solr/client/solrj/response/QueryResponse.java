@@ -45,6 +45,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _debugInfo = null;
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
+  private NamedList<Object> _statsInfo = null;
 
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
@@ -57,6 +58,9 @@ public class QueryResponse extends SolrResponseBase
 
   // SpellCheck Response
   private SpellCheckResponse _spellResponse = null;
+
+  // Field stats Response
+  private Map<String,FieldStatsInfo> _fieldStatsInfo = null;
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
@@ -110,11 +114,28 @@ public class QueryResponse extends SolrResponseBase
         _spellInfo = (NamedList<Object>) res.getVal( i );
         extractSpellCheckInfo( _spellInfo );
       }
+      else if ( "stats".equals( n ) )  {
+        _statsInfo = (NamedList<Object>) res.getVal( i );
+        extractStatsInfo( _statsInfo );
+      }
     }
   }
 
   private void extractSpellCheckInfo(NamedList<Object> spellInfo) {
     _spellResponse = new SpellCheckResponse(spellInfo);
+  }
+
+  private void extractStatsInfo(NamedList<Object> info) {
+    if( info != null ) {
+      _fieldStatsInfo = new HashMap<String, FieldStatsInfo>();
+      NamedList<NamedList<Object>> ff = (NamedList<NamedList<Object>>) info.get( "stats_fields" );
+      if( ff != null ) {
+        for( Map.Entry<String,NamedList<Object>> entry : ff ) {
+          _fieldStatsInfo.put( entry.getKey(), 
+              new FieldStatsInfo( entry.getValue(), entry.getKey() ) );
+        }
+      }
+    }
   }
 
   private void extractDebugInfo( NamedList<Object> debug )
@@ -288,6 +309,10 @@ public class QueryResponse extends SolrResponseBase
     return solrServer == null ? 
       new DocumentObjectBinder().getBeans(type,_results):
       solrServer.getBinder().getBeans(type, _results);
+  }
+
+  public Map<String, FieldStatsInfo> getFieldStatsInfo() {
+    return _fieldStatsInfo;
   }
 }
 
