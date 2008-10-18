@@ -247,6 +247,14 @@
         />
       </analyzer>
     </fieldType>
+    
+    <fieldtype name="phonetic" stored="false" indexed="true" class="solr.TextField" >
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.DoubleMetaphoneFilterFactory" inject="false"/>
+      </analyzer>
+    </fieldtype> 
+    
 
     <!-- since fields of this type are by default not stored or indexed, any data added to 
          them will be ignored outright 

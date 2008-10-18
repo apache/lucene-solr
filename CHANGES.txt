@@ -43,7 +43,7 @@ New Features
     See http://lucene.apache.org/java/2_3_2/api/org/apache/lucene/index/IndexDeletionPolicy.html
     (yonik, Noble Paul, Akshay Ukey via shalin)
  
- 3. SOLR-657: Replace deprecated calls with the non-deprecated equivalents
+ 3. SOLR-657: Replace many deprecated calls with non-deprecated equivalents
     (Lars Kotthoff via ryan)
 
  4. SOLR-658: Allow Solr to load index from arbitrary directory in dataDir
@@ -56,6 +56,10 @@ New Features
  6. SOLR-670: Add support for rollbacks in UpdateHandler. This allows user to rollback all changes
     since the last commit. (Noble Paul, koji via shalin)
     
+ 7. SOLR-813: Adding DoubleMetaphone Filter and Factory.  Similar to the PhoneticFilter, 
+    but this uses DoubleMetaphone specific calls (including alternate encoding)
+    (Todd Feak via ryan)   
+
 
 Optimizations
 ----------------------
