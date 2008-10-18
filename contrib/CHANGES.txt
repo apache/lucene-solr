@@ -2,6 +2,35 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
 
+Changes in runtime behavior
+
+ (None)
+
+API Changes
+
+ (None)
+
+Bug fixes
+
+ 1. LUCENE-1423: InstantiatedTermEnum#skipTo(Term) throws ArrayIndexOutOfBounds on empty index.
+    (Karl Wettin) 
+
+New features
+
+ (None)
+
+Documentation
+
+ (None)
+
+Build
+
+ (None)
+
+Test Cases
+
+ (None)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in runtime behavior

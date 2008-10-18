@@ -84,6 +84,10 @@ public class InstantiatedTermEnum
     // in lucene for many years now, so there is
     // very to gain by optimizing this method more,
 
+    if (reader.getIndex().getOrderedTerms().length == 0) {
+      return false;
+    }
+
     InstantiatedTerm term = reader.getIndex().findTerm(target);
     if (term != null) {
       this.term = term;
