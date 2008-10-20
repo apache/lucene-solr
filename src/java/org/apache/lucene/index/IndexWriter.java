@@ -548,7 +548,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -577,7 +577,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(FSDirectory.getDirectory(path), a, create, true, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -608,7 +608,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, create, true, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -637,7 +637,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(FSDirectory.getDirectory(path), a, create, true, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -668,7 +668,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, null, false, mfl.getLimit());
+    init(d, a, create, false, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -696,7 +696,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, create, false, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -723,7 +723,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -747,7 +747,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(FSDirectory.getDirectory(path), a, true, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -774,7 +774,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit());
+    init(FSDirectory.getDirectory(path), a, true, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -798,7 +798,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, true, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(FSDirectory.getDirectory(path), a, true, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -825,7 +825,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, null, false, mfl.getLimit());
+    init(d, a, false, null, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -850,7 +850,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, null, true, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, false, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -876,7 +876,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, false, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -906,7 +906,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, create, false, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
 
   /**
@@ -933,7 +933,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, deletionPolicy, false, mfl.getLimit());
+    init(d, a, false, deletionPolicy, false, mfl.getLimit(), null, null);
   }
 
   /**
@@ -960,7 +960,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, false, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, false, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
   }
   
   /**
@@ -993,7 +993,7 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, deletionPolicy, false, mfl.getLimit());
+    init(d, a, create, false, deletionPolicy, false, mfl.getLimit(), null, null);
   }
   
   /**
@@ -1015,9 +1015,10 @@ public class IndexWriter {
    *  the existing one; <code>false</code> to append to the existing
    *  index
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @param mfl whether or not to limit field lengths
    * @param indexingChain the {@link DocConsumer} chain to be used to 
    *  process documents
-   * @param mfl whether or not to limit field lengths
+   * @param commit which commit to open
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -1027,9 +1028,9 @@ public class IndexWriter {
    *  <code>false</code> or if there is any other low-level
    *  IO error
    */
-  IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexingChain indexingChain)
+  IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexingChain indexingChain, IndexCommit commit)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, deletionPolicy, false, mfl.getLimit(), indexingChain);
+    init(d, a, create, false, deletionPolicy, false, mfl.getLimit(), indexingChain, commit);
   }
   
   /**
@@ -1062,39 +1063,72 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy)
           throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH);
+    init(d, a, create, false, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
+  }
+
+  /**
+   * Expert: constructs an IndexWriter on specific commit
+   * point, with a custom {@link IndexDeletionPolicy}, for
+   * the index in <code>d</code>.  Text will be analyzed
+   * with <code>a</code>.
+   *
+   * <p> This is only meaningful if you've used a {@link
+   * IndexDeletionPolicy} in that past that keeps more than
+   * just the last commit.
+   * 
+   * <p>This operation is similar to {@link #rollback()},
+   * except that method can only rollback what's been done
+   * with the current instance of IndexWriter since its last
+   * commit, whereas this method can rollback to an
+   * arbitrary commit point from the past, assuming the
+   * {@link IndexDeletionPolicy} has preserved past
+   * commits.
+   *
+   * <p><b>NOTE</b>: autoCommit (see <a
+   * href="#autoCommit">above</a>) is set to false with this
+   * constructor.
+   *
+   * @param d the index directory
+   * @param a the analyzer to use
+   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @param mfl whether or not to limit field lengths
+   * @param commit which commit to open
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be read/written to, or
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
+   */
+  public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexCommit commit)
+       throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, false, false, deletionPolicy, false, mfl.getLimit(), null, commit);
   }
 
   private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, 
-      boolean autoCommit, int maxFieldLength) 
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, closeDir, deletionPolicy, autoCommit, maxFieldLength, DocumentsWriter.DefaultIndexingChain);
-  }
-  
-  private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, 
-      boolean autoCommit, int maxFieldLength, IndexingChain indexingChain)
+                    boolean autoCommit, int maxFieldLength, IndexingChain indexingChain, IndexCommit commit)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(d)) {
-      init(d, a, false, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain);
+      init(d, a, false, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain, commit);
     } else {
-      init(d, a, true, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain);
+      init(d, a, true, closeDir, deletionPolicy, autoCommit, maxFieldLength, indexingChain, commit);
     }
   }
 
   private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, 
-      IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, closeDir, deletionPolicy, autoCommit, maxFieldLength, DocumentsWriter.DefaultIndexingChain);
-  }
-  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, 
-      IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength,
-      IndexingChain indexingChain)
+                    IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength,
+                    IndexingChain indexingChain, IndexCommit commit)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     this.closeDir = closeDir;
     directory = d;
     analyzer = a;
     setMessageID(defaultInfoStream);
     this.maxFieldLength = maxFieldLength;
+
+    if (indexingChain == null)
+      indexingChain = DocumentsWriter.DefaultIndexingChain;
 
     if (create) {
       // Clear the write lock in case it's leftover:
@@ -1121,6 +1155,21 @@ public class IndexWriter {
         segmentInfos.commit(directory);
       } else {
         segmentInfos.read(directory);
+
+        if (commit != null) {
+          // Swap out all segments, but, keep metadata in
+          // SegmentInfos, like version & generation, to
+          // preserve write-once.  This is important if
+          // readers are open against the future commit
+          // points.
+          if (commit.getDirectory() != directory)
+            throw new IllegalArgumentException("IndexCommit's directory doesn't match my directory");
+          SegmentInfos oldInfos = new SegmentInfos();
+          oldInfos.read(directory, commit.getSegmentsFileName());
+          segmentInfos.replace(oldInfos);
+          changeCount++;
+          message("init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
+        }
 
         // We assume that this segments_N was previously
         // properly sync'd:
@@ -3461,6 +3510,7 @@ public class IndexWriter {
       try {
         message("commit: pendingCommit != null");
         pendingCommit.finishCommit(directory);
+        message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
         setRollbackSegmentInfos(pendingCommit);

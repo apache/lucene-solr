@@ -20,6 +20,14 @@ Bug fixes
 
 New features
 
+1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
+   commit, obtained from IndexReader.listCommits.  This makes it
+   possible to rollback changes to an index even after you've closed
+   the IndexWriter that made the changes, assuming you are using an
+   IndexDeletionPolicy that keeps past commits around.  This is useful
+   when building transactional support on top of Lucene.  (Mike
+   McCandless)
+
 Optimizations
 
 Documentation

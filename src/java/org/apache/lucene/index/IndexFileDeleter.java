@@ -122,10 +122,8 @@ final class IndexFileDeleter {
   /**
    * Initialize the deleter: find all previous commits in
    * the Directory, incref the files they reference, call
-   * the policy to let it delete commits.  The incoming
-   * segmentInfos must have been loaded from a commit point
-   * and not yet modified.  This will remove any files not
-   * referenced by any of the commits.
+   * the policy to let it delete commits.  This will remove
+   * any files not referenced by any of the commits.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -242,12 +240,9 @@ final class IndexFileDeleter {
     // startup:
     policy.onInit(commits);
 
-    // It's OK for the onInit to remove the current commit
-    // point; we just have to checkpoint our in-memory
-    // SegmentInfos to protect those files that it uses:
-    if (currentCommitPoint.deleted) {
-      checkpoint(segmentInfos, false);
-    }
+    // Always protect the incoming segmentInfos since
+    // sometime it may not be the most recent commit
+    checkpoint(segmentInfos, false);
     
     deleteCommits();
   }
@@ -341,6 +336,14 @@ final class IndexFileDeleter {
   }
 
   public void close() throws IOException {
+    // DecRef old files from the last checkpoint, if any:
+    int size = lastFiles.size();
+    if (size > 0) {
+      for(int i=0;i<size;i++)
+        decRef((List) lastFiles.get(i));
+      lastFiles.clear();
+    }
+
     deletePendingFiles();
   }
 

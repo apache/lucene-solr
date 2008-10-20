@@ -840,4 +840,14 @@ final class SegmentInfos extends Vector {
     }
     return buffer.toString();
   }
+
+  /** Replaces all segments in this instance, but keeps
+   *  generation, version, counter so that future commits
+   *  remain write once.
+   */
+  void replace(SegmentInfos other) {
+    clear();
+    addAll(other);
+    lastGeneration = other.lastGeneration;
+  }
 }

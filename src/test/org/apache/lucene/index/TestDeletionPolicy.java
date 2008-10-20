@@ -33,6 +33,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -343,6 +344,108 @@ public class TestDeletionPolicy extends LuceneTestCase
       dir.close();
     }
   }
+
+  /* Uses KeepAllDeletionPolicy to keep all commits around,
+   * then, opens a new IndexWriter on a previous commit
+   * point. */
+  public void testOpenPriorSnapshot() throws IOException {
+  
+    // Never deletes a commit
+    KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
+
+    Directory dir = new MockRAMDirectory();
+    policy.dir = dir;
+
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), policy, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    for(int i=0;i<10;i++) {
+      addDoc(writer);
+      if ((1+i)%2 == 0)
+        writer.commit();
+    }
+    writer.close();
+
+    Collection commits = IndexReader.listCommits(dir);
+    assertEquals(6, commits.size());
+    IndexCommit lastCommit = null;
+    Iterator it = commits.iterator();
+    while(it.hasNext()) {
+      IndexCommit commit = (IndexCommit) it.next();
+      if (lastCommit == null || commit.getGeneration() > lastCommit.getGeneration())
+        lastCommit = commit;
+    }
+    assertTrue(lastCommit != null);
+
+    // Now add 1 doc and optimize
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), policy, IndexWriter.MaxFieldLength.LIMITED);
+    addDoc(writer);
+    assertEquals(11, writer.numDocs());
+    writer.optimize();
+    writer.close();
+
+    assertEquals(7, IndexReader.listCommits(dir).size());
+
+    // Now open writer on the commit just before optimize:
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), policy, IndexWriter.MaxFieldLength.LIMITED, lastCommit);
+    assertEquals(10, writer.numDocs());
+
+    // Should undo our rollback:
+    writer.rollback();
+
+    IndexReader r = IndexReader.open(dir);
+    // Still optimized, still 11 docs
+    assertTrue(r.isOptimized());
+    assertEquals(11, r.numDocs());
+    r.close();
+
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), policy, IndexWriter.MaxFieldLength.LIMITED, lastCommit);
+    assertEquals(10, writer.numDocs());
+    // Commits the rollback:
+    writer.close();
+
+    // Now 8 because we made another commit
+    assertEquals(8, IndexReader.listCommits(dir).size());
+    
+    r = IndexReader.open(dir);
+    // Not optimized because we rolled it back, and now only
+    // 10 docs
+    assertTrue(!r.isOptimized());
+    assertEquals(10, r.numDocs());
+    r.close();
+
+    // Reoptimize
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), policy, IndexWriter.MaxFieldLength.LIMITED);
+    writer.optimize();
+    writer.close();
+
+    r = IndexReader.open(dir);
+    assertTrue(r.isOptimized());
+    assertEquals(10, r.numDocs());
+    r.close();
+
+    // Now open writer on the commit just before optimize,
+    // but this time keeping only the last commit:
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), new KeepOnlyLastCommitDeletionPolicy(), IndexWriter.MaxFieldLength.LIMITED, lastCommit);
+    assertEquals(10, writer.numDocs());
+    
+    // Reader still sees optimized index, because writer
+    // opened on the prior commit has not yet committed:
+    r = IndexReader.open(dir);
+    assertTrue(r.isOptimized());
+    assertEquals(10, r.numDocs());
+    r.close();
+
+    writer.close();
+
+    // Now reader sees unoptimized index:
+    r = IndexReader.open(dir);
+    assertTrue(!r.isOptimized());
+    assertEquals(10, r.numDocs());
+    r.close();
+
+    dir.close();
+  }
+
 
   /* Test keeping NO commit points.  This is a viable and
    * useful case eg where you want to build a big index with

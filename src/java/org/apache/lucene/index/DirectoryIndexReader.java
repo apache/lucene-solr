@@ -266,6 +266,7 @@ abstract class DirectoryIndexReader extends IndexReader {
         // Have the deleter remove any now unreferenced
         // files due to this commit:
         deleter.checkpoint(segmentInfos, true);
+        deleter.close();
 
         if (writeLock != null) {
           writeLock.release();  // release write lock
