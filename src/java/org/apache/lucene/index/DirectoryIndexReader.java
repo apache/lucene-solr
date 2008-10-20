@@ -169,6 +169,11 @@ abstract class DirectoryIndexReader extends IndexReader {
     return segmentInfos.getVersion();
   }
 
+  public String getCommitUserData() {
+    ensureOpen();
+    return segmentInfos.getUserData();
+  }
+
   /**
    * Check whether this IndexReader is still using the
    * current (i.e., most recently committed) version of the
@@ -367,11 +372,13 @@ abstract class DirectoryIndexReader extends IndexReader {
     long generation;
     long version;
     final boolean isOptimized;
+    final String userData;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
       this.dir = dir;
       final int size = infos.size();
+      userData = infos.getUserData();
       files = new ArrayList(size);
       files.add(segmentsFileName);
       for(int i=0;i<size;i++) {
@@ -404,6 +411,9 @@ abstract class DirectoryIndexReader extends IndexReader {
     }
     public boolean isDeleted() {
       return false;
+    }
+    public String getUserData() {
+      return userData;
     }
   }
 

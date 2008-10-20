@@ -3400,8 +3400,16 @@ public class IndexWriter {
     flush(true, false, true);
   }
 
-  /** <p>Expert: prepare for commit.  This does the first
-   *  phase of 2-phase commit.  You can only call this when
+  /** Expert: prepare for commit.
+   * @see #prepareCommit(String) */
+  public final void prepareCommit() throws CorruptIndexException, IOException {
+    ensureOpen();
+    prepareCommit(null);
+  }
+
+  /** <p>Expert: prepare for commit, specifying
+   *  commitUserData String.  This does the first phase of
+   *  2-phase commit.  You can only call this when
    *  autoCommit is false.  This method does all steps
    *  necessary to commit changes since this writer was
    *  opened: flushes pending added and deleted docs, syncs
@@ -3410,17 +3418,28 @@ public class IndexWriter {
    *  #commit()} to finish the commit, or {@link
    *  #rollback()} to revert the commit and undo all changes
    *  done since the writer was opened.</p>
+   * 
+   *  You can also just call {@link #commit(String)} directly
+   *  without prepareCommit first in which case that method
+   *  will internally call prepareCommit.
    *
-   * You can also just call {@link #commit()} directly
-   * without prepareCommit first in which case that method
-   * will internally call prepareCommit.
+   *  @param commitUserData Opaque String that's recorded
+   *  into the segments file in the index, and retrievable
+   *  by {@link IndexReader#getCommitUserData}.  Note that
+   *  when IndexWriter commits itself, for example if open
+   *  with autoCommit=true, or, during {@link #close}, the
+   *  commitUserData is unchanged (just carried over from
+   *  the prior commit).  If this is null then the previous
+   *  commitUserData is kept.  Also, the commitUserData will
+   *  only "stick" if there are actually changes in the
+   *  index to commit.  Therefore it's best to use this
+   *  feature only when autoCommit is false.
    */
-  public final void prepareCommit() throws CorruptIndexException, IOException {
-    ensureOpen();
-    prepareCommit(false);
+  public final void prepareCommit(String commitUserData) throws CorruptIndexException, IOException {
+    prepareCommit(commitUserData, false);
   }
 
-  private final void prepareCommit(boolean internal) throws CorruptIndexException, IOException {
+  private final void prepareCommit(String commitUserData, boolean internal) throws CorruptIndexException, IOException {
 
     if (hitOOM)
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
@@ -3435,11 +3454,11 @@ public class IndexWriter {
 
     flush(true, true, true);
 
-    startCommit(0);
+    startCommit(0, commitUserData);
   }
 
   private void commit(long sizeInBytes) throws IOException {
-    startCommit(sizeInBytes);
+    startCommit(sizeInBytes, null);
     finishCommit();
   }
 
@@ -3482,7 +3501,17 @@ public class IndexWriter {
    * @see #prepareCommit
    */
 
+  /** Commits all changes to the index.
+   *  @see #commit(String) */
   public final void commit() throws CorruptIndexException, IOException {
+    commit(null);
+  }
+
+  /** Commits all changes to the index, specifying a
+   *  commitUserData String.  This just calls {@link
+   *  #prepareCommit(String)} (if you didn't already call
+   *  it) and then {@link #finishCommit}. */
+  public final void commit(String commitUserData) throws CorruptIndexException, IOException {
 
     ensureOpen();
 
@@ -3494,7 +3523,7 @@ public class IndexWriter {
 
       if (autoCommit || pendingCommit == null) {
         message("commit: now prepare");
-        prepareCommit(true);
+        prepareCommit(commitUserData, true);
       } else
         message("commit: already prepared");
 
@@ -3513,6 +3542,7 @@ public class IndexWriter {
         message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
+        segmentInfos.setUserData(pendingCommit.getUserData());
         setRollbackSegmentInfos(pendingCommit);
         deleter.checkpoint(pendingCommit, true);
       } finally {
@@ -4600,7 +4630,7 @@ public class IndexWriter {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(long sizeInBytes) throws IOException {
+  private void startCommit(long sizeInBytes, String commitUserData) throws IOException {
 
     assert testPoint("startStartCommit");
 
@@ -4655,6 +4685,10 @@ public class IndexWriter {
             message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
 
           toSync = (SegmentInfos) segmentInfos.clone();
+
+          if (commitUserData != null)
+            toSync.setUserData(commitUserData);
+
           deleter.incRef(toSync, false);
           myChangeCount = changeCount;
         } finally {

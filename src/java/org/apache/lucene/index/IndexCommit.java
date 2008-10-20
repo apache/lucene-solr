@@ -101,14 +101,14 @@ public abstract class IndexCommit implements IndexCommitPoint {
   }
 
   /** Returns the version for this IndexCommit.  This is the
-      same value that {@link IndexReader#getVersion} would
-      return if it were opened on this commit. */
+   *  same value that {@link IndexReader#getVersion} would
+   *  return if it were opened on this commit. */
   public long getVersion() {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
 
   /** Returns the generation (the _N in segments_N) for this
-      IndexCommit */
+   *  IndexCommit */
   public long getGeneration() {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
@@ -119,5 +119,11 @@ public abstract class IndexCommit implements IndexCommitPoint {
    *  getDirectory().fileModified(getSegmentsFileName()). */
   public long getTimestamp() throws IOException {
     return getDirectory().fileModified(getSegmentsFileName());
+  }
+
+  /** Returns userData, previously passed to {@link
+   *  IndexWriter#commit(String)} for this commit.  */
+  public String getUserData() throws IOException {
+    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
 }

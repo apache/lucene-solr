@@ -118,6 +118,9 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     public long getGeneration() {
       return cp.getGeneration();
     }
+    public String getUserData() throws IOException {
+      return cp.getUserData();
+    }
   }
 
   private List wrapCommits(List commits) {

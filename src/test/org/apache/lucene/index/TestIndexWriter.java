@@ -4116,6 +4116,44 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
+  // LUCENE-1382
+  public void testCommitUserData() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    w.setMaxBufferedDocs(2);
+    for(int j=0;j<17;j++)
+      addDoc(w);
+    w.close();
+
+    assertEquals(null, IndexReader.getCommitUserData(dir));
+
+    IndexReader r = IndexReader.open(dir);
+    // commit(String) never called for this index
+    assertEquals(null, r.getCommitUserData());
+    r.close();
+      
+    w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    w.setMaxBufferedDocs(2);
+    for(int j=0;j<17;j++)
+      addDoc(w);
+    w.commit("test1");
+    w.close();
+      
+    assertEquals("test1", IndexReader.getCommitUserData(dir));
+
+    r = IndexReader.open(dir);
+    assertEquals("test1", r.getCommitUserData());
+    r.close();
+
+    w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    w.optimize();
+    w.close();
+
+    assertEquals("test1", IndexReader.getCommitUserData(dir));
+      
+    dir.close();
+  }
+
   public void testOptimizeExceptions() throws IOException {
     RAMDirectory startDir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(startDir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);    

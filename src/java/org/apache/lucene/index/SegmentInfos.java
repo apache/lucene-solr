@@ -69,8 +69,11 @@ final class SegmentInfos extends Vector {
    *  omitTf==false) */
   public static final int FORMAT_HAS_PROX = -7;
 
+  /** This format adds optional commit userData (String) storage. */
+  public static final int FORMAT_USER_DATA = -8;
+
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_HAS_PROX;
+  static final int CURRENT_FORMAT = FORMAT_USER_DATA;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -83,6 +86,8 @@ final class SegmentInfos extends Vector {
   private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
                                    // or wrote; this is normally the same as generation except if
                                    // there was an IOException that had interrupted a commit
+
+  private String userData;                        // Opaque String that user can specify during IndexWriter.commit
 
   /**
    * If non-null, information about loading segments_N files
@@ -241,6 +246,13 @@ final class SegmentInfos extends Vector {
           version = input.readLong(); // read version
       }
 
+      if (format <= FORMAT_USER_DATA) {
+        if (0 == input.readByte())
+          userData = null;
+        else
+          userData = input.readString();
+      }
+
       if (format <= FORMAT_CHECKSUM) {
         final long checksumNow = input.getChecksum();
         final long checksumThen = input.readLong();
@@ -305,6 +317,12 @@ final class SegmentInfos extends Vector {
       output.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
         info(i).write(output);
+      }
+      if (userData == null)
+        output.writeByte((byte) 0);
+      else {
+        output.writeByte((byte) 1);
+        output.writeString(userData);
       }
       output.prepareCommit();
       success = true;
@@ -392,6 +410,18 @@ final class SegmentInfos extends Vector {
           return new Long(sis.getVersion());
         }
       }.run()).longValue();
+  }
+
+  /**
+   * Returns userData from latest segments file
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static String readCurrentUserData(Directory directory)
+    throws CorruptIndexException, IOException {
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(directory);
+    return sis.getUserData();
   }
 
   /** If non-null, information about retries when loading
@@ -839,6 +869,14 @@ final class SegmentInfos extends Vector {
         buffer.append("**");
     }
     return buffer.toString();
+  }
+
+  public String getUserData() {
+    return userData;
+  }
+
+  public void setUserData(String data) {
+    userData = data;
   }
 
   /** Replaces all segments in this instance, but keeps

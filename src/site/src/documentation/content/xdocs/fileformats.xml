@@ -830,6 +830,12 @@
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile, DeletionCount, HasProx&gt;<sup>SegCount</sup>, Checksum
                 </p>
+                <p>
+                    <b>2.9 and above:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
+                    NormGen<sup>NumField</sup>,
+                    IsCompoundFile, DeletionCount, HasProx&gt;<sup>SegCount</sup>, HasUserData, CommitUserData?, Checksum
+                </p>
 
                 <p>
                     Format, NameCounter, SegCount, SegSize, NumField,
@@ -841,16 +847,16 @@
                 </p>
 
                 <p>
-                    SegName, DocStoreSegment --&gt; String
+                    SegName, DocStoreSegment, CommitUserData --&gt; String
                 </p>
 
                 <p>
                     IsCompoundFile, HasSingleNormFile,
-                    DocStoreIsCompoundFile, HasProx --&gt; Int8
+                    DocStoreIsCompoundFile, HasProx, HasUserData --&gt; Int8
                 </p>
 
                 <p>
-                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3 and -7 (SegmentInfos.FORMAT_HAS_PROX) as of Lucene 2.4.
+                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3, -7 (SegmentInfos.FORMAT_HAS_PROX) as of Lucene 2.4, and -8 (SegmentInfos.FORMAT_USER_DATA) as of Lucene 2.9.
                 </p>
 
                 <p>
@@ -950,6 +956,13 @@
 		    HasProx is 1 if any fields in this segment have
 		    omitTf set to false; else, it's 0.
 		</p>
+
+		<p>
+		    If HasUserData is 1, then the string
+		    CommitUserData is non-null and is stored.  This is
+		    a string previously passed to IndexWriter's commit
+		    or prepareCommit method.
+                </p>
 
             </section>
 

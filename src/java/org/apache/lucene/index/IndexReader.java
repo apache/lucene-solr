@@ -458,10 +458,40 @@ public abstract class IndexReader {
   }
 
   /**
+   * Reads commitUserData, previously passed to {@link
+   * IndexWriter#commit(String)}, from current index
+   * segments file.  This will return null if {@link
+   * IndexWriter#commit(String)} has never been called for
+   * this index.
+   * 
+   * @param directory where the index resides.
+   * @return commit userData.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #getCommitUserData()
+   */
+  public static String getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
+    return SegmentInfos.readCurrentUserData(directory);
+  }
+
+  /**
    * Version number when this IndexReader was opened. Not implemented in the IndexReader base class.
    * @throws UnsupportedOperationException unless overridden in subclass
    */
   public long getVersion() {
+    throw new UnsupportedOperationException("This reader does not support this method.");
+  }
+
+  /**
+   * Retrieve the String userData optionally passed to
+   * IndexWriter#commit.  This will return null if {@link
+   * IndexWriter#commit(String)} has never been called for
+   * this index.
+   *
+   * @see #getCommitUserData(Directory)
+   */
+  public String getCommitUserData() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 

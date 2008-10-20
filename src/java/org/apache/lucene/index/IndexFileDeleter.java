@@ -585,10 +585,12 @@ final class IndexFileDeleter {
     long version;
     long generation;
     final boolean isOptimized;
+    final String userData;
 
     public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
       this.commitsToDelete = commitsToDelete;
+      userData = segmentInfos.getUserData();
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
@@ -627,6 +629,10 @@ final class IndexFileDeleter {
 
     public long getGeneration() {
       return generation;
+    }
+
+    public String getUserData() {
+      return userData;
     }
 
     /**
