@@ -1,0 +1,124 @@
+package org.apache.lucene.analysis.ar;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WordlistLoader;
+
+/**
+ * Analyzer for Arabic. 
+ * <p>
+ * This analyzer implements light-stemming as specified by:
+ * <i>
+ * Improving Stemming for Arabic Information Retrieval: 
+ *      Light Stemming and Co-occurrence Analysis
+ * </i>    
+ * http://ciir.cs.umass.edu/pubfiles/ir-249.pdf
+ * <p>
+ * The analysis package contains three primary components:
+ * <ul>
+ *  <li>{@link ArabicNormalizationFilter}: Arabic orthographic normalization.
+ *  <li>{@link ArabicStemFilter}: Arabic light stemming
+ *  <li>Arabic stop words file: a set of default Arabic stop words.
+ * </ul>
+ * 
+ */
+public final class ArabicAnalyzer extends Analyzer {
+
+  /**
+   * File containing default Arabic stopwords.
+   * 
+   * Default stopword list is from http://members.unine.ch/jacques.savoy/clef/index.html
+   * The stopword list is BSD-Licensed.
+   */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+
+  /**
+   * Contains the stopwords used with the StopFilter.
+   */
+  private Set stoptable = new HashSet();
+  /**
+   * The comment character in the stopwords file.  All lines prefixed with this will be ignored  
+   */
+  public static final String STOPWORDS_COMMENT = "#";
+
+  /**
+   * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
+   */
+  public ArabicAnalyzer() {
+    try {
+      InputStream stream = ArabicAnalyzer.class.getResourceAsStream(DEFAULT_STOPWORD_FILE);
+      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+      stoptable = WordlistLoader.getWordSet(reader, STOPWORDS_COMMENT);
+      reader.close();
+      stream.close();
+    } catch (IOException e) {
+      // TODO: throw IOException
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public ArabicAnalyzer( String[] stopwords ) {
+    stoptable = StopFilter.makeStopSet( stopwords );
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public ArabicAnalyzer( Hashtable stopwords ) {
+    stoptable = new HashSet(stopwords.keySet());
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
+   */
+  public ArabicAnalyzer( File stopwords ) throws IOException {
+    stoptable = WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT);
+  }
+
+
+  /**
+   * Creates a TokenStream which tokenizes all the text in the provided Reader.
+   *
+   * @return  A TokenStream build from a StandardTokenizer filtered with
+   * 			StandardFilter, StopFilter, ArabicNormalizationFilter and ArabicStemFilter.
+   */
+  public final TokenStream tokenStream(String fieldName, Reader reader) {
+    TokenStream result = new ArabicLetterTokenizer( reader );
+    result = new StopFilter( result, stoptable );
+    result = new ArabicNormalizationFilter( result );
+    result = new ArabicStemFilter( result );
+
+    return result;
+  }
+}
+

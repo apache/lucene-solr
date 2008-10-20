@@ -57,6 +57,31 @@ public class WordlistLoader {
   }
 
   /**
+   * Loads a text file and adds every non-comment line as an entry to a HashSet (omitting
+   * leading and trailing whitespace). Every line of the file should contain only
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   *
+   * @param wordfile File containing the wordlist
+   * @param comment The comment string to ignore
+   * @return A HashSet with the file's words
+   */
+  public static HashSet getWordSet(File wordfile, String comment) throws IOException {
+    HashSet result = new HashSet();
+    FileReader reader = null;
+    try {
+      reader = new FileReader(wordfile);
+      result = getWordSet(reader, comment);
+    }
+    finally {
+      if (reader != null)
+        reader.close();
+    }
+    return result;
+  }
+
+
+  /**
    * Reads lines from a Reader and adds every line as an entry to a HashSet (omitting
    * leading and trailing whitespace). Every line of the Reader should contain only
    * one word. The words need to be in lowercase if you make use of an
@@ -85,6 +110,41 @@ public class WordlistLoader {
     }
     return result;
   }
+
+  /**
+   * Reads lines from a Reader and adds every non-comment line as an entry to a HashSet (omitting
+   * leading and trailing whitespace). Every line of the Reader should contain only
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   *
+   * @param reader Reader containing the wordlist
+   * @param comment The string representing a comment.
+   * @return A HashSet with the reader's words
+   */
+  public static HashSet getWordSet(Reader reader, String comment) throws IOException {
+    HashSet result = new HashSet();
+    BufferedReader br = null;
+    try {
+      if (reader instanceof BufferedReader) {
+        br = (BufferedReader) reader;
+      } else {
+        br = new BufferedReader(reader);
+      }
+      String word = null;
+      while ((word = br.readLine()) != null) {
+        if (word.startsWith(comment) == false){
+          result.add(word.trim());
+        }
+      }
+    }
+    finally {
+      if (br != null)
+        br.close();
+    }
+    return result;
+  }
+
+
 
   /**
    * Reads a stem dictionary. Each line contains:

@@ -9,3 +9,8 @@ The snowball stemmers in
 were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
   http://snowball.tartarus.org/
+
+The Arabic stemmer (contrib/analyzer) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file
+resides in contrib/analyzers/src/java/org/apache/lucene/analysis/ar/stopwords.txt
+See http://members.unine.ch/jacques.savoy/clef/index.html.

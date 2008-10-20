@@ -35,7 +35,16 @@ public class TestWordlistLoader extends LuceneTestCase {
     HashSet wordSet2 = WordlistLoader.getWordSet(new BufferedReader(new StringReader(s)));
     checkSet(wordSet2);
   }
-  
+
+  public void testComments() throws Exception {
+    String s = "ONE\n  two \nthree\n#comment";
+    HashSet wordSet1 = WordlistLoader.getWordSet(new StringReader(s), "#");
+    checkSet(wordSet1);
+    assertFalse(wordSet1.contains("#comment"));
+    assertFalse(wordSet1.contains("comment"));
+  }
+
+
   private void checkSet(HashSet wordset) {
     assertEquals(3, wordset.size());
     assertTrue(wordset.contains("ONE"));		// case is not modified
