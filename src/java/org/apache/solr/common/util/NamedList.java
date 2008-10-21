@@ -287,4 +287,10 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     };
     return iter;
   }
+
+  public T remove(String name) {
+    int idx = indexOf(name, 0);
+    if(idx != -1) return remove(idx);
+    return null;
+  }
 }

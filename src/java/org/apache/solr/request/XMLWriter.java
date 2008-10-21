@@ -99,6 +99,8 @@ final public class XMLWriter {
 
     // dump response values
     NamedList lst = rsp.getValues();
+    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
+    if(omitHeader != null && omitHeader) lst.remove("responseHeader");
     int sz = lst.size();
     int start=0;
 

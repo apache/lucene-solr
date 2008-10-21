@@ -21,6 +21,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedListCodec;
 import org.apache.solr.schema.IndexSchema;
@@ -40,6 +41,8 @@ import java.util.*;
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
+    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
+    if(omitHeader != null && omitHeader) response.getValues().remove("responseHeader");
     NamedListCodec codec = new NamedListCodec(resolver);
     codec.marshal(response.getValues(), out);
   }

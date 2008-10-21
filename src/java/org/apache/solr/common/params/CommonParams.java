@@ -89,7 +89,10 @@ public interface CommonParams {
   
   /** include the parameters in the header **/
   public static final String HEADER_ECHO_PARAMS = "echoParams";
-  
+
+  /** include header in the response */
+  public static final String OMIT_HEADER = "omitHeader";
+
   /** valid values for: <code>echoParams</code> */
   public enum EchoParamStyle {
     EXPLICIT,

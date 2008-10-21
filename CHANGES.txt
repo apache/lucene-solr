@@ -67,6 +67,9 @@ New Features
     as well as configuration replication and exposes detailed statistics and progress information
     on the Admin page. Works on all platforms. (Noble Paul, yonik, Akshay Ukey, shalin)
 
+10. SOLR-746: Added "omitHeader" request parameter to omit the header from the response.
+    (Noble Paul via shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

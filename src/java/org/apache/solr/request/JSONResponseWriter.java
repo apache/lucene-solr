@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
@@ -85,6 +86,8 @@ class JSONWriter extends TextResponseWriter {
     if(wrapperFunction!=null) {
         writer.write(wrapperFunction + "(");
     }
+    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
+    if(omitHeader != null && omitHeader) rsp.getValues().remove("responseHeader");
     writeNamedList(null, rsp.getValues());
     if(wrapperFunction!=null) {
         writer.write(')');
