@@ -23,11 +23,12 @@
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Collection" %>
+<%@ page import="org.apache.solr.request.SolrRequestHandler"%>
 
 <%-- jsp:include page="header.jsp"/ --%>
 <%-- do a verbatim include so we can use the local vars --%>
 <%@include file="header.jsp" %>
-
+<%SolrRequestHandler replicationhandler = core.getRequestHandler("/replication");%>
 <br clear="all">
 <table>
 
@@ -43,7 +44,7 @@
     [<a href="file/?file=<%=core.getConfigResource()%>">Config</a>]
     <% } %>
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
-    [<a href="schema.jsp">Schema Browser</a>]
+    [<a href="schema.jsp">Schema Browser</a>] <%if(replicationhandler != null ){%>[<a href="replication">Replication</a>]<%}%>
     <br>
     [<a href="stats.jsp">Statistics</a>]
     [<a href="registry.jsp">Info</a>]

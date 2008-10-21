@@ -51,6 +51,15 @@ input.stdbutton:hover {
    border: groove #0000ff;
 }
 
+input.stdbuttondis{
+   font-family: ITC Officina Sans Book, Helvetica, Arial, sans-serif;
+   font-style: bold;
+   font-size: 11;
+   text-transform: capitalize;
+   color: #8B8B83;
+   background-color: #dddddd;
+   border: groove #8B8B83;
+}
 
 body {
    background-color: #bbbbbb;
