@@ -236,11 +236,7 @@ final class WordDelimiterFilter extends TokenFilter {
       startOff += start;     
     }
 
-    Token newTok = new Token(startOff,
-            endOff,
-            orig.type());
-    newTok.setTermBuffer(orig.termBuffer(), start, (end - start));
-    return newTok;
+    return (Token)orig.clone(orig.termBuffer(), start, (end - start), startOff, endOff);
   }
 
 

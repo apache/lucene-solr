@@ -84,6 +84,8 @@ Bug Fixes
 
  2. SOLR-771: CoreAdminHandler STATUS should display 'normalized' paths (koji, hossman, shalin)
 
+ 3. SOLR-532: WordDelimiterFilter now respects payloads and other attributes of the original Token by using Token.clone() (Tricia Williams, gsingers)
+
 
 Other Changes
 ----------------------
