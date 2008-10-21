@@ -94,9 +94,42 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
     assertQ(req("desc:hello"), "//*[@numFound='1']");
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCompositePk_DeltaImport_DeltaImportQuery() throws Exception {
+    List deltaRow = new ArrayList();
+    deltaRow.add(createMap("id", "5"));
+    MockDataSource.setIterator("select id from x where last_modified > NOW",
+            deltaRow.iterator());
+
+    List parentRow = new ArrayList();
+    parentRow.add(createMap("id", "5"));
+    MockDataSource.setIterator("select * from x where id=5", parentRow
+            .iterator());
+
+    List childRow = new ArrayList();
+    childRow.add(createMap("desc", "hello"));
+    MockDataSource.setIterator("select * from y where y.A=5", childRow
+            .iterator());
+
+    super.runDeltaImport(dataConfig_deltaimportquery);
+
+    assertQ(req("id:5"), "//*[@numFound='1']");
+    assertQ(req("desc:hello"), "//*[@numFound='1']");
+  }
+
   private static String dataConfig = "<dataConfig>\n"
           + "       <document>\n"
           + "               <entity name=\"x\" pk=\"x.id\" query=\"select * from x\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
+          + "                       <field column=\"id\" />\n"
+          + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
+          + "                               <field column=\"desc\" />\n"
+          + "                       </entity>\n" + "               </entity>\n"
+          + "       </document>\n" + "</dataConfig>\n";
+
+  private static String dataConfig_deltaimportquery = "<dataConfig>\n"
+          + "       <document>\n"
+          + "               <entity name=\"x\" deltaImportQuery=\"select * from x where id=${dataimporter.delta.id}\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
           + "                       <field column=\"id\" />\n"
           + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
           + "                               <field column=\"desc\" />\n"

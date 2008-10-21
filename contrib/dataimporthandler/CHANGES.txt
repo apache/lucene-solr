@@ -21,6 +21,10 @@ New Features
 1. SOLR-768:  Set last_index_time variable in full-import command.
               (Wojtek Piaseczny, Noble Paul via shalin)
 
+2. SOLR-811:  Allow a "deltaImportQuery" attribute in SqlEntityProcessor which is used for delta imports
+              instead of DataImportHandler manipulating the SQL itself.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 

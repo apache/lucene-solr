@@ -125,6 +125,10 @@ public class SqlEntityProcessor extends EntityProcessorBase {
   }
 
   public String getDeltaImportQuery(String queryString) {
+    String deltaImportQuery = context.getEntityAttribute(DELTA_IMPORT_QUERY);
+    if(deltaImportQuery != null){
+      return resolver.replaceTokens(deltaImportQuery);
+    }
     StringBuffer sb = new StringBuffer(queryString);
     if (SELECT_WHERE_PATTERN.matcher(queryString).find()) {
       sb.append(" and ");
@@ -161,6 +165,8 @@ public class SqlEntityProcessor extends EntityProcessorBase {
   public static final String QUERY = "query";
 
   public static final String DELTA_QUERY = "deltaQuery";
+
+  public static final String DELTA_IMPORT_QUERY = "deltaImportQuery";
 
   public static final String PARENT_DELTA_QUERY = "parentDeltaQuery";
 
