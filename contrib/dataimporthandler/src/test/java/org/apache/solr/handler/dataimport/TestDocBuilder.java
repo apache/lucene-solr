@@ -170,12 +170,8 @@ public class TestDocBuilder {
       super(null, ".");
     }
 
-    public SolrDoc getSolrDocInstance() {
-      return new DataImportHandler.SolrDocumentWrapper();
-    }
-
-    public boolean upload(SolrDoc d) {
-      return docs.add(((DataImportHandler.SolrDocumentWrapper) d).doc);
+    public boolean upload(SolrInputDocument doc) {
+      return docs.add(doc);
     }
 
     public void log(int event, String name, Object row) {

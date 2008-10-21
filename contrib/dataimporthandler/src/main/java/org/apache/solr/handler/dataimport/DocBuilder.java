@@ -18,6 +18,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.common.SolrInputDocument;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -229,7 +230,7 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void buildDocument(VariableResolverImpl vr, SolrWriter.SolrDoc doc,
+  private void buildDocument(VariableResolverImpl vr, SolrInputDocument doc,
                              Map<String, Object> pk, DataConfig.Entity entity, boolean isRoot,
                              ContextImpl parentCtx) {
 
@@ -272,7 +273,7 @@ public class DocBuilder {
               ctx.getDocSession().clear();
             else
               ctx.setDocSession(new HashMap<String, Object>());
-            doc = writer.getSolrDocInstance();
+            doc = new SolrInputDocument();
             DataConfig.Entity e = entity;
             while (e.parentEntity != null) {
               addFields(e.parentEntity, doc, (Map<String, Object>) vr
@@ -351,7 +352,7 @@ public class DocBuilder {
     }
   }
 
-  private void setDocumentBoost(SolrWriter.SolrDoc doc, Map<String, Object> arow) {
+  private void setDocumentBoost(SolrInputDocument doc, Map<String, Object> arow) {
     Object v = arow.get(DOC_BOOST);
     float value = 1.0f;
     if (v instanceof Number) {
@@ -363,7 +364,7 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void addFields(DataConfig.Entity entity, SolrWriter.SolrDoc doc,
+  private void addFields(DataConfig.Entity entity, SolrInputDocument doc,
                          Map<String, Object> arow) {
     DataConfig.Entity parentMost = entity;
     while (parentMost.parentEntity != null)
@@ -383,7 +384,7 @@ public class DocBuilder {
   }
 
   private void addFieldValue(DataConfig.Field field, Map<String, Object> arow,
-                             Map<String, Object> lowerCaseMap, SolrWriter.SolrDoc doc) {
+                             Map<String, Object> lowerCaseMap, SolrInputDocument doc) {
     if (!field.toWrite)
       return;
     Object value = arow.get(field.column);

@@ -16,18 +16,18 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class SolrWriter {
+public class SolrWriter {
   private static final Logger log = LoggerFactory.getLogger(SolrWriter.class);
 
   static final String IMPORTER_PROPERTIES = "dataimport.properties";
@@ -50,6 +50,8 @@ public abstract class SolrWriter {
   private final UpdateRequestProcessor processor;
 
   private final String configDir;
+
+  DebugLogger debugLogger;
 
   public SolrWriter(UpdateRequestProcessor processor, String confDir) {
     this.processor = processor;
@@ -66,10 +68,10 @@ public abstract class SolrWriter {
       command.overwriteCommitted = true;
       processor.processAdd(command);
     } catch (IOException e) {
-      log.error( "Exception while adding: " + d, e);
+      log.error("Exception while adding: " + d, e);
       return false;
     } catch (Exception e) {
-      log.warn( "Error creating document : " + d, e);
+      log.warn("Error creating document : " + d, e);
       return false;
     }
 
@@ -85,7 +87,7 @@ public abstract class SolrWriter {
       delCmd.fromCommitted = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      log.error( "Exception while deleteing: " + id, e);
+      log.error("Exception while deleteing: " + id, e);
     }
   }
 
@@ -145,7 +147,7 @@ public abstract class SolrWriter {
       props.load(propInput);
       log.info("Read " + SolrWriter.IMPORTER_PROPERTIES);
     } catch (Exception e) {
-      log.warn( "Unable to read: " + SolrWriter.IMPORTER_PROPERTIES);
+      log.warn("Unable to read: " + SolrWriter.IMPORTER_PROPERTIES);
     } finally {
       try {
         if (propInput != null)
@@ -167,7 +169,7 @@ public abstract class SolrWriter {
       delCmd.fromPending = true;
       processor.processDelete(delCmd);
     } catch (IOException e) {
-      log.error( "Exception while deleting by query: " + query, e);
+      log.error("Exception while deleting by query: " + query, e);
     }
   }
 
@@ -176,7 +178,7 @@ public abstract class SolrWriter {
       CommitUpdateCommand commit = new CommitUpdateCommand(optimize);
       processor.processCommit(commit);
     } catch (Exception e) {
-      log.error( "Exception while solr commit.", e);
+      log.error("Exception while solr commit.", e);
     }
   }
 
@@ -240,18 +242,6 @@ public abstract class SolrWriter {
     this.persistStartTime(date);
   }
 
-  public abstract SolrDoc getSolrDocInstance();
-
-  /**
-   * <p>
-   * Write the document to the index
-   * </p>
-   *
-   * @param d . The Document warapper object
-   * @return a boolean value denoting success (true) or failure (false)
-   */
-  public abstract boolean upload(SolrDoc d);
-
   /**
    * This method is used for verbose debugging
    *
@@ -259,20 +249,11 @@ public abstract class SolrWriter {
    * @param name  Name of the entity/transformer
    * @param row   The actual data . Can be a Map<String,object> or a List<Map<String,object>>
    */
-  public abstract void log(int event, String name, Object row);
-
-  /**
-   * The purpose of this interface to provide pluggable implementations for Solr
-   * 1.2 & 1.3 The implementation can choose to wrap appropriate Objects based
-   * on the version
-   */
-  public static interface SolrDoc {
-
-    public void addField(String name, Object value, float boost);
-
-    public Object getField(String field);
-
-    public void setDocumentBoost(float boost);
+  public void log(int event, String name, Object row) {
+    if (debugLogger == null) {
+      debugLogger = new DebugLogger();
+    }
+    debugLogger.log(event, name, row);
   }
 
   public static final int START_ENTITY = 1, END_ENTITY = 2,

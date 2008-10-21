@@ -33,6 +33,10 @@ Bug Fixes
 Documentation
 ----------------------
 
+Other
+----------------------
+1. SOLR-782: Refactored SolrWriter to make it a concrete class and removed wrappers over SolrInputDocument
+             (Noble Paul via shalin)
 
 ================== Release 1.3.0 20080915 ==================
 

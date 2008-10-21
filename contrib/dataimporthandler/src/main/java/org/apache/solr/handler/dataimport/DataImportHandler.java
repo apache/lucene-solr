@@ -78,8 +78,6 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private List<SolrInputDocument> debugDocuments;
 
-  private DebugLogger debugLogger;
-
   private boolean debugEnabled = true;
 
   @Override
@@ -180,8 +178,7 @@ public class DataImportHandler extends RequestHandlerBase implements
                 req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
-        SolrWriter sw = getSolrWriter(processor, loader, req
-                .getSchema());
+        SolrWriter sw = getSolrWriter(processor, loader);
 
         if (requestParams.debug) {
           if (debugEnabled) {
@@ -189,9 +186,8 @@ public class DataImportHandler extends RequestHandlerBase implements
             importer.runCmd(requestParams, sw, variables);
             rsp.add("mode", "debug");
             rsp.add("documents", debugDocuments);
-            if (debugLogger != null)
-              rsp.add("verbose-output", debugLogger.output);
-            debugLogger = null;
+            if (sw.debugLogger != null)
+              rsp.add("verbose-output", sw.debugLogger.output);
             debugDocuments = null;
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;
@@ -266,14 +262,13 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
-                                   final SolrResourceLoader loader, final IndexSchema schema) {
+                                   final SolrResourceLoader loader) {
 
     return new SolrWriter(processor, loader.getConfigDir()) {
 
       @Override
-      public boolean upload(SolrDoc d) {
+      public boolean upload(SolrInputDocument document) {
         try {
-          SolrInputDocument document = ((SolrDocumentWrapper) d).doc;
           if (requestParams.debug) {
             if (debugDocuments == null)
               debugDocuments = new ArrayList<SolrInputDocument>();
@@ -283,51 +278,13 @@ public class DataImportHandler extends RequestHandlerBase implements
               importer.getDocBuilder().abort();
             }
           }
-
           return super.upload(document);
         } catch (RuntimeException e) {
-          LOG.error( "Exception while adding: " + d, e);
+          LOG.error( "Exception while adding: " + document, e);
           return false;
         }
       }
-
-      public void log(int event, String name, Object row) {
-        if (debugLogger == null) {
-          debugLogger = new DebugLogger();
-        }
-        debugLogger.log(event, name, row);
-      }
-
-
-
-      public SolrDoc getSolrDocInstance() {
-        return new SolrDocumentWrapper();
-      }
     };
-  }
-
-  static class SolrDocumentWrapper implements SolrWriter.SolrDoc {
-    SolrInputDocument doc;
-
-    public SolrDocumentWrapper() {
-      doc = new SolrInputDocument();
-    }
-
-    public void setDocumentBoost(float boost) {
-      doc.setDocumentBoost(boost);
-    }
-
-    public Object getField(String field) {
-      return doc.getField(field);
-    }
-
-    public void addField(String name, Object value, float boost) {
-      doc.addField(name, value, boost);
-    }
-
-    public String toString() {
-      return doc.toString();
-    }
   }
 
   @Override
