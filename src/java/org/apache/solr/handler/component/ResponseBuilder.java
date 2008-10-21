@@ -92,7 +92,7 @@ public class ResponseBuilder
 
   public int stage;  // What stage is this current request at?
 
-
+  //The address of the Shard
   public String[] shards;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
