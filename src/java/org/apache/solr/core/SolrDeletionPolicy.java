@@ -122,9 +122,8 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
         }
 
         try {
-          //TODO: replace LHS of if condition with commit.getTimestamp()
           if (maxCommitAge != null)
-            if (commit.getDirectory().fileModified(commit.getSegmentsFileName()) < dmp.parseMath(maxCommitAge).getTime()) {
+            if (commit.getTimestamp() < dmp.parseMath(maxCommitAge).getTime()) {
               commit.delete();
               continue;
             }

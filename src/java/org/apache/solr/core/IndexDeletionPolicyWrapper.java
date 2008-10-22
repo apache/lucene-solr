@@ -133,6 +133,10 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     public boolean isDeleted() {
       return delegate.isDeleted();
     }
+
+    public long getTimestamp() throws IOException {
+      return delegate.getTimestamp();
+    }
   }
 
   /**
