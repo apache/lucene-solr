@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Assert;
+import org.apache.solr.request.LocalSolrQueryRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +70,21 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testRequestParamsAsVariable() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "101", "desc", "ApacheSolr"));
+    MockDataSource.setIterator("select * from books where category='search'", rows.iterator());
+
+    LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
+            "debug", "on", "clean", "true", "commit", "true",
+            "category", "search",
+            "dataConfig", requestParamAsVariable);
+    h.query("/dataimport", request);
+    assertQ(req("desc:ApacheSolr"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testContext() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -85,7 +101,17 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
   }
 
   public static class MockDataSource2 extends MockDataSource  {
-    
+
   }
+
+  private final String requestParamAsVariable = "<dataConfig>\n" +
+          "    <dataSource type=\"MockDataSource\" />\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from books where category='${dataimporter.request.category}'\">\n" +
+          "            <field column=\"id\" />\n" +
+          "            <field column=\"desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
 
 }

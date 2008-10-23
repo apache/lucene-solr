@@ -85,7 +85,7 @@ public class DocBuilder {
       indexerNamespace.put(LAST_INDEX_TIME, DataImporter.DATE_TIME_FORMAT
               .format(context.getLastIndexTime()));
     indexerNamespace.put(INDEX_START_TIME, context.getIndexStartTime());
-    indexerNamespace.put("request", requestParameters);
+    indexerNamespace.put("request", requestParameters.requestParams);
     indexerNamespace.put("defaults", defaultVariables);
     indexerNamespace.put("functions", EvaluatorBag.getFunctionsNamespace(resolver,
             dataImporter.getConfig().evaluators));
