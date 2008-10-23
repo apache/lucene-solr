@@ -789,6 +789,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             if(indexVersion != null && (packetsWritten % 5 == 0)){
               delPolicy.setReserveDuration(indexVersion, reserveCommitDuration);
             }
+            packetsWritten++;
           }
         } else {
           writeNothing();
