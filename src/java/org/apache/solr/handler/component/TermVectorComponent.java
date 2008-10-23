@@ -84,7 +84,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     boolean idf = params.getBool(TermVectorParams.IDF, false);
     boolean tfIdf = params.getBool(TermVectorParams.TF_IDF, false);
     //boolean cacheIdf = params.getBool(TermVectorParams.IDF, false);
-
+    //short cut to all values.
     boolean all = params.getBool(TermVectorParams.ALL, false);
     if (all == true){
       termFreq = true;
@@ -111,9 +111,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
       IndexReader reader = searcher.get().getReader();
+      //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
       TVMapper mapper = new TVMapper(fields, reader, termFreq, positions, offsets, idf, tfIdf);
       IndexSchema schema = core.getSchema();
       String uniqFieldName = schema.getUniqueKeyField().getName();
+      //Only load the id field
       SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.emptySet());
       while (iter.hasNext()) {
         Integer docId = iter.next();
