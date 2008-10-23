@@ -238,11 +238,11 @@ public class SnapPuller {
       boolean successfulInstall = false;
       try {
         File indexDir = new File(core.getIndexDir());
-        downloadIndexFiles(isSnapNeeded, tmpIndexDir, client);
+        downloadIndexFiles(isSnapNeeded, tmpIndexDir, client, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
         if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
-          downloadConfFiles(client, confFilesToDownload);
+          downloadConfFiles(client, confFilesToDownload, latestVersion);
           if (isSnapNeeded) {
             modifyIndexProps(tmpIndexDir.getName());
           } else {
@@ -373,7 +373,7 @@ public class SnapPuller {
     }.start();
   }
 
-  private void downloadConfFiles(HttpClient client, List<Map<String, Object>> confFilesToDownload) throws Exception {
+  private void downloadConfFiles(HttpClient client, List<Map<String, Object>> confFilesToDownload, long latestVersion) throws Exception {
     LOG.info("Starting download of configuration files from master: " + confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
     File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
@@ -383,7 +383,7 @@ public class SnapPuller {
               "Failed to create temporary config folder: " + tmpconfDir.getName());
     }
     for (Map<String, Object> file : confFilesToDownload) {
-      fileFetcher = new FileFetcher(tmpconfDir, file, (String) file.get(NAME), client, true);
+      fileFetcher = new FileFetcher(tmpconfDir, file, (String) file.get(NAME), client, true, latestVersion);
       currentFile = file;
       fileFetcher.fetchFile();
       confFilesDownloaded.add(new HashMap<String, Object>(file));
@@ -392,12 +392,12 @@ public class SnapPuller {
   }
 
   private void downloadIndexFiles(boolean snapNeeded, File snapDir,
-                                  HttpClient client) throws Exception {
+                                  HttpClient client, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
       File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
       if (!localIndexFile.exists() || snapNeeded) {
         fileFetcher = new FileFetcher(snapDir, file, (String) file.get(NAME),
-                client, false);
+                client, false, latestVersion);
         currentFile = file;
         fileFetcher.fetchFile();
         filesDownloaded.add(new HashMap<String, Object>(file));
@@ -662,14 +662,17 @@ public class SnapPuller {
 
     private boolean aborted = false;
 
+    private Long indexVersion;
+
     FileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
-                HttpClient client, boolean isConf) throws FileNotFoundException {
+                HttpClient client, boolean isConf, long latestVersion) throws FileNotFoundException {
       this.snapDir = dir;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       this.client = client;
       this.isConf = isConf;
       this.saveAs = saveAs;
+      indexVersion = latestVersion;
 
       this.file = new File(snapDir, saveAs);
       this.fileChannel = new FileOutputStream(file).getChannel();
@@ -810,6 +813,7 @@ public class SnapPuller {
     FastInputStream getStream() throws IOException {
       post = new PostMethod(masterUrl);
       post.addParameter(COMMAND, CMD_GET_FILE);
+      post.addParameter(CMD_INDEX_VERSION, indexVersion.toString());
       if (isConf) {
         post.addParameter(CONF_FILE_SHORT, fileName);
       } else {

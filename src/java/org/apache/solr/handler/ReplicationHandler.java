@@ -27,6 +27,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -89,15 +90,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private boolean replicateOnCommit = false;
 
-  //private String masterUrl;
-
-  //private String pollInterval;
-
   private int numTimesReplicated = 0;
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
 
-  private Integer reserveCommitDuration = SnapPuller.readInterval("01:00:00");
+  private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
   private IndexCommit indexCommitPoint;
 
@@ -628,15 +625,29 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         includeConfFiles = Arrays.asList(includeFiles.split(","));
         LOG.info("Replication enabled for following config files: " + includeConfFiles);
       }
-      String snapshot = (String) master.get("snapshot");
-      if ("optimize".equals(master.get(REPLICATE_AFTER))) {
-        replicateOnOptimize = true;
-        boolean snapshoot = "optimize".equals(snapshot);
-        core.getUpdateHandler().registerOptimizeCallback(getEventListener(snapshoot));
-      } else if ("commit".equals(master.get(REPLICATE_AFTER))) {
+      List snapshot = master.getAll("snapshot");
+      boolean snapshotOnCommit =  snapshot.contains("commit");
+      boolean snapshotOnOptimize = snapshot.contains("optimize");
+      List replicateAfter =  master.getAll(REPLICATE_AFTER);
+      replicateOnCommit = replicateAfter.contains("commit"); 
+      replicateOnOptimize = replicateAfter.contains("optimize");
+
+      if (replicateOnOptimize || snapshotOnOptimize) {
+        core.getUpdateHandler().registerOptimizeCallback(getEventListener(snapshotOnOptimize, replicateOnOptimize));
+      }
+      if (replicateOnCommit || snapshotOnCommit) {
         replicateOnCommit = true;
-        boolean snapshoot = "commit".equals(snapshot);
-        core.getUpdateHandler().registerCommitCallback(getEventListener(snapshoot));
+        core.getUpdateHandler().registerCommitCallback(getEventListener(snapshotOnCommit, replicateOnCommit));
+      }
+      if (replicateAfter.contains("startup")) {
+        RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
+        try {
+          indexCommitPoint = s.get().getReader().getIndexCommit();
+        } catch (IOException e) {
+          LOG.warn("Unable to get IndexCommit on startup",e);
+        } finally {
+          s.decref();
+        }
       }
       String reserve = (String) master.get(RESERVE);
       if (reserve != null && !reserve.trim().equals("")) {
@@ -677,12 +688,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   }
 
-  private SolrEventListener getEventListener(final boolean snapshoot) {
+  private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
       public void init(NamedList args) {/*no op*/ }
 
       public void postCommit() {
-        indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
+        if(getCommit){
+          indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
+        }
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core);
@@ -709,8 +722,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     private FastOutputStream fos;
 
+    private Long indexVersion;
+    private IndexDeletionPolicyWrapper delPolicy;
+
     public FileStream(SolrParams solrParams) {
       params = solrParams;
+      delPolicy = core.getDeletionPolicy();
     }
 
     public void write(OutputStream out) {
@@ -720,7 +737,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String sOffset = params.get(OFFSET);
       String sLen = params.get(LEN);
       String sChecksum = params.get(CHECKSUM);
+      String sindexVersion = params.get(CMD_INDEX_VERSION);
+      if(sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
       FileInputStream inputStream = null;
+      int packetsWritten = 0;
       try {
         long offset = -1;
         int len = -1;
@@ -766,6 +786,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             fos.write(buf, 0, (int) bytesRead);
             fos.flush();
+            if(indexVersion != null && (packetsWritten % 5 == 0)){
+              delPolicy.setReserveDuration(indexVersion, reserveCommitDuration);
+            }
           }
         } else {
           writeNothing();

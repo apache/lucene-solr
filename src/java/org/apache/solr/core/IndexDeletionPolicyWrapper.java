@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   private IndexDeletionPolicy deletionPolicy;
   private Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
-  private Map<Long, Long> reserves = new HashMap<Long, Long>();
+  private Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
   private IndexCommit latestCommit;
 
   public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy) {
@@ -51,13 +51,15 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
    * @param reserveTime  time in milliseconds for which the commit point is to be reserved
    */
   public void setReserveDuration(Long indexVersion, long reserveTime) {
-    synchronized (reserves) {
       reserves.put(indexVersion, System.currentTimeMillis() + reserveTime);
-      List<Long> removeThese = new ArrayList<Long>();
-      for (Map.Entry<Long, Long> entry : reserves.entrySet()) {
-        if (entry.getValue() < System.currentTimeMillis()) removeThese.add(entry.getKey());
+  }
+
+  private void cleanReserves() {
+    long currentTime = System.currentTimeMillis();
+    for (Map.Entry<Long, Long> entry : reserves.entrySet()) {
+      if (entry.getValue() < currentTime) {
+        reserves.remove(entry.getKey());
       }
-      for (Long l : removeThese) reserves.remove(l);
     }
   }
 
@@ -74,6 +76,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onInit(wrapperList);
     updateCommitPoints(wrapperList);
+    cleanReserves();
   }
 
   /**
@@ -83,6 +86,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onCommit(wrapperList);
     updateCommitPoints(wrapperList);
+    cleanReserves();
   }
 
   private class IndexCommitWrapper extends IndexCommit {
