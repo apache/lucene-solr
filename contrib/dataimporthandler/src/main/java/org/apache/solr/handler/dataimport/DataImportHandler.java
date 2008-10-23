@@ -141,7 +141,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     if (command != null)
       rsp.add("command", command);
 
-    if (requestParams.debug) {
+    if (requestParams.debug && (importer == null || !importer.isBusy())) {
       // Reload the data-config.xml
       importer = null;
       if (requestParams.dataConfig != null) {
@@ -168,7 +168,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
     if (command != null && DataImporter.ABORT_CMD.equals(command)) {
       importer.runCmd(requestParams, null, null);
-    } else if (importer.getStatus() != DataImporter.Status.IDLE) {
+    } else if (importer.isBusy()) {
       message = DataImporter.MSG.CMD_RUNNING;
     } else if (command != null) {
       if (DataImporter.FULL_IMPORT_CMD.equals(command)
@@ -202,8 +202,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         message = DataImporter.MSG.CONFIG_RELOADED;
       }
     }
-    rsp.add("status", importer.getStatus() == DataImporter.Status.IDLE ? "idle"
-            : "busy");
+    rsp.add("status", importer.isBusy() ? "busy" : "idle");
     rsp.add("importResponse", message);
     rsp.add("statusMessages", importer.getStatusMessages());
 

@@ -32,6 +32,8 @@ import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +76,8 @@ public class DataImporter {
   public Map<String, Evaluator> evaluators;
 
   private SolrCore core;
+
+  private ReentrantLock importLock = new ReentrantLock();
 
   /**
    * Only for testing purposes
@@ -318,6 +322,10 @@ public class DataImporter {
     this.status = status;
   }
 
+  public boolean isBusy() {
+    return importLock.isLocked();
+  }
+
   public void doFullImport(SolrWriter writer, RequestParams requestParams,
                            Map<String, String> variables) {
     LOG.info("Starting Full Import");
@@ -376,18 +384,24 @@ public class DataImporter {
     }.start();
   }
 
-  void runCmd(RequestParams reqParams, SolrWriter sw,
-              Map<String, String> variables) {
-    String command = reqParams.command;
-    Date lastModified = sw.loadIndexStartTime();
-    setLastIndexTime(lastModified);
-    if (command.equals("full-import")) {
-      doFullImport(sw, reqParams, variables);
-    } else if (command.equals(DELTA_IMPORT_CMD)) {
-      doDeltaImport(sw, reqParams, variables);
-    } else if (command.equals(ABORT_CMD)) {
-      if (docBuilder != null)
-        docBuilder.abort();
+  void runCmd(RequestParams reqParams, SolrWriter sw, Map<String, String> variables) {
+    if (importLock.isLocked())
+      return;
+    importLock.lock();
+    try {
+      String command = reqParams.command;
+      Date lastModified = sw.loadIndexStartTime();
+      setLastIndexTime(lastModified);
+      if (command.equals("full-import")) {
+        doFullImport(sw, reqParams, variables);
+      } else if (command.equals(DELTA_IMPORT_CMD)) {
+        doDeltaImport(sw, reqParams, variables);
+      } else if (command.equals(ABORT_CMD)) {
+        if (docBuilder != null)
+          docBuilder.abort();
+      }
+    } finally {
+      importLock.unlock();
     }
   }
 

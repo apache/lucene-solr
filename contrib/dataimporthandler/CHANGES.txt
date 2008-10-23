@@ -37,6 +37,9 @@ Bug Fixes
 2. SOLR-823:  Request parameter variables ${dataimporter.request.xxx} are not resolved
               (Mck SembWever, Noble Paul, shalin)
 
+3. SOLR-728:  Add synchronization to avoid race condition of multiple imports working concurrently
+              (Walter Ferrara, shalin)
+
 Documentation
 ----------------------
 
