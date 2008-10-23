@@ -281,6 +281,8 @@
      termVectors: [false] set to true to store the term vector for a given field.
        When using MoreLikeThis, fields used for similarity should be stored for 
        best performance.
+     termPositions: Store position information with the term vector.  This will increase storage costs.
+     termOffsets: Store offset information with the term vector. This will increase storage costs.
    -->
 
    <field name="id" type="string" indexed="true" stored="true" required="true" /> 
@@ -290,7 +292,7 @@
    <field name="alphaNameSort" type="alphaOnlySort" indexed="true" stored="false"/>
    <field name="manu" type="text" indexed="true" stored="true" omitNorms="true"/>
    <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true" termVectors="true" />
-   <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
+   <field name="features" type="text" indexed="true" stored="true" multiValued="true" termVectors="true" termPositions="true" termOffsets="true"/>
    <field name="includes" type="text" indexed="true" stored="true"/>
 
    <field name="weight" type="sfloat" indexed="true" stored="true"/>

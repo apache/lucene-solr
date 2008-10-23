@@ -574,7 +574,8 @@
     </lst>
   </searchComponent>
 
-  <!-- a request handler utilizing the spellcheck component -->
+  <!-- a request handler utilizing the spellcheck component.  This is purely as an example.
+  You will likely want to add the component to your already specified request handlers. -->
   <requestHandler name="/spellCheckCompRH" class="solr.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
@@ -588,6 +589,19 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
+
+  <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
+  <!-- A Req Handler for working with the tvComponent.  This is purely as an example.
+  You will likely want to add the component to your already specified request handlers. -->
+  <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
+    <lst name="defaults">
+      <bool name="tv">true</bool>
+    </lst>
+    <arr name="last-components">
+      <str>tvComponent</str>
+    </arr>
+  </requestHandler>
+
 
   <!-- a search component that enables you to configure the top results for
        a given query regardless of the normal lucene scoring.-->
