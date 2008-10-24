@@ -19,10 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
 public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
-  private IndexDeletionPolicy deletionPolicy;
-  private Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
-  private Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
-  private IndexCommit latestCommit;
+  private final IndexDeletionPolicy deletionPolicy;
+  private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
+  private final Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
+  private volatile IndexCommit latestCommit;
 
   public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy) {
     this.deletionPolicy = deletionPolicy;
@@ -51,7 +51,20 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
    * @param reserveTime  time in milliseconds for which the commit point is to be reserved
    */
   public void setReserveDuration(Long indexVersion, long reserveTime) {
-      reserves.put(indexVersion, System.currentTimeMillis() + reserveTime);
+    long timeToSet = System.currentTimeMillis() + reserveTime;
+    for(;;) {
+      Long previousTime = reserves.put(indexVersion, timeToSet);
+
+      // this is the common success case: the older time didn't exist, or
+      // came before the new time.
+      if (previousTime == null || previousTime <= timeToSet) break;
+
+      // At this point, we overwrote a longer reservation, so we want to restore the older one.
+      // the problem is that an even longer reservation may come in concurrently
+      // and we don't want to overwrite that one too.  We simply keep retrying in a loop
+      // with the maximum time value we have seen.
+      timeToSet = previousTime;      
+    }
   }
 
   private void cleanReserves() {

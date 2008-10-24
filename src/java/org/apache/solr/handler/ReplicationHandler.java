@@ -96,7 +96,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
-  private IndexCommit indexCommitPoint;
+  private volatile IndexCommit indexCommitPoint;
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -107,9 +107,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return;
     }
     if (command.equals(CMD_INDEX_VERSION)) {
-      if (indexCommitPoint != null) {
-        rsp.add(CMD_INDEX_VERSION, indexCommitPoint.getVersion());
-        rsp.add(GENERATION, indexCommitPoint.getGeneration());
+      IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
+      if (commitPoint != null) {
+        rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
+        rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
         // must never happen
         rsp.add(CMD_INDEX_VERSION, 0L);
@@ -201,9 +202,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   void doSnapPull() {
     if (!isSlave)
       return;
-    if (snapPullLock.isLocked())
+    if (!snapPullLock.tryLock())
       return;
-    snapPullLock.lock();
     try {
       snapPuller.fetchLatestIndex(core);
     } catch (Exception e) {
@@ -214,7 +214,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   boolean isReplicating() {
-    boolean b = snapPullLock.isLocked();
     return snapPullLock.isLocked();
   }
 
@@ -445,9 +444,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     long[] versionAndGeneration = getIndexVersion();
     details.add(CMD_INDEX_VERSION, versionAndGeneration[0]);
     details.add(GENERATION, versionAndGeneration[1]);
-    if (isMaster && indexCommitPoint != null) {
-      details.add("replicatable" + CMD_INDEX_VERSION, indexCommitPoint.getVersion());
-      details.add("replicatable" + GENERATION, indexCommitPoint.getGeneration());
+    IndexCommit commit = indexCommitPoint;  // make a copy so it won't change
+    if (isMaster && commit != null) {
+      details.add("replicatable" + CMD_INDEX_VERSION, commit.getVersion());
+      details.add("replicatable" + GENERATION, commit.getGeneration());
     }
 
     if (isSlave) {

@@ -58,35 +58,35 @@ import java.util.zip.Checksum;
 public class SnapPuller {
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
 
-  private String masterUrl;
+  private final String masterUrl;
 
-  private ReplicationHandler replicationHandler;
+  private final ReplicationHandler replicationHandler;
 
-  private Integer pollInterval;
+  private final Integer pollInterval;
 
   private String pollIntervalStr;
 
   private ScheduledExecutorService executorService;
 
-  private long executorStartTime;
+  private volatile long executorStartTime;
 
-  private long replicationStartTime;
+  private volatile long replicationStartTime;
 
-  private SolrCore solrCore;
+  private final SolrCore solrCore;
 
-  private List<Map<String, Object>> filesToDownload;
+  private volatile List<Map<String, Object>> filesToDownload;
 
-  private List<Map<String, Object>> confFilesToDownload;
+  private volatile List<Map<String, Object>> confFilesToDownload;
 
-  private List<Map<String, Object>> filesDownloaded;
+  private volatile List<Map<String, Object>> filesDownloaded;
 
-  private List<Map<String, Object>> confFilesDownloaded;
+  private volatile List<Map<String, Object>> confFilesDownloaded;
 
-  private Map<String, Object> currentFile;
+  private volatile Map<String, Object> currentFile;
 
-  private FileFetcher fileFetcher;
+  private volatile FileFetcher fileFetcher;
 
-  private boolean stop = false;
+  private volatile boolean stop = false;
 
   /**
    * Disable the timer task for polling
@@ -214,7 +214,7 @@ public class SnapPuller {
       IndexCommit commit;
       RefCounted<SolrIndexSearcher> searcherRefCounted = null;
       try {
-        searcherRefCounted = core.getSearcher();
+        searcherRefCounted = core.getNewestSearcher(false);
         commit = searcherRefCounted.get().getReader().getIndexCommit();
       } finally {
         if (searcherRefCounted != null)
@@ -587,6 +587,7 @@ public class SnapPuller {
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
+    // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
     return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
   }
 
