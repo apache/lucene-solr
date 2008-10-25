@@ -38,7 +38,7 @@
 
   <target name="build-memory" unless="memory.jar.present">
     <echo>Highlighter building dependency ${memory.jar}</echo>
-    <ant antfile="../memory/build.xml" target="default" inheritall="true" dir="../memory" />
+    <ant antfile="../memory/build.xml" target="default" inheritall="false" dir="../memory" />
   </target>
 
 </project>
