@@ -21,7 +21,7 @@ import java.util.List;
 
 
 /**
- *  The results of a SpanQueryFilter.  Wraps the BitSet and the position infomration from the SpanQuery
+ *  The results of a SpanQueryFilter.  Wraps the BitSet and the position information from the SpanQuery
  *
  *<p/>
  * NOTE: This API is still experimental and subject to change. 
