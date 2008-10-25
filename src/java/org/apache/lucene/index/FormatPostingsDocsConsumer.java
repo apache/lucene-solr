@@ -17,13 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.io.IOException;
 
-abstract class InvertedDocEndConsumer {
-  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-  abstract void abort();
-  abstract void setFieldInfos(FieldInfos fieldInfos);
+/**
+ * NOTE: this API is experimental and will likely change
+ */
+
+abstract class FormatPostingsDocsConsumer {
+
+  /** Adds a new doc in this term.  If this returns null
+   *  then we just skip consuming positions/payloads. */
+  abstract FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException;
+
+  /** Called when we are done adding docs to this term */
+  abstract void finish() throws IOException;
 }

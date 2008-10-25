@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -476,38 +477,28 @@ final class SegmentMerger {
       throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + mergedDocs + " but tvx size is " + tvxSize + "; now aborting this merge to prevent index corruption");
   }
 
-  private IndexOutput freqOutput = null;
-  private IndexOutput proxOutput = null;
-  private TermInfosWriter termInfosWriter = null;
-  private int skipInterval;
-  private int maxSkipLevels;
   private SegmentMergeQueue queue = null;
-  private DefaultSkipListWriter skipListWriter = null;
 
   private final void mergeTerms() throws CorruptIndexException, IOException {
+
+    SegmentWriteState state = new SegmentWriteState(null, directory, segment, null, mergedDocs, 0, termIndexInterval);
+
+    final FormatPostingsFieldsConsumer consumer = new FormatPostingsFieldsWriter(state, fieldInfos);
+
     try {
-      freqOutput = directory.createOutput(segment + ".frq");
-      if (hasProx())
-        proxOutput = directory.createOutput(segment + ".prx");
-      termInfosWriter =
-              new TermInfosWriter(directory, segment, fieldInfos,
-                                  termIndexInterval);
-      skipInterval = termInfosWriter.skipInterval;
-      maxSkipLevels = termInfosWriter.maxSkipLevels;
-      skipListWriter = new DefaultSkipListWriter(skipInterval, maxSkipLevels, mergedDocs, freqOutput, proxOutput);
       queue = new SegmentMergeQueue(readers.size());
 
-      mergeTermInfos();
+      mergeTermInfos(consumer);
 
     } finally {
-      if (freqOutput != null) freqOutput.close();
-      if (proxOutput != null) proxOutput.close();
-      if (termInfosWriter != null) termInfosWriter.close();
+      consumer.finish();
       if (queue != null) queue.close();
     }
   }
 
-  private final void mergeTermInfos() throws CorruptIndexException, IOException {
+  boolean omitTF;
+
+  private final void mergeTermInfos(final FormatPostingsFieldsConsumer consumer) throws CorruptIndexException, IOException {
     int base = 0;
     final int readerCount = readers.size();
     for (int i = 0; i < readerCount; i++) {
@@ -533,6 +524,9 @@ final class SegmentMerger {
 
     SegmentMergeInfo[] match = new SegmentMergeInfo[readers.size()];
 
+    String currentField = null;
+    FormatPostingsTermsConsumer termsConsumer = null;
+
     while (queue.size() > 0) {
       int matchSize = 0;			  // pop matching terms
       match[matchSize++] = (SegmentMergeInfo) queue.pop();
@@ -544,7 +538,16 @@ final class SegmentMerger {
         top = (SegmentMergeInfo) queue.top();
       }
 
-      final int df = mergeTermInfo(match, matchSize);		  // add new TermInfo
+      if (currentField != term.field) {
+        currentField = term.field;
+        if (termsConsumer != null)
+          termsConsumer.finish();
+        final FieldInfo fieldInfo = fieldInfos.fieldInfo(currentField);
+        termsConsumer = consumer.addField(fieldInfo);
+        omitTF = fieldInfo.omitTf;
+      }
+
+      int df = appendPostings(termsConsumer, match, matchSize);		  // add new TermInfo
 
       if (checkAbort != null)
         checkAbort.work(df/3.0);
@@ -559,44 +562,6 @@ final class SegmentMerger {
     }
   }
 
-  private final TermInfo termInfo = new TermInfo(); // minimize consing
-
-  /** Merge one term found in one or more segments. The array <code>smis</code>
-   *  contains segments that are positioned at the same term. <code>N</code>
-   *  is the number of cells in the array actually occupied.
-   *
-   * @param smis array of segments
-   * @param n number of cells in the array actually occupied
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  private final int mergeTermInfo(SegmentMergeInfo[] smis, int n)
-          throws CorruptIndexException, IOException {
-    final long freqPointer = freqOutput.getFilePointer();
-    final long proxPointer;
-    if (proxOutput != null)
-      proxPointer = proxOutput.getFilePointer();
-    else
-      proxPointer = 0;
-
-    int df;
-    if (fieldInfos.fieldInfo(smis[0].term.field).omitTf) { // append posting data
-      df = appendPostingsNoTf(smis, n);     
-    } else{
-      df = appendPostings(smis, n);      
-    }
-    
-    long skipPointer = skipListWriter.writeSkip(freqOutput);
-
-    if (df > 0) {
-      // add an entry to the dictionary with pointers to prox and freq files
-      termInfo.set(df, freqPointer, proxPointer, (int) (skipPointer - freqPointer));
-      termInfosWriter.add(smis[0].term, termInfo);
-    }
-
-    return df;
-  }
-  
   private byte[] payloadBuffer;
   private int[][] docMaps;
   int[][] getDocMaps() {
@@ -617,13 +582,11 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  private final int appendPostings(SegmentMergeInfo[] smis, int n)
-          throws CorruptIndexException, IOException {
-    int lastDoc = 0;
-    int df = 0;					  // number of docs w/ term
-    skipListWriter.resetSkip();
-    boolean storePayloads = fieldInfos.fieldInfo(smis[0].term.field).storePayloads;
-    int lastPayloadLength = -1;   // ensures that we write the first length
+  private final int appendPostings(final FormatPostingsTermsConsumer termsConsumer, SegmentMergeInfo[] smis, int n)
+        throws CorruptIndexException, IOException {
+
+    final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term.text);
+    int df = 0;
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
       TermPositions postings = smi.getPositions();
@@ -631,114 +594,37 @@ final class SegmentMerger {
       int base = smi.base;
       int[] docMap = smi.getDocMap();
       postings.seek(smi.termEnum);
+
       while (postings.next()) {
+        df++;
         int doc = postings.doc();
         if (docMap != null)
           doc = docMap[doc];                      // map around deletions
         doc += base;                              // convert to merged space
 
-        if (doc < 0 || (df > 0 && doc <= lastDoc))
-          throw new CorruptIndexException("docs out of order (" + doc +
-              " <= " + lastDoc + " )");
+        final int freq = postings.freq();
+        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
 
-        df++;
-
-        if ((df % skipInterval) == 0) {
-          skipListWriter.setSkipData(lastDoc, storePayloads, lastPayloadLength);
-          skipListWriter.bufferSkip(df);
-        }
-
-        int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
-        lastDoc = doc;
-
-        int freq = postings.freq();
-        if (freq == 1) {
-          freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
-        } else {
-          freqOutput.writeVInt(docCode);	  // write doc
-          freqOutput.writeVInt(freq);		  // write frequency in doc
-        }
-        
-        /** See {@link DocumentWriter#writePostings(Posting[], String)} for 
-         *  documentation about the encoding of positions and payloads
-         */
-        int lastPosition = 0;			  // write position deltas
-        for (int j = 0; j < freq; j++) {
-          int position = postings.nextPosition();
-          int delta = position - lastPosition;
-          if (storePayloads) {
-            int payloadLength = postings.getPayloadLength();
-            if (payloadLength == lastPayloadLength) {
-              proxOutput.writeVInt(delta * 2);
-            } else {
-              proxOutput.writeVInt(delta * 2 + 1);
-              proxOutput.writeVInt(payloadLength);
-              lastPayloadLength = payloadLength;
-            }
+        if (!omitTF) {
+          for (int j = 0; j < freq; j++) {
+            final int position = postings.nextPosition();
+            final int payloadLength = postings.getPayloadLength();
             if (payloadLength > 0) {
-              if (payloadBuffer == null || payloadBuffer.length < payloadLength) {
+              if (payloadBuffer == null || payloadBuffer.length < payloadLength)
                 payloadBuffer = new byte[payloadLength];
-              }
               postings.getPayload(payloadBuffer, 0);
-              proxOutput.writeBytes(payloadBuffer, 0, payloadLength);
             }
-          } else {
-            proxOutput.writeVInt(delta);
+            posConsumer.addPosition(position, payloadBuffer, 0, payloadLength);
           }
-          lastPosition = position;
+          posConsumer.finish();
         }
       }
     }
+    docConsumer.finish();
+
     return df;
   }
 
-  /** Process postings from multiple segments without tf, all positioned on the
-   *  same term. Writes out merged entries only into freqOutput, proxOut is not written.
-   *
-   * @param smis array of segments
-   * @param n number of cells in the array actually occupied
-   * @return number of documents across all segments where this term was found
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  private final int appendPostingsNoTf(SegmentMergeInfo[] smis, int n)
-          throws CorruptIndexException, IOException {
-    int lastDoc = 0;
-    int df = 0;           // number of docs w/ term
-    skipListWriter.resetSkip();
-    int lastPayloadLength = -1;   // ensures that we write the first length
-    for (int i = 0; i < n; i++) {
-      SegmentMergeInfo smi = smis[i];
-      TermPositions postings = smi.getPositions();
-      assert postings != null;
-      int base = smi.base;
-      int[] docMap = smi.getDocMap();
-      postings.seek(smi.termEnum);
-      while (postings.next()) {
-        int doc = postings.doc();
-        if (docMap != null)
-          doc = docMap[doc];                      // map around deletions
-        doc += base;                              // convert to merged space
-
-        if (doc < 0 || (df > 0 && doc <= lastDoc))
-          throw new CorruptIndexException("docs out of order (" + doc +
-              " <= " + lastDoc + " )");
-
-        df++;
-
-        if ((df % skipInterval) == 0) {
-          skipListWriter.setSkipData(lastDoc, false, lastPayloadLength);
-          skipListWriter.bufferSkip(df);
-        }
-
-        int docCode = (doc - lastDoc);   
-        lastDoc = doc;
-        freqOutput.writeVInt(docCode);    // write doc & freq=1
-      }
-    }
-    return df;
-  }
-  
   private void mergeNorms() throws IOException {
     byte[] normBuffer = null;
     IndexOutput output = null;

@@ -195,4 +195,8 @@ final class IndexFileNames {
         return true;
     return false;
   }
+
+  static String segmentFileName(String segmentName, String ext) {
+    return segmentName + "." + ext;
+  }
 }

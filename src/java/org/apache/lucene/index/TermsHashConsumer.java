@@ -24,9 +24,9 @@ abstract class TermsHashConsumer {
   abstract int bytesPerPosting();
   abstract void createPostings(RawPostingList[] postings, int start, int count);
   abstract TermsHashConsumerPerThread addThread(TermsHashPerThread perThread);
-  abstract void flush(Map threadsAndFields, final DocumentsWriter.FlushState state) throws IOException;
+  abstract void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException;
   abstract void abort();
-  abstract void closeDocStore(DocumentsWriter.FlushState state) throws IOException;
+  abstract void closeDocStore(SegmentWriteState state) throws IOException;
 
   FieldInfos fieldInfos;
 

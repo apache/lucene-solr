@@ -51,7 +51,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       postings[i] = new PostingList();
   }
 
-  synchronized void flush(Map threadsAndFields, final DocumentsWriter.FlushState state) throws IOException {
+  synchronized void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
 
     if (tvx != null) {
 
@@ -80,7 +80,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
-  synchronized void closeDocStore(final DocumentsWriter.FlushState state) throws IOException {
+  synchronized void closeDocStore(final SegmentWriteState state) throws IOException {
     if (tvx != null) {
       // At least one doc in this run had term vectors
       // enabled

@@ -17,13 +17,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.io.IOException;
 
-abstract class InvertedDocEndConsumer {
-  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-  abstract void abort();
-  abstract void setFieldInfos(FieldInfos fieldInfos);
+/** Abstract API that consumes terms, doc, freq, prox and
+ *  payloads postings.  Concrete implementations of this
+ *  actually do "something" with the postings (write it into
+ *  the index in a specific format).
+ *
+ * NOTE: this API is experimental and will likely change
+ */
+abstract class FormatPostingsFieldsConsumer {
+
+  /** Add a new field */
+  abstract FormatPostingsTermsConsumer addField(FieldInfo field) throws IOException;
+
+  /** Called when we are done adding everything. */
+  abstract void finish() throws IOException;
 }

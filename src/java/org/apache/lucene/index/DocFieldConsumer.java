@@ -26,11 +26,11 @@ abstract class DocFieldConsumer {
 
   /** Called when DocumentsWriter decides to create a new
    *  segment */
-  abstract void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException;
+  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
 
   /** Called when DocumentsWriter decides to close the doc
    *  stores */
-  abstract void closeDocStore(DocumentsWriter.FlushState state) throws IOException;
+  abstract void closeDocStore(SegmentWriteState state) throws IOException;
   
   /** Called when an aborting exception is hit */
   abstract void abort();

@@ -156,20 +156,6 @@ final class DocumentsWriter {
     }
   }
 
-  static class FlushState {
-    DocumentsWriter docWriter;
-    Directory directory;
-    String segmentName;
-    String docStoreSegmentName;
-    int numDocsInRAM;
-    int numDocsInStore;
-    Collection flushedFiles;
-
-    public String segmentFileName(String ext) {
-      return segmentName + "." + ext;
-    }
-  }
-
   /** Consumer returns this on each doc.  This holds any
    *  state that must be flushed synchronized "in docID
    *  order".  We gather these and flush them in order. */
@@ -402,7 +388,7 @@ final class DocumentsWriter {
 
   private Collection abortedFiles;               // List of files that were written before last abort()
 
-  private FlushState flushState;
+  private SegmentWriteState flushState;
 
   Collection abortedFiles() {
     return abortedFiles;
@@ -545,18 +531,7 @@ final class DocumentsWriter {
 
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
-
-    if (flushState == null) {
-      flushState = new FlushState();
-      flushState.directory = directory;
-      flushState.docWriter = this;
-    }
-
-    flushState.docStoreSegmentName = docStoreSegment;
-    flushState.segmentName = segment;
-    flushState.numDocsInRAM = numDocsInRAM;
-    flushState.numDocsInStore = numDocsInStore;
-    flushState.flushedFiles = new HashSet();
+    flushState = new SegmentWriteState(this, directory, segment, docStoreSegment, numDocsInRAM, numDocsInStore, writer.getTermIndexInterval());
   }
 
   /** Flush all pending docs to a new segment */
@@ -602,7 +577,7 @@ final class DocumentsWriter {
         message(message);
       }
 
-      flushedDocCount += flushState.numDocsInRAM;
+      flushedDocCount += flushState.numDocs;
 
       doAfterFlush();
 
@@ -616,7 +591,7 @@ final class DocumentsWriter {
 
     assert waitQueue.waitingBytes == 0;
 
-    return flushState.numDocsInRAM;
+    return flushState.numDocs;
   }
 
   /** Build compound file for the segment we just flushed */

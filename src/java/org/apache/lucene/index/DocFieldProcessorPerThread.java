@@ -87,7 +87,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   /** If there are fields we've seen but did not see again
    *  in the last run, then free them up. */
 
-  void trimFields(DocumentsWriter.FlushState state) {
+  void trimFields(SegmentWriteState state) {
 
     for(int i=0;i<fieldHash.length;i++) {
       DocFieldProcessorPerField perField = fieldHash[i];

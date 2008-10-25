@@ -54,6 +54,14 @@ class DefaultSkipListWriter extends MultiLevelSkipListWriter {
     lastSkipProxPointer = new long[numberOfSkipLevels];
   }
 
+  void setFreqOutput(IndexOutput freqOutput) {
+    this.freqOutput = freqOutput;
+  }
+
+  void setProxOutput(IndexOutput proxOutput) {
+    this.proxOutput = proxOutput;
+  }
+
   /**
    * Sets the values for the current skip data. 
    */

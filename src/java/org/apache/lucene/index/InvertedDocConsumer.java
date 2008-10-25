@@ -29,10 +29,10 @@ abstract class InvertedDocConsumer {
   abstract void abort();
 
   /** Flush a new segment */
-  abstract void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException;
+  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
 
   /** Close doc stores */
-  abstract void closeDocStore(DocumentsWriter.FlushState state) throws IOException;
+  abstract void closeDocStore(SegmentWriteState state) throws IOException;
 
   /** Attempt to free RAM, returning true if any RAM was
    *  freed */

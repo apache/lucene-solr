@@ -54,7 +54,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
-  public void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException {
+  public void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
 
     final Map byField = new HashMap();
 
@@ -133,7 +133,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
               }
             }
 
-            assert minDocID < state.numDocsInRAM;
+            assert minDocID < state.numDocs;
 
             // Fill hole
             for(;upto<minDocID;upto++)
@@ -154,16 +154,16 @@ final class NormsWriter extends InvertedDocEndConsumer {
           }
           
           // Fill final hole with defaultNorm
-          for(;upto<state.numDocsInRAM;upto++)
+          for(;upto<state.numDocs;upto++)
             normsOut.writeByte(defaultNorm);
         } else if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {
           normCount++;
           // Fill entire field with default norm:
-          for(;upto<state.numDocsInRAM;upto++)
+          for(;upto<state.numDocs;upto++)
             normsOut.writeByte(defaultNorm);
         }
 
-        assert 4+normCount*state.numDocsInRAM == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocsInRAM) + " actual=" + normsOut.getFilePointer();
+        assert 4+normCount*state.numDocs == normsOut.getFilePointer() : ".nrm file size mismatch: expected=" + (4+normCount*state.numDocs) + " actual=" + normsOut.getFilePointer();
       }
 
     } finally {
@@ -171,5 +171,5 @@ final class NormsWriter extends InvertedDocEndConsumer {
     }
   }
 
-  void closeDocStore(DocumentsWriter.FlushState state) {}
+  void closeDocStore(SegmentWriteState state) {}
 }

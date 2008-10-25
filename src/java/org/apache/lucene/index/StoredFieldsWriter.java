@@ -40,7 +40,7 @@ final class StoredFieldsWriter extends DocFieldConsumer {
     return new StoredFieldsWriterPerThread(docFieldProcessorPerThread, this);
   }
 
-  synchronized public void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException {
+  synchronized public void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
 
     if (state.numDocsInStore > 0) {
       // It's possible that all documents seen in this segment
@@ -72,7 +72,7 @@ final class StoredFieldsWriter extends DocFieldConsumer {
     }
   }
 
-  synchronized public void closeDocStore(DocumentsWriter.FlushState state) throws IOException {
+  synchronized public void closeDocStore(SegmentWriteState state) throws IOException {
     final int inc = state.numDocsInStore - lastDocID;
     if (inc > 0) {
       initFieldsWriter();

@@ -57,7 +57,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     }
   }
 
-  void closeDocStore(DocumentsWriter.FlushState state) {}
+  void closeDocStore(SegmentWriteState state) {}
   void abort() {}
 
 
@@ -66,7 +66,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   // under the same FieldInfo together, up into TermsHash*.
   // Other writers would presumably share alot of this...
 
-  public void flush(Map threadsAndFields, final DocumentsWriter.FlushState state) throws IOException {
+  public void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
 
     // Gather all FieldData's that have postings, across all
     // ThreadStates
@@ -92,22 +92,19 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     Collections.sort(allFields);
     final int numAllFields = allFields.size();
 
-    final TermInfosWriter termsOut = new TermInfosWriter(state.directory,
-                                                         state.segmentName,
-                                                         fieldInfos,
-                                                         state.docWriter.writer.getTermIndexInterval());
-
-    final IndexOutput freqOut = state.directory.createOutput(state.segmentFileName(IndexFileNames.FREQ_EXTENSION));
-    final IndexOutput proxOut;
-
-    if (fieldInfos.hasProx())
-      proxOut = state.directory.createOutput(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
-    else
-      proxOut = null;
-
-    final DefaultSkipListWriter skipListWriter = new DefaultSkipListWriter(termsOut.skipInterval,
-                                                                           termsOut.maxSkipLevels,
-                                                                           state.numDocsInRAM, freqOut, proxOut);
+    // TODO: allow Lucene user to customize this consumer:
+    final FormatPostingsFieldsConsumer consumer = new FormatPostingsFieldsWriter(state, fieldInfos);
+    /*
+    Current writer chain:
+      FormatPostingsFieldsConsumer
+        -> IMPL: FormatPostingsFieldsWriter
+          -> FormatPostingsTermsConsumer
+            -> IMPL: FormatPostingsTermsWriter
+              -> FormatPostingsDocConsumer
+                -> IMPL: FormatPostingsDocWriter
+                  -> FormatPostingsPositionsConsumer
+                    -> IMPL: FormatPostingsPositionsWriter
+    */
 
     int start = 0;
     while(start < numAllFields) {
@@ -129,7 +126,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       // If this field has postings then add them to the
       // segment
-      appendPostings(state, fields, termsOut, freqOut, proxOut, skipListWriter);
+      appendPostings(fields, consumer);
 
       for(int i=0;i<fields.length;i++) {
         TermsHashPerField perField = fields[i].termsHashPerField;
@@ -149,51 +146,18 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       perThread.termsHashPerThread.reset(true);
     }
 
-    freqOut.close();
-    if (proxOut != null) {
-      state.flushedFiles.add(state.segmentFileName(IndexFileNames.PROX_EXTENSION));
-      proxOut.close();
-    }
-    termsOut.close();
-    
-    // Record all files we have flushed
-    state.flushedFiles.add(state.segmentFileName(IndexFileNames.FIELD_INFOS_EXTENSION));
-    state.flushedFiles.add(state.segmentFileName(IndexFileNames.FREQ_EXTENSION));
-    state.flushedFiles.add(state.segmentFileName(IndexFileNames.TERMS_EXTENSION));
-    state.flushedFiles.add(state.segmentFileName(IndexFileNames.TERMS_INDEX_EXTENSION));
+    consumer.finish();
   }
 
-  final byte[] copyByteBuffer = new byte[4096];
-
-  /** Copy numBytes from srcIn to destIn */
-  void copyBytes(IndexInput srcIn, IndexOutput destIn, long numBytes) throws IOException {
-    // TODO: we could do this more efficiently (save a copy)
-    // because it's always from a ByteSliceReader ->
-    // IndexOutput
-    while(numBytes > 0) {
-      final int chunk;
-      if (numBytes > 4096)
-        chunk = 4096;
-      else
-        chunk = (int) numBytes;
-      srcIn.readBytes(copyByteBuffer, 0, chunk);
-      destIn.writeBytes(copyByteBuffer, 0, chunk);
-      numBytes -= chunk;
-    }
-  }
+  private byte[] payloadBuffer;
 
   /* Walk through all unique text tokens (Posting
    * instances) found in this field and serialize them
    * into a single RAM segment. */
-  void appendPostings(final DocumentsWriter.FlushState flushState,
-                      FreqProxTermsWriterPerField[] fields,
-                      TermInfosWriter termsOut,
-                      IndexOutput freqOut,
-                      IndexOutput proxOut,
-                      DefaultSkipListWriter skipListWriter)
+  void appendPostings(FreqProxTermsWriterPerField[] fields,
+                      FormatPostingsFieldsConsumer consumer)
     throws CorruptIndexException, IOException {
 
-    final int fieldNumber = fields[0].fieldInfo.number;
     int numFields = fields.length;
 
     final FreqProxFieldMergeState[] mergeStates = new FreqProxFieldMergeState[numFields];
@@ -208,14 +172,11 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
       assert result;
     }
 
-    final int skipInterval = termsOut.skipInterval;
-    final boolean currentFieldOmitTf = fields[0].fieldInfo.omitTf;
+    final FormatPostingsTermsConsumer termsConsumer = consumer.addField(fields[0].fieldInfo);
 
-    // If current field omits tf then it cannot store
-    // payloads.  We silently drop the payloads in this case:
-    final boolean currentFieldStorePayloads = currentFieldOmitTf ? false : fields[0].fieldInfo.storePayloads;
-  
     FreqProxFieldMergeState[] termStates = new FreqProxFieldMergeState[numFields];
+
+    final boolean currentFieldOmitTf = fields[0].fieldInfo.omitTf;
 
     while(numFields > 0) {
 
@@ -235,43 +196,21 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
           termStates[numToMerge++] = mergeStates[i];
       }
 
-      int df = 0;
-      int lastPayloadLength = -1;
-
-      int lastDoc = 0;
-
-      final char[] text = termStates[0].text;
-      final int start = termStates[0].textOffset;
-
-      final long freqPointer = freqOut.getFilePointer();
-      final long proxPointer;
-      if (proxOut != null)
-        proxPointer = proxOut.getFilePointer();
-      else
-        proxPointer = 0;
-
-      skipListWriter.resetSkip();
+      final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(termStates[0].text, termStates[0].textOffset);
 
       // Now termStates has numToMerge FieldMergeStates
       // which all share the same term.  Now we must
       // interleave the docID streams.
       while(numToMerge > 0) {
         
-        if ((++df % skipInterval) == 0) {
-          skipListWriter.setSkipData(lastDoc, currentFieldStorePayloads, lastPayloadLength);
-          skipListWriter.bufferSkip(df);
-        }
-
         FreqProxFieldMergeState minState = termStates[0];
         for(int i=1;i<numToMerge;i++)
           if (termStates[i].docID < minState.docID)
             minState = termStates[i];
 
-        final int doc = minState.docID;
         final int termDocFreq = minState.termFreq;
 
-        assert doc < flushState.numDocsInRAM;
-        assert doc > lastDoc || df == 1;
+        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(minState.docID, termDocFreq);
 
         final ByteSliceReader prox = minState.prox;
 
@@ -279,46 +218,31 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         // changing the format to match Lucene's segment
         // format.
         if (!currentFieldOmitTf) {
-          // omitTf == false so we do write positions & payload          
-          assert proxOut != null;
+          // omitTf == false so we do write positions &
+          // payload          
+          int position = 0;
           for(int j=0;j<termDocFreq;j++) {
             final int code = prox.readVInt();
-            if (currentFieldStorePayloads) {
-              final int payloadLength;
-              if ((code & 1) != 0) {
-                // This position has a payload
-                payloadLength = prox.readVInt();
-              } else
-                payloadLength = 0;
-              if (payloadLength != lastPayloadLength) {
-                proxOut.writeVInt(code|1);
-                proxOut.writeVInt(payloadLength);
-                lastPayloadLength = payloadLength;
-              } else
-                proxOut.writeVInt(code & (~1));
-              if (payloadLength > 0)
-                copyBytes(prox, proxOut, payloadLength);
-            } else {
-              assert 0 == (code & 1);
-              proxOut.writeVInt(code>>1);
-            }
+            position += code >> 1;
+
+            final int payloadLength;
+            if ((code & 1) != 0) {
+              // This position has a payload
+              payloadLength = prox.readVInt();
+
+              if (payloadBuffer == null || payloadBuffer.length < payloadLength)
+                payloadBuffer = new byte[payloadLength];
+
+              prox.readBytes(payloadBuffer, 0, payloadLength);
+
+            } else
+              payloadLength = 0;
+
+            posConsumer.addPosition(position, payloadBuffer, 0, payloadLength);
           } //End for
-          
-          final int newDocCode = (doc-lastDoc)<<1;
 
-          if (1 == termDocFreq) {
-            freqOut.writeVInt(newDocCode|1);
-           } else {
-            freqOut.writeVInt(newDocCode);
-            freqOut.writeVInt(termDocFreq);
-          }
-        } else {
-          // omitTf==true: we store only the docs, without
-          // term freq, positions, payloads
-          freqOut.writeVInt(doc-lastDoc);
+          posConsumer.finish();
         }
-
-        lastDoc = doc;
 
         if (!minState.nextDoc()) {
 
@@ -345,26 +269,10 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         }
       }
 
-      assert df > 0;
-
-      // Done merging this term
-
-      long skipPointer = skipListWriter.writeSkip(freqOut);
-
-      // Write term
-      termInfo.set(df, freqPointer, proxPointer, (int) (skipPointer - freqPointer));
-
-      // TODO: we could do this incrementally
-      UnicodeUtil.UTF16toUTF8(text, start, termsUTF8);
-
-      // TODO: we could save O(n) re-scan of the term by
-      // computing the shared prefix with the last term
-      // while during the UTF8 encoding
-      termsOut.add(fieldNumber,
-                   termsUTF8.result,
-                   termsUTF8.length,
-                   termInfo);
+      docConsumer.finish();
     }
+
+    termsConsumer.finish();
   }
 
   private final TermInfo termInfo = new TermInfo(); // minimize consing

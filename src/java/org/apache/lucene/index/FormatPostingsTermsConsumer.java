@@ -17,13 +17,30 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.io.IOException;
 
-abstract class InvertedDocEndConsumer {
-  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-  abstract void abort();
-  abstract void setFieldInfos(FieldInfos fieldInfos);
+import org.apache.lucene.util.ArrayUtil;
+
+/**
+ * NOTE: this API is experimental and will likely change
+ */
+
+abstract class FormatPostingsTermsConsumer {
+
+  /** Adds a new term in this field; term ends with U+FFFF
+   *  char */
+  abstract FormatPostingsDocsConsumer addTerm(char[] text, int start) throws IOException;
+
+  char[] termBuffer;
+  FormatPostingsDocsConsumer addTerm(String text) throws IOException {
+    final int len = text.length();
+    if (termBuffer == null || termBuffer.length < 1+len)
+      termBuffer = new char[ArrayUtil.getNextSize(1+len)];
+    text.getChars(0, len, termBuffer, 0);
+    termBuffer[len] = 0xffff;
+    return addTerm(termBuffer, 0);
+  }
+
+  /** Called when we are done adding terms to this field */
+  abstract void finish() throws IOException;
 }

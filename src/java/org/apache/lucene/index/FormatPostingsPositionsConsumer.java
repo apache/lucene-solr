@@ -17,13 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.io.IOException;
 
-abstract class InvertedDocEndConsumer {
-  abstract InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread);
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-  abstract void abort();
-  abstract void setFieldInfos(FieldInfos fieldInfos);
+import org.apache.lucene.store.IndexInput;
+
+abstract class FormatPostingsPositionsConsumer {
+
+  /** Add a new position & payload.  If payloadLength > 0
+   *  you must read those bytes from the IndexInput. */
+  abstract void addPosition(int position, byte[] payload, int payloadOffset, int payloadLength) throws IOException;
+
+  /** Called when we are done adding positions & payloads */
+  abstract void finish() throws IOException;
 }

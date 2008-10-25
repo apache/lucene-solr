@@ -44,7 +44,7 @@ final class DocInverter extends DocFieldConsumer {
     endConsumer.setFieldInfos(fieldInfos);
   }
 
-  void flush(Map threadsAndFields, DocumentsWriter.FlushState state) throws IOException {
+  void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
 
     Map childThreadsAndFields = new HashMap();
     Map endChildThreadsAndFields = new HashMap();
@@ -75,7 +75,7 @@ final class DocInverter extends DocFieldConsumer {
     endConsumer.flush(endChildThreadsAndFields, state);
   }
 
-  public void closeDocStore(DocumentsWriter.FlushState state) throws IOException {
+  public void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
     endConsumer.closeDocStore(state);
   }

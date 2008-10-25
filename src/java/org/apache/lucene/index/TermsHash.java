@@ -85,7 +85,7 @@ final class TermsHash extends InvertedDocConsumer {
       nextTermsHash.abort();
   }
 
-  void shrinkFreePostings(Map threadsAndFields, DocumentsWriter.FlushState state) {
+  void shrinkFreePostings(Map threadsAndFields, SegmentWriteState state) {
 
     assert postingsFreeCount == postingsAllocCount: Thread.currentThread().getName() + ": postingsFreeCount=" + postingsFreeCount + " postingsAllocCount=" + postingsAllocCount + " consumer=" + consumer;
 
@@ -97,13 +97,13 @@ final class TermsHash extends InvertedDocConsumer {
     }
   }
 
-  synchronized void closeDocStore(DocumentsWriter.FlushState state) throws IOException {
+  synchronized void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
     if (nextTermsHash != null)
       nextTermsHash.closeDocStore(state);
   }
 
-  synchronized void flush(Map threadsAndFields, final DocumentsWriter.FlushState state) throws IOException {
+  synchronized void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
     Map childThreadsAndFields = new HashMap();
     Map nextThreadsAndFields;
 

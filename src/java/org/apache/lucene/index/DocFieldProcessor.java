@@ -43,11 +43,11 @@ final class DocFieldProcessor extends DocConsumer {
     consumer.setFieldInfos(fieldInfos);
   }
 
-  public void closeDocStore(DocumentsWriter.FlushState state) throws IOException {
+  public void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
   }
 
-  public void flush(Collection threads, DocumentsWriter.FlushState state) throws IOException {
+  public void flush(Collection threads, SegmentWriteState state) throws IOException {
 
     Map childThreadsAndFields = new HashMap();
     Iterator it = threads.iterator();
@@ -63,7 +63,9 @@ final class DocFieldProcessor extends DocConsumer {
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
-    fieldInfos.write(state.directory, state.segmentName + ".fnm");
+    final String fileName = state.segmentFileName(IndexFileNames.FIELD_INFOS_EXTENSION);
+    fieldInfos.write(state.directory, fileName);
+    state.flushedFiles.add(fileName);
   }
 
   public void abort() {
