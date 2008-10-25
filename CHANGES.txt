@@ -96,6 +96,8 @@ Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
 
+ 2. SOLR-805: Upgraded to Lucene 2.9-dev (r707499) (koji)
+
 
 Build
 ----------------------
