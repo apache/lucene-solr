@@ -98,6 +98,8 @@ Other Changes
 
  2. SOLR-805: Upgraded to Lucene 2.9-dev (r707499) (koji)
 
+ 3. DumpRequestHandler (/debug/dump): changed 'fieldName' to 'sourceInfo'. (ehatcher)
+
 
 Build
 ----------------------

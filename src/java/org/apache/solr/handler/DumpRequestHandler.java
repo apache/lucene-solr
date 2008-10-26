@@ -42,7 +42,7 @@ public class DumpRequestHandler extends RequestHandlerBase
       for( ContentStream content : req.getContentStreams() ) {
         NamedList<Object> stream = new SimpleOrderedMap<Object>();
         stream.add( "name", content.getName() );
-        stream.add( "fieldName", content.getSourceInfo() );
+        stream.add( "sourceInfo", content.getSourceInfo() );
         stream.add( "size", content.getSize() );
         stream.add( "contentType", content.getContentType() );
         stream.add( "stream", IOUtils.toString( content.getStream() ) );
