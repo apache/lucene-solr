@@ -59,14 +59,14 @@ public class SolrIndexWriter extends IndexWriter {
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
       if (config.mergePolicyClassName != null && SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME.equals(config.mergePolicyClassName) == false) {
-        MergePolicy policy = (MergePolicy) schema.getSolrConfig().getResourceLoader().newInstance(config.mergePolicyClassName);
+        MergePolicy policy = (MergePolicy) schema.getResourceLoader().newInstance(config.mergePolicyClassName);
         setMergePolicy(policy);///hmm, is this really the best way to get a newInstance?
       }
       if (config.mergeFactor != -1 && getMergePolicy() instanceof LogMergePolicy) {
         setMergeFactor(config.mergeFactor);
       }
       if (config.mergeSchedulerClassname != null && SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME.equals(config.mergeSchedulerClassname) == false) {
-        MergeScheduler scheduler = (MergeScheduler) schema.getSolrConfig().getResourceLoader().newInstance(config.mergeSchedulerClassname);
+        MergeScheduler scheduler = (MergeScheduler) schema.getResourceLoader().newInstance(config.mergeSchedulerClassname);
         setMergeScheduler(scheduler);
       }
 

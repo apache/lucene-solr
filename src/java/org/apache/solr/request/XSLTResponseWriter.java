@@ -109,7 +109,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       throw new IOException("'" + TRANSFORM_PARAM + "' request parameter is required to use the XSLTResponseWriter");
     }
     // not the cleanest way to achieve this
-    SolrConfig solrConfig = request.getSearcher().getSchema().getSolrConfig();
+    SolrConfig solrConfig = request.getCore().getSolrConfig();
     // no need to synchronize access to context, right? 
     // Nothing else happens with it at the same time
     final Map<Object,Object> ctx = request.getContext();

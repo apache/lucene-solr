@@ -62,6 +62,7 @@ public final class IndexSchema {
   private final String resourceName;
   private String name;
   private float version;
+  private final SolrResourceLoader loader;
 
   /**
    * Constructs a schema using the specified file name using the normal
@@ -86,7 +87,7 @@ public final class IndexSchema {
     if (name == null)
       name = DEFAULT_SCHEMA_FILE;
     this.resourceName = name;
-    SolrResourceLoader loader = solrConfig.getResourceLoader();
+    loader = solrConfig.getResourceLoader();
     InputStream lis = is;
     if (lis == null)
       lis = loader.openSchema(name);
@@ -97,14 +98,23 @@ public final class IndexSchema {
       }
       catch(IOException xio) {} // ignore
     }
-    
     loader.inform( loader );
   }
 
+  /**
+   * @deprecated -- get access to SolrConfig some other way...
+   */
   public SolrConfig getSolrConfig() {
     return solrConfig;
   }
   
+  /**
+   * @since solr 1.4
+   */
+  public SolrResourceLoader getResourceLoader()
+  {
+    return loader;
+  }
   
   /** Gets the name of the resource used to instantiate this schema. */
   public String getResourceName() {
@@ -128,7 +138,7 @@ public final class IndexSchema {
    */
   @Deprecated
   public InputStream getInputStream() {
-    return solrConfig.getResourceLoader().openResource(resourceName);
+    return loader.openResource(resourceName);
   }
 
   /** Gets the name of the schema file.
@@ -381,7 +391,7 @@ public final class IndexSchema {
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      Config schemaConf = new Config(solrConfig.getResourceLoader(), "schema", is, "/schema/");
+      Config schemaConf = new Config(loader, "schema", is, "/schema/");
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
 
@@ -396,7 +406,7 @@ public final class IndexSchema {
       version = schemaConf.getFloat("/schema/@version", 1.0f);
 
       final IndexSchema schema = this;
-      AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType", true, true) {
+      AbstractPluginLoader<FieldType> fieldLoader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType", true, true) {
 
         @Override
         protected FieldType create( ResourceLoader loader, String name, String className, Node node ) throws Exception
@@ -438,7 +448,7 @@ public final class IndexSchema {
 
       String expression = "/schema/types/fieldtype | /schema/types/fieldType";
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      loader.load( solrConfig.getResourceLoader(), nodes );
+      fieldLoader.load( loader, nodes );
 
       
 
@@ -539,7 +549,7 @@ public final class IndexSchema {
       };
       log.debug("using default similarity");
     } else {
-      final Object obj = solrConfig.getResourceLoader().newInstance(((Element) node).getAttribute("class"));
+      final Object obj = loader.newInstance(((Element) node).getAttribute("class"));
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
         SolrParams params = SolrParams.toSolrParams(DOMUtil.childNodesToNamedList(node));
@@ -724,7 +734,7 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      return (Analyzer)solrConfig.getResourceLoader().newInstance(analyzerName);
+      return (Analyzer)loader.newInstance(analyzerName);
     }
 
     XPath xpath = XPathFactory.newInstance().newXPath();
@@ -752,7 +762,7 @@ public final class IndexSchema {
         return null; // used for map registration
       }
     };
-    tokenizerLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
+    tokenizerLoader.load( loader, (NodeList)xpath.evaluate("./tokenizer", node, XPathConstants.NODESET) );
     
     // Make sure something was loaded
     if( tokenizers.isEmpty() ) {
@@ -779,7 +789,7 @@ public final class IndexSchema {
         return null; // used for map registration
       }
     };
-    filterLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
+    filterLoader.load( loader, (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
     
     return new TokenizerChain(tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
   };

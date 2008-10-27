@@ -123,7 +123,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     this.closeReader = closeReader;
     searcher.setSimilarity(schema.getSimilarity());
 
-    SolrConfig solrConfig = schema.getSolrConfig();
+    SolrConfig solrConfig = core.getSolrConfig();
     queryResultWindowSize = solrConfig.queryResultWindowSize;
     queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
