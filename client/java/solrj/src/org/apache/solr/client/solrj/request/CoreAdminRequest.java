@@ -66,7 +66,7 @@ public class CoreAdminRequest extends SolrRequest
       }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set( CoreAdminParams.ACTION, action.toString() );
-      params.set( CoreAdminParams.CORE, core );
+      params.set( CoreAdminParams.NAME, core );
       params.set( CoreAdminParams.INSTANCE_DIR, instanceDir);
       if (configName != null) {
         params.set( CoreAdminParams.CONFIG, configName);
@@ -220,12 +220,23 @@ public class CoreAdminRequest extends SolrRequest
   
   public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server ) throws SolrServerException, IOException 
   {
+    return CoreAdminRequest.createCore(name, instanceDir, server, null, null);
+  }
+  
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile ) throws SolrServerException, IOException 
+  {
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName( name );
     req.setInstanceDir(instanceDir);
+    if(configFile != null){
+      req.setConfigName(configFile);
+    }
+    if(schemaFile != null){
+      req.setSchemaName(schemaFile);
+    }
     return req.process( server );
   }
-    
+
   public static CoreAdminResponse persist(String fileName, SolrServer server) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();
@@ -233,4 +244,3 @@ public class CoreAdminRequest extends SolrRequest
     return req.process(server);
   }
 }
-
