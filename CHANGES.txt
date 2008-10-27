@@ -73,7 +73,7 @@ New Features
 11. SOLR-651: Added TermVectorComponent for serving up term vector information, plus IDF.
     See http://wiki.apache.org/solr/TermVectorComponent (gsingers, Vaijanath N. Rao, Noble Paul)
 
-12. SOLR-813:  Deprecate access to SolrConfig from IndexSchema.  Rather then access
+12. SOLR-816:  Deprecate access to SolrConfig from IndexSchema.  Rather then access
     SolrConfig from the schema, plugins should get the config from the core.  IndexSchema
     still has access to the ResourceLoader.  (ryan)
     
