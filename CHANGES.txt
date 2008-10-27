@@ -42,41 +42,34 @@ New Features
     point and optimized status.
     See http://lucene.apache.org/java/2_3_2/api/org/apache/lucene/index/IndexDeletionPolicy.html
     (yonik, Noble Paul, Akshay Ukey via shalin)
- 
- 3. SOLR-657: Replace many deprecated calls with non-deprecated equivalents
-    (Lars Kotthoff via ryan)
 
- 4. SOLR-658: Allow Solr to load index from arbitrary directory in dataDir
+ 3. SOLR-658: Allow Solr to load index from arbitrary directory in dataDir
     (Noble Paul, Akshay Ukey via shalin)
     
- 5. SOLR-793: Add 'commitWithin' argument to the update add command.  This behaves
+ 4. SOLR-793: Add 'commitWithin' argument to the update add command.  This behaves
     similar to the global autoCommit maxTime argument except that it is set for 
     each request.  (ryan)
 
- 6. SOLR-670: Add support for rollbacks in UpdateHandler. This allows user to rollback all changes
+ 5. SOLR-670: Add support for rollbacks in UpdateHandler. This allows user to rollback all changes
     since the last commit. (Noble Paul, koji via shalin)
     
- 7. SOLR-813: Adding DoubleMetaphone Filter and Factory.  Similar to the PhoneticFilter, 
+ 6. SOLR-813: Adding DoubleMetaphone Filter and Factory.  Similar to the PhoneticFilter, 
     but this uses DoubleMetaphone specific calls (including alternate encoding)
     (Todd Feak via ryan)   
 
- 8. SOLR-680: Add StatsComponent. This gets simple statists on matched numeric fields,
+ 7. SOLR-680: Add StatsComponent. This gets simple statists on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
- 9. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
+ 8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information
     on the Admin page. Works on all platforms. (Noble Paul, yonik, Akshay Ukey, shalin)
 
-10. SOLR-746: Added "omitHeader" request parameter to omit the header from the response.
+ 9. SOLR-746: Added "omitHeader" request parameter to omit the header from the response.
     (Noble Paul via shalin)
 
-11. SOLR-651: Added TermVectorComponent for serving up term vector information, plus IDF.
+10. SOLR-651: Added TermVectorComponent for serving up term vector information, plus IDF.
     See http://wiki.apache.org/solr/TermVectorComponent (gsingers, Vaijanath N. Rao, Noble Paul)
 
-12. SOLR-816:  Deprecate access to SolrConfig from IndexSchema.  Rather then access
-    SolrConfig from the schema, plugins should get the config from the core.  IndexSchema
-    still has access to the ResourceLoader.  (ryan)
-    
 
 Optimizations
 ----------------------
@@ -107,7 +100,13 @@ Other Changes
 
  3. DumpRequestHandler (/debug/dump): changed 'fieldName' to 'sourceInfo'. (ehatcher)
 
+ 4. SOLR-657: Replace many deprecated calls with non-deprecated equivalents
+    (Lars Kotthoff via ryan)
 
+ 5. SOLR-816:  Deprecate access to SolrConfig from IndexSchema.  Rather then access
+    SolrConfig from the schema, plugins should get the config from the core.  IndexSchema
+    still has access to the ResourceLoader.  (ryan)
+    
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
