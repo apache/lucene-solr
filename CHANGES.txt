@@ -73,6 +73,10 @@ New Features
 12. SOLR-795: SpellCheckComponent supports building indices on optimize if configured in solrconfig.xml
     (Jason Rennie, shalin)
 
+13. SOLR-667: A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce
+    contention and synchronization overhead, to utilize multiple CPU cores more effectively.
+    (Fuad Efendi, Noble Paul, yonik via shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
