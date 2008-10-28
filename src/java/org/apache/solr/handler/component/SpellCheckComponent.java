@@ -51,7 +51,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.*;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.NodeList;
@@ -273,10 +272,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
               }
             }
             // Register event listeners for this SpellChecker
-            core.registerFirstSearcherListener(new SpellCheckerListener(core, checker, true));
-            if (Boolean.parseBoolean((String)spellchecker.get("buildOnCommit")))   {
+            core.registerFirstSearcherListener(new SpellCheckerListener(core, checker, false, false));
+            boolean buildOnCommit = Boolean.parseBoolean((String) spellchecker.get("buildOnCommit"));
+            boolean buildOnOptimize = Boolean.parseBoolean((String) spellchecker.get("buildOnOptimize"));
+            if (buildOnCommit || buildOnOptimize)   {
               LOG.info("Registering newSearcher listener for spellchecker: " + checker.getDictionaryName());
-              core.registerNewSearcherListener(new SpellCheckerListener(core, checker, false));
+              core.registerNewSearcherListener(new SpellCheckerListener(core, checker, buildOnCommit, buildOnOptimize));
             }
           } else {
             throw new RuntimeException("Can't load spell checker: " + className);
@@ -316,12 +317,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private static class SpellCheckerListener implements SolrEventListener {
     private final SolrCore core;
     private final SolrSpellChecker checker;
-    private final boolean firstSearcher;
+    private final boolean buildOnCommit;
+    private final boolean buildOnOptimize;
 
-    public SpellCheckerListener(SolrCore core, SolrSpellChecker checker, boolean firstSearcher) {
+    public SpellCheckerListener(SolrCore core, SolrSpellChecker checker, boolean buildOnCommit, boolean buildOnOptimize) {
       this.core = core;
       this.checker = checker;
-      this.firstSearcher = firstSearcher;
+      this.buildOnCommit = buildOnCommit;
+      this.buildOnOptimize = buildOnOptimize;
     }
 
     public void init(NamedList args) {
@@ -329,7 +332,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
-      if (firstSearcher) {
+      if (currentSearcher == null) {
+        // firstSearcher event
         try {
           LOG.info("Loading spell index for spellchecker: "
                   + checker.getDictionaryName());
@@ -339,15 +343,27 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
       } else {
         // newSearcher event
-        try {
-          LOG.info("Building spell index for spell checker: " + checker.getDictionaryName());
-          checker.build(core, newSearcher);
-        } catch (Exception e) {
-          log.error(
-                  "Exception in building spell check index for spellchecker: " + checker.getDictionaryName(), e);
+        if (buildOnCommit)  {
+          buildSpellIndex(newSearcher);
+        } else if (buildOnOptimize) {
+          if (newSearcher.getReader().isOptimized())  {
+            buildSpellIndex(newSearcher);
+          } else  {
+            LOG.info("Index is not optimized therefore skipping building spell check index for: " + checker.getDictionaryName());
+          }
         }
       }
 
+    }
+
+    private void buildSpellIndex(SolrIndexSearcher newSearcher) {
+      try {
+        LOG.info("Building spell index for spell checker: " + checker.getDictionaryName());
+        checker.build(core, newSearcher);
+      } catch (Exception e) {
+        log.error(
+                "Exception in building spell check index for spellchecker: " + checker.getDictionaryName(), e);
+      }
     }
 
     public void postCommit() {
