@@ -106,13 +106,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add("status", "OK");
       return;
     }
+    //This command does not give the current index version of the master
+    // It gives the current replicateable index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null) {
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
-        // must never happen
+        // This happens when replicateAfter does not have startup and no commit/optimize
+        // has happened yet.
         rsp.add(CMD_INDEX_VERSION, 0L);
         rsp.add(GENERATION, 0L);
       }
@@ -134,6 +137,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (snapPuller != null)
         snapPuller.abortPull();
     } else if (command.equals(CMD_FILE_CHECKSUM)) {
+      // this command is not used by anyone
       getFileChecksum(solrParams, rsp);
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       rsp.add(CMD_SHOW_COMMITS, getCommits());
@@ -160,6 +164,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return l;
   }
 
+  /**Gets the checksum of a file
+   */
   private void getFileChecksum(SolrParams solrParams, SolrQueryResponse rsp) {
     Checksum checksum = new Adler32();
     File dir = new File(core.getIndexDir());
@@ -225,6 +231,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
+  /**This method adds an Object of FileStream to the resposnse .
+   * The FileStream implements a custom protocol which is also understoop by the SnapPuller
+   */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp) {
     ModifiableSolrParams rawParams = new ModifiableSolrParams(solrParams);
     rawParams.set(CommonParams.WT, FILE_STREAM);
@@ -244,9 +253,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add("status", "invalid indexversion");
       return;
     }
+    // reserve the indexcommit for sometime
     core.getDeletionPolicy().setReserveDuration(version, reserveCommitDuration);
     List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
     try {
+      //get all the files in the commit
       Collection<String> files = commit.getFileNames();
       for (String fileName : files) {
         File file = new File(core.getIndexDir(), fileName);
@@ -263,10 +274,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     if (includeConfFiles == null)
       return;
     LOG.debug("Adding config files to list: " + includeConfFiles);
+    //if configuration files need to be included get their details
     List<Map<String, Object>> confFiles = getConfFileCache(includeConfFiles);
     rsp.add(CONF_FILES, confFiles);
   }
 
+  /** for configuration files checksum of the file also is included
+   * because ,unlike index ,files they may have same content but different timestamps
+   * The local conf files information is cached so that everytime it does not have to
+   * read the file content. The cache is refreshed only if the lastmodified of the file changes
+   */
   List<Map<String, Object>> getConfFileCache(Collection<String> filenames) {
     List<Map<String, Object>> confFiles = new ArrayList<Map<String, Object>>();
     synchronized (confFileInfoCache) {
@@ -348,6 +365,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return size;
   }
 
+  /**Collects the details such as name, size ,lasmodified of a file
+   */
   private Map<String, Object> getFileInfo(File file) {
     Map<String, Object> fileMeta = new HashMap<String, Object>();
     fileMeta.put(NAME, file.getName());
@@ -658,6 +677,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
+  /**register a closehook
+   */
   private void registerCloseHook() {
     core.addCloseHook(new CloseHook() {
       public void close(SolrCore core) {
@@ -668,6 +689,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
+  /**A responsewriter is registered automatically for wt=filestream
+   */
   private void registerFileStreamResponseWriter() {
     core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
       public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse resp) throws IOException {
@@ -687,6 +710,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
 
   }
+
+  /**Register a listener for postcommit/optimize
+   * @param snapshoot do a snapshoot
+   * @param getCommit get a commitpoint also
+   * @return an instance of the eventlistener
+   */
 
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
@@ -744,24 +773,29 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         long offset = -1;
         int len = -1;
+        //check if checksum is requested
         boolean useChecksum = Boolean.parseBoolean(sChecksum);
         if (sOffset != null)
           offset = Long.parseLong(sOffset);
         if (sLen != null)
           len = Integer.parseInt(sLen);
         if (fileName == null && cfileName == null) {
+          //no filename do nothing
           writeNothing();
         }
 
         File file = null;
         if (cfileName != null) {
+          //if if is a conf file read from config diectory
           file = new File(core.getResourceLoader().getConfigDir(), cfileName);
         } else {
+          //else read from the indexdirectory
           file = new File(core.getIndexDir(), fileName);
         }
         if (file.exists() && file.canRead()) {
           inputStream = new FileInputStream(file);
           FileChannel channel = inputStream.getChannel();
+          //if offset is mentioned move the pointer to that point
           if (offset != -1)
             channel.position(offset);
           byte[] buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
@@ -787,6 +821,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             fos.write(buf, 0, (int) bytesRead);
             fos.flush();
             if(indexVersion != null && (packetsWritten % 5 == 0)){
+              //after every 5 packets reserve the commitpoint for some time
               delPolicy.setReserveDuration(indexVersion, reserveCommitDuration);
             }
             packetsWritten++;
