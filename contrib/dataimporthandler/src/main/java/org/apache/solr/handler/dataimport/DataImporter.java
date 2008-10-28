@@ -385,7 +385,7 @@ public class DataImporter {
   }
 
   void runCmd(RequestParams reqParams, SolrWriter sw, Map<String, String> variables) {
-    if (importLock.isLocked())
+    if (importLock.tryLock())
       return;
     importLock.lock();
     try {
