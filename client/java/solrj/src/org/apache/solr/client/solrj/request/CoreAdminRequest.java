@@ -66,7 +66,11 @@ public class CoreAdminRequest extends SolrRequest
       }
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set( CoreAdminParams.ACTION, action.toString() );
-      params.set( CoreAdminParams.NAME, core );
+      if( action.equals(CoreAdminAction.CREATE) ) {
+        params.set( CoreAdminParams.NAME, core );
+      } else {
+        params.set( CoreAdminParams.CORE, core );
+      }
       params.set( CoreAdminParams.INSTANCE_DIR, instanceDir);
       if (configName != null) {
         params.set( CoreAdminParams.CONFIG, configName);

@@ -89,7 +89,7 @@ Bug Fixes
 
  4. SOLR-805: DisMax queries are not being cached in QueryResultCache (Todd Feak via koji)
 
- 5. SOLR-803: CoreAdminRequest.createCore fails because name parameter isn't set (Sean Colombo via ryan)
+ 5. SOLR-803, SOLR-827: Fix CoreAdminRequest#createCore (Sean Colombo via ryan)
  
 
 Other Changes
