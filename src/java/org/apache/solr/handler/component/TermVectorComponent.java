@@ -107,30 +107,26 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       DocList list = listAndSet.docList;
       iter = list.iterator();
     }
-    SolrCore core = rb.req.getCore();
-    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-    try {
-      IndexReader reader = searcher.get().getReader();
-      //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
-      TVMapper mapper = new TVMapper(fields, reader, termFreq, positions, offsets, idf, tfIdf);
-      IndexSchema schema = core.getSchema();
-      String uniqFieldName = schema.getUniqueKeyField().getName();
-      //Only load the id field
-      SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.emptySet());
-      while (iter.hasNext()) {
-        Integer docId = iter.next();
-        NamedList docNL = new NamedList();
-        termVectors.add("doc-" + docId, docNL);
-        mapper.docNL = docNL;
-        Document document = reader.document(docId, fieldSelector);
-        String uniqId = document.get(uniqFieldName);
-        docNL.add("uniqueKey", uniqId);
-        reader.getTermFreqVector(docId, mapper);
-      }
-      termVectors.add("uniqueKeyFieldName", uniqFieldName);
-    } finally {
-      searcher.decref();
+    SolrIndexSearcher searcher = rb.req.getSearcher();
+
+    IndexReader reader = searcher.getReader();
+    //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
+    TVMapper mapper = new TVMapper(fields, reader, termFreq, positions, offsets, idf, tfIdf);
+    IndexSchema schema = rb.req.getSchema();
+    String uniqFieldName = schema.getUniqueKeyField().getName();
+    //Only load the id field
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.emptySet());
+    while (iter.hasNext()) {
+      Integer docId = iter.next();
+      NamedList docNL = new NamedList();
+      termVectors.add("doc-" + docId, docNL);
+      mapper.docNL = docNL;
+      Document document = reader.document(docId, fieldSelector);
+      String uniqId = document.get(uniqFieldName);
+      docNL.add("uniqueKey", uniqId);
+      reader.getTermFreqVector(docId, mapper);
     }
+    termVectors.add("uniqueKeyFieldName", uniqFieldName);
   }
 
   private List<Integer> getInts(String[] vals) {
