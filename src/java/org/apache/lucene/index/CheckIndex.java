@@ -308,6 +308,8 @@ public class CheckIndex {
         sFormat = "FORMAT_DEL_COUNT [Lucene 2.4]";
       else if (format == SegmentInfos.FORMAT_HAS_PROX)
         sFormat = "FORMAT_HAS_PROX [Lucene 2.4]";
+      else if (format == SegmentInfos.FORMAT_USER_DATA)
+        sFormat = "FORMAT_USER_DATA [Lucene 2.9]";
       else if (format < SegmentInfos.CURRENT_FORMAT) {
         sFormat = "int=" + format + " [newer version of Lucene than this tool]";
         skip = true;
