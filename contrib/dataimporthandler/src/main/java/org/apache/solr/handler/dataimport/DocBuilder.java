@@ -19,13 +19,15 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.schema.SchemaField;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -364,56 +366,53 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void addFields(DataConfig.Entity entity, SolrInputDocument doc,
-                         Map<String, Object> arow) {
-    DataConfig.Entity parentMost = entity;
-    while (parentMost.parentEntity != null)
-      parentMost = parentMost.parentEntity;
-    for (DataConfig.Field field : entity.fields) {
-      addFieldValue(field, arow, null, doc);
-    }
-    if (parentMost.implicitFields != null) {
-      Map<String, Object> lowerCaseMap = new HashMap<String, Object>();
-      for (Map.Entry<String, Object> entry : arow.entrySet())
-        lowerCaseMap.put(entry.getKey().toLowerCase(), entry.getValue());
-
-      for (DataConfig.Field automaticField : parentMost.implicitFields) {
-        addFieldValue(automaticField, arow, lowerCaseMap, doc);
+  private void addFields(DataConfig.Entity entity, SolrInputDocument doc, Map<String, Object> arow) {
+    for (Map.Entry<String, Object> entry : arow.entrySet()) {
+      String key = entry.getKey();
+      DataConfig.Field field = entity.colNameVsField.get(key);
+      if (field == null)  {
+        field = entity.lowercaseColNameVsField.get(key.toLowerCase());
       }
+      if (field == null && entity.rootEntity != null)  {
+        field = entity.rootEntity.colNameVsField.get(key);
+      }
+      if (field == null && entity.rootEntity != null)  {
+        field = entity.rootEntity.lowercaseColNameVsField.get(key.toLowerCase());
+      }
+      if (field == null)  {
+        // This can be a dynamic field
+        SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
+        if (sf != null) {
+          addFieldToDoc(entry.getValue(), key, 1.0f, sf.multiValued(), doc);
+        }
+      } else  {
+        if (field.toWrite)  {
+          addFieldToDoc(entry.getValue(), key, field.boost, field.multiValued, doc);
+        }
+      }
+      
     }
   }
 
-  private void addFieldValue(DataConfig.Field field, Map<String, Object> arow,
-                             Map<String, Object> lowerCaseMap, SolrInputDocument doc) {
-    if (!field.toWrite)
-      return;
-    Object value = arow.get(field.column);
-    if (value == null) {
-      if (lowerCaseMap != null) {
-        value = lowerCaseMap.get(field.column.toLowerCase());
-      }
-      if (value == null)
-        return;
-    }
-
+  private void addFieldToDoc(Object value, String name, float boost, boolean multiValued, SolrInputDocument doc) {
     if (value instanceof Collection) {
       Collection collection = (Collection) value;
-      if (field.multiValued) {
+      if (multiValued) {
         for (Object o : collection) {
-          doc.addField(field.nameOrColName, o, field.boost);
+          doc.addField(name, o, boost);
         }
       } else {
-        if (doc.getField(field.nameOrColName) == null)
+        if (doc.getField(name) == null)
           for (Object o : collection) {
-            doc.addField(field.nameOrColName, o, field.boost);
+            doc.addField(name, o,boost);
             break;
           }
       }
-    } else if (field.multiValued) {
-      doc.addField(field.nameOrColName, value, field.boost);
+    } else if (multiValued) {
+      doc.addField(name, value, boost);
     } else {
-      if (doc.getField(field.nameOrColName) == null)
-        doc.addField(field.nameOrColName, value, field.boost);
+      if (doc.getField(name) == null)
+        doc.addField(name, value, boost);
     }
   }
 

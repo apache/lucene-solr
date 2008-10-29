@@ -100,7 +100,7 @@ public class DataImporter {
         Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
         initEntity(e, fields, false);
         e.implicitFields = new ArrayList<DataConfig.Field>();
-        String errs = verifyWithSchema(fields, e.implicitFields);
+        String errs = verifyWithSchema(e, fields);
         if (e.implicitFields.isEmpty())
           e.implicitFields = null;
         if (errs != null) {
@@ -111,8 +111,7 @@ public class DataImporter {
     }
   }
 
-  private String verifyWithSchema(Map<String, DataConfig.Field> fields,
-                                  List<DataConfig.Field> autoFields) {
+  private String verifyWithSchema(DataConfig.Entity e, Map<String, DataConfig.Field> fields) {
     List<String> errors = new ArrayList<String>();
     Map<String, SchemaField> schemaFields = schema.getFields();
     for (Map.Entry<String, SchemaField> entry : schemaFields.entrySet()) {
@@ -123,7 +122,10 @@ public class DataImporter {
                   .info(sf.getName()
                           + " is a required field in SolrSchema . But not found in DataConfig");
         }
-        autoFields.add(new DataConfig.Field(sf.getName(), sf.multiValued()));
+        DataConfig.Field field = new DataConfig.Field(sf.getName(), sf.multiValued());
+        e.implicitFields.add(field);
+        e.colNameVsField.put(field.column, field);
+        e.lowercaseColNameVsField.put(field.column.toLowerCase(), field);
       }
     }
     for (Map.Entry<String, DataConfig.Field> entry : fields.entrySet()) {
@@ -132,7 +134,7 @@ public class DataImporter {
 
       try {
         fieldType = schema.getDynamicFieldType(fld.name);
-      } catch (RuntimeException e) {
+      } catch (RuntimeException ex) {
         // Ignore because it may not be a dynamic field
       }
 
@@ -233,7 +235,7 @@ public class DataImporter {
     if (e.entities == null)
       return;
     for (DataConfig.Entity e1 : e.entities) {
-      e1.parentEntity = e;
+      e1.setParentEntity(e);
       initEntity(e1, fields, e.isDocRoot || docRootFound);
     }
 
@@ -530,6 +532,9 @@ public class DataImporter {
     }
   }
 
+  IndexSchema getSchema() {
+    return schema;
+  }
 
   SolrCore getCore() {
     return core;

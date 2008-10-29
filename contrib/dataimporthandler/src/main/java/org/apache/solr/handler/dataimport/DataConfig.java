@@ -129,6 +129,12 @@ public class DataConfig {
 
     public List<Field> implicitFields;
 
+    public Map<String, Field> colNameVsField;
+
+    public Map<String, Field> lowercaseColNameVsField;
+
+    public Entity rootEntity;
+
     public Entity() {
     }
 
@@ -141,14 +147,28 @@ public class DataConfig {
       allAttributes = getAllAttributes(element);
       List<Element> n = getChildNodes(element, "field");
       fields = new ArrayList<Field>();
-      for (Element elem : n)
-        fields.add(new Field(elem));
+      colNameVsField = new HashMap<String, Field>();
+      lowercaseColNameVsField = new HashMap<String, Field>();
+      for (Element elem : n)  {
+        Field field = new Field(elem);
+        fields.add(field);
+        colNameVsField.put(field.column, field);
+        lowercaseColNameVsField.put(field.column.toLowerCase(), field);
+      }
       n = getChildNodes(element, "entity");
       if (!n.isEmpty())
         entities = new ArrayList<Entity>();
       for (Element elem : n)
         entities.add(new Entity(elem));
 
+    }
+
+    public void setParentEntity(Entity parentEntity) {
+      this.parentEntity = parentEntity;
+      while (parentEntity.parentEntity != null)  {
+        parentEntity = parentEntity.parentEntity;
+      }
+      this.rootEntity = parentEntity;
     }
 
     public void clearCache() {

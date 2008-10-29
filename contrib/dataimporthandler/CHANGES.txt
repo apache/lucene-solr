@@ -40,6 +40,9 @@ Bug Fixes
 3. SOLR-728:  Add synchronization to avoid race condition of multiple imports working concurrently
               (Walter Ferrara, shalin)
 
+4. SOLR-742:  Add ability to create dynamic fields with custom DataImportHandler transformers
+              (Wojtek Piaseczny, Noble Paul, shalin)
+
 Documentation
 ----------------------
 

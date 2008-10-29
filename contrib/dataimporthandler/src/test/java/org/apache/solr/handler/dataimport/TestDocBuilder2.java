@@ -70,6 +70,19 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testDynamicFields() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigWithDynamicTransformer);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+    assertQ(req("dynamic_s:test"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testRequestParamsAsVariable() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "101", "desc", "ApacheSolr"));
@@ -100,6 +113,14 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     }
   }
 
+  public static class AddDynamicFieldTransformer extends Transformer  {
+    public Object transformRow(Map<String, Object> row, Context context) {
+      // Add a dynamic field
+      row.put("dynamic_s", "test");
+      return row;
+    }
+  }
+
   public static class MockDataSource2 extends MockDataSource  {
 
   }
@@ -114,4 +135,13 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
+   private final String dataConfigWithDynamicTransformer = "<dataConfig>\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from x\"" +
+           "                transformer=\"TestDocBuilder2$AddDynamicFieldTransformer\">\n" +
+          "            <field column=\"id\" />\n" +
+          "            <field column=\"desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
 }
