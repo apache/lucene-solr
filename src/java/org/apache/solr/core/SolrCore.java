@@ -876,7 +876,9 @@ public final class SolrCore implements SolrInfoMBean {
   * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
   * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
   * This method should not be called from SolrCoreAware.inform() since it can result
-  * in a deadlock if useColdSearcher==false. 
+  * in a deadlock if useColdSearcher==false.
+  * If handling a normal request, the searcher should be obtained from
+   * {@link org.apache.solr.request.SolrQueryRequest#getSearcher()} instead.
   */
   public RefCounted<SolrIndexSearcher> getSearcher() {
     try {
