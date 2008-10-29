@@ -385,19 +385,22 @@ public class DataImporter {
   }
 
   void runCmd(RequestParams reqParams, SolrWriter sw, Map<String, String> variables) {
+    String command = reqParams.command;
+    if (command.equals(ABORT_CMD)) {
+      if (docBuilder != null) {
+        docBuilder.abort();
+      }
+      return;
+    }
     if (!importLock.tryLock())
       return;
     try {
-      String command = reqParams.command;
       Date lastModified = sw.loadIndexStartTime();
       setLastIndexTime(lastModified);
       if (command.equals("full-import")) {
         doFullImport(sw, reqParams, variables);
       } else if (command.equals(DELTA_IMPORT_CMD)) {
         doDeltaImport(sw, reqParams, variables);
-      } else if (command.equals(ABORT_CMD)) {
-        if (docBuilder != null)
-          docBuilder.abort();
       }
     } finally {
       importLock.unlock();
