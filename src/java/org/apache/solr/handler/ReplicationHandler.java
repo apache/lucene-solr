@@ -25,9 +25,9 @@ import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -106,15 +106,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       rsp.add("status", "OK");
       return;
     }
-    //This command does not give the current index version of the master
-    // It gives the current replicateable index version
+    // This command does not give the current index version of the master
+    // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null) {
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
-        // This happens when replicateAfter does not have startup and no commit/optimize
+        // This happens when replication is not configured to happen after startup and no commit/optimize
         // has happened yet.
         rsp.add(CMD_INDEX_VERSION, 0L);
         rsp.add(GENERATION, 0L);
@@ -164,7 +164,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return l;
   }
 
-  /**Gets the checksum of a file
+  /**
+   * Gets the checksum of a file
    */
   private void getFileChecksum(SolrParams solrParams, SolrQueryResponse rsp) {
     Checksum checksum = new Adler32();
@@ -231,8 +232,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  /**This method adds an Object of FileStream to the resposnse .
-   * The FileStream implements a custom protocol which is also understoop by the SnapPuller
+  /**
+   * This method adds an Object of FileStream to the resposnse .
+   * The FileStream implements a custom protocol which is understood by SnapPuller.FileFetcher
+   *
+   * @see org.apache.solr.handler.SnapPuller.FileFetcher
    */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp) {
     ModifiableSolrParams rawParams = new ModifiableSolrParams(solrParams);
@@ -279,10 +283,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CONF_FILES, confFiles);
   }
 
-  /** for configuration files checksum of the file also is included
-   * because ,unlike index ,files they may have same content but different timestamps
+  /**
+   * For configuration files, checksum of the file is included
+   * because, unlike index files, they may have same content but different timestamps.
+   * <p/>
    * The local conf files information is cached so that everytime it does not have to
-   * read the file content. The cache is refreshed only if the lastmodified of the file changes
+   * compute the checksum. The cache is refreshed only if the lastModified of the file changes
    */
   List<Map<String, Object>> getConfFileCache(Collection<String> filenames) {
     List<Map<String, Object>> confFiles = new ArrayList<Map<String, Object>>();
@@ -291,7 +297,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Checksum checksum = null;
       for (String cf : filenames) {
         File f = new File(confDir, cf);
-        if (!f.exists() || f.isDirectory()) continue;//must not happen
+        if (!f.exists() || f.isDirectory()) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
         if (info == null || info.lastmodified != f.lastModified() || info.size != f.length()) {
           if (checksum == null) checksum = new Adler32();
@@ -305,7 +311,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private static class FileInfo {
-
     long lastmodified;
     String name;
     long size;
@@ -365,7 +370,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return size;
   }
 
-  /**Collects the details such as name, size ,lasmodified of a file
+  /**
+   * Collects the details such as name, size ,lastModified of a file
    */
   private Map<String, Object> getFileInfo(File file) {
     Map<String, Object> fileMeta = new HashMap<String, Object>();
@@ -376,19 +382,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   public String getDescription() {
-    return "";
+    return "ReplicationHandler provides replication of index and configuration files from Master to Slaves";
   }
 
   public String getSourceId() {
-    return "";
+    return "$Id$";
   }
 
   public String getSource() {
-    return "";
+    return "$URL$";
   }
 
   public String getVersion() {
-    return "$Id$";
+    return "$Revision$";
   }
 
   String readableSize(long size) {
@@ -451,6 +457,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return list;
   }
 
+  /**
+   * Used for showing statistics and progress information.
+   */
   void getReplicationDetails(SolrQueryResponse resp) {
     String timeLastReplicated = "", confFilesReplicated = "", confFilesReplicatedTime = "", timesIndexReplicated = "", timesConfigReplicated = "";
     NamedList<Object> details = new SimpleOrderedMap<Object>();
@@ -645,10 +654,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         LOG.info("Replication enabled for following config files: " + includeConfFiles);
       }
       List snapshot = master.getAll("snapshot");
-      boolean snapshotOnCommit =  snapshot.contains("commit");
+      boolean snapshotOnCommit = snapshot.contains("commit");
       boolean snapshotOnOptimize = snapshot.contains("optimize");
-      List replicateAfter =  master.getAll(REPLICATE_AFTER);
-      replicateOnCommit = replicateAfter.contains("commit"); 
+      List replicateAfter = master.getAll(REPLICATE_AFTER);
+      replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = replicateAfter.contains("optimize");
 
       if (replicateOnOptimize || snapshotOnOptimize) {
@@ -663,7 +672,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           indexCommitPoint = s.get().getReader().getIndexCommit();
         } catch (IOException e) {
-          LOG.warn("Unable to get IndexCommit on startup",e);
+          LOG.warn("Unable to get IndexCommit on startup", e);
         } finally {
           s.decref();
         }
@@ -677,7 +686,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  /**register a closehook
+  /**
+   * register a closehook
    */
   private void registerCloseHook() {
     core.addCloseHook(new CloseHook() {
@@ -689,7 +699,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
-  /**A responsewriter is registered automatically for wt=filestream
+  /**
+   * A ResponseWriter is registered automatically for wt=filestream
+   * This response writer is used to transfer index files in a block-by-block manner within
+   * the same HTTP response.
    */
   private void registerFileStreamResponseWriter() {
     core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
@@ -711,18 +724,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   }
 
-  /**Register a listener for postcommit/optimize
+  /**
+   * Register a listener for postcommit/optimize
+   *
    * @param snapshoot do a snapshoot
    * @param getCommit get a commitpoint also
    * @return an instance of the eventlistener
    */
-
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
       public void init(NamedList args) {/*no op*/ }
 
+      /**
+       * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
+       */
       public void postCommit() {
-        if(getCommit){
+        if (getCommit) {
           indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
         }
         if (snapshoot) {
@@ -767,7 +784,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String sLen = params.get(LEN);
       String sChecksum = params.get(CHECKSUM);
       String sindexVersion = params.get(CMD_INDEX_VERSION);
-      if(sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
+      if (sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
       FileInputStream inputStream = null;
       int packetsWritten = 0;
       try {
@@ -820,7 +837,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             fos.write(buf, 0, (int) bytesRead);
             fos.flush();
-            if(indexVersion != null && (packetsWritten % 5 == 0)){
+            if (indexVersion != null && (packetsWritten % 5 == 0)) {
               //after every 5 packets reserve the commitpoint for some time
               delPolicy.setReserveDuration(indexVersion, reserveCommitDuration);
             }
@@ -836,6 +853,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
+    /**
+     * Used to write a marker for EOF
+     */
     private void writeNothing() throws IOException {
       fos.writeInt(0);
       fos.flush();

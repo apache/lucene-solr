@@ -131,10 +131,6 @@ public class SnapPuller {
 
   /**
    * Gets the latest commit version and generation from the master
-   *
-   * @param client
-   * @return
-   * @throws IOException
    */
   @SuppressWarnings("unchecked")
   NamedList getLatestVersion(HttpClient client) throws IOException {
@@ -151,8 +147,7 @@ public class SnapPuller {
     return getNamedListResponse(client, post);
   }
 
-  private NamedList getNamedListResponse(HttpClient client, PostMethod method)
-          throws IOException {
+  private NamedList getNamedListResponse(HttpClient client, PostMethod method) throws IOException {
     try {
       int status = client.executeMethod(method);
       if (status != HttpStatus.SC_OK) {
@@ -169,12 +164,7 @@ public class SnapPuller {
   }
 
   /**
-   * Fetches the list of files in a given snapshot
-   *
-   * @param version
-   * @param client
-   * @return
-   * @throws IOException
+   * Fetches the list of files in a given index commit point
    */
   void fetchFileList(long version, HttpClient client) throws IOException {
     PostMethod post = new PostMethod(masterUrl);
@@ -192,8 +182,8 @@ public class SnapPuller {
 
   /**
    * This command downloads all the necessary files from master to install a
-   * snapshot. Only changed files are downloaded. it also downloads the
-   * conf files (if they are modified)
+   * index commit point. Only changed files are downloaded. It also downloads the
+   * conf files (if they are modified).
    *
    * @param core the SolrCore
    * @return true on success, false if slave is already in sync
@@ -297,6 +287,10 @@ public class SnapPuller {
     }
   }
 
+  /**
+   * Helper method to record the last replication's details so that we can show them on the
+   * statistics page across restarts.
+   */
   private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles) {
     FileOutputStream outFile = null;
     FileInputStream inFile = null;
@@ -364,11 +358,11 @@ public class SnapPuller {
   }
 
 
-  /**All the files are copied to a temp dir first
+  /**
+   * All the files are copied to a temp dir first
    */
   private File createTempindexDir(SolrCore core) {
-    String snapName = "index."
-            + new SimpleDateFormat(SnapShooter.DATE_FMT).format(new Date());
+    String snapName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT).format(new Date());
     File snapDir = new File(core.getDataDir(), snapName);
     snapDir.mkdirs();
     return snapDir;
@@ -404,17 +398,19 @@ public class SnapPuller {
     copyTmpConfFiles2Conf(tmpconfDir);
   }
 
-  /** download the index files. if snap needed download all the files .
-   * @param snapNeeded is it a fresh index copy
-   * @param snapDir the directory to which files need to be downloadeed to
-   * @param client the httpclient instance
+  /**
+   * Download the index files. If a new index is needed, download all the files.
+   *
+   * @param downloadCompleteIndex    is it a fresh index copy
+   * @param snapDir       the directory to which files need to be downloadeed to
+   * @param client        the httpclient instance
    * @param latestVersion the version number
    */
-  private void downloadIndexFiles(boolean snapNeeded, File snapDir,
+  private void downloadIndexFiles(boolean downloadCompleteIndex, File snapDir,
                                   HttpClient client, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
       File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
-      if (!localIndexFile.exists() || snapNeeded) {
+      if (!localIndexFile.exists() || downloadCompleteIndex) {
         fileFetcher = new FileFetcher(snapDir, file, (String) file.get(NAME),
                 client, false, latestVersion);
         currentFile = file;
@@ -426,8 +422,11 @@ public class SnapPuller {
     }
   }
 
-  /**All the files which are common between master and slave must have
-   * same timestamp and size else we assume they are not compatible (stale)
+  /**
+   * All the files which are common between master and slave must have
+   * same timestamp and size else we assume they are not compatible (stale).
+   *
+   * @return true if the index stale and we need to download a fresh copy, false otherwise.
    */
   private boolean isIndexStale() {
     for (Map<String, Object> file : filesToDownload) {
@@ -443,9 +442,11 @@ public class SnapPuller {
     return false;
   }
 
-  /**Copy a file by the File#renameTo() method. if it fails , it is considered
+  /**
+   * Copy a file by the File#renameTo() method. If it fails, it is considered
    * a failure
-   * todo may be we should try a simple copy if it fails
+   *
+   * Todo may be we should try a simple copy if it fails
    */
   private boolean copyAFile(File snapDir, File indexDir, String fname, List<String> copiedfiles) {
     File indexFileInSnap = new File(snapDir, fname);
@@ -465,9 +466,10 @@ public class SnapPuller {
     return true;
   }
 
-  /**Copy all index files from the temp index dir to the actual index
+  /**
+   * Copy all index files from the temp index dir to the actual index.
+   * The segments_N file is copied last.
    */
-
   private boolean copyIndexFiles(File snapDir, File indexDir) {
     String segmentsFile = null;
     List<String> copiedfiles = new ArrayList<String>();
@@ -492,7 +494,8 @@ public class SnapPuller {
     return true;
   }
 
-  /**The conf files are copied to the tmp dir to the config dir
+  /**
+   * The conf files are copied to the tmp dir to the conf dir.
    * A backup of the old file is maintained
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) throws IOException {
@@ -523,8 +526,8 @@ public class SnapPuller {
     return new SimpleDateFormat(SnapShooter.DATE_FMT).format(d);
   }
 
-  /**if the index is stale by any chance. use the new feature of solr to load index
-   * from a different dir in the data dir.
+  /**
+   * If the index is stale by any chance, load index from a different dir in the data dir.
    */
   private void modifyIndexProps(String snap) {
     LOG.info("New index installed. Updating index properties...");
@@ -554,8 +557,11 @@ public class SnapPuller {
     }
   }
 
-  /**The local conf files are compared with the conf files in the master. If they are
-   * same (by checksum) do not copy
+  /**
+   * The local conf files are compared with the conf files in the master. If they are
+   * same (by checksum) do not copy.
+   *
+   * @return a list of configuration files which have changed on the master and need to be downloaded.
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
@@ -576,7 +582,8 @@ public class SnapPuller {
     return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
   }
 
-  /**delete the directree recursively
+  /**
+   * Delete the directory tree recursively
    */
   static boolean delTree(File dir) {
     if (dir == null || !dir.exists())
@@ -598,7 +605,8 @@ public class SnapPuller {
     return dir.delete();
   }
 
-  /**periodic polling is disabled
+  /**
+   * Disable periodic polling
    */
   void disablePoll() {
     pollDisabled.set(true);
@@ -613,7 +621,8 @@ public class SnapPuller {
     LOG.info("inside enable poll, value of pollDisabled = " + pollDisabled);
   }
 
-  /** Stops the ongoing pull
+  /**
+   * Stops the ongoing pull
    */
   void abortPull() {
     stop = true;
@@ -623,8 +632,6 @@ public class SnapPuller {
     return replicationStartTime;
   }
 
-  /**used by details page for display.
-   */
   List<Map<String, Object>> getConfFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
@@ -673,16 +680,15 @@ public class SnapPuller {
   }
 
   private class ReplicationHandlerException extends InterruptedException {
-
     public ReplicationHandlerException(String message) {
       super(message);
     }
-
   }
 
-  /**The class acts as a client for ReplicationHandler.FileStream.
-   * It understands the protoolc well
-   *
+  /**
+   * The class acts as a client for ReplicationHandler.FileStream.
+   * It understands the protocol of wt=filestream
+   * @see org.apache.solr.handler.ReplicationHandler.FileStream
    */
   private class FileFetcher {
     boolean includeChecksum = true;
@@ -733,8 +739,8 @@ public class SnapPuller {
         checksum = new Adler32();
     }
 
-    /**The main method which downloads file
-     * @throws Exception
+    /**
+     * The main method which downloads file
      */
     void fetchFile() throws Exception {
       try {
@@ -753,7 +759,7 @@ public class SnapPuller {
             }
             //if there is an error continue. But continue from the point where it got broken
           } finally {
-            //closing Inputstream and HTTP connection takes a long time,
+            // closing Inputstream and HTTP connection takes a long time,
             // so replication status shows as 'replicating' even though it is aborted.
             new Thread() {
               public void run() {
@@ -806,7 +812,7 @@ public class SnapPuller {
             long checkSumClient = checksum.getValue();
             if (checkSumClient != checkSumServer) {
               LOG.error("Checksum not matched between client and server for: " + currentFile);
-              //if checksum is wrong it is a problem  return for retry
+              //if checksum is wrong it is a problem return for retry
               return 1;
             }
           }
@@ -836,7 +842,7 @@ public class SnapPuller {
     /**
      * The webcontainer flushes the data only after it fills the buffer size.
      * So, all data has to be read as readFully() other wise it fails. So read
-     * everything as bytes and then extract int out of it
+     * everything as bytes and then extract an integer out of it
      */
     private int readInt(byte[] b) {
       return (((b[0] & 0xff) << 24) | ((b[1] & 0xff) << 16)
@@ -845,7 +851,7 @@ public class SnapPuller {
     }
 
     /**
-     * Same as above but to read long
+     * Same as above but to read longs from a byte array
      */
     private long readLong(byte[] b) {
       return (((long) (b[0] & 0xff)) << 56) | (((long) (b[1] & 0xff)) << 48)
@@ -855,7 +861,8 @@ public class SnapPuller {
 
     }
 
-    /**cleanup everything
+    /**
+     * cleanup everything
      */
     private void cleanup() {
       try {
@@ -864,7 +871,7 @@ public class SnapPuller {
       } catch (Exception e) {/* noop */
       }
       if (bytesDownloaded != size) {
-        //if the download is notcomplete then
+        //if the download is not complete then
         //delete the file being downloaded
         try {
           file.delete();
@@ -879,7 +886,8 @@ public class SnapPuller {
       }
     }
 
-    /**Open a new stream using HttpClient
+    /**
+     * Open a new stream using HttpClient
      */
     FastInputStream getStream() throws IOException {
       post = new PostMethod(masterUrl);
@@ -898,7 +906,7 @@ public class SnapPuller {
         post.addParameter(CHECKSUM, "true");
       //wt=filestream this is a custom protocol
       post.addParameter("wt", FILE_STREAM);
-      //This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
+      // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
       // the server starts from the offset
       if (bytesDownloaded > 0) {
         post.addParameter(OFFSET, "" + bytesDownloaded);
