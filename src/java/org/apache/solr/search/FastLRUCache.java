@@ -189,6 +189,7 @@ public class FastLRUCache implements SolrCache {
 
   public NamedList getStatistics() {
     NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
+    if (cache == null)  return lst;
     ConcurrentLRUCache.Stats stats = cache.getStats();
     long lookups = stats.getCumulativeLookups();
     long hits = stats.getCumulativeHits();
