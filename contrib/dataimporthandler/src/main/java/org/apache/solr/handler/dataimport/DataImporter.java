@@ -95,14 +95,15 @@ public class DataImporter {
     dataSourceProps = ds;
     loadDataConfig(dataConfig);
 
+    for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
+      config.lowerNameVsSchemaField.put(entry.getKey().toLowerCase(), entry.getValue());
+    }
+
     for (DataConfig.Document document : config.documents) {
       for (DataConfig.Entity e : document.entities) {
         Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
         initEntity(e, fields, false);
-        e.implicitFields = new ArrayList<DataConfig.Field>();
-        String errs = verifyWithSchema(e, fields);
-        if (e.implicitFields.isEmpty())
-          e.implicitFields = null;
+        String errs = verifyWithSchema(fields);
         if (errs != null) {
           throw new DataImportHandlerException(
                   DataImportHandlerException.SEVERE, errs);
@@ -111,7 +112,7 @@ public class DataImporter {
     }
   }
 
-  private String verifyWithSchema(DataConfig.Entity e, Map<String, DataConfig.Field> fields) {
+  private String verifyWithSchema(Map<String, DataConfig.Field> fields) {
     List<String> errors = new ArrayList<String>();
     Map<String, SchemaField> schemaFields = schema.getFields();
     for (Map.Entry<String, SchemaField> entry : schemaFields.entrySet()) {
@@ -122,10 +123,6 @@ public class DataImporter {
                   .info(sf.getName()
                           + " is a required field in SolrSchema . But not found in DataConfig");
         }
-        DataConfig.Field field = new DataConfig.Field(sf.getName(), sf.multiValued());
-        e.implicitFields.add(field);
-        e.colNameVsField.put(field.column, field);
-        e.lowercaseColNameVsField.put(field.column.toLowerCase(), field);
       }
     }
     for (Map.Entry<String, DataConfig.Field> entry : fields.entrySet()) {
@@ -197,7 +194,7 @@ public class DataImporter {
     if (e.fields != null) {
       for (DataConfig.Field f : e.fields) {
         f.nameOrColName = f.getName();
-        SchemaField schemaField = schema.getFields().get(f.getName());
+        SchemaField schemaField = schema.getFieldOrNull(f.getName());
         if (schemaField != null) {
           f.multiValued = schemaField.multiValued();
           f.allAttributes.put(MULTI_VALUED, Boolean.toString(schemaField
@@ -235,7 +232,7 @@ public class DataImporter {
     if (e.entities == null)
       return;
     for (DataConfig.Entity e1 : e.entities) {
-      e1.setParentEntity(e);
+      e1.parentEntity = e;
       initEntity(e1, fields, e.isDocRoot || docRootFound);
     }
 

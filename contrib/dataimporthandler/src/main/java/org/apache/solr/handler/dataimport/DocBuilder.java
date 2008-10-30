@@ -17,12 +17,11 @@
 
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -332,7 +331,7 @@ public class DocBuilder {
             if (e.getErrCode() == DataImportHandlerException.SKIP) {
               importStatistics.skipDocCount.getAndIncrement();
             } else {
-              LOG.error( "Exception while processing: "
+              LOG.error("Exception while processing: "
                       + entity.name + " document : " + doc, e);
             }
             if (e.getErrCode() == DataImportHandlerException.SEVERE)
@@ -369,28 +368,27 @@ public class DocBuilder {
   private void addFields(DataConfig.Entity entity, SolrInputDocument doc, Map<String, Object> arow) {
     for (Map.Entry<String, Object> entry : arow.entrySet()) {
       String key = entry.getKey();
+      if (key.startsWith("$")) {
+        // All fields starting with $ are special values and don't need to be added
+        continue;
+      }
       DataConfig.Field field = entity.colNameVsField.get(key);
-      if (field == null)  {
-        field = entity.lowercaseColNameVsField.get(key.toLowerCase());
-      }
-      if (field == null && entity.rootEntity != null)  {
-        field = entity.rootEntity.colNameVsField.get(key);
-      }
-      if (field == null && entity.rootEntity != null)  {
-        field = entity.rootEntity.lowercaseColNameVsField.get(key.toLowerCase());
-      }
-      if (field == null)  {
-        // This can be a dynamic field
+      if (field == null) {
+        // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
         SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
+        if (sf == null) {
+          sf = dataImporter.getConfig().lowerNameVsSchemaField.get(key.toLowerCase());
+        }
         if (sf != null) {
           addFieldToDoc(entry.getValue(), key, 1.0f, sf.multiValued(), doc);
         }
-      } else  {
-        if (field.toWrite)  {
+        //else do nothing. if we add it it may fail
+      } else {
+        if (field.toWrite) {
           addFieldToDoc(entry.getValue(), key, field.boost, field.multiValued, doc);
         }
       }
-      
+
     }
   }
 
@@ -404,7 +402,7 @@ public class DocBuilder {
       } else {
         if (doc.getField(name) == null)
           for (Object o : collection) {
-            doc.addField(name, o,boost);
+            doc.addField(name, o, boost);
             break;
           }
       }
@@ -581,7 +579,7 @@ public class DocBuilder {
         String n = DocBuilder.class.getPackage().getName() + "." + name;
         return core != null ?
                 core.getResourceLoader().findClass(n) :
-              Class.forName(n);
+                Class.forName(n);
       } catch (Exception e1) {
         throw new ClassNotFoundException("Unable to load " + name + " or " + DocBuilder.class.getPackage().getName() + "." + name, e);
       }

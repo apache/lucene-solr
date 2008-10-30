@@ -20,6 +20,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.apache.solr.schema.SchemaField;
 
 import java.util.*;
 
@@ -51,6 +52,8 @@ public class DataConfig {
   public Script script;
 
   public Map<String, Properties> dataSources = new HashMap<String, Properties>();
+
+  public Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
 
   public Document getDocumentByName(String name) {
     if (documentCache == null) {
@@ -127,13 +130,7 @@ public class DataConfig {
 
     public Script script;
 
-    public List<Field> implicitFields;
-
     public Map<String, Field> colNameVsField;
-
-    public Map<String, Field> lowercaseColNameVsField;
-
-    public Entity rootEntity;
 
     public Entity() {
     }
@@ -148,12 +145,10 @@ public class DataConfig {
       List<Element> n = getChildNodes(element, "field");
       fields = new ArrayList<Field>();
       colNameVsField = new HashMap<String, Field>();
-      lowercaseColNameVsField = new HashMap<String, Field>();
       for (Element elem : n)  {
         Field field = new Field(elem);
         fields.add(field);
         colNameVsField.put(field.column, field);
-        lowercaseColNameVsField.put(field.column.toLowerCase(), field);
       }
       n = getChildNodes(element, "entity");
       if (!n.isEmpty())
@@ -161,14 +156,6 @@ public class DataConfig {
       for (Element elem : n)
         entities.add(new Entity(elem));
 
-    }
-
-    public void setParentEntity(Entity parentEntity) {
-      this.parentEntity = parentEntity;
-      while (parentEntity.parentEntity != null)  {
-        parentEntity = parentEntity.parentEntity;
-      }
-      this.rootEntity = parentEntity;
     }
 
     public void clearCache() {
