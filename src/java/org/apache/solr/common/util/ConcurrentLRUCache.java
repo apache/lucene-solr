@@ -22,10 +22,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ConcurrentLRUCache {
 
-  private Map<Object, CacheEntry> map;
+  private final ConcurrentHashMap<Object, CacheEntry> map;
   private final int upperWaterMark, lowerWaterMark;
-  private boolean stop = false;
+  private volatile boolean stop = false;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
+  private volatile boolean isCleaning = false;
   private final boolean newThreadForCleanup;
   private volatile boolean islive = true;
   private final Stats stats = new Stats();
@@ -82,21 +83,29 @@ public class ConcurrentLRUCache {
     if (val == null) return null;
     CacheEntry e = new CacheEntry(key, val, stats.accessCounter.incrementAndGet());
     CacheEntry oldCacheEntry = map.put(key, e);
-    stats.size.incrementAndGet();
+    if (oldCacheEntry != null) {
+      stats.size.incrementAndGet();
+    }
     if (islive) {
       stats.putCounter.incrementAndGet();
     } else {
       stats.nonLivePutCounter.incrementAndGet();
     }
-    if (stats.size.get() > upperWaterMark) {
+
+    // Check if we need to clear out old entries from the cache.
+    // isCleaning variable is checked instead of markAndSweepLock.isLocked()
+    // for performance because every put invokation will check until
+    // the size is back to an acceptable level.
+    //
+    // There is a race between the check and the call to markAndSweep, but
+    // it's unimportant because markAndSweep actually aquires the lock or returns if it can't.
+    if (stats.size.get() > upperWaterMark && !isCleaning) {
       if (newThreadForCleanup) {
-        if (!markAndSweepLock.isLocked()) {
-          new Thread() {
-            public void run() {
-              markAndSweep();
-            }
-          }.start();
-        }
+        new Thread() {
+          public void run() {
+            markAndSweep();
+          }
+        }.start();
       } else {
         markAndSweep();
       }
@@ -118,6 +127,7 @@ public class ConcurrentLRUCache {
   public void markAndSweep() {
     if (!markAndSweepLock.tryLock()) return;
     try {
+      isCleaning = true;
       int size = stats.size.get();
       long currentLatestAccessed = stats.accessCounter.get();
       int itemsToBeRemoved = size - lowerWaterMark;
@@ -164,6 +174,7 @@ public class ConcurrentLRUCache {
       for (CacheEntry sortCacheEntry : tree)
         evictEntry(sortCacheEntry.key);
     } finally {
+      isCleaning = false;
       markAndSweepLock.unlock();
     }
   }
@@ -252,10 +263,6 @@ public class ConcurrentLRUCache {
 
   public void destroy() {
     stop = true;
-    if (map != null) {
-      map.clear();
-      map = null;
-    }
   }
 
   public Stats getStats() {
