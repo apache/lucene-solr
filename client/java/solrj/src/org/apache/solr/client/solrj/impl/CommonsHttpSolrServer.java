@@ -153,7 +153,7 @@ public class CommonsHttpSolrServer extends SolrServer
       this.setMaxTotalConnections( 128 ); // 20
     }
 
-    // by default use the XML one
+    // by default use the binary response parser
     _parser = parser;
     
     this.useMultiPartPost = useMultiPartPost;
