@@ -179,6 +179,19 @@ import java.util.Iterator;
   MergeScheduler} is invoked with the requested merges and
   it decides when and how to run the merges.  The default is
   {@link ConcurrentMergeScheduler}. </p>
+
+  <a name="OOME"></a><p><b>NOTE</b>: if you hit an
+  OutOfMemoryError then IndexWriter will quietly record this
+  fact and block all future segment commits.  This is a
+  defensive measure in case any internal state (buffered
+  documents and deletions) were corrupted.  Any subsequent
+  calls to {@link #commit()} will throw an
+  IllegalStateException.  The only course of action is to
+  call {@link #close()}, which internally will call {@link
+  #rollback()}, to undo any changes to the index since the
+  last commit.  If you opened the writer with autoCommit
+  false you can also just call {@link #rollback()}
+  directly.</p>
 */
 
 /*
@@ -1655,6 +1668,11 @@ public class IndexWriter {
    *
    * after which, you must be certain not to use the writer
    * instance anymore.</p>
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer, again.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -1667,6 +1685,11 @@ public class IndexWriter {
    * running merges to finish.  This is only meaningful when
    * using a MergeScheduler that runs merges in background
    * threads.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param waitForMerges if true, this call will block
    * until all merges complete; else, it will ask all
    * running merges to abort, wait until those merges have
@@ -1972,6 +1995,10 @@ public class IndexWriter {
    * replaced with the Unicode replacement character
    * U+FFFD.</p>
    *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -1988,6 +2015,10 @@ public class IndexWriter {
    * <p>See {@link #addDocument(Document)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -2027,6 +2058,11 @@ public class IndexWriter {
 
   /**
    * Deletes the document(s) containing <code>term</code>.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param term the term to identify the documents to be deleted
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -2046,6 +2082,11 @@ public class IndexWriter {
   /**
    * Deletes the document(s) containing any of the
    * terms. All deletes are flushed at the same time.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param terms array of terms to identify the documents
    * to be deleted
    * @throws CorruptIndexException if the index is corrupt
@@ -2065,6 +2106,11 @@ public class IndexWriter {
 
   /**
    * Deletes the document(s) matching the provided query.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param query the query to identify the documents to be deleted
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -2079,6 +2125,11 @@ public class IndexWriter {
   /**
    * Deletes the document(s) matching any of the provided queries.
    * All deletes are flushed at the same time.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param queries array of queries to identify the documents
    * to be deleted
    * @throws CorruptIndexException if the index is corrupt
@@ -2097,6 +2148,11 @@ public class IndexWriter {
    * document.  The delete and then add are atomic as seen
    * by a reader on the same index (flush may happen only after
    * the add).
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param term the term to identify the document(s) to be
    * deleted
    * @param doc the document to be added
@@ -2114,6 +2170,11 @@ public class IndexWriter {
    * document.  The delete and then add are atomic as seen
    * by a reader on the same index (flush may happen only after
    * the add).
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param term the term to identify the document(s) to be
    * deleted
    * @param doc the document to be added
@@ -2208,8 +2269,6 @@ public class IndexWriter {
    * default merge policy, but individaul merge policies may implement
    * optimize in different ways.
    *
-   * @see LogMergePolicy#findMergesForOptimize
-   *
    * <p>It is recommended that this method be called upon completion of indexing.  In
    * environments with frequent updates, optimize is best done during low volume times, if at all. 
    * 
@@ -2275,8 +2334,13 @@ public class IndexWriter {
    * newly created segments will not be optimized unless you
    * call optimize again.</p>
    *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @see LogMergePolicy#findMergesForOptimize
   */
   public void optimize() throws CorruptIndexException, IOException {
     optimize(true);
@@ -2286,6 +2350,11 @@ public class IndexWriter {
    * Optimize the index down to <= maxNumSegments.  If
    * maxNumSegments==1 then this is the same as {@link
    * #optimize()}.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @param maxNumSegments maximum number of segments left
    * in the index after optimization finishes
    */
@@ -2297,7 +2366,12 @@ public class IndexWriter {
    *  whether the call should block until the optimize
    *  completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
-   *  background threads. */
+   *  background threads.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   */
   public void optimize(boolean doWait) throws CorruptIndexException, IOException {
     optimize(1, doWait);
   }
@@ -2306,7 +2380,12 @@ public class IndexWriter {
    *  specify whether the call should block until the
    *  optimize completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
-   *  background threads. */
+   *  background threads.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   */
   public void optimize(int maxNumSegments, boolean doWait) throws CorruptIndexException, IOException {
     ensureOpen();
 
@@ -2402,7 +2481,12 @@ public class IndexWriter {
    *  specify whether the call should block until the
    *  operation completes.  This is only meaningful with a
    *  {@link MergeScheduler} that is able to run merges in
-   *  background threads. */
+   *  background threads.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   */
   public void expungeDeletes(boolean doWait)
     throws CorruptIndexException, IOException {
     ensureOpen();
@@ -2473,7 +2557,12 @@ public class IndexWriter {
    *  MergePolicy#findMergesToExpungeDeletes}.). Note that
    *  this call does not first commit any buffered
    *  documents, so you must do so yourself if necessary.
-   *  See also {@link #expungeDeletes(boolean)} */
+   *  See also {@link #expungeDeletes(boolean)}
+   *
+   *  <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   *  you should immediately close the writer.  See <a
+   *  href="#OOME">above</a> for details.</p>
+   */
   public void expungeDeletes() throws CorruptIndexException, IOException {
     expungeDeletes(true);
   }
@@ -2487,6 +2576,10 @@ public class IndexWriter {
    * Explicit calls to maybeMerge() are usually not
    * necessary. The most common case is when merge policy
    * parameters have changed.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
    */
   public final void maybeMerge() throws CorruptIndexException, IOException {
     maybeMerge(false);
@@ -2927,9 +3020,15 @@ public class IndexWriter {
   }
 
   /** Merges all segments from an array of indexes into this index.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @deprecated Use {@link #addIndexesNoOptimize} instead,
    * then separately call {@link #optimize} afterwards if
    * you need to.
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -3049,6 +3148,10 @@ public class IndexWriter {
    * 
    * <p>
    * This requires this index not be among those to be added.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -3233,6 +3336,11 @@ public class IndexWriter {
    * details on transactional semantics, temporary free
    * space required in the Directory, and non-CFS segments
    * on an Exception.</p>
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -3391,9 +3499,15 @@ public class IndexWriter {
    * <p>Note: while this will force buffered docs to be
    * pushed into the index, it will not make these docs
    * visible to a reader.  Use {@link #commit()} instead
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
+   * @deprecated please call {@link #commit()}) instead
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated please call {@link #commit()}) instead
    */
   public final void flush() throws CorruptIndexException, IOException {  
     if (hitOOM)
@@ -3403,6 +3517,11 @@ public class IndexWriter {
   }
 
   /** Expert: prepare for commit.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @see #prepareCommit(String) */
   public final void prepareCommit() throws CorruptIndexException, IOException {
     ensureOpen();
@@ -3424,6 +3543,10 @@ public class IndexWriter {
    *  You can also just call {@link #commit(String)} directly
    *  without prepareCommit first in which case that method
    *  will internally call prepareCommit.
+   *
+   *  <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   *  you should immediately close the writer.  See <a
+   *  href="#OOME">above</a> for details.</p>
    *
    *  @param commitUserData Opaque String that's recorded
    *  into the segments file in the index, and retrievable
@@ -3500,11 +3623,13 @@ public class IndexWriter {
    * loss it may still lose data.  Lucene cannot guarantee
    * consistency on such devices.  </p>
    *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   *
    * @see #prepareCommit
+   * @see #commit(String)
    */
-
-  /** Commits all changes to the index.
-   *  @see #commit(String) */
   public final void commit() throws CorruptIndexException, IOException {
     commit(null);
   }
@@ -3512,7 +3637,12 @@ public class IndexWriter {
   /** Commits all changes to the index, specifying a
    *  commitUserData String.  This just calls {@link
    *  #prepareCommit(String)} (if you didn't already call
-   *  it) and then {@link #finishCommit}. */
+   *  it) and then {@link #finishCommit}.
+   *
+   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer.  See <a
+   * href="#OOME">above</a> for details.</p>
+   */
   public final void commit(String commitUserData) throws CorruptIndexException, IOException {
 
     ensureOpen();
