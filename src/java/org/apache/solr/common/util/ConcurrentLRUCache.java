@@ -83,7 +83,7 @@ public class ConcurrentLRUCache {
     if (val == null) return null;
     CacheEntry e = new CacheEntry(key, val, stats.accessCounter.incrementAndGet());
     CacheEntry oldCacheEntry = map.put(key, e);
-    if (oldCacheEntry != null) {
+    if (oldCacheEntry == null) {
       stats.size.incrementAndGet();
     }
     if (islive) {
