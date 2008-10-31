@@ -1386,4 +1386,44 @@ public class TestIndexReader extends LuceneTestCase
 
       r3.close();
     }
+
+    public void testFalseDirectoryAlreadyClosed() throws Throwable {
+
+      String tempDir = System.getProperty("java.io.tmpdir");
+      if (tempDir == null)
+        throw new RuntimeException("java.io.tmpdir undefined");
+      File indexDir = new File(tempDir, "lucenetestdiralreadyclosed");
+
+      try {
+        FSDirectory dir = FSDirectory.getDirectory(indexDir);
+        IndexWriter w = new IndexWriter(indexDir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+        w.setUseCompoundFile(false);
+        Document doc = new Document();
+        w.addDocument(doc);
+        w.close();
+        assertTrue(new File(indexDir, "_0.fnm").delete());
+
+        IndexReader r = null;
+        try {
+          r = IndexReader.open(indexDir);
+          fail("did not hit expected exception");
+        } catch (AlreadyClosedException ace) {
+          fail("should not have hit AlreadyClosedException");
+        } catch (FileNotFoundException ioe) {
+          // expected
+        }
+
+        // Make sure we really did close the dir inside IndexReader.open
+        dir.close();
+
+        try {
+          dir.fileExists("hi");
+          fail("did not hit expected exception");
+        } catch (AlreadyClosedException ace) {
+          // expected
+        }
+      } finally {
+        _TestUtil.rmDir(indexDir);
+      }
+    }
 }
