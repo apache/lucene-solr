@@ -12,6 +12,9 @@ API Changes
    Yet, it will give us the possibility to try out different consumers in
    in the chain. (Michael Busch)
 
+2. LUCENE-1427: DocIdSet.iterator() is now allowed to throw
+   IOException.  (Paul Elschot, Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -37,6 +40,12 @@ New features
  3. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
 
 Optimizations
+
+ 1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
+    scores of the query, since they are just discarded.  Also, made it
+    more efficient (single pass) by not creating & populating an
+    intermediate OpenBitSet (Paul Elschot, Mike McCandless)
+
 
 Documentation
 

@@ -17,11 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 
 /**
  * A DocIdSet contains a set of doc ids. Implementing classes must provide
  * a {@link DocIdSetIterator} to access the set. 
  */
 public abstract class DocIdSet {
-	public abstract DocIdSetIterator iterator();
+	public abstract DocIdSetIterator iterator() throws IOException;
 }

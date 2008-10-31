@@ -59,15 +59,13 @@ public class QueryWrapperFilter extends Filter {
     return bits;
   }
   
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-
-    new IndexSearcher(reader).search(query, new HitCollector() {
-      public final void collect(int doc, float score) {
-        bits.set(doc);  // set bit for hit
+  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
+    final Weight weight = query.weight(new IndexSearcher(reader));
+    return new DocIdSet() {
+      public DocIdSetIterator iterator() throws IOException {
+        return weight.scorer(reader);
       }
-    });
-    return bits;
+    };
   }
 
   public String toString() {
