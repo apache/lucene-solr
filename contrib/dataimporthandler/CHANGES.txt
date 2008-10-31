@@ -43,6 +43,9 @@ Bug Fixes
 4. SOLR-742:  Add ability to create dynamic fields with custom DataImportHandler transformers
               (Wojtek Piaseczny, Noble Paul, shalin)
 
+5. SOLR-832:  Rows parameter is not honored in non-debug mode and can abort a running import in debug mode.
+              (Akshay Ukey, shalin)
+
 Documentation
 ----------------------
 

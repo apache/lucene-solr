@@ -74,8 +74,6 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private Map<String, Properties> dataSources = new HashMap<String, Properties>();
 
-  private DataImporter.RequestParams requestParams;
-
   private List<SolrInputDocument> debugDocuments;
 
   private boolean debugEnabled = true;
@@ -119,7 +117,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           throws Exception {
     rsp.setHttpCaching(false);
     SolrParams params = req.getParams();
-    requestParams = new DataImporter.RequestParams(getParamsMap(params));
+    DataImporter.RequestParams requestParams = new DataImporter.RequestParams(getParamsMap(params));
     String command = requestParams.command;
 
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {
@@ -178,7 +176,7 @@ public class DataImportHandler extends RequestHandlerBase implements
                 req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
-        SolrWriter sw = getSolrWriter(processor, loader);
+        SolrWriter sw = getSolrWriter(processor, loader, requestParams);
 
         if (requestParams.debug) {
           if (debugEnabled) {
@@ -261,7 +259,7 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
-                                   final SolrResourceLoader loader) {
+                                   final SolrResourceLoader loader, final DataImporter.RequestParams requestParams) {
 
     return new SolrWriter(processor, loader.getConfigDir()) {
 
@@ -272,10 +270,11 @@ public class DataImportHandler extends RequestHandlerBase implements
             if (debugDocuments == null)
               debugDocuments = new ArrayList<SolrInputDocument>();
             debugDocuments.add(document);
-            if (debugDocuments.size() >= requestParams.rows) {
-              // Abort this operation now
-              importer.getDocBuilder().abort();
-            }
+          }
+          if (importer.getDocBuilder().importStatistics.docCount.get() >= requestParams.rows) {
+            // Abort this operation now
+            importer.getDocBuilder().abort();
+            LOG.info("Indexing stopped at docCount = " + importer.getDocBuilder().importStatistics.docCount);
           }
           return super.upload(document);
         } catch (RuntimeException e) {

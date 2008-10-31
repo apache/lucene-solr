@@ -474,7 +474,7 @@ public class DataImporter {
 
     public int start = 0;
 
-    public int rows = 10;
+    public int rows = Integer.MAX_VALUE;
 
     public boolean clean = true;
 
@@ -493,6 +493,7 @@ public class DataImporter {
 
       if ("on".equals(requestParams.get("debug"))) {
         debug = true;
+        rows = 10;
         // Set default values suitable for debug mode
         commit = false;
         clean = false;
