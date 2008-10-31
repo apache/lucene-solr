@@ -1,0 +1,10 @@
+#if($params.getBool("debugQuery",false))
+<pre>
+  request = $request
+
+  response = $response.values
+</pre>
+#end
+
+Generated using <a href="http://wiki.apache.org/solr/VelocityResponseWriter">VelocityResponseWriter</a>
+
