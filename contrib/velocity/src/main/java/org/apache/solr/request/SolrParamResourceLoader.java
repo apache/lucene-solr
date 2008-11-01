@@ -30,6 +30,7 @@ import java.util.Iterator;
 public class SolrParamResourceLoader extends ResourceLoader {
   private HashMap<String,String> templates = new HashMap();
   public SolrParamResourceLoader(SolrQueryRequest request) {
+    super();
 
     // TODO: Consider using content streams, but need a template name associated with each stream
     // for now, a custom param convention of template.<name>=<template body> is a nice example
@@ -44,7 +45,6 @@ public class SolrParamResourceLoader extends ResourceLoader {
         templates.put(name.substring(9) + ".vm",params.get(name));
       }
     }
-
   }
 
   public void init(ExtendedProperties extendedProperties) {

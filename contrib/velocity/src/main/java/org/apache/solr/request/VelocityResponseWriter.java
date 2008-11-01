@@ -49,8 +49,10 @@ public class VelocityResponseWriter implements QueryResponseWriter {
       baseDir = new File(template_root);
     }
     engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
-    engine.setProperty("params.resource.loader.instance",new SolrParamResourceLoader(request));
-    engine.setProperty(VelocityEngine.RESOURCE_LOADER, "params,file");
+    engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
+    engine.setProperty("solr.resource.loader.instance",
+        new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader()));
+    engine.setProperty(VelocityEngine.RESOURCE_LOADER, "params,file,solr");
 
     return engine;
   }

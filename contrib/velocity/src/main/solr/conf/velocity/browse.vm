@@ -44,19 +44,7 @@
 <div class="pagination">
   <span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
 </div>
-#if (${nlResponse.suggestions.size()} > 0)
-<div class="spelling">
-  <span>Did you mean?</span>
-  #foreach ($suggestion in ${nlResponse.suggestions})
-  <a href="${request.requestURL}?q=${suggestion}">${suggestion}</a>#if ($velocityCount < $nlResponse.suggestions.size()),#end
-  #end
-</div>
-#end
-#if (${nlResponse.autoSpell} == true)
-<div class="autoSpell">There were no results for your original query, so we automatically searched a few spelling
-  variants: ${nlResponse.autoSpellQuery}
-</div>
-#end
+
 <div class="results">
   #foreach($id in $doclist.iterator())
     #set($doc = $searcher.doc($id,$response.returnFields))

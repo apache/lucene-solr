@@ -61,7 +61,9 @@
 
   <target name="build" depends="compile">
     <solr-jar destfile="src/main/solr/lib/${fullnamever}.jar" basedir="target/classes"
-              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF">
+      <fileset dir="src/main/java" excludes="**/*.java"/>
+    </solr-jar>
   </target>
 
   <target name="compileTests" depends="compile">
