@@ -30,7 +30,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   final TermVectorsTermsWriter termsWriter;
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
-  final DocInverter.FieldInvertState fieldState;
+  final FieldInvertState fieldState;
 
   boolean doVectors;
   boolean doVectorPositions;

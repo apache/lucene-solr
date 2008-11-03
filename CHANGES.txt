@@ -36,8 +36,16 @@ New features
     then retrievable via IndexReader.getCommitUserData instance and
     static methods.  (Shalin Shekhar Mangar via Mike McCandless)
 
-
  3. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
+
+ 4. LUCENE-1420: Similarity now has a computeNorm method that allows
+    custom Similarity classes to override how norm is computed.  It's
+    provided a FieldInvertState instance that contains details from
+    inverting the field.  The default impl is boost *
+    lengthNorm(numTerms), to be backwards compatible.  Also added
+    {set/get}DiscountOverlaps to DefaultSimilarity, to control whether
+    overlapping tokens (tokens with 0 position increment) should be
+    counted in lengthNorm.  (Andrzej Bialecki via Mike McCandless)
 
 Optimizations
 

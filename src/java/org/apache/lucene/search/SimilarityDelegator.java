@@ -1,5 +1,7 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.index.FieldInvertState;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,6 +34,10 @@ public class SimilarityDelegator extends Similarity {
     this.delegee = delegee;
   }
 
+  public float computeNorm(String fieldName, FieldInvertState state) {
+    return delegee.computeNorm(fieldName, state);
+  }
+  
   public float lengthNorm(String fieldName, int numTerms) {
     return delegee.lengthNorm(fieldName, numTerms);
   }

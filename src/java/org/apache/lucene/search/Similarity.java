@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.SmallFloat;
 
@@ -333,6 +334,29 @@ public abstract class Similarity implements Serializable {
     return NORM_TABLE;
   }
 
+  /**
+   * Compute the normalization value for a field, given the accumulated
+   * state of term processing for this field (see {@link FieldInvertState}).
+   * 
+   * <p>Implementations should calculate a float value based on the field
+   * state and then return that value.
+   *
+   * <p>For backward compatibility this method by default calls
+   * {@link #lengthNorm(String, int)} passing
+   * {@link FieldInvertState#getLength()} as the second argument, and
+   * then multiplies this value by {@link FieldInvertState#getBoost()}.</p>
+   * 
+   * <p><b>WARNING</b>: This API is new and experimental and may
+   * suddenly change.</p>
+   * 
+   * @param field field name
+   * @param state current processing state for this field
+   * @return the calculated float norm
+   */
+  public float computeNorm(String field, FieldInvertState state) {
+    return (float) (state.getBoost() * lengthNorm(field, state.getLength()));
+  }
+  
   /** Computes the normalization value for a field given the total number of
    * terms contained in a field.  These values, together with field boosts, are
    * stored in an index and multipled into scores for hits on each field by the
@@ -341,10 +365,10 @@ public abstract class Similarity implements Serializable {
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually return smaller values when <code>numTokens</code> is large,
    * and larger values when <code>numTokens</code> is small.
-   *
-   * <p>That these values are computed under 
+   * 
+   * <p>Note that the return values are computed under 
    * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
-   * and stored then using
+   * and then stored using
    * {@link #encodeNorm(float)}.  
    * Thus they have limited precision, and documents
    * must be re-indexed if this method is altered.

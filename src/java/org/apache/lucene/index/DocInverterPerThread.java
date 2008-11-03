@@ -32,7 +32,7 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
   final Token localToken = new Token();
   final DocumentsWriter.DocState docState;
 
-  final DocInverter.FieldInvertState fieldState = new DocInverter.FieldInvertState();
+  final FieldInvertState fieldState = new FieldInvertState();
 
   // Used to read a string value for a field
   final ReusableStringReader stringReader = new ReusableStringReader();

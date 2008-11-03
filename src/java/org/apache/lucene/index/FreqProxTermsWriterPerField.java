@@ -30,7 +30,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final TermsHashPerField termsHashPerField;
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
-  final DocInverter.FieldInvertState fieldState;
+  final FieldInvertState fieldState;
   boolean omitTf;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {

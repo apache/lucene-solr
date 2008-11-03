@@ -30,7 +30,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final TermsHashPerField nextPerField;
   final TermsHashPerThread perThread;
   final DocumentsWriter.DocState docState;
-  final DocInverter.FieldInvertState fieldState;
+  final FieldInvertState fieldState;
 
   // Copied from our perThread
   final CharBlockPool charPool;

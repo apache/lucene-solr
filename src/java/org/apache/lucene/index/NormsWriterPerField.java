@@ -36,7 +36,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
   byte[] norms = new byte[1];
   int upto;
 
-  final DocInverter.FieldInvertState fieldState;
+  final FieldInvertState fieldState;
 
   public void reset() {
     // Shrink back if we are overallocated now:
@@ -68,7 +68,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
         docIDs = ArrayUtil.grow(docIDs, 1+upto);
         norms = ArrayUtil.grow(norms, 1+upto);
       }
-      final float norm = fieldState.boost * docState.similarity.lengthNorm(fieldInfo.name, fieldState.length);
+      final float norm = docState.similarity.computeNorm(fieldInfo.name, fieldState);
       norms[upto] = Similarity.encodeNorm(norm);
       docIDs[upto] = docState.docID;
       upto++;

@@ -41,6 +41,7 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.TermVectorMapper;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -348,6 +349,7 @@ public class MemoryIndex implements Serializable {
       
       HashMap terms = new HashMap();
       int numTokens = 0;
+      int numOverlapTokens = 0;
       int pos = -1;
       final Token reusableToken = new Token();
       for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
@@ -355,7 +357,10 @@ public class MemoryIndex implements Serializable {
         if (term.length() == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
-        pos += nextToken.getPositionIncrement();
+        final int posIncr = nextToken.getPositionIncrement();
+        if (posIncr == 0)
+          numOverlapTokens++;
+        pos += posIncr;
         
         ArrayIntList positions = (ArrayIntList) terms.get(term);
         if (positions == null) { // term not seen before
@@ -372,7 +377,7 @@ public class MemoryIndex implements Serializable {
       // ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
       if (numTokens > 0) {
         boost = boost * docBoost; // see DocumentWriter.addDocument(...)
-        fields.put(fieldName, new Info(terms, numTokens, boost));
+        fields.put(fieldName, new Info(terms, numTokens, numOverlapTokens, boost));
         sortedFields = null;    // invalidate sorted view, if any
       }
     } catch (IOException e) { // can never happen
@@ -574,6 +579,9 @@ public class MemoryIndex implements Serializable {
     /** Number of added tokens for this field */
     private final int numTokens;
     
+    /** Number of overlapping tokens for this field */
+    private final int numOverlapTokens;
+    
     /** Boost factor for hits for this field */
     private final float boost;
 
@@ -582,9 +590,10 @@ public class MemoryIndex implements Serializable {
 
     private static final long serialVersionUID = 2882195016849084649L;  
 
-    public Info(HashMap terms, int numTokens, float boost) {
+    public Info(HashMap terms, int numTokens, int numOverlapTokens, float boost) {
       this.terms = terms;
       this.numTokens = numTokens;
+      this.numOverlapTokens = numOverlapTokens;
       this.boost = boost;
     }
     
@@ -1067,9 +1076,10 @@ public class MemoryIndex implements Serializable {
       if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
         Info info = getInfo(fieldName);
         int numTokens = info != null ? info.numTokens : 0;
-        float n = sim.lengthNorm(fieldName, numTokens);
+        int numOverlapTokens = info != null ? info.numOverlapTokens : 0;
         float boost = info != null ? info.getBoost() : 1.0f; 
-        n = n * boost; // see DocumentWriter.writeNorms(String segment)                
+        FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
+        float n = sim.computeNorm(fieldName, invertState);
         byte norm = Similarity.encodeNorm(n);
         norms = new byte[] {norm};
         

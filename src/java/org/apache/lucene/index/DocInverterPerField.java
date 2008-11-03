@@ -39,7 +39,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   final InvertedDocConsumerPerField consumer;
   final InvertedDocEndConsumerPerField endConsumer;
   final DocumentsWriter.DocState docState;
-  final DocInverter.FieldInvertState fieldState;
+  final FieldInvertState fieldState;
 
   public DocInverterPerField(DocInverterPerThread perThread, FieldInfo fieldInfo) {
     this.perThread = perThread;
@@ -134,7 +134,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               Token token = stream.next(localToken);
 
               if (token == null) break;
-              fieldState.position += (token.getPositionIncrement() - 1);
+              final int posIncr = token.getPositionIncrement();
+              fieldState.position += posIncr - 1;
+              if (posIncr == 0)
+                fieldState.numOverlap++;
+
               boolean success = false;
               try {
                 // If we hit an exception in here, we abort

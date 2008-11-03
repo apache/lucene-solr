@@ -19,6 +19,7 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.index.FieldInvertState;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   private Map ln_mins = new HashMap(7);
   private Map ln_maxs = new HashMap(7);
   private Map ln_steeps = new HashMap(7);
+  private Map ln_overlaps = new HashMap(7);
 
   private float tf_base = 0.0f;
   private float tf_min = 0.0f;
@@ -106,17 +108,66 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   }
 
   /**
-   * Sets the function variables used by lengthNorm for a specific named field
+   * Sets the function variables used by lengthNorm for a
+   * specific named field.
+   * 
+   * @deprecated Please call {@link #setLengthNormFactors(String,
+   * int, int, float, boolean)} instead.
+   * 
+   * @param field field name
+   * @param min minimum value
+   * @param max maximum value
+   * @param steepness steepness of the curve
    *
    * @see #lengthNorm
    */
   public void setLengthNormFactors(String field, int min, int max,
                                    float steepness) {
+    setLengthNormFactors(field, min, max, steepness, false);
+  }
+    
+  /**
+   * Sets the function variables used by lengthNorm for a specific named field.
+   * 
+   * @param field field name
+   * @param min minimum value
+   * @param max maximum value
+   * @param steepness steepness of the curve
+   * @param discountOverlaps if true, <code>numOverlapTokens</code> will be
+   * subtracted from <code>numTokens</code>; if false then
+   * <code>numOverlapTokens</code> will be assumed to be 0 (see
+   * {@link DefaultSimilarity#computeNorm(String, FieldInvertState)} for details).
+   *
+   * @see #lengthNorm
+   */
+  public void setLengthNormFactors(String field, int min, int max,
+                                   float steepness, boolean discountOverlaps) {
     ln_mins.put(field, new Integer(min));
     ln_maxs.put(field, new Integer(max));
     ln_steeps.put(field, new Float(steepness));
+    ln_overlaps.put(field, new Boolean(discountOverlaps));
   }
     
+  /**
+   * Implemented as <code> state.getBoost() *
+   * lengthNorm(fieldName, numTokens) </code> where
+   * numTokens does not count overlap tokens if
+   * discountOverlaps is true by default or true for this
+   * specific field. */
+  public float computeNorm(String fieldName, FieldInvertState state) {
+    final int numTokens;
+    boolean overlaps = discountOverlaps;
+    if (ln_overlaps.containsKey(fieldName)) {
+      overlaps = ((Boolean)ln_overlaps.get(fieldName)).booleanValue();
+    }
+    if (overlaps)
+      numTokens = state.getLength() - state.getNumOverlap();
+    else
+      numTokens = state.getLength();
+
+    return state.getBoost() * lengthNorm(fieldName, numTokens);
+  }
+
   /**
    * Implemented as:
    * <code>

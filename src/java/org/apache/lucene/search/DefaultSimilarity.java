@@ -1,5 +1,7 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.index.FieldInvertState;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +21,25 @@ package org.apache.lucene.search;
 
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends Similarity {
+
+  /** Implemented as
+   *  <code>state.getBoost()*lengthNorm(numTerms)</code>, where
+   *  <code>numTerms</code> is {@link FieldInvertState#getLength()} if {@link
+   *  #setDiscountOverlaps} is false, else it's {@link
+   *  FieldInvertState#getLength()} - {@link
+   *  FieldInvertState#getNumOverlap()}.
+   *
+   *  <p><b>WARNING</b>: This API is new and experimental, and may suddenly
+   *  change.</p> */
+  public float computeNorm(String field, FieldInvertState state) {
+    final int numTerms;
+    if (discountOverlaps)
+      numTerms = state.getLength() - state.getNumOverlap();
+    else
+      numTerms = state.getLength();
+    return (float) (state.getBoost() * lengthNorm(field, numTerms));
+  }
+  
   /** Implemented as <code>1/sqrt(numTerms)</code>. */
   public float lengthNorm(String fieldName, int numTerms) {
     return (float)(1.0 / Math.sqrt(numTerms));
@@ -47,5 +68,27 @@ public class DefaultSimilarity extends Similarity {
   /** Implemented as <code>overlap / maxOverlap</code>. */
   public float coord(int overlap, int maxOverlap) {
     return overlap / (float)maxOverlap;
+  }
+
+  // Default false
+  protected boolean discountOverlaps;
+
+  /** Determines whether overlap tokens (Tokens with
+   *  0 position increment) are ignored when computing
+   *  norm.  By default this is false, meaning overlap
+   *  tokens are counted just like non-overlap tokens.
+   *
+   *  <p><b>WARNING</b>: This API is new and experimental, and may suddenly
+   *  change.</p>
+   *
+   *  @see #computeNorm
+   */
+  public void setDiscountOverlaps(boolean v) {
+    discountOverlaps = v;
+  }
+
+  /** @see #setDiscountOverlaps */
+  public boolean getDiscountOverlaps() {
+    return discountOverlaps;
   }
 }
