@@ -2,10 +2,13 @@ package org.apache.solr.search;
 
 import junit.framework.TestCase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ConcurrentLRUCache;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -40,7 +43,9 @@ public class TestFastLRUCache extends TestCase {
     assertEquals(2L, nl.get("lookups"));
     assertEquals(1L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
-    assertEquals(11L, nl.get("evictions"));
+
+    assertEquals(null, sc.get(1));  // first item put in should be the first out
+
 
     FastLRUCache scNew = new FastLRUCache();
     scNew.init(l, o, cr);
@@ -55,10 +60,148 @@ public class TestFastLRUCache extends TestCase {
     assertEquals(1L, nl.get("inserts"));
     assertEquals(0L, nl.get("evictions"));
 
-    assertEquals(4L, nl.get("cumulative_lookups"));
+    assertEquals(5L, nl.get("cumulative_lookups"));
     assertEquals(2L, nl.get("cumulative_hits"));
     assertEquals(102L, nl.get("cumulative_inserts"));
-    assertEquals(11L, nl.get("cumulative_evictions"));
   }
+
+  void doPerfTest(int iter, int cacheSize, int maxKey) {
+    long start = System.currentTimeMillis();
+
+    int lowerWaterMark = cacheSize;
+    int upperWaterMark = (int)(lowerWaterMark * 1.1);
+
+    Random r = new Random(0);
+    ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, 0);
+    boolean getSize=false;
+    int minSize=0,maxSize=0;
+    for (int i=0; i<iter; i++) {
+      cache.put(r.nextInt(maxKey),"TheValue");
+      int sz = cache.size();
+      if (!getSize && sz >= cacheSize) {
+        getSize = true;
+        minSize = sz;
+      } else {
+        if (sz < minSize) minSize=sz;
+        else if (sz > maxSize) maxSize=sz;
+      }
+    }
+
+    long end = System.currentTimeMillis();    
+    System.out.println("time=" + (end-start) + ", minSize="+minSize+",maxSize="+maxSize);
+  }
+
+  /***
+  public void testPerf() {
+    doPerfTest(1000000, 100000, 200000); // big cache, warmup
+    doPerfTest(2000000, 100000, 200000); // big cache
+    doPerfTest(2000000, 100000, 120000);  // smaller key space increases distance between oldest, newest and makes the first passes less effective.
+    doPerfTest(6000000, 1000, 2000);    // small cache, smaller hit rate
+    doPerfTest(6000000, 1000, 1200);    // small cache, bigger hit rate
+  }
+  ***/
+
+  // returns number of puts
+  int useCache(SolrCache sc, int numGets, int maxKey, int seed) {
+    int ret = 0;
+    Random r = new Random(seed);
+    
+    // use like a cache... gets and a put if not found
+    for (int i=0; i<numGets; i++) {
+      Integer k = r.nextInt(maxKey);
+      Integer v = (Integer)sc.get(k);
+      if (v == null) {
+        sc.put(k, k);
+        ret++;
+      }
+    }
+
+    return ret;
+  }
+
+  void fillCache(SolrCache sc, int cacheSize, int maxKey) {
+    Random r = new Random(0);
+    for (int i=0; i<cacheSize; i++) {
+      Integer kv = r.nextInt(maxKey);
+      sc.put(kv,kv);
+    }
+  }
+
+  
+  void cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
+    Map l = new HashMap();
+    l.put("size", ""+cacheSize);
+    l.put("initialSize", ""+cacheSize);
+
+    Object o = sc.init(l, null, null);
+    sc.setState(SolrCache.State.LIVE);
+
+    fillCache(sc, cacheSize, maxKey);
+
+    long start = System.currentTimeMillis();
+
+    Thread[] threads = new Thread[nThreads];
+    final AtomicInteger puts = new AtomicInteger(0);
+    for (int i=0; i<threads.length; i++) {
+      final int seed=i;
+      threads[i] = new Thread() {
+        public void run() {
+          int ret = useCache(sc, numGets/nThreads, maxKey, seed);
+          puts.addAndGet(ret);
+        }
+      };
+    }
+
+    for (Thread thread : threads) {
+      try {
+        thread.start();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    for (Thread thread : threads) {
+      try {
+        thread.join();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    long end = System.currentTimeMillis();
+    System.out.println("time=" + (end-start) + " impl=" +sc.getClass().getSimpleName()
+            +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
+            +" hitRatio="+(1-(((double)puts.get())/numGets)));
+  }
+
+  void perfTestBoth(int nThreads, int numGets, int cacheSize, int maxKey) {
+    cachePerfTest(new LRUCache(), nThreads, numGets, cacheSize, maxKey);
+    cachePerfTest(new FastLRUCache(), nThreads, numGets, cacheSize, maxKey);
+  }
+
+  /***
+  public void testCachePerf() {
+    // warmup
+    perfTestBoth(2, 100000, 100000, 120000);
+    perfTestBoth(1, 2000000, 100000, 100000); // big cache, 100% hit ratio
+    perfTestBoth(2, 2000000, 100000, 100000); // big cache, 100% hit ratio
+    perfTestBoth(1, 2000000, 100000, 120000); // big cache, bigger hit ratio
+    perfTestBoth(2, 2000000, 100000, 120000); // big cache, bigger hit ratio
+    perfTestBoth(1, 2000000, 100000, 200000); // big cache, ~50% hit ratio
+    perfTestBoth(2, 2000000, 100000, 200000); // big cache, ~50% hit ratio
+    perfTestBoth(1, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
+    perfTestBoth(2, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
+
+    perfTestBoth(1, 2000000, 1000, 1000); // small cache, ~100% hit ratio
+    perfTestBoth(2, 2000000, 1000, 1000); // small cache, ~100% hit ratio
+    perfTestBoth(1, 2000000, 1000, 1200); // small cache, bigger hit ratio
+    perfTestBoth(2, 2000000, 1000, 1200); // small cache, bigger hit ratio
+    perfTestBoth(1, 2000000, 1000, 2000); // small cache, ~50% hit ratio
+    perfTestBoth(2, 2000000, 1000, 2000); // small cache, ~50% hit ratio
+    perfTestBoth(1, 2000000, 1000, 10000); // small cache, ~10% hit ratio
+    perfTestBoth(2, 2000000, 1000, 10000); // small cache, ~10% hit ratio
+  }
+  ***/
+
 
 }

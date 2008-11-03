@@ -44,7 +44,7 @@ public class FastLRUCache implements SolrCache {
     this.regenerator = regenerator;
     name = (String) args.get("name");
     String str = (String) args.get("size");
-    final int limit = str == null ? 1024 : Integer.parseInt(str);
+    int limit = str == null ? 1024 : Integer.parseInt(str);
     int minLimit;
     str = (String) args.get("minSize");
     if (str == null) {
@@ -52,6 +52,9 @@ public class FastLRUCache implements SolrCache {
     } else {
       minLimit = Integer.parseInt(str);
     }
+    if (minLimit==0) minLimit=1;
+    if (limit <= minLimit) limit=minLimit+1;
+
     int acceptableLimit;
     str = (String) args.get("acceptableSize");
     if (str == null) {
@@ -59,12 +62,14 @@ public class FastLRUCache implements SolrCache {
     } else {
       acceptableLimit = Integer.parseInt(str);
     }
+    acceptableLimit = Math.max(limit,acceptableLimit);
+
     str = (String) args.get("initialSize");
-    final int initialSize = str == null ? 1024 : Integer.parseInt(str);
+    final int initialSize = str == null ? limit : Integer.parseInt(str);
     str = (String) args.get("autowarmCount");
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
-
-    description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
+    
+    description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize + ", minSize="+minLimit + ", acceptableSize="+acceptableLimit;
     if (autowarmCount > 0) {
       description += ", autowarmCount=" + autowarmCount
               + ", regenerator=" + regenerator;
