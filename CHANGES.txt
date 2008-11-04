@@ -95,6 +95,10 @@ Bug Fixes
 
  4. SOLR-805: DisMax queries are not being cached in QueryResultCache (Todd Feak via koji)
 
+ 5. SOLR-751: WordDelimiterFilter didn't adjust the start offset of single
+    tokens that started with delimiters, leading to incorrect highlighting.
+    (Stefan Oestreicher via yonik)
+
 
 Other Changes
 ----------------------

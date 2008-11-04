@@ -373,6 +373,7 @@ final class WordDelimiterFilter extends TokenFilter {
               // just adjust the text w/o changing the rest
               // of the original token
               t.setTermBuffer(termBuffer, start, len-start);
+              t.setStartOffset(t.startOffset() + start);
               return t;
             }
 

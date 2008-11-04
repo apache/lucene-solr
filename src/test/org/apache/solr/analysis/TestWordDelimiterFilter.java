@@ -183,4 +183,99 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
       assertEquals(6, t.endOffset());
     }
   }
+  
+  public void testOffsetChange() throws Exception
+  {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(
+      new TokenStream() {
+        Token t;
+        public Token next() {
+         if (t != null) return null;
+         t = new Token("übelkeit)", 7, 16);
+         return t;
+        }
+      },
+      1,1,0,0,1,1,0
+    );
+    
+    Token t = wdf.next();
+    
+    assertNotNull(t);
+    assertEquals("übelkeit", t.term());
+    assertEquals(7, t.startOffset());
+    assertEquals(15, t.endOffset());
+  }
+  
+  public void testOffsetChange2() throws Exception
+  {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(
+      new TokenStream() {
+        Token t;
+        public Token next() {
+         if (t != null) return null;
+         t = new Token("(übelkeit", 7, 17);
+         return t;
+        }
+      },
+      1,1,0,0,1,1,0
+    );
+    
+    Token t = wdf.next();
+    
+    assertNotNull(t);
+    assertEquals("übelkeit", t.term());
+    assertEquals(8, t.startOffset());
+    assertEquals(17, t.endOffset());
+  }
+  
+  public void testOffsetChange3() throws Exception
+  {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(
+      new TokenStream() {
+        Token t;
+        public Token next() {
+         if (t != null) return null;
+         t = new Token("(übelkeit", 7, 16);
+         return t;
+        }
+      },
+      1,1,0,0,1,1,0
+    );
+    
+    Token t = wdf.next();
+    
+    assertNotNull(t);
+    assertEquals("übelkeit", t.term());
+    assertEquals(8, t.startOffset());
+    assertEquals(16, t.endOffset());
+  }
+  
+  public void testOffsetChange4() throws Exception
+  {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(
+      new TokenStream() {
+        private Token t;
+        public Token next() {
+         if (t != null) return null;
+         t = new Token("(foo,bar)", 7, 16);
+         return t;
+        }
+      },
+      1,1,0,0,1,1,0
+    );
+    
+    Token t = wdf.next();
+    
+    assertNotNull(t);
+    assertEquals("foo", t.term());
+    assertEquals(8, t.startOffset());
+    assertEquals(11, t.endOffset());
+    
+    t = wdf.next();
+    
+    assertNotNull(t);
+    assertEquals("bar", t.term());
+    assertEquals(12, t.startOffset());
+    assertEquals(15, t.endOffset());
+  }
 }
