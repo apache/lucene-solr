@@ -388,6 +388,7 @@ public class SolrQuery extends ModifiableSolrParams
   public SolrQuery setFields(String ... fields) {
     if( fields == null || fields.length == 0 ) {
       this.remove( CommonParams.FL );
+      return this;
     }
     StringBuilder sb = new StringBuilder();
     sb.append( fields[0] );
