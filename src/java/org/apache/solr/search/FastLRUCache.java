@@ -62,7 +62,8 @@ public class FastLRUCache implements SolrCache {
     } else {
       acceptableLimit = Integer.parseInt(str);
     }
-    acceptableLimit = Math.max(limit,acceptableLimit);
+    // acceptable limit should be somehwere between minLimit and limit
+    acceptableLimit = Math.max(minLimit, acceptableLimit);
 
     str = (String) args.get("initialSize");
     final int initialSize = str == null ? limit : Integer.parseInt(str);
