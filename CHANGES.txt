@@ -99,6 +99,9 @@ Bug Fixes
     tokens that started with delimiters, leading to incorrect highlighting.
     (Stefan Oestreicher via yonik)
 
+ 6. SOLR-837: Fix inject parameter on PhoneticFilterFactory and DoubleMetaphoneFilterFactory.
+    (ehatcher)
+
 
 Other Changes
 ----------------------

@@ -63,10 +63,8 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   @Override
   public void init(Map<String,String> args) {
     super.init( args );
-    
-    if( args.get( "inject" ) != null ) {
-      inject = Boolean.getBoolean( args.get( INJECT ) );
-    }
+
+    inject = getBoolean(INJECT, true);
     
     String name = args.get( ENCODER );
     if( name == null ) {

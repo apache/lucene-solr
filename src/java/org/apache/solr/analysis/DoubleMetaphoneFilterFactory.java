@@ -34,9 +34,7 @@ public class DoubleMetaphoneFilterFactory extends BaseTokenFilterFactory
   public void init(Map<String, String> args) {
     super.init(args);
 
-    if (args.get(INJECT) != null) {
-      inject = Boolean.getBoolean(args.get(INJECT));
-    }
+    inject = getBoolean(INJECT, true);
 
     if (args.get(MAX_CODE_LENGTH) != null) {
       maxCodeLength = Integer.parseInt(args.get(MAX_CODE_LENGTH));

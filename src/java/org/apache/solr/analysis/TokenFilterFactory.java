@@ -50,7 +50,7 @@ import java.util.Map;
 public interface TokenFilterFactory {
   /** <code>init</code> will be called just once, immediately after creation.
    * <p>The args are user-level initialization parameters that
-   * may be specified when declaring a the factory in the
+   * may be specified when declaring the factory in the
    * schema.xml
    */
   public void init(Map<String,String> args);
