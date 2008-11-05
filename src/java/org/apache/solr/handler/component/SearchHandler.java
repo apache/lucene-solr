@@ -379,7 +379,7 @@ class HttpCommComponent {
           // String url = "http://" + shard + "/select";
           String url = "http://" + shard;
 
-          params.remove(CommonParams.WT); // use default (or should we explicitly set it?)
+          params.remove(CommonParams.WT); // use default (currently javabin)
           params.remove(CommonParams.VERSION);
 
           SolrServer server = new CommonsHttpSolrServer(url, client);
@@ -387,7 +387,9 @@ class HttpCommComponent {
           // use generic request to avoid extra processing of queries
           QueryRequest req = new QueryRequest(params);
           req.setMethod(SolrRequest.METHOD.POST);
-          req.setResponseParser(new BinaryResponseParser());  // this sets the wt param
+
+          // no need to set the response parser as binary is the default
+          // req.setResponseParser(new BinaryResponseParser());
           // srsp.rsp = server.request(req);
           // srsp.rsp = server.query(sreq.params);
 
