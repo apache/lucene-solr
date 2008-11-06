@@ -96,6 +96,7 @@ public final class SolrCore implements SolrInfoMBean {
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
   private IndexDeletionPolicyWrapper solrDelPolicy;
+  private DirectoryFactory directoryFactory;
 
   public long getStartTime() { return startTime; }
 
@@ -217,7 +218,11 @@ public final class SolrCore implements SolrInfoMBean {
     }
     return result;
   }
-
+  
+  public DirectoryFactory getDirectoryFactory() {
+    return directoryFactory;
+  }
+  
   public String getName() {
     return name;
   }
@@ -319,9 +324,28 @@ public final class SolrCore implements SolrInfoMBean {
   
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name, boolean readOnly) throws IOException {
-    return new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), readOnly), true, false);
+    return new SolrIndexSearcher(this, schema, name, directoryFactory.open(getIndexDir()), false);
+    //return new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), readOnly), true, false);
   }
 
+  private void initDirectoryFactory() {
+    String xpath = "directoryFactory";
+    Node node = (Node) solrConfig.evaluate(xpath, XPathConstants.NODE);
+    DirectoryFactory dirFactory;
+    if (node != null) {
+      Map<String, DirectoryFactory> registry = new HashMap<String, DirectoryFactory>();
+      NamedListPluginLoader<DirectoryFactory> indexReaderFactoryLoader = new NamedListPluginLoader<DirectoryFactory>(
+          "[solrconfig.xml] " + xpath, registry);
+
+      dirFactory = indexReaderFactoryLoader.loadSingle(solrConfig
+          .getResourceLoader(), node);
+    } else {
+      dirFactory = new StandardDirectoryFactory();
+    }
+
+    // And set it
+    directoryFactory = dirFactory;
+  }
 
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
@@ -351,6 +375,8 @@ public final class SolrCore implements SolrInfoMBean {
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
         writer.close();
       }
+      
+      initDirectoryFactory();
 
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -1011,22 +1037,22 @@ public final class SolrCore implements SolrInfoMBean {
 
     try {
       newestSearcher = getNewestSearcher(false);
+      String newIndexDir = getNewIndexDir();
       if (newestSearcher != null) {
         IndexReader currentReader = newestSearcher.get().getReader();
-        String newIndexDir = getNewIndexDir();
         if(new File(getIndexDir()).equals(new File(newIndexDir)))  {
           IndexReader newReader = currentReader.reopen();
 
           if(newReader == currentReader) {
             currentReader.incRef();
           }
-
+          
           tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
         } else  {
-          tmp = new SolrIndexSearcher(this, schema, "main", newIndexDir, true);
+          tmp = new SolrIndexSearcher(this, schema, "main", getDirectoryFactory().open(newIndexDir), true, true);
         }
       } else {
-        tmp = new SolrIndexSearcher(this, schema, "main", getNewIndexDir(), true);
+          tmp = new SolrIndexSearcher(this, schema, "main", getDirectoryFactory().open(newIndexDir), true, true);
       }
     } catch (Throwable th) {
       synchronized(searcherLock) {

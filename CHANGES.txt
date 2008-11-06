@@ -77,6 +77,11 @@ New Features
     contention and synchronization overhead, to utilize multiple CPU cores more effectively.
     (Fuad Efendi, Noble Paul, yonik via shalin)
 
+14. SOLR-465: Add configurable DirectoryProvider so that alternate Directory
+    implementations can be specified via solrconfig.xml.  The default
+    DirectoryProvider will use NIOFSDirectory for better concurrency
+    on non Windows platforms.  (Mark Miller, TJ Laurenzo via yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

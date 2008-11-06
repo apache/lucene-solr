@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
 
 import org.slf4j.Logger;
@@ -75,12 +76,13 @@ public class SolrIndexWriter extends IndexWriter {
 
   }
 
-  public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
-    Directory d = FSDirectory.getDirectory(path);
+  public static Directory getDirectory(String path, DirectoryFactory directoryFactory, SolrIndexConfig config) throws IOException {
+    
+    Directory d = directoryFactory.open(path);
 
     String rawLockType = (null == config) ? null : config.lockType;
     if (null == rawLockType) {
-      // we default to "simple" for backwards compatiblitiy
+      // we default to "simple" for backwards compatibility
       log.warn("No lockType configured for " + path + " assuming 'simple'");
       rawLockType = "simple";
     }
@@ -95,7 +97,7 @@ public class SolrIndexWriter extends IndexWriter {
       if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
         d.setLockFactory(new SingleInstanceLockFactory());
     } else if ("none".equals(lockType)) {
-      // recipie for disaster
+      // Recipe for disaster
       log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
       d.setLockFactory(new NoLockFactory());
     } else {
@@ -104,12 +106,67 @@ public class SolrIndexWriter extends IndexWriter {
     }
     return d;
   }
+  
+  /**
+   * @deprecated use getDirectory(DirectoryFactory directoryFactory, SolrIndexConfig config)
+   */
+  public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
+    Directory d = FSDirectory.getDirectory(path);
 
+    String rawLockType = (null == config) ? null : config.lockType;
+    if (null == rawLockType) {
+      // we default to "simple" for backwards compatibility
+      log.warn("No lockType configured for " + path + " assuming 'simple'");
+      rawLockType = "simple";
+    }
+    final String lockType = rawLockType.toLowerCase().trim();
+
+    if ("simple".equals(lockType)) {
+      // multiple SimpleFSLockFactory instances should be OK
+      d.setLockFactory(new SimpleFSLockFactory(path));
+    } else if ("native".equals(lockType)) {
+      d.setLockFactory(new NativeFSLockFactory(path));
+    } else if ("single".equals(lockType)) {
+      if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
+        d.setLockFactory(new SingleInstanceLockFactory());
+    } else if ("none".equals(lockType)) {
+      // Recipe for disaster
+      log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
+      d.setLockFactory(new NoLockFactory());
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Unrecognized lockType: " + rawLockType);
+    }
+    return d;
+  }
+  
+  /**
+   *
+   */
+  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema) throws IOException {
+    super(getDirectory(path, dirFactory, null), false, schema.getAnalyzer(), create);
+    init(name, schema, null);
+  }
+
+  /**
+   *
+   */
+  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
+    super(getDirectory(path, dirFactory, null), config.luceneAutoCommit, schema.getAnalyzer(), create);
+    init(name, schema, config);
+  }
+  
+  /**
+   * @deprecated
+   */
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
     super(getDirectory(path, null), false, schema.getAnalyzer(), create);
     init(name, schema, null);
   }
 
+  /**
+   * @deprecated
+   */
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
     super(getDirectory(path, config), config.luceneAutoCommit, schema.getAnalyzer(), create);
     init(name, schema, config);

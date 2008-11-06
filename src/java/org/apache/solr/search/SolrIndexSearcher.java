@@ -91,7 +91,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private final SolrCache[] cacheList;
   private static final SolrCache[] noCaches = new SolrCache[0];
 
-  /** Creates a searcher searching the index in the named directory. */
+  /** Creates a searcher searching the index in the named directory.
+   * 
+   * @deprecated use alternate constructor
+   */
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
     this(core, schema,name,IndexReader.open(path), true, enableCache);
   }
@@ -99,6 +102,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   /** Creates a searcher searching the index in the provided directory. */
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean enableCache) throws IOException {
     this(core, schema,name,IndexReader.open(directory), true, enableCache);
+  }
+  
+  /** Creates a searcher searching the index in the provided directory. */
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean readOnly, boolean enableCache) throws IOException {
+    this(core, schema,name,IndexReader.open(directory, readOnly), true, enableCache);
   }
 
   /** Creates a searcher searching the provided index. */
