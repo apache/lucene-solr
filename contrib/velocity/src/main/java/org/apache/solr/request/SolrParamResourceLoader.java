@@ -22,13 +22,14 @@ import org.apache.velocity.runtime.resource.Resource;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.commons.collections.ExtendedProperties;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.StringBufferInputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class SolrParamResourceLoader extends ResourceLoader {
-  private HashMap<String,String> templates = new HashMap();
+  private Map<String,String> templates = new HashMap<String,String>();
   public SolrParamResourceLoader(SolrQueryRequest request) {
     super();
 
@@ -52,7 +53,7 @@ public class SolrParamResourceLoader extends ResourceLoader {
 
   public InputStream getResourceStream(String s) throws ResourceNotFoundException {
     String template = templates.get(s);
-    return template == null ? null : new StringBufferInputStream(template);
+    return template == null ? null : new ByteArrayInputStream( s.getBytes() );
   }
 
   public boolean isSourceModified(Resource resource) {
