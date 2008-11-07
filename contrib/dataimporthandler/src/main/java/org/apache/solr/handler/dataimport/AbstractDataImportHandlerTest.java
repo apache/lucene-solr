@@ -21,7 +21,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,7 @@ public abstract class AbstractDataImportHandlerTest extends
                                    int currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
     final Context delegate = new ContextImpl(parentEntity, resolver,
-            parentDataSource, currProcess, Collections.EMPTY_MAP,
+            parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);
     return new Context() {
       public String getEntityAttribute(String name) {

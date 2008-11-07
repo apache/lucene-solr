@@ -22,6 +22,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -33,9 +35,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -86,7 +85,7 @@ public class DataImporter {
   }
 
   DataImporter(String dataConfig, SolrCore core,
-                      Map<String, Properties> ds) {
+               Map<String, Properties> ds) {
     if (dataConfig == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Configuration not found");
@@ -227,8 +226,6 @@ public class DataImporter {
     e.allFieldsList = Collections.unmodifiableList(e.allFieldsList);
     e.allAttributes = Collections.unmodifiableMap(e.allAttributes);
 
-    addDataSource(e);
-
     if (e.entities == null)
       return;
     for (DataConfig.Entity e1 : e.entities) {
@@ -266,16 +263,8 @@ public class DataImporter {
     return store.get(key);
   }
 
-  @SuppressWarnings("unchecked")
-  public void addDataSource(DataConfig.Entity key) {
-    if ("null".equals(key.dataSource)) {
-      key.dataSrc = new MockDataSource();
-      return;
-    }
-    key.dataSrc = getDataSourceInstance(key, key.dataSource, null);
-  }
-
-  DataSource getDataSourceInstance(DataConfig.Entity key, String name, Context ctx ) {
+  DataSource getDataSourceInstance(DataConfig.Entity key, String name, Context ctx) {
+    if ("null".equals(name)) return new MockDataSource();
     Properties p = dataSourceProps.get(name);
     if (p == null)
       p = config.dataSources.get(name);
@@ -302,9 +291,6 @@ public class DataImporter {
     try {
       Properties copyProps = new Properties();
       copyProps.putAll(p);
-      if(ctx == null)
-        ctx = new ContextImpl(key, null, dataSrc, 0,
-              Collections.EMPTY_MAP, new HashMap(), null, this);
       dataSrc.init(ctx, copyProps);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
@@ -341,7 +327,7 @@ public class DataImporter {
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (RuntimeException e) {
-      LOG.error( "Full Import failed", e);
+      LOG.error("Full Import failed", e);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();
@@ -364,7 +350,7 @@ public class DataImporter {
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (RuntimeException e) {
-      LOG.error( "Delta Import Failed", e);
+      LOG.error("Delta Import Failed", e);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();

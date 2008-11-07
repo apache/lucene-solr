@@ -46,6 +46,9 @@ Bug Fixes
 5. SOLR-832:  Rows parameter is not honored in non-debug mode and can abort a running import in debug mode.
               (Akshay Ukey, shalin)
 
+6. SOLR-838:  The VariableResolver obtained from a DataSource's context does not have current data.
+              (Noble Paul via shalin)
+
 Documentation
 ----------------------
 

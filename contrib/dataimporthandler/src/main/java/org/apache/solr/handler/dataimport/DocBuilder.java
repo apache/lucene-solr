@@ -45,7 +45,7 @@ public class DocBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
 
-  private DataImporter dataImporter;
+  DataImporter dataImporter;
 
   private DataConfig.Document document;
 
@@ -236,13 +236,10 @@ public class DocBuilder {
                              ContextImpl parentCtx) {
 
     EntityProcessor entityProcessor = getEntityProcessor(entity, dataImporter.getCore());
-    DataSource ds = entity.dataSrc;
-    if (verboseDebug) {
-      ds = DebugLogger.wrapDs(ds);
-    }
-    ContextImpl ctx = new ContextImpl(entity, vr, ds,
+
+    ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
-            requestParameters.requestParams, session, parentCtx, dataImporter);
+            session, parentCtx, this);
     entityProcessor.init(ctx);
 
     if (requestParameters.start > 0) {
@@ -451,6 +448,7 @@ public class DocBuilder {
   public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity,
                                                DataConfig.Entity parentEntity, VariableResolverImpl resolver,
                                                DataImporter context, Set<Map<String, Object>> deletedRows) {
+    //someone called abort
     if (stop.get())
       return new HashSet();
 
@@ -459,6 +457,7 @@ public class DocBuilder {
     if (entity.entities != null) {
 
       for (DataConfig.Entity entity1 : entity.entities) {
+        //this ensures that we start from the leaf nodes
         myModifiedPks.addAll(collectDelta(entity1, entity, resolver, context,
                 deletedRows));
       }
@@ -469,11 +468,11 @@ public class DocBuilder {
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
     resolver.addNamespace(null, (Map) entity.allAttributes);
     EntityProcessor entityProcessor = getEntityProcessor(entity, context.getCore());
-    entityProcessor.init(new ContextImpl(entity, resolver, entity.dataSrc,
-            Context.FIND_DELTA, requestParameters.requestParams, session, null,
-            dataImporter));
+    entityProcessor.init(new ContextImpl(entity, resolver, null,
+            Context.FIND_DELTA, session, null, this));
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     int count = 0;
+    //get the modified rows in this entity
     while (true) {
       Map<String, Object> row = entityProcessor.nextModifiedRowKey();
 
@@ -489,6 +488,7 @@ public class DocBuilder {
     count = 0;
     // identifying the deleted rows from this entities
     LOG.info("Running DeletedRowKey() for Entity: " + entity.name);
+    //get the deleted rows for this entity
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
     while (true) {
       Map<String, Object> row = entityProcessor.nextDeletedRowKey();
@@ -504,11 +504,11 @@ public class DocBuilder {
 
     myModifiedPks.addAll(deltaSet);
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
+    //all that we have captured is useless (in a sub-entity) if no rows in the parent is modified because of these
+    //so propogate up the changes in the chain
     if (parentEntity != null && parentEntity.isDocRoot) {
       EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity, context.getCore());
-      parentEntityProcessor.init(new ContextImpl(parentEntity, resolver,
-              parentEntity.dataSrc, Context.FIND_DELTA,
-              requestParameters.requestParams, session, null, dataImporter));
+      parentEntityProcessor.init(new ContextImpl(parentEntity, resolver, null, Context.FIND_DELTA, session, null, this));
       // identifying deleted rows with deltas
 
       for (Map<String, Object> row : myModifiedPks)

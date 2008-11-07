@@ -43,8 +43,7 @@ public class TestEntityProcessorBase {
     fields.add(TestRegexTransformer.getField("A", null, null, null, null));
     fields.add(TestRegexTransformer.getField("B", null, null, null, null));
 
-    Context context = AbstractDataImportHandlerTest.getContext(null, null,
-            null, 0, fields, entity);
+    Context context = AbstractDataImportHandlerTest.getContext(null, null, new MockDataSource(), 0, fields, entity);
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("A", "NA");
     src.put("B", "NA");

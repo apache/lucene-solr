@@ -50,17 +50,22 @@ public class ContextImpl extends Context {
 
   private Map<String, Object> entitySession, globalSession, docSession;
 
+  private DocBuilder docBuilder;
+
   public ContextImpl(DataConfig.Entity entity, VariableResolverImpl resolver,
-                     DataSource ds, int currProcess, Map<String, Object> requestParams,
-                     Map<String, Object> global, ContextImpl p, DataImporter di) {
+                     DataSource ds, int currProcess,
+                     Map<String, Object> global, ContextImpl parentContext, DocBuilder docBuilder) {
     this.entity = entity;
     this.resolver = resolver;
     this.ds = ds;
     this.currProcess = currProcess;
-    this.requestParams = requestParams;
+    this.docBuilder = docBuilder;
+    if (docBuilder != null) {
+      this.requestParams = docBuilder.requestParameters.requestParams;
+      dataImporter = docBuilder.dataImporter;
+    }
     globalSession = global;
-    parent = p;
-    dataImporter = di;
+    parent = parentContext;
   }
 
   public String getEntityAttribute(String name) {
@@ -76,7 +81,16 @@ public class ContextImpl extends Context {
   }
 
   public DataSource getDataSource() {
-    return ds;
+    if (ds != null) return ds;
+    if (entity.dataSrc == null) {
+      entity.dataSrc = dataImporter.getDataSourceInstance(entity, entity.dataSource, this);
+    }
+    if (entity.dataSrc != null && docBuilder != null && docBuilder.verboseDebug &&
+            currProcess == Context.FULL_DUMP) {
+      //debug is not yet implemented properly for deltas
+      return DebugLogger.wrapDs(entity.dataSrc);
+    }
+    return entity.dataSrc;
   }
 
   public DataSource getDataSource(String name) {
