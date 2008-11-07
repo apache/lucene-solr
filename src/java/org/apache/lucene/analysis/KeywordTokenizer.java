@@ -53,6 +53,9 @@ public class KeywordTokenizer extends Tokenizer {
           buffer = reusableToken.resizeTermBuffer(1+buffer.length);
       }
       reusableToken.setTermLength(upto);
+      reusableToken.setStartOffset(0);
+      reusableToken.setEndOffset(upto);
+      
       return reusableToken;
     }
     return null;

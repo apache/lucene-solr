@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -81,5 +83,14 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
     assertTrue(td.next());
     td = reader.termDocs(new Term("partnum", "Q37"));
     assertTrue(td.next());
+  }
+
+  // LUCENE-1441
+  public void testOffsets() throws Exception {
+    TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"));
+    Token token = new Token();
+    assertTrue(stream.next(token) != null);
+    assertEquals(0, token.startOffset);
+    assertEquals(4, token.endOffset);
   }
 }
