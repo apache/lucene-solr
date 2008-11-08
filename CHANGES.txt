@@ -46,6 +46,9 @@ New features
     {set/get}DiscountOverlaps to DefaultSimilarity, to control whether
     overlapping tokens (tokens with 0 position increment) should be
     counted in lengthNorm.  (Andrzej Bialecki via Mike McCandless)
+    
+ 5. Added web-based demo of functionality in contrib's XML Query Parser
+    packaged as War file (Mark Harwood)    
 
 Optimizations
 

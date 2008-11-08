@@ -14,3 +14,5 @@ The Arabic stemmer (contrib/analyzer) comes with a default
 stopword list that is BSD-licensed created by Jacques Savoy.  The file
 resides in contrib/analyzers/src/java/org/apache/lucene/analysis/ar/stopwords.txt
 See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+Includes lib/servlet-api-2.4.jar from  Apache Tomcat
