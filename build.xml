@@ -88,7 +88,51 @@
   <target name="test" depends="test-core, test-contrib"
           description="Runs all unit tests (including contribs)"
   />
-  
+
+  <property name="tag" value="lucene_2_4_0"/>
+	
+  <path id="tag.test.classpath">
+    <path refid="demo.classpath"/>
+    <path refid="junit-path"/>
+    <pathelement location="${build.dir}/${tag}/classes/test"/>
+  </path>
+	
+  <path id="tag.junit.classpath">
+    <path refid="junit-path"/>
+    <pathelement location="${build.dir}/${tag}/classes/test"/>
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/demo"/>
+    <pathelement path="${java.class.path}"/>
+  </path>
+
+  <target name="download-tag"
+  	description="Downloads a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
+	<sequential>
+	  <mkdir dir="${tags.dir}/${tag}"/>
+      <exec dir="${tags.dir}/${tag}" executable="svn"
+            failifexecutionfails="true">
+        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/test/"/>
+      </exec>
+	</sequential>
+  </target>
+	
+  <target name="test-tag" depends="download-tag, compile-core, compile-demo"
+  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
+	<sequential>
+	  <mkdir dir="${build.dir}/${tag}/test"/>
+	  <compile-test-macro srcdir="${tags.dir}/${tag}/test" destdir="${build.dir}/${tag}/classes/test"
+		  				  test.classpath="tag.test.classpath"/>
+      <test-macro dataDir="${tags.dir}/${tag}/test" 
+      			  tempDir="${build.dir}/${tag}"
+      			  junit.classpath="tag.junit.classpath"/>
+  	</sequential>
+  </target>	
+
+  <target name="clean-tags"
+    description="Removes contents of the tags directory">
+    <delete dir="${tags.dir}"/>
+  </target>
+	
   <!-- ================================================================== -->
   <!-- J A R                                                              -->
   <!-- ================================================================== -->

@@ -62,6 +62,10 @@ Documentation
 
 Build
 
+ 1. LUCENE-1440: Add new targets to build.xml that allow downloading
+    and executing the junit testcases from an older release for
+    backwards-compatibility testing. (Michael Busch)
+
 Test Cases
 
 ======================= Release 2.4.0 2008-10-06 =======================

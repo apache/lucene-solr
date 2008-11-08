@@ -73,6 +73,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="build.dir" location="build"/>
+  <property name="tags.dir" location="tags"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
@@ -331,67 +332,92 @@
   </macrodef>
 
   <target name="compile-test" depends="compile-core">
-    <compile
-      srcdir="src/test"
-      destdir="${build.dir}/classes/test">
-      <classpath refid="test.classpath"/>
-    </compile>
-
-    <!-- Copy any data files present to the classpath -->
-    <copy todir="${build.dir}/classes/test">
-      <fileset dir="src/test" excludes="**/*.java"/>
-    </copy>
+  	<compile-test-macro srcdir="src/test" destdir="${build.dir}/classes/test"
+  						test.classpath="test.classpath"/>
   </target>
 
   <property name="tests.verbose" value="false"/>
+	
+  <macrodef name="compile-test-macro" description="Compiles junit tests.">
+  	<attribute name="srcdir"/>
+  	<attribute name="destdir"/>
+  	<attribute name="test.classpath"/>
+   	<sequential>
+      <compile
+        srcdir="@{srcdir}" 
+        destdir="@{destdir}">
+        <classpath refid="@{test.classpath}"/>
+      </compile>
 
+      <!-- Copy any data files present to the classpath -->
+      <copy todir="@{destdir}">
+        <fileset dir="@{srcdir}" excludes="**/*.java"/>
+      </copy>
+  	</sequential>
+  </macrodef>
+	
+  <macrodef name="test-macro" description="Executes junit tests.">
+  	<attribute name="junit.output.dir" default="${junit.output.dir}"/>
+  	<attribute name="junit.classpath" default="junit.classpath"/>
+  	<attribute name="dataDir"/>
+  	<attribute name="tempDir"/>
+  	<element name="contrib-settings" optional="yes"/>
+  	
+  	<sequential>
+	  	<mkdir dir="@{junit.output.dir}"/>
+	    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
+	      errorProperty="tests.failed" failureProperty="tests.failed">
+	      <classpath refid="@{junit.classpath}"/>
+	      <assertions>
+	        <enable package="org.apache.lucene"/>
+	      </assertions>
+	
+	      <!-- allow tests to control debug prints -->
+	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+	
+	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
+	      <sysproperty key="dataDir" file="@{dataDir}"/>
+	      <sysproperty key="tempDir" file="@{tempDir}"/>
+	      <sysproperty key="java.io.tmpdir" file="@{tempDir}"/>
+	
+		  <contrib-settings />
+	    	
+	      <formatter type="xml"/>
+	      <formatter type="brief" usefile="false"/>
+	      <batchtest fork="yes" todir="@{junit.output.dir}" unless="testcase">
+	        <fileset dir="@{dataDir}" includes="${junit.includes}" excludes="${junit.excludes}"/>
+	      </batchtest>
+	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testcase">
+	        <fileset dir="@{dataDir}" includes="**/${testcase}.java"/>
+	      </batchtest>
+	    </junit>
+	    <!-- create this file, then if we don't fail, delete it -->
+	    <!-- this meme makes it easy to tell if contribs have failed later -->
+	    <echo file="@{junit.output.dir}/junitfailed.flag">MAYBE</echo>
+	    <fail if="tests.failed">Tests failed!</fail>
+	    <!-- life would be easier if echo had an 'if' attribute like fail -->
+	    <delete file="@{junit.output.dir}/junitfailed.flag" />
+  	</sequential>
+  </macrodef>
+	
   <target name="test" depends="compile-test" description="Runs unit tests">
-    <mkdir dir="${junit.output.dir}"/>
-    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
-      errorProperty="tests.failed" failureProperty="tests.failed">
-      <classpath refid="junit.classpath"/>
-      <assertions>
-        <enable package="org.apache.lucene"/>
-      </assertions>
-
-      <!-- allow tests to control debug prints -->
-      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
-
-      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-      <sysproperty key="dataDir" file="src/test"/>
-      <sysproperty key="tempDir" file="${build.dir}/test"/>
-      <sysproperty key="java.io.tmpdir" file="${build.dir}/test"/>
-
-      <!-- set as a system property so contrib tests can have a fixed root
-           to reference file paths from, and "ant test" can work from
-           anywhere.
-       -->
-      <sysproperty key="lucene.common.dir" file="${common.dir}" />
-      
-      <!-- contrib/ant IndexTaskTest needs these two system properties -->
-      <sysproperty key="docs.dir" file="src/test"/>
-      <sysproperty key="index.dir" file="${build.dir}/test/index"/>
-
-      <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
-      <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
-      <sysproperty key="benchmark.work.dir" file="${common.dir}/contrib/benchmark/work"/>
-
-      <formatter type="xml"/>
-      <formatter type="brief" usefile="false"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-        <fileset dir="src/test" includes="${junit.includes}" excludes="${junit.excludes}"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-        <fileset dir="src/test" includes="**/${testcase}.java"/>
-      </batchtest>
-    </junit>
-    <!-- create this file, then if we don't fail, delete it -->
-    <!-- this meme makes it easy to tell if contribs have failed later -->
-    <echo file="${build.dir}/test/junitfailed.flag">MAYBE</echo>
-    <fail if="tests.failed">Tests failed!</fail>
-    <!-- life would be easier if echo had an 'if' attribute like fail -->
-    <delete file="${build.dir}/test/junitfailed.flag" />
-    
+    <test-macro dataDir="src/test" tempDir="${build.dir}/test">
+    	<contrib-settings>
+	      <!-- set as a system property so contrib tests can have a fixed root
+	           to reference file paths from, and "ant test" can work from
+	           anywhere.
+	       -->
+	      <sysproperty key="lucene.common.dir" file="${common.dir}" />
+	      
+	      <!-- contrib/ant IndexTaskTest needs these two system properties -->
+	      <sysproperty key="docs.dir" file="src/test"/>
+	      <sysproperty key="index.dir" file="${build.dir}/test/index"/>
+	
+	      <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
+	      <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
+	      <sysproperty key="benchmark.work.dir" file="${common.dir}/contrib/benchmark/work"/>
+	  </contrib-settings>
+    </test-macro>
   </target>
 
     <!--
