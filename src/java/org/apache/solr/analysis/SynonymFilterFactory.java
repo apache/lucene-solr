@@ -56,8 +56,10 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
           wlist = loader.getLines(synonyms);
         } else  {
           List<String> files = StrUtils.splitFileNames(synonyms);
+          wlist = new ArrayList<String>();
           for (String file : files) {
-            wlist = loader.getLines(file.trim());
+            List<String> lines = loader.getLines(file.trim());
+            wlist.addAll(lines);
           }
         }
       } catch (IOException e) {

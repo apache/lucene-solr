@@ -107,6 +107,7 @@ Bug Fixes
 
  6. SOLR-837: Fix inject parameter on PhoneticFilterFactory and DoubleMetaphoneFilterFactory.
     (ehatcher)
+ 7. SOLR-843: SynonymFilterFactory cannot handle multiple synonym files correctly (koji)
 
 
 Other Changes
