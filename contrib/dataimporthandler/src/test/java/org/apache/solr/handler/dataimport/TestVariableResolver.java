@@ -20,9 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * <p>
@@ -70,10 +68,8 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithValue() {
     VariableResolverImpl vri = new VariableResolverImpl();
-    HashMap<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
-    evaluators.put("formatDate", EvaluatorBag.getDateFormatEvaluator());
     vri.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(vri, evaluators));
+            .getFunctionsNamespace(vri, Collections.EMPTY_LIST, null));
     Map<String, Object> ns = new HashMap<String, Object>();
     Date d = new Date();
     ns.put("dt", d);
@@ -88,10 +84,8 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithExpr() {
     VariableResolverImpl vri = new VariableResolverImpl();
-    HashMap<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
-    evaluators.put("formatDate", EvaluatorBag.getDateFormatEvaluator());
     vri.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(vri, evaluators));
+            .getFunctionsNamespace(vri, Collections.EMPTY_LIST,null));
     String s = vri
             .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -119,21 +113,24 @@ public class TestVariableResolver {
   @Test
   public void testFunctionNamespace1() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
-    final Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
-    evaluators.put("formatDate", EvaluatorBag.getDateFormatEvaluator());
-    evaluators.put("test", new Evaluator() {
-      public String evaluate(VariableResolver resolver, String expression) {
-        return "Hello World";
-      }
-    });
-
+    final List<Map<String ,String >> l = new ArrayList<Map<String, String>>();
+    Map<String ,String > m = new HashMap<String, String>();
+    m.put("name","test");
+    m.put("class",E.class.getName());
+    l.add(m);
     resolver.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(resolver, evaluators));
+            .getFunctionsNamespace(resolver, l,null));
     String s = resolver
             .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
             .format(new Date()), s);
     Assert.assertEquals("Hello World", resolver
             .replaceTokens("${dataimporter.functions.test('TEST')}"));
+  }
+
+  public static class E extends Evaluator{
+      public String evaluate(VariableResolver resolver, String expression) {
+        return "Hello World";
+      }
   }
 }

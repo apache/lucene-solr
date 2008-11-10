@@ -16,7 +16,11 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
+import static org.apache.solr.handler.dataimport.DataConfig.CLASS;
+import static org.apache.solr.handler.dataimport.DataConfig.NAME;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.core.SolrCore;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -53,11 +57,11 @@ public class EvaluatorBag {
           .compile("^(\\w*?)\\((.*?)\\)$");
 
   /**
-   * <p>
+   * <p/>
    * Returns an <code>Evaluator</code> instance meant to be used for escaping
    * values in SQL queries.
    * </p>
-   * <p>
+   * <p/>
    * It escapes the value of the given expression by replacing all occurrences
    * of single-quotes by two single-quotes and similarily for double-quotes
    * </p>
@@ -79,7 +83,7 @@ public class EvaluatorBag {
   }
 
   /**
-   * <p>
+   * <p/>
    * Returns an <code>Evaluator</code> instance capable of URL-encoding
    * expressions. The expressions are evaluated using a
    * <code>VariableResolver</code>
@@ -109,11 +113,11 @@ public class EvaluatorBag {
   }
 
   /**
-   * <p>
+   * <p/>
    * Returns an <code>Evaluator</code> instance capable of formatting values
    * using a given date format.
    * </p>
-   * <p>
+   * <p/>
    * The value to be formatted can be a entity.field or a date expression parsed
    * with <code>DateMathParser</code> class. If the value is in single quotes,
    * then it is assumed to be a datemath expression, otherwise it resolved using
@@ -190,7 +194,21 @@ public class EvaluatorBag {
   }
 
   static Map<String, Object> getFunctionsNamespace(
-          final VariableResolver resolver, final Map<String, Evaluator> evaluators) {
+          final VariableResolver resolver, final List<Map<String, String>> fn, DocBuilder docBuilder) {
+    final Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
+    evaluators.put(DATE_FORMAT_EVALUATOR, getDateFormatEvaluator());
+    evaluators.put(SQL_ESCAPE_EVALUATOR, getSqlEscapingEvaluator());
+    evaluators.put(URL_ENCODE_EVALUATOR, getUrlEvaluator());
+    SolrCore core = docBuilder == null ? null : docBuilder.dataImporter.getCore();
+    for (Map<String, String> map : fn) {
+      try {
+        evaluators.put(map.get(NAME), (Evaluator) loadClass(map.get(CLASS), core).newInstance());
+      } catch (Exception e) {
+         throw new DataImportHandlerException(
+                  DataImportHandlerException.SEVERE,
+                  "Unable to instantiate evaluator: " + map.get(CLASS), e);
+      }
+    }
 
     return new HashMap<String, Object>() {
       @Override

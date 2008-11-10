@@ -89,7 +89,7 @@ public class DocBuilder {
     indexerNamespace.put("request", requestParameters.requestParams);
     indexerNamespace.put("defaults", defaultVariables);
     indexerNamespace.put("functions", EvaluatorBag.getFunctionsNamespace(resolver,
-            dataImporter.getConfig().evaluators));
+            dataImporter.getConfig().functions, this));
     if (context.getConfig().script != null) {
       indexerNamespace
               .put(DataConfig.SCRIPT, context.getConfig().script.script);

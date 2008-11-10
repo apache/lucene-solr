@@ -43,11 +43,9 @@ import java.util.*;
 public class DataConfig {
   public List<Document> documents;
 
-  public List<Props> properties;
-
   private Map<String, Document> documentCache;
 
-  public Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
+  public List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
 
   public Script script;
 
@@ -66,13 +64,13 @@ public class DataConfig {
   }
 
   public static class Document {
+    // TODO - remove this
     public String name;
 
+    // TODO - remove from here and add it to entity
     public String deleteQuery;
 
     public List<Entity> entities = new ArrayList<Entity>();
-
-    public List<Field> fields;
 
     public Document() {
     }
@@ -83,19 +81,7 @@ public class DataConfig {
       List<Element> l = getChildNodes(element, "entity");
       for (Element e : l)
         entities.add(new Entity(e));
-      // entities = new Entity(l.get(0));
-      l = getChildNodes(element, "field");
-      if (!l.isEmpty())
-        fields = new ArrayList<Field>();
-      for (Element e : l)
-        fields.add(new Field(e));
     }
-  }
-
-  public static class Props {
-    public String name;
-
-    public String file;
   }
 
   public static class Entity {
@@ -252,29 +238,17 @@ public class DataConfig {
     }
 
     // Add the provided evaluators
-    evaluators.put(EvaluatorBag.DATE_FORMAT_EVALUATOR, EvaluatorBag
-            .getDateFormatEvaluator());
-    evaluators.put(EvaluatorBag.SQL_ESCAPE_EVALUATOR, EvaluatorBag
-            .getSqlEscapingEvaluator());
-    evaluators.put(EvaluatorBag.URL_ENCODE_EVALUATOR, EvaluatorBag
-            .getUrlEvaluator());
-
     n = getChildNodes(e, FUNCTION);
     if (!n.isEmpty()) {
       for (Element element : n) {
         String func = getStringAttribute(element, NAME, null);
         String clz = getStringAttribute(element, CLASS, null);
-        if (func == null || clz == null)
+        if (func == null || clz == null){
           throw new DataImportHandlerException(
                   DataImportHandlerException.SEVERE,
                   "<function> must have a 'name' and 'class' attributes");
-        try {
-          evaluators.put(func, (Evaluator) DocBuilder.loadClass(clz, null)
-                  .newInstance());
-        } catch (Exception exp) {
-          throw new DataImportHandlerException(
-                  DataImportHandlerException.SEVERE,
-                  "Unable to instantiate evaluator: " + clz, exp);
+        } else {
+          functions.add(getAllAttributes(element));
         }
       }
     }
