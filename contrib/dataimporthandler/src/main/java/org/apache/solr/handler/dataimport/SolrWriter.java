@@ -221,7 +221,7 @@ public class SolrWriter {
       return ""
               + (DocBuilder.INSTANCE.get().importStatistics.docCount.get() + 1);
     } else {
-      return "";
+      return null;
     }
   }
 

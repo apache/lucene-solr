@@ -41,12 +41,12 @@ public class DataImportHandlerException extends RuntimeException {
   }
 
   public DataImportHandlerException(int err, String message) {
-    super(message + MSG + SolrWriter.getDocCount());
+    super(message + (SolrWriter.getDocCount() == null ? "" : MSG + SolrWriter.getDocCount()));
     errCode = err;
   }
 
   public DataImportHandlerException(int err, String message, Throwable cause) {
-    super(message + MSG + SolrWriter.getDocCount(), cause);
+    super(message + (SolrWriter.getDocCount() == null ? "" : MSG + SolrWriter.getDocCount()), cause);
     errCode = err;
   }
 
