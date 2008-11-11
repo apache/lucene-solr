@@ -30,7 +30,7 @@ import org.apache.solr.search.function.ValueSource;
  * Create a boosted query from the input value.  The main value is the query to be boosted.
  * <br>Other parameters: <code>b</code>, the function query to use as the boost.
  * <br>Example: <code>{!boost b=log(popularity)}foo</code> creates a query "foo"
- * which is boosted (scores are multiplied) by the function query <code>log(popularity</code>.
+ * which is boosted (scores are multiplied) by the function query <code>log(popularity)</code>.
  * The query to be boosted may be of any type.
  */
 public class BoostQParserPlugin extends QParserPlugin {
