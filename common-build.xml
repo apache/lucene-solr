@@ -41,6 +41,7 @@
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
   <property name="version" value="2.9-dev"/>
+  <property name="compatibility.tag" value="lucene_2_4_0"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>

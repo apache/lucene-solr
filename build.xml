@@ -89,7 +89,7 @@
           description="Runs all unit tests (including contribs)"
   />
 
-  <property name="tag" value="lucene_2_4_0"/>
+  <property name="tag" value="${compatibility.tag}"/>
 	
   <path id="tag.test.classpath">
     <path refid="demo.classpath"/>
@@ -110,7 +110,7 @@
 	<sequential>
 	  <mkdir dir="${tags.dir}/${tag}"/>
       <exec dir="${tags.dir}/${tag}" executable="svn"
-            failifexecutionfails="true">
+            failifexecutionfails="false">
         <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/test/"/>
       </exec>
 	</sequential>
@@ -119,6 +119,11 @@
   <target name="test-tag" depends="download-tag, compile-core, compile-demo"
   	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
 	<sequential>
+      <available property="tag.available" file="${tags.dir}/${tag}/test" />
+
+	  <fail unless="tag.available">
+	  	Specified tag '${tag}' could not be found in directory '${tags.dir}/${tag}'.
+	  </fail>
 	  <mkdir dir="${build.dir}/${tag}/test"/>
 	  <compile-test-macro srcdir="${tags.dir}/${tag}/test" destdir="${build.dir}/${tag}/classes/test"
 		  				  test.classpath="tag.test.classpath"/>
@@ -353,7 +358,7 @@
      </copy>
   </target>
 
-  <target name="nightly" depends="test, package-tgz, changes-to-html">
+  <target name="nightly" depends="test, test-tag, package-tgz, changes-to-html">
   </target>
 
   <!-- ================================================================== -->

@@ -82,6 +82,9 @@ Build
     and executing the junit testcases from an older release for
     backwards-compatibility testing. (Michael Busch)
 
+ 2. LUCENE-1446: Add compatibility tag to common-build.xml and run 
+    backwards-compatibility tests in the nightly build. (Michael Busch)
+
 Test Cases
 
 ======================= Release 2.4.0 2008-10-06 =======================
