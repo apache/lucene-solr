@@ -105,6 +105,8 @@ final class IndexFileDeleter {
   private IndexDeletionPolicy policy;
   private DocumentsWriter docWriter;
 
+  final boolean startingCommitDeleted;
+
   /** Change to true to see details of reference counts when
    *  infoStream != null */
   public static boolean VERBOSE_REF_COUNTS = false;
@@ -244,6 +246,8 @@ final class IndexFileDeleter {
     // sometime it may not be the most recent commit
     checkpoint(segmentInfos, false);
     
+    startingCommitDeleted = currentCommitPoint.isDeleted();
+
     deleteCommits();
   }
 

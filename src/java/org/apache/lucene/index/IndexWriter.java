@@ -1207,6 +1207,13 @@ public class IndexWriter {
                                      deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                      segmentInfos, infoStream, docWriter);
 
+      if (deleter.startingCommitDeleted)
+        // Deletion policy deleted the "head" commit point.
+        // We have to mark ourself as changed so that if we
+        // are closed w/o any further changes we write a new
+        // segments_N file.
+        changeCount++;
+
       pushMaxBufferedDocs();
 
       if (infoStream != null) {
