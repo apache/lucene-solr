@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -41,9 +40,7 @@ public class TestRangeQuery extends LuceneTestCase {
   }
 
   public void testExclusive() throws Exception {
-    Query query = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 false);
+    Query query = new RangeQuery("content", "A", "C", false, false);
     initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -64,9 +61,7 @@ public class TestRangeQuery extends LuceneTestCase {
   }
 
   public void testInclusive() throws Exception {
-    Query query = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 true);
+    Query query = new RangeQuery("content", "A", "C", true, true);
 
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -88,13 +83,10 @@ public class TestRangeQuery extends LuceneTestCase {
   }
 
   public void testEqualsHashcode() {
-    Query query = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 true);
+    Query query = new RangeQuery("content", "A", "C", true, true);
+    
     query.setBoost(1.0f);
-    Query other = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 true);
+    Query other = new RangeQuery("content", "A", "C", true, true);
     other.setBoost(1.0f);
 
     assertEquals("query equals itself is true", query, query);
@@ -104,38 +96,36 @@ public class TestRangeQuery extends LuceneTestCase {
     other.setBoost(2.0f);
     assertFalse("Different boost queries are not equal", query.equals(other));
 
-    other = new RangeQuery(new Term("notcontent", "A"), new Term("notcontent", "C"), true);
+    other = new RangeQuery("notcontent", "A", "C", true, true);
     assertFalse("Different fields are not equal", query.equals(other));
 
-    other = new RangeQuery(new Term("content", "X"), new Term("content", "C"), true);
+    other = new RangeQuery("content", "X", "C", true, true);
     assertFalse("Different lower terms are not equal", query.equals(other));
 
-    other = new RangeQuery(new Term("content", "A"), new Term("content", "Z"), true);
+    other = new RangeQuery("content", "A", "Z", true, true);
     assertFalse("Different upper terms are not equal", query.equals(other));
 
-    query = new RangeQuery(null, new Term("content", "C"), true);
-    other = new RangeQuery(null, new Term("content", "C"), true);
+    query = new RangeQuery("content", null, "C", true, true);
+    other = new RangeQuery("content", null, "C", true, true);
     assertEquals("equivalent queries with null lowerterms are equal()", query, other);
     assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
 
-    query = new RangeQuery(new Term("content", "C"), null, true);
-    other = new RangeQuery(new Term("content", "C"), null, true);
+    query = new RangeQuery("content", "C", null, true, true);
+    other = new RangeQuery("content", "C", null, true, true);
     assertEquals("equivalent queries with null upperterms are equal()", query, other);
     assertEquals("hashcode returns same value", query.hashCode(), other.hashCode());
 
-    query = new RangeQuery(null, new Term("content", "C"), true);
-    other = new RangeQuery(new Term("content", "C"), null, true);
+    query = new RangeQuery("content", null, "C", true, true);
+    other = new RangeQuery("content", "C", null, true, true);
     assertFalse("queries with different upper and lower terms are not equal", query.equals(other));
 
-    query = new RangeQuery(new Term("content", "A"), new Term("content", "C"), false);
-    other = new RangeQuery(new Term("content", "A"), new Term("content", "C"), true);
+    query = new RangeQuery("content", "A", "C", false, false);
+    other = new RangeQuery("content", "A", "C", true, true);
     assertFalse("queries with different inclusive are not equal", query.equals(other));
   }
 
   public void testExclusiveCollating() throws Exception {
-    Query query = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 false, Collator.getInstance(Locale.ENGLISH));
+    Query query = new RangeQuery("content", "A", "C", false, false, Collator.getInstance(Locale.ENGLISH));
     initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -156,9 +146,7 @@ public class TestRangeQuery extends LuceneTestCase {
   }
 
   public void testInclusiveCollating() throws Exception {
-    Query query = new RangeQuery(new Term("content", "A"),
-                                 new Term("content", "C"),
-                                 true, Collator.getInstance(Locale.ENGLISH));
+    Query query = new RangeQuery("content", "A", "C",true, true, Collator.getInstance(Locale.ENGLISH));
 
     initializeIndex(new String[]{"A", "B", "C", "D"});
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -184,9 +172,7 @@ public class TestRangeQuery extends LuceneTestCase {
     // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
     // characters properly.
     Collator collator = Collator.getInstance(new Locale("ar"));
-    Query query = new RangeQuery(new Term("content", "\u062F"),
-                                 new Term("content", "\u0698"),
-                                 true, collator);
+    Query query = new RangeQuery("content", "\u062F", "\u0698", true, true, collator);
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single
     // index Term below should NOT be returned by a RangeQuery with a Farsi
@@ -196,9 +182,7 @@ public class TestRangeQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, hits.length);
 
-    query = new RangeQuery(new Term("content", "\u0633"),
-                           new Term("content", "\u0638"),
-                           true, collator);
+    query = new RangeQuery("content", "\u0633", "\u0638",true, true, collator);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, hits.length);
     searcher.close();

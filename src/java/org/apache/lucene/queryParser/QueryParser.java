@@ -21,7 +21,6 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -94,7 +93,6 @@ import org.apache.lucene.util.Parameter;
  * </p>
  *
  * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
- *
  */
 public class QueryParser implements QueryParserConstants {
 
@@ -117,7 +115,7 @@ public class QueryParser implements QueryParserConstants {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
-  boolean useOldRangeQuery= false;
+  boolean constantScoreRewrite= true;
   boolean allowLeadingWildcard = false;
   boolean enablePositionIncrements = false;
 
@@ -134,7 +132,7 @@ public class QueryParser implements QueryParserConstants {
   Map fieldToDateResolution = null;
 
   // The collator to use when determining range inclusion,
-  // for use when constructing RangeQuerys and ConstantScoreRangeQuerys.
+  // for use when constructing RangeQuerys.
   Collator rangeCollator = null;
 
   /** The default operator for parsing queries. 
@@ -324,24 +322,40 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * By default QueryParser uses new ConstantScoreRangeQuery in preference to RangeQuery
-   * for range queries. This implementation is generally preferable because it 
-   * a) Runs faster b) Does not have the scarcity of range terms unduly influence score 
-   * c) avoids any "TooManyBooleanClauses" exception.
-   * However, if your application really needs to use the old-fashioned RangeQuery and the above
-   * points are not required then set this option to <code>true</code>
-   * Default is <code>false</code>.
+   * @deprecated Please use {@link #setConstantScoreRewrite} instead.
    */
   public void setUseOldRangeQuery(boolean useOldRangeQuery) {
-    this.useOldRangeQuery = useOldRangeQuery;
+    constantScoreRewrite = !useOldRangeQuery;
   }
 
 
   /**
-   * @see #setUseOldRangeQuery(boolean)
+   * @deprecated Please use {@link #getConstantScoreRewrite} instead.
    */
   public boolean getUseOldRangeQuery() {
-    return useOldRangeQuery;
+    return !constantScoreRewrite;
+  }
+
+  /**
+   * By default QueryParser uses constant-score rewriting
+   * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it 
+   * a) Runs faster b) Does not have the scarcity of terms unduly influence score 
+   * c) avoids any "TooManyBooleanClauses" exception.
+   * However, if your application really needs to use the
+   * old-fashioned BooleanQuery expansion rewriting and the above
+   * points are not relevant then set this option to <code>true</code>
+   * Default is <code>false</code>.
+   */
+  public void setConstantScoreRewrite(boolean v) {
+    constantScoreRewrite = v;
+  }
+
+
+  /**
+   * @see #setConstantScoreRewrite(boolean)
+   */
+  public boolean getConstantScoreRewrite() {
+    return constantScoreRewrite;
   }
 
   /**
@@ -415,9 +429,7 @@ public class QueryParser implements QueryParserConstants {
 
   /** 
    * Sets the collator used to determine index term inclusion in ranges
-   * specified either for ConstantScoreRangeQuerys or RangeQuerys (if
-   * {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
-   * value.)
+   * for RangeQuerys.
    * <p/>
    * <strong>WARNING:</strong> Setting the rangeCollator to a non-null
    * collator using this method will cause every single index Term in the
@@ -426,7 +438,6 @@ public class QueryParser implements QueryParserConstants {
    * be very slow.
    *
    *  @param rc  the collator to use when constructing RangeQuerys
-   *             and ConstantScoreRangeQuerys
    */
   public void setRangeCollator(Collator rc) {
     rangeCollator = rc;
@@ -434,9 +445,7 @@ public class QueryParser implements QueryParserConstants {
 
   /**
    * @return the collator used to determine index term inclusion in ranges
-   *  specified either for ConstantScoreRangeQuerys or RangeQuerys (if
-   *  {@link #setUseOldRangeQuery(boolean)} is called with a <code>true</code>
-   *  value.)
+   * for RangeQuerys.
    */
   public Collator getRangeCollator() {
     return rangeCollator;
@@ -718,7 +727,9 @@ public class QueryParser implements QueryParserConstants {
    * @return new PrefixQuery instance
    */
   protected Query newPrefixQuery(Term prefix){
-    return new PrefixQuery(prefix);
+    PrefixQuery query = new PrefixQuery(prefix);
+    query.setConstantScoreRewrite(constantScoreRewrite);
+    return query;
   }
 
   /**
@@ -729,6 +740,7 @@ public class QueryParser implements QueryParserConstants {
    * @return new FuzzyQuery Instance
    */
   protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
+    // FuzzyQuery doesn't yet allow constant score rewrite
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
 
@@ -741,17 +753,9 @@ public class QueryParser implements QueryParserConstants {
    * @return new RangeQuery instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
-    if(useOldRangeQuery)
-    {
-      return new RangeQuery(new Term(field, part1),
-                            new Term(field, part2),
-                            inclusive, rangeCollator);
-    }
-    else
-    {
-      return new ConstantScoreRangeQuery
-        (field, part1, part2, inclusive, inclusive, rangeCollator);
-    }
+    RangeQuery query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    query.setConstantScoreRewrite(constantScoreRewrite);
+    return query;
   }
 
   /**
@@ -768,7 +772,9 @@ public class QueryParser implements QueryParserConstants {
    * @return new WildcardQuery instance
    */
   protected Query newWildcardQuery(Term t) {
-    return new WildcardQuery(t);
+    WildcardQuery query = new WildcardQuery(t);
+    query.setConstantScoreRewrite(constantScoreRewrite);
+    return query;
   }
 
   /**
@@ -1245,7 +1251,6 @@ public class QueryParser implements QueryParserConstants {
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
-  boolean rangein = false;
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case STAR:
@@ -1490,12 +1495,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1509,6 +1508,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

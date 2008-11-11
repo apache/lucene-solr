@@ -43,7 +43,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -415,11 +414,11 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertTrue(getQuery("[ a TO z]", null) instanceof ConstantScoreRangeQuery);
+    assertTrue(((RangeQuery)getQuery("[ a TO z]", null)).getConstantScoreRewrite());
 
     QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
-	qp.setUseOldRangeQuery(true);
-    assertTrue(qp.parse("[ a TO z]") instanceof RangeQuery);
+	  qp.setConstantScoreRewrite(false);
+    assertFalse(((RangeQuery)qp.parse("[ a TO z]")).getConstantScoreRewrite());
     
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
@@ -458,7 +457,7 @@ public class TestQueryParser extends LuceneTestCase {
     // supported).
       
     // Test ConstantScoreRangeQuery
-    qp.setUseOldRangeQuery(false);
+    qp.setConstantScoreRewrite(true);
     ScoreDoc[] result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
@@ -466,7 +465,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     // Test RangeQuery
-    qp.setUseOldRangeQuery(true);
+    qp.setConstantScoreRewrite(false);
     result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
@@ -775,7 +774,7 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void assertParseException(String queryString) throws Exception {
     try {
-      Query q = getQuery(queryString, null);
+      getQuery(queryString, null);
     } catch (ParseException expected) {
       return;
     }

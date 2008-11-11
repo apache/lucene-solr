@@ -5,6 +5,12 @@ $Id$
 
 Changes in runtime behavior
 
+ 1. LUCENE-1424: QueryParser now by default uses constant score query
+    rewriting when it generates a WildcardQuery and PrefixQuery (it
+    already does so for RangeQuery, as well).  Call
+    setConstantScoreRewrite(false) to revert to BooleanQuery rewriting
+    method.  (Mark Miller via Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
@@ -49,6 +55,13 @@ New features
     
  5. Added web-based demo of functionality in contrib's XML Query Parser
     packaged as War file (Mark Harwood)    
+
+ 6. LUCENE-1424: Moved constant score query rewrite capability into
+    MultiTermQuery, allowing RangeQuery, PrefixQuery and WildcardQuery
+    to switch betwen constant-score rewriting or BooleanQuery
+    expansion rewriting via a new setConstantScoreRewrite method.
+    Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
+    McCandless)
 
 Optimizations
 

@@ -21,234 +21,213 @@ import java.io.IOException;
 import java.text.Collator;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query that matches documents within an exclusive range. A RangeQuery
  * is built by QueryParser for input like <code>[010 TO 120]</code> but only if the QueryParser has 
  * the useOldRangeQuery property set to true. The QueryParser default behaviour is to use
- * the newer ConstantScoreRangeQuery class. This is generally preferable because:
+ * the newer ConstantScore mode. This is generally preferable because:
  * <ul>
- * 	<li>It is faster than RangeQuery</li>
- * 	<li>Unlike RangeQuery, it does not cause a BooleanQuery.TooManyClauses exception if the range of values is large</li>
- * 	<li>Unlike RangeQuery it does not influence scoring based on the scarcity of individual terms that may match</li>
+ *  <li>It is faster than the standard RangeQuery mode</li>
+ *  <li>Unlike the RangeQuery mode, it does not cause a BooleanQuery.TooManyClauses exception if the range of values is large</li>
+ *  <li>Unlike the RangeQuery mode, it does not influence scoring based on the scarcity of individual terms that may match</li>
  * </ul>
- * 
- * 
- * @see ConstantScoreRangeQuery
  * 
  *
  * @version $Id$
  */
-public class RangeQuery extends Query
-{
-    private Term lowerTerm;
-    private Term upperTerm;
-    private boolean inclusive;
-    private Collator collator;
-
-    /** Constructs a query selecting all terms greater than
-     * <code>lowerTerm</code> but less than <code>upperTerm</code>.
-     * There must be at least one term and either term may be null,
-     * in which case there is no bound on that side, but if there are
-     * two terms, both terms <b>must</b> be for the same field.
-     *
-     * @param lowerTerm The Term at the lower end of the range
-     * @param upperTerm The Term at the upper end of the range
-     * @param inclusive If true, both <code>lowerTerm</code> and
-     *  <code>upperTerm</code> will themselves be included in the range.
-     */
-    public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive)
-    {
-        if (lowerTerm == null && upperTerm == null)
-        {
-            throw new IllegalArgumentException("At least one term must be non-null");
-        }
-        if (lowerTerm != null && upperTerm != null && lowerTerm.field() != upperTerm.field())
-        {
-            throw new IllegalArgumentException("Both terms must be for the same field");
-        }
-
-        // if we have a lowerTerm, start there. otherwise, start at beginning
-        if (lowerTerm != null) {
-            this.lowerTerm = lowerTerm;
-        }
-        else {
-            this.lowerTerm = new Term(upperTerm.field());
-        }
-
-        this.upperTerm = upperTerm;
-        this.inclusive = inclusive;
-    }
-
-    /** Constructs a query selecting all terms greater than
-     * <code>lowerTerm</code> but less than <code>upperTerm</code>.
-     * There must be at least one term and either term may be null,
-     * in which case there is no bound on that side, but if there are
-     * two terms, both terms <b>must</b> be for the same field.
-     * <p>
-     * If <code>collator</code> is not null, it will be used to decide whether
-     * index terms are within the given range, rather than using the Unicode code
-     * point order in which index terms are stored.
-     * <p>
-     * <strong>WARNING:</strong> Using this constructor and supplying a non-null
-     * value in the <code>collator</code> parameter will cause every single 
-     * index Term in the Field referenced by lowerTerm and/or upperTerm to be
-     * examined.  Depending on the number of index Terms in this Field, the 
-     * operation could be very slow.
-     *
-     * @param lowerTerm The Term at the lower end of the range
-     * @param upperTerm The Term at the upper end of the range
-     * @param inclusive If true, both <code>lowerTerm</code> and
-     *  <code>upperTerm</code> will themselves be included in the range.
-     * @param collator The collator to use to collate index Terms, to determine
-     *  their membership in the range bounded by <code>lowerTerm</code> and
-     *  <code>upperTerm</code>.
-     */
-    public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive,
-                      Collator collator)
-    {
-        this(lowerTerm, upperTerm, inclusive);
-        this.collator = collator;
-    }
-
-    public Query rewrite(IndexReader reader) throws IOException {
-
-        BooleanQuery query = new BooleanQuery(true);
-        String testField = getField();
-        if (collator != null) {
-            TermEnum enumerator = reader.terms(new Term(testField, ""));
-            String lowerTermText = lowerTerm != null ? lowerTerm.text() : null;
-            String upperTermText = upperTerm != null ? upperTerm.text() : null;
-
-            try {
-                do {
-                    Term term = enumerator.term();
-                    if (term != null && term.field() == testField) { // interned comparison
-                        if ((lowerTermText == null
-                             || (inclusive ? collator.compare(term.text(), lowerTermText) >= 0
-                                           : collator.compare(term.text(), lowerTermText) > 0))
-                            && (upperTermText == null
-                                || (inclusive ? collator.compare(term.text(), upperTermText) <= 0
-                                              : collator.compare(term.text(), upperTermText) < 0))) {
-                            addTermToQuery(term, query);
-                        }
-                    }
-                }
-                while (enumerator.next());
-            }
-            finally {
-                enumerator.close();
-            }
-        }
-        else { // collator is null
-            TermEnum enumerator = reader.terms(lowerTerm);
-
-            try {
-
-                boolean checkLower = false;
-                if (!inclusive) // make adjustments to set to exclusive
-                    checkLower = true;
-
-                do {
-                    Term term = enumerator.term();
-                    if (term != null && term.field() == testField) { // interned comparison
-                        if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
-                            checkLower = false;
-                            if (upperTerm != null) {
-                                int compare = upperTerm.text().compareTo(term.text());
-                                /* if beyond the upper term, or is exclusive and
-                                 * this is equal to the upper term, break out */
-                                if ((compare < 0) || (!inclusive && compare == 0))
-                                    break;
-                            }
-                            addTermToQuery(term, query); // Found a match
-                        }
-                    }
-                    else {
-                        break;
-                    }
-                }
-                while (enumerator.next());
-            }
-            finally {
-                enumerator.close();
-            }
-        }
-        return query;
-    }
-
-    private void addTermToQuery(Term term, BooleanQuery query) {
-        TermQuery tq = new TermQuery(term);
-        tq.setBoost(getBoost()); // set the boost
-        query.add(tq, BooleanClause.Occur.SHOULD); // add to query
-    }
-
-    /** Returns the field name for this query */
-    public String getField() {
-      return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
-    }
-
-    /** Returns the lower term of this range query */
-    public Term getLowerTerm() { return lowerTerm; }
-
-    /** Returns the upper term of this range query */
-    public Term getUpperTerm() { return upperTerm; }
-
-    /** Returns <code>true</code> if the range query is inclusive */
-    public boolean isInclusive() { return inclusive; }
-
-    /** Returns the collator used to determine range inclusion, if any. */
-    public Collator getCollator() { return collator; }
+public class RangeQuery extends MultiTermQuery {
+  private Term lowerTerm;
+  private Term upperTerm;
+  private Collator collator;
+  private String field;
+  private boolean includeLower;
+  private boolean includeUpper;
 
 
-    /** Prints a user-readable version of this query. */
-    public String toString(String field)
-    {
-        StringBuffer buffer = new StringBuffer();
-        if (!getField().equals(field))
-        {
-            buffer.append(getField());
-            buffer.append(":");
-        }
-        buffer.append(inclusive ? "[" : "{");
-        buffer.append(lowerTerm != null ? lowerTerm.text() : "null");
-        buffer.append(" TO ");
-        buffer.append(upperTerm != null ? upperTerm.text() : "null");
-        buffer.append(inclusive ? "]" : "}");
-        buffer.append(ToStringUtils.boost(getBoost()));
-        return buffer.toString();
-    }
+  /**
+   * Constructs a query selecting all terms greater/equal than <code>lowerTerm</code>
+   * but less/equal than <code>upperTerm</code>. 
+   * 
+   * <p>
+   * If an endpoint is null, it is said 
+   * to be "open". Either or both endpoints may be open.  Open endpoints may not 
+   * be exclusive (you can't select all but the first or last term without 
+   * explicitly specifying the term to exclude.)
+   * 
+   * @param field The field that holds both lower and upper terms.
+   * @param lowerTerm
+   *          The term text at the lower end of the range
+   * @param upperTerm
+   *          The term text at the upper end of the range
+   * @param includeLower
+   *          If true, the <code>lowerTerm</code> is
+   *          included in the range.
+   * @param includeUpper
+   *          If true, the <code>upperTerm</code> is
+   *          included in the range.
+   */
+  public RangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper) {
+    init(new Term(field, lowerTerm), new Term(field, upperTerm), includeLower, includeUpper, null);
+  }
 
-    /** Returns true iff <code>o</code> is equal to this. */
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RangeQuery)) return false;
+  /** Constructs a query selecting all terms greater/equal than
+   * <code>lowerTerm</code> but less/equal than <code>upperTerm</code>.
+   * <p>
+   * If an endpoint is null, it is said 
+   * to be "open". Either or both endpoints may be open.  Open endpoints may not 
+   * be exclusive (you can't select all but the first or last term without 
+   * explicitly specifying the term to exclude.)
+   * <p>
+   * If <code>collator</code> is not null, it will be used to decide whether
+   * index terms are within the given range, rather than using the Unicode code
+   * point order in which index terms are stored.
+   * <p>
+   * <strong>WARNING:</strong> Using this constructor and supplying a non-null
+   * value in the <code>collator</code> parameter will cause every single 
+   * index Term in the Field referenced by lowerTerm and/or upperTerm to be
+   * examined.  Depending on the number of index Terms in this Field, the 
+   * operation could be very slow.
+   *
+   * @param lowerTerm The Term text at the lower end of the range
+   * @param upperTerm The Term text at the upper end of the range
+   * @param includeLower
+   *          If true, the <code>lowerTerm</code> is
+   *          included in the range.
+   * @param includeUpper
+   *          If true, the <code>upperTerm</code> is
+   *          included in the range.
+   * @param collator The collator to use to collate index Terms, to determine
+   *  their membership in the range bounded by <code>lowerTerm</code> and
+   *  <code>upperTerm</code>.
+   */
+  public RangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper,
+                    Collator collator) {
+    init(new Term(field, lowerTerm), new Term(field,upperTerm), includeLower, includeUpper, collator);
+  }
 
-        final RangeQuery other = (RangeQuery) o;
-        if (this.getBoost() != other.getBoost()) return false;
-        if (this.inclusive != other.inclusive) return false;
-        if (this.collator != null && ! this.collator.equals(other.collator)) 
-            return false;
+  /** @deprecated Please use {@link #RangeQuery(String,
+   *  String, String, boolean, boolean, Collator)} instead */
+  public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive,
+                    Collator collator) {
+    init(lowerTerm, upperTerm, inclusive, inclusive, collator);
+  }
+  
+  /** @deprecated Please use {@link #RangeQuery(String,
+   *  String, String, boolean, boolean)} instead */
+  public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive) {
+    init(lowerTerm, upperTerm, inclusive, inclusive, null);
+  }
 
-        // one of lowerTerm and upperTerm can be null
-        if (this.lowerTerm != null ? !this.lowerTerm.equals(other.lowerTerm) : other.lowerTerm != null) return false;
-        if (this.upperTerm != null ? !this.upperTerm.equals(other.upperTerm) : other.upperTerm != null) return false;
-        return true;
-    }
+  private void init(Term lowerTerm, Term upperTerm, boolean includeLower, boolean includeUpper, Collator collator) {
+    if (lowerTerm == null && upperTerm == null)
+      throw new IllegalArgumentException("At least one term must be non-null");
+    if (lowerTerm != null && upperTerm != null && lowerTerm.field() != upperTerm.field())
+      throw new IllegalArgumentException("Both terms must be for the same field");
 
-    /** Returns a hash code value for this object.*/
-    public int hashCode() {
-      int h = Float.floatToIntBits(getBoost());
-      h ^= lowerTerm != null ? lowerTerm.hashCode() : 0;
-      // reversible mix to make lower and upper position dependent and
-      // to prevent them from cancelling out.
-      h ^= (h << 25) | (h >>> 8);
-      h ^= upperTerm != null ? upperTerm.hashCode() : 0;
-      h ^= this.inclusive ? 0x2742E74A : 0;
-      h ^= collator != null ? collator.hashCode() : 0; 
-      return h;
-    }
+    if (lowerTerm == null)
+      this.field = upperTerm.field();
+    else
+      this.field = lowerTerm.field();
+    this.lowerTerm = lowerTerm;
+    this.upperTerm = upperTerm;
+    this.includeLower = includeLower;
+    this.includeUpper = includeUpper;
+    this.collator = collator;
+  }
+  
+  /** Returns the field name for this query */
+  public String getField() {
+    return field;
+  }
+
+  /** Returns the lower term of this range query.
+   *  @deprecated Use {@link #getLowerTermText} instead. */
+  public Term getLowerTerm() { return lowerTerm; }
+
+  /** Returns the upper term of this range query.
+   *  @deprecated Use {@link #getUpperTermText} instead. */
+  public Term getUpperTerm() { return upperTerm; }
+  
+  /** Returns the lower value of this range query */
+  public String getLowerTermText() { return lowerTerm == null ? null : lowerTerm.text(); }
+
+  /** Returns the upper value of this range query */
+  public String getUpperTermText() { return upperTerm == null ? null : upperTerm.text(); }
+  
+  /** Returns <code>true</code> if the lower endpoint is inclusive */
+  public boolean includesLower() { return includeLower; }
+  
+  /** Returns <code>true</code> if the upper endpoint is inclusive */
+  public boolean includesUpper() { return includeUpper; }
+
+  /** Returns <code>true</code> if the range query is inclusive 
+   *  @deprecated Use {@link #includesLower}, {@link #includesUpper}  instead. 
+   */
+  public boolean isInclusive() { return includeUpper && includeLower; }
+
+  /** Returns the collator used to determine range inclusion, if any. */
+  public Collator getCollator() { return collator; }
+  
+  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
+    return new RangeTermEnum(reader, collator, getField(), lowerTerm.text(),
+                             upperTerm.text(), includeLower, includeUpper);
+  }
+
+  /** Prints a user-readable version of this query. */
+  public String toString(String field) {
+      StringBuffer buffer = new StringBuffer();
+      if (!getField().equals(field)) {
+          buffer.append(getField());
+          buffer.append(":");
+      }
+      buffer.append(includeLower ? '[' : '{');
+      buffer.append(lowerTerm != null ? lowerTerm.text() : "*");
+      buffer.append(" TO ");
+      buffer.append(upperTerm != null ? upperTerm.text() : "*");
+      buffer.append(includeUpper ? ']' : '}');
+      if (getBoost() != 1.0f) {
+          buffer.append("^");
+          buffer.append(Float.toString(getBoost()));
+      }
+      return buffer.toString();
+  }
+
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof RangeQuery)) return false;
+    RangeQuery other = (RangeQuery) o;
+
+    if (this.field != other.field  // interned comparison
+        || this.includeLower != other.includeLower
+        || this.includeUpper != other.includeUpper
+        || (this.collator != null && ! this.collator.equals(other.collator))
+       ) { return false; }
+    String lowerVal = this.lowerTerm == null ? null : lowerTerm.text();
+    String upperVal = this.upperTerm == null ? null : upperTerm.text();
+    String olowerText = other.lowerTerm == null ? null : other.lowerTerm.text();
+    String oupperText = other.upperTerm == null ? null : other.upperTerm.text();
+    if (lowerVal != null ? !lowerVal.equals(olowerText) : olowerText != null) return false;
+    if (upperVal != null ? !upperVal.equals(oupperText) : oupperText != null) return false;
+    return this.getBoost() == other.getBoost();
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    int h = Float.floatToIntBits(getBoost()) ^ field.hashCode();
+    String lowerVal = this.lowerTerm == null ? null : lowerTerm.text();
+    String upperVal = this.upperTerm == null ? null : upperTerm.text();
+    // hashCode of "" is 0, so don't use that for null...
+    h ^= lowerVal != null ? lowerVal.hashCode() : 0x965a965a;
+    // don't just XOR upperVal with out mixing either it or h, as it will cancel
+    // out lowerVal if they are equal.
+    h ^= (h << 17) | (h >>> 16);  // a reversible (one to one) 32 bit mapping mix
+    h ^= (upperVal != null ? (upperVal.hashCode()) : 0x5a695a69);
+    h ^= (includeLower ? 0x665599aa : 0)
+       ^ (includeUpper ? 0x99aa5566 : 0);
+    h ^= collator != null ? collator.hashCode() : 0;
+    return h;
+  }
 }

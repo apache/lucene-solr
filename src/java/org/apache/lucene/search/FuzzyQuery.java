@@ -99,6 +99,10 @@ public class FuzzyQuery extends MultiTermQuery {
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
   }
+
+  public void setConstantScoreRewrite(boolean constantScoreRewrite) {
+    throw new UnsupportedOperationException("FuzzyQuery cannot rewrite to a constant score query");
+  }
   
   public Query rewrite(IndexReader reader) throws IOException {
     FilteredTermEnum enumerator = getEnum(reader);

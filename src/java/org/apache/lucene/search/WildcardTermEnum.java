@@ -40,9 +40,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
   boolean endEnum = false;
 
   /**
-   * Creates a new <code>WildcardTermEnum</code>.  Passing in a
-   * {@link org.apache.lucene.index.Term Term} that does not contain a
-   * <code>WILDCARD_CHAR</code> will cause an exception to be thrown.
+   * Creates a new <code>WildcardTermEnum</code>.
    * <p>
    * After calling the constructor the enumeration is already pointing to the first 
    * valid term if such a term exists.
@@ -62,8 +60,12 @@ public class WildcardTermEnum extends FilteredTermEnum {
     else if (cidx >= 0) {
       idx = Math.min(idx, cidx);
     }
+    if (idx != -1) {
+      pre = searchTerm.text().substring(0,idx);
+    } else {
+      pre = "";
+    }
 
-    pre = searchTerm.text().substring(0,idx);
     preLen = pre.length();
     text = text.substring(preLen);
     setEnum(reader.terms(new Term(searchTerm.field(), pre)));

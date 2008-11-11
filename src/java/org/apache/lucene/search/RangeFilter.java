@@ -18,10 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -44,6 +40,7 @@ public class RangeFilter extends Filter {
     private boolean includeLower;
     private boolean includeUpper;
     private Collator collator;
+    private RangeQuery rangeQuery;
 
   /**
      * @param fieldName The field this range applies to
@@ -75,6 +72,7 @@ public class RangeFilter extends Filter {
             throw new IllegalArgumentException
                 ("The upper bound must be non-null to be inclusive");
         }
+        initRangeQuery();
     }
 
     /**
@@ -99,6 +97,11 @@ public class RangeFilter extends Filter {
                        Collator collator) {
         this(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
         this.collator = collator;
+        initRangeQuery();
+    }
+
+    private void initRangeQuery() {
+      rangeQuery = new RangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper, collator);
     }
 
     /**
@@ -124,81 +127,7 @@ public class RangeFilter extends Filter {
      * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
      */
     public BitSet bits(IndexReader reader) throws IOException {
-        BitSet bits = new BitSet(reader.maxDoc());
-        TermEnum enumerator =
-            (null != lowerTerm && collator == null
-             ? reader.terms(new Term(fieldName, lowerTerm))
-             : reader.terms(new Term(fieldName)));
-        
-        try {
-            
-            if (enumerator.term() == null) {
-                return bits;
-            }
-            
-            TermDocs termDocs = reader.termDocs();
-            try {
-                if (collator != null) {
-                    do {
-                        Term term = enumerator.term();
-                        if (term != null && term.field().equals(fieldName)) {
-                            if ((lowerTerm == null
-                                 || (includeLower
-                                     ? collator.compare(term.text(), lowerTerm) >= 0
-                                     : collator.compare(term.text(), lowerTerm) > 0))
-                                && (upperTerm == null
-                                    || (includeUpper
-                                        ? collator.compare(term.text(), upperTerm) <= 0
-                                        : collator.compare(term.text(), upperTerm) < 0))) {
-                              /* we have a good term, find the docs */
-                                termDocs.seek(enumerator.term());
-                                while (termDocs.next()) {
-                                    bits.set(termDocs.doc());
-                                }
-                            }
-                        }
-                    }
-                    while (enumerator.next());
-                } else { // collator is null - use Unicode code point ordering
-                    boolean checkLower = false;
-                    if (!includeLower) // make adjustments to set to exclusive
-                        checkLower = true;
-       
-                    do {
-                        Term term = enumerator.term();
-                        if (term != null && term.field().equals(fieldName)) {
-                            if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
-                                checkLower = false;
-                                if (upperTerm != null) {
-                                    int compare = upperTerm.compareTo(term.text());
-                                    /* if beyond the upper term, or is exclusive and
-                                     * this is equal to the upper term, break out */
-                                    if ((compare < 0) ||
-                                        (!includeUpper && compare==0)) {
-                                        break;
-                                    }
-                                }
-                                /* we have a good term, find the docs */
-                            
-                                termDocs.seek(enumerator.term());
-                                while (termDocs.next()) {
-                                    bits.set(termDocs.doc());
-                                }
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    while (enumerator.next());
-                }
-            } finally {
-                termDocs.close();
-            }
-        } finally {
-            enumerator.close();
-        }
-
-        return bits;
+      return rangeQuery.getFilter().bits(reader);
     }
     
     /**
@@ -206,84 +135,7 @@ public class RangeFilter extends Filter {
      * permitted in search results.
      */
     public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-        OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-        
-        TermEnum enumerator =
-            (null != lowerTerm && collator == null
-             ? reader.terms(new Term(fieldName, lowerTerm))
-             : reader.terms(new Term(fieldName)));
-        
-        try {
-            
-            if (enumerator.term() == null) {
-                return bits;
-            }
-
-            TermDocs termDocs = reader.termDocs();
-
-            try {
-                if (collator != null) {
-                    do {
-                        Term term = enumerator.term();
-                        if (term != null && term.field().equals(fieldName)) {
-                            if ((lowerTerm == null
-                                 || (includeLower
-                                     ? collator.compare(term.text(), lowerTerm) >= 0
-                                     : collator.compare(term.text(), lowerTerm) > 0))
-                                && (upperTerm == null
-                                    || (includeUpper
-                                        ? collator.compare(term.text(), upperTerm) <= 0
-                                        : collator.compare(term.text(), upperTerm) < 0))) {
-                                /* we have a good term, find the docs */
-                                termDocs.seek(enumerator.term());
-                                while (termDocs.next()) {
-                                    bits.set(termDocs.doc());
-                                }
-                            }
-                        }
-                    }
-                    while (enumerator.next());
-                } else { // collator is null - use Unicode code point ordering
-                    boolean checkLower = false;
-                    if (!includeLower) // make adjustments to set to exclusive
-                        checkLower = true;
-        
-                    do {
-                        Term term = enumerator.term();
-                        if (term != null && term.field().equals(fieldName)) {
-                            if (!checkLower || null==lowerTerm || term.text().compareTo(lowerTerm) > 0) {
-                                checkLower = false;
-                                if (upperTerm != null) {
-                                    int compare = upperTerm.compareTo(term.text());
-                                    /* if beyond the upper term, or is exclusive and
-                                     * this is equal to the upper term, break out */
-                                    if ((compare < 0) ||
-                                        (!includeUpper && compare==0)) {
-                                        break;
-                                    }
-                                }
-                                /* we have a good term, find the docs */
-                            
-                                termDocs.seek(enumerator.term());
-                                while (termDocs.next()) {
-                                    bits.set(termDocs.doc());
-                                }
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                    while (enumerator.next());
-                }
-                
-            } finally {
-                termDocs.close();
-            }
-        } finally {
-            enumerator.close();
-        }
-
-        return bits;
+      return rangeQuery.getFilter().getDocIdSet(reader);
     }
     
     public String toString() {
