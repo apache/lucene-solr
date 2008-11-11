@@ -59,20 +59,15 @@ public class OpenBitSetDISI extends OpenBitSet {
    * constructor.
    */   
   public void inPlaceAnd(DocIdSetIterator disi) throws IOException {
-    int index = nextSetBit(0);
-    int lastNotCleared = -1;
-    while ((index != -1) && disi.skipTo(index)) {
-      while ((index != -1) && (index < disi.doc())) {
-        fastClear(index);
-        index = nextSetBit(index + 1);
-      }
-      if (index == disi.doc()) {
-        lastNotCleared = index;
-        index++;
-      }
-      assert (index == -1) || (index > disi.doc());
+    int bitSetDoc = nextSetBit(0);
+    while ((bitSetDoc != -1) && disi.skipTo(bitSetDoc)) {
+      int disiDoc = disi.doc();
+      clear(bitSetDoc, disiDoc);
+      bitSetDoc = nextSetBit(disiDoc + 1);
     }
-    clear(lastNotCleared+1, size());
+    if (bitSetDoc != -1) {
+      clear(bitSetDoc, size());
+    }
   }
 
   /**

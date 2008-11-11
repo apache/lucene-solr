@@ -332,6 +332,43 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    * @param startIndex lower index
    * @param endIndex one-past the last bit to clear
    */
+  public void clear(int startIndex, int endIndex) {
+    if (endIndex <= startIndex) return;
+
+    int startWord = (startIndex>>6);
+    if (startWord >= wlen) return;
+
+    // since endIndex is one past the end, this is index of the last
+    // word to be changed.
+    int endWord   = ((endIndex-1)>>6);
+
+    long startmask = -1L << startIndex;
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+
+    // invert masks since we are clearing
+    startmask = ~startmask;
+    endmask = ~endmask;
+
+    if (startWord == endWord) {
+      bits[startWord] &= (startmask | endmask);
+      return;
+    }
+
+    bits[startWord] &= startmask;
+
+    int middle = Math.min(wlen, endWord);
+    Arrays.fill(bits, startWord+1, middle, 0L);
+    if (endWord < wlen) {
+      bits[endWord] &= endmask;
+    }
+  }
+
+
+  /** Clears a range of bits.  Clearing past the end does not change the size of the set.
+   *
+   * @param startIndex lower index
+   * @param endIndex one-past the last bit to clear
+   */
   public void clear(long startIndex, long endIndex) {
     if (endIndex <= startIndex) return;
 

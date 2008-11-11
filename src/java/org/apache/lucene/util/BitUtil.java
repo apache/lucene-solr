@@ -688,7 +688,7 @@ public class BitUtil {
   public static final byte[] ntzTable = {8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0};
 
 
-  /** Returns number of trailing zeros in the 64 bit long value. */
+  /** Returns number of trailing zeros in a 64 bit long value. */
   public static int ntz(long val) {
     // A full binary search to determine the low byte was slower than
     // a linear search for nextSetBit().  This is most likely because
@@ -726,6 +726,23 @@ public class BitUtil {
       // no need to check for zero on the last byte either.
       return ntzTable[upper>>>24] + 56;
     }
+  }
+
+  /** Returns number of trailing zeros in a 32 bit int value. */
+  public static int ntz(int val) {
+    // This implementation does a single binary search at the top level only.
+    // In addition, the case of a non-zero first byte is checked for first
+    // because it is the most common in dense bit arrays.
+
+    int lowByte = val & 0xff;
+    if (lowByte != 0) return ntzTable[lowByte];
+    lowByte = (val>>>8) & 0xff;
+    if (lowByte != 0) return ntzTable[lowByte] + 8;
+    lowByte = (val>>>16) & 0xff;
+    if (lowByte != 0) return ntzTable[lowByte] + 16;
+    // no need to mask off low byte for the last byte.
+    // no need to check for zero on the last byte either.
+    return ntzTable[val>>>24] + 24;
   }
 
   /** returns 0 based index of first set bit

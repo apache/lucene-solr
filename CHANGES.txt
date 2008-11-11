@@ -70,6 +70,9 @@ Optimizations
     more efficient (single pass) by not creating & populating an
     intermediate OpenBitSet (Paul Elschot, Mike McCandless)
 
+ 2. LUCENE-1443: Performance improvement for OpenBitSetDISI.inPlaceAnd()
+    (Paul Elschot via yonik)
+
 
 Documentation
 
