@@ -370,7 +370,7 @@ public class DocBuilder {
         continue;
       }
       DataConfig.Field field = entity.colNameVsField.get(key);
-      if (field == null) {
+      if (field == null && dataImporter.getSchema() != null) {
         // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
         SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
         if (sf == null) {
@@ -381,7 +381,7 @@ public class DocBuilder {
         }
         //else do nothing. if we add it it may fail
       } else {
-        if (field.toWrite) {
+        if (field != null && field.toWrite) {
           addFieldToDoc(entry.getValue(), key, field.boost, field.multiValued, doc);
         }
       }

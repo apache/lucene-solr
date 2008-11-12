@@ -64,7 +64,7 @@ public class DataImporter {
 
   private Properties store = new Properties();
 
-  private Map<String, Properties> dataSourceProps;
+  private Map<String, Properties> dataSourceProps = new HashMap<String, Properties>();
 
   private IndexSchema schema;
 
@@ -159,6 +159,15 @@ public class DataImporter {
 
   }
 
+  /**Used by tests
+   */
+  void loadAndInit(String configStr){
+    loadDataConfig(configStr);
+    Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
+    DataConfig.Entity e = getConfig().documents.get(0).entities.get(0);
+    initEntity(e, fields, false);    
+  }
+
   void loadDataConfig(String configFile) {
 
     try {
@@ -193,27 +202,29 @@ public class DataImporter {
     if (e.fields != null) {
       for (DataConfig.Field f : e.fields) {
         f.nameOrColName = f.getName();
-        SchemaField schemaField = schema.getFieldOrNull(f.getName());
-        if (schemaField != null) {
-          f.multiValued = schemaField.multiValued();
-          f.allAttributes.put(MULTI_VALUED, Boolean.toString(schemaField
-                  .multiValued()));
-          f.allAttributes.put(TYPE, schemaField.getType().getTypeName());
-          f.allAttributes.put("indexed", Boolean
-                  .toString(schemaField.indexed()));
-          f.allAttributes.put("stored", Boolean.toString(schemaField.stored()));
-          f.allAttributes.put("defaultValue", schemaField.getDefaultValue());
-        } else {
+        if (schema != null) {
+          SchemaField schemaField = schema.getFieldOrNull(f.getName());
+          if (schemaField != null) {
+            f.multiValued = schemaField.multiValued();
+            f.allAttributes.put(MULTI_VALUED, Boolean.toString(schemaField
+                    .multiValued()));
+            f.allAttributes.put(TYPE, schemaField.getType().getTypeName());
+            f.allAttributes.put("indexed", Boolean
+                    .toString(schemaField.indexed()));
+            f.allAttributes.put("stored", Boolean.toString(schemaField.stored()));
+            f.allAttributes.put("defaultValue", schemaField.getDefaultValue());
+          } else {
 
-          try {
-            f.allAttributes.put(TYPE, schema.getDynamicFieldType(f.getName())
-                    .getTypeName());
-            f.allAttributes.put(MULTI_VALUED, "true");
-            f.multiValued = true;
-          } catch (RuntimeException e2) {
-            LOG.info("Field in data-config.xml - " + f.getName()
-                    + " not found in schema.xml");
-            f.toWrite = false;
+            try {
+              f.allAttributes.put(TYPE, schema.getDynamicFieldType(f.getName())
+                      .getTypeName());
+              f.allAttributes.put(MULTI_VALUED, "true");
+              f.multiValued = true;
+            } catch (RuntimeException e2) {
+              LOG.info("Field in data-config.xml - " + f.getName()
+                      + " not found in schema.xml");
+              f.toWrite = false;
+            }
           }
         }
         fields.put(f.getName(), f);

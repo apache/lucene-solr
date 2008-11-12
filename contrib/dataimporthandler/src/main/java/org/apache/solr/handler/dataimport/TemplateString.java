@@ -67,6 +67,8 @@ public class TemplateString {
    * @return the string with all variables replaced
    */
   public String replaceTokens(String string, VariableResolver resolver) {
+    if (string == null)
+      return null;
     TemplateString ts = cache.get(string);
     if (ts == null) {
       ts = new TemplateString(string);
