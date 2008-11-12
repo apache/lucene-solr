@@ -45,6 +45,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -777,11 +778,18 @@ public class QueryParser {
    * @return new RangeQuery instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
-    RangeQuery query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    RangeQuery query;  
+  
+    if (constantScoreRewrite) {
+      // TODO: remove in Lucene 3.0
+      query = new ConstantScoreRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    } else {
+      query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    }
     query.setConstantScoreRewrite(constantScoreRewrite);
     return query;
   }
-
+  
   /**
    * Builds a new MatchAllDocsQuery instance
    * @return new MatchAllDocsQuery instance

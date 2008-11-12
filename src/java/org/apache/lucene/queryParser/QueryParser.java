@@ -21,6 +21,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -753,7 +754,14 @@ public class QueryParser implements QueryParserConstants {
    * @return new RangeQuery instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
-    RangeQuery query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    RangeQuery query;
+
+    if (constantScoreRewrite) {
+      // TODO: remove in Lucene 3.0
+      query = new ConstantScoreRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    } else {
+      query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+    }
     query.setConstantScoreRewrite(constantScoreRewrite);
     return query;
   }
@@ -1495,6 +1503,12 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1508,12 +1522,6 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
     return false;
   }
 
