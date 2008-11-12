@@ -25,12 +25,12 @@ public interface TermVectorParams {
   /**
   * Return IDF information.  May be expensive
   * */
-  public static final String IDF = TV_PREFIX + "idf";
+  public static final String DF = TV_PREFIX + "df";
 
   /**
    * Return TF-IDF calculation, i.e. (tf / idf).  May be expensive.
    */
-  public static final String TF_IDF = TV_PREFIX + "tf-idf";
+  public static final String TF_IDF = TV_PREFIX + "tf_idf";
 
 
   /**

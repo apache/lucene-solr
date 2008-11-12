@@ -92,7 +92,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     assertTrue(field.size() + " does not equal: " + 2, field.size() == 2);
     NamedList titl = (NamedList) field.get("titl");
     assertTrue("titl is null and it shouldn't be", titl != null);
-    assertTrue(titl.get("freq") + " does not equal: " + 2, ((Integer) titl.get("freq")) == 2);
+    assertTrue(titl.get("tf") + " does not equal: " + 2, ((Integer) titl.get("tf")) == 2);
 
     String uniqueKeyFieldName = (String) termVectors.getVal(1);
     assertTrue("uniqueKeyFieldName is null and it shouldn't be", uniqueKeyFieldName != null);
@@ -108,7 +108,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     params.add(CommonParams.Q, "id:0");
     params.add(CommonParams.QT, "tvrh");
     params.add(TermVectorParams.TF, "true");
-    params.add(TermVectorParams.IDF, "true");
+    params.add(TermVectorParams.DF, "true");
     params.add(TermVectorParams.OFFSETS, "true");
     params.add(TermVectorParams.POSITIONS, "true");
     params.add(TermVectorParams.TF_IDF, "true");
@@ -167,7 +167,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     params.add(CommonParams.Q, "id:0");
     params.add(CommonParams.QT, "tvrh");
     params.add(TermVectorParams.TF, "true");
-    params.add(TermVectorParams.IDF, "true");
+    params.add(TermVectorParams.DF, "true");
     params.add(TermVectorParams.OFFSETS, "true");
     params.add(TermVectorParams.POSITIONS, "true");
     params.add(TermVectorComponent.COMPONENT_NAME, "true");
