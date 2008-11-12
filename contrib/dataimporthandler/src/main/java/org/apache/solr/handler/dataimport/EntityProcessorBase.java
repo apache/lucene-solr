@@ -16,20 +16,16 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.lang.reflect.Method;
-import java.util.*;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
+import java.util.*;
+
 /**
- * <p>
- * Base class for all implementations of EntityProcessor
- * </p>
- * <p/>
- * <p>
- * Most implementations of EntityProcessor extend this base class which provides
- * common functionality.
- * </p>
+ * <p> Base class for all implementations of EntityProcessor </p> <p/> <p> Most implementations of EntityProcessor
+ * extend this base class which provides common functionality. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
@@ -38,6 +34,8 @@ import org.slf4j.LoggerFactory;
  */
 public class EntityProcessorBase extends EntityProcessor {
   private static final Logger log = LoggerFactory.getLogger(EntityProcessorBase.class);
+
+  protected boolean isFirstInit = true;
 
   protected String entityName;
 
@@ -56,14 +54,21 @@ public class EntityProcessorBase extends EntityProcessor {
   @SuppressWarnings("unchecked")
   private Map session;
 
+  protected String onError = ABORT;
+
   public void init(Context context) {
     rowIterator = null;
     rowcache = null;
     this.context = context;
-    entityName = context.getEntityAttribute("name");
+    if (isFirstInit) {
+      entityName = context.getEntityAttribute("name");
+      String s = context.getEntityAttribute(ON_ERROR);
+      if (s != null) onError = s;
+    }
     resolver = (VariableResolverImpl) context.getVariableResolver();
     query = null;
     session = null;
+    isFirstInit = false;
 
   }
 
@@ -101,15 +106,15 @@ public class EntityProcessorBase extends EntityProcessor {
             String msg = "Transformer :"
                     + trans
                     + "does not implement Transformer interface or does not have a transformRow(Map m)method";
-            log.error( msg);
+            log.error(msg);
             throw new DataImportHandlerException(
-                    DataImportHandlerException.SEVERE, msg);
+                    SEVERE, msg);
           }
           transformers.add(new ReflectionTransformer(meth, clazz, trans));
         }
       } catch (Exception e) {
-        log.error( "Unable to load Transformer: " + aTransArr, e);
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+        log.error("Unable to load Transformer: " + aTransArr, e);
+        throw new DataImportHandlerException(SEVERE,
                 e);
       }
     }
@@ -138,8 +143,8 @@ public class EntityProcessorBase extends EntityProcessor {
       try {
         return meth.invoke(o, aRow);
       } catch (Exception e) {
-        log.warn("method invocation failed on transformer : "+ trans, e);
-        throw new DataImportHandlerException(DataImportHandlerException.WARN, e);
+        log.warn("method invocation failed on transformer : " + trans, e);
+        throw new DataImportHandlerException(WARN, e);
       }
     }
   }
@@ -189,15 +194,17 @@ public class EntityProcessorBase extends EntityProcessor {
           } else if (o instanceof List) {
             rows = (List) o;
           } else {
-            log.error( "Transformer must return Map<String, Object> or a List<Map<String, Object>>");
+            log.error("Transformer must return Map<String, Object> or a List<Map<String, Object>>");
           }
         }
-
-      } catch (DataImportHandlerException e) {
-        throw e;
       } catch (Exception e) {
-        log.warn( "transformer threw error", e);
-        throw new DataImportHandlerException(DataImportHandlerException.WARN, e);
+        log.warn("transformer threw error", e);
+        if (ABORT.equals(onError)) {
+          wrapAndThrow(SEVERE, e);
+        } else if (SKIP.equals(onError)) {
+          wrapAndThrow(DataImportHandlerException.SKIP, e);
+        }
+        // onError = continue
       }
     }
     if (rows == null) {
@@ -222,14 +229,13 @@ public class EntityProcessorBase extends EntityProcessor {
         return null;
       if (rowIterator.hasNext())
         return rowIterator.next();
-      rowIterator = null;
       query = null;
       return null;
     } catch (Exception e) {
-      log.error( "getNext() failed for query '" + query + "'", e);
-      rowIterator = null;
+      log.error("getNext() failed for query '" + query + "'", e);
       query = null;
-      throw new DataImportHandlerException(DataImportHandlerException.WARN, e);
+      wrapAndThrow(DataImportHandlerException.WARN, e);
+      return null;
     }
   }
 
@@ -259,13 +265,11 @@ public class EntityProcessorBase extends EntityProcessor {
   }
 
   /**
-   * For a simple implementation, this is the only method that the sub-class
-   * should implement. This is intended to stream rows one-by-one. Return null
-   * to signal end of rows
+   * For a simple implementation, this is the only method that the sub-class should implement. This is intended to
+   * stream rows one-by-one. Return null to signal end of rows
    *
-   * @return a row where the key is the name of the field and value can be any
-   *         Object or a Collection of objects. Return null to signal end of
-   *         rows
+   * @return a row where the key is the name of the field and value can be any Object or a Collection of objects. Return
+   *         null to signal end of rows
    */
   public Map<String, Object> nextRow() {
     return null;// do not do anything
@@ -324,11 +328,11 @@ public class EntityProcessorBase extends EntityProcessor {
   }
 
   /**
-   * If the where clause is present the cache is sql Vs Map of key Vs List of
-   * Rows. Only used by cache implementations.
+   * If the where clause is present the cache is sql Vs Map of key Vs List of Rows. Only used by cache implementations.
    *
    * @param query the query string for which cached data is to be returned
-   * @return the cached row corresponding to the given query after all variables have been resolved 
+   *
+   * @return the cached row corresponding to the given query after all variables have been resolved
    */
   protected Map<String, Object> getIdCacheData(String query) {
     Map<Object, List<Map<String, Object>>> rowIdVsRows = cacheWithWhereClause
@@ -367,12 +371,8 @@ public class EntityProcessorBase extends EntityProcessor {
   }
 
   /**
-   * <p>
-   * Get all the rows from the the datasource for the given query. Only used by
-   * cache implementations.
-   * </p>
-   * This <b>must</b> be implemented by sub-classes which intend to provide a
-   * cached implementation
+   * <p> Get all the rows from the the datasource for the given query. Only used by cache implementations. </p> This
+   * <b>must</b> be implemented by sub-classes which intend to provide a cached implementation
    *
    * @return the list of all rows fetched from the datasource.
    */
@@ -381,10 +381,10 @@ public class EntityProcessorBase extends EntityProcessor {
   }
 
   /**
-   * If where clause is not present the cache is a Map of query vs List of Rows.
-   * Only used by cache implementations.
+   * If where clause is not present the cache is a Map of query vs List of Rows. Only used by cache implementations.
    *
    * @param query string for which cached row is to be returned
+   *
    * @return the cached row corresponding to the given query
    */
   protected Map<String, Object> getSimpleCacheData(String query) {
@@ -414,6 +414,14 @@ public class EntityProcessorBase extends EntityProcessor {
   public static final String TRANSFORMER = "transformer";
 
   public static final String TRANSFORM_ROW = "transformRow";
+
+  public static final String ON_ERROR = "onError";
+
+  public static final String ABORT = "abort";
+
+  public static final String CONTINUE = "continue";
+
+  public static final String SKIP = "skip";
 
   public static final String SKIP_DOC = "$skipDoc";
 }

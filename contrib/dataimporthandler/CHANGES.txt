@@ -25,6 +25,9 @@ New Features
               instead of DataImportHandler manipulating the SQL itself.
               (Noble Paul via shalin)
 
+3. SOLR-842:  Better error handling in DataImportHandler with options to abort, skip and continue imports.
+              (Noble Paul, shalin)
+
 Optimizations
 ----------------------
 

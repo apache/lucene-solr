@@ -18,9 +18,7 @@
 package org.apache.solr.handler.dataimport;
 
 /**
- * <p>
- * Exception class for all DataImportHandler exceptions
- * </p>
+ * <p> Exception class for all DataImportHandler exceptions </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
  * <p/>
@@ -58,6 +56,23 @@ public class DataImportHandlerException extends RuntimeException {
   public int getErrCode() {
     return errCode;
   }
+
+  public static void wrapAndThrow(int err, Exception e) {
+    if (e instanceof DataImportHandlerException) {
+      throw (DataImportHandlerException) e;
+    } else {
+      throw new DataImportHandlerException(err, e);
+    }
+  }
+
+  public static void wrapAndThrow(int err, Exception e, String msg) {
+    if (e instanceof DataImportHandlerException) {
+      throw (DataImportHandlerException) e;
+    } else {
+      throw new DataImportHandlerException(err, msg, e);
+    }
+  }
+
 
   public static final String MSG = " Processing Document # ";
 }
