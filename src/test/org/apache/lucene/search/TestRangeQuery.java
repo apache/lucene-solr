@@ -187,6 +187,26 @@ public class TestRangeQuery extends LuceneTestCase {
     assertEquals("The index Term should be included.", 1, hits.length);
     searcher.close();
   }
+  
+  public void testDanish() throws Exception {
+    Collator collator = Collator.getInstance(new Locale("da", "dk"));
+    // Danish collation orders the words below in the given order (example taken
+    // from TestSort.testInternationalSort() ).
+    String[] words = { "H\u00D8T", "H\u00C5T", "MAND" };
+    Query query = new RangeQuery("content", "H\u00D8T", "MAND", false, false, collator);
+
+    // Unicode order would not include "H\u00C5T" in [ "H\u00D8T", "MAND" ],
+    // but Danish collation does.
+    initializeIndex(words);
+    IndexSearcher searcher = new IndexSearcher(dir);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("The index Term should be included.", 1, hits.length);
+
+    query = new RangeQuery("content", "H\u00C5T", "MAND", false, false, collator);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("The index Term should not be included.", 0, hits.length);
+    searcher.close();
+  }
 
   private void initializeIndex(String[] values) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);

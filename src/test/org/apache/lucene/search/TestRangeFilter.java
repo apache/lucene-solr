@@ -376,4 +376,46 @@ public class TestRangeFilter extends BaseTestRangeFilter {
         assertEquals("The index Term should be included.", 1, result.length());
         search.close();
     }
+
+    public void testDanish() throws Exception {
+            
+        /* build an index */
+        RAMDirectory danishIndex = new RAMDirectory();
+        IndexWriter writer = new IndexWriter
+            (danishIndex, new SimpleAnalyzer(), T, 
+             IndexWriter.MaxFieldLength.LIMITED);
+        // Danish collation orders the words below in the given order
+        // (example taken from TestSort.testInternationalSort() ).
+        String[] words = { "H\u00D8T", "H\u00C5T", "MAND" };
+        for (int docnum = 0 ; docnum < words.length ; ++docnum) {   
+            Document doc = new Document();
+            doc.add(new Field("content", words[docnum], 
+                              Field.Store.YES, Field.Index.UN_TOKENIZED));
+            doc.add(new Field("body", "body",
+                              Field.Store.YES, Field.Index.UN_TOKENIZED));
+            writer.addDocument(doc);
+        }
+        writer.optimize();
+        writer.close();
+
+        IndexReader reader = IndexReader.open(danishIndex);
+        IndexSearcher search = new IndexSearcher(reader);
+        Query q = new TermQuery(new Term("body","body"));
+
+        Collator collator = Collator.getInstance(new Locale("da", "dk"));
+        Query query = new RangeQuery
+            ("content", "H\u00D8T", "MAND", false, false, collator);
+
+        // Unicode order would not include "H\u00C5T" in [ "H\u00D8T", "MAND" ],
+        // but Danish collation does.
+        Hits result = search.search
+            (q, new RangeFilter("content", "H\u00D8T", "MAND", F, F, collator));
+        assertEquals("The index Term should be included.", 1, result.length());
+
+        result = search.search
+            (q, new RangeFilter("content", "H\u00C5T", "MAND", F, F, collator));
+        assertEquals
+            ("The index Term should not be included.", 0, result.length());
+        search.close();
+    }
 }

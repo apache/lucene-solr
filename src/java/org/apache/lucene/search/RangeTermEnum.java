@@ -70,7 +70,8 @@ public class RangeTermEnum extends FilteredTermEnum {
       this.includeUpper = true;
     }
 
-    setEnum(reader.terms(new Term(this.field, this.lowerTermText)));
+    String startTermText = collator == null ? this.lowerTermText : "";
+    setEnum(reader.terms(new Term(this.field, startTermText)));
   }
 
   public float difference() {
