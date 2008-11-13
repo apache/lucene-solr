@@ -118,6 +118,8 @@ Other Changes
 
  3. DumpRequestHandler (/debug/dump): changed 'fieldName' to 'sourceInfo'. (ehatcher)
 
+ 4. SOLR-852: Refactored common code in CSVRequestHandler and XMLUpdateRequestHandler (gsingers, ehatcher)
+
 
 Build
 ----------------------

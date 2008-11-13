@@ -22,20 +22,16 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.*;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.commons.csv.CSVStrategy;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 
-import javax.xml.stream.XMLStreamReader;
 import java.util.regex.Pattern;
 import java.util.List;
 import java.io.*;
@@ -44,45 +40,10 @@ import java.io.*;
  * @version $Id$
  */
 
-public class CSVRequestHandler extends RequestHandlerBase {
+public class CSVRequestHandler extends ContentStreamHandlerBase {
 
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrParams params = req.getParams();
-    UpdateRequestProcessorChain processorChain =
-            req.getCore().getUpdateProcessingChain( params.get( UpdateParams.UPDATE_PROCESSOR ) );
-
-    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
-
-    try {
-      CSVLoader loader = new SingleThreadedCSVLoader(req, processor);
-
-
-      Iterable<ContentStream> streams = req.getContentStreams();
-      if( streams == null ) {
-        if (!RequestHandlerUtils.handleCommit(processor, params, false) && !RequestHandlerUtils.handleRollback(processor, params, false)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
-        }
-      }
-      else {
-
-        for(ContentStream stream : streams) {
-          Reader reader = stream.getReader();
-          try {
-            loader.errHeader = "CSVLoader: input=" + stream.getSourceInfo();
-            loader.load(reader);
-          } finally {
-            IOUtils.closeQuietly(reader);
-          }
-        }
-
-        // Perhaps commit from the parameters
-        RequestHandlerUtils.handleCommit( processor, params, false );
-        RequestHandlerUtils.handleRollback(processor,  params, false );
-      }
-    } finally {
-      // finish the request
-      processor.finish();
-    }
+  protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
+    return new SingleThreadedCSVLoader(req, processor);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -108,7 +69,7 @@ public class CSVRequestHandler extends RequestHandlerBase {
 }
 
 
-abstract class CSVLoader {
+abstract class CSVLoader extends ContentStreamLoader {
   static String SEPARATOR="separator";
   static String FIELDNAMES="fieldnames";
   static String HEADER="header";
@@ -138,6 +99,7 @@ abstract class CSVLoader {
   int skipLines;    // number of lines to skip at start of file
 
   final AddUpdateCommand templateAdd;
+
 
 
   /** Add a field to a document unless it's zero length.
@@ -362,40 +324,48 @@ abstract class CSVLoader {
   }
 
   /** load the CSV input */
-  void load(Reader input) throws IOException {
-    Reader reader = input;
-    if (skipLines>0) {
-      if (!(reader instanceof BufferedReader)) {
-        reader = new BufferedReader(reader);
+  public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws IOException {
+    errHeader = "CSVLoader: input=" + stream.getSourceInfo();
+    Reader reader = null;
+    try {
+      reader = stream.getReader();
+      if (skipLines>0) {
+        if (!(reader instanceof BufferedReader)) {
+          reader = new BufferedReader(reader);
+        }
+        BufferedReader r = (BufferedReader)reader;
+        for (int i=0; i<skipLines; i++) {
+          r.readLine();
+        }
       }
-      BufferedReader r = (BufferedReader)reader;
-      for (int i=0; i<skipLines; i++) {
-        r.readLine();
-      }
-    }
 
-    CSVParser parser = new CSVParser(reader, strategy);
+      CSVParser parser = new CSVParser(reader, strategy);
 
-    // parse the fieldnames from the header of the file
-    if (fieldnames==null) {
-      fieldnames = parser.getLine();
+      // parse the fieldnames from the header of the file
       if (fieldnames==null) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Expected fieldnames in CSV input");
-      }
-      prepareFields();
-    }
-
-    // read the rest of the CSV file
-    for(;;) {
-      int line = parser.getLineNumber();  // for error reporting in MT mode
-      String[] vals = parser.getLine();
-      if (vals==null) break;
-
-      if (vals.length != fields.length) {
-        input_err("expected "+fields.length+" values but got "+vals.length, vals, line);
+        fieldnames = parser.getLine();
+        if (fieldnames==null) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Expected fieldnames in CSV input");
+        }
+        prepareFields();
       }
 
-      addDoc(line,vals);
+      // read the rest of the CSV file
+      for(;;) {
+        int line = parser.getLineNumber();  // for error reporting in MT mode
+        String[] vals = parser.getLine();
+        if (vals==null) break;
+
+        if (vals.length != fields.length) {
+          input_err("expected "+fields.length+" values but got "+vals.length, vals, line);
+        }
+
+        addDoc(line,vals);
+      }
+    } finally{
+      if (reader != null) {
+        IOUtils.closeQuietly(reader);
+      }
     }
   }
 

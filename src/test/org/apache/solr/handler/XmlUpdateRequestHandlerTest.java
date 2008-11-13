@@ -47,8 +47,9 @@ public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase
     XMLStreamReader parser = 
       inputFactory.createXMLStreamReader( new StringReader( xml ) );
     parser.next(); // read the START document...
-    
-    SolrInputDocument doc = handler.readDoc( parser );
+    //null for the processor is all right here
+    XMLLoader loader = new XMLLoader(null, inputFactory);
+    SolrInputDocument doc = loader.readDoc( parser );
     
     // Read boosts
     assertEquals( 5.5f, doc.getDocumentBoost() );
