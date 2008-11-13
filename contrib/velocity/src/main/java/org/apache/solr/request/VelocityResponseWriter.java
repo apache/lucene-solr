@@ -20,6 +20,7 @@ package org.apache.solr.request;
 import org.apache.solr.common.util.NamedList;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
+import org.apache.velocity.tools.generic.EscapeTool;
 import org.apache.velocity.app.VelocityEngine;
 
 import java.io.File;
@@ -38,6 +39,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     context.put("request", request);
     context.put("response", response);
     context.put("page",new PageTool(request,response));
+    context.put("esc", new EscapeTool());
     template.merge(context, writer);
   }
 
