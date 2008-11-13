@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -57,6 +58,23 @@ public class TestRangeQuery extends LuceneTestCase {
     searcher = new IndexSearcher(dir);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("C added, still only B in range", 1, hits.length);
+    searcher.close();
+  }
+  
+  //TODO: remove in Lucene 3.0
+  public void testDeprecatedCstrctors() throws IOException {
+    Query query = new RangeQuery(null, new Term("content","C"), false);
+    initializeIndex(new String[] {"A", "B", "C", "D"});
+    IndexSearcher searcher = new IndexSearcher(dir);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D, only B in range", 2, hits.length);
+    searcher.close();
+    
+    query = new RangeQuery(new Term("content","C"),null, false);
+    initializeIndex(new String[] {"A", "B", "C", "D"});
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("A,B,C,D, only B in range", 1, hits.length);
     searcher.close();
   }
 

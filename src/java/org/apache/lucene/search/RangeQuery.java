@@ -171,8 +171,9 @@ public class RangeQuery extends MultiTermQuery {
   public Collator getCollator() { return collator; }
   
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new RangeTermEnum(reader, collator, getField(), lowerTerm.text(),
-                             upperTerm.text(), includeLower, includeUpper);
+    //TODO: when the deprecated 'Term' constructors are removed we can remove these null checks
+    return new RangeTermEnum(reader, collator, getField(), lowerTerm == null ? null : lowerTerm.text(),
+        upperTerm == null ? null : upperTerm.text(), includeLower, includeUpper);
   }
 
   /** Prints a user-readable version of this query. */
