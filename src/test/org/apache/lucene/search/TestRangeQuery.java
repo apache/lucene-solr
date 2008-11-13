@@ -23,9 +23,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.Token;
 
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Locale;
 import java.text.Collator;
 
@@ -226,8 +231,58 @@ public class TestRangeQuery extends LuceneTestCase {
     searcher.close();
   }
 
+  private static class SingleCharAnalyzer extends Analyzer {
+
+    private static class SingleCharTokenizer extends Tokenizer {
+      char[] buffer = new char[1];
+      boolean done;
+
+      public SingleCharTokenizer(Reader r) {
+        super(r);
+      }
+
+      public final Token next(final Token reusableToken) throws IOException {
+        int count = input.read(buffer);
+        if (done)
+          return null;
+        else {
+          done = true;
+          if (count == 1) {
+            reusableToken.termBuffer()[0] = buffer[0];
+            reusableToken.setTermLength(1);
+          } else
+            reusableToken.setTermLength(0);
+          return reusableToken;
+        }
+      }
+
+      public final void reset(Reader reader) throws IOException {
+        super.reset(reader);
+        done = false;
+      }
+    }
+
+    public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+      Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
+      if (tokenizer == null) {
+        tokenizer = new SingleCharTokenizer(reader);
+        setPreviousTokenStream(tokenizer);
+      } else
+        tokenizer.reset(reader);
+      return tokenizer;
+    }
+
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new SingleCharTokenizer(reader);
+    }
+  }
+
   private void initializeIndex(String[] values) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    initializeIndex(values, new WhitespaceAnalyzer());
+  }
+
+  private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
     }
@@ -248,5 +303,72 @@ public class TestRangeQuery extends LuceneTestCase {
 
     writer.addDocument(doc);
     docCount++;
+  }
+
+  // LUCENE-38
+  public void testExclusiveLowerNull() throws Exception {
+    Analyzer analyzer = new SingleCharAnalyzer();
+    //http://issues.apache.org/jira/browse/LUCENE-38
+    Query query = new RangeQuery(null,
+                                 new Term("content", "C"),
+                                 false);
+    initializeIndex(new String[] {"A", "B", "", "C", "D"}, analyzer);
+    IndexSearcher searcher = new IndexSearcher(dir);
+    Hits hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 3, hits.length());
+    // until Lucene-38 is fixed, use this assert:
+    //assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 2, hits.length());
+
+    searcher.close();
+    initializeIndex(new String[] {"A", "B", "", "D"}, analyzer);
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 3, hits.length());
+    // until Lucene-38 is fixed, use this assert:
+    //assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 2, hits.length());
+    searcher.close();
+    addDoc("C");
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("C added, still A, B & <empty string> are in range", 3, hits.length());
+    // until Lucene-38 is fixed, use this assert
+    //assertEquals("C added, still A, B & <empty string> are in range", 2, hits.length());
+    searcher.close();
+  }
+
+  // LUCENE-38
+  public void testInclusiveLowerNull() throws Exception {
+    //http://issues.apache.org/jira/browse/LUCENE-38
+    Analyzer analyzer = new SingleCharAnalyzer();
+    Query query = new RangeQuery(null,
+                                 new Term("content", "C"),
+                                 true);
+    initializeIndex(new String[]{"A", "B", "","C", "D"}, analyzer);
+    IndexSearcher searcher = new IndexSearcher(dir);
+    Hits hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 4, hits.length());
+    // until Lucene-38 is fixed, use this assert
+    //assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 3, hits.length());
+    searcher.close();
+    initializeIndex(new String[]{"A", "B", "", "D"}, analyzer);
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("A,B,<empty string>,D - A, B and <empty string> in range", 3, hits.length());
+    // until Lucene-38 is fixed, use this assert
+    //assertEquals("A,B,<empty string>,D => A, B and <empty string> in range", 2, hits.length());
+    searcher.close();
+    addDoc("C");
+    searcher = new IndexSearcher(dir);
+    hits = searcher.search(query);
+    // When Lucene-38 is fixed, use the assert on the next line:
+    assertEquals("C added => A,B,<empty string>,C in range", 4, hits.length());
+    // until Lucene-38 is fixed, use this assert
+    //assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
+     searcher.close();
   }
 }
