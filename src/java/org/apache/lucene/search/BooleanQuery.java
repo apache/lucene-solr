@@ -175,11 +175,12 @@ public class BooleanQuery extends Query {
 
   private class BooleanWeight implements Weight {
     protected Similarity similarity;
-    protected ArrayList weights = new ArrayList();
+    protected ArrayList weights;
 
     public BooleanWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
+      weights = new ArrayList(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
         weights.add(c.getQuery().createWeight(searcher));
