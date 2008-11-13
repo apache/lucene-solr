@@ -242,6 +242,46 @@ public class HighlighterTest extends TestCase implements Formatter {
     }
   }
   
+  public void testSimpleSpanFragmenter() throws Exception {
+    doSearching("\"piece of text that is very long\"");
+
+    int maxNumFragmentsRequired = 2;
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(FIELD_NAME);
+      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer
+          .tokenStream(FIELD_NAME, new StringReader(text)));
+      SpanScorer spanscorer = new SpanScorer(query, FIELD_NAME, tokenStream);
+      Highlighter highlighter = new Highlighter(this, spanscorer);
+      highlighter.setTextFragmenter(new SimpleSpanFragmenter(spanscorer, 5));
+      tokenStream.reset();
+
+      String result = highlighter.getBestFragments(tokenStream, text,
+          maxNumFragmentsRequired, "...");
+      System.out.println("\t" + result);
+
+    }
+    
+    doSearching("\"been shot\"");
+
+    maxNumFragmentsRequired = 2;
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(FIELD_NAME);
+      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer
+          .tokenStream(FIELD_NAME, new StringReader(text)));
+      SpanScorer spanscorer = new SpanScorer(query, FIELD_NAME, tokenStream);
+      Highlighter highlighter = new Highlighter(this, spanscorer);
+      highlighter.setTextFragmenter(new SimpleSpanFragmenter(spanscorer, 20));
+      tokenStream.reset();
+
+      String result = highlighter.getBestFragments(tokenStream, text,
+          maxNumFragmentsRequired, "...");
+      System.out.println("\t" + result);
+
+    }
+  }
+  
   // position sensitive query added after position insensitive query
   public void testPosTermStdTerm() throws Exception {
     doSearching("y \"x y z\"");

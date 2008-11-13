@@ -33,6 +33,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private int position = -1;
   private SpanScorer spanScorer;
   private int waitForPos = -1;
+  private int textSize;
 
   /**
    * @param spanscorer SpanScorer that was used to score hits
@@ -70,14 +71,14 @@ public class SimpleSpanFragmenter implements Fragmenter {
       for (int i = 0; i < positionSpans.size(); i++) {
         if (((PositionSpan) positionSpans.get(i)).start == position) {
           waitForPos = ((PositionSpan) positionSpans.get(i)).end + 1;
-
-          return true;
+          break;
         }
       }
     }
 
-    boolean isNewFrag = token.endOffset() >= (fragmentSize * currentNumFrags);
-
+    boolean isNewFrag = token.endOffset() >= (fragmentSize * currentNumFrags)
+        && (textSize - token.endOffset()) >= (fragmentSize >>> 1);
+    
     if (isNewFrag) {
       currentNumFrags++;
     }
@@ -89,7 +90,8 @@ public class SimpleSpanFragmenter implements Fragmenter {
    * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String)
    */
   public void start(String originalText) {
-    position = 0;
+    position = -1;
     currentNumFrags = 1;
+    textSize = originalText.length();
   }
 }
