@@ -97,6 +97,7 @@
     default PATH. (this is useful for Hudson)
   -->
   <property name="svnversion.exe" value="svnversion" />
+  <property name="svn.exe" value="svn" />
   
   <condition property="build-1-5-contrib">
      <equals arg1="1.5" arg2="${ant.java.version}" />

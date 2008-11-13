@@ -109,7 +109,7 @@
   	description="Downloads a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
 	<sequential>
 	  <mkdir dir="${tags.dir}/${tag}"/>
-      <exec dir="${tags.dir}/${tag}" executable="svn"
+      <exec dir="${tags.dir}/${tag}" executable="${svn.exe}"
             failifexecutionfails="false">
         <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/test/"/>
       </exec>
