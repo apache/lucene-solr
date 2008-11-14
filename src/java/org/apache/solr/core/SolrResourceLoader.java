@@ -37,6 +37,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
 
+import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.common.ResourceLoader;
@@ -394,8 +395,9 @@ public class SolrResourceLoader implements ResourceLoader
       }
     );
 
-    awareCompatibility.put( 
+    awareCompatibility.put(
       ResourceLoaderAware.class, new Class[] {
+        CharFilterFactory.class,
         TokenFilterFactory.class,
         TokenizerFactory.class,
         FieldType.class
@@ -427,5 +429,5 @@ public class SolrResourceLoader implements ResourceLoader
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
   }
-  
+
 }

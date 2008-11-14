@@ -181,9 +181,9 @@
        TokenizerFactory tfac = tchain.getTokenizerFactory();
        TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
 
-       TokenStream tstream = tfac.create(reader);
+       TokenStream tstream = tfac.create(tchain.charStream(reader));
        List<Token> tokens = getTokens(tstream);
-       tstream = tfac.create(reader);
+       tstream = tfac.create(tchain.charStream(reader));
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
        }

@@ -82,6 +82,9 @@ New Features
     DirectoryProvider will use NIOFSDirectory for better concurrency
     on non Windows platforms.  (Mark Miller, TJ Laurenzo via yonik)
 
+15. SOLR-822: Add CharFilter so that characters can be filtered (e.g. character normalization)
+    before Tokenizer/TokenFilters. (koji)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

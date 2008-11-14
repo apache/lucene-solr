@@ -215,6 +215,16 @@
       </analyzer>
     </fieldType>
 
+    <!-- charFilter + "CharStream aware" WhitespaceTokenizer  -->
+    <!--
+    <fieldType name="textCharNorm" class="solr.TextField" positionIncrementGap="100" >
+      <analyzer>
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+        <tokenizer class="solr.CharStreamAwareWhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+    -->
+
     <!-- This is an example of using the KeywordTokenizer along
          With various TokenFilterFactories to produce a sortable field
          that does not include some properties of the source text

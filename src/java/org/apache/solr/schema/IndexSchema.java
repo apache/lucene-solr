@@ -29,6 +29,7 @@ import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
@@ -739,12 +740,33 @@ public final class IndexSchema {
 
     XPath xpath = XPathFactory.newInstance().newXPath();
 
+    // Load the CharFilters
+    // --------------------------------------------------------------------------------
+    final ArrayList<CharFilterFactory> charFilters = new ArrayList<CharFilterFactory>();
+    AbstractPluginLoader<CharFilterFactory> charFilterLoader =
+      new AbstractPluginLoader<CharFilterFactory>( "[schema.xml] analyzer/charFilter", false, false )
+    {
+      @Override
+      protected void init(CharFilterFactory plugin, Node node) throws Exception {
+        if( plugin != null ) {
+          plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+          charFilters.add( plugin );
+        }
+      }
+
+      @Override
+      protected CharFilterFactory register(String name, CharFilterFactory plugin) throws Exception {
+        return null; // used for map registration
+      }
+    };
+    charFilterLoader.load( solrConfig.getResourceLoader(), (NodeList)xpath.evaluate("./charFilter", node, XPathConstants.NODESET) );
+
     // Load the Tokenizer
-    // Although an analyzer only allows a single Tokenizer, we load a list to make sure 
+    // Although an analyzer only allows a single Tokenizer, we load a list to make sure
     // the configuration is ok
     // --------------------------------------------------------------------------------
     final ArrayList<TokenizerFactory> tokenizers = new ArrayList<TokenizerFactory>(1);
-    AbstractPluginLoader<TokenizerFactory> tokenizerLoader = 
+    AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
       new AbstractPluginLoader<TokenizerFactory>( "[schema.xml] analyzer/tokenizer", false, false )
     {
       @Override
@@ -790,8 +812,9 @@ public final class IndexSchema {
       }
     };
     filterLoader.load( loader, (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET) );
-    
-    return new TokenizerChain(tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
+
+    return new TokenizerChain(charFilters.toArray(new CharFilterFactory[charFilters.size()]),
+        tokenizers.get(0), filters.toArray(new TokenFilterFactory[filters.size()]));
   };
 
 

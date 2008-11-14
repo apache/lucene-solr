@@ -31,19 +31,37 @@ import java.io.Reader;
 // create a TokenStream.
 //
 public class TokenizerChain extends SolrAnalyzer {
+  final private CharFilterFactory[] charFilters;
   final private TokenizerFactory tokenizer;
   final private TokenFilterFactory[] filters;
 
   public TokenizerChain(TokenizerFactory tokenizer, TokenFilterFactory[] filters) {
+    this(null,tokenizer,filters);
+  }
+
+  public TokenizerChain(CharFilterFactory[] charFilters, TokenizerFactory tokenizer, TokenFilterFactory[] filters) {
+    this.charFilters = charFilters;
     this.tokenizer = tokenizer;
     this.filters = filters;
   }
 
+  public CharFilterFactory[] getCharFilterFactories() { return charFilters; }
   public TokenizerFactory getTokenizerFactory() { return tokenizer; }
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
+  public Reader charStream(Reader reader){
+    if( charFilters != null && charFilters.length > 0 ){
+      CharStream cs = new CharReader( reader );
+      for (int i=0; i<charFilters.length; i++) {
+        cs = charFilters[i].create(cs);
+      }
+      reader = cs;
+    }
+    return reader;
+  }
+
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream ts = tokenizer.create(reader);
+    TokenStream ts = tokenizer.create(charStream(reader));
     for (int i=0; i<filters.length; i++) {
       ts = filters[i].create(ts);
     }
@@ -52,6 +70,10 @@ public class TokenizerChain extends SolrAnalyzer {
 
   public String toString() {
     StringBuilder sb = new StringBuilder("TokenizerChain(");
+    for (CharFilterFactory filter: charFilters) {
+      sb.append(filter);
+      sb.append(", ");
+    }
     sb.append(tokenizer);
     for (TokenFilterFactory filter: filters) {
       sb.append(", ");
