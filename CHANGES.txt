@@ -27,6 +27,12 @@ Bug fixes
    implementation - Leads to Solr Cache misses. 
    (Todd Feak, Mark Miller via yonik)
 
+2. LUCENE-1452: Fixed silent data-loss case whereby binary fields are
+   truncated to 0 bytes during merging if the segments being merged
+   are non-congruent (same field name maps to different field
+   numbers).  This bug was introduced with LUCENE-1219.  (Andrzej
+   Bialecki via Mike McCandless).
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
