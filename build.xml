@@ -634,6 +634,16 @@
     </delete>
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
+	
+  <target name="run-example" depends="example">
+    <property name="example.solr.home" location="example/solr"/>
+    <property name="example.data.dir" location="example/solr/data"/>
+    <java jar="${example}/start.jar" fork="true" dir="${example}">
+      <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
+      <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
+    </java>
+
+  </target>
 
   <!-- make a distribution -->
   <target name="package" depends="generate-maven-artifacts"/>
