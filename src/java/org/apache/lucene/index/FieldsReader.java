@@ -423,6 +423,8 @@ final class FieldsReader {
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+      if (isBinary)
+        binaryLength = toRead;
       lazy = true;
     }
 
@@ -431,6 +433,8 @@ final class FieldsReader {
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+      if (isBinary)
+        binaryLength = toRead;
       lazy = true;
     }
 
@@ -619,6 +623,9 @@ final class FieldsReader {
       this.fieldsData = value;
       this.isCompressed = compressed;
       this.isBinary = binary;
+      if (binary)
+        binaryLength = ((byte[]) value).length;
+
       this.isTokenized = tokenize;
 
       this.name = fi.name.intern();

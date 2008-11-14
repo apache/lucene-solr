@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -34,6 +35,9 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -288,6 +292,96 @@ public class TestIndexReader extends LuceneTestCase
         reader.close();
         reader2.close();
         dir.close();
+    }
+    
+    public void testBinaryFields() throws IOException
+    {
+        Directory dir = new RAMDirectory();
+        byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+        
+        for (int i = 0; i < 10; i++) {
+          addDoc(writer, "document number " + (i + 1));
+          addDocumentWithFields(writer);
+          addDocumentWithDifferentFields(writer);
+          addDocumentWithTermVectorFields(writer);
+        }
+        writer.close();
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+        Document doc = new Document();
+        doc.add(new Field("bin1", bin, Field.Store.YES));
+        doc.add(new Field("bin2", bin, Field.Store.COMPRESS));
+        doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
+        writer.addDocument(doc);
+        writer.close();
+        IndexReader reader = IndexReader.open(dir);
+        doc = reader.document(reader.maxDoc() - 1);
+        Field[] fields = doc.getFields("bin1");
+        assertNotNull(fields);
+        assertEquals(1, fields.length);
+        Field b1 = fields[0];
+        assertTrue(b1.isBinary());
+        byte[] data1 = b1.getBinaryValue();
+        assertEquals(bin.length, b1.getBinaryLength());
+        for (int i = 0; i < bin.length; i++) {
+          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+        }
+        fields = doc.getFields("bin2");
+        assertNotNull(fields);
+        assertEquals(1, fields.length);
+        b1 = fields[0];
+        assertTrue(b1.isBinary());
+        data1 = b1.getBinaryValue();
+        assertEquals(bin.length, b1.getBinaryLength());
+        for (int i = 0; i < bin.length; i++) {
+          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+        }
+        Set lazyFields = new HashSet();
+        lazyFields.add("bin1");
+        FieldSelector sel = new SetBasedFieldSelector(new HashSet(), lazyFields);
+        doc = reader.document(reader.maxDoc() - 1, sel);
+        Fieldable[] fieldables = doc.getFieldables("bin1");
+        assertNotNull(fieldables);
+        assertEquals(1, fieldables.length);
+        Fieldable fb1 = fieldables[0];
+        assertTrue(fb1.isBinary());
+        assertEquals(bin.length, fb1.getBinaryLength());
+        data1 = fb1.getBinaryValue();
+        assertEquals(bin.length, fb1.getBinaryLength());
+        for (int i = 0; i < bin.length; i++) {
+          assertEquals(bin[i], data1[i + fb1.getBinaryOffset()]);
+        }
+        reader.close();
+        // force optimize
+
+
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+        writer.optimize();
+        writer.close();
+        reader = IndexReader.open(dir);
+        doc = reader.document(reader.maxDoc() - 1);
+        fields = doc.getFields("bin1");
+        assertNotNull(fields);
+        assertEquals(1, fields.length);
+        b1 = fields[0];
+        assertTrue(b1.isBinary());
+        data1 = b1.getBinaryValue();
+        assertEquals(bin.length, b1.getBinaryLength());
+        for (int i = 0; i < bin.length; i++) {
+          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+        }
+        fields = doc.getFields("bin2");
+        assertNotNull(fields);
+        assertEquals(1, fields.length);
+        b1 = fields[0];
+        assertTrue(b1.isBinary());
+        data1 = b1.getBinaryValue();
+        assertEquals(bin.length, b1.getBinaryLength());
+        for (int i = 0; i < bin.length; i++) {
+          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
+        }
+        reader.close();
     }
 
     // Make sure attempts to make changes after reader is

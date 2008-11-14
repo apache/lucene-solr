@@ -5,6 +5,12 @@ $Id$
 
 Bug fixes
 
+1. LUCENE-1452: Fixed silent data-loss case whereby binary fields are
+   truncated to 0 bytes during merging if the segments being merged
+   are non-congruent (same field name maps to different field
+   numbers).  This bug was introduced with LUCENE-1219.  (Andrzej
+   Bialecki via Mike McCandless).
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy
