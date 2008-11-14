@@ -21,6 +21,10 @@ API Changes
 2. LUCENE-1427: DocIdSet.iterator() is now allowed to throw
    IOException.  (Paul Elschot, Mike McCandless)
 
+3. LUCENE-1451: Add public constructors to FSDirectory and subclasses,
+   and deprecate FSDirectory.getDirectory().  FSDirectory instances
+   are not required to be singletons per path. (yonik)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

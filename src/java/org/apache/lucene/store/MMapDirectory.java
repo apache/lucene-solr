@@ -33,6 +33,19 @@ import java.nio.channels.FileChannel.MapMode;
  */
 public class MMapDirectory extends FSDirectory {
 
+  /** Create a new MMapDirectory for the named location.
+   * @param path the path of the directory
+   * @param lockFactory the lock factory to use, or null for the default.
+   * @throws IOException
+   */
+  public MMapDirectory(File path, LockFactory lockFactory) throws IOException {
+    super(path, lockFactory);
+  }
+
+  // back compatibility so FSDirectory can instantiate via reflection
+  protected MMapDirectory() throws IOException {
+  }
+
   private static class MMapIndexInput extends IndexInput {
 
     private ByteBuffer buffer;

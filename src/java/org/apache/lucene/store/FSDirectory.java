@@ -131,7 +131,11 @@ public class FSDirectory extends Directory {
   /** A buffer optionally used in renameTo method */
   private byte[] buffer = null;
 
+
   /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   *
    * @param path the path to the directory.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path)
@@ -140,6 +144,9 @@ public class FSDirectory extends Directory {
   }
 
   /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   *
    * @param path the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
    *        locking implementation.
@@ -150,6 +157,9 @@ public class FSDirectory extends Directory {
   }
 
   /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   *
    * @param file the path to the directory.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file)
@@ -158,6 +168,9 @@ public class FSDirectory extends Directory {
   }
 
   /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   *
    * @param file the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
    *        locking implementation.
@@ -165,14 +178,7 @@ public class FSDirectory extends Directory {
   public static FSDirectory getDirectory(File file, LockFactory lockFactory)
     throws IOException
   {
-    file = new File(file.getCanonicalPath());
-
-    if (file.exists() && !file.isDirectory())
-      throw new IOException(file + " not a directory");
-
-    if (!file.exists())
-      if (!file.mkdirs())
-        throw new IOException("Cannot create directory: " + file);
+    file = createCanonicalDir(file);
 
     FSDirectory dir;
     synchronized (DIRECTORIES) {
@@ -249,10 +255,38 @@ public class FSDirectory extends Directory {
     lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
   }
 
+  // returns the canonical version of the directory, creating it if it doesn't exist.
+  private static File createCanonicalDir(File file) throws IOException {
+    file = new File(file.getCanonicalPath());
+
+    if (file.exists() && !file.isDirectory())
+      throw new IOException(file + " not a directory");
+
+    if (!file.exists())
+      if (!file.mkdirs())
+        throw new IOException("Cannot create directory: " + file);
+
+    return file;
+  }
+
   private File directory = null;
   private int refCount;
 
   protected FSDirectory() {};                     // permit subclassing
+
+  /** Create a new FSDirectory for the named location.
+   *
+   * @param path the path of the directory
+   * @param lockFactory the lock factory to use, or null for the default.
+   * @throws IOException
+   *
+   * Use {@link #getDirectory(String)} if singletons per path are needed.
+   */
+  public FSDirectory(File path, LockFactory lockFactory) throws IOException {
+    path = createCanonicalDir(path);
+    init(path, lockFactory);
+    refCount = 1;
+  }
 
   private void init(File path, LockFactory lockFactory) throws IOException {
 

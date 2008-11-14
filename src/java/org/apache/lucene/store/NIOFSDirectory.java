@@ -43,6 +43,20 @@ import java.nio.channels.FileChannel;
 
 public class NIOFSDirectory extends FSDirectory {
 
+  /** Create a new NIOFSDirectory for the named location.
+   * 
+   * @param path the path of the directory
+   * @param lockFactory the lock factory to use, or null for the default.
+   * @throws IOException
+   */
+  public NIOFSDirectory(File path, LockFactory lockFactory) throws IOException {
+    super(path, lockFactory);
+  }
+
+  // back compatibility so FSDirectory can instantiate via reflection
+  protected NIOFSDirectory() throws IOException {
+  }
+
   // Inherit javadoc
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
