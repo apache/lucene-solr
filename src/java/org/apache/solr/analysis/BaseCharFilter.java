@@ -28,28 +28,36 @@ import java.util.List;
  */
 public abstract class BaseCharFilter extends CharFilter {
 
-  protected List<PosCorrectMap> pcmList;
+  private List<PosCorrectMap> pcmList;
   
   public BaseCharFilter( CharStream in ){
     super(in);
-    pcmList = new ArrayList<PosCorrectMap>();
   }
 
   protected int correctPosition( int currentPos ){
-    if( pcmList.isEmpty() ) return currentPos;
+    if( pcmList == null || pcmList.isEmpty() ) return currentPos;
     for( int i = pcmList.size() - 1; i >= 0; i-- ){
       if( currentPos >= pcmList.get( i ).pos )
         return currentPos + pcmList.get( i ).cumulativeDiff;
     }
     return currentPos;
   }
+  
+  protected int getLastCumulativeDiff(){
+    return pcmList == null || pcmList.isEmpty() ? 0 : pcmList.get( pcmList.size() - 1 ).cumulativeDiff;
+  }
+  
+  protected void addPosCorrectMap( int pos, int cumulativeDiff ){
+    if( pcmList == null ) pcmList = new ArrayList<PosCorrectMap>();
+    pcmList.add( new PosCorrectMap( pos, cumulativeDiff ) );
+  }
 
-  protected static class PosCorrectMap {
+  static class PosCorrectMap {
 
-    protected int pos;
-    protected int cumulativeDiff;
+    int pos;
+    int cumulativeDiff;
 
-    public PosCorrectMap( int pos, int cumulativeDiff ){
+    PosCorrectMap( int pos, int cumulativeDiff ){
       this.pos = pos;
       this.cumulativeDiff = cumulativeDiff;
     }

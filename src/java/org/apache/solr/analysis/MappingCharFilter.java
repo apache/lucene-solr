@@ -54,14 +54,13 @@ public class MappingCharFilter extends BaseCharFilter {
       replacement = result.normStr;
       charPointer = 0;
       if( result.diff != 0 ){
-        int prevCumulativeDiff = pcmList.isEmpty() ? 0 :
-          pcmList.get( pcmList.size() - 1 ).cumulativeDiff;
+        int prevCumulativeDiff = getLastCumulativeDiff();
         if( result.diff < 0 ){
           for( int i = 0; i < -result.diff ; i++ )
-            pcmList.add( new PosCorrectMap( nextCharCounter + i - prevCumulativeDiff, prevCumulativeDiff - 1 - i ) );
+            addPosCorrectMap( nextCharCounter + i - prevCumulativeDiff, prevCumulativeDiff - 1 - i );
         }
         else{
-          pcmList.add( new PosCorrectMap( nextCharCounter - result.diff - prevCumulativeDiff, prevCumulativeDiff + result.diff ) );
+          addPosCorrectMap( nextCharCounter - result.diff - prevCumulativeDiff, prevCumulativeDiff + result.diff ) ;
         }
       }
     }
