@@ -170,7 +170,7 @@ extends SegmentTermDocs implements TermPositions {
 
   public byte[] getPayload(byte[] data, int offset) throws IOException {
     if (!needToLoadPayload) {
-      throw new IOException("Payload cannot be loaded more than once for the same term position.");
+      throw new IOException("Either no payload exists at this term position or an attempt was made to load it more than once.");
     }
 
     // read payloads lazily
