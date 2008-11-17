@@ -1,0 +1,47 @@
+== 2.0.1 ==
+
+  * Fixed bug that prevented @fileOverview tag from being recognized.
+  * Added support for @fieldOf as a synonym for @field plus @memberOf.
+  * Added support for @name tag in a @fileOverview comment to control the displayed name of the file.
+  * Added support for multiple @example tags. ( issue #152 )
+  * Modified style sheet of jsdoc template to make more readable. ( issue #151 )
+  * Fixed bug that prevented @since documentation from displaying correctly when it appeared in a class. ( issue #150 )
+  * Fixed bug that caused inhertited properties to sometimes not resolve correctly. ( issue #144 )
+  * Modified so that trailing whitespace in @example is always trimmed. ( issue #153 )
+  * Added support for elseif to JsPlate. (hat tip to fredck)
+  * Added support for @location urls in the @overview comment to the jsdoc template.
+
+== Changes From Versions 1.4.0 to 2.0.0 ==
+
+  * Upgraded included version of Rhino from 1.6 to 1.7R1.
+  * Removed circular references in parsed documentation objects.
+  * Improved inheritance handling, now properties and events can be inherited same as methods.
+  * Improved handling of cross-file relationships, now having two related objects in separate files is not a problem.
+  * Improved ability to recognize membership of previously defined objects.
+  * Added ability to redefine parsing behavior with plugins.
+  * @methodOf is a synonym for @function and @memberOf.
+  * Added @default to document default values of members that are objects.
+  * Added ability to parse and refer to inner functions.
+  * Fixed bug that appeared when calling a method to set properties of the instance referred to by "this".
+  * Added ability to automatically create links to other symbols.
+  * New "jsdoc" template now produces fully W3C valid XHTML.
+  * Inline parameter type hint comments are now documented.
+  * Fixed error: Locally scoped variables (declared with var) no longer appear as global.
+  * It is now possible to run JsDoc Toolkit from any directory.
+  * Added support for inline {@link ...} tags.
+  * Added support for the -H command-line option to allow for custom content handlers.
+  * Tag names @inherits and @scope changed to @borrows and @lends.
+  ? Combining @constructor in a doclet with @lends now supported.
+  * Multiple @lend tags now supported.
+  * Added support for the @constructs tag, used inside a @lends block.
+  * Added support for the @constant tag.
+  * Fixed bug that prevented the use of [] as a default value.
+  * Added support for the @field tag.
+  * Added support for the @public tag (applied to inner functions).
+  * @namespace tag can now be applied to functions, not just object literals.
+  * Added support for the -s command line option to suppress source code output.
+  * Added new unit test framework.
+  * Underscored symbols are now treated as if they have a @private tag by default.
+  * Improved support for anonymous constructors.
+  * Added support for the nocode meta tag.
+  

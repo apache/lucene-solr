@@ -1,0 +1,18 @@
+<div class="result-document">
+  #foreach($field in $doc.fields)
+    #if($response.returnFields.contains("*") || $response.returnFields.contains($field.name()))
+     <p>
+       <span class="field-name">$field.name() :</span>
+       <span>
+       ##TODO: Need to provide helpers for field values, including HTML escaping and highlighting
+       #foreach($value in $doc.getFieldables($field.name()))
+         $request.schema.getFieldType($field.name()).toExternal($value)
+       #end
+       </span>
+     </p>
+    #end
+  #end
+  #if($params.getBool("debugQuery",false))
+    <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle explain</a> <pre style="display:none">$response.values.debug.explain.get($doc.get('id'))</pre>
+  #end
+</div>

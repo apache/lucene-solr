@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>SolrJS</title>
+    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+    
+    <link rel="stylesheet" type="text/css" href="../../src/css/solrjs.css" />
+    <link rel="stylesheet" type="text/css" href="../../lib/jquery-autocomplete/jquery.autocomplete.css" />
+
+    <script src="../../lib/jquery/jquery-1.2.6.js"></script>
+    <script src="../../lib/jquery-autocomplete/jquery.autocomplete.js"</script>
+    <script src="../../src/core/Core.js"></script>
+    <script src="../../src/core/QueryItem.js"></script>
+    <script src="../../src/core/Manager.js"></script>
+    <script src="../../src/core/AbstractSelectionView.js"></script> 
+    <script src="../../src/core/AbstractWidget.js"></script>
+    <script src="../../src/core/AbstractServerSideWidget.js"></script>
+    <script src="../../src/core/AbstractClientSideWidget.js"></script>
+    <script src="../../src/clientside/ExtensibleResultWidget.js"/></script>
+    <script src="../../src/clientside/AutocompleteWidget.js"/></script>
+    <script src="../../src/clientside/CalendarWidget.js"/></script>
+    <script src="../../src/clientside/TagcloudWidget.js"/></script>
+    <script src="../../src/clientside/CountryCodeWidget.js"/></script>
+    
+    <link rel="stylesheet" type="text/css" media="all" href="../../lib/jscalendar/aqua/theme.css" title="Aqua" />
+    <script type="text/javascript" src="../../lib/jscalendar/calendar.js"></script>
+    <script type="text/javascript" src="../../lib/jscalendar/lang/calendar-en.js"></script>
+    
+    <script>
+      var $sj = jQuery.noConflict();
+      
+      var solrjsManager;
+      $sj(document).ready(function(){
+        solrjsManager = new $sj.solrjs.Manager({solrUrl:"http://localhost:8983/solr/select", resourcesBase: "../../src/resources"});
+        
+        var resultWidget = new $sj.solrjs.ExtensibleResultWidget({
+          id:"result", 
+          target:"#result", 
+          rows:10,
+          showLoadingDiv: true,
+          renderResult : function(docs, pageSize, offset, numFound) { 
+            var container = jQuery("<div/>");
+            
+            // paging
+            jQuery("<a/>").html("<<").attr("href", "javascript:solrjsManager.doRequest(0, true)").appendTo(container);
+            jQuery("<a/>").html("<").attr("href", "javascript:solrjsManager.doRequest(" + Math.max(0, (parseInt(offset) - parseInt(pageSize))) + ", true)").appendTo(container);
+            jQuery("<a/>").html(">").attr("href", "javascript:solrjsManager.doRequest(" + Math.min((parseInt(numFound) - parseInt(pageSize)), (parseInt(offset) + parseInt(pageSize))) + ", true)").appendTo(container);
+            jQuery("<a/>").html(">>").attr("href", "javascript:solrjsManager.doRequest(" + (parseInt(numFound) - parseInt(pageSize)) + ", true)").appendTo(container);
+            jQuery("<span/>").html("displaying " + (parseInt(offset) + 1) + " to " + Math.min(numFound, (parseInt(offset) + parseInt(pageSize))) + " of " + numFound ).appendTo(container);
+            jQuery("<hr/>").appendTo(container);
+            
+            // result
+            $sj.each(docs, function(i, item) {
+              jQuery("<h2/>").html(item["title"]).appendTo(container);
+              var topics = jQuery("<p/>").appendTo(container);
+              if (item["topics"] != null) {
+                $sj.each(item["topics"], function(i, topic) {
+                  var items =  "[new jQuery.solrjs.QueryItem({field:'topics',value:'" +  topic + "'})]";
+                  jQuery("<a/>").html(topic).attr("href", "javascript:solrjsManager.clearSelection();solrjsManager.selectItems('result'," + items + ")").appendTo(topics);
+                }); 
+              }
+              if (item["organisations"] != null) {
+                $sj.each(item["organisations"], function(i, topic) {
+                  var items =  "[new jQuery.solrjs.QueryItem({field:'organisations' ,value:'" +  topic + "'})]";
+                  jQuery("<a/>").html(topic).attr("href", "javascript:solrjsManager.clearSelection();solrjsManager.selectItems('result'," + items + ")").appendTo(topics);
+                }); 
+              }
+              if (item["exchanges"] != null) {
+                $sj.each(item["exchanges"], function(i, topic) {
+                  var items =  "[new jQuery.solrjs.QueryItem({field:'exchanges' ,value:'" +  topic + "'})]";
+                  jQuery("<a/>").html(topic).attr("href", "javascript:solrjsManager.clearSelection();solrjsManager.selectItems('result'," + items + ")").appendTo(topics);
+                }); 
+              }
+              if (item["text"].length > 300) {
+                var short = jQuery("<p/>").attr("id", "short_" + item["id"]).html(item["dateline"] + " " + item["text"].substring(0,Math.min(300,item["text"].length))).appendTo(container).css("display", "block");
+                jQuery("<p/>").attr("id", "long_" + item["id"]).html(item["dateline"] + " " + item["text"]).appendTo(container).css("display", "none");
+                jQuery("<a/>").html(" more").attr("href", "javascript:toggle('#short_" + item['id'] + "', '#long_" + item['id'] + "');").appendTo(short);
+              } else {
+                jQuery("<p/>").attr("id", "long_" + item["id"]).html(item["dateline"] + " " + item["text"]).appendTo(container);
+              }
+            });
+            container.appendTo(this.target);
+          }
+        });     
+        solrjsManager.addWidget(resultWidget);  
+        
+        solrjsManager.addWidget(new $sj.solrjs.AutocompleteWidget({id:"search", target:"#search", fulltextFieldName:"allText", fieldNames:["topics", "organisations", "exchanges"]}));
+        solrjsManager.addWidget(new $sj.solrjs.TagcloudWidget({id:"topics", target:"#topics", fieldName:"topics", size:50})); 
+        solrjsManager.addWidget(new $sj.solrjs.TagcloudWidget({id:"organisations", target:"#organisations", fieldName:"organisations", size:20}));
+        solrjsManager.addWidget(new $sj.solrjs.TagcloudWidget({id:"exchanges", target:"#exchanges", fieldName:"exchanges", size:20}));
+        solrjsManager.addWidget(new $sj.solrjs.CountryCodeWidget({id:"countries", target:"#countries", fieldName:"countryCodes"}));  
+        solrjsManager.addWidget(new $sj.solrjs.CalendarWidget({id:"calendar", target:"#calendar", fieldName:"date", startDate: new Date(1987,01,01), endDate: new Date(1987,10,31)}));
+        
+        var selectionView = new $sj.solrjs.AbstractSelectionView({
+          id:"selectionView", 
+          target:"#selection", 
+          displaySelection : function(selectedItems) { 
+            jQuery(this.target).empty();
+            if(selectedItems.length == 0) {
+              jQuery("<div/>").html("Viewing all documents!").appendTo(this.target);
+              return;
+            } else if(selectedItems.length > 1) {
+              jQuery("<a/>").html("remove all").attr("href", "javascript:solrjsManager.doRequestAll()").appendTo(this.target);
+            }
+            
+            for (var i = 0; i < selectedItems.length; ++i) {
+              var item = selectedItems[i];
+              jQuery("<a/>").html("(x) " + item.field + ":" + item.value).attr("href", "javascript:solrjsManager.deselectItem('" + item.toSolrQuery() + "')").appendTo(this.target);
+            }
+          }
+        });     
+        solrjsManager.addSelectionView(selectionView);
+    
+        solrjsManager.doRequestAll();
+      
+       });
+       
+       function toggle(id1, id2) {
+        $sj(id1).css("display", "none");
+        $sj(id2).css("display", "block"); 
+       }
+  </script>
+    
+  </head>
+  <body>
+    <div id="wrap"> 
+      <div id="header">
+        <h1><a href="#">SolrJS Demonstration</a></h1>
+        <h2>Browse REUTERS business news from 1987</h2>
+      </div> 
+      <div class="right">
+        <div id="result">
+          <div id="navigation"></div>
+          <div id="docs"></div>
+        </div>
+      </div>
+      
+      <div class="left">
+        <h2>Current Selection</h2>
+        <ul>
+          <li> <div id="selection"></div> </li>
+        </ul>
+        <h2>Search</h2>
+        <ul>
+          <li> 
+            <span style="font-size:80%"> ( press ESC to close suggestions) </span>
+            <div id="search"></div> 
+          </li>
+        </ul>
+        <h2>Top Topics</h2>
+        <ul>
+          <li> <div id="topics"></div> </li>
+        </ul>
+        <h2>Top Organisations</h2>
+        <ul>
+          <li> <div id="organisations"></div> </li>
+        </ul>
+        <h2>Top Exchanges</h2>
+        <ul>
+          <li> <div id="exchanges"></div> </li>
+        </ul>
+        <h2>By Country</h2>
+        <ul>
+          <li> <div id="countries"></div> </li>
+          <li> <div id="preview"></div> </li>
+        </ul>
+        <h2>By Date</h2>
+        <ul>
+          <li> <div id="calendar" style="width:160px"></div> </li> 
+        </ul>
+        <div style="clear:both"></div>
+      </div>
+      
+      <div style="clear: both;"> </div>
+      
+      </div>
+      
+      
+      <div class="footer">
+        Design by <a href="http://www.free-css-templates.com/">Free CSS Templates</a> - Thanks to <a href="http://www.dubaiapartments.biz/">Dubai Villas</a>
+      </div>
+  </body>
+</html>

@@ -84,6 +84,10 @@ New Features
 
 15. SOLR-822: Add CharFilter so that characters can be filtered (e.g. character normalization)
     before Tokenizer/TokenFilters. (koji)
+    
+16. SOLR-868: Adding solrjs as a contrib package: contrib/javascript.
+    (Matthias Epheser via ryan)    
+    
 
 Optimizations
 ----------------------
