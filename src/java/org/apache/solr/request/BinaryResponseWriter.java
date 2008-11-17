@@ -31,6 +31,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,6 +41,8 @@ import java.util.*;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
+  private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
+
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
@@ -141,7 +145,15 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
           if (f.isBinary()) val = f.binaryValue();
           else val = f.stringValue();
         } else {
-          val = useFieldObjects ? ft.toObject(f) : ft.toExternal(f);
+          try {
+            val = useFieldObjects ? ft.toObject(f) : ft.toExternal(f);
+          } catch (Exception e) {
+            // There is a chance of the underlying field not really matching the
+            // actual field type . So ,it can throw exception
+            LOG.warn("Error reading a field from document : "+solrDoc, e);
+            //if it happens log it and continue
+            continue;
+          }
         }
         solrDoc.addField(fieldName, val);
       }
