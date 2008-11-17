@@ -258,7 +258,7 @@ API Changes
     constructor and fields from package to protected. (Shai Erera
     via Doron Cohen) 
 
-24. LUCENE-1375: Added convencience method IndexCommit.getTimestamp,
+24. LUCENE-1375: Added convenience method IndexCommit.getTimestamp,
     which is equivalent to
     getDirectory().fileModified(getSegmentsFileName()).  (Mike McCandless)
 
