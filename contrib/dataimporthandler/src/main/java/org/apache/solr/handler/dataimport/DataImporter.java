@@ -337,8 +337,8 @@ public class DataImporter {
       docBuilder.execute(getConfig().documents.get(0).name);
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (RuntimeException e) {
-      LOG.error("Full Import failed", e);
+    } catch (Throwable t) {
+      LOG.error("Full Import failed", t);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();
@@ -360,8 +360,8 @@ public class DataImporter {
       docBuilder.execute(config.documents.get(0).name);
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (RuntimeException e) {
-      LOG.error("Delta Import Failed", e);
+    } catch (Throwable t) {
+      LOG.error("Delta Import Failed", t);
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();

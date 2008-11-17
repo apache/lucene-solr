@@ -29,11 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * <p>
- * DocBuilder is responsible for creating Solr documents out of the given
- * configuration. It also maintains statistics information. It depends on the
- * EntityProcessor implementations to fetch data.
- * </p>
+ * <p> DocBuilder is responsible for creating Solr documents out of the given configuration. It also maintains
+ * statistics information. It depends on the EntityProcessor implementations to fetch data. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
@@ -335,6 +332,11 @@ public class DocBuilder {
               throw e;
           } else
             throw e;
+        } catch (Throwable t) {
+          if (verboseDebug) {
+            writer.log(SolrWriter.ENTITY_EXCEPTION, entity.name, t);
+          }
+          throw new DataImportHandlerException(DataImportHandlerException.SEVERE, t);
         } finally {
           if (verboseDebug) {
             writer.log(SolrWriter.ROW_END, entity.name, null);
@@ -431,18 +433,11 @@ public class DocBuilder {
   }
 
   /**
-   * <p>
-   * Collects unique keys of all Solr documents for whom one or more source
-   * tables have been changed since the last indexed time.
-   * </p>
-   * <p>
-   * Note: In our definition, unique key of Solr document is the primary key of
-   * the top level entity (unless skipped using docRoot=false) in the Solr
-   * document in data-config.xml
-   * </p>
+   * <p> Collects unique keys of all Solr documents for whom one or more source tables have been changed since the last
+   * indexed time. </p> <p> Note: In our definition, unique key of Solr document is the primary key of the top level
+   * entity (unless skipped using docRoot=false) in the Solr document in data-config.xml </p>
    *
-   * @return an iterator to the list of keys for which Solr documents should be
-   *         updated.
+   * @return an iterator to the list of keys for which Solr documents should be updated.
    */
   @SuppressWarnings("unchecked")
   public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity,

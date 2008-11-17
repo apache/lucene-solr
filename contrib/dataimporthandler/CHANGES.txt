@@ -56,6 +56,8 @@ Bug Fixes
 6. SOLR-838:  The VariableResolver obtained from a DataSource's context does not have current data.
               (Noble Paul via shalin)
 
+7. SOLR-864:  DataImportHandler does not catch and log Errors (shalin)
+
 Documentation
 ----------------------
 
