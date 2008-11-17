@@ -16,28 +16,29 @@
  */
 package org.apache.solr.request;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedListCodec;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TextField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.*;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
@@ -162,4 +163,32 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
   }
   
+
+  /**
+   * TODO -- there may be a way to do this without marshal at all...
+   * 
+   * @param req
+   * @param rsp
+   * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
+   * become SolrDocuments, DocList becomes SolrDocumentList etc.
+   * 
+   * @since solr 1.4
+   */
+  @SuppressWarnings("unchecked")
+  public static NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
+  {
+    try {
+      Resolver resolver = new Resolver(req, rsp.getReturnFields());
+
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      NamedListCodec codec = new NamedListCodec(resolver);
+      codec.marshal(rsp.getValues(), out);
+      
+      InputStream in = new ByteArrayInputStream( out.toByteArray() );
+      return codec.unmarshal( in );
+    }
+    catch( Exception ex ) {
+      throw new RuntimeException( ex );
+    }
+  }
 }

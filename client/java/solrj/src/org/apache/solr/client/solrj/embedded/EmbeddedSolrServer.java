@@ -17,28 +17,20 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.BinaryResponseWriter;
-import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
@@ -166,25 +158,15 @@ public class EmbeddedSolrServer extends SolrServer
   }
   
   /**
-   * TODO -- in the future, this could perhaps transform the NamedList without serializing it
-   * then parsing it from the serialized form.
-   * 
    * @param req
    * @param rsp
    * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
    * become SolrDocuments, DocList becomes SolrDocumentList etc.
+   * 
+   * @deprecated use {@link BinaryResponseWriter#getParsedResponse(SolrQueryRequest, SolrQueryResponse)}
    */
   public NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
   {
-    try {
-      BinaryResponseWriter writer = new BinaryResponseWriter();
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      writer.write( bos, req, rsp );
-      BinaryResponseParser parser = new BinaryResponseParser();
-      return parser.processResponse( new ByteArrayInputStream( bos.toByteArray() ), "UTF-8" );
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
+    return BinaryResponseWriter.getParsedResponse(req, rsp);
   }
 }
