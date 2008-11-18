@@ -107,10 +107,8 @@
 
 
 	<!-- do nothing for now, required for generate maven artifacts -->
-  <target name="build" >
-  
-  </target>
-
+  <target name="build"/>
+  <target name="javadoc"/>
   <target name="test"/>  <!-- TODO: Tests would be nice :) -->
 </project>
 
