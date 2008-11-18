@@ -25,6 +25,15 @@ API Changes
    and deprecate FSDirectory.getDirectory().  FSDirectory instances
    are not required to be singletons per path. (yonik)
 
+4. LUCENE-1422: New TokenStream API that uses a new class called 
+   AttributeSource instead of the now deprecated Token class. All attributes
+   that the Token class had have been moved into separate classes:
+   TermAttribute, OffsetAttribute, PositionIncrementAttribute, 
+   PayloadAttribute, TypeAttribute and FlagsAttribute. The new API
+   is much more flexible; it allows to combine the Attributes arbitrarily 
+   and also to define custom Attributes. The new API has the same performance
+   as the old next(Token) approach. (Michael Busch)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

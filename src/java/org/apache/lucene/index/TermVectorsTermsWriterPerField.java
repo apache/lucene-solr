@@ -18,10 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.analysis.Token;
+
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.UnicodeUtil;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
@@ -37,7 +38,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   boolean doVectorOffsets;
 
   int maxNumPostings;
-
+  OffsetAttribute offsetAttribute = null;
+  
   public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriterPerThread perThread, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
     this.perThread = perThread;
@@ -191,8 +193,16 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     termsHashPerField.shrinkHash(maxNumPostings);
     maxNumPostings = 0;
   }
+  
+  void start(Fieldable f) {
+    if (doVectorOffsets && fieldState.attributeSource.hasAttribute(OffsetAttribute.class)) {
+      offsetAttribute = (OffsetAttribute) fieldState.attributeSource.getAttribute(OffsetAttribute.class);
+    } else {
+      offsetAttribute = null;
+    }
+  }
 
-  void newTerm(Token t, RawPostingList p0) {
+  void newTerm(RawPostingList p0) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
 
@@ -201,8 +211,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     p.freq = 1;
 
     if (doVectorOffsets) {
-      final int startOffset = fieldState.offset + t.startOffset();
-      final int endOffset = fieldState.offset + t.endOffset();
+      int startOffset = fieldState.offset + offsetAttribute.startOffset();;
+      int endOffset = fieldState.offset + offsetAttribute.endOffset();
+      
       termsHashPerField.writeVInt(1, startOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       p.lastOffset = endOffset;
@@ -214,7 +225,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
   }
 
-  void addTerm(Token t, RawPostingList p0) {
+  void addTerm(RawPostingList p0) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
 
@@ -222,8 +233,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     p.freq++;
 
     if (doVectorOffsets) {
-      final int startOffset = fieldState.offset + t.startOffset();
-      final int endOffset = fieldState.offset + t.endOffset();
+      int startOffset = fieldState.offset + offsetAttribute.startOffset();;
+      int endOffset = fieldState.offset + offsetAttribute.endOffset();
+      
       termsHashPerField.writeVInt(1, startOffset - p.lastOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
       p.lastOffset = endOffset;
@@ -235,5 +247,5 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
   }
 
-  void skippingLongTerm(Token t) {}
+  void skippingLongTerm() {}
 }

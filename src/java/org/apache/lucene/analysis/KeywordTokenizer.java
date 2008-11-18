@@ -20,6 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 /**
  * Emits the entire input as a single token.
  */
@@ -28,7 +31,9 @@ public class KeywordTokenizer extends Tokenizer {
   private static final int DEFAULT_BUFFER_SIZE = 256;
 
   private boolean done;
-
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+  
   public KeywordTokenizer(Reader input) {
     this(input, DEFAULT_BUFFER_SIZE);
   }
@@ -36,8 +41,32 @@ public class KeywordTokenizer extends Tokenizer {
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
     this.done = false;
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  }
+  
+  public boolean incrementToken() throws IOException {
+    if (!done) {
+      done = true;
+      int upto = 0;
+      termAtt.clear();
+      char[] buffer = termAtt.termBuffer();
+      while (true) {
+        final int length = input.read(buffer, upto, buffer.length-upto);
+        if (length == -1) break;
+        upto += length;
+        if (upto == buffer.length)
+          buffer = termAtt.resizeTermBuffer(1+buffer.length);
+      }
+      termAtt.setTermLength(upto);
+      offsetAtt.setStartOffset(0);
+      offsetAtt.setEndOffset(upto);
+      return true;
+    }
+    return false;
   }
 
+  /** @deprecated */
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     if (!done) {

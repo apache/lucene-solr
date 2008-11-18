@@ -21,9 +21,9 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -66,29 +66,32 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   private class PayloadFilter extends TokenFilter {
     String fieldName;
     int numSeen = 0;
-
+    
+    PayloadAttribute payloadAtt;    
+    
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
       this.fieldName = fieldName;
+      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
     }
-
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null) {
+    
+    public boolean incrementToken() throws IOException {
+      boolean hasNext = input.incrementToken();
+      if (hasNext) {
         if (fieldName.equals("field")) {
-          nextToken.setPayload(new Payload(payloadField));
+          payloadAtt.setPayload(new Payload(payloadField));
         } else if (fieldName.equals("multiField")) {
           if (numSeen % 2 == 0) {
-            nextToken.setPayload(new Payload(payloadMultiField1));
+            payloadAtt.setPayload(new Payload(payloadMultiField1));
           } else {
-            nextToken.setPayload(new Payload(payloadMultiField2));
+            payloadAtt.setPayload(new Payload(payloadMultiField2));
           }
           numSeen++;
         }
-
+        return true;
+      } else {
+        return false;
       }
-      return nextToken;
     }
   }
 

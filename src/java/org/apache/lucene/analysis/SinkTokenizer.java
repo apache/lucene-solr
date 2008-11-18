@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.util.AttributeSource;
+
 
 /**
  * A SinkTokenizer can be used to cache Tokens for use in an Analyzer
@@ -32,7 +34,7 @@ import java.util.List;
 public class SinkTokenizer extends Tokenizer {
   protected List/*<Token>*/ lst = new ArrayList/*<Token>*/();
   protected Iterator/*<Token>*/ iter;
-
+  
   public SinkTokenizer(List/*<Token>*/ input) {
     this.lst = input;
     if (this.lst == null) this.lst = new ArrayList/*<Token>*/();
@@ -62,9 +64,29 @@ public class SinkTokenizer extends Tokenizer {
   }
 
   /**
+   * Increments this stream to the next token out of the list of cached tokens
+   * @throws IOException
+   */
+  public boolean incrementToken() throws IOException {
+    if (iter == null) iter = lst.iterator();
+    // Since this TokenStream can be reset we have to maintain the tokens as immutable
+    if (iter.hasNext()) {
+      AttributeSource state = (AttributeSource) iter.next();
+      state.restoreState(this);
+      return true;
+    }
+    return false;
+  }
+
+  public void add(AttributeSource source) throws IOException {
+    lst.add(source); 
+  }
+  
+  /**
    * Returns the next token out of the list of cached tokens
    * @return The next {@link org.apache.lucene.analysis.Token} in the Sink.
    * @throws IOException
+   * @deprecated
    */
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
@@ -76,8 +98,6 @@ public class SinkTokenizer extends Tokenizer {
     }
     return null;
   }
-
-
 
   /**
    * Override this method to cache only certain tokens, or new tokens based

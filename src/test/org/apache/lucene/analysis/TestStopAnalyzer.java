@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
@@ -45,9 +47,10 @@ public class TestStopAnalyzer extends LuceneTestCase {
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
-    final Token reusableToken = new Token();
-    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-      assertFalse(inValidTokens.contains(nextToken.term()));
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    
+    while (stream.incrementToken()) {
+      assertFalse(inValidTokens.contains(termAtt.term()));
     }
   }
 
@@ -60,11 +63,13 @@ public class TestStopAnalyzer extends LuceneTestCase {
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
-    final Token reusableToken = new Token();
-    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-      String text = nextToken.term();
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+    
+    while (stream.incrementToken()) {
+      String text = termAtt.term();
       assertFalse(stopWordsSet.contains(text));
-      assertEquals(1,nextToken.getPositionIncrement()); // by default stop tokenizer does not apply increments.
+      assertEquals(1,posIncrAtt.getPositionIncrement()); // by default stop tokenizer does not apply increments.
     }
   }
 
@@ -82,11 +87,13 @@ public class TestStopAnalyzer extends LuceneTestCase {
       TokenStream stream = newStop.tokenStream("test", reader);
       assertNotNull(stream);
       int i = 0;
-      final Token reusableToken = new Token();
-      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-        String text = nextToken.term();
+      TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+      PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+
+      while (stream.incrementToken()) {
+        String text = termAtt.term();
         assertFalse(stopWordsSet.contains(text));
-        assertEquals(expectedIncr[i++],nextToken.getPositionIncrement());
+        assertEquals(expectedIncr[i++],posIncrAtt.getPositionIncrement());
       }
     } finally {
       StopFilter.setEnablePositionIncrementsDefault(defaultEnable);

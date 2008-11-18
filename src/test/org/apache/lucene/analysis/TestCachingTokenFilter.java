@@ -22,6 +22,8 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.TermVector;
@@ -41,13 +43,17 @@ public class TestCachingTokenFilter extends LuceneTestCase {
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;
+      private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
       
-      public Token next(final Token reusableToken) throws IOException {
-        assert reusableToken != null;
+      public boolean incrementToken() throws IOException {
         if (index == tokens.length) {
-          return null;
+          return false;
         } else {
-          return reusableToken.reinit(tokens[index++], 0, 0);
+          termAtt.setTermBuffer(tokens[index++]);
+          offsetAtt.setStartOffset(0);
+          offsetAtt.setEndOffset(0);
+          return true;
         }        
       }
       
@@ -92,10 +98,12 @@ public class TestCachingTokenFilter extends LuceneTestCase {
   
   private void checkTokens(TokenStream stream) throws IOException {
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+    
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    assertNotNull(termAtt);
+    while (stream.incrementToken()) {
       assertTrue(count < tokens.length);
-      assertEquals(tokens[count], nextToken.term());
+      assertEquals(tokens[count], termAtt.term());
       count++;
     }
     

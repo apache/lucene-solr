@@ -3,8 +3,8 @@ package org.apache.lucene.queryParser;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.DateFormat;
 import java.text.Collator;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -15,7 +15,10 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
@@ -518,48 +521,126 @@ public class QueryParser implements QueryParserConstants {
     // PhraseQuery, or nothing based on the term count
 
     TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
-    List list = new ArrayList();
-    final org.apache.lucene.analysis.Token reusableToken = new org.apache.lucene.analysis.Token();
-    org.apache.lucene.analysis.Token nextToken;
+    CachingTokenFilter buffer = new CachingTokenFilter(source);
+    TermAttribute termAtt = null;
+    PositionIncrementAttribute posIncrAtt = null;
+    int numTokens = 0;
+
+    org.apache.lucene.analysis.Token reusableToken = null;
+    org.apache.lucene.analysis.Token nextToken = null;
+
+
+    boolean useNewAPI = TokenStream.useNewAPIDefault();
+
+    if (useNewAPI) {
+      boolean success = false;
+      try {
+        buffer.reset();
+        success = true;
+      } catch (IOException e) {
+        // success==false if we hit an exception
+      }
+      if (success) {
+        if (buffer.hasAttribute(TermAttribute.class)) {
+          termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
+        }
+        if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+          posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
+        }
+      }
+    } else {
+      reusableToken = new org.apache.lucene.analysis.Token();
+    }
+
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
 
-    while (true) {
-      try {
-        nextToken = source.next(reusableToken);
+    if (useNewAPI) {
+      if (termAtt != null) {
+        try {
+          while (buffer.incrementToken()) {
+            numTokens++;
+            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+            if (positionIncrement != 0) {
+              positionCount += positionIncrement;
+            } else {
+              severalTokensAtSamePosition = true;
+            }
+          }
+        } catch (IOException e) {
+          // ignore
+        }
       }
-      catch (IOException e) {
-        nextToken = null;
+    } else {
+      while (true) {
+        try {
+          nextToken = buffer.next(reusableToken);
+        }
+        catch (IOException e) {
+          nextToken = null;
+        }
+        if (nextToken == null)
+          break;
+        numTokens++;
+        if (nextToken.getPositionIncrement() != 0)
+          positionCount += nextToken.getPositionIncrement();
+        else
+          severalTokensAtSamePosition = true;
       }
-      if (nextToken == null)
-        break;
-      list.add(nextToken.clone());
-      if (nextToken.getPositionIncrement() != 0)
-        positionCount += nextToken.getPositionIncrement();
-      else
-        severalTokensAtSamePosition = true;
     }
     try {
+      // rewind the buffer stream
+      buffer.reset();
+
+      // close original stream - all tokens buffered
       source.close();
     }
     catch (IOException e) {
       // ignore
     }
 
-    if (list.size() == 0)
+    if (numTokens == 0)
       return null;
-    else if (list.size() == 1) {
-      nextToken = (org.apache.lucene.analysis.Token) list.get(0);
-      return newTermQuery(new Term(field, nextToken.term()));
+    else if (numTokens == 1) {
+      String term = null;
+      try {
+
+        if (useNewAPI) {
+          boolean hasNext = buffer.incrementToken();
+          assert hasNext == true;
+          term = termAtt.term();
+        } else {
+          nextToken = buffer.next(reusableToken);
+          assert nextToken != null;
+          term = nextToken.term();
+        }
+      } catch (IOException e) {
+        // safe to ignore, because we know the number of tokens
+      }
+      return newTermQuery(new Term(field, term));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
           BooleanQuery q = newBooleanQuery(true);
-          for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
+          for (int i = 0; i < numTokens; i++) {
+            String term = null;
+            try {
+              if (useNewAPI) {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                term = termAtt.term();
+              } else {
+                nextToken = buffer.next(reusableToken);
+                assert nextToken != null;
+                term = nextToken.term();
+              }
+            } catch (IOException e) {
+              // safe to ignore, because we know the number of tokens
+            }
+
             Query currentQuery = newTermQuery(
-                new Term(field, nextToken.term()));
+                new Term(field, term));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
@@ -570,9 +651,28 @@ public class QueryParser implements QueryParserConstants {
           mpq.setSlop(phraseSlop);
           List multiTerms = new ArrayList();
           int position = -1;
-          for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
-            if (nextToken.getPositionIncrement() > 0 && multiTerms.size() > 0) {
+          for (int i = 0; i < numTokens; i++) {
+            String term = null;
+            int positionIncrement = 1;
+            try {
+              if (useNewAPI) {
+                boolean hasNext = buffer.incrementToken();
+                assert hasNext == true;
+                term = termAtt.term();
+                if (posIncrAtt != null) {
+                  positionIncrement = posIncrAtt.getPositionIncrement();
+                }
+              } else {
+                nextToken = buffer.next(reusableToken);
+                assert nextToken != null;
+                term = nextToken.term();
+                positionIncrement = nextToken.getPositionIncrement();
+              }
+            } catch (IOException e) {
+              // safe to ignore, because we know the number of tokens
+            }
+
+            if (positionIncrement > 0 && multiTerms.size() > 0) {
               if (enablePositionIncrements) {
                 mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
               } else {
@@ -580,8 +680,8 @@ public class QueryParser implements QueryParserConstants {
               }
               multiTerms.clear();
             }
-            position += nextToken.getPositionIncrement();
-            multiTerms.add(new Term(field, nextToken.term()));
+            position += positionIncrement;
+            multiTerms.add(new Term(field, term));
           }
           if (enablePositionIncrements) {
             mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
@@ -595,19 +695,43 @@ public class QueryParser implements QueryParserConstants {
         PhraseQuery pq = newPhraseQuery();
         pq.setSlop(phraseSlop);
         int position = -1;
-        for (int i = 0; i < list.size(); i++) {
-          nextToken = (org.apache.lucene.analysis.Token) list.get(i);
+
+
+        for (int i = 0; i < numTokens; i++) {
+          String term = null;
+          int positionIncrement = 1;
+
+          try {
+            if (useNewAPI) {
+
+              boolean hasNext = buffer.incrementToken();
+              assert hasNext == true;
+              term = termAtt.term();
+              if (posIncrAtt != null) {
+                positionIncrement = posIncrAtt.getPositionIncrement();
+              }
+            } else {
+              nextToken = buffer.next(reusableToken);
+              assert nextToken != null;
+              term = nextToken.term();
+              positionIncrement = nextToken.getPositionIncrement();
+            }
+          } catch (IOException e) {
+            // safe to ignore, because we know the number of tokens
+          }
+
           if (enablePositionIncrements) {
-            position += nextToken.getPositionIncrement();
-            pq.add(new Term(field, nextToken.term()),position);
+            position += positionIncrement;
+            pq.add(new Term(field, term),position);
           } else {
-            pq.add(new Term(field, nextToken.term()));
+            pq.add(new Term(field, term));
           }
         }
         return pq;
       }
     }
   }
+
 
 
   /**
@@ -1503,12 +1627,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1522,6 +1640,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

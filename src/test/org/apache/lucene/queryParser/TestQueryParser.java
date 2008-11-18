@@ -19,8 +19,8 @@ package org.apache.lucene.queryParser;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.text.DateFormat;
 import java.text.Collator;
+import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -31,11 +31,12 @@ import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -64,36 +65,47 @@ public class TestQueryParser extends LuceneTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static class QPTestFilter extends TokenFilter {
+    TermAttribute termAtt;
+    OffsetAttribute offsetAtt;
+        
     /**
      * Filter which discards the token 'stop' and which expands the
      * token 'phrase' into 'phrase1 phrase2'
      */
     public QPTestFilter(TokenStream in) {
       super(in);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     }
 
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
+    public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
-        return reusableToken.reinit("phrase2", savedStart, savedEnd);
+        termAtt.setTermBuffer("phrase2");
+        offsetAtt.setStartOffset(savedStart);
+        offsetAtt.setEndOffset(savedEnd);
+        return true;
       } else
-        for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-          if (nextToken.term().equals("phrase")) {
+        while (input.incrementToken()) {
+          if (termAtt.term().equals("phrase")) {
             inPhrase = true;
-            savedStart = nextToken.startOffset();
-            savedEnd = nextToken.endOffset();
-            return nextToken.reinit("phrase1", savedStart, savedEnd);
-          } else if (!nextToken.term().equals("stop"))
-            return nextToken;
+            savedStart = offsetAtt.startOffset();
+            savedEnd = offsetAtt.endOffset();
+            termAtt.setTermBuffer("phrase1");
+            offsetAtt.setStartOffset(savedStart);
+            offsetAtt.setEndOffset(savedEnd);
+            return true;
+          } else if (!termAtt.term().equals("stop"))
+            return true;
         }
-      return null;
+      return false;
     }
   }
 
+  
   public static class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */

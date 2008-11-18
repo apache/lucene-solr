@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
@@ -32,6 +32,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
   boolean omitTf;
+  PayloadAttribute payloadAttribute;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
@@ -53,7 +54,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   boolean hasPayloads;
 
-  void skippingLongTerm(Token t) throws IOException {}
+  void skippingLongTerm() throws IOException {}
 
   public int compareTo(Object other0) {
     FreqProxTermsWriterPerField other = (FreqProxTermsWriterPerField) other0;
@@ -64,6 +65,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
     omitTf = fieldInfo.omitTf;
+    payloadAttribute = null;
   }
 
   boolean start(Fieldable[] fields, int count) {
@@ -72,9 +74,23 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         return true;
     return false;
   }     
+  
+  void start(Fieldable f) {
+    if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
+      payloadAttribute = (PayloadAttribute) fieldState.attributeSource.getAttribute(PayloadAttribute.class);
+    } else {
+      payloadAttribute = null;
+    }
+  }
 
-  final void writeProx(Token t, FreqProxTermsWriter.PostingList p, int proxCode) {
-    final Payload payload = t.getPayload();    
+  final void writeProx(FreqProxTermsWriter.PostingList p, int proxCode) {
+    final Payload payload;
+    if (payloadAttribute == null) {
+      payload = null;
+    } else {
+      payload = payloadAttribute.getPayload();
+    }
+    
     if (payload != null && payload.length > 0) {
       termsHashPerField.writeVInt(1, (proxCode<<1)|1);
       termsHashPerField.writeVInt(1, payload.length);
@@ -85,7 +101,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     p.lastPosition = fieldState.position;
   }
 
-  final void newTerm(Token t, RawPostingList p0) {
+  final void newTerm(RawPostingList p0) {
     // First time we're seeing this term since the last
     // flush
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
@@ -96,11 +112,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     } else {
       p.lastDocCode = docState.docID << 1;
       p.docFreq = 1;
-      writeProx(t, p, fieldState.position);
+      writeProx(p, fieldState.position);
     }
   }
 
-  final void addTerm(Token t, RawPostingList p0) {
+  final void addTerm(RawPostingList p0) {
 
     assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");
 
@@ -132,10 +148,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
         p.docFreq = 1;
         p.lastDocCode = (docState.docID - p.lastDocID) << 1;
         p.lastDocID = docState.docID;
-        writeProx(t, p, fieldState.position);
+        writeProx(p, fieldState.position);
       } else {
         p.docFreq++;
-        writeProx(t, p, fieldState.position-p.lastPosition);
+        writeProx(p, fieldState.position-p.lastPosition);
       }
     }
   }

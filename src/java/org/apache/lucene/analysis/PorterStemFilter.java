@@ -19,6 +19,8 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 /** Transforms the token stream as per the Porter stemming algorithm.
     Note: the input to the stemming filter must already be in lower case,
     so you will need to use LowerCaseFilter or LowerCaseTokenizer farther
@@ -39,12 +41,24 @@ import java.io.IOException;
 */
 public final class PorterStemFilter extends TokenFilter {
   private PorterStemmer stemmer;
+  private TermAttribute termAtt;
 
   public PorterStemFilter(TokenStream in) {
     super(in);
     stemmer = new PorterStemmer();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
+  public final boolean incrementToken() throws IOException {
+    if (!input.incrementToken())
+      return false;
+
+    if (stemmer.stem(termAtt.termBuffer(), 0, termAtt.termLength()))
+      termAtt.setTermBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
+    return true;
+  }
+  
+  /** @deprecated */
   public final Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     Token nextToken = input.next(reusableToken);

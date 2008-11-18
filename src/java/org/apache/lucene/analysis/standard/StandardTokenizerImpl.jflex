@@ -29,6 +29,7 @@ NOTE: if you change StandardTokenizerImpl.jflex and need to regenerate
 */
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 %%
 
@@ -69,6 +70,14 @@ public final int yychar()
 final void getText(Token t) {
   t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
+
+/**
+ * Fills TermAttribute with the current token text.
+ */
+final void getText(TermAttribute t) {
+  t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
+}
+
 %}
 
 THAI       = [\u0E00-\u0E59]

@@ -20,16 +20,24 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 /** An abstract base class for simple, character-oriented tokenizers.*/
 public abstract class CharTokenizer extends Tokenizer {
   public CharTokenizer(Reader input) {
     super(input);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   private int offset = 0, bufferIndex = 0, dataLen = 0;
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
   private final char[] ioBuffer = new char[IO_BUFFER_SIZE];
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
 
   /** Returns true iff a character should be included in a token.  This
    * tokenizer generates as tokens adjacent sequences of characters which
@@ -44,6 +52,50 @@ public abstract class CharTokenizer extends Tokenizer {
     return c;
   }
 
+  public final boolean incrementToken() throws IOException {
+    clearAttributes();
+    int length = 0;
+    int start = bufferIndex;
+    char[] buffer = termAtt.termBuffer();
+    while (true) {
+
+      if (bufferIndex >= dataLen) {
+        offset += dataLen;
+        dataLen = input.read(ioBuffer);
+        if (dataLen == -1) {
+          if (length > 0)
+            break;
+          else
+            return false;
+        }
+        bufferIndex = 0;
+      }
+
+      final char c = ioBuffer[bufferIndex++];
+
+      if (isTokenChar(c)) {               // if it's a token char
+
+        if (length == 0)                 // start of token
+          start = offset + bufferIndex - 1;
+        else if (length == buffer.length)
+          buffer = termAtt.resizeTermBuffer(1+length);
+
+        buffer[length++] = normalize(c); // buffer it, normalized
+
+        if (length == MAX_WORD_LEN)      // buffer overflow!
+          break;
+
+      } else if (length > 0)             // at non-Letter w/ chars
+        break;                           // return 'em
+    }
+
+    termAtt.setTermLength(length);
+    offsetAtt.setStartOffset(start);
+    offsetAtt.setEndOffset(start+length);
+    return true;
+  }
+
+  /** @deprecated */
   public final Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     reusableToken.clear();

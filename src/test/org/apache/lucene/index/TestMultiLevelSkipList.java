@@ -20,19 +20,18 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * This testcase tests whether multi-level skipping is being used
@@ -99,17 +98,19 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   private static class PayloadFilter extends TokenFilter {
     static int count = 0;
     
+    PayloadAttribute payloadAtt;
+    
     protected PayloadFilter(TokenStream input) {
       super(input);
+      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
     }
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null) {
-        nextToken.setPayload(new Payload(new byte[] { (byte) count++ }));
-      }
-      return nextToken;
+    public boolean incrementToken() throws IOException {
+      boolean hasNext = input.incrementToken();
+      if (hasNext) {
+        payloadAtt.setPayload(new Payload(new byte[] { (byte) count++ }));
+      } 
+      return hasNext;
     }
 
   }

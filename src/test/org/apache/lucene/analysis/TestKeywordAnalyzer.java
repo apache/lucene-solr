@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -88,9 +89,9 @@ public class TestKeywordAnalyzer extends LuceneTestCase {
   // LUCENE-1441
   public void testOffsets() throws Exception {
     TokenStream stream = new KeywordAnalyzer().tokenStream("field", new StringReader("abcd"));
-    Token token = new Token();
-    assertTrue(stream.next(token) != null);
-    assertEquals(0, token.startOffset);
-    assertEquals(4, token.endOffset);
+    OffsetAttribute offsetAtt = (OffsetAttribute) stream.addAttribute(OffsetAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(0, offsetAtt.startOffset());
+    assertEquals(4, offsetAtt.endOffset());
   }
 }

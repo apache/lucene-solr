@@ -19,10 +19,10 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -36,13 +36,12 @@ public class TestAnalyzers extends LuceneTestCase {
                                String input, 
                                String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    final Token reusableToken  = new Token();
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
     for (int i=0; i<output.length; i++) {
-      Token nextToken = ts.next(reusableToken);
-      assertNotNull(nextToken);
-      assertEquals(nextToken.term(), output[i]);
+      assertTrue(ts.incrementToken());
+      assertEquals(termAtt.term(), output[i]);
     }
-    assertNull(ts.next(reusableToken));
+    assertFalse(ts.incrementToken());
     ts.close();
   }
 
@@ -95,14 +94,13 @@ public class TestAnalyzers extends LuceneTestCase {
   }
 
   void verifyPayload(TokenStream ts) throws IOException {
-    final Token reusableToken = new Token();
+    PayloadAttribute payloadAtt = (PayloadAttribute) ts.getAttribute(PayloadAttribute.class);
     for(byte b=1;;b++) {
-      reusableToken.clear();
-      Token nextToken = ts.next(reusableToken);
-      if (nextToken==null) break;
+      boolean hasNext = ts.incrementToken();
+      if (!hasNext) break;
       // System.out.println("id="+System.identityHashCode(nextToken) + " " + t);
       // System.out.println("payload=" + (int)nextToken.getPayload().toByteArray()[0]);
-      assertEquals(b, nextToken.getPayload().toByteArray()[0]);
+      assertEquals(b, payloadAtt.getPayload().toByteArray()[0]);
     }
   }
 
@@ -111,13 +109,11 @@ public class TestAnalyzers extends LuceneTestCase {
     String s = "how now brown cow";
     TokenStream ts;
     ts = new WhitespaceTokenizer(new StringReader(s));
-    ts = new BuffTokenFilter(ts);
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
 
     ts = new WhitespaceTokenizer(new StringReader(s));
     ts = new PayloadSetter(ts);
-    ts = new BuffTokenFilter(ts);
     verifyPayload(ts);
   }
 
@@ -136,38 +132,21 @@ public class TestAnalyzers extends LuceneTestCase {
   }
 }
 
-class BuffTokenFilter extends TokenFilter {
-  List lst;
-
-  public BuffTokenFilter(TokenStream input) {
-    super(input);
-  }
-
-  public Token next(final Token reusableToken) throws IOException {
-    if (lst == null) {
-      lst = new LinkedList();
-      for(Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-        lst.add(nextToken.clone());
-      }
-    }
-    return lst.size()==0 ? null : (Token)lst.remove(0);
-  }
-}
-
 class PayloadSetter extends TokenFilter {
+  PayloadAttribute payloadAtt;
   public  PayloadSetter(TokenStream input) {
     super(input);
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
   }
 
   byte[] data = new byte[1];
   Payload p = new Payload(data,0,1);
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken==null) return null;
-    nextToken.setPayload(p);  // reuse the payload / byte[]
+  public boolean incrementToken() throws IOException {
+    boolean hasNext = input.incrementToken();
+    if (!hasNext) return false;
+    payloadAtt.setPayload(p);  // reuse the payload / byte[]
     data[0]++;
-    return nextToken;
+    return true;
   }
 }

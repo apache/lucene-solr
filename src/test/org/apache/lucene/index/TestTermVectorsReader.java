@@ -17,20 +17,22 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTermVectorsReader extends LuceneTestCase {
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
@@ -118,17 +120,31 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   private class MyTokenStream extends TokenStream {
     int tokenUpto;
-    public Token next(final Token reusableToken) {
+    
+    TermAttribute termAtt;
+    PositionIncrementAttribute posIncrAtt;
+    OffsetAttribute offsetAtt;
+    
+    public MyTokenStream() {
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    }
+    
+    public boolean incrementToken() {
       if (tokenUpto >= tokens.length)
-        return null;
+        return false;
       else {
         final TestToken testToken = tokens[tokenUpto++];
-        reusableToken.reinit(testToken.text, testToken.startOffset, testToken.endOffset);
-        if (tokenUpto > 1)
-          reusableToken.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
-        else
-          reusableToken.setPositionIncrement(testToken.pos+1);
-        return reusableToken;
+        termAtt.setTermBuffer(testToken.text);
+        offsetAtt.setStartOffset(testToken.startOffset);
+        offsetAtt.setEndOffset(testToken.endOffset);
+        if (tokenUpto > 1) {
+          posIncrAtt.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
+        } else {
+          posIncrAtt.setPositionIncrement(testToken.pos+1);
+        }
+        return true;
       }
     }
   }

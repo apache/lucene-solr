@@ -27,20 +27,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnicodeUtil;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.UnicodeUtil;
 
 
 public class TestPayloads extends LuceneTestCase {
@@ -442,32 +442,33 @@ public class TestPayloads extends LuceneTestCase {
         private int length;
         private int offset;
         Payload payload = new Payload();
+        PayloadAttribute payloadAtt;
         
         public PayloadFilter(TokenStream in, byte[] data, int offset, int length) {
             super(in);
             this.data = data;
             this.length = length;
             this.offset = offset;
+            payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
         }
         
-        public Token next(final Token reusableToken) throws IOException {
-            assert reusableToken != null;
-            Token nextToken = input.next(reusableToken);
-            if (nextToken != null) {
+        public boolean incrementToken() throws IOException {
+            boolean hasNext = input.incrementToken();
+            if (hasNext) {
                 if (offset + length <= data.length) {
                     Payload p = null;
                     if (p == null) {
                         p = new Payload();
-                        nextToken.setPayload(p);
+                        payloadAtt.setPayload(p);
                     }
                     p.setData(data, offset, length);
                     offset += length;                
                 } else {
-                    nextToken.setPayload(null);
+                    payloadAtt.setPayload(null);
                 }
             }
             
-            return nextToken;
+            return hasNext;
         }
     }
     
@@ -529,19 +530,25 @@ public class TestPayloads extends LuceneTestCase {
         private boolean first;
         private ByteArrayPool pool;
         private String term;
+
+        TermAttribute termAtt;
+        PayloadAttribute payloadAtt;
+        
         PoolingPayloadTokenStream(ByteArrayPool pool) {
             this.pool = pool;
             payload = pool.get();
             generateRandomData(payload);
             term = pool.bytesToString(payload);
             first = true;
+            payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+            termAtt = (TermAttribute) addAttribute(TermAttribute.class);
         }
         
-        public Token next(final Token reusableToken) throws IOException {
-            if (!first) return null;
-            reusableToken.reinit(term, 0, 0);
-            reusableToken.setPayload(new Payload(payload));
-            return reusableToken;
+        public boolean incrementToken() throws IOException {
+            if (!first) return false;
+            termAtt.setTermBuffer(term);
+            payloadAtt.setPayload(new Payload(payload));
+            return true;
         }
         
         public void close() throws IOException {

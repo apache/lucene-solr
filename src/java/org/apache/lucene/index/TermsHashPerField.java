@@ -20,8 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.util.UnicodeUtil;
 
 final class TermsHashPerField extends InvertedDocConsumerPerField {
@@ -31,7 +31,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final TermsHashPerThread perThread;
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
-
+  TermAttribute termAtt;
+  
   // Copied from our perThread
   final CharBlockPool charPool;
   final IntBlockPool intPool;
@@ -49,7 +50,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private int postingsHashMask = postingsHashSize-1;
   private RawPostingList[] postingsHash = new RawPostingList[postingsHashSize];
   private RawPostingList p;
-
+  
   public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHashPerThread perThread, final TermsHashPerThread nextPerThread, final FieldInfo fieldInfo) {
     this.perThread = perThread;
     intPool = perThread.intPool;
@@ -247,6 +248,14 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private boolean doCall;
   private boolean doNextCall;
 
+  void start(Fieldable f) {
+    termAtt = (TermAttribute) fieldState.attributeSource.getAttribute(TermAttribute.class);
+    consumer.start(f);
+    if (nextPerField != null) {
+      nextPerField.start(f);
+    }
+  }
+  
   boolean start(Fieldable[] fields, int count) throws IOException {
     doCall = consumer.start(fields, count);
     if (nextPerField != null)
@@ -257,7 +266,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   // Secondary entry point (for 2nd & subsequent TermsHash),
   // because token text has already been "interned" into
   // textStart, so we hash by textStart
-  public void add(Token token, int textStart) throws IOException {
+  public void add(int textStart) throws IOException {
 
     int code = textStart;
 
@@ -320,17 +329,17 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
       p.byteStart = intUptos[intUptoStart];
 
-      consumer.newTerm(token, p);
+      consumer.newTerm(p);
 
     } else {
       intUptos = intPool.buffers[p.intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
       intUptoStart = p.intStart & DocumentsWriter.INT_BLOCK_MASK;
-      consumer.addTerm(token, p);
+      consumer.addTerm(p);
     }
   }
 
   // Primary entry point (for first TermsHash)
-  void add(Token token) throws IOException {
+  void add() throws IOException {
 
     assert !postingsCompacted;
 
@@ -338,8 +347,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // term text into textStart address
 
     // Get the text of this term.
-    final char[] tokenText = token.termBuffer();
-    final int tokenTextLen = token.termLength();
+    final char[] tokenText = termAtt.termBuffer();;
+    final int tokenTextLen = termAtt.termLength();
 
     // Compute hashcode & replace any invalid UTF16 sequences
     int downto = tokenTextLen;
@@ -403,7 +412,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
           if (docState.maxTermPrefix == null)
             docState.maxTermPrefix = new String(tokenText, 0, 30);
 
-          consumer.skippingLongTerm(token);
+          consumer.skippingLongTerm();
           return;
         }
         charPool.nextBuffer();
@@ -450,16 +459,16 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
       p.byteStart = intUptos[intUptoStart];
 
-      consumer.newTerm(token, p);
+      consumer.newTerm(p);
 
     } else {
       intUptos = intPool.buffers[p.intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
       intUptoStart = p.intStart & DocumentsWriter.INT_BLOCK_MASK;
-      consumer.addTerm(token, p);
+      consumer.addTerm(p);
     }
 
     if (doNextCall)
-      nextPerField.add(token, p.textStart);
+      nextPerField.add(p.textStart);
   }
 
   int[] intUptos;

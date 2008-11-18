@@ -35,8 +35,7 @@ application using Lucene to use an appropriate <i>Parser</i> to convert the orig
 <h2>Tokenization</h2>
 <p>
 Plain text passed to Lucene for indexing goes through a process generally called tokenization &ndash; namely breaking of the 
-input text into small indexing elements &ndash; 
-{@link org.apache.lucene.analysis.Token Tokens}.
+input text into small indexing elements &ndash; tokens.
 The way input text is broken into tokens very 
 much dictates further capabilities of search upon that text. 
 For instance, sentences beginnings and endings can be identified to provide for more accurate phrase 
@@ -72,12 +71,13 @@ providing for several functions, including (but not limited to):
     <li>{@link org.apache.lucene.analysis.Analyzer} &ndash; An Analyzer is responsible for building a {@link org.apache.lucene.analysis.TokenStream} which can be consumed
     by the indexing and searching processes.  See below for more information on implementing your own Analyzer.</li>
     <li>{@link org.apache.lucene.analysis.Tokenizer} &ndash; A Tokenizer is a {@link org.apache.lucene.analysis.TokenStream} and is responsible for breaking
-    up incoming text into {@link org.apache.lucene.analysis.Token}s.  In most cases, an Analyzer will use a Tokenizer as the first step in
+    up incoming text into tokens. In most cases, an Analyzer will use a Tokenizer as the first step in
     the analysis process.</li>
     <li>{@link org.apache.lucene.analysis.TokenFilter} &ndash; A TokenFilter is also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
-    for modifying {@link org.apache.lucene.analysis.Token}s that have been created by the Tokenizer.  Common modifications performed by a
+    for modifying tokenss that have been created by the Tokenizer.  Common modifications performed by a
     TokenFilter are: deletion, stemming, synonym injection, and down casing.  Not all Analyzers require TokenFilters</li>
   </ul>
+  <b>Since Lucene 2.9 the TokenStream API was changed. Please see section "New TokenStream API" below for details.</b>
 </p>
 <h2>Hints, Tips and Traps</h2>
 <p>
@@ -140,9 +140,8 @@ providing for several functions, including (but not limited to):
   <PRE>
       Analyzer analyzer = new StandardAnalyzer(); // or any other analyzer
       TokenStream ts = analyzer.tokenStream("myfield",new StringReader("some text goes here"));
-      Token t = ts.next();
-      while (t!=null) {
-        System.out.println("token: "+t));
+      while (ts.incrementToken()) {
+        System.out.println("token: "+ts));
         t = ts.next();
       }
   </PRE>
@@ -179,7 +178,7 @@ the source code of any one of the many samples located in this package.
 <p>
   The following sections discuss some aspects of implementing your own analyzer.
 </p>
-<h3>Field Section Boundaries</h2>
+<h3>Field Section Boundaries</h3>
 <p>
   When {@link org.apache.lucene.document.Document#add(org.apache.lucene.document.Fieldable) document.add(field)}
   is called multiple times for the same field name, we could say that each such call creates a new 
@@ -208,10 +207,10 @@ the source code of any one of the many samples located in this package.
       };
   </PRE>
 </p>
-<h3>Token Position Increments</h2>
+<h3>Token Position Increments</h3>
 <p>
    By default, all tokens created by Analyzers and Tokenizers have a 
-   {@link org.apache.lucene.analysis.Token#getPositionIncrement() position increment} of one.
+   {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#getPositionIncrement() position increment} of one.
    This means that the position stored for that token in the index would be one more than
    that of the previous token.
    Recall that phrase and proximity searches rely on position info.
@@ -227,26 +226,29 @@ the source code of any one of the many samples located in this package.
    If this behavior does not fit the application needs,
    a modified analyzer can be used, that would increment further the positions of
    tokens following a removed stop word, using
-   {@link org.apache.lucene.analysis.Token#setPositionIncrement(int)}.
+   {@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute#setPositionIncrement(int)}.
    This can be done with something like:
    <PRE>
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         final TokenStream ts = someAnalyzer.tokenStream(fieldName, reader);
         TokenStream res = new TokenStream() {
-          public Token next() throws IOException {
+          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+        
+          public boolean incrementToken() throws IOException {
             int extraIncrement = 0;
             while (true) {
-              Token t = ts.next();
-              if (t!=null) {
-                if (stopWords.contains(t.termText())) {
+              boolean hasNext = ts.incrementToken();
+              if (hasNext) {
+                if (stopWords.contains(termAtt.term())) {
                   extraIncrement++; // filter this word
                   continue;
                 } 
                 if (extraIncrement>0) {
-                  t.setPositionIncrement(t.getPositionIncrement()+extraIncrement);
+                  posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+extraIncrement);
                 }
               }
-              return t;
+              return hasNext;
             }
           }
         };
@@ -268,5 +270,336 @@ the source code of any one of the many samples located in this package.
          same position as that token, and so would they be seen by phrase and proximity searches.</li>
    </ol>
 </p>
+<h2>New TokenStream API</h2>
+<p>
+	With Lucene 2.9 we introduce a new TokenStream API. The old API used to produce Tokens. A Token
+	has getter and setter methods for different properties like positionIncrement and termText.
+	While this approach was sufficient for the default indexing format, it is not versatile enough for
+	Flexible Indexing, a term which summarizes the effort of making the Lucene indexer pluggable and extensible for custom
+	index formats.
+</p>
+<p>
+A fully customizable indexer means that users will be able to store custom data structures on disk. Therefore an API
+is necessary that can transport custom types of data from the documents to the indexer.
+</p>
+<h3>Attribute and AttributeSource</h3> 
+Lucene 2.9 therefore introduces a new pair of classes called {@link org.apache.lucene.util.Attribute} and
+{@link org.apache.lucene.util.AttributeSource}. An Attribute serves as a
+particular piece of information about a text token. For example, {@link org.apache.lucene.analysis.tokenattributes.TermAttribute}
+ contains the term text of a token, and {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} contains the start and end character offsets of a token.
+An AttributeSource is a collection of Attributes with a restriction: there may be only one instance of each attribute type. TokenStream now extends AttributeSource, which
+means that one can add Attributes to a TokenStream. Since TokenFilter extends TokenStream, all filters are also
+AttributeSources.
+<p>
+	Lucene now provides six Attributes out of the box, which replace the variables the Token class has:
+	<ul>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.TermAttribute}<p>The term text of a token.</p></li>
+  	  <li>{@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute}<p>The start and end offset of token in characters.</p></li>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute}<p>See above for detailed information about position increment.</p></li>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute}<p>The payload that a Token can optionally have.</p></li>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.TypeAttribute}<p>The type of the token. Default is 'word'.</p></li>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.FlagsAttribute}<p>Optional flags a token can have.</p></li>
+	</ul>
+</p>
+<h3>Using the new TokenStream API</h3>
+There are a few important things to know in order to use the new API efficiently which are summarized here. You may want
+to walk through the example below first and come back to this section afterwards.
+<ol><li>
+Please keep in mind that an AttributeSource can only have one instance of a particular Attribute. Furthermore, if 
+a chain of a TokenStream and multiple TokenFilters is used, then all TokenFilters in that chain share the Attributes
+with the TokenStream.
+</li>
+<br>
+<li>
+Attribute instances are reused for all tokens of a document. Thus, a TokenStream/-Filter needs to update
+the appropriate Attribute(s) in incrementToken(). The consumer, commonly the Lucene indexer, consumes the data in the
+Attributes and then calls incrementToken() again until it retuns false, which indicates that the end of the stream
+was reached. This means that in each call of incrementToken() a TokenStream/-Filter can safely overwrite the data in
+the Attribute instances.
+</li>
+<br>
+<li>
+For performance reasons a TokenStream/-Filter should add/get Attributes during instantiation; i.e., create an attribute in the
+constructor and store references to it in an instance variable.  Using an instance variable instead of calling addAttribute()/getAttribute() 
+in incrementToken() will avoid expensive casting and attribute lookups for every token in the document.
+</li>
+<br>
+<li>
+All methods in AttributeSource are idempotent, which means calling them multiple times always yields the same
+result. This is especially important to know for addAttribute(). The method takes the <b>type</b> (<code>Class</code>)
+of an Attribute as an argument and returns an <b>instance</b>. If an Attribute of the same type was previously added, then
+the already existing instance is returned, otherwise a new instance is created and returned. Therefore TokenStreams/-Filters
+can safely call addAttribute() with the same Attribute type multiple times.
+</li></ol>
+<h3>Example</h3>
+In this example we will create a WhiteSpaceTokenizer and use a LengthFilter to suppress all words that only
+have two or less characters. The LengthFilter is part of the Lucene core and its implementation will be explained
+here to illustrate the usage of the new TokenStream API.<br>
+Then we will develop a custom Attribute, a PartOfSpeechAttribute, and add another filter to the chain which
+utilizes the new custom attribute, and call it PartOfSpeechTaggingFilter.
+<h4>Whitespace tokenization</h4>
+<pre>
+public class MyAnalyzer extends Analyzer {
+
+  public TokenStream tokenStream(String fieldName, Reader reader) {
+    TokenStream stream = new WhitespaceTokenizer(reader);
+    return stream;
+  }
+  
+  public static void main(String[] args) throws IOException {
+    // text to tokenize
+    final String text = "This is a demo of the new TokenStream API";
+    
+    MyAnalyzer analyzer = new MyAnalyzer();
+    TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
+    
+    // get the TermAttribute from the TokenStream
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    
+    // print all tokens until stream is exhausted
+    while (stream.incrementToken()) {
+      System.out.println(termAtt.term());
+    }
+  }
+}
+</pre>
+In this easy example a simple white space tokenization is performed. In main() a loop consumes the stream and
+prints the term text of the tokens by accessing the TermAttribute that the WhitespaceTokenizer provides. 
+Here is the output:
+<pre>
+This
+is
+a
+demo
+of
+the
+new
+TokenStream
+API
+</pre>
+<h4>Adding a LengthFilter</h4>
+We want to suppress all tokens that have 2 or less characters. We can do that easily by adding a LengthFilter 
+to the chain. Only the tokenStream() method in our analyzer needs to be changed:
+<pre>
+  public TokenStream tokenStream(String fieldName, Reader reader) {
+    TokenStream stream = new WhitespaceTokenizer(reader);
+    stream = new LengthFilter(stream, 3, Integer.MAX_VALUE);
+    return stream;
+  }
+</pre>
+Note how now only words with 3 or more characters are contained in the output:
+<pre>
+This
+demo
+the
+new
+TokenStream
+API
+</pre>
+Now let's take a look how the LengthFilter is implemented (it is part of Lucene's core):
+<pre>
+public final class LengthFilter extends TokenFilter {
+
+  final int min;
+  final int max;
+  
+  private TermAttribute termAtt;
+
+  /**
+   * Build a filter that removes words that are too long or too
+   * short from the text.
+   */
+  public LengthFilter(TokenStream in, int min, int max)
+  {
+    super(in);
+    this.min = min;
+    this.max = max;
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+  }
+  
+  /**
+   * Returns the next input Token whose term() is the right len
+   */
+  public final boolean incrementToken() throws IOException
+  {
+    assert termAtt != null;
+    // return the first non-stop word found
+    while (input.incrementToken()) {
+      int len = termAtt.termLength();
+      if (len >= min && len <= max) {
+          return true;
+      }
+      // note: else we ignore it but should we index each part of it?
+    }
+    // reached EOS -- return null
+    return false;
+  }
+}
+</pre>
+The TermAttribute is added in the constructor and stored in the instance variable <code>termAtt</code>.
+Remember that there can only be a single instance of TermAttribute in the chain, so in our example the 
+<code>addAttribute()</code> call in LengthFilter returns the TermAttribute that the WhitespaceTokenizer already added. The tokens
+are retrieved from the input stream in the <code>incrementToken()</code> method. By looking at the term text
+in the TermAttribute the length of the term can be determined and too short or too long tokens are skipped. 
+Note how <code>incrementToken()</code> can efficiently access the instance variable; no attribute lookup or downcasting
+is neccessary. The same is true for the consumer, which can simply use local references to the Attributes.
+<h4>Adding a custom Attribute</h4>
+Now we're going to implement our own custom Attribute for part-of-speech tagging and call it consequently 
+<code>PartOfSpeechAttribute</code>:
+<pre>
+  public static enum PartOfSpeech {
+    Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Article, Unknown
+  }
+  
+  public static final class PartOfSpeechAttribute extends Attribute {
+    
+    private PartOfSpeech pos = PartOfSpeech.Unknown;
+    
+    public void setPartOfSpeech(PartOfSpeech pos) {
+      this.pos = pos;
+    }
+    
+    public PartOfSpeech getPartOfSpeech() {
+      return pos;
+    }
+
+    public void clear() {
+      pos = PartOfSpeech.Unknown;
+    }
+
+    public void copyTo(Attribute target) {
+      ((PartOfSpeechAttribute) target).pos = pos;
+    }
+
+    public boolean equals(Object other) {
+      if (other == this) {
+        return true;
+      }
+      
+      if (other instanceof PartOfSpeechAttribute) {
+        return pos == ((PartOfSpeechAttribute) other).pos;
+      }
+   
+      return false;
+    }
+
+    public int hashCode() {
+      return pos.ordinal();
+    }
+
+    public String toString() {
+      return "PartOfSpeech=" + pos;
+    }
+  }
+</pre>
+This is a simple Attribute that has only a single variable that stores the part-of-speech of a token. It extends the
+new <code>Attribute</code> class and therefore implements its abstract methods <code>clear(), copyTo(), equals(), hashCode(), toString()</code>.
+Now we need a TokenFilter that can set this new PartOfSpeechAttribute for each token. In this example we show a very naive filter
+that tags every word with a leading upper-case letter as a 'Noun' and all other words as 'Unknown'.
+<pre>
+  public static class PartOfSpeechTaggingFilter extends TokenFilter {
+    PartOfSpeechAttribute posAtt;
+    TermAttribute termAtt;
+    
+    protected PartOfSpeechTaggingFilter(TokenStream input) {
+      super(input);
+      posAtt = (PartOfSpeechAttribute) addAttribute(PartOfSpeechAttribute.class);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    }
+    
+    public boolean incrementToken() throws IOException {
+      if (!input.incrementToken()) {return false;}
+      posAtt.setPartOfSpeech(determinePOS(termAtt.termBuffer(), 0, termAtt.termLength()));
+      return true;
+    }
+    
+    // determine the part of speech for the given term
+    protected PartOfSpeech determinePOS(char[] term, int offset, int length) {
+      // naive implementation that tags every uppercased word as noun
+      if (length > 0 && Character.isUpperCase(term[0])) {
+        return PartOfSpeech.Noun;
+      }
+      return PartOfSpeech.Unknown;
+    }
+  }
+</pre>
+Just like the LengthFilter, this new filter accesses the attributes it needs in the constructor and
+stores references in instance variables. Now we need to add the filter to the chain:
+<pre>
+  public TokenStream tokenStream(String fieldName, Reader reader) {
+    TokenStream stream = new WhitespaceTokenizer(reader);
+    stream = new LengthFilter(stream, 3, Integer.MAX_VALUE);
+    stream = new PartOfSpeechTaggingFilter(stream);
+    return stream;
+  }
+</pre>
+Now let's look at the output:
+<pre>
+This
+demo
+the
+new
+TokenStream
+API
+</pre>
+Apparently it hasn't changed, which shows that adding a custom attribute to a TokenStream/Filter chain does not
+affect any existing consumers, simply because they don't know the new Attribute. Now let's change the consumer
+to make use of the new PartOfSpeechAttribute and print it out:
+<pre>
+  public static void main(String[] args) throws IOException {
+    // text to tokenize
+    final String text = "This is a demo of the new TokenStream API";
+    
+    MyAnalyzer analyzer = new MyAnalyzer();
+    TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
+    
+    // get the TermAttribute from the TokenStream
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    
+    // get the PartOfSpeechAttribute from the TokenStream
+    PartOfSpeechAttribute posAtt = (PartOfSpeechAttribute) stream.getAttribute(PartOfSpeechAttribute.class);
+    
+    // print all tokens until stream is exhausted
+    while (stream.incrementToken()) {
+      System.out.println(termAtt.term() + ": " + posAtt.getPartOfSpeech());
+    }
+  }
+</pre>
+The change that was made is to get the PartOfSpeechAttribute from the TokenStream and print out its contents in
+the while loop that consumes the stream. Here is the new output:
+<pre>
+This: Noun
+demo: Unknown
+the: Unknown
+new: Unknown
+TokenStream: Noun
+API: Noun
+</pre>
+Each word is now followed by its assigned PartOfSpeech tag. Of course this is a naive 
+part-of-speech tagging. The word 'This' should not even be tagged as noun; it is only spelled capitalized because it
+is the first word of a sentence. Actually this is a good opportunity for an excerise. To practice the usage of the new
+API the reader could now write an Attribute and TokenFilter that can specify for each word if it was the first token
+of a sentence or not. Then the PartOfSpeechTaggingFilter can make use of this knowledge and only tag capitalized words
+as nouns if not the first word of a sentence (we know, this is still not a correct behavior, but hey, it's a good exercise). 
+As a small hint, this is how the new Attribute class could begin:
+<pre>
+  public class FirstTokenOfSentenceAttribute extends Attribute {
+    
+    private boolean firstToken;
+    
+    public void setFirstToken(boolean firstToken) {
+      this.firstToken = firstToken;
+    }
+    
+    public boolean getFirstToken() {
+      return firstToken;
+    }
+
+    public void clear() {
+      firstToken = false;
+    }
+
+  ...
+</pre>
 </body>
 </html>

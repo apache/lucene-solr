@@ -17,14 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -49,14 +51,19 @@ public class TestPositionIncrement extends LuceneTestCase {
           private final int[] INCREMENTS = {1, 2, 1, 0, 1};
           private int i = 0;
 
-          public Token next(final Token reusableToken) {
-            assert reusableToken != null;
+          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+          OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+          
+          public boolean incrementToken() {
             if (i == TOKENS.length)
-              return null;
-            reusableToken.reinit(TOKENS[i], i, i);
-            reusableToken.setPositionIncrement(INCREMENTS[i]);
+              return false;
+            termAtt.setTermBuffer(TOKENS[i]);
+            offsetAtt.setStartOffset(i);
+            offsetAtt.setEndOffset(i);
+            posIncrAtt.setPositionIncrement(INCREMENTS[i]);
             i++;
-            return reusableToken;
+            return true;
           }
         };
       }
@@ -194,20 +201,6 @@ public class TestPositionIncrement extends LuceneTestCase {
       assertEquals(1, hits.length);
     } finally {
       StopFilter.setEnablePositionIncrementsDefault(dflt);
-    }
-  }
-
-  /**
-   * Basic analyzer behavior should be to keep sequential terms in one
-   * increment from one another.
-   */
-  public void testIncrementingPositions() throws Exception {
-    Analyzer analyzer = new WhitespaceAnalyzer();
-    TokenStream ts = analyzer.tokenStream("field",
-                                new StringReader("one two three four five"));
-    final Token reusableToken = new Token();
-    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-      assertEquals(nextToken.term(), 1, nextToken.getPositionIncrement());
     }
   }
 }

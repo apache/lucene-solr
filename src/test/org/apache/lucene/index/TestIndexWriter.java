@@ -17,48 +17,48 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.File;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnicodeUtil;
-
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SinkTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util._TestUtil;
-
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util._TestUtil;
 
 /**
  *
@@ -1793,11 +1793,11 @@ public class TestIndexWriter extends LuceneTestCase
         return new TokenFilter(new StandardTokenizer(reader)) {
           private int count = 0;
 
-          public Token next(final Token reusableToken) throws IOException {
+          public boolean incrementToken() throws IOException {
             if (count++ == 5) {
               throw new IOException();
             }
-            return input.next(reusableToken);
+            return input.incrementToken();
           }
         };
       }
@@ -1916,10 +1916,10 @@ public class TestIndexWriter extends LuceneTestCase
       this.fieldName = fieldName;
     }
 
-    public Token next(final Token reusableToken) throws IOException {
+    public boolean incrementToken() throws IOException {
       if (this.fieldName.equals("crash") && count++ >= 4)
         throw new IOException("I'm experiencing problems");
-      return input.next(reusableToken);
+      return input.incrementToken();
     }
 
     public void reset() throws IOException {
@@ -3577,21 +3577,47 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
+  private static class MyAnalyzer extends Analyzer {
+
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      TokenStream s = new WhitespaceTokenizer(reader);
+      s.addAttribute(PositionIncrementAttribute.class);
+      return s;
+    }
+    
+  }
+  
   // LUCENE-1255
   public void testNegativePositions() throws Throwable {
     SinkTokenizer tokens = new SinkTokenizer();
-    Token t = new Token();
-    t.setTermBuffer("a");
-    t.setPositionIncrement(0);
-    tokens.add(t);
-    t.setTermBuffer("b");
-    t.setPositionIncrement(1);
-    tokens.add(t);
-    t.setTermBuffer("c");
-    tokens.add(t);
+    tokens.addAttribute(TermAttribute.class);
+    tokens.addAttribute(PositionIncrementAttribute.class);
+
+    AttributeSource state = new AttributeSource();
+    TermAttribute termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
+    termAtt.setTermBuffer("a");
+    posIncrAtt.setPositionIncrement(0);
+    tokens.add(state);
+
+    state = new AttributeSource();
+    termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
+
+    termAtt.setTermBuffer("b");
+    posIncrAtt.setPositionIncrement(1);
+    tokens.add(state);
+    
+    state = new AttributeSource();
+    termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
+
+    termAtt.setTermBuffer("c");
+    posIncrAtt.setPositionIncrement(1);
+    tokens.add(state);
 
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new MyAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", tokens));
     w.addDocument(doc);

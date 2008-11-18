@@ -21,7 +21,11 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
 import org.apache.lucene.util.ArrayUtil;
 
-/** A Token is an occurrence of a term from the text of a field.  It consists of
+/** 
+  This class is now deprecated and a new TokenStream API was introduced with Lucene 2.9.
+  See Javadocs in {@link TokenStream} for further details.
+  <p> 
+  A Token is an occurrence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
   <p>
@@ -114,6 +118,8 @@ import org.apache.lucene.util.ArrayUtil;
   </p>
 
   @see org.apache.lucene.index.Payload
+  @deprecated A new TokenStream API was introduced with Lucene 2.9.
+              See javadocs in {@link TokenStream} for further details.
 */
 public class Token implements Cloneable {
 

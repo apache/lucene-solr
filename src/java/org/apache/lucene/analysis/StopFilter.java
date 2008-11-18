@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 /**
  * Removes stop words from a token stream.
  */
@@ -32,6 +35,9 @@ public final class StopFilter extends TokenFilter {
   private final CharArraySet stopWords;
   private boolean enablePositionIncrements = ENABLE_POSITION_INCREMENTS_DEFAULT;
 
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  
   /**
    * Construct a token stream filtering the given input.
    */
@@ -47,6 +53,7 @@ public final class StopFilter extends TokenFilter {
   public StopFilter(TokenStream in, String[] stopWords, boolean ignoreCase) {
     super(in);
     this.stopWords = (CharArraySet)makeStopSet(stopWords, ignoreCase);
+    init();
   }
 
 
@@ -74,6 +81,7 @@ public final class StopFilter extends TokenFilter {
       this.stopWords = new CharArraySet(stopWords.size(), ignoreCase);
       this.stopWords.addAll(stopWords);
     }
+    init();
   }
 
   /**
@@ -84,6 +92,11 @@ public final class StopFilter extends TokenFilter {
    */
   public StopFilter(TokenStream in, Set stopWords) {
     this(in, stopWords, false);
+  }
+  
+  public void init() {
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
   }
 
   /**
@@ -109,9 +122,29 @@ public final class StopFilter extends TokenFilter {
     stopSet.addAll(Arrays.asList(stopWords));
     return stopSet;
   }
+  
+  /**
+   * Returns the next input Token whose term() is not a stop word.
+   */
+  public final boolean incrementToken() throws IOException {
+    // return the first non-stop word found
+    int skippedPositions = 0;
+    while (input.incrementToken()) {
+      if (!stopWords.contains(termAtt.termBuffer(), 0, termAtt.termLength())) {
+        if (enablePositionIncrements) {
+          posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
+        }
+        return true;
+      }
+      skippedPositions += posIncrAtt.getPositionIncrement();
+    }
+    // reached EOS -- return null
+    return false;
+  }
 
   /**
    * Returns the next input Token whose term() is not a stop word.
+   * @deprecated
    */
   public final Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;

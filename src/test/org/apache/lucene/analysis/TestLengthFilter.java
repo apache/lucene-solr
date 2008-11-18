@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
@@ -27,11 +28,15 @@ public class TestLengthFilter extends LuceneTestCase {
     TokenStream stream = new WhitespaceTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"));
     LengthFilter filter = new LengthFilter(stream, 2, 6);
-    final Token reusableToken = new Token();
-    assertEquals("short", filter.next(reusableToken).term());
-    assertEquals("ab", filter.next(reusableToken).term());
-    assertEquals("foo", filter.next(reusableToken).term());
-    assertNull(filter.next(reusableToken));
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+
+    assertTrue(filter.incrementToken());
+    assertEquals("short", termAtt.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("ab", termAtt.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("foo", termAtt.term());
+    assertFalse(filter.incrementToken());
   }
 
 }

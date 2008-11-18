@@ -26,7 +26,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
@@ -236,23 +236,25 @@ public class TestRangeQuery extends LuceneTestCase {
     private static class SingleCharTokenizer extends Tokenizer {
       char[] buffer = new char[1];
       boolean done;
-
+      TermAttribute termAtt;
+      
       public SingleCharTokenizer(Reader r) {
         super(r);
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
       }
 
-      public final Token next(final Token reusableToken) throws IOException {
+      public boolean incrementToken() throws IOException {
         int count = input.read(buffer);
         if (done)
-          return null;
+          return false;
         else {
           done = true;
           if (count == 1) {
-            reusableToken.termBuffer()[0] = buffer[0];
-            reusableToken.setTermLength(1);
+            termAtt.termBuffer()[0] = buffer[0];
+            termAtt.setTermLength(1);
           } else
-            reusableToken.setTermLength(0);
-          return reusableToken;
+            termAtt.setTermLength(0);
+          return true;
         }
       }
 

@@ -1,5 +1,7 @@
 package org.apache.lucene.analysis;
 
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,11 +29,33 @@ package org.apache.lucene.analysis;
 public class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
     super(input);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[256];
   private int outputPos;
-
+  private TermAttribute termAtt;
+    
+  public final boolean incrementToken() throws java.io.IOException {    
+    if (input.incrementToken()) {
+      final char[] buffer = termAtt.termBuffer();
+      final int length = termAtt.termLength();
+      // If no characters actually require rewriting then we
+      // just return token as-is:
+      for(int i=0;i<length;i++) {
+        final char c = buffer[i];
+        if (c >= '\u00c0' && c <= '\uFB06') {
+          removeAccents(buffer, length);
+          termAtt.setTermBuffer(output, 0, outputPos);
+          break;
+        }
+      }
+      return true;
+    } else
+      return false;
+  }
+  
+  /** @deprecated */
   public final Token next(final Token reusableToken) throws java.io.IOException {
     assert reusableToken != null;
     Token nextToken = input.next(reusableToken);
@@ -241,7 +265,7 @@ public class ISOLatin1AccentFilter extends TokenFilter {
         case '\uFB06': // ﬆ
             output[outputPos++] = 's';
             output[outputPos++] = 't';
-        	break;
+          break;
         default :
           output[outputPos++] = c;
           break;

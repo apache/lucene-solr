@@ -17,18 +17,19 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
-
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.Date;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 class AnalysisTest {
   static File tmpFile;
@@ -70,12 +71,15 @@ class AnalysisTest {
     Date start = new Date();
 
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
+    
+    stream.reset();
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) stream.getAttribute(OffsetAttribute.class);
+    while (stream.incrementToken()) {      
       if (verbose) {
-	System.out.println("Text=" + nextToken.term()
-			   + " start=" + nextToken.startOffset()
-			   + " end=" + nextToken.endOffset());
+        System.out.println("Text=" + termAtt.term()
+			   + " start=" + offsetAtt.startOffset()
+			   + " end=" + offsetAtt.endOffset());
       }
       count++;
     }

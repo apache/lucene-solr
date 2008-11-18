@@ -24,12 +24,23 @@ import java.io.IOException;
   <p>
   This is an abstract class.
   <p>
-  NOTE: subclasses must override {@link #next(Token)}.  It's
-  also OK to instead override {@link #next()} but that
-  method is now deprecated in favor of {@link #next(Token)}.
+  <b>NOTE:</b> In order to enable the new API the method
+  {@link #useNewAPI()} has to be called with useNewAPI=true.
+  Otherwise the deprecated method {@link #next(Token)} will 
+  be used by Lucene consumers (indexer and queryparser) to
+  consume the tokens. {@link #next(Token)} will be removed
+  in Lucene 3.0.
   <p>
+  NOTE: To use the old API subclasses must override {@link #next(Token)}.
+  It's also OK to instead override {@link #next()} but that
+  method is slower compared to {@link #next(Token)}.
+ <p>
   NOTE: subclasses overriding {@link #next(Token)} must  
   call {@link Token#clear()}.
+ * <p><font color="#FF0000">
+ * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
+ * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
+ * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 
 public abstract class Tokenizer extends TokenStream {

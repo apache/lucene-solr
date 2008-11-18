@@ -17,17 +17,20 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.util.LuceneTestCase;
-
-import org.apache.lucene.search.Query;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
@@ -140,34 +143,49 @@ public class TestMultiAnalyzer extends LuceneTestCase {
 
   private final class TestFilter extends TokenFilter {
     
-    private Token prevToken;
+    private String prevType;
+    private int prevStartOffset;
+    private int prevEndOffset;
+    
+    TermAttribute termAtt;
+    PositionIncrementAttribute posIncrAtt;
+    OffsetAttribute offsetAtt;
+    TypeAttribute typeAtt;
     
     public TestFilter(TokenStream in) {
       super(in);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
 
-    public final Token next(final Token reusableToken) throws java.io.IOException {
+    public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
-        reusableToken.reinit("multi"+(multiToken+1), prevToken.startOffset(), prevToken.endOffset(), prevToken.type());
-        reusableToken.setPositionIncrement(0);
+        termAtt.setTermBuffer("multi"+(multiToken+1));
+        offsetAtt.setStartOffset(prevStartOffset);
+        offsetAtt.setEndOffset(prevEndOffset);
+        typeAtt.setType(prevType);
+        posIncrAtt.setPositionIncrement(0);
         multiToken--;
-        return reusableToken;
+        return true;
       } else {
-        Token nextToken = input.next(reusableToken);
-        if (nextToken == null) {
-          prevToken = null;
-          return null;
+        boolean next = input.incrementToken();
+        if (next == false) {
+          return false;
         }
-        prevToken = (Token) nextToken.clone();
-        String text = nextToken.term();
+        prevType = typeAtt.type();
+        prevStartOffset = offsetAtt.startOffset();
+        prevEndOffset = offsetAtt.endOffset();
+        String text = termAtt.term();
         if (text.equals("triplemulti")) {
           multiToken = 2;
-          return nextToken;
+          return true;
         } else if (text.equals("multi")) {
           multiToken = 1;
-          return nextToken;
+          return true;
         } else {
-          return nextToken;
+          return true;
         }
       }
     }
@@ -192,23 +210,28 @@ public class TestMultiAnalyzer extends LuceneTestCase {
 
   private final class TestPosIncrementFilter extends TokenFilter {
     
+    TermAttribute termAtt;
+    PositionIncrementAttribute posIncrAtt;
+    
     public TestPosIncrementFilter(TokenStream in) {
       super(in);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
     }
 
-    public final Token next(final Token reusableToken) throws java.io.IOException {
-      for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-        if (nextToken.term().equals("the")) {
+    public final boolean incrementToken () throws java.io.IOException {
+      while(input.incrementToken()) {
+        if (termAtt.term().equals("the")) {
           // stopword, do nothing
-        } else if (nextToken.term().equals("quick")) {
-          nextToken.setPositionIncrement(2);
-          return nextToken;
+        } else if (termAtt.term().equals("quick")) {
+          posIncrAtt.setPositionIncrement(2);
+          return true;
         } else {
-          nextToken.setPositionIncrement(1);
-          return nextToken;
+          posIncrAtt.setPositionIncrement(1);
+          return true;
         }
       }
-      return null;
+      return false;
     }
   }
 

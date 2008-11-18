@@ -27,9 +27,11 @@ import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -43,8 +45,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestPayloadSpans extends TestCase {
+public class TestPayloadSpans extends LuceneTestCase {
   private final static boolean DEBUG = false;
   private IndexSearcher searcher;
   private Similarity similarity = new DefaultSimilarity();
@@ -54,7 +57,8 @@ public class TestPayloadSpans extends TestCase {
     super(s);
   }
 
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     PayloadHelper helper = new PayloadHelper();
     searcher = helper.setUp(similarity, 1000);
     indexReader = searcher.getIndexReader();
@@ -345,6 +349,9 @@ public class TestPayloadSpans extends TestCase {
     Set entities = new HashSet();
     Set nopayload = new HashSet();
     int pos;
+    PayloadAttribute payloadAtt;
+    TermAttribute termAtt;
+    PositionIncrementAttribute posIncrAtt;
 
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
@@ -354,24 +361,26 @@ public class TestPayloadSpans extends TestCase {
       entities.add("one");
       nopayload.add("nopayload");
       nopayload.add("np");
-
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
     }
 
-    public Token next() throws IOException {
-      Token result = input.next();
-      if (result != null) {
-        String token = new String(result.termBuffer(), 0, result.termLength());
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        String token = new String(termAtt.termBuffer(), 0, termAtt.termLength());
 
         if (!nopayload.contains(token)) {
           if (entities.contains(token)) {
-            result.setPayload(new Payload((token + ":Entity:"+ pos ).getBytes()));
+            payloadAtt.setPayload(new Payload((token + ":Entity:"+ pos ).getBytes()));
           } else {
-            result.setPayload(new Payload((token + ":Noise:" + pos ).getBytes()));
+            payloadAtt.setPayload(new Payload((token + ":Noise:" + pos ).getBytes()));
           }
         }
-        pos += result.getPositionIncrement();
+        pos += posIncrAtt.getPositionIncrement();
+        return true;
       }
-      return result;
+      return false;
     }
   }
 }

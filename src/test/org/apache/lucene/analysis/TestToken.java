@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+/** @deprecated */
 public class TestToken extends LuceneTestCase {
 
   public TestToken(String name) {

@@ -1,6 +1,10 @@
 package org.apache.lucene.analysis;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
@@ -35,19 +39,25 @@ public class TestStandardAnalyzer extends LuceneTestCase {
 
   public void assertAnalyzesTo(Analyzer a, String input, String[] expectedImages, String[] expectedTypes, int[] expectedPosIncrs) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    final Token reusableToken = new Token();
+    // TODO Java 1.5
+    //final TypeAttribute typeAtt = reusableToken.getAttribute(TypeAttribute.class);
+    //final PositionIncrementAttribute posIncrAtt = reusableToken.getAttribute(PositionIncrementAttribute.class);
+
+    final TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    final TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+    final PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) ts.getAttribute(PositionIncrementAttribute.class);
+    
     for (int i = 0; i < expectedImages.length; i++) {
-      Token nextToken = ts.next(reusableToken);
-      assertNotNull(nextToken);
-      assertEquals(expectedImages[i], nextToken.term());
+      assertTrue(ts.incrementToken());
+      assertEquals(expectedImages[i], new String(termAtt.termBuffer(), 0, termAtt.termLength()));
       if (expectedTypes != null) {
-        assertEquals(expectedTypes[i], nextToken.type());
+        assertEquals(expectedTypes[i], typeAtt.type());
       }
       if (expectedPosIncrs != null) {
-        assertEquals(expectedPosIncrs[i], nextToken.getPositionIncrement());
+        assertEquals(expectedPosIncrs[i], posIncrAtt.getPositionIncrement());
       }
     }
-    assertNull(ts.next(reusableToken));
+    assertFalse(ts.incrementToken());
     ts.close();
   }
 
