@@ -42,8 +42,8 @@ public class SolrParamResourceLoader extends ResourceLoader {
     while (names.hasNext()) {
       String name = names.next();
       
-      if (name.startsWith("template.")) {
-        templates.put(name.substring(9) + ".vm",params.get(name));
+      if (name.startsWith("v.template.")) {
+        templates.put(name.substring(11) + ".vm",params.get(name));
       }
     }
   }
@@ -53,7 +53,7 @@ public class SolrParamResourceLoader extends ResourceLoader {
 
   public InputStream getResourceStream(String s) throws ResourceNotFoundException {
     String template = templates.get(s);
-    return template == null ? null : new ByteArrayInputStream( s.getBytes() );
+    return template == null ? null : new ByteArrayInputStream(template.getBytes());
   }
 
   public boolean isSourceModified(Resource resource) {
