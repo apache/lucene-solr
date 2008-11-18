@@ -75,28 +75,4 @@ final class FieldInfo {
       this.storePayloads = true;
     }
   }
-
-  void update(FieldInfo other) {
-    if (isIndexed != other.isIndexed) {
-      isIndexed = true;                      // once indexed, always index
-    }
-    if (storeTermVector != other.storeTermVector) {
-      storeTermVector = true;                // once vector, always vector
-    }
-    if (storePositionWithTermVector != other.storePositionWithTermVector) {
-      storePositionWithTermVector = true;                // once vector, always vector
-    }
-    if (storeOffsetWithTermVector != other.storeOffsetWithTermVector) {
-      storeOffsetWithTermVector = true;                // once vector, always vector
-    }
-    if (omitNorms != other.omitNorms) {
-      omitNorms = false;                // once norms are stored, always store
-    }
-    if (this.omitTf != omitTf) {
-      this.omitTf = true;                // if one require omitTf at least once, it remains off for life
-    }
-    if (storePayloads != other.storePayloads) {
-      storePayloads = true;
-    }
-  }
 }

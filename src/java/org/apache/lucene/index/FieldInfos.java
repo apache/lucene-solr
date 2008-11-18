@@ -211,18 +211,6 @@ final class FieldInfos {
     return fi;
   }
 
-  synchronized public FieldInfo add(FieldInfo fieldInfo) {
-    FieldInfo fi = fieldInfo(fieldInfo.name);
-    if (fi == null) {
-      return addInternal(fieldInfo.name, fieldInfo.isIndexed, fieldInfo.storeTermVector,
-                         fieldInfo.storePositionWithTermVector, fieldInfo.storeOffsetWithTermVector,
-                         fieldInfo.omitNorms, fieldInfo.storePayloads, fieldInfo.omitTf);
-    } else {
-      fi.update(fieldInfo);
-    }
-    return fi;
-  }
-
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTf) {
