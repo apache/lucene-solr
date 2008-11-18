@@ -111,6 +111,7 @@
   
   </target>
 
+  <target name="test"/>  <!-- TODO: Tests would be nice :) -->
 </project>
 
 
