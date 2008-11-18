@@ -25,6 +25,7 @@ import org.apache.velocity.app.VelocityEngine;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
@@ -36,11 +37,22 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
     VelocityContext context = new VelocityContext();
 
-    context.put("request", request);
-    context.put("response", response);
+    // TODO: Make this use the SolrJ API, rather than "embedded" Solr API
+    context.put("request", request);    // TODO: inject a SolrRequest instead of a SolrQueryRequest
+    context.put("response", response);  // TODO: inject a SolrResponse instead of a SolrQueryResponse
     context.put("page",new PageTool(request,response));
     context.put("esc", new EscapeTool());
-    template.merge(context, writer);
+   
+    // create output, optionally wrap it into a json object
+    if (request.getParams().getBool("v.json", false)) {
+      StringWriter stringWriter = new StringWriter();
+      template.merge(context, stringWriter);
+      writer.write(request.getParams().get("v.json") + "(");
+      writer.write(getJSONWrap(stringWriter.toString()));
+      writer.write(')');
+    } else {
+      template.merge(context, writer);
+    }
   }
 
   private VelocityEngine getEngine(SolrQueryRequest request) {
@@ -62,7 +74,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
   private Template getTemplate(VelocityEngine engine, SolrQueryRequest request) throws IOException {
     Template template;
     try {
-      template = engine.getTemplate(request.getParams().get("template", "browse") + ".vm");
+      template = engine.getTemplate(request.getParams().get("v.template", "browse") + ".vm");
     } catch (Exception e) {
       throw new IOException(e.getMessage());
     }
@@ -71,7 +83,17 @@ public class VelocityResponseWriter implements QueryResponseWriter {
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return request.getParams().get("contentType","text/html");
+    return request.getParams().get("v.contentType","text/html");
+  }
+  
+  private String getJSONWrap(String xmlResult) {
+    // escape the double quotes and backslashes
+    String replace1 = xmlResult.replaceAll("\\\\", "\\\\\\\\");
+    replace1 = replace1.replaceAll("\\n", "\\\\n");
+    replace1 = replace1.replaceAll("\\r", "\\\\r");
+    String replaced = replace1.replaceAll("\"", "\\\\\"");
+    // wrap it in a JSON object
+    return "{\"result\":\"" + replaced + "\"}";
   }
 
   public void init(NamedList args) {

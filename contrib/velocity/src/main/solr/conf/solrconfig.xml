@@ -400,7 +400,7 @@
 
   <requestHandler name="/itas" class="solr.SearchHandler">
      <lst name="defaults">
-       <str name="template">browse</str>
+       <str name="v.template">browse</str>
        <str name="title">Solritas</str>
 
        <str name="wt">velocity</str>
