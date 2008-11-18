@@ -6,7 +6,8 @@
 
 #macro(url_for_start $start)/solr/itas?start=$start#end
 
-#macro(url_for_nested_facet $field $value)/solr/itas?fq=$field:$value#end
+## TODO: need to add escaping
+#macro(url_for_nested_facet $field $value)/solr/itas?fq=$field:%22$value%22#end
 
 #macro(link_to_previous_page $text)
   #if($page.current_page_number > 1)
