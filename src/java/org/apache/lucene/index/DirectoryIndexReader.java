@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * IndexReader implementation that has access to a Directory. 
@@ -147,7 +148,7 @@ abstract class DirectoryIndexReader extends IndexReader {
       return this;
     }
 
-    return (DirectoryIndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+    final SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
 
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
@@ -162,7 +163,35 @@ abstract class DirectoryIndexReader extends IndexReader {
 
         return newReader;
       }
-    }.run();
+    };
+
+    DirectoryIndexReader reader = null;
+
+    // While trying to reopen, we temporarily mark our
+    // closeDirectory as false.  This way any exceptions hit
+    // partway while opening the reader, which is expected
+    // eg if writer is committing, won't close our
+    // directory.  We restore this value below:
+    final boolean myCloseDirectory = closeDirectory;
+    closeDirectory = false;
+
+    try {
+      reader = (DirectoryIndexReader) finder.run();
+    } finally {
+      if (myCloseDirectory) {
+        assert directory instanceof FSDirectory;
+        // Restore my closeDirectory
+        closeDirectory = true;
+        if (reader != null && reader != this) {
+          // Success, and a new reader was actually opened
+          reader.closeDirectory = true;
+          // Clone the directory
+          reader.directory = FSDirectory.getDirectory(((FSDirectory) directory).getFile());
+        }
+      }
+    }
+
+    return reader;
   }
 
   /**

@@ -660,10 +660,13 @@ class SegmentReader extends DirectoryIndexReader {
   
       if (storeCFSReader != null)
         storeCFSReader.close();
-      
-      // maybe close directory
-      super.doClose();
     }
+
+    // In DirectoryIndexReader.reopen, our directory
+    // instance was made private to us (cloned), so we
+    // always call super.doClose to possibly close the
+    // directory:
+    super.doClose();
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {
