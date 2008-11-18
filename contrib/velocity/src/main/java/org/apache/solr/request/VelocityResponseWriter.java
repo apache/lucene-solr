@@ -44,7 +44,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     context.put("esc", new EscapeTool());
    
     // create output, optionally wrap it into a json object
-    if (request.getParams().getBool("v.json", false)) {
+    if (request.getParams().get("v.json") != null) {
       StringWriter stringWriter = new StringWriter();
       template.merge(context, stringWriter);
       writer.write(request.getParams().get("v.json") + "(");
