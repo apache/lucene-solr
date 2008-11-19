@@ -236,17 +236,23 @@ public class SolrResourceLoader implements ResourceLoader
 
   public List<String> getLines(String resource, Charset charset) throws IOException{
     BufferedReader input = null;
-    input = new BufferedReader(new InputStreamReader(openResource(resource),
-        charset));
+    ArrayList<String> lines;
+    try {
+      input = new BufferedReader(new InputStreamReader(openResource(resource),
+          charset));
 
-    ArrayList<String> lines = new ArrayList<String>();
-    for (String word=null; (word=input.readLine())!=null;) {
-      // skip comments
-      if (word.startsWith("#")) continue;
-      word=word.trim();
-      // skip blank lines
-      if (word.length()==0) continue;
-      lines.add(word);
+      lines = new ArrayList<String>();
+      for (String word=null; (word=input.readLine())!=null;) {
+        // skip comments
+        if (word.startsWith("#")) continue;
+        word=word.trim();
+        // skip blank lines
+        if (word.length()==0) continue;
+        lines.add(word);
+      }
+    } finally {
+      if (input != null)
+        input.close();
     }
     return lines;
   }

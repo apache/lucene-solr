@@ -121,6 +121,8 @@ Bug Fixes
 
  9. SOLR-803: CoreAdminRequest.createCore fails because name parameter isn't set (Sean Colombo via ryan)
 
+10. SOLR-869: Fix file descriptor leak in SolrResourceLoader#getLines (Mark Miller, shalin)
+
 
 Other Changes
 ----------------------
