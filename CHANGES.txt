@@ -136,6 +136,9 @@ Other Changes
 
  4. SOLR-852: Refactored common code in CSVRequestHandler and XMLUpdateRequestHandler (gsingers, ehatcher)
 
+ 5. SOLR-871: Removed dependancy on stax-utils.jar.  If you using solr.jar and running 
+    java 6, you can also remove woodstox and geronimo.  (ryan)
+
 
 Build
 ----------------------

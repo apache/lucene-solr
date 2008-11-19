@@ -4,18 +4,14 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import java.io.StringReader;
 import java.util.Collection;
 
-import javanet.staxutils.BaseXMLInputFactory;
-
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
-
-import junit.framework.TestCase;
 
 import org.apache.solr.common.SolrInputDocument;
 
 public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase 
 {
-  private XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
+  private XMLInputFactory inputFactory = XMLInputFactory.newInstance();
   protected XmlUpdateRequestHandler handler;
 
 @Override public String getSchemaFile() { return "schema.xml"; }

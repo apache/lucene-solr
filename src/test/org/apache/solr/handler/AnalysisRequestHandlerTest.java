@@ -16,18 +16,15 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import javanet.staxutils.BaseXMLInputFactory;
-import org.apache.lucene.analysis.Token;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 import java.io.StringReader;
-import java.util.List;
 
 public class AnalysisRequestHandlerTest extends AbstractSolrTestCase {
-  private XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
+  private XMLInputFactory inputFactory = XMLInputFactory.newInstance();
 
   @Override
   public String getSchemaFile() {

@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import javanet.staxutils.BaseXMLInputFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -68,7 +67,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
   public void init(NamedList args) {
     super.init(args);
 
-    inputFactory = BaseXMLInputFactory.newInstance();
+    inputFactory = XMLInputFactory.newInstance();
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the

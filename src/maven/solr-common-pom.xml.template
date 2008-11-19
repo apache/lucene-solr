@@ -39,10 +39,10 @@
   <dependencies>
 
     <dependency>
-	  <groupId>org.slf4j</groupId>
-	  <artifactId>slf4j-api</artifactId>
-	  <version>1.5.3</version>
-	</dependency> 
+	    <groupId>org.slf4j</groupId>
+	    <artifactId>slf4j-api</artifactId>
+	    <version>1.5.5</version>
+	  </dependency> 
 	
 	<!--
 	Your app will need an slf4j implementation, it does not matter which one...
@@ -50,6 +50,7 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.5.3</version>
+      <scope>runtime</scope>
     </dependency>
     -->
 

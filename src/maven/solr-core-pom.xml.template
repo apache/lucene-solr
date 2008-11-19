@@ -93,11 +93,6 @@
       <artifactId>commons-io</artifactId>
       <version>1.3.2</version>
     </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-      <version>1.0.4</version>
-    </dependency>
 
     <!-- Solr specific commons csv -->
     <dependency>
@@ -106,7 +101,7 @@
       <version>@maven_version@</version>
     </dependency>
 
-    <!-- Stax -->
+    <!-- Stax : we could exclude this because already dependancy of solrj -->
     <dependency>
       <groupId>woodstox</groupId>
       <artifactId>wstx-asl</artifactId>
@@ -116,12 +111,7 @@
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-stax-api_1.0_spec</artifactId>
       <version>1.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>stax-utils</groupId>
-      <artifactId>stax-utils</artifactId>
-      <version>snapshot-20040917</version>
-    </dependency>
+    </dependency>   
 
   </dependencies>
 
