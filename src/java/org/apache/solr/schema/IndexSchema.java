@@ -661,7 +661,10 @@ public final class IndexSchema {
     boolean destIsPattern   = isWildCard(dest);
 
     log.debug("copyField source='"+source+"' dest='"+dest+"'");
-    SchemaField d = getField(dest);
+    SchemaField d = getFieldOrNull(dest);
+    if(d == null){
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField destination :'"+dest+"' does not exist" );
+    }
 
     if(sourceIsPattern) {
       if( destIsPattern ) {

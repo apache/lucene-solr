@@ -123,6 +123,8 @@ Bug Fixes
 
 10. SOLR-869: Fix file descriptor leak in SolrResourceLoader#getLines (Mark Miller, shalin)
 
+11. SOLR-872: Better error message for incorrect copyField destination (Noble Paul via shalin)
+
 
 Other Changes
 ----------------------
