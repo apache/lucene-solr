@@ -125,6 +125,8 @@ Bug Fixes
 
 11. SOLR-872: Better error message for incorrect copyField destination (Noble Paul via shalin)
 
+12. SOLR-346: Use perl regex to improve accuracy of finding latest snapshot in snapinstaller (billa)
+
 
 Other Changes
 ----------------------
