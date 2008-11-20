@@ -466,6 +466,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     /** schedule individual commits */
     public synchronized void scheduleCommitWithin(long commitMaxTime) 
     {
+      _scheduleCommitWithin( commitMaxTime );
+    }
+    
+    private void _scheduleCommitWithin(long commitMaxTime) 
+    {
       // Check if there is a commit already scheduled for longer then this time
       if( pending != null && 
           pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime ) 
@@ -487,13 +492,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       lastAddedTime = System.currentTimeMillis();
       // maxDocs-triggered autoCommit
       if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
-        scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
+        _scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
       }
       
       // maxTime-triggered autoCommit
       long ctime = (commitWithin>0) ? commitWithin : timeUpperBound;
       if( ctime > 0 ) {
-        scheduleCommitWithin( ctime );
+        _scheduleCommitWithin( ctime );
       }
     }
 
