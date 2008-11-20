@@ -58,6 +58,8 @@ Bug Fixes
 
 7. SOLR-864:  DataImportHandler does not catch and log Errors (shalin)
 
+8. SOLR-873:  Fix case-sensitive field names and columns (Jon Baer, shalin)
+
 Documentation
 ----------------------
 

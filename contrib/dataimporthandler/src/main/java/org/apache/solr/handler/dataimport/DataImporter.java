@@ -126,24 +126,12 @@ public class DataImporter {
     }
     for (Map.Entry<String, DataConfig.Field> entry : fields.entrySet()) {
       DataConfig.Field fld = entry.getValue();
-      FieldType fieldType = null;
-
-      try {
-        fieldType = schema.getDynamicFieldType(fld.name);
-      } catch (RuntimeException ex) {
-        // Ignore because it may not be a dynamic field
-      }
-
-      if (fld.name != null) {
-        if (schema.getFields().get(fld.name) == null && fieldType == null) {
-          errors
-                  .add("The field :"
-                          + fld.name
-                          + " present in DataConfig does not have a counterpart in Solr Schema");
+      SchemaField field = schema.getFieldOrNull(fld.getName());
+      if (field == null) {
+        field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase());
+        if (field == null)  {
+          errors.add("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
         }
-      } else if (schema.getFields().get(fld.column) == null
-              && fieldType == null) {
-        LOG.info("Column : " + fld.column + " is not a schema field");
       }
     }
 
@@ -201,30 +189,22 @@ public class DataImporter {
 
     if (e.fields != null) {
       for (DataConfig.Field f : e.fields) {
-        f.nameOrColName = f.getName();
         if (schema != null) {
           SchemaField schemaField = schema.getFieldOrNull(f.getName());
+          if (schemaField == null)  {
+            schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase());
+            if(schemaField != null) f.name = schemaField.getName();
+          }
           if (schemaField != null) {
             f.multiValued = schemaField.multiValued();
             f.allAttributes.put(MULTI_VALUED, Boolean.toString(schemaField
                     .multiValued()));
             f.allAttributes.put(TYPE, schemaField.getType().getTypeName());
-            f.allAttributes.put("indexed", Boolean
-                    .toString(schemaField.indexed()));
+            f.allAttributes.put("indexed", Boolean.toString(schemaField.indexed()));
             f.allAttributes.put("stored", Boolean.toString(schemaField.stored()));
             f.allAttributes.put("defaultValue", schemaField.getDefaultValue());
           } else {
-
-            try {
-              f.allAttributes.put(TYPE, schema.getDynamicFieldType(f.getName())
-                      .getTypeName());
-              f.allAttributes.put(MULTI_VALUED, "true");
-              f.multiValued = true;
-            } catch (RuntimeException e2) {
-              LOG.info("Field in data-config.xml - " + f.getName()
-                      + " not found in schema.xml");
-              f.toWrite = false;
-            }
+            f.toWrite = false;
           }
         }
         fields.put(f.getName(), f);

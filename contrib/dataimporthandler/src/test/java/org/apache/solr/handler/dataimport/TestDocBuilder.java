@@ -49,9 +49,6 @@ public class TestDocBuilder {
       di.loadDataConfig(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.documents.get(0).entities.get(0);
-      for (DataConfig.Field field : ent.fields) {
-        field.nameOrColName = field.name = field.column;
-      }
       MockDataSource.setIterator("select * from x", new ArrayList().iterator());
       ent.dataSrc = new MockDataSource();
       ent.isDocRoot = true;
@@ -80,9 +77,6 @@ public class TestDocBuilder {
       di.loadDataConfig(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.documents.get(0).entities.get(0);
-      for (DataConfig.Field field : ent.fields) {
-        field.nameOrColName = field.name = field.column;
-      }
       List l = new ArrayList();
       l.add(createMap("id", 1, "desc", "one"));
       MockDataSource.setIterator("select * from x", l.iterator());
@@ -125,9 +119,6 @@ public class TestDocBuilder {
       ent.isDocRoot = true;
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
-      for (DataConfig.Field field : ent.fields) {
-        field.nameOrColName = field.name = field.column;
-      }
       List l = new ArrayList();
       l.add(createMap("id", 1, "desc", "one"));
       l.add(createMap("id", 2, "desc", "two"));

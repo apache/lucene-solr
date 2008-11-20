@@ -379,12 +379,12 @@ public class DocBuilder {
           sf = dataImporter.getConfig().lowerNameVsSchemaField.get(key.toLowerCase());
         }
         if (sf != null) {
-          addFieldToDoc(entry.getValue(), key, 1.0f, sf.multiValued(), doc);
+          addFieldToDoc(entry.getValue(), sf.getName(), 1.0f, sf.multiValued(), doc);
         }
         //else do nothing. if we add it it may fail
       } else {
         if (field != null && field.toWrite) {
-          addFieldToDoc(entry.getValue(), key, field.boost, field.multiValued, doc);
+          addFieldToDoc(entry.getValue(), field.getName(), field.boost, field.multiValued, doc);
         }
       }
 

@@ -191,8 +191,6 @@ public class DataConfig {
 
     public boolean multiValued = false;
 
-    public String nameOrColName;
-
     public Map<String, String> allAttributes = new HashMap<String, String>() {
       public String put(String key, String value) {
         if (super.containsKey(key))
@@ -209,12 +207,6 @@ public class DataConfig {
       this.column = getStringAttribute(e, DataImporter.COLUMN, null);
       this.boost = Float.parseFloat(getStringAttribute(e, "boost", "1.0f"));
       allAttributes.putAll(getAllAttributes(e));
-    }
-
-    public Field(String name, boolean b) {
-      name = nameOrColName = column = name;
-      multiValued = b;
-
     }
 
     public String getName() {

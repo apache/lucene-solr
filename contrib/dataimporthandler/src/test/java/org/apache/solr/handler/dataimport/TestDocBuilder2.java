@@ -70,6 +70,18 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testSingleEntity_CaseInsensitive() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desC", "one"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigWithCaseInsensitiveFields);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testDynamicFields() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -141,6 +153,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
            "                transformer=\"TestDocBuilder2$AddDynamicFieldTransformer\">\n" +
           "            <field column=\"id\" />\n" +
           "            <field column=\"desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigWithCaseInsensitiveFields = "<dataConfig>\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from x\">\n" +
+          "            <field column=\"ID\" />\n" +
+          "            <field column=\"Desc\" />\n" +
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";
