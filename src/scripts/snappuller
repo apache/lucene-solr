@@ -178,7 +178,7 @@ fi
 # get directory name of latest snapshot if not specified on command line
 if [[ -z ${snap_name} ]]
 then
-    snap_name=`ssh -o StrictHostKeyChecking=no ${master_host} "ls ${master_data_dir}|grep 'snapshot\.'|grep -v wip|sort -r|head -1"`
+    snap_name=`ssh -o StrictHostKeyChecking=no ${master_host} "perl -e 'chdir q|${master_data_dir}|; print ((sort grep {/^snapshot[.][1-9][0-9]{13}$/} <*>)[-1])'"`
 fi
 if [[ "${snap_name}" == "" ]]
 then
