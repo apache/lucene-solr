@@ -139,6 +139,8 @@ Other Changes
  5. SOLR-871: Removed dependancy on stax-utils.jar.  If you using solr.jar and running 
     java 6, you can also remove woodstox and geronimo.  (ryan)
 
+ 6. SOLR-465: Upgraded to Lucene 2.9-dev (r719351) (shalin)
+
 
 Build
 ----------------------
