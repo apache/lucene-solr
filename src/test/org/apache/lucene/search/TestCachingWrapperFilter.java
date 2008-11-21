@@ -39,11 +39,15 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     cacher.getDocIdSet(reader);
     assertTrue("first time", filter.wasCalled());
 
+    // make sure no exception if cache is holding the wrong bitset
+    cacher.bits(reader);
+    cacher.getDocIdSet(reader);
+
     // second time, nested filter should not be called
     filter.clear();
     cacher.getDocIdSet(reader);
     assertFalse("second time", filter.wasCalled());
 
     reader.close();
- }
+  }
 }
