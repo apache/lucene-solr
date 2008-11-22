@@ -48,11 +48,11 @@
         renderResult : function(docs, pageSize, offset) { 
           var container = jQuery("<div/>");
           $sj.each(docs, function(i, item) {
-            jQuery("<h3/>").html(item["title"]).appendTo(container);
-            if (item["topics"] != null) {
-              jQuery("<p/>").html(item["topics"].toString()).appendTo(container);
+            jQuery("<h3/>").html(item["name"]).appendTo(container);
+            if (item["cat"] != null) {
+              jQuery("<p/>").html(item["cat"].toString()).appendTo(container);
             }
-            jQuery("<p/>").html(item["text"]).appendTo(container);
+            jQuery("<p/>").html(item["name"]).appendTo(container);
             jQuery("<hr/>").appendTo(container);
           });
           container.appendTo(this.target);
@@ -60,7 +60,7 @@
       });     
 
       solrjsManager.addWidget(resultWidget);  
-      solrjsManager.addWidget(new $sj.solrjs.FacetWidget({id:"topics", target:"#topics", fieldName:"topics"}));	
+      solrjsManager.addWidget(new $sj.solrjs.FacetWidget({id:"categories", target:"#categories", fieldName:"cat"}));	
 			solrjsManager.doRequestAll(); 
 		});
 	</script>
@@ -68,8 +68,8 @@
 </head>
 <body>
 	<div id="facets" style="float:left;width:300px;">
-		<h3 style="margin-top:0px">topics</h3>		
-		<div id="topics"></div>
+		<h3 style="margin-top:0px">categories</h3>		
+		<div id="categories"></div>
 	</div>
   <div id="result" style="margin-left:300px;"></div>
 </body>
