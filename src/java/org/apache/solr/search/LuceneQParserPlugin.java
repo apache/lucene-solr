@@ -71,9 +71,8 @@ class LuceneQParser extends QParser {
       lparser.setDefaultOperator("AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
     } else {
       // try to get default operator from schema
-          String operator = getReq().getSchema().getSolrQueryParser(null).getField();
-      lparser.setDefaultOperator("AND".equals(operator) ?
-                          QueryParser.Operator.AND : QueryParser.Operator.OR);
+      QueryParser.Operator operator = getReq().getSchema().getSolrQueryParser(null).getDefaultOperator();
+      lparser.setDefaultOperator(null == operator ? QueryParser.Operator.OR : operator);
     }
 
     return lparser.parse(qstr);
