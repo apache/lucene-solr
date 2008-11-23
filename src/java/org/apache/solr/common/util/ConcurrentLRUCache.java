@@ -529,4 +529,7 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
+  protected void finalize() throws Throwable {
+    destroy();
+  }
 }
