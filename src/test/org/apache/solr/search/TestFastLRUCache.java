@@ -72,7 +72,7 @@ public class TestFastLRUCache extends TestCase {
     int upperWaterMark = (int)(lowerWaterMark * 1.1);
 
     Random r = new Random(0);
-    ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, 0);
+    ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, null);
     boolean getSize=false;
     int minSize=0,maxSize=0;
     for (int i=0; i<iter; i++) {

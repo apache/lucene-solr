@@ -62,22 +62,25 @@ public class FastLRUCache implements SolrCache {
     } else {
       acceptableLimit = Integer.parseInt(str);
     }
-    // acceptable limit should be somehwere between minLimit and limit
+    // acceptable limit should be somewhere between minLimit and limit
     acceptableLimit = Math.max(minLimit, acceptableLimit);
 
     str = (String) args.get("initialSize");
     final int initialSize = str == null ? limit : Integer.parseInt(str);
     str = (String) args.get("autowarmCount");
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
+    str = (String) args.get("cleanupThread");
+    boolean newThread = str == null ? false : Boolean.parseBoolean(str);
     
-    description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize + ", minSize="+minLimit + ", acceptableSize="+acceptableLimit;
+    description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
+            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+" ,cleanupThread ="+newThread;
     if (autowarmCount > 0) {
       description += ", autowarmCount=" + autowarmCount
               + ", regenerator=" + regenerator;
     }
     description += ')';
 
-    cache = new ConcurrentLRUCache(limit, minLimit, acceptableLimit, initialSize, false, false, -1);
+    cache = new ConcurrentLRUCache(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
     cache.setAlive(false);
 
     if (persistence == null) {
@@ -153,6 +156,7 @@ public class FastLRUCache implements SolrCache {
 
 
   public void close() {
+    cache.destroy();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
