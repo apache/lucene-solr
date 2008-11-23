@@ -53,7 +53,7 @@ public class ResourceLoaderTest extends TestCase
     
     // Make sure it throws an error for invalid objects
     Object[] invalid = new Object[] {
-        new NGramTokenFilter( null ),
+        // new NGramTokenFilter( null ),
         "hello",  new Float( 12.3f ),
         new LukeRequestHandler(),
         new JSONResponseWriter()
