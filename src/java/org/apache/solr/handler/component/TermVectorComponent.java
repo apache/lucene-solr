@@ -59,7 +59,7 @@ import java.util.logging.Logger;
  * <b>Note</b> Returning IDF can be expensive.
  */
 public class TermVectorComponent extends SearchComponent implements SolrCoreAware {
-  private transient static Logger log = Logger.getLogger(TermVectorComponent.class.getName());
+
 
   public static final String COMPONENT_NAME = "tv";
 
