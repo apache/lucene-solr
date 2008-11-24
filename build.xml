@@ -58,6 +58,7 @@
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz, and maven artifacts for distribution." />
+    <echo message="Use 'ant luke' to start luke.  see: http://www.getopt.org/luke/" />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -880,6 +881,33 @@
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
     </rat:report>
+  </target>
+  
+  <!-- LUKE -->
+  <available file="luke/luke-0.9.1.jar" property="luke.jar.exists" />
+  <target name="luke-download" unless="luke.jar.exists">
+    <mkdir dir="luke"/>
+    <get src="http://www.getopt.org/luke/luke-0.9.1/luke-0.9.1.jar" 
+        dest="luke/luke-0.9.1.jar"/>
+    <get src="http://people.apache.org/repo/m2-snapshot-repository/org/apache/lucene/lucene-misc/2.4-SNAPSHOT/lucene-misc-2.4-SNAPSHOT.jar" 
+        dest="luke/lucene-misc-2.4-SNAPSHOT.jar" />
+  </target>
+  
+  <target name="luke" depends="luke-download">
+    <java fork="true" 
+          classname="org.getopt.luke.Luke"
+          logError="true"
+          failonerror="true">
+      <classpath>
+        <fileset dir="${lib}">
+          <include name="*.jar" />
+        </fileset>
+        <fileset dir="luke">
+          <include name="luke-0.9.1.jar"/>
+          <include name="lucene-misc-2.4-SNAPSHOT.jar"/>
+        </fileset>
+       </classpath>
+    </java>
   </target>
 
 </project>
