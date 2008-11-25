@@ -148,16 +148,32 @@ public class SimpleFacets {
     boolean sort = params.getFieldBool(field, FacetParams.FACET_SORT, limit>0);
     String prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
 
+
     NamedList counts;
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
-    if (sf.multiValued() || ft.isTokenized() || ft instanceof BoolField) {
+
+    // determine what type of faceting method to use
+    String method = params.getFieldParam(field, FacetParams.FACET_METHOD);
+    boolean enumMethod = FacetParams.FACET_METHOD_enum.equals(method);
+    if (method == null && ft instanceof BoolField) {
       // Always use filters for booleans... we know the number of values is very small.
+      enumMethod = true;
+    }
+    boolean multiToken = sf.multiValued() || ft.isTokenized();
+
+    // unless the enum method is explicitly specified, use a counting method.
+    if (enumMethod) {
       counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix);
     } else {
-      // TODO: future logic could use filters instead of the fieldcache if
-      // the number of terms in the field is small enough.
-      counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
+      if (multiToken) {
+        UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
+        counts = uif.getCounts(searcher, docs, offset, limit, mincount,missing,sort,prefix);
+      } else {
+        // TODO: future logic could use filters instead of the fieldcache if
+        // the number of terms in the field is small enough.
+        counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
+      }
     }
 
     return counts;

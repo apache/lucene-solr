@@ -285,6 +285,7 @@
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ws" type="text_ws" indexed="true"  stored="true"/>
 
    <dynamicField name="*_extf" type="file"/>
 

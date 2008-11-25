@@ -29,6 +29,20 @@ public interface FacetParams {
    * Should facet counts be calculated?
    */
   public static final String FACET = "facet";
+
+  /** What method should be used to do the faceting */
+  public static final String FACET_METHOD = FACET + ".method";
+
+  /** Value for FACET_METHOD param to indicate that Solr should enumerate over terms
+   * in a field to calculate the facet counts.
+   */
+  public static final String FACET_METHOD_enum = "enum";
+
+  /** Value for FACET_METHOD param to indicate that Solr should enumerate over documents
+   * and count up terms by consulting an uninverted representation of the field values
+   * (such as the FieldCache used for sorting).
+   */
+  public static final String FACET_METHOD_fc = "fc";
   
   /**
    * Any lucene formated queries the user would like to use for

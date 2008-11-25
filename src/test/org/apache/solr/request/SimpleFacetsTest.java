@@ -303,9 +303,10 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
   }
 
   public void testFacetMultiValued() {
-    doFacets("t_s");
-    doFacets("t_s", "facet.enum.cache.minDf", "2");
-    doFacets("t_s", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", "facet.method","enum");
+    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "2");
+    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", "facet.method", "fc");
   }
 
   public void testFacetSingleValued() {
@@ -476,9 +477,10 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
 
 
   public void testFacetPrefixMultiValued() {
-    doFacetPrefix("t_s");   
-    doFacetPrefix("t_s", "facet.enum.cache.minDf", "3");
-    doFacetPrefix("t_s", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", "facet.method","enum");
+    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "3");
+    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", "facet.method", "fc");
   }
 
   public void testFacetPrefixSingleValued() {

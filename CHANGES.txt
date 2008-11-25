@@ -96,6 +96,11 @@ Optimizations
 
  2. SOLR-808: Write string keys in Maps as extern strings in the javabin format. (Noble Paul via shalin)
 
+ 3. SOLR-475: New faceting method with better performance and smaller memory usage for
+    multi-valued fields with many unique values but relatively few values per document.
+    Controllable via the facet.method parameter - "fc" is the new default method and "enum"
+    is the original method.  (yonik)
+
 
 Bug Fixes
 ----------------------
