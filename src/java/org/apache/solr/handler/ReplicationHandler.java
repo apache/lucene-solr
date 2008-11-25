@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
+import java.util.zip.DeflaterOutputStream;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves.
@@ -126,7 +127,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_SNAP_SHOOT)) {
       doSnapShoot(rsp);
     } else if (command.equals(CMD_SNAP_PULL)) {
-      doSnapPull();
+      new Thread() {
+        public void run() {
+          doSnapPull();
+        }
+      }.start();
+      rsp.add("status", "OK");
     } else if (command.equals(CMD_DISABLE_POLL)) {
       if (snapPuller != null)
         snapPuller.disablePoll();
@@ -501,16 +507,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         closeNoExp(inFile);
       }
 
-      HttpClient client = null;
       try {
-        client = new HttpClient();
-        NamedList nl = snapPuller.getCommandResponse(client, CMD_DETAILS);
+        NamedList nl = snapPuller.getCommandResponse(CMD_DETAILS);
         details.add("masterDetails", nl.get(CMD_DETAILS));
       } catch (IOException e) {
         LOG.warn("Exception while invoking a 'details' method on master ", e);
-      } finally {
-        if (client != null)
-          client.getHttpConnectionManager().closeIdleConnections(0);
       }
       details.add(MASTER_URL, snapPuller.getMasterUrl());
       if (snapPuller.getPollInterval() != null) {
@@ -776,15 +777,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       delPolicy = core.getDeletionPolicy();
     }
 
-    public void write(OutputStream out) {
-      fos = new FastOutputStream(out);
+    public void write(OutputStream out) throws IOException {
       String fileName = params.get(FILE);
       String cfileName = params.get(CONF_FILE_SHORT);
       String sOffset = params.get(OFFSET);
       String sLen = params.get(LEN);
+      String compress = params.get(COMPRESSION);
       String sChecksum = params.get(CHECKSUM);
       String sindexVersion = params.get(CMD_INDEX_VERSION);
       if (sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
+      if (Boolean.parseBoolean(compress))  {
+        fos = new FastOutputStream(new DeflaterOutputStream(out));
+      } else  {
+        fos = new FastOutputStream(out);
+      }
       FileInputStream inputStream = null;
       int packetsWritten = 0;
       try {
@@ -917,5 +923,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final int PACKET_SZ = 1024 * 1024; // 1MB
 
   public static final String RESERVE = "commitReserveDuration";
+
+  public static final String COMPRESSION = "compression";
+
+  public static final String EXTERNAL = "external";
+
+  public static final String INTERNAL = "internal";
 
 }

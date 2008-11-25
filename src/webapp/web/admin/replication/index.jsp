@@ -311,21 +311,12 @@
       String abortParam = request.getParameter("abort");
       if (replicateParam != null)
         if (replicateParam.equals("now")) {
-          new Thread() {
-            public void run() {
-              executeCommand("snappull", solrcore, rh);
-            }
-          }.start();
+          executeCommand("snappull", solrcore, rh);
         }
       if (abortParam != null)
         if (abortParam.equals("stop")) {
-          new Thread() {
-            public void run() {
-              executeCommand("abortsnappull", solrcore, rh);
-            }
-          }.start();
+          executeCommand("abortsnappull", solrcore, rh);
         }
-
     %>
   </td>
 

@@ -86,7 +86,10 @@ New Features
     before Tokenizer/TokenFilters. (koji)
     
 16. SOLR-868: Adding solrjs as a contrib package: contrib/javascript.
-    (Matthias Epheser via ryan)    
+    (Matthias Epheser via ryan)
+
+17. SOLR-829: Allow slaves to request compressed files from master during replication
+    (Simon Collins, Noble Paul, Akshay Ukey via shalin)
     
 
 Optimizations

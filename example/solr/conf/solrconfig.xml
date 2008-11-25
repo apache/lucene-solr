@@ -403,6 +403,7 @@
      </lst>
   </requestHandler>
 
+<!-- Please refer to http://wiki.apache.org/solr/SolrReplication for details on configuring replication -->
 <!--Master config-->
 <!--
 <requestHandler name="/replication" class="solr.ReplicationHandler" >
@@ -414,9 +415,9 @@
 -->
 <!-- Slave config-->
 <!--
-<requestHandler name="/replication" class="solr.ReplicationHandler" >
+<requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="slave">
-        <str name="masterUrl">http://localhost:8983/solr/replication</str>  
+        <str name="masterUrl">http://localhost:8983/solr/replication</str>
         <str name="pollInterval">00:00:60</str>  
      </lst>
 </requestHandler>
