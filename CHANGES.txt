@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+﻿﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -49,6 +49,11 @@ Bug fixes
    are non-congruent (same field name maps to different field
    numbers).  This bug was introduced with LUCENE-1219.  (Andrzej
    Bialecki via Mike McCandless).
+   
+3. LUCENE-1465: NearSpansOrdered returns payloads from first possible match 
+   rather than the correct, shortest match; Payloads could be returned even
+   if the max slop was exceeded; The wrong payload could be returned in 
+   certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
 
 New features
 
