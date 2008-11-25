@@ -34,6 +34,10 @@ API Changes
    and also to define custom Attributes. The new API has the same performance
    as the old next(Token) approach. (Michael Busch)
 
+5. LUCENE-1467: Add nextDoc() and next(int) methods to OpenBitSetIterator.
+   These methods can be used to avoid additional calls to doc(). 
+   (Michael Busch)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

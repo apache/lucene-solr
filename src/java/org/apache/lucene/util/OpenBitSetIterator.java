@@ -133,6 +133,35 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     return true;
   }
 
+  /** Moves iterator to the next doc and returns its id;
+      returns -1 when this iterator is exhausted. */
+  public int nextDoc() {
+    if (indexArray==0) {
+      if (word!=0) {
+        word >>>= 8;
+        wordShift += 8;
+      }
+
+      while (word==0) {
+        if (++i >= words) {
+          return curDocId = -1;
+        }
+        word = arr[i];
+        wordShift =-1;  // loop invariant code motion should move this
+      }
+
+      // after the first time, should I go with a linear search, or
+      // stick with the binary search in shift?
+      shift();
+    }
+
+    int bitIndex = (indexArray & 0x0f) + wordShift;
+    indexArray >>>= 4;
+    // should i<<6 be cached as a separate variable?
+    // it would only save one cycle in the best circumstances.
+    return curDocId = (i<<6) + bitIndex;
+  }
+  
   public boolean skipTo(int target) {
     indexArray=0;
     i = target >> 6;
@@ -164,6 +193,38 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     // it would only save one cycle in the best circumstances.
     curDocId = (i<<6) + bitIndex;
     return true;
+  }
+  
+  /** Behaves like {@link #skipTo(int)} and returns the docId the iterator
+   *  skipped to; returns -1 if no valid document could be skipped to. */
+  public int next(int fromIndex) {
+    indexArray=0;
+    i = fromIndex >> 6;
+    if (i>=words) {
+      word =0; // setup so next() will also return -1
+      return curDocId = -1;
+    }
+    wordShift = fromIndex & 0x3f;
+    word = arr[i] >>> wordShift;
+    if (word !=0) {
+      wordShift--; // compensate for 1 based arrIndex
+    } else {
+      while (word ==0) {
+        if (++i >= words) {
+          return curDocId = -1;
+        }
+        word = arr[i];
+      }
+      wordShift =-1;
+    }
+
+    shift();
+
+    int bitIndex = (indexArray & 0x0f) + wordShift;
+    indexArray >>>= 4;
+    // should i<<6 be cached as a separate variable?
+    // it would only save one cycle in the best circumstances.
+    return curDocId = (i<<6) + bitIndex;
   }
   
   public int doc() {

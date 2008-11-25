@@ -46,8 +46,13 @@ public class TestOpenBitSet extends TestCase {
     } while (aa>=0);
   }
 
-  // test interleaving different BitSetIterator.next()
-  void doIterate(BitSet a, OpenBitSet b) {
+  // test interleaving different OpenBitSetIterator.next()/skipTo()
+  void doIterate(BitSet a, OpenBitSet b, int mode) {
+    if (mode==1) doIterate1(a, b);
+    if (mode==2) doIterate2(a, b);
+  }
+
+  void doIterate1(BitSet a, OpenBitSet b) {
     int aa=-1,bb=-1;
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
@@ -61,8 +66,20 @@ public class TestOpenBitSet extends TestCase {
     } while (aa>=0);
   }
 
+  void doIterate2(BitSet a, OpenBitSet b) {
+    int aa=-1,bb=-1;
+    OpenBitSetIterator iterator = new OpenBitSetIterator(b);
+    do {
+      aa = a.nextSetBit(aa+1);
+      if (rand.nextBoolean())
+        bb = iterator.nextDoc();
+      else
+        bb = iterator.next(bb+1);
+      assertEquals(aa,bb);
+    } while (aa>=0);
+  }
 
-  void doRandomSets(int maxSize, int iter) {
+  void doRandomSets(int maxSize, int iter, int mode) {
     BitSet a0=null;
     OpenBitSet b0=null;
 
@@ -110,7 +127,7 @@ public class TestOpenBitSet extends TestCase {
       BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
       OpenBitSet bb = (OpenBitSet)b.clone(); bb.flip(fromIndex,toIndex);
 
-      doIterate(aa,bb);   // a problem here is from flip or doIterate
+      doIterate(aa,bb, mode);   // a problem here is from flip or doIterate
 
       fromIndex = rand.nextInt(sz+80);
       toIndex = fromIndex + rand.nextInt((sz>>1)+1);
@@ -142,10 +159,10 @@ public class TestOpenBitSet extends TestCase {
         OpenBitSet b_xor = (OpenBitSet)b.clone(); b_xor.xor(b0);
         OpenBitSet b_andn = (OpenBitSet)b.clone(); b_andn.andNot(b0);
 
-        doIterate(a_and,b_and);
-        doIterate(a_or,b_or);
-        doIterate(a_xor,b_xor);
-        doIterate(a_andn,b_andn);
+        doIterate(a_and,b_and, mode);
+        doIterate(a_or,b_or, mode);
+        doIterate(a_xor,b_xor, mode);
+        doIterate(a_andn,b_andn, mode);
 
         assertEquals(a_and.cardinality(), b_and.cardinality());
         assertEquals(a_or.cardinality(), b_or.cardinality());
@@ -167,12 +184,14 @@ public class TestOpenBitSet extends TestCase {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() {
-    doRandomSets(1200,1000);
+    doRandomSets(1200,1000, 1);
+    doRandomSets(1200,1000, 2);
   }
 
   public void testBig() {
     // uncomment to run a bigger test (~2 minutes).
-    // doRandomSets(2000,200000);
+    // doRandomSets(2000,200000, 1);
+    // doRandomSets(2000,200000, 2);
   }
 
   public void testEquals() {
@@ -196,7 +215,28 @@ public class TestOpenBitSet extends TestCase {
     // try different type of object
     assertFalse(b1.equals(new Object()));
   }
+  
+  public void testBitUtils()
+  {
+    long num = 100000;
+    assertEquals( 5, BitUtil.ntz(num) );
+    assertEquals( 5, BitUtil.ntz2(num) );
+    assertEquals( 5, BitUtil.ntz3(num) );
+    
+    num = 10;
+    assertEquals( 1, BitUtil.ntz(num) );
+    assertEquals( 1, BitUtil.ntz2(num) );
+    assertEquals( 1, BitUtil.ntz3(num) );
 
+    for (int i=0; i<64; i++) {
+      num = 1L << i;
+      assertEquals( i, BitUtil.ntz(num) );
+      assertEquals( i, BitUtil.ntz2(num) );
+      assertEquals( i, BitUtil.ntz3(num) );
+    }
+  }
+
+  
 }
 
 
