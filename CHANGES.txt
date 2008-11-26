@@ -55,6 +55,11 @@ Bug fixes
    if the max slop was exceeded; The wrong payload could be returned in 
    certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
 
+ 4 LUCENE-1453: Ensure IndexReader.reopen() does not result in
+   incorrectly closing the shared FSDirectory.  This bug would only
+   happen if you use IndexReader.open with a File or String argument.
+   (Mark Miller via Mike McCandless)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
