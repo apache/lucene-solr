@@ -64,7 +64,7 @@ public class TermsComponent extends SearchComponent {
             if (theTerm != null && theTerm.field().equals(field)
                     && ((upperIncl == true && upperCmp <= 0) ||
                     (upperIncl == false && upperCmp < 0))) {
-              terms.add(theText, String.valueOf(termEnum.docFreq()));
+              terms.add(theText, termEnum.docFreq());
             } else {//we're done
               break;
             }
