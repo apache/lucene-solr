@@ -90,7 +90,9 @@ New Features
 
 17. SOLR-829: Allow slaves to request compressed files from master during replication
     (Simon Collins, Noble Paul, Akshay Ukey via shalin)
-    
+
+18. SOLR-877: Added TermsComponent for accessing Lucene's TermEnum capabilities.
+    Useful for auto suggest and possibly distributed search.  Not distributed search compliant.  (gsingers)
 
 Optimizations
 ----------------------

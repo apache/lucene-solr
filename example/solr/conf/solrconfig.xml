@@ -610,6 +610,15 @@
   </requestHandler>
 
 
+  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
+
+  <requestHandler name="/autoSuggest" class="org.apache.solr.handler.component.SearchHandler">
+    <arr name="components">
+      <str>termsComp</str>
+    </arr>
+  </requestHandler>
+
+
   <!-- a search component that enables you to configure the top results for
        a given query regardless of the normal lucene scoring.-->
   <searchComponent name="elevator" class="solr.QueryElevationComponent" >

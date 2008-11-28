@@ -349,6 +349,14 @@
       <str name="spellcheckIndexDir">spellchecker3</str>
     </lst>
   </searchComponent>
+
+  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
+
+  <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
+    <arr name="components">
+      <str>termsComp</str>
+    </arr>
+  </requestHandler>
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
