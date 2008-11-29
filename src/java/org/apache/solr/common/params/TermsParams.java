@@ -22,9 +22,14 @@ package org.apache.solr.common.params;
  *
  **/
 public class TermsParams {
-
+  /**
+   * The component name.  Set to true to turn on the TermsComponent
+   */
   public static final String TERMS = "terms";
 
+  /**
+   * Used for building up the other terms
+   */
   public static final String TERMS_PREFIX = TERMS + ".";
 
   /**
@@ -48,15 +53,17 @@ public class TermsParams {
   /**
    * Optional.  If true, include the upper bound term in the results.  False by default.
    */
-  public static final String TERMS_UPPER_INCLUSIVE = TERMS_PREFIX + "upr.incl";
+  public static final String TERMS_UPPER_INCLUSIVE = TERMS_PREFIX + "upper.incl";
 
   /**
    * Optional.  If true, include the lower bound term in the results, otherwise skip to the next one.  True by default.
    */
-  public static final String TERMS_LOWER_INCLUSIVE = TERMS_PREFIX + "lwr.incl";
+  public static final String TERMS_LOWER_INCLUSIVE = TERMS_PREFIX + "lower.incl";
 
   /**
    * Optional.  The number of results to return.  If not specified, looks for {@link org.apache.solr.common.params.CommonParams#ROWS}.  If that's not specified, uses 10.
    */
   public static final String TERMS_ROWS = TERMS_PREFIX + "rows";
+
+  public static final String TERMS_PREFIX_STR = TERMS_PREFIX + "prefix";
 }

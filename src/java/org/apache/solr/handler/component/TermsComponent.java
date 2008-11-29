@@ -44,21 +44,27 @@ public class TermsComponent extends SearchComponent {
       if (fields != null && fields.length > 0) {
         NamedList terms = new NamedList();
         rb.rsp.add("terms", terms);
+        int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
+        if (rows < 0){
+          rows = Integer.MAX_VALUE;
+        }
 
+        String upper = params.get(TermsParams.TERMS_UPPER);
+        boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
+        boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+        String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
         for (int j = 0; j < fields.length; j++) {
           String field = fields[j];
           Term lowerTerm = new Term(field, lower);
+          Term upperTerm = upper != null ? new Term(field, upper) : null;
           TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm);//this will be positioned ready to go
-          int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
           int i = 0;
           NamedList fieldTerms = new NamedList();
           terms.add(field, fieldTerms);
-          String upper = params.get(TermsParams.TERMS_UPPER);
-          Term upperTerm = upper != null ? new Term(field, upper) : null;
-          boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
-          boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
           boolean hasMore = true;
-          if (lowerIncl == false) {
+          Term lowerTestTerm = termEnum.term();
+          //Only advance the enum if we are excluding the lower bound and the lower Term actually matches
+          if (lowerIncl == false && lowerTestTerm.field().equals(field) == true && lowerTestTerm.text().equals(lower)) {
             hasMore = termEnum.next();
           }
           if (hasMore == true) {
@@ -68,7 +74,9 @@ public class TermsComponent extends SearchComponent {
               int upperCmp = upperTerm != null ? theTerm.compareTo(upperTerm) : -1;
               if (theTerm != null && theTerm.field().equals(field)
                       && ((upperIncl == true && upperCmp <= 0) ||
-                      (upperIncl == false && upperCmp < 0))) {
+                      (upperIncl == false && upperCmp < 0))
+                      && (prefix == null || theText.startsWith(prefix))
+                      ) {
                 fieldTerms.add(theText, termEnum.docFreq());
               } else {//we're done
                 break;
