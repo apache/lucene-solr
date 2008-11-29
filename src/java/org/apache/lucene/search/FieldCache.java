@@ -38,7 +38,29 @@ public interface FieldCache {
 
   /** Expert: Stores term text values and document ordering data. */
   public static class StringIndex {
+	  
+    public int binarySearchLookup(String key) {
+      // this special case is the reason that Arrays.binarySearch() isn't useful.
+      if (key == null)
+        return 0;
+	  
+      int low = 1;
+      int high = lookup.length-1;
 
+      while (low <= high) {
+        int mid = (low + high) >> 1;
+        int cmp = lookup[mid].compareTo(key);
+
+        if (cmp < 0)
+          low = mid + 1;
+        else if (cmp > 0)
+          high = mid - 1;
+        else
+          return mid; // key found
+      }
+      return -(low + 1);  // key not found.
+    }
+	
     /** All the term values, in natural order. */
     public final String[] lookup;
 

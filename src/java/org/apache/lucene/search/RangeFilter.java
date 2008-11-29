@@ -31,6 +31,9 @@ import java.text.Collator;
  * This code borrows heavily from {@link RangeQuery}, but is implemented as a Filter
  * 
  * </p>
+ * 
+ * If you construct a large number of range filters with different ranges but on the 
+ * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
  */
 public class RangeFilter extends Filter {
     

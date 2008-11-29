@@ -96,6 +96,15 @@ New features
     Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
     McCandless)
 
+ 7. LUCENE-1461: Added FieldCacheRangeFilter, a RangeFilter for
+    single-term fields that uses FieldCache to compute the filter.  If
+    your field has a single term per document, and you need to create
+    many RangeFilters with varying lower/upper bounds, then this is
+    likely a much faster way to create the filters than RangeFilter.
+    However, it comes at the expense of added RAM consumption and
+    slower first-time usage due to populating the FieldCache.  (Tim
+    Sturge via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
