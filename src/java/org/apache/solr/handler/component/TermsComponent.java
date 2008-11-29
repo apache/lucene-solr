@@ -31,7 +31,7 @@ import java.io.IOException;
  * Return TermEnum information, useful for things like auto suggest.
  *
  * @see org.apache.solr.common.params.TermsParams
- * See Lucene's TermEnum class
+ *      See Lucene's TermEnum class
  */
 public class TermsComponent extends SearchComponent {
 
@@ -40,39 +40,46 @@ public class TermsComponent extends SearchComponent {
     SolrParams params = rb.req.getParams();
     if (params.getBool(TermsParams.TERMS, false)) {
       String lower = params.get(TermsParams.TERMS_LOWER, "");
-      String field = params.get(TermsParams.TERMS_FIELD);
-      if (field != null) {
-        Term lowerTerm = new Term(field, lower);
-        TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm);//this will be positioned ready to go
-        int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
-        int i = 0;
+      String[] fields = params.getParams(TermsParams.TERMS_FIELD);
+      if (fields != null && fields.length > 0) {
         NamedList terms = new NamedList();
         rb.rsp.add("terms", terms);
-        String upper = params.get(TermsParams.TERMS_UPPER);
-        Term upperTerm = upper != null ? new Term(field, upper) : null;
-        boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
-        boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
-        boolean hasMore = true;
-        if (lowerIncl == false) {
-          hasMore = termEnum.next();
-        }
-        if (hasMore == true) {
-          do {
-            Term theTerm = termEnum.term();
-            String theText = theTerm.text();
-            int upperCmp = upperTerm != null ? theTerm.compareTo(upperTerm) : -1;
-            if (theTerm != null && theTerm.field().equals(field)
-                    && ((upperIncl == true && upperCmp <= 0) ||
-                    (upperIncl == false && upperCmp < 0))) {
-              terms.add(theText, termEnum.docFreq());
-            } else {//we're done
-              break;
-            }
-            i++;
+
+        for (int j = 0; j < fields.length; j++) {
+          String field = fields[j];
+          Term lowerTerm = new Term(field, lower);
+          TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm);//this will be positioned ready to go
+          int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
+          int i = 0;
+          NamedList fieldTerms = new NamedList();
+          terms.add(field, fieldTerms);
+          String upper = params.get(TermsParams.TERMS_UPPER);
+          Term upperTerm = upper != null ? new Term(field, upper) : null;
+          boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
+          boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+          boolean hasMore = true;
+          if (lowerIncl == false) {
+            hasMore = termEnum.next();
           }
-          while (i < rows && termEnum.next());
+          if (hasMore == true) {
+            do {
+              Term theTerm = termEnum.term();
+              String theText = theTerm.text();
+              int upperCmp = upperTerm != null ? theTerm.compareTo(upperTerm) : -1;
+              if (theTerm != null && theTerm.field().equals(field)
+                      && ((upperIncl == true && upperCmp <= 0) ||
+                      (upperIncl == false && upperCmp < 0))) {
+                fieldTerms.add(theText, termEnum.docFreq());
+              } else {//we're done
+                break;
+              }
+              i++;
+            }
+            while (i < rows && termEnum.next());
+          }
+          termEnum.close();
         }
-        termEnum.close();
+
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No terms.fl parameter specified");
       }

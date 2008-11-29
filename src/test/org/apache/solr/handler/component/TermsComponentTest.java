@@ -46,16 +46,16 @@ public class TermsComponentTest extends AbstractSolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    assertU(adoc("id", "0", "lowerfilt", "a"));
-    assertU(adoc("id", "1", "lowerfilt", "a"));
-    assertU(adoc("id", "2", "lowerfilt", "aa"));
-    assertU(adoc("id", "3", "lowerfilt", "aaa"));
-    assertU(adoc("id", "4", "lowerfilt", "ab"));
-    assertU(adoc("id", "5", "lowerfilt", "abb"));
-    assertU(adoc("id", "6", "lowerfilt", "abc"));
-    assertU(adoc("id", "7", "lowerfilt", "b"));
-    assertU(adoc("id", "8", "lowerfilt", "baa"));
-    assertU(adoc("id", "9", "lowerfilt", "bbb"));
+    assertU(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a"));
+    assertU(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa"));
+    assertU(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa"));
+    assertU(adoc("id", "3", "lowerfilt", "aaa", "standardfilt", "abbb"));
+    assertU(adoc("id", "4", "lowerfilt", "ab", "standardfilt", "b"));
+    assertU(adoc("id", "5", "lowerfilt", "abb", "standardfilt", "bb"));
+    assertU(adoc("id", "6", "lowerfilt", "abc", "standardfilt", "bbbb"));
+    assertU(adoc("id", "7", "lowerfilt", "b", "standardfilt", "c"));
+    assertU(adoc("id", "8", "lowerfilt", "baa", "standardfilt", "cccc"));
+    assertU(adoc("id", "9", "lowerfilt", "bbb", "standardfilt", "ccccc"));
 
     assertU("commit", commit());
   }
@@ -81,7 +81,8 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
+
     assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
     assertTrue("a is null and it shouldn't be", terms.get("a") != null);
     assertTrue("aa is null and it shouldn't be", terms.get("aa") != null);
@@ -89,6 +90,58 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("ab is null and it shouldn't be", terms.get("ab") != null);
     assertTrue("abb is null and it shouldn't be", terms.get("abb") != null);
     assertTrue("abc is null and it shouldn't be", terms.get("abc") != null);
+  }
+
+  public void testNoField() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    //no lower bound
+    params.add(TermsParams.TERMS_LOWER, "d");
+    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    Exception exception = rsp.getException();
+    assertTrue("exception is null and it shouldn't be", exception != null);
+  }
+
+
+  public void testMultipleFields() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
+    //no lower bound
+    params.add(TermsParams.TERMS_UPPER, "b");
+    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    NamedList tmp = (NamedList) values.get("terms");
+    assertTrue("tmp Size: " + tmp.size() + " is not: " + 2, tmp.size() == 2);
+    terms = (NamedList) tmp.get("lowerfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
+    terms = (NamedList) tmp.get("standardfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 4, terms.size() == 4);
   }
 
   public void testPastUpper() throws Exception {
@@ -112,7 +165,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
     assertTrue("terms Size: " + terms.size() + " is not: " + 0, terms.size() == 0);
   }
 
@@ -137,7 +190,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
     assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
     assertTrue("aa is null and it shouldn't be", terms.get("aa") != null);
     assertTrue("aaa is null and it shouldn't be", terms.get("aaa") != null);
@@ -152,7 +205,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
     assertTrue("terms Size: " + terms.size() + " is not: " + 7, terms.size() == 7);
     assertTrue("aa is null and it shouldn't be", terms.get("aa") != null);
     assertTrue("ab is null and it shouldn't be", terms.get("ab") != null);
@@ -168,7 +221,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
     assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
     assertTrue("aa is null and it shouldn't be", terms.get("aa") != null);
     assertTrue("ab is null and it shouldn't be", terms.get("ab") != null);
@@ -191,7 +244,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
-    terms = (NamedList) values.get("terms");
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
     assertTrue("terms Size: " + terms.size() + " is not: " + 2, terms.size() == 2);
     assertTrue("aa is null and it shouldn't be", terms.get("a") != null);
     assertTrue("aaa is null and it shouldn't be", terms.get("aa") != null);
