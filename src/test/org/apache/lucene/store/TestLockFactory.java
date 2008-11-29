@@ -300,8 +300,8 @@ public class TestLockFactory extends LuceneTestCase {
 
         // Different lock factory instance should hit IOException:
         try {
-            FSDirectory fs2 = FSDirectory.getDirectory(indexDirName, new SingleInstanceLockFactory());
-            fail("Should have hit an IOException because LockFactory instances differ");
+          FSDirectory.getDirectory(indexDirName, new SingleInstanceLockFactory());
+          fail("Should have hit an IOException because LockFactory instances differ");
         } catch (IOException e) {
         }
 
@@ -370,8 +370,6 @@ public class TestLockFactory extends LuceneTestCase {
     public void testNativeFSLockFactory() throws IOException {
 
       NativeFSLockFactory f = new NativeFSLockFactory(System.getProperty("tempDir"));
-
-      NativeFSLockFactory f2 = new NativeFSLockFactory(System.getProperty("tempDir"));
 
       f.setLockPrefix("test");
       Lock l = f.makeLock("commit");
@@ -485,7 +483,6 @@ public class TestLockFactory extends LuceneTestCase {
         }
         public void run() {
             IndexSearcher searcher = null;
-            WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
@@ -566,10 +563,12 @@ public class TestLockFactory extends LuceneTestCase {
     private void rmDir(String dirName) {
         File dir = new java.io.File(dirName);
         String[] files = dir.list();            // clear old files
-        for (int i = 0; i < files.length; i++) {
+        if (files != null) {
+          for (int i = 0; i < files.length; i++) {
             File file = new File(dir, files[i]);
             file.delete();
+          }
+          dir.delete();
         }
-        dir.delete();
     }
 }

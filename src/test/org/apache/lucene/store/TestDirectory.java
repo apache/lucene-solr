@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.File;
 
@@ -115,5 +116,17 @@ public class TestDirectory extends LuceneTestCase {
     }
   }
 
+  // LUCENE-1464
+  public void testDontCreate() throws Throwable {
+    File path = new File(System.getProperty("tempDir"), "doesnotexist");
+    try {
+      assertTrue(!path.exists());
+      Directory dir = new FSDirectory(path, null);
+      assertTrue(!path.exists());
+      dir.close();
+    } finally {
+      _TestUtil.rmDir(path);
+    }
+  }
 }
 

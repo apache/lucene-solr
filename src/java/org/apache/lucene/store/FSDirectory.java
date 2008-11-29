@@ -178,7 +178,7 @@ public class FSDirectory extends Directory {
   public static FSDirectory getDirectory(File file, LockFactory lockFactory)
     throws IOException
   {
-    file = createCanonicalDir(file);
+    file = getCanonicalPath(file);
 
     FSDirectory dir;
     synchronized (DIRECTORIES) {
@@ -197,6 +197,7 @@ public class FSDirectory extends Directory {
         if (lockFactory != null && lockFactory != dir.getLockFactory()) {
           throw new IOException("Directory was previously created with a different LockFactory instance; please pass null as the lockFactory instance and use setLockFactory to change it");
         }
+        dir.checked = false;
       }
     }
     synchronized (dir) {
@@ -256,17 +257,23 @@ public class FSDirectory extends Directory {
   }
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
-  private static File createCanonicalDir(File file) throws IOException {
-    file = new File(file.getCanonicalPath());
+  private static File getCanonicalPath(File file) throws IOException {
+    return new File(file.getCanonicalPath());
+  }
 
-    if (file.exists() && !file.isDirectory())
-      throw new IOException(file + " not a directory");
+  private boolean checked;
 
-    if (!file.exists())
-      if (!file.mkdirs())
-        throw new IOException("Cannot create directory: " + file);
+  final void createDir() throws IOException {
+    if (!checked) {
+      if (directory.exists() && !directory.isDirectory())
+        throw new IOException(directory + " not a directory");
 
-    return file;
+      if (!directory.exists())
+        if (!directory.mkdirs())
+          throw new IOException("Cannot create directory: " + directory);
+
+      checked = true;
+    }
   }
 
   private File directory = null;
@@ -283,7 +290,7 @@ public class FSDirectory extends Directory {
    * Use {@link #getDirectory(String)} if singletons per path are needed.
    */
   public FSDirectory(File path, LockFactory lockFactory) throws IOException {
-    path = createCanonicalDir(path);
+    path = getCanonicalPath(path);
     init(path, lockFactory);
     refCount = 1;
   }
@@ -469,6 +476,7 @@ public class FSDirectory extends Directory {
       Returns a stream writing this file. */
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
+    createDir();
     File file = new File(directory, name);
     if (file.exists() && !file.delete())          // delete existing, if any
       throw new IOException("Cannot overwrite: " + file);

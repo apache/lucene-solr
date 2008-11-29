@@ -130,8 +130,6 @@ final class SegmentInfos extends Vector {
    */
   public static long getCurrentSegmentGeneration(Directory directory) throws IOException {
     String[] files = directory.list();
-    if (files == null)
-      throw new IOException("cannot read directory " + directory + ": list() returned null");
     return getCurrentSegmentGeneration(files);
   }
 
