@@ -106,18 +106,18 @@
   </path>
 
   <target name="download-tag"
-  	description="Downloads a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
+  	description="Downloads a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
 	<sequential>
 	  <mkdir dir="${tags.dir}/${tag}"/>
       <exec dir="${tags.dir}/${tag}" executable="${svn.exe}"
             failifexecutionfails="false">
-        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/test/"/>
+        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/${tag}/src/test/"/>
       </exec>
 	</sequential>
   </target>
 	
   <target name="test-tag" depends="download-tag, compile-core, compile-demo"
-  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_0">
+  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
 	<sequential>
       <available property="tag.available" file="${tags.dir}/${tag}/test" />
 
