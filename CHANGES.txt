@@ -135,6 +135,11 @@ Bug Fixes
 
 11. SOLR-872: Better error message for incorrect copyField destination (Noble Paul via shalin)
 
+12. SOLR-879: Enable position increments in the query parser and fix the
+    example schema to enable position increments for the stop filter in
+    both the index and query analyzers to fix the bug with phrase queries
+    with stopwords. (yonik)
+
 
 Other Changes
 ----------------------

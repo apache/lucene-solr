@@ -73,6 +73,7 @@ public class SolrQueryParser extends QueryParser {
     this.parser  = null;
     this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
+    setEnablePositionIncrements(true);    
   }
 
   public SolrQueryParser(QParser parser, String defaultField) {
@@ -85,6 +86,7 @@ public class SolrQueryParser extends QueryParser {
     this.parser = parser;
     this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
+    setEnablePositionIncrements(true);
   }
 
   private void checkNullField(String field) throws SolrException {
