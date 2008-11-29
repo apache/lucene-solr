@@ -140,6 +140,8 @@ Bug Fixes
     both the index and query analyzers to fix the bug with phrase queries
     with stopwords. (yonik)
 
+13. SOLR-836: Add missing "a" to the example stopwords.txt (yonik)
+
 
 Other Changes
 ----------------------
