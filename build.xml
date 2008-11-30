@@ -52,7 +52,8 @@
           description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
     <echo message="Use 'ant example' to create a runnable example configuration." />
-    <echo message="And for developers:"/>
+    <echo message="Use 'ant run-example' to create and run the example." />
+   	<echo message="And for developers:"/>
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
