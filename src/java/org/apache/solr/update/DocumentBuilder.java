@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -120,15 +121,15 @@ public class DocumentBuilder {
 
     // Check if we should copy this field to any other fields.
     // This could happen whether it is explicit or not.
-    SchemaField[] destArr = schema.getCopyFields(name);
-    if (destArr != null) {
-      for (SchemaField destField : destArr) {
-        addSingleField(destField,val,boost);
+    final List<CopyField> copyFields = schema.getCopyFieldsList(name);
+    if (copyFields != null) {
+      for(CopyField cf : copyFields) {
+        addSingleField(cf.getDestination(), cf.getLimitedValue( val ), boost);
       }
     }
 
     // error if this field name doesn't match anything
-    if (sfield==null && (destArr==null || destArr.length==0)) {
+    if (sfield==null && (copyFields==null || copyFields.size()==0)) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
     }
   }
@@ -218,7 +219,7 @@ public class DocumentBuilder {
               sfield.getName() + ": " +field.getValue() );
       }
       
-      SchemaField[] destArr = schema.getCopyFields(name);
+      final List<CopyField> copyFields = schema.getCopyFieldsList(name);
       
       // load each field value
       boolean hasField = false;
@@ -246,8 +247,10 @@ public class DocumentBuilder {
           }
         }
         
-        // Add the copy fields
-        for( SchemaField sf : destArr ) {
+        // Check if we should copy this field to any other fields.
+        // This could happen whether it is explicit or not.
+        for( CopyField cf : copyFields ) {
+          SchemaField sf = cf.getDestination();
           // check if the copy field is a multivalued or not
           if( !sf.multiValued() && out.get( sf.getName() ) != null ) {
             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
@@ -256,7 +259,7 @@ public class DocumentBuilder {
           }
           
           used = true;
-          Field f = sf.createField( val, boost );
+          Field f = sf.createField( cf.getLimitedValue( val ), boost );
           if( f != null ) { // null fields are not added
             out.add( f );
           }

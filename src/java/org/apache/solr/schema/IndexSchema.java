@@ -621,8 +621,18 @@ public final class IndexSchema {
 
         String source = DOMUtil.getAttr(attrs,"source","copyField definition");
         String dest   = DOMUtil.getAttr(attrs,"dest",  "copyField definition");
+        String maxChars = DOMUtil.getAttr(attrs, "maxChars");
+        int maxCharsInt = CopyField.UNLIMITED;
+        if (maxChars != null) {
+          try {
+            maxCharsInt = Integer.parseInt(maxChars);
+          } catch (NumberFormatException e) {
+            log.warn("Couldn't parse maxChars attribute for copyField from "
+                    + source + " to " + dest + " as integer. The whole field will be copied.");
+          }
+        }
 
-        registerCopyField(source, dest);
+        registerCopyField(source, dest, maxCharsInt);
      }
       
       for (Map.Entry<SchemaField, Integer> entry : copyFieldTargetCounts.entrySet())    {
@@ -646,6 +656,11 @@ public final class IndexSchema {
     refreshAnalyzers();
   }
 
+  public void registerCopyField( String source, String dest )
+  {
+    registerCopyField(source, dest, CopyField.UNLIMITED);
+  }
+
   /**
    * <p>
    * NOTE: this function is not thread safe.  However, it is safe to use within the standard
@@ -655,12 +670,12 @@ public final class IndexSchema {
    * 
    * @see SolrCoreAware
    */
-  public void registerCopyField( String source, String dest )
+  public void registerCopyField( String source, String dest, int maxChars )
   {
     boolean sourceIsPattern = isWildCard(source);
     boolean destIsPattern   = isWildCard(dest);
 
-    log.debug("copyField source='"+source+"' dest='"+dest+"'");
+    log.debug("copyField source='"+source+"' dest='"+dest+"' maxChars='"+maxChars);
     SchemaField d = getFieldOrNull(dest);
     if(d == null){
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField destination :'"+dest+"' does not exist" );
@@ -678,10 +693,10 @@ public final class IndexSchema {
         if( df == null ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField dynamic destination must match a dynamicField." );
         }
-        registerDynamicCopyField(new DynamicDestCopy(source, df ));
+        registerDynamicCopyField(new DynamicDestCopy(source, df, maxChars ));
       }
       else {
-        registerDynamicCopyField(new DynamicCopy(source, d));
+        registerDynamicCopyField(new DynamicCopy(source, d, maxChars));
       }
     } 
     else if( destIsPattern ) {
@@ -692,13 +707,12 @@ public final class IndexSchema {
       // retrieve the field to force an exception if it doesn't exist
       SchemaField f = getField(source);
 
-      SchemaField[] destArr = copyFields.get(source);
-      if (destArr==null) {
-        destArr=new SchemaField[]{d};
-      } else {
-        destArr = (SchemaField[])append(destArr,d);
+      List<CopyField> copyFieldList = copyFieldsMap.get(source);
+      if (copyFieldList == null) {
+        copyFieldList = new ArrayList<CopyField>();
+        copyFieldsMap.put(source, copyFieldList);
       }
-      copyFields.put(source,destArr);
+      copyFieldList.add(new CopyField(f, d, maxChars));
 
       copyFieldTargetCounts.put(d, (copyFieldTargetCounts.containsKey(d) ? copyFieldTargetCounts.get(d) + 1 : 1));
     }
@@ -894,9 +908,16 @@ public final class IndexSchema {
 
   static class DynamicCopy extends DynamicReplacement {
     final SchemaField targetField;
+    final int maxChars;
+
     DynamicCopy(String regex, SchemaField targetField) {
+      this(regex, targetField, CopyField.UNLIMITED);
+    }
+
+    DynamicCopy(String regex, SchemaField targetField, int maxChars) {
       super(regex);
       this.targetField = targetField;
+      this.maxChars = maxChars;
     }
     
     public SchemaField getTargetField( String sourceField )
@@ -918,7 +939,11 @@ public final class IndexSchema {
     final String dstr;
     
     DynamicDestCopy(String source, DynamicField dynamic) {
-      super(source, dynamic.prototype );
+      this(source, dynamic, CopyField.UNLIMITED);
+    }
+      
+    DynamicDestCopy(String source, DynamicField dynamic, int maxChars) {
+      super(source, dynamic.prototype, maxChars);
       this.dynamic = dynamic;
       
       String dest = dynamic.regex;
@@ -1098,7 +1123,7 @@ public final class IndexSchema {
   };
 
 
-  private final Map<String, SchemaField[]> copyFields = new HashMap<String,SchemaField[]>();
+  private final Map<String, List<CopyField>> copyFieldsMap = new HashMap<String, List<CopyField>>();
   private DynamicCopy[] dynamicCopyFields;
   /**
    * keys are all fields copied to, count is num of copyField
@@ -1119,46 +1144,69 @@ public final class IndexSchema {
       return new SchemaField[0];
     }
     List<SchemaField> sf = new ArrayList<SchemaField>();
-    for (Map.Entry<String, SchemaField[]> cfs : copyFields.entrySet()) {
-      for (SchemaField cf : cfs.getValue()) {
-        if (cf.getName().equals(destField)) {
-          sf.add(getField(cfs.getKey()));
+    for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
+      for (CopyField copyField : cfs.getValue()) {
+        if (copyField.getDestination().getName().equals(destField)) {
+          sf.add(copyField.getSource());
         }
       }
     }
-    return sf.toArray(new SchemaField[1]);
+    return sf.toArray(new SchemaField[sf.size()]);
   }
   /**
    * Get all copy fields, both the static and the dynamic ones.
+   * 
    * @param sourceField
    * @return Array of fields to copy to.
+   * @deprecated Use {@link #getCopyFieldsList(String)} instead.
    */
+  @Deprecated
   public SchemaField[] getCopyFields(String sourceField) {
-    // Get the dynamic ones into a list.
+    // This is the List that holds all the results, dynamic or not.
     List<SchemaField> matchCopyFields = new ArrayList<SchemaField>();
 
+    // Get the dynamic results into the list.
     for(DynamicCopy dynamicCopy : dynamicCopyFields) {
       if(dynamicCopy.matches(sourceField)) {
         matchCopyFields.add(dynamicCopy.getTargetField(sourceField));
       }
     }
 
-    // Get the fixed ones, if there are any.
-    SchemaField[] fixedCopyFields = copyFields.get(sourceField);
-
-    boolean appendFixed = copyFields.containsKey(sourceField);
-
-    // Construct the results by concatenating dynamic and fixed into a results array.
-
-    SchemaField[] results = new SchemaField[matchCopyFields.size() + (appendFixed ? fixedCopyFields.length : 0)];
-
-    matchCopyFields.toArray(results);
-
-    if(appendFixed) {
-      System.arraycopy(fixedCopyFields, 0, results, matchCopyFields.size(), fixedCopyFields.length);
+    // Get the fixed ones, if there are any and add them.
+    final List<CopyField> copyFields = copyFieldsMap.get(sourceField);
+    if (copyFields!=null) {
+      final Iterator<CopyField> it = copyFields.iterator();
+      while (it.hasNext()) {
+        matchCopyFields.add(it.next().getDestination());
+      }
     }
 
-    return results;
+    // Construct the results by transforming the list into an array.
+    return matchCopyFields.toArray(new SchemaField[matchCopyFields.size()]);
+  }
+
+  /**
+   * Get all copy fields for a specified source field, both static
+   * and dynamic ones.
+   * @param sourceField
+   * @return List of CopyFields to copy to.
+   * @since solr 1.4
+   */
+  // This is useful when we need the maxSize param of each CopyField
+  public List<CopyField> getCopyFieldsList(final String sourceField){
+    final List<CopyField> result = new ArrayList<CopyField>();
+    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+      if (dynamicCopy.matches(sourceField)) {
+        result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
+      }
+    }
+    List<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
+    if (fixedCopyFields != null)
+    {
+      result.addAll(fixedCopyFields);
+    }
+
+    return result;
   }
   
   /**
