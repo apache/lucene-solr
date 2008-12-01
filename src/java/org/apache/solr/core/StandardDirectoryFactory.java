@@ -1,5 +1,6 @@
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -15,9 +16,9 @@ public class StandardDirectoryFactory extends DirectoryFactory {
 
   public Directory open(String path) throws IOException {
     if (!Constants.WINDOWS) {
-      return NIOFSDirectory.getDirectory(path);
+      return new NIOFSDirectory(new File(path), null);
     }
 
-    return FSDirectory.getDirectory(path);
+    return new FSDirectory(new File(path), null);
   }
 }
