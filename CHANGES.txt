@@ -105,6 +105,10 @@ New features
     slower first-time usage due to populating the FieldCache.  (Tim
     Sturge via Mike McCandless)
 
+ 8. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
+    to allow subclasses to choose which DocIdSet implementation to use
+    (Paul Elschot via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

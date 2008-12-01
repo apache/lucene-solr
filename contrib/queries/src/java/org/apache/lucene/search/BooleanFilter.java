@@ -19,11 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.SortedVIntList;
@@ -116,7 +114,12 @@ public class BooleanFilter extends Filter
     return emptyDocIdSet;
   }
 
-  /** Provide a SortedVIntList when it is definitely smaller than an OpenBitSet */
+  // TODO: in 3.0, instead of removing this deprecated
+  // method, make it a no-op and mark it final
+  /** Provide a SortedVIntList when it is definitely smaller
+   * than an OpenBitSet.
+   * @deprecated Either use CachingWrapperFilter, or
+   * switch to a different DocIdSet implementation yourself. */
   protected DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
     return (result.cardinality() < (maxDocs / 9))
       ? (DocIdSet) new SortedVIntList(result)

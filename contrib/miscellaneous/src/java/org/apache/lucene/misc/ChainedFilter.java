@@ -176,8 +176,13 @@ public class ChainedFilter extends Filter
         }
         return result;
     }
-    
-    /** Provide a SortedVIntList when it is definitely smaller than an OpenBitSet */
+
+    // TODO: in 3.0, instead of removing this deprecated
+    // method, make it a no-op and mark it final
+    /** Provide a SortedVIntList when it is definitely
+     *  smaller than an OpenBitSet
+     *  @deprecated Either use CachingWrapperFilter, or
+     *  switch to a different DocIdSet implementation yourself. */
     protected DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
         return (result.cardinality() < (maxDocs / 9))
               ? (DocIdSet) new SortedVIntList(result)

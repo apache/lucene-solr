@@ -73,6 +73,14 @@ public class CachingWrapperFilter extends Filter {
 
     return bits;
   }
+
+  /** Provide the DocIdSet to be cached, using the DocIdSet provided
+   *  by the wrapped Filter.
+   *  This implementation returns the given DocIdSet.
+   */
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) {
+    return docIdSet;
+  }
   
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     if (cache == null) {
@@ -91,7 +99,7 @@ public class CachingWrapperFilter extends Filter {
         return new DocIdBitSet((BitSet) cached);
     }
 
-    final DocIdSet docIdSet = filter.getDocIdSet(reader);
+    final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
 
     synchronized (cache) {  // update cache
       cache.put(reader, docIdSet);
