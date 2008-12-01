@@ -123,15 +123,27 @@ public class FieldCacheRangeFilter extends Filter {
     
     private void initialize() {
       int lowerPoint = fcsi.binarySearchLookup(lowerVal);
-      if (includeLower && lowerPoint >= 0) {
+      int upperPoint = fcsi.binarySearchLookup(upperVal);
+
+      if (lowerPoint == 0 && upperPoint == 0) {
+        throw new IllegalArgumentException("At least one value must be non-null");
+      }
+      
+      if (includeLower && lowerPoint == 0) {
+    	throw new IllegalArgumentException("The lower bound must be non-null to be inclusive");
+      } else if (includeLower && lowerPoint > 0) {
         inclusiveLowerPoint = lowerPoint;
       } else if (lowerPoint >= 0) {
         inclusiveLowerPoint = lowerPoint+1;
       } else {
         inclusiveLowerPoint = -lowerPoint-1;
       }
-      int upperPoint = fcsi.binarySearchLookup(upperVal);
-      if (includeUpper && upperPoint >= 0) {
+      
+      if (includeUpper && upperPoint == 0) {
+    	throw new IllegalArgumentException("The upper bound must be non-null to be inclusive");
+      } else if (upperPoint == 0) {
+    	inclusiveUpperPoint = Integer.MAX_VALUE;  
+      } else if (includeUpper && upperPoint > 0) {
         inclusiveUpperPoint = upperPoint;
       } else if (upperPoint >= 0) {
         inclusiveUpperPoint = upperPoint - 1;
