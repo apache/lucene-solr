@@ -254,18 +254,52 @@ print<<"__HTML_HEADER__";
 
     }
 
+    var newerRegex = new RegExp("^(?:trunk|2\\\\.4\\\\.0)");
+    function isOlder(listId) {
+      return ! newerRegex.test(listId);
+    }
+
+    function escapeMeta(s) {
+      return s.replace(/(?=[.*+?^\${}()|[\\]\\/\\\\])/g, '\\\\');
+    }
+
+    function shouldExpand(currentList, currentAnchor, listId) {
+      var listName = listId.substring(0, listId.length - 5);
+      var parentRegex = new RegExp("^" + escapeMeta(listName) + "\\\\.");
+      return currentList == listId
+             || (isOlder(currentAnchor) && listId == 'older.list')
+             || parentRegex.test(currentAnchor);
+    }
+
     function collapse() {
       /* Collapse all but the first and second releases. */
       var unorderedLists = document.getElementsByTagName("ul");
+      var currentAnchor = location.hash.substring(1);
+      var currentList = currentAnchor + ".list";
+
       for (var i = 0; i < unorderedLists.length; i++) {
         var list = unorderedLists[i];
-        if (list.id != '$first_relid.list' && list.id != '$second_relid.list') {
+        /* Collapse the current item, unless either the current item is one of
+         * the first two releases, or the current URL has a fragment and the
+         * fragment refers to the current item or one of its ancestors.
+         */
+        if (list.id != '$first_relid.list' 
+            && list.id != '$second_relid.list'
+            && (currentAnchor == ''
+                || ! shouldExpand(currentList, currentAnchor, list.id))) {
           list.style.display = "none";
         }
       }
       var orderedLists = document.getElementsByTagName("ol");
       for (var i = 0; i < orderedLists.length; i++) {
-        orderedLists[i].style.display = "none"; 
+        var list = orderedLists[i];
+        /* Collapse the current item, unless the current URL has a fragment
+         * and the fragment refers to the current item or one of its ancestors.
+         */
+        if (currentAnchor == ''
+            || ! shouldExpand(currentList, currentAnchor, list.id)) {
+          list.style.display = "none";
+        }
       }
       /* Add "Click to collapse/expand" tooltips to the release/section headings */
       var anchors = document.getElementsByTagName("a");
@@ -320,7 +354,7 @@ for my $rel (@releases) {
   ($release, $reldate, $relinfo, $sections) = @$rel;
 
   # The first section heading is undefined for the older sectionless releases
-  my $has_release_sections = $sections->[0][0];
+  my $has_release_sections = has_release_sections($sections);
 
   (my $relid = lc($release)) =~ s/\s+/_/g;
   print "<$header><a id=\"$relid\" href=\"javascript:toggleList('$relid')\">";
@@ -339,12 +373,13 @@ for my $rel (@releases) {
     print "  <li><a id=\"$relid.$sectid\"",
           " href=\"javascript:toggleList('$relid.$sectid')\">",
           ($heading || ''), "</a>&nbsp;&nbsp;&nbsp;$numItemsStr\n"
-      if ($has_release_sections);
+      if ($has_release_sections and $heading);
 
     my $list_type = $items->[0] || '';
     my $list = ($has_release_sections || $list_type eq 'numbered' ? 'ol' : 'ul');
     my $listid = $sectid ? "$relid.$sectid" : $relid;
-    print "    <$list id=\"$listid.list\">\n";
+    print "    <$list id=\"$listid.list\">\n"
+      unless ($has_release_sections and not $heading);
 
     for my $itemnum (1..$#{$items}) {
       my $item = $items->[$itemnum];
@@ -362,27 +397,36 @@ for my $rel (@releases) {
         #
         # Rule of thumb: if a trailing parenthesized expression with a following
         # period does not contain "LUCENE-XXX", and it either has three or 
-        # fewer words or it includes the word "via", then it is considered to
-        # be an attribution.
+        # fewer words or it includes the word "via" or the phrase "updates from",
+	      # then it is considered to be an attribution.
 
-        $item =~ s{(\s*(\((?!see #|use the bug number)[^)"]+?\))\.\s*)$}
-                  { 
+        $item =~ s{(\s*(\((?!see \#|use the bug number)[^)"]+?\)))
+                   ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
+                  {
                     my $subst = $1;  # default: no change
                     my $parenthetical = $2;
+		                my $trailing_period_and_or_issue = $3;
                     if ($parenthetical !~ /LUCENE-\d+/) {
                       my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
                       my @words = grep {/\S/} split /\s+/, $no_parens;
-                      if ($no_parens =~ /\svia\s/i || scalar(@words) <= 3) { 
+                      if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= 3) {
                         $subst = "<br /><span class=\"attrib\">$parenthetical</span>";
                       }
                     }
-                    $subst
-                  }e;
+                    $subst . $trailing_period_and_or_issue;
+                  }ex;
       }
-      $item =~ s:\n{2,}:\n<p/>\n:g;                    # Keep paragraph breaks
-      $item =~ s{(?:${jira_url_prefix})?(LUCENE-\d+)}  # Link to JIRA
+      $item =~ s:\n{2,}:\n<p/>\n:g;                   # Keep paragraph breaks
+      # Link LUCENE-XXX, SOLR-XXX and INFRA-XXX to JIRA
+      $item =~ s{(?:${jira_url_prefix})?((?:LUCENE|SOLR|INFRA)-\d+)}
                 {<a href="${jira_url_prefix}$1">$1</a>}g;
-      $item =~ s~((?i:bug|patch)\s*\#?\s*(\d+))        # Find Bugzilla issues
+      $item =~ s{(issue\s*\#?\s*(\d{3,}))}            # Link Issue XXX to JIRA
+                {<a href="${jira_url_prefix}LUCENE-$2">$1</a>}gi;
+      # Link Lucene XXX, SOLR XXX and INFRA XXX to JIRA
+      $item =~ s{((LUCENE|SOLR|INFRA)\s+(\d{3,}))}
+                {<a href="${jira_url_prefix}\U$2\E-$3">$1</a>}gi;
+      # Find single Bugzilla issues
+      $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))
                 ~ my $issue = $1;
                   my $jira_issue_num = $bugzilla_jira_map{$2}; # Link to JIRA copies
                   $issue = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_num">!
@@ -390,15 +434,60 @@ for my $rel (@releases) {
                     if (defined($jira_issue_num));
                   $issue;
                 ~gex;
+      # Find multiple Bugzilla issues
+      $item =~ s~(?<=(?i:bugs))(\s*)(\d+)(\s*(?i:\&|and)\s*)(\d+)
+		            ~ my $leading_whitespace = $1;
+		              my $issue_num_1 = $2;
+		              my $interlude = $3;
+                  my $issue_num_2 = $4;
+                  # Link to JIRA copies
+                  my $jira_issue_1 = $bugzilla_jira_map{$issue_num_1};
+                  my $issue1
+		                  = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_1">!
+                      . qq!$issue_num_1&nbsp;[LUCENE-$jira_issue_1]</a>!
+                    if (defined($jira_issue_1));
+                  my $jira_issue_2 = $bugzilla_jira_map{$issue_num_2};
+                  my $issue2
+		                  = qq!<a href="${jira_url_prefix}LUCENE-$jira_issue_2">!
+                      . qq!$issue_num_2&nbsp;[LUCENE-$jira_issue_2]</a>!
+                    if (defined($jira_issue_2));
+                  $leading_whitespace . $issue1 . $interlude . $issue2;
+                ~gex;
+
       print "      <li>$item</li>\n";
     }
-    print "    </$list>\n";
+    print "    </$list>\n" unless ($has_release_sections and not $heading);
     print "  </li>\n" if ($has_release_sections);
   }
   print "</ul>\n" if ($has_release_sections);
 }
 print "</ul>\n" if ($relcnt > 3);
 print "</body>\n</html>\n";
+
+
+#
+# Subroutine: has_release_sections
+#
+# Takes one parameter:
+#
+#    - The $sections array reference
+#
+# Returns one scalar:
+#
+#    - A boolean indicating whether there are release sections 
+#
+sub has_release_sections {
+  my $sections = shift;
+  my $has_release_sections = 0;
+  my $first_titled_section_num = -1;
+  for my $section_num (0 .. $#{$sections}) {
+    if ($sections->[$section_num][0]) {
+      $has_release_sections = 1;
+      last;
+    }
+  }
+  return $has_release_sections;
+}
 
 
 #
@@ -520,7 +609,9 @@ sub setup_release_dates {
            '1.4.3' => '2004-12-07',     '1.9 RC1' => '2006-02-21',
            '1.9 final' => '2006-02-27', '1.9.1' => '2006-03-02',
            '2.0.0' => '2006-05-26',     '2.1.0' => '2007-02-14',
-           '2.2.0' => '2007-06-19',     '2.3.0' => '2008-01-23' );
+           '2.2.0' => '2007-06-19',     '2.3.0' => '2008-01-21',
+           '2.3.1' => '2008-02-22',     '2.3.2' => '2008-05-05',
+           '2.4.0' => '2008-10-06'                                );
 }
 
 
