@@ -146,6 +146,9 @@ Bug Fixes
 
 13. SOLR-836: Add missing "a" to the example stopwords.txt (yonik)
 
+14. SOLR-892: Fix serialization of booleans for PHPSerializedResponseWriter
+    (yonik)
+
 
 Other Changes
 ----------------------

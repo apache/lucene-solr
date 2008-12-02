@@ -243,6 +243,11 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeBool(String name, boolean val) throws IOException {
     writer.write(val ? "b:1;" : "b:0;");
   }
+
+  @Override
+  public void writeBool(String name, String val) throws IOException {
+    writeBool(name, val.charAt(0) == 't');
+  }
   
   @Override
   public void writeInt(String name, String val) throws IOException {

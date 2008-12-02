@@ -50,5 +50,18 @@ public class JSONWriterTest extends AbstractSolrTestCase {
     assertEquals(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
 
   }
+
+  public void testPHPS() throws IOException {
+    SolrQueryRequest req = req("dummy");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    QueryResponseWriter w = new PHPSerializedResponseWriter();
+
+    StringWriter buf = new StringWriter();
+    rsp.add("data1", "hello");
+    rsp.add("data2", 42);
+    rsp.add("data3", true);
+    w.write(buf, req, rsp);
+    assertEquals(buf.toString(), "a:3:{s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;}");
+  }
   
 }
