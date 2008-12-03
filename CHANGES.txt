@@ -165,6 +165,8 @@ Other Changes
 
  6. SOLR-465: Upgraded to Lucene 2.9-dev (r719351) (shalin)
 
+ 7. SOLR-889: Upgraded to commons-io-1.4.jar and commons-fileupload-1.2.1.jar (ryan) 
+
 
 Build
 ----------------------
