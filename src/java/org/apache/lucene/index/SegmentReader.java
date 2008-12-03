@@ -591,6 +591,7 @@ class SegmentReader extends DirectoryIndexReader {
       deletedDocs.write(directory(), si.getDelFileName());
       
       si.setDelCount(si.getDelCount()+pendingDeleteCount);
+      pendingDeleteCount = 0;
     }
     if (undeleteAll && si.hasDeletions()) {
       si.clearDelGen();
