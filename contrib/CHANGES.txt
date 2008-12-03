@@ -17,7 +17,9 @@ Bug fixes
 
 New features
 
- (None)
+ 1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of
+    RangeQuery at the expense of added space (additional indexed
+    tokens) consumed in the index.  (Uwe Schindler via Mike McCandless)
 
 Documentation
 
