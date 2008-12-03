@@ -424,12 +424,17 @@ public class BooleanQuery extends Query {
         buffer.append("+");
 
       Query subQuery = c.getQuery();
-      if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
-        buffer.append("(");
-        buffer.append(c.getQuery().toString(field));
-        buffer.append(")");
-      } else
-        buffer.append(c.getQuery().toString(field));
+      if (subQuery != null) {
+        if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
+          buffer.append("(");
+          buffer.append(subQuery.toString(field));
+          buffer.append(")");
+        } else {
+          buffer.append(subQuery.toString(field));
+        }
+      } else {
+        buffer.append("null");
+      }
 
       if (i != clauses.size()-1)
         buffer.append(" ");
