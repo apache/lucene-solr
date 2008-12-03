@@ -85,7 +85,7 @@ final class MergeDocIDRemapper {
       int hi = docMaps.length - 1;                  // for first element less
 
       while (hi >= lo) {
-        int mid = (lo + hi) >> 1;
+        int mid = (lo + hi) >>> 1;
         int midValue = starts[mid];
         if (oldDocID < midValue)
           hi = mid - 1;

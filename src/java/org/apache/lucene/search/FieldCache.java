@@ -48,7 +48,7 @@ public interface FieldCache {
       int high = lookup.length-1;
 
       while (low <= high) {
-        int mid = (low + high) >> 1;
+        int mid = (low + high) >>> 1;
         int cmp = lookup[mid].compareTo(key);
 
         if (cmp < 0)
