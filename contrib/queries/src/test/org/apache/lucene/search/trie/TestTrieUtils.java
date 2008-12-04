@@ -81,6 +81,7 @@ public class TestTrieUtils extends LuceneTestCase {
 		for (int i=0; i<vals.length; i++) {
 			trieVals[i]=variant.longToTrieCoded(vals[i]);
 			assertEquals( "Back and forth conversion should return same value", vals[i], variant.trieCodedToLong(trieVals[i]) );
+			assertEquals( "Automatic back conversion with encoding detection should return same value", vals[i], TrieUtils.trieCodedToLongAuto(trieVals[i]) );
 		}
 		
 		// check sort order (trieVals should be ascending)
@@ -112,6 +113,7 @@ public class TestTrieUtils extends LuceneTestCase {
 		for (int i=0; i<vals.length; i++) {
 			trieVals[i]=variant.doubleToTrieCoded(vals[i]);
 			assertTrue( "Back and forth conversion should return same value", vals[i]==variant.trieCodedToDouble(trieVals[i]) );
+			assertTrue( "Automatic back conversion with encoding detection should return same value", vals[i]==TrieUtils.trieCodedToDoubleAuto(trieVals[i]) );
 		}
 		
 		// check sort order (trieVals should be ascending)
@@ -145,6 +147,7 @@ public class TestTrieUtils extends LuceneTestCase {
 		for (int i=0; i<vals.length; i++) {
 			trieVals[i]=variant.dateToTrieCoded(vals[i]);
 			assertEquals( "Back and forth conversion should return same value", vals[i], variant.trieCodedToDate(trieVals[i]) );
+			assertEquals( "Automatic back conversion with encoding detection should return same value", vals[i], TrieUtils.trieCodedToDateAuto(trieVals[i]) );
 		}
 		
 		// check sort order (trieVals should be ascending)
