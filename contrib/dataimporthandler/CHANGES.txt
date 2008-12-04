@@ -32,6 +32,9 @@ New Features
               residing as CLOBs or BLOBs in databases.
               (Noble Paul via shalin)
 
+5. SOLR-887:  A Transformer to strip HTML tags.
+              (Ahmed Hammad via shalin)
+
 Optimizations
 ----------------------
 
