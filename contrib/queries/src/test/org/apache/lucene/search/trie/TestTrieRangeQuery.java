@@ -19,8 +19,6 @@ package org.apache.lucene.search.trie;
 
 import java.util.Random;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,8 +30,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestTrieRangeQuery extends TestCase
+public class TestTrieRangeQuery extends LuceneTestCase
 {
 	private static final long distance=66666;
 	
