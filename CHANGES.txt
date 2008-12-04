@@ -98,12 +98,12 @@ New features
 
  7. LUCENE-1461: Added FieldCacheRangeFilter, a RangeFilter for
     single-term fields that uses FieldCache to compute the filter.  If
-    your field has a single term per document, and you need to create
-    many RangeFilters with varying lower/upper bounds, then this is
-    likely a much faster way to create the filters than RangeFilter.
-    However, it comes at the expense of added RAM consumption and
-    slower first-time usage due to populating the FieldCache.  (Tim
-    Sturge via Mike McCandless)
+    your documents all have a single term for a given field, and you
+    need to create many RangeFilters with varying lower/upper bounds,
+    then this is likely a much faster way to create the filters than
+    RangeFilter.  However, it comes at the expense of added RAM
+    consumption and slower first-time usage due to populating the
+    FieldCache.  (Tim Sturge via Mike McCandless)
 
  8. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
     to allow subclasses to choose which DocIdSet implementation to use
