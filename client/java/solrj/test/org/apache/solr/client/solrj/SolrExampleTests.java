@@ -219,7 +219,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     doc3.addField( "price", 10 );
     UpdateRequest up = new UpdateRequest();
     up.add( doc3 );
-    up.setCommitWithin( 10 );
+    up.setCommitWithin( 100 );
     up.process( server );
     
     rsp = server.query( new SolrQuery( "*:*") );
