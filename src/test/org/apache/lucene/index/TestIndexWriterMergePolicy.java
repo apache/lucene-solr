@@ -239,7 +239,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       assertTrue(numSegments < mergeFactor);
     }
 
-    String[] files = writer.getDirectory().list();
+    String[] files = writer.getDirectory().listAll();
     int segmentCfsCount = 0;
     for (int i = 0; i < files.length; i++) {
       if (files[i].endsWith(".cfs")) {
@@ -249,6 +249,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     assertEquals(segmentCount, segmentCfsCount);
   }
 
+  /*
   private void printSegmentDocCounts(IndexWriter writer) {
     int segmentCount = writer.getSegmentCount();
     System.out.println("" + segmentCount + " segments total");
@@ -257,4 +258,5 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
           + " docs");
     }
   }
+  */
 }

@@ -620,12 +620,11 @@ final class SegmentInfo {
       else
         prefix = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION;
       int prefixLength = prefix.length();
-      String[] allFiles = dir.list();
-      if (allFiles == null)
-        throw new IOException("cannot read directory " + dir + ": list() returned null");
+      String[] allFiles = dir.listAll();
+      final IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
       for(int i=0;i<allFiles.length;i++) {
         String fileName = allFiles[i];
-        if (fileName.length() > prefixLength && Character.isDigit(fileName.charAt(prefixLength)) && fileName.startsWith(prefix)) {
+        if (filter.accept(null, fileName) && fileName.length() > prefixLength && Character.isDigit(fileName.charAt(prefixLength)) && fileName.startsWith(prefix)) {
           files.add(fileName);
         }
       }

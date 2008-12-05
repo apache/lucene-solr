@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexFileNameFilter;
+
 /** A Directory is a flat list of files.  Files may be written once, when they
  * are created.  Once a file is created it may only be opened for read, or
  * deleted.  Random access is permitted both when reading and writing.
@@ -43,13 +45,28 @@ public abstract class Directory {
    * this Directory instance). */
   protected LockFactory lockFactory;
 
-  /** Returns an array of strings, one for each file in the
-   * directory.  This method may return null (for example for
-   * {@link FSDirectory} if the underlying directory doesn't
-   * exist in the filesystem or there are permissions
-   * problems).*/
+  /** @deprecated For some Directory implementations ({@link
+   *  FSDirectory}, and its subclasses), this method
+   *  silently filters its results to include only index
+   *  files.  Please use {@link #listAll} instead, which
+   *  does no filtering. */
   public abstract String[] list()
        throws IOException;
+
+  /** Returns an array of strings, one for each file in the
+   *  directory.  Unlike {@link #list} this method does no
+   *  filtering of the contents in a directory, and it will
+   *  never return null (throws IOException instead).
+   *
+   *  Currently this method simply fallsback to {@link
+   *  #list} for Directory impls outside of Lucene's core &
+   *  contrib, but in 3.0 that method will be removed and
+   *  this method will become abstract. */
+  public String[] listAll()
+    throws IOException
+  {
+    return list();
+  }
 
   /** Returns true iff a file with the given name exists. */
   public abstract boolean fileExists(String name)
@@ -173,48 +190,55 @@ public abstract class Directory {
    * are undefined and you could easily hit a
    * FileNotFoundException.
    *
+   * <p><b>NOTE:</b> this method only copies files that look
+   * like index files (ie, have extensions matching the
+   * known extensions of index files).
+   *
    * @param src source directory
    * @param dest destination directory
    * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
    * @throws IOException
    */
   public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
-      final String[] files = src.list();
+    final String[] files = src.listAll();
 
-      if (files == null)
-        throw new IOException("cannot read directory " + src + ": list() returned null");
+    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
-      byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
-      for (int i = 0; i < files.length; i++) {
-        IndexOutput os = null;
-        IndexInput is = null;
+    byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
+    for (int i = 0; i < files.length; i++) {
+
+      if (!filter.accept(null, files[i]))
+        continue;
+
+      IndexOutput os = null;
+      IndexInput is = null;
+      try {
+        // create file in dest directory
+        os = dest.createOutput(files[i]);
+        // read current file
+        is = src.openInput(files[i]);
+        // and copy to dest directory
+        long len = is.length();
+        long readCount = 0;
+        while (readCount < len) {
+          int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
+          is.readBytes(buf, 0, toRead);
+          os.writeBytes(buf, toRead);
+          readCount += toRead;
+        }
+      } finally {
+        // graceful cleanup
         try {
-          // create file in dest directory
-          os = dest.createOutput(files[i]);
-          // read current file
-          is = src.openInput(files[i]);
-          // and copy to dest directory
-          long len = is.length();
-          long readCount = 0;
-          while (readCount < len) {
-            int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
-            is.readBytes(buf, 0, toRead);
-            os.writeBytes(buf, toRead);
-            readCount += toRead;
-          }
+          if (os != null)
+            os.close();
         } finally {
-          // graceful cleanup
-          try {
-            if (os != null)
-              os.close();
-          } finally {
-            if (is != null)
-              is.close();
-          }
+          if (is != null)
+            is.close();
         }
       }
-      if(closeDirSrc)
-        src.close();
+    }
+    if(closeDirSrc)
+      src.close();
   }
 
   /**

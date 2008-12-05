@@ -38,6 +38,14 @@ API Changes
    These methods can be used to avoid additional calls to doc(). 
    (Michael Busch)
 
+6. LUCENE-1468: Deprecate Directory.list(), which sometimes (in
+   FSDirectory) filters out files that don't look like index files, in
+   favor of new Directory.listAll(), which does no filtering.  Also,
+   listAll() will never return null; instead, it throws an IOException
+   (or subclass).  Specifically, FSDirectory.listAll() will throw the
+   newly added NoSuchDirectoryException if the directory does not
+   exist.  (Marcel Reutegger, Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

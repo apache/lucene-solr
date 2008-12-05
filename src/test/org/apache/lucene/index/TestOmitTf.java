@@ -197,7 +197,7 @@ public class TestOmitTf extends LuceneTestCase {
   }
 
   private void assertNoPrx(Directory dir) throws Throwable {
-    final String[] files = dir.list();
+    final String[] files = dir.listAll();
     for(int i=0;i<files.length;i++)
       assertFalse(files[i].endsWith(".prx"));
   }

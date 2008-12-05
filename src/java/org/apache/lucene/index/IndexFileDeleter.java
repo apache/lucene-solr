@@ -146,9 +146,7 @@ final class IndexFileDeleter {
     long currentGen = segmentInfos.getGeneration();
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
-    String[] files = directory.list();
-    if (files == null)
-      throw new IOException("cannot read directory " + directory + ": list() returned null");
+    String[] files = directory.listAll();
 
     CommitPoint currentCommitPoint = null;
 
@@ -306,9 +304,7 @@ final class IndexFileDeleter {
    * that segment.
    */
   public void refresh(String segmentName) throws IOException {
-    String[] files = directory.list();
-    if (files == null)
-      throw new IOException("cannot read directory " + directory + ": list() returned null");
+    String[] files = directory.listAll();
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
     String segmentPrefix1;
     String segmentPrefix2;

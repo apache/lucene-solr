@@ -315,6 +315,9 @@ public class TestFieldsReader extends LuceneTestCase {
     public String[] list() throws IOException {
       return fsDir.list();
     }
+    public String[] listAll() throws IOException {
+      return fsDir.listAll();
+    }
     public boolean fileExists(String name) throws IOException {
       return fsDir.fileExists(name);
     }

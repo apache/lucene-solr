@@ -271,6 +271,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       {
         return dir.list();
       }
+      public String[] listAll()
+        throws IOException
+      {
+        return dir.listAll();
+      }
 
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);

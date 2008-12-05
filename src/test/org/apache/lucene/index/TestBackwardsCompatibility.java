@@ -447,7 +447,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
                     "segments_3",
                     "segments.gen"};
 
-        String[] actual = dir.list();
+        String[] actual = dir.listAll();
         Arrays.sort(expected);
         Arrays.sort(actual);
         if (!Arrays.equals(expected, actual)) {

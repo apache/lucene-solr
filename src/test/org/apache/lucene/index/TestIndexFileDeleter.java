@@ -65,7 +65,7 @@ public class TestIndexFileDeleter extends LuceneTestCase
 
     // Now, artificially create an extra .del file & extra
     // .s0 file:
-    String[] files = dir.list();
+    String[] files = dir.listAll();
 
     /*
     for(int j=0;j<files.length;j++) {
@@ -142,14 +142,14 @@ public class TestIndexFileDeleter extends LuceneTestCase
     // Create a bogus cfs file shadowing a non-cfs segment:
     copyFile(dir, "_2.cfs", "_3.cfs");
 
-    String[] filesPre = dir.list();
+    String[] filesPre = dir.listAll();
 
     // Open & close a writer: it should delete the above 4
     // files and nothing more:
     writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.close();
 
-    String[] files2 = dir.list();
+    String[] files2 = dir.listAll();
     dir.close();
 
     Arrays.sort(files);

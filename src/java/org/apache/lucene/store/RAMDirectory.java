@@ -95,8 +95,11 @@ public class RAMDirectory extends Directory implements Serializable {
     this(FSDirectory.getDirectory(dir), true);
   }
 
-  /** Returns an array of strings, one for each file in the directory. */
   public synchronized final String[] list() {
+    return listAll();
+  }
+
+  public synchronized final String[] listAll() {
     ensureOpen();
     Set fileNames = fileMap.keySet();
     String[] result = new String[fileNames.size()];

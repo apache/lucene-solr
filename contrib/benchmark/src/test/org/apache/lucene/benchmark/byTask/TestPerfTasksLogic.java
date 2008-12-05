@@ -24,7 +24,6 @@ import java.io.BufferedReader;
 import java.util.List;
 import java.util.Iterator;
 
-import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
@@ -712,7 +711,7 @@ public class TestPerfTasksLogic extends TestCase {
     ir.close();
 
     // Make sure we have 3 segments:
-    final String[] files = benchmark.getRunData().getDirectory().list();
+    final String[] files = benchmark.getRunData().getDirectory().listAll();
     int cfsCount = 0;
     for(int i=0;i<files.length;i++)
       if (files[i].endsWith(".cfs"))

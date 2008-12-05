@@ -333,10 +333,10 @@ public class TestDeletionPolicy extends LuceneTestCase
           // should have orphan'd at least one index file.
           // Open & close a writer and assert that it
           // actually removed something:
-          int preCount = dir.list().length;
+          int preCount = dir.listAll().length;
           writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.LIMITED);
           writer.close();
-          int postCount = dir.list().length;
+          int postCount = dir.listAll().length;
           assertTrue(postCount < preCount);
         }
       }

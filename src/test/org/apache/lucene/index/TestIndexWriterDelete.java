@@ -668,11 +668,11 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
       }
 
-      String[] startFiles = dir.list();
+      String[] startFiles = dir.listAll();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
       new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-      String[] endFiles = dir.list();
+      String[] endFiles = dir.listAll();
 
       if (!Arrays.equals(startFiles, endFiles)) {
         fail("docswriter abort() failed to delete unreferenced files:\n  before delete:\n    "

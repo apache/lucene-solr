@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -242,6 +243,7 @@ public class FSDirectory extends Directory {
     return dir;
   }
 
+  /** @deprecated */
   private void create() throws IOException {
     if (directory.exists()) {
       String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
@@ -265,9 +267,6 @@ public class FSDirectory extends Directory {
 
   final void createDir() throws IOException {
     if (!checked) {
-      if (directory.exists() && !directory.isDirectory())
-        throw new IOException(directory + " not a directory");
-
       if (!directory.exists())
         if (!directory.mkdirs())
           throw new IOException("Cannot create directory: " + directory);
@@ -303,6 +302,9 @@ public class FSDirectory extends Directory {
     // instantiate that; else, use SimpleFSLockFactory:
 
     directory = path;
+
+    if (directory.exists() && !directory.isDirectory())
+      throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
 
     boolean doClearLockID = false;
 
@@ -356,10 +358,44 @@ public class FSDirectory extends Directory {
     }
   }
 
-  /** Returns an array of strings, one for each Lucene index file in the directory. */
+  /** Lists all files (not subdirectories) in the
+   *  directory.  This method never returns null (throws
+   *  {@link IOException} instead).
+   *
+   *  @throws NoSuchDirectoryException if the directory
+   *   does not exist, or does exist but is not a
+   *   directory.
+   *  @throws IOException if list() returns null */
+  public static String[] listAll(File dir) throws IOException {
+    if (!dir.exists())
+      throw new NoSuchDirectoryException("directory '" + dir + "' does not exist");
+    else if (!dir.isDirectory())
+      throw new NoSuchDirectoryException("file '" + dir + "' exists but is not a directory");
+
+    // Exclude subdirs
+    String[] result = dir.list(new FilenameFilter() {
+        public boolean accept(File dir, String file) {
+          return !new File(dir, file).isDirectory();
+        }
+      });
+
+    if (result == null)
+      throw new IOException("directory '" + dir + "' exists and is a directory, but cannot be listed: list() returned null");
+
+    return result;
+  }
+
   public String[] list() {
     ensureOpen();
     return directory.list(IndexFileNameFilter.getFilter());
+  }
+
+  /** Lists all files (not subdirectories) in the
+   * directory.
+   * @see #listAll(File) */
+  public String[] listAll() throws IOException {
+    ensureOpen();
+    return listAll(directory);
   }
 
   /** Returns true iff a file with the given name exists. */

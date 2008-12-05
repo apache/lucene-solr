@@ -170,7 +170,7 @@ public class TestIndexWriter extends LuceneTestCase
           addDocWithIndex(writer, 25*i+j);
         }
         writer.close();
-        String[] files = dirs[i].list();
+        String[] files = dirs[i].listAll();
         for(int j=0;j<files.length;j++) {
           inputDiskUsage += dirs[i].fileLength(files[j]);
         }
@@ -207,11 +207,11 @@ public class TestIndexWriter extends LuceneTestCase
       // succeed and index should show all documents were
       // added.
 
-      // String[] files = startDir.list();
+      // String[] files = startDir.listAll();
       long diskUsage = startDir.sizeInBytes();
 
       long startDiskUsage = 0;
-      String[] files = startDir.list();
+      String[] files = startDir.listAll();
       for(int i=0;i<files.length;i++) {
         startDiskUsage += startDir.fileLength(files[i]);
       }
@@ -539,11 +539,11 @@ public class TestIndexWriter extends LuceneTestCase
     }                                               
 
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
-      String[] startFiles = dir.list();
+      String[] startFiles = dir.listAll();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
       new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-      String[] endFiles = dir.list();
+      String[] endFiles = dir.listAll();
 
       Arrays.sort(startFiles);
       Arrays.sort(endFiles);
@@ -708,7 +708,7 @@ public class TestIndexWriter extends LuceneTestCase
       writer.close();
 
       long startDiskUsage = 0;
-      String[] files = dir.list();
+      String[] files = dir.listAll();
       for(int i=0;i<files.length;i++) {
         startDiskUsage += dir.fileLength(files[i]);
       }
@@ -988,7 +988,7 @@ public class TestIndexWriter extends LuceneTestCase
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
         assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
 
-        String[] files = dir.list();
+        String[] files = dir.listAll();
         for(int i=0;i<files.length;i++) {
           if (files[i].endsWith(".cfs")) {
             dir.deleteFile(files[i]);
@@ -1276,12 +1276,12 @@ public class TestIndexWriter extends LuceneTestCase
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setRAMBufferSizeMB(0.000001);
-      int lastNumFile = dir.list().length;
+      int lastNumFile = dir.listAll().length;
       for(int j=0;j<9;j++) {
         Document doc = new Document();
         doc.add(new Field("field", "aaa" + j, Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(doc);
-        int numFile = dir.list().length;
+        int numFile = dir.listAll().length;
         // Verify that with a tiny RAM buffer we see new
         // segment after every doc
         assertTrue(numFile > lastNumFile);
@@ -4253,5 +4253,32 @@ public class TestIndexWriter extends LuceneTestCase
     assertEquals(8, termOffsets[1].getEndOffset());
     r.close();
     dir.close();
+  }
+
+  // LUCENE-1468 -- make sure opening an IndexWriter with
+  // create=true does not remove non-index files
+  
+  public void testOtherFiles() throws Throwable {
+    File indexDir = new File(System.getProperty("tempDir"), "otherfiles");
+    Directory dir = new FSDirectory(indexDir, null);
+    try {
+      // Create my own random file:
+
+      IndexOutput out = dir.createOutput("myrandomfile");
+      out.writeByte((byte) 42);
+      out.close();
+
+      new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED).close();
+
+      assertTrue(dir.fileExists("myrandomfile"));
+
+      // Make sure this does not copy myrandomfile:
+      Directory dir2 = new RAMDirectory(dir);
+      assertTrue(!dir2.fileExists("myrandomfile"));
+
+    } finally {
+      dir.close();
+      _TestUtil.rmDir(indexDir);
+    }
   }
 }

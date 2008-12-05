@@ -480,9 +480,7 @@ abstract class DirectoryIndexReader extends IndexReader {
   /** @see IndexReader#listCommits */
   public static Collection listCommits(Directory dir) throws IOException {
 
-    final String[] files = dir.list();
-    if (files == null)
-      throw new IOException("cannot read directory " + dir + ": list() returned null");
+    final String[] files = dir.listAll();
 
     Collection commits = new ArrayList();
 

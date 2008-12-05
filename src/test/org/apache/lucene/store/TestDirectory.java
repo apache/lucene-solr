@@ -21,6 +21,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 public class TestDirectory extends LuceneTestCase {
 
@@ -125,6 +127,61 @@ public class TestDirectory extends LuceneTestCase {
       assertTrue(!path.exists());
       dir.close();
     } finally {
+      _TestUtil.rmDir(path);
+    }
+  }
+
+  // LUCENE-1468
+  public void testRAMDirectoryFilter() throws IOException {
+    checkDirectoryFilter(new RAMDirectory());
+  }
+
+  // LUCENE-1468
+  public void testFSDirectoryFilter() throws IOException {
+    checkDirectoryFilter(FSDirectory.getDirectory("test"));
+  }
+
+  // LUCENE-1468
+  private void checkDirectoryFilter(Directory dir) throws IOException {
+    String name = "file";
+    try {
+      dir.createOutput(name).close();
+      assertTrue(dir.fileExists(name));
+      assertTrue(Arrays.asList(dir.listAll()).contains(name));
+    } finally {
+      dir.close();
+    }
+  }
+
+  // LUCENE-1468
+  public void testCopySubdir() throws Throwable {
+    File path = new File(System.getProperty("tempDir"), "testsubdir");
+    try {
+      path.mkdirs();
+      new File(path, "subdir").mkdirs();
+      Directory fsDir = new FSDirectory(path, null);
+      assertEquals(0, new RAMDirectory(fsDir).listAll().length);
+    } finally {
+      _TestUtil.rmDir(path);
+    }
+  }
+
+  // LUCENE-1468
+  public void testNotDirectory() throws Throwable {
+    File path = new File(System.getProperty("tempDir"), "testnotdir");
+    Directory fsDir = new FSDirectory(path, null);
+    try {
+      IndexOutput out = fsDir.createOutput("afile");
+      out.close();
+      assertTrue(fsDir.fileExists("afile"));
+      try {
+        new FSDirectory(new File(path, "afile"), null);
+        fail("did not hit expected exception");
+      } catch (NoSuchDirectoryException nsde) {
+        // Expected
+      }
+    } finally {
+      fsDir.close();
       _TestUtil.rmDir(path);
     }
   }

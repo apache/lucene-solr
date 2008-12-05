@@ -17,11 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.NoSuchDirectoryException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -129,8 +131,11 @@ final class SegmentInfos extends Vector {
    * @param directory -- directory to search for the latest segments_N file
    */
   public static long getCurrentSegmentGeneration(Directory directory) throws IOException {
-    String[] files = directory.list();
-    return getCurrentSegmentGeneration(files);
+    try {
+      return getCurrentSegmentGeneration(directory.listAll());
+    } catch (NoSuchDirectoryException nsde) {
+      return -1;
+    }
   }
 
   /**
@@ -558,9 +563,9 @@ final class SegmentInfos extends Vector {
           long genA = -1;
 
           if (directory != null)
-            files = directory.list();
+            files = directory.listAll();
           else
-            files = fileDirectory.list();
+            files = FSDirectory.listAll(fileDirectory);
           
           if (files != null)
             genA = getCurrentSegmentGeneration(files);

@@ -1051,7 +1051,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir1.close();
 
     try {
-      dir1.list();
+      dir1.listAll();
       fail("did not hit AlreadyClosedException");
     } catch (AlreadyClosedException ace) {
       // expected

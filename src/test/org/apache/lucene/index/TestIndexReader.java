@@ -48,6 +48,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -962,11 +963,11 @@ public class TestIndexReader extends LuceneTestCase
           // new IndexFileDeleter, have it delete
           // unreferenced files, then verify that in fact
           // no files were deleted:
-          String[] startFiles = dir.list();
+          String[] startFiles = dir.listAll();
           SegmentInfos infos = new SegmentInfos();
           infos.read(dir);
           new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.list();
+          String[] endFiles = dir.listAll();
 
           Arrays.sort(startFiles);
           Arrays.sort(endFiles);
@@ -1520,6 +1521,7 @@ public class TestIndexReader extends LuceneTestCase
       }
     }
 
+
   // LUCENE-1474
   public void testIndexReader() throws Exception {
     Directory dir = new RAMDirectory();
@@ -1541,5 +1543,19 @@ public class TestIndexReader extends LuceneTestCase
     Document doc = new Document();
     doc.add(new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
     return doc;
+  }
+
+  // LUCENE-1468 -- make sure on attempting to open an
+  // IndexReader on a non-existent directory, you get a
+  // good exception
+  public void testNoDir() throws Throwable {
+    String tempDir = System.getProperty("java.io.tmpdir");
+    Directory dir = FSDirectory.getDirectory(new File(tempDir, "doesnotexist"), null);
+    try {
+      IndexReader.open(dir);
+      fail("did not hit expected exception");
+    } catch (NoSuchDirectoryException nsde) {
+      // expected
+    }
   }
 }
