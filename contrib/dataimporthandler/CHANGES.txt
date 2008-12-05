@@ -63,6 +63,9 @@ Bug Fixes
 
 8. SOLR-873:  Fix case-sensitive field names and columns (Jon Baer, shalin)
 
+9. SOLR-893:  Unable to delete documents via SQL and deletedPkQuery with deltaimport
+              (Dan Rosher via shalin)
+
 Documentation
 ----------------------
 

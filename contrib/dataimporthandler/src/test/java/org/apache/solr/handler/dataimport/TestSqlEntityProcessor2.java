@@ -80,7 +80,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
 
     List parentRow = new ArrayList();
     parentRow.add(createMap("id", "5"));
-    MockDataSource.setIterator("select * from x where x.id = '5'", parentRow
+    MockDataSource.setIterator("select * from x where id = '5'", parentRow
             .iterator());
 
     List childRow = new ArrayList();
@@ -92,6 +92,56 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
 
     assertQ(req("id:5"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCompositePk_DeltaImport_DeletedPkQuery() throws Exception {
+    List parentRow = new ArrayList();
+    parentRow.add(createMap("id", "11"));
+    MockDataSource.setIterator("select * from x", parentRow.iterator());
+
+    List childRow = new ArrayList();
+    childRow.add(createMap("desc", "hello"));
+
+    MockDataSource.setIterator("select * from y where y.A=11", childRow
+            .iterator());
+
+    super.runFullImport(dataConfig);
+
+    assertQ(req("id:11"), "//*[@numFound='1']");
+
+
+
+    List deltaRow = new ArrayList();
+    deltaRow.add(createMap("id", "15"));
+    deltaRow.add(createMap("id", "17"));
+    MockDataSource.setIterator("select id from x where last_modified > NOW",
+            deltaRow.iterator());
+
+    List deltaDeleteRow = new ArrayList();
+    deltaDeleteRow.add(createMap("id", "11"));
+    deltaDeleteRow.add(createMap("id", "17"));
+    MockDataSource.setIterator("select id from x where last_modified > NOW AND deleted='true'",
+            deltaDeleteRow.iterator());
+
+    parentRow = new ArrayList();
+    parentRow.add(createMap("id", "15"));
+    MockDataSource.setIterator("select * from x where id = '15'", parentRow
+            .iterator());
+
+    parentRow = new ArrayList();
+    parentRow.add(createMap("id", "17"));
+    MockDataSource.setIterator("select * from x where id = '17'", parentRow
+            .iterator());
+
+    super.runDeltaImport(dataConfig);
+
+    assertQ(req("id:15"), "//*[@numFound='1']");
+    assertQ(req("id:11"), "//*[@numFound='0']");
+    assertQ(req("id:17"), "//*[@numFound='0']");
+
+
   }
 
   @Test
@@ -120,7 +170,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
 
   private static String dataConfig = "<dataConfig>\n"
           + "       <document>\n"
-          + "               <entity name=\"x\" pk=\"x.id\" query=\"select * from x\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
+          + "               <entity name=\"x\" pk=\"id\" query=\"select * from x\" deletedPkQuery=\"select id from x where last_modified > NOW AND deleted='true'\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
           + "                       <field column=\"id\" />\n"
           + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
           + "                               <field column=\"desc\" />\n"

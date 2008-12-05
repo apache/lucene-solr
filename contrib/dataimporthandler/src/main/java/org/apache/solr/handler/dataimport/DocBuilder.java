@@ -463,10 +463,8 @@ public class DocBuilder {
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
     resolver.addNamespace(null, (Map) entity.allAttributes);
     EntityProcessor entityProcessor = getEntityProcessor(entity, context.getCore());
-    entityProcessor.init(new ContextImpl(entity, resolver, null,
-            Context.FIND_DELTA, session, null, this));
+    entityProcessor.init(new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this));
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
-    int count = 0;
     //get the modified rows in this entity
     while (true) {
       Map<String, Object> row = entityProcessor.nextModifiedRowKey();
@@ -475,27 +473,32 @@ public class DocBuilder {
         break;
 
       deltaSet.add(row);
-      count++;
       importStatistics.rowsCount.incrementAndGet();
     }
-    LOG.info("Completed ModifiedRowKey for Entity: " + entity.name
-            + " rows obtained : " + count);
-    count = 0;
-    // identifying the deleted rows from this entities
-    LOG.info("Running DeletedRowKey() for Entity: " + entity.name);
     //get the deleted rows for this entity
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
+    Set<Map<String, Object>> deltaRemoveSet = new HashSet<Map<String, Object>>();
     while (true) {
       Map<String, Object> row = entityProcessor.nextDeletedRowKey();
       if (row == null)
         break;
 
+      //Check to see if this delete is in the current delta set
+      for (Map<String, Object> modifiedRow : deltaSet) {
+        if (modifiedRow.get(entity.pk).equals(row.get(entity.pk))) {
+          deltaRemoveSet.add(modifiedRow);
+        }
+      }
+
       deletedSet.add(row);
-      count++;
       importStatistics.rowsCount.incrementAndGet();
     }
-    LOG.info("Completed DeletedRowKey for Entity: " + entity.name
-            + " rows obtained : " + count);
+
+    //asymmetric Set difference
+    deltaSet.removeAll(deltaRemoveSet);
+
+    LOG.info("Completed ModifiedRowKey for Entity: " + entity.name + " rows obtained : " + deltaSet.size());
+    LOG.info("Completed DeletedRowKey for Entity: " + entity.name + " rows obtained : " + deletedSet.size());
 
     myModifiedPks.addAll(deltaSet);
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
@@ -507,12 +510,10 @@ public class DocBuilder {
       // identifying deleted rows with deltas
 
       for (Map<String, Object> row : myModifiedPks)
-        getModifiedParentRows(resolver.addNamespace(entity.name, row),
-                entity.name, parentEntityProcessor, parentKeyList);
+        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
       // running the same for deletedrows
       for (Map<String, Object> row : deletedSet) {
-        getModifiedParentRows(resolver.addNamespace(entity.name, row),
-                entity.name, parentEntityProcessor, parentKeyList);
+        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
       }
     }
     LOG.info("Completed parentDeltaQuery for Entity: " + entity.name);
