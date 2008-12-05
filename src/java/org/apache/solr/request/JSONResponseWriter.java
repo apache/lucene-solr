@@ -245,13 +245,15 @@ class JSONWriter extends TextResponseWriter {
 
         writeArrayOpener(1);
         incLevel();
-        writeStr(null,key,true);
+        if (key==null) {
+          writeNull(null);
+        } else {
+          writeStr(null, key, true);
+        }
         writeArraySeparator();
         writeVal(key,val.getVal(i));
         decLevel();
         writeArrayCloser();
-
-
     }
 
     decLevel();

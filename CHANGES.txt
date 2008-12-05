@@ -149,6 +149,9 @@ Bug Fixes
 14. SOLR-892: Fix serialization of booleans for PHPSerializedResponseWriter
     (yonik)
 
+15. SOLR-898: Fix null pointer exception for the JSON response writer
+    based formats when nl.json=arrarr with null keys.  (yonik)
+
 
 Other Changes
 ----------------------

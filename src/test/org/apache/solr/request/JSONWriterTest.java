@@ -63,5 +63,21 @@ public class JSONWriterTest extends AbstractSolrTestCase {
     w.write(buf, req, rsp);
     assertEquals(buf.toString(), "a:3:{s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;}");
   }
+
+  public void testJSON() throws IOException {
+    SolrQueryRequest req = req("wt","json","json.nl","arrarr");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    JSONResponseWriter w = new JSONResponseWriter();
+
+    StringWriter buf = new StringWriter();
+    NamedList nl = new NamedList();
+    nl.add("data1", "hello");
+    nl.add(null, 42);
+    rsp.add("nl", nl);
+
+    w.write(buf, req, rsp);
+    assertEquals(buf.toString(), "{\"nl\":[[\"data1\",\"hello\"],[null,42]]}");
+
+  }
   
 }
