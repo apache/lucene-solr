@@ -67,4 +67,14 @@ public interface TermsParams {
   public static final String TERMS_ROWS = TERMS_PREFIX + "rows";
 
   public static final String TERMS_PREFIX_STR = TERMS_PREFIX + "prefix";
+
+  /**
+   * Optional.  The minimum value of docFreq to be returned.  1 by default
+   */
+  public static final String TERMS_MINCOUNT = TERMS_PREFIX + "mincount";
+  /**
+   * Optional.  The maximum value of docFreq to be returned.  -1 by default means no boundary
+   */
+  public static final String TERMS_MAXCOUNT = TERMS_PREFIX + "maxcount";
 }
+

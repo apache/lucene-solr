@@ -16,7 +16,6 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.mortbay.log.Log;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -26,8 +25,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-
-import java.util.Iterator;
 
 
 /**
@@ -56,6 +53,14 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "7", "lowerfilt", "b", "standardfilt", "c"));
     assertU(adoc("id", "8", "lowerfilt", "baa", "standardfilt", "cccc"));
     assertU(adoc("id", "9", "lowerfilt", "bbb", "standardfilt", "ccccc"));
+
+    assertU(adoc("id", "10", "standardfilt", "ddddd"));
+    assertU(adoc("id", "11", "standardfilt", "ddddd"));
+    assertU(adoc("id", "12", "standardfilt", "ddddd"));
+    assertU(adoc("id", "13", "standardfilt", "ddddd"));
+    assertU(adoc("id", "14", "standardfilt", "d"));
+    assertU(adoc("id", "15", "standardfilt", "d"));
+    assertU(adoc("id", "16", "standardfilt", "d"));
 
     assertU("commit", commit());
   }
@@ -338,5 +343,49 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("abc is not null", terms.get("abc") == null);
     assertTrue("b is null and it shouldn't be", terms.get("b") == null);
     assertTrue("baa is not null", terms.get("baa") == null);
+  }
+
+  
+  public void testMinMaxFreq() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "lowerfilt");
+    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    // Tests TERMS_LOWER = "a" with freqmin = 2, freqmax = -1, terms.size() = 1
+    params.add(TermsParams.TERMS_LOWER, "a");
+    params.add(TermsParams.TERMS_MINCOUNT,String.valueOf(2));
+    params.add(TermsParams.TERMS_MAXCOUNT,String.valueOf(TermsComponent.UNLIMITED_MAX_COUNT));
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 1, terms.size() == 1);
+
+    params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "standardfilt");
+    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    // Tests TERMS_LOWER = "a" with freqmin = 2, freqmax = -1, terms.size() = 1
+    params.add(TermsParams.TERMS_LOWER, "d");
+    params.add(TermsParams.TERMS_MINCOUNT,String.valueOf(2));
+    params.add(TermsParams.TERMS_MAXCOUNT,String.valueOf(3));
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 1, terms.size() == 1);
+    Integer d = (Integer) terms.get("d");
+    assertTrue(d + " does not equal: " + 3, d == 3);
+
   }
 }

@@ -93,6 +93,7 @@ New Features
 
 18. SOLR-877: Added TermsComponent for accessing Lucene's TermEnum capabilities.
     Useful for auto suggest and possibly distributed search.  Not distributed search compliant.  (gsingers)
+    - Added mincount and maxcount options (Khee Chin via gsingers)
 
 19. SOLR-538: Add maxChars attribute for copyField function so that the length limit for destination
     can be specified.

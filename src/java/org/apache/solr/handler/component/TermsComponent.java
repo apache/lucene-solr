@@ -34,6 +34,7 @@ import java.io.IOException;
  *      See Lucene's TermEnum class
  */
 public class TermsComponent extends SearchComponent {
+  public static final int UNLIMITED_MAX_COUNT = -1;
 
 
   public void process(ResponseBuilder rb) throws IOException {
@@ -45,13 +46,14 @@ public class TermsComponent extends SearchComponent {
         NamedList terms = new NamedList();
         rb.rsp.add("terms", terms);
         int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
-        if (rows < 0){
+        if (rows < 0) {
           rows = Integer.MAX_VALUE;
         }
-
         String upper = params.get(TermsParams.TERMS_UPPER);
         boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
         boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+        int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1); // initialize freqmin
+        int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT); // initialize freqmax
         String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
         for (int j = 0; j < fields.length; j++) {
           String field = fields[j];
@@ -77,17 +79,19 @@ public class TermsComponent extends SearchComponent {
                       (upperIncl == false && upperCmp < 0))
                       && (prefix == null || theText.startsWith(prefix))
                       ) {
-                fieldTerms.add(theText, termEnum.docFreq());
+                int docFreq = termEnum.docFreq();
+                if (docFreq >= freqmin && (freqmax == UNLIMITED_MAX_COUNT || (docFreq <= freqmax))) {
+                  fieldTerms.add(theText, docFreq);
+                  i++;
+                }
               } else {//we're done
                 break;
               }
-              i++;
             }
             while (i < rows && termEnum.next());
           }
           termEnum.close();
         }
-
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No terms.fl parameter specified");
       }
@@ -99,7 +103,7 @@ public class TermsComponent extends SearchComponent {
   }
 
   public String getVersion() {
-    return "$Revision$";
+    return "$Revision:$";
   }
 
   public String getSourceId() {
@@ -107,7 +111,7 @@ public class TermsComponent extends SearchComponent {
   }
 
   public String getSource() {
-    return "$Revision:$";
+    return "$URL:$";
   }
 
   public String getDescription() {
