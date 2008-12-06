@@ -554,12 +554,12 @@ public class QueryParser {
     org.apache.lucene.analysis.Token nextToken = null;
 
     
-    boolean useNewAPI = TokenStream.useNewAPI();
+    boolean useNewAPI = TokenStream.useNewAPIDefault();
     
     if (useNewAPI) {
       boolean success = false;
       try {
-        buffer.start();
+        buffer.reset();
         success = true;
       } catch (IOException e) {
         // success==false if we hit an exception
