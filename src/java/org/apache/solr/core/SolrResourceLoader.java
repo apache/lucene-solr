@@ -31,6 +31,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.nio.charset.Charset;
+import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -308,6 +309,36 @@ public class SolrResourceLoader implements ResourceLoader
     }
     return obj;
   }
+
+  public Object newInstance(String cName, String [] subPackages, Class[] params, Object[] args){
+    Class clazz = findClass(cName,subPackages);
+    if( clazz == null ) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "Can not find class: "+cName + " in " + classLoader, false);
+    }
+
+    Object obj = null;
+    try {
+
+      Constructor constructor = clazz.getConstructor(params);
+      obj = constructor.newInstance(args);
+    }
+    catch (Exception e) {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "Error instantiating class: '" + clazz.getName()+"'", e, false );
+    }
+
+    if( obj instanceof SolrCoreAware ) {
+      assertAwareCompatibility( SolrCoreAware.class, obj );
+      waitingForCore.add( (SolrCoreAware)obj );
+    }
+    if( obj instanceof ResourceLoaderAware ) {
+      assertAwareCompatibility( ResourceLoaderAware.class, obj );
+      waitingForResources.add( (ResourceLoaderAware)obj );
+    }
+    return obj;
+  }
+
   
   /**
    * Tell all {@link SolrCoreAware} instances about the SolrCore

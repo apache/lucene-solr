@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" "http://forrest.apache.org/dtd/document-v20.dtd">
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<document>
+  
+  <header>
+    <title>Solr Version Control System</title>
+  </header>
+  
+  <body>
+  
+    <section>
+      <title>Overview</title>
+      <p>
+        The Solr source code resides in the Apache <a href="http://subversion.tigris.org/">Subversion (SVN)</a> repository.
+        The command-line SVN client can be obtained <a href="http://subversion.tigris.org/project_packages.html">here</a> or as an optional package for <a href="http://www.cygwin.com/">cygwin</a>.
+        The TortoiseSVN GUI client for Windows can be obtained <a href="http://tortoisesvn.tigris.org/">here</a>. There
+        are also SVN plugins available for older versions of <a href="http://subclipse.tigris.org/">Eclipse</a> and 
+        <a href="http://svnup.tigris.org/">IntelliJ IDEA</a> that don't have subversion support already included.
+      </p>
+    </section>
+    <p>Here is some more text.  It contains <a href="http://lucene.apache.org">a link</a>. </p>
+    <p>Text Here</p>
+  </body>
+  
+</document>

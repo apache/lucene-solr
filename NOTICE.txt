@@ -113,3 +113,24 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+=========================================================================
+==  Apache Tika Notices                                                ==
+=========================================================================
+
+The following notices apply to the Apache Tika libraries in contrib/extraction/lib:
+
+This product includes software developed by the following copyright owners:
+
+Copyright (c) 2000-2006 The Legion Of The Bouncy Castle
+(http://www.bouncycastle.org)
+
+Copyright (c) 2003-2005, www.pdfbox.org
+
+Copyright (c) 2003-2005, www.fontbox.org
+
+Copyright (c) 1995-2005 International Business Machines Corporation and others
+
+Copyright (c) 2000-2005 INRIA, France Telecom
+ 
+

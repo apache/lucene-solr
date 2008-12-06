@@ -261,9 +261,9 @@ such code.
 1.13. You (or Your) means an individual or a legal entity exercising rights
 under, and complying with all of the terms of, this License. For legal
 entities, You includes any entity which controls, is controlled by, or is under
-common control with You. For purposes of this definition, control means (a)áthe
+common control with You. For purposes of this definition, control means (a)ï¿½the
 power, direct or indirect, to cause the direction or management of such entity,
-whether by contract or otherwise, or (b)áownership of more than fifty percent
+whether by contract or otherwise, or (b)ï¿½ownership of more than fifty percent
 (50%) of the outstanding shares or beneficial ownership of such entity.
 
 2. License Grants.
@@ -278,12 +278,12 @@ with or without Modifications, and/or as part of a Larger Work; and (b) under
 Patent Claims infringed by the making, using or selling of Original Software,
 to make, have made, use, practice, sell, and offer for sale, and/or otherwise
 dispose of the Original Software (or portions thereof).  (c) The licenses
-granted in Sectionsá2.1(a) and (b) are effective on the date Initial Developer
+granted in Sectionsï¿½2.1(a) and (b) are effective on the date Initial Developer
 first distributes or otherwise makes the Original Software available to a third
-party under the terms of this License.  (d) Notwithstanding Sectioná2.1(b)
-above, no patent license is granted: (1)áfor code that You delete from the
-Original Software, or (2)áfor infringements caused by: (i)áthe modification of
-the Original Software, or (ii)áthe combination of the Original Software with
+party under the terms of this License.  (d) Notwithstanding Sectionï¿½2.1(b)
+above, no patent license is granted: (1)ï¿½for code that You delete from the
+Original Software, or (2)ï¿½for infringements caused by: (i)ï¿½the modification of
+the Original Software, or (ii)ï¿½the combination of the Original Software with
 other software or devices.
 
 2.2. Contributor Grant.  Conditioned upon Your compliance with Section 3.1
@@ -297,17 +297,17 @@ and/or as part of a Larger Work; and (b) under Patent Claims infringed by the
 making, using, or selling of Modifications made by that Contributor either
 alone and/or in combination with its Contributor Version (or portions of such
 combination), to make, use, sell, offer for sale, have made, and/or otherwise
-dispose of: (1)áModifications made by that Contributor (or portions thereof);
-and (2)áthe combination of Modifications made by that Contributor with its
+dispose of: (1)ï¿½Modifications made by that Contributor (or portions thereof);
+and (2)ï¿½the combination of Modifications made by that Contributor with its
 Contributor Version (or portions of such combination).  (c) The licenses
-granted in Sectionsá2.2(a) and 2.2(b) are effective on the date Contributor
+granted in Sectionsï¿½2.2(a) and 2.2(b) are effective on the date Contributor
 first distributes or otherwise makes the Modifications available to a third
-party.  (d) Notwithstanding Sectioná2.2(b) above, no patent license is granted:
-(1)áfor any code that Contributor has deleted from the Contributor Version;
-(2)áfor infringements caused by: (i)áthird party modifications of Contributor
-Version, or (ii)áthe combination of Modifications made by that Contributor with
+party.  (d) Notwithstanding Sectionï¿½2.2(b) above, no patent license is granted:
+(1)ï¿½for any code that Contributor has deleted from the Contributor Version;
+(2)ï¿½for infringements caused by: (i)ï¿½third party modifications of Contributor
+Version, or (ii)ï¿½the combination of Modifications made by that Contributor with
 other software (except as part of the Contributor Version) or other devices; or
-(3)áunder Patent Claims infringed by Covered Software in the absence of
+(3)ï¿½under Patent Claims infringed by Covered Software in the absence of
 Modifications made by that Contributor.
 
 3. Distribution Obligations.
@@ -389,9 +389,9 @@ License published by the license steward.  4.3. Modified Versions.
 
 When You are an Initial Developer and You want to create a new license for Your
 Original Software, You may create and use a modified version of this License if
-You: (a)árename the license and remove any references to the name of the
+You: (a)ï¿½rename the license and remove any references to the name of the
 license steward (except to note that the license differs from this License);
-and (b)áotherwise make it clear that the license contains terms which differ
+and (b)ï¿½otherwise make it clear that the license contains terms which differ
 from this License.
 
 5. DISCLAIMER OF WARRANTY.
@@ -422,14 +422,14 @@ the Participant is a Contributor or the Original Software where the Participant
 is the Initial Developer) directly or indirectly infringes any patent, then any
 and all rights granted directly or indirectly to You by such Participant, the
 Initial Developer (if the Initial Developer is not the Participant) and all
-Contributors under Sectionsá2.1 and/or 2.2 of this License shall, upon 60 days
+Contributors under Sectionsï¿½2.1 and/or 2.2 of this License shall, upon 60 days
 notice from Participant terminate prospectively and automatically at the
 expiration of such 60 day notice period, unless if within such 60 day period
 You withdraw Your claim with respect to the Participant Software against such
 Participant either unilaterally or pursuant to a written agreement with
 Participant.
 
-6.3. In the event of termination under Sectionsá6.1 or 6.2 above, all end user
+6.3. In the event of termination under Sectionsï¿½6.1 or 6.2 above, all end user
 licenses that have been validly granted by You or any distributor hereunder
 prior to termination (excluding licenses granted to You by any distributor)
 shall survive termination.
@@ -453,9 +453,9 @@ LIMITATION MAY NOT APPLY TO YOU.
 8. U.S. GOVERNMENT END USERS.
 
 The Covered Software is a commercial item, as that term is defined in
-48áC.F.R.á2.101 (Oct. 1995), consisting of commercial computer software (as
-that term is defined at 48 C.F.R. á252.227-7014(a)(1)) and commercial computer
-software documentation as such terms are used in 48áC.F.R.á12.212 (Sept. 1995).
+48ï¿½C.F.R.ï¿½2.101 (Oct. 1995), consisting of commercial computer software (as
+that term is defined at 48 C.F.R. ï¿½252.227-7014(a)(1)) and commercial computer
+software documentation as such terms are used in 48ï¿½C.F.R.ï¿½12.212 (Sept. 1995).
 Consistent with 48 C.F.R. 12.212 and 48 C.F.R. 227.7202-1 through 227.7202-4
 (June 1995), all U.S. Government End Users acquire Covered Software with only
 those rights set forth herein. This U.S. Government Rights clause is in lieu
@@ -735,4 +735,162 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+===========================================================================
+Apache Tika Licenses - contrib/extraction
+---------------------------------------------------------------------------
+Apache Tika is licensed under the ASL 2.0.  See above for the text of the license
+
+APACHE TIKA SUBCOMPONENTS
+
+Apache Tika includes a number of subcomponents with separate copyright notices
+and license terms. Your use of these subcomponents is subject to the terms and
+conditions of the following licenses.
+
+Bouncy Castle libraries (bcmail and bcprov)
+
+    Copyright (c) 2000-2006 The Legion Of The Bouncy Castle
+    (http://www.bouncycastle.org)
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files
+    (the "Software"), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of the Software,
+    and to permit persons to whom the Software is furnished to do so,
+    subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+PDFBox library (pdfbox)
+
+    Copyright (c) 2003-2005, www.pdfbox.org
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice,
+       this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+    3. Neither the name of pdfbox; nor the names of its
+       contributors may be used to endorse or promote products derived from this
+       software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+    OF SUCH DAMAGE.
+
+FontBox and JempBox libraries (fontbox, jempbox)
+
+    Copyright (c) 2003-2005, www.fontbox.org
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice,
+       this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+    3. Neither the name of fontbox; nor the names of its
+       contributors may be used to endorse or promote products derived from this
+       software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+    OF SUCH DAMAGE.
+
+ICU4J library (icu4j)
+
+    Copyright (c) 1995-2005 International Business Machines Corporation
+    and others
+
+    All rights reserved.
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, and/or sell copies of the Software, and to permit persons
+    to whom the Software is furnished to do so, provided that the above
+    copyright notice(s) and this permission notice appear in all copies
+    of the Software and that both the above copyright notice(s) and this
+    permission notice appear in supporting documentation.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+    IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+    BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+    OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+    WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+    ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+    SOFTWARE.
+
+    Except as contained in this notice, the name of a copyright holder shall
+    not be used in advertising or otherwise to promote the sale, use or other
+    dealings in this Software without prior written authorization of the
+    copyright holder.
+
+ASM library (asm)
+
+    Copyright (c) 2000-2005 INRIA, France Telecom
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+
+    3. Neither the name of the copyright holders nor the names of its
+       contributors may be used to endorse or promote products derived from
+       this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+    THE POSSIBILITY OF SUCH DAMAGE.
+
 

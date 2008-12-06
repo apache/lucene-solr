@@ -315,11 +315,7 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(core.getRequestHandler(handler),req,rsp);
-    if (rsp.getException() != null) {
-      throw rsp.getException();
-    }
+    SolrQueryResponse rsp = queryAndResponse(handler, req);
 
     StringWriter sw = new StringWriter(32000);
     QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
@@ -328,6 +324,15 @@ public class TestHarness {
     req.close();
 
     return sw.toString();
+  }
+
+  public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    core.execute(core.getRequestHandler(handler),req,rsp);
+    if (rsp.getException() != null) {
+      throw rsp.getException();
+    }
+    return rsp;
   }
 
 

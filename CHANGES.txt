@@ -98,6 +98,8 @@ New Features
     can be specified.
     (Georgios Stamatis, Lars Kotthoff, Chris Harris via koji)
 
+20. SOLR-284: Added support for extracting content from binary documents like MS Word and PDF using Apache Tika.  See also contrib/extraction/CHANGES.txt (Eric Pugh, Chris Harris, gsingers)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

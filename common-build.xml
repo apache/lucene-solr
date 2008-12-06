@@ -38,6 +38,9 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
+
+  <!-- Example directory -->
+  <property name="example" value="${common.dir}/example" />
   <!-- 
     we attempt to exec svnversion to get details build information
     for jar manifests.  this property can be set at runtime to an
@@ -330,6 +333,10 @@
 
   <target name="dist-contrib" description="Make the contribs ready for distribution">
   	<contrib-crawl target="dist" failonerror="true" />
+  </target>
+
+  <target name="example-contrib" description="Tell the contrib to add their stuff to examples">
+  	<contrib-crawl target="example" failonerror="true" />
   </target>
 
   <!-- Creates a Manifest file for Jars and WARs -->

@@ -23,17 +23,14 @@ import java.io.Writer;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.util.DateParseException;
-import org.apache.commons.httpclient.util.DateUtil;
+
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -41,6 +38,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.common.util.DateUtil;
 
 
 /**
@@ -61,17 +59,17 @@ public class ClientUtils
   {
     if( str == null )
       return null;
-    
+
     ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 1 );
     ContentStreamBase ccc = new ContentStreamBase.StringStream( str );
     ccc.setContentType( contentType );
     streams.add( ccc );
     return streams;
   }
-  
+
   /**
    * @param d SolrDocument to convert
-   * @return a SolrInputDocument with the same fields and values as the 
+   * @return a SolrInputDocument with the same fields and values as the
    *   SolrDocument.  All boosts are 1.0f
    */
   public static SolrInputDocument toSolrInputDocument( SolrDocument d )
@@ -95,38 +93,38 @@ public class ClientUtils
     }
     return doc;
   }
-  
+
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
-  
+
   public static void writeXML( SolrInputDocument doc, Writer writer ) throws IOException
   {
     writer.write("<doc boost=\""+doc.getDocumentBoost()+"\">");
-   
+
     for( SolrInputField field : doc ) {
       float boost = field.getBoost();
       String name = field.getName();
       for( Object v : field ) {
         if (v instanceof Date) {
-          v = fmtThreadLocal.get().format( (Date)v );
+          v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
         }
         if( boost != 1.0f ) {
-          XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost ); 
+          XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
         }
         else {
-          XML.writeXML(writer, "field", v.toString(), "name", name ); 
+          XML.writeXML(writer, "field", v.toString(), "name", name );
         }
-        
+
         // only write the boost for the first multi-valued field
         // otherwise, the used boost is the product of all the boost values
-        boost = 1.0f; 
+        boost = 1.0f;
       }
     }
     writer.write("</doc>");
   }
-  
 
-  public static String toXML( SolrInputDocument doc ) 
+
+  public static String toXML( SolrInputDocument doc )
   {
     StringWriter str = new StringWriter();
     try {
@@ -135,58 +133,44 @@ public class ClientUtils
     catch( Exception ex ){}
     return str.toString();
   }
-  
+
   //---------------------------------------------------------------------------------------
 
-  public static final Collection<String> fmts = new ArrayList<String>();
-  static {
-    fmts.add( "yyyy-MM-dd'T'HH:mm:ss'Z'" );
-    fmts.add( "yyyy-MM-dd'T'HH:mm:ss" );
-    fmts.add( "yyyy-MM-dd" );
-  }
-  
+  /**
+   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#DEFAULT_DATE_FORMATS}
+   */
+  public static final Collection<String> fmts = DateUtil.DEFAULT_DATE_FORMATS;
+
   /**
    * Returns a formatter that can be use by the current thread if needed to
    * convert Date objects to the Internal representation.
-   * @throws ParseException 
-   * @throws DateParseException 
+   * @throws ParseException
+   * @throws DateParseException
+   *
+   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#parseDate(String)}
    */
-  public static Date parseDate( String d ) throws ParseException, DateParseException 
+  public static Date parseDate( String d ) throws ParseException, DateParseException
   {
-    // 2007-04-26T08:05:04Z
-    if( d.endsWith( "Z" ) && d.length() > 20 ) {
-      return getThreadLocalDateFormat().parse( d );
-    }
-    return DateUtil.parseDate( d, fmts ); 
-  }
-  
-  /**
-   * Returns a formatter that can be use by the current thread if needed to
-   * convert Date objects to the Internal representation.
-   */
-  public static DateFormat getThreadLocalDateFormat() {
-  
-    return fmtThreadLocal.get();
+    return DateUtil.parseDate(d);
   }
 
-  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
-  private static ThreadLocalDateFormat fmtThreadLocal = new ThreadLocalDateFormat();
-  
-  private static class ThreadLocalDateFormat extends ThreadLocal<DateFormat> {
-    DateFormat proto;
-    public ThreadLocalDateFormat() {
-      super();
-                                    //2007-04-26T08:05:04Z
-      SimpleDateFormat tmp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-      tmp.setTimeZone(UTC);
-      proto = tmp;
-    }
-    
-    @Override
-    protected DateFormat initialValue() {
-      return (DateFormat) proto.clone();
-    }
+  /**
+   * Returns a formatter that can be use by the current thread if needed to
+   * convert Date objects to the Internal representation.
+   *
+   * @deprecated use {@link org.apache.solr.common.util.DateUtil#getThreadLocalDateFormat()}
+   */
+  public static DateFormat getThreadLocalDateFormat() {
+
+    return DateUtil.getThreadLocalDateFormat();
   }
+
+  /**
+   * @deprecated Use {@link org.apache.solr.common.util.DateUtil#UTC}.
+   */
+  public static TimeZone UTC = DateUtil.UTC;
+
+
 
   /**
    * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping Special Characters
@@ -206,7 +190,7 @@ public class ClientUtils
     }
     return sb.toString();
   }
-  
+
   public static String toQueryString( SolrParams params, boolean xml ) {
     StringBuilder sb = new StringBuilder(128);
     try {

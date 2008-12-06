@@ -105,6 +105,8 @@
 	  </target>
 	-->
 
+  <target name="example" depends="build"/>
+	
 
 	<!-- do nothing for now, required for generate maven artifacts -->
   <target name="build"/>

@@ -121,4 +121,6 @@
     <!-- TODO: Autolaunch Solr  --> 
   </target>
 
+  <target name="example" depends="build"/>
+
 </project>
