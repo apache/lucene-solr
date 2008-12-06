@@ -32,7 +32,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
 import java.util.ArrayList;

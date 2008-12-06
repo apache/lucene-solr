@@ -18,8 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.HitCollector;
-import org.apache.solr.util.OpenBitSet;
-import org.apache.solr.core.SolrConfig;
+import org.apache.lucene.util.OpenBitSet;
 
 /**
  * @version $Id$

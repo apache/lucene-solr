@@ -127,24 +127,4 @@ public class TestUtils extends TestCase {
     assertEquals( num, NumberUtils.SortableStr2long(sortable, 0, sortable.length() ) );
     assertEquals( Long.toString(num), NumberUtils.SortableStr2long(sortable) );
   }
-  
-  public void testBitUtils()
-  {
-    long num = 100000;
-    assertEquals( 5, BitUtil.ntz(num) );
-    assertEquals( 5, BitUtil.ntz2(num) );
-    assertEquals( 5, BitUtil.ntz3(num) );
-    
-    num = 10;
-    assertEquals( 1, BitUtil.ntz(num) );
-    assertEquals( 1, BitUtil.ntz2(num) );
-    assertEquals( 1, BitUtil.ntz3(num) );
-
-    for (int i=0; i<64; i++) {
-      num = 1L << i;
-      assertEquals( i, BitUtil.ntz(num) );
-      assertEquals( i, BitUtil.ntz2(num) );
-      assertEquals( i, BitUtil.ntz3(num) );
-    }
-  }
 }

@@ -17,8 +17,8 @@
 
 package org.apache.solr.search;
 
-import org.apache.solr.util.OpenBitSet;
-import org.apache.solr.util.BitSetIterator;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetIterator;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -81,8 +81,8 @@ public class BitDocSet extends DocSetBase {
 
   public DocIterator iterator() {
     return new DocIterator() {
-      private final BitSetIterator iter = new BitSetIterator(bits);
-      private int pos = iter.next();
+      private final OpenBitSetIterator iter = new OpenBitSetIterator(bits);
+      private int pos = iter.nextDoc();
       public boolean hasNext() {
         return pos>=0;
       }
@@ -97,7 +97,7 @@ public class BitDocSet extends DocSetBase {
 
       public int nextDoc() {
         int old=pos;
-        pos=iter.next();
+        pos=iter.nextDoc();
         return old;
       }
 

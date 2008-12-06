@@ -18,7 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSet;
 
 /**
  * <code>DocSet</code> represents an unordered set of Lucene Document Ids.

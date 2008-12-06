@@ -29,7 +29,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QueryParsing;
 import org.apache.lucene.queryParser.ParseException;

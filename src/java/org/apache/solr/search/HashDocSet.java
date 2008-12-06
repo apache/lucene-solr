@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.solr.util.BitUtil;
+import org.apache.lucene.util.BitUtil;
 
 
 /**

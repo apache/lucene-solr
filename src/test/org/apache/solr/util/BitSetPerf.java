@@ -20,6 +20,9 @@ package org.apache.solr.util;
 import java.util.Random;
 import java.util.BitSet;
 
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetIterator;
+
 /** Performance tester for OpenBitSet.
  * Use -Xbatch for more predictable results, and run tests such that the duration
  * is at least 10 seconds for better accuracy.  Close browsers on your system (javascript
@@ -169,8 +172,8 @@ public class BitSetPerf {
         for (int i=0; i<numSets; i++) {
           if (impl=="open") {
             final OpenBitSet set = osets[i];
-            final BitSetIterator iterator = new BitSetIterator(set);
-            for(int next=iterator.next(); next>=0; next=iterator.next()) {
+            final OpenBitSetIterator iterator = new OpenBitSetIterator(set);
+            for(int next=iterator.nextDoc(); next>=0; next=iterator.nextDoc()) {
               ret += next;
             }
           } else {

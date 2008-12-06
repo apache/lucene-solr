@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.HashDocSet;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSet;
 
 import java.util.Random;
 import java.util.BitSet;

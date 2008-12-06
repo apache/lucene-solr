@@ -21,8 +21,8 @@ import junit.framework.TestCase;
 
 import java.util.Random;
 
-import org.apache.solr.util.OpenBitSet;
-import org.apache.solr.util.BitSetIterator;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetIterator;
 
 /**
  * @version $Id$
@@ -42,9 +42,9 @@ public class TestDocSet extends TestCase {
 
   public DocSet getHashDocSet(OpenBitSet bs) {
     int[] docs = new int[(int)bs.cardinality()];
-    BitSetIterator iter = new BitSetIterator(bs);
+    OpenBitSetIterator iter = new OpenBitSetIterator(bs);
     for (int i=0; i<docs.length; i++) {
-      docs[i] = iter.next();
+      docs[i] = iter.nextDoc();
     }
     return new HashDocSet(docs,0,docs.length);
   }
