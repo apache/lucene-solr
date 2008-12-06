@@ -1,4 +1,4 @@
-﻿﻿Lucene Change Log
+﻿﻿﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -116,6 +116,13 @@ New features
  8. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
     to allow subclasses to choose which DocIdSet implementation to use
     (Paul Elschot via Mike McCandless)
+    
+ 9. LUCENE-1390: Added ASCIIFoldingFilter, a Filter that converts 
+    alphabetic, numeric, and symbolic Unicode characters which are not in 
+    the first 127 ASCII characters (the "Basic Latin" Unicode block) into 
+    their ASCII equivalents, if one exists. ISOLatin1AccentFilter, which
+    handles a subset of this filter, has been deprecated.
+    (Andi Vajda, Steven Rowe via Mark Miller)
 
 Optimizations
 

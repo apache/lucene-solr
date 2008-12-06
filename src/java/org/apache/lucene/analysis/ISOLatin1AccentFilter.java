@@ -25,6 +25,9 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * <p>
  * For instance, '&agrave;' will be replaced by 'a'.
  * <p>
+ * 
+ * @deprecated in favor of {@link ASCIIFoldingFilter} which covers a superset 
+ * of Latin 1. This class will be removed in Lucene 3.0.
  */
 public class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
