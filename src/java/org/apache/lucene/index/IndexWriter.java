@@ -1181,7 +1181,8 @@ public class IndexWriter {
           oldInfos.read(directory, commit.getSegmentsFileName());
           segmentInfos.replace(oldInfos);
           changeCount++;
-          message("init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
+          if (infoStream != null)
+            message("init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
         }
 
         // We assume that this segments_N was previously
@@ -1606,6 +1607,11 @@ public class IndexWriter {
     return infoStream;
   }
 
+  /** Returns true if verbosing is enabled (i.e., infoStream != null). */
+  public boolean verbose() {
+    return infoStream != null;
+  }
+  
   /**
    * Sets the maximum time to wait for a write lock (in milliseconds) for this instance of IndexWriter.  @see
    * @see #setDefaultWriteLockTimeout to change the default value for all instances of IndexWriter.
@@ -1817,9 +1823,8 @@ public class IndexWriter {
       docStoreSegment = docWriter.closeDocStore();
       success = true;
     } finally {
-      if (!success) {
-        if (infoStream != null)
-          message("hit exception closing doc store segment");
+      if (!success && infoStream != null) {
+        message("hit exception closing doc store segment");
       }
     }
 
@@ -3582,7 +3587,8 @@ public class IndexWriter {
     if (!autoCommit && pendingCommit != null)
       throw new IllegalStateException("prepareCommit was already called with no corresponding call to commit");
 
-    message("prepareCommit: flush");
+    if (infoStream != null)
+      message("prepareCommit: flush");
 
     flush(true, true, true);
 
@@ -3658,12 +3664,14 @@ public class IndexWriter {
     waitForCommit();
 
     try {
-      message("commit: start");
+      if (infoStream != null)
+        message("commit: start");
 
       if (autoCommit || pendingCommit == null) {
-        message("commit: now prepare");
+        if (infoStream != null)
+          message("commit: now prepare");
         prepareCommit(commitUserData, true);
-      } else
+      } else if (infoStream != null)
         message("commit: already prepared");
 
       finishCommit();
@@ -3676,9 +3684,11 @@ public class IndexWriter {
 
     if (pendingCommit != null) {
       try {
-        message("commit: pendingCommit != null");
+        if (infoStream != null)
+    	  message("commit: pendingCommit != null");
         pendingCommit.finishCommit(directory);
-        message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
+        if (infoStream != null)
+          message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
         segmentInfos.setUserData(pendingCommit.getUserData());
@@ -3690,10 +3700,11 @@ public class IndexWriter {
         notifyAll();
       }
 
-    } else
-      message("commit: pendingCommit == null; skip");
+    } else if (infoStream != null)
+        message("commit: pendingCommit == null; skip");
 
-    message("commit: done");
+    if (infoStream != null)
+      message("commit: done");
   }
 
   /**
@@ -4008,7 +4019,8 @@ public class IndexWriter {
 
     if (deletes != null) {
       merge.info.advanceDelGen();
-      message("commit merge deletes to " + merge.info.getDelFileName());
+      if (infoStream != null)
+        message("commit merge deletes to " + merge.info.getDelFileName());
       deletes.write(directory, merge.info.getDelFileName());
       merge.info.setDelCount(delCount);
       assert delCount == deletes.count();
@@ -4857,7 +4869,8 @@ public class IndexWriter {
                   // Because we incRef'd this commit point, above,
                   // the file had better exist:
                   assert directory.fileExists(fileName): "file '" + fileName + "' does not exist dir=" + directory;
-                  message("now sync " + fileName);
+                  if (infoStream != null)
+                    message("now sync " + fileName);
                   directory.sync(fileName);
                   success = true;
                 } finally {
@@ -4888,7 +4901,8 @@ public class IndexWriter {
 
             // Wait now for any current pending commit to complete:
             while(pendingCommit != null) {
-              message("wait for existing pendingCommit to finish...");
+              if (infoStream != null)
+                message("wait for existing pendingCommit to finish...");
               doWait();
             }
 
@@ -4917,14 +4931,15 @@ public class IndexWriter {
               pendingCommitChangeCount = myChangeCount;
               success = true;
             } finally {
-              if (!success)
+              if (!success && infoStream != null)
                 message("hit exception committing segments file");
             }
-          } else
+          } else if (infoStream != null)
             message("sync superseded by newer infos");
         }
 
-        message("done all syncs");
+        if (infoStream != null)
+          message("done all syncs");
 
         assert testPoint("midStartCommitSuccess");
 

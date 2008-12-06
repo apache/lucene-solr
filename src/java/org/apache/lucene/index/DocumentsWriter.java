@@ -395,7 +395,8 @@ final class DocumentsWriter {
   }
 
   void message(String message) {
-    writer.message("DW: " + message);
+    if (infoStream != null)
+      writer.message("DW: " + message);
   }
 
   final List openFiles = new ArrayList();
@@ -433,7 +434,8 @@ final class DocumentsWriter {
   synchronized void abort() throws IOException {
 
     try {
-      message("docWriter: now abort");
+      if (infoStream != null)
+        message("docWriter: now abort");
 
       // Forcefully remove waiting ThreadStates from line
       waitQueue.abort();

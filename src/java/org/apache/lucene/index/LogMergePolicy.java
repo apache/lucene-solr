@@ -63,8 +63,12 @@ public abstract class LogMergePolicy extends MergePolicy {
   private boolean useCompoundDocStore = true;
   private IndexWriter writer;
 
+  protected boolean verbose() {
+    return writer != null && writer.verbose();
+  }
+  
   private void message(String message) {
-    if (writer != null)
+    if (verbose())
       writer.message("LMP: " + message);
   }
 
@@ -258,20 +262,23 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     final int numSegments = segmentInfos.size();
 
-    message("findMergesToExpungeDeletes: " + numSegments + " segments");
+    if (verbose())
+      message("findMergesToExpungeDeletes: " + numSegments + " segments");
 
     MergeSpecification spec = new MergeSpecification();
     int firstSegmentWithDeletions = -1;
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = segmentInfos.info(i);
       if (info.hasDeletions()) {
-        message("  segment " + info.name + " has deletions");
+        if (verbose())
+          message("  segment " + info.name + " has deletions");
         if (firstSegmentWithDeletions == -1)
           firstSegmentWithDeletions = i;
         else if (i - firstSegmentWithDeletions == mergeFactor) {
           // We've seen mergeFactor segments in a row with
           // deletions, so force a merge now:
-          message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+          if (verbose())
+            message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
           spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i), useCompoundFile));
           firstSegmentWithDeletions = i;
         }
@@ -279,14 +286,16 @@ public abstract class LogMergePolicy extends MergePolicy {
         // End of a sequence of segments with deletions, so,
         // merge those past segments even if it's fewer than
         // mergeFactor segments
-        message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
+        if (verbose())
+          message("  add merge " + firstSegmentWithDeletions + " to " + (i-1) + " inclusive");
         spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, i), useCompoundFile));
         firstSegmentWithDeletions = -1;
       }
     }
 
     if (firstSegmentWithDeletions != -1) {
-      message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive");
+      if (verbose())
+        message("  add merge " + firstSegmentWithDeletions + " to " + (numSegments-1) + " inclusive");
       spec.add(new OneMerge(segmentInfos.range(firstSegmentWithDeletions, numSegments), useCompoundFile));
     }
 
@@ -304,7 +313,8 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     final int numSegments = infos.size();
     this.writer = writer;
-    message("findMerges: " + numSegments + " segments");
+    if (verbose())
+      message("findMerges: " + numSegments + " segments");
 
     // Compute levels, which is just log (base mergeFactor)
     // of the size of each segment
@@ -371,7 +381,8 @@ public abstract class LogMergePolicy extends MergePolicy {
         }
         upto--;
       }
-      message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments");
+      if (verbose())
+        message("  level " + levelBottom + " to " + maxLevel + ": " + (1+upto-start) + " segments");
 
       // Finally, record all merges that are viable at this level:
       int end = start + mergeFactor;
@@ -385,9 +396,10 @@ public abstract class LogMergePolicy extends MergePolicy {
         if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          message("    " + start + " to " + end + ": add this merge");
+          if (verbose())
+            message("    " + start + " to " + end + ": add this merge");
           spec.add(new OneMerge(infos.range(start, end), useCompoundFile));
-        } else
+        } else if (verbose())
           message("    " + start + " to " + end + ": contains segment over maxMergeSize or maxMergeDocs; skipping");
 
         start = end;

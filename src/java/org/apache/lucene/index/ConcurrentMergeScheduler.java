@@ -94,8 +94,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     }
   }
 
+  private boolean verbose() {
+    return writer != null && writer.verbose();
+  }
+  
   private void message(String message) {
-    if (writer != null)
+    if (verbose())
       writer.message("CMS: " + message);
   }
 
@@ -115,11 +119,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   public synchronized void sync() {
     while(mergeThreadCount() > 0) {
-      message("now wait for threads; currently " + mergeThreads.size() + " still running");
+      if (verbose())
+        message("now wait for threads; currently " + mergeThreads.size() + " still running");
       final int count = mergeThreads.size();
-      for(int i=0;i<count;i++)
-        message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
-
+      if (verbose()) {
+        for(int i=0;i<count;i++)
+          message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
+      }
+      
       try {
         wait();
       } catch (InterruptedException e) {
@@ -154,9 +161,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     // these newly proposed merges will likely already be
     // registered.
 
-    message("now merge");
-    message("  index: " + writer.segString());
-
+    if (verbose()) {
+      message("now merge");
+      message("  index: " + writer.segString());
+    }
+    
     // Iterate, pulling from the IndexWriter's queue of
     // pending merges, until it's empty:
     while(true) {
@@ -167,7 +176,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       MergePolicy.OneMerge merge = writer.getNextMerge();
       if (merge == null) {
-        message("  no more merges pending; now return");
+        if (verbose())
+          message("  no more merges pending; now return");
         return;
       }
 
@@ -177,7 +187,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       synchronized(this) {
         while (mergeThreadCount() >= maxThreadCount) {
-          message("    too many merge threads running; stalling...");
+          if (verbose())
+            message("    too many merge threads running; stalling...");
           try {
             wait();
           } catch (InterruptedException ie) {
@@ -185,7 +196,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           }
         }
 
-        message("  consider merge " + merge.segString(dir));
+        if (verbose())
+          message("  consider merge " + merge.segString(dir));
       
         assert mergeThreadCount() < maxThreadCount;
 
@@ -193,7 +205,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         // merge:
         final MergeThread merger = getMergeThread(writer, merge);
         mergeThreads.add(merger);
-        message("    launch new thread [" + merger.getName() + "]");
+        if (verbose())
+          message("    launch new thread [" + merger.getName() + "]");
         merger.start();
       }
     }
@@ -253,7 +266,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       
       try {
 
-        message("  merge thread: start");
+        if (verbose())
+          message("  merge thread: start");
 
         while(true) {
           setRunningMerge(merge);
@@ -264,12 +278,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           merge = writer.getNextMerge();
           if (merge != null) {
             writer.mergeInit(merge);
-            message("  merge thread: do another merge " + merge.segString(dir));
+            if (verbose())
+              message("  merge thread: do another merge " + merge.segString(dir));
           } else
             break;
         }
 
-        message("  merge thread: done");
+        if (verbose())
+          message("  merge thread: done");
 
       } catch (Throwable exc) {
 
