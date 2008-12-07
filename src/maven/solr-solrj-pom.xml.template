@@ -40,10 +40,10 @@
 
     <!-- Solr -->
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-common</artifactId>
-      <version>@maven_version@</version>
-    </dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.5.5</version>
+    </dependency> 
 
     <!-- Apache Commons -->
     <dependency>

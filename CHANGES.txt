@@ -184,6 +184,10 @@ Other Changes
 
  9. SOLR-819: Upgraded to Lucene 2.9-dev (r724059) to get access to Arabic public constructors (gsingers)
 
+10. SOLR-900: Moved solrj into /src/solrj.  The contents of solr-common.jar is now included
+    in the solr-solrj.jar. (ryan)
+
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

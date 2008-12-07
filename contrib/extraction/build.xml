@@ -30,8 +30,8 @@
   </description>
 
   <path id="common.classpath">
-    <pathelement location="${solr-path}/build/common" />
-    <pathelement location="${solr-path}/build/core" />
+    <pathelement location="${solr-path}/build/solr" />
+    <pathelement location="${solr-path}/build/solrj" />
     <fileset dir="lib" includes="*.jar"/>
     <fileset dir="${solr-path}/lib" includes="*.jar"></fileset>
   </path>

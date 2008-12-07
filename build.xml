@@ -97,18 +97,6 @@
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
   <!-- ========================================================================= -->
 
-  <!-- Compile common classes. -->
-  <target name="compile-common"
-          description="Compile the source code."
-          depends="init-forrest-entities">
-
-    <solr-javac destdir="${dest}/common"
-                classpathref="compile.classpath">
-      <src path="${src}/java" />
-      <include name="org/apache/solr/common/**" />
-    </solr-javac>
-  </target>
-
   <!-- The compilation classpath -->
   <path id="compile.classpath">
     <fileset dir="${lib}">
@@ -117,64 +105,81 @@
     <pathelement location="${dest}/common"/>
   </path>
 
-  <!-- Compile the project. -->
-  <target name="compile"
-          description="Compile the source code."
-          depends="compile-common,init-forrest-entities">
+  <target name="compile-solrj"
+          description="Compile the java client."
+          depends="init-forrest-entities">
 
-    <solr-javac destdir="${dest}/core"
-                classpathref="compile.classpath.solrj-embedded">
-      <src path="${src}/java" />
-      <src path="${src}/webapp/src" />
-      <src path="client/java/solrj/src" />
-      <exclude name="org/apache/solr/common/**" />
+    <solr-javac destdir="${dest}/solrj"
+                classpathref="compile.classpath">
+      <src path="${src}/common" />
+      <src path="${src}/solrj" />
     </solr-javac>
   </target>
 
-  <target name="javadoc-core" depends="compile,compile-solrj"  description="Generates javadoc documentation for core.">
+
+  <!-- This depend on all of solr -->
+  <path id="compile.classpath.solrj">
+    <path refid="compile.classpath" />
+    <pathelement location="${dest}/solrj"/>
+    <!-- jetty -->
+    <fileset dir="example/lib">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+    
+  <!-- Compile the project. -->
+  <target name="compile"
+          description="Compile the source code."
+          depends="compile-solrj,init-forrest-entities">
+
+    <solr-javac destdir="${dest}/solr"
+                classpathref="compile.classpath.solrj">
+      <src path="${src}/java" />
+      <src path="${src}/webapp/src" />
+    </solr-javac>
+  </target>
+
+  <target name="javadoc-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
+    <sequential>
+      <mkdir dir="${build.javadoc}/solrj"/>
+
+      <path id="javadoc.classpath">
+        <path refid="compile.classpath"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/solrj"
+        title="${Name}-j ${version} API (${specversion})">
+        <sources>
+          <packageset dir="${src}/common"/>
+          <packageset dir="${src}/solrj"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+  
+  <target name="javadoc-core" depends="compile"  description="Generates javadoc documentation for core.">
 
     <sequential>
-      <mkdir dir="${build.javadoc}/core"/>
+      <mkdir dir="${build.javadoc}/solr"/>
 
       <path id="javadoc.classpath">
         <path refid="compile.classpath"/>
         <path refid="compile.classpath.solrj"/>
-        <pathelement location="${dest}/client/solrj"/>
+        <pathelement location="${dest}/solrj"/>
       </path>
 
       <invoke-javadoc
-        destdir="${build.javadoc}/core"
+        destdir="${build.javadoc}/solr"
       	title="${Name} ${version} core API (${specversion})">
         <sources>
-          <packageset dir="${src}/java">
-            <exclude name="org/apache/solr/common/**" />
-          </packageset>
+          <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src"/>
         </sources>
       </invoke-javadoc>
     </sequential>
   </target>
 
-  <target name="javadoc-common" depends="compile,compile-solrj"  description="Generates javadoc documentation for core.">
-
-    <sequential>
-      <mkdir dir="${build.javadoc}/common"/>
-
-      <path id="javadoc.classpath">
-        <path refid="compile.classpath"/>
-        <path refid="compile.classpath.solrj"/>
-        <pathelement location="${dest}/client/solrj"/>
-      </path>
-
-      <invoke-javadoc
-        destdir="${build.javadoc}/common"
-      	title="${Name} ${version} core API (${specversion})">
-        <sources>
-          <fileset dir="${src}/java" includes="org/apache/solr/common/**" />
-        </sources>
-      </invoke-javadoc>
-    </sequential>
-  </target>
 
   <target name="javadoc-all" description="Generate javadoc for core, client and contrib">
     <sequential>
@@ -183,15 +188,15 @@
       <path id="javadoc.classpath">
          <path refid="compile.classpath"/>
          <path refid="compile.classpath.solrj"/>
-         <path refid="compile.classpath.solrj-embedded"/>
          <pathelement location="${dest}/client/solrj"/>
       </path>
 
       <invoke-javadoc destdir="${build.javadoc}">
         <sources>
+          <packageset dir="${src}/common" />
+          <packageset dir="${src}/solrj" />
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
-          <packageset dir="${solrj-dir}/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
 
           <group title="Core" packages="org.apache.*" />
@@ -208,7 +213,7 @@
                    failonerror="true"/>
   </target>
 
-  <target name="javadoc" depends="javadoc-core, javadoc-common, javadoc-contrib, javadoc-solrj, javadoc-all">
+  <target name="javadoc" depends="javadoc-core, javadoc-contrib, javadoc-solrj, javadoc-all">
   </target>
 
   <target name="stub-factories" depends="dist-jar"
@@ -298,73 +303,6 @@
   <!-- ===================== CLIENT: solrj         ============================= -->
   <!-- ========================================================================= -->
 
-  <property name="solrj-dir" value="client/java/solrj" />
-
-  <path id="compile.classpath.solrj">
-    <fileset dir="${solrj-dir}/lib">
-      <include name="*.jar" />
-    </fileset>
-    <fileset dir="${lib}">
-      <include name="commons-io-*.jar" />
-      <include name="*stax-*.jar" />
-      <include name="wstx-*.jar" />
-    </fileset>
-    <pathelement location="${dest}/common"/>
-  </path>
-
-  <!-- This depend on all of solr -->
-  <path id="compile.classpath.solrj-embedded">
-    <path refid="compile.classpath.solrj" />
-    <path refid="compile.classpath" />
-    <pathelement location="${dest}/core"/>
-    
-    <!-- jetty -->
-    <fileset dir="example/lib">
-      <include name="**/*.jar" />
-    </fileset>
-  </path>
-    
-  <target name="compile-solrj-core"
-          description="Compile the java client."
-          depends="compile-common">
-
-    <solr-javac destdir="${dest}/client/solrj"
-                classpathref="compile.classpath.solrj">
-      <src path="${solrj-dir}/src" />
-      <exclude name="org/apache/solr/client/solrj/embedded/**" />
-    </solr-javac>
-  </target>
-
-  <!-- solrj includes the embedded app -->
-  <target name="compile-solrj"
-          description="Compile the java client."
-          depends="compile,compile-solrj-core">
-
-    <solr-javac destdir="${dest}/client/solrj"
-                classpathref="compile.classpath.solrj-embedded">
-      <src path="${solrj-dir}/src/org/apache/solr/client/solrj/embedded" />
-    </solr-javac>
-  </target>
-  
-  
-  <target name="javadoc-solrj" depends="compile-solrj" description="Generates solrj javadoc documentation.">
-    <sequential>
-      <mkdir dir="${build.javadoc}/solrj"/>
-
-      <path id="javadoc.classpath">
-        <path refid="compile.classpath.solrj"/>
-        <path refid="compile.classpath.solrj-embedded"/>
-      </path>
-
-      <invoke-javadoc
-        destdir="${build.javadoc}/solrj"
-      	title="${Name}-j ${version} API (${specversion})">
-        <sources>
-          <packageset dir="${solrj-dir}/src"/>
-        </sources>
-      </invoke-javadoc>
-    </sequential>
-  </target>
   
 
 
@@ -377,11 +315,10 @@
   <!-- For now, it's the same as main classpath.  Later it will have JUnit, Clover, etc. -->
   <path id="test.compile.classpath">
     <path refid="compile.classpath" />
-    <path refid="compile.classpath.solrj-embedded" />
+    <path refid="compile.classpath.solrj" />
       
-    <pathelement location="${dest}/common"/>
-    <pathelement location="${dest}/core"/>
-    <pathelement location="${dest}/client/solrj"/> <!-- include solrj -->
+    <pathelement location="${dest}/solr"/>
+    <pathelement location="${dest}/solrj"/> <!-- include solrj -->
   </path>
 
   <path id="test.run.classpath">
@@ -404,7 +341,6 @@
        destdir="${dest}/tests"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
-      <src path="${solrj-dir}/test" />
     </solr-javac>
   </target>
 
@@ -433,12 +369,9 @@
       <formatter type="xml"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
         <fileset dir="src/test" includes="${junit.includes}"/>
-        <!-- this will start jetty and run some tests through HTTP -->
-        <fileset dir="${solrj-dir}/test/" includes="${junit.includes}" />
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>
-        <fileset dir="${solrj-dir}/test/" includes="**/${testcase}.java" />
       </batchtest>
     </junit>
 
@@ -463,9 +396,10 @@
     <taskdef resource="clovertasks"/>
     <mkdir dir="${clover.db.dir}"/>
     <clover-setup initString="${clover.db.dir}/solr_coverage.db">
+      <fileset dir="src/common"/>
+      <fileset dir="src/solrj"/>
       <fileset dir="src/java"/>
       <fileset dir="src/webapp/src"/>
-      <fileset dir="${solrj-dir}/src" />
       <fileset dir="contrib/dataimporthandler/src/main/java" />
     </clover-setup>
   </target>
@@ -526,10 +460,9 @@
          <exclude name="easymock.jar" />
        </lib>
        <lib dir="${dist}">
-         <include name="${fullname}-core-${version}.jar" />
-         <include name="${fullname}-common-${version}.jar" />
+         <include name="${fullname}-solrj-${version}.jar" />
+         <include name="${fullname}-${version}.jar" />
        </lib>
-       <lib dir="client/java/solrj/lib"/>
        <fileset dir="${src}/webapp/web" />
        
        <!-- Include anything put in by contrib projects -->
@@ -542,15 +475,17 @@
   <target name="dist-src" description="Creates the Solr source distribution files"
           depends="make-manifest">
     <mkdir dir="${dist}" />
-    
+
+    <solr-jar destfile="${dist}/${fullname}-solrj-src-${version}.jar">
+      <fileset dir="${src}/common" />
+      <fileset dir="${src}/solrj"/>
+    </solr-jar>
+    	
     <solr-jar destfile="${dist}/${fullname}-core-src-${version}.jar">
-      <fileset dir="${src}/java" excludes="org/apache/solr/common/**" />
+      <fileset dir="${src}/java" />
       <fileset dir="${src}/webapp/src"/>
     </solr-jar>
-    <solr-jar destfile="${dist}/${fullname}-common-src-${version}.jar" basedir="${src}/java"
-              includes="org/apache/solr/common/**" />
-    <solr-jar destfile="${dist}/${fullname}-solrj-src-${version}.jar"
-              basedir="client/java/solrj/src" />
+  	
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src" />
   </target>
@@ -560,9 +495,7 @@
     <mkdir dir="${dist}" />
 
     <solr-jar destfile="${dist}/${fullname}-core-docs-${version}.jar"
-              basedir="${build.javadoc}/core" />
-    <solr-jar destfile="${dist}/${fullname}-common-docs-${version}.jar"
-              basedir="${build.javadoc}/common"/>
+              basedir="${build.javadoc}/solr" />
     <solr-jar destfile="${dist}/${fullname}-solrj-docs-${version}.jar"
               basedir="${build.javadoc}/solrj" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
@@ -574,15 +507,10 @@
           description="Creates the Solr JAR Distribution file."
           depends="compile, make-manifest">
     <mkdir dir="${dist}" />
-    <solr-jar
-         destfile="${dist}/${fullname}-core-${version}.jar"
-         basedir="${dest}/core" />
+    <solr-jar destfile="${dist}/${fullname}-core-${version}.jar">
+      <fileset dir="${dest}/solr" />
+    </solr-jar>
 
-    <!-- package the common classes together -->
-    <solr-jar
-         destfile="${dist}/${fullname}-common-${version}.jar"
-         basedir="${dest}/common" />
-    
   </target>
 
   <!-- Creates the solr jar. -->
@@ -592,18 +520,18 @@
     <mkdir dir="${dist}" />
     <solr-jar
          destfile="${dist}/${fullname}-solrj-${version}.jar"
-         basedir="${dest}/client/solrj" />
+         basedir="${dest}/solrj" />
 
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">
       <fileset dir="${lib}">
         <include name="commons-codec-*.jar"/>
         <include name="commons-io-*.jar"/>
+        <include name="commons-httpclient-*.jar"/>
         <include name="*stax-*.jar" />
         <include name="wstx-*.jar" />
-      </fileset>
-      <fileset dir="${solrj-dir}/lib">
-        <include name="*.jar" />
+        <include name="jcl-over-slf4j-*.jar" />
+        <include name="slf4j-api-*.jar" />
       </fileset>
     </copy>
       
@@ -615,7 +543,7 @@
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
-         basedir="${dest}/core"
+         basedir="${dest}/solr"
          filesetmanifest="skip"
          includes="org/apache/solr/util/SimplePostTool*.class">
        <manifest>
@@ -818,16 +746,6 @@
 
       <!-- ========== SOLR ARTIFACTS ========== -->
 
-      <m2-deploy pom.xml="${src}/maven/solr-common-pom.xml.template"
-                 jar.file="${dist}/apache-solr-common-${version}.jar">
-
-        <artifact-attachments>
-          <attach file="${dist}/${fullname}-common-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/${fullname}-common-docs-${version}.jar" classifier="javadoc"/>
-        </artifact-attachments>
-
-      </m2-deploy>
-
       <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-pom.xml.template"
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
 
@@ -847,7 +765,7 @@
 
       </m2-deploy>
 
-      <m2-deploy pom.xml="client/java/solrj/solr-solrj-pom.xml.template"
+      <m2-deploy pom.xml="${src}/maven/solr-solrj-pom.xml.template"
                  jar.file="${dist}/apache-solr-solrj-${version}.jar">
 
         <artifact-attachments>
@@ -875,6 +793,8 @@
     description="runs the tasks over src/java excluding the license directory">
     <rat:report xmlns:rat="antlib:org.apache.rat.anttasks">
       <fileset dir="src/java"/>
+      <fileset dir="src/common"/>
+      <fileset dir="src/solrj"/>
       <fileset dir="client">
         <exclude name="**/CHANGES.*"/>
       </fileset>
