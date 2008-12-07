@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.TermQuery;
+import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
@@ -416,7 +417,7 @@ class UnInvertedField {
 
 
 
-  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix) throws IOException {
+  public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
     FieldType ft = searcher.getSchema().getFieldType(field);
 
     NamedList res = new NamedList();  // order is important
@@ -528,7 +529,7 @@ class UnInvertedField {
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
 
-      if (sort) {
+      if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
         int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
         maxsize = Math.min(maxsize, numTermsInField);
         final BoundedTreeSet<Long> queue = new BoundedTreeSet<Long>(maxsize);

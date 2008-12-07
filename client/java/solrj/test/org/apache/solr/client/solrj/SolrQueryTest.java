@@ -94,6 +94,13 @@ public class SolrQueryTest extends TestCase {
   
   public void testFacetSort() {
     SolrQuery q = new SolrQuery("dog");
+    assertEquals("count", q.getFacetSortString());
+    q.setFacetSort("lex");
+    assertEquals("lex", q.getFacetSortString());
+  }
+
+  public void testFacetSortLegacy() {
+    SolrQuery q = new SolrQuery("dog");
     assertTrue("expected default value to be true", q.getFacetSort());
     q.setFacetSort(false);
     assertFalse("expected set value to be false", q.getFacetSort());
@@ -103,7 +110,7 @@ public class SolrQueryTest extends TestCase {
       SolrQuery q = new SolrQuery("foo");
       assertEquals(10, q.setFacetLimit(10).getFacetLimit());
       assertEquals(10, q.setFacetMinCount(10).getFacetMinCount());
-      assertEquals(true, q.setFacetSort(true).getFacetSort());
+      assertEquals("lex", q.setFacetSort("lex").getFacetSortString());
       assertEquals(10, q.setHighlightSnippets(10).getHighlightSnippets());
       assertEquals(10, q.setHighlightFragsize(10).getHighlightFragsize());
       assertEquals(true, q.setHighlightRequireFieldMatch(true).getHighlightRequireFieldMatch());

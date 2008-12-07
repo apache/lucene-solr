@@ -149,7 +149,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
-                    ,"facet.sort","true"
+                    ,"facet.sort","count"
                     ,"hl","true"
                     ,"hl.fl","t1"
             );

@@ -199,10 +199,21 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** get facet sort
    * 
-   * @return facet sort or default of true
+   * @return facet sort or default of FacetParams.FACET_SORT_COUNT
    */
+  public String getFacetSortString() {
+    return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
+  }
+
+  /** get facet sort
+   * 
+   * @return facet sort or default of true
+   * @deprecated Use {@link #getFacetSortString()} instead, true corresponds to
+   * FacetParams.FACET_SORT_COUNT and false to FacetParams.FACET_SORT_LEX.
+   */
+  @Deprecated
   public boolean getFacetSort() {
-    return this.getBool(FacetParams.FACET_SORT, true);
+    return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT).equals(FacetParams.FACET_SORT_COUNT);
   }
 
   /** set facet sort
@@ -210,8 +221,21 @@ public class SolrQuery extends ModifiableSolrParams
    * @param sort sort facets
    * @return this
    */
-  public SolrQuery setFacetSort(Boolean sort) {
+  public SolrQuery setFacetSort(String sort) {
     this.set(FacetParams.FACET_SORT, sort);
+    return this;
+  }
+
+  /** set facet sort
+   * 
+   * @param sort sort facets
+   * @return this
+   * @deprecated Use {@link #setFacetSort(String)} instead, true corresponds to
+   * FacetParams.FACET_SORT_COUNT and false to FacetParams.FACET_SORT_LEX.
+   */
+  @Deprecated
+  public SolrQuery setFacetSort(boolean sort) {
+    this.set(FacetParams.FACET_SORT, sort == true ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
     return this;
   }
 

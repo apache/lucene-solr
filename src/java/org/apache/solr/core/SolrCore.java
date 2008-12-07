@@ -1538,6 +1538,13 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn( "adding ShowFileRequestHandler with hidden files: "+hide );
       }
     }
+
+    String facetSort = solrConfig.get("//bool[@name='facet.sort']", null);
+    if (facetSort != null) {
+      log.warn( 
+          "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
+          "update your config to use <string name='facet.sort'>.");
+    }
   } 
 
   public CoreDescriptor getCoreDescriptor() {

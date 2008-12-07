@@ -88,10 +88,15 @@ public interface FacetParams {
   public static final String FACET_MISSING = FACET + ".missing";
 
   /**
-   * Boolean option: true causes facets to be sorted
-   * by the count, false results in natural index order.
+   * String option: "count" causes facets to be sorted
+   * by the count, "lex" results in lexicographical order.
    */
   public static final String FACET_SORT = FACET + ".sort";
+
+  public static final String FACET_SORT_COUNT = "count";
+  public static final String FACET_SORT_COUNT_LEGACY = "true";
+  public static final String FACET_SORT_LEX = "lex";
+  public static final String FACET_SORT_LEX_LEGACY = "false";
 
   /**
    * Only return constraints of a facet field with the given prefix.

@@ -122,7 +122,7 @@ public class  FacetComponent extends SearchComponent
         }
 
         refine.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;
-        refine.params.set(FacetParams.FACET,"true");
+        refine.params.set(FacetParams.FACET,FacetParams.FACET_SORT_COUNT_LEGACY);
         refine.params.remove(FacetParams.FACET_FIELD);
         // TODO: perhaps create a more compact facet.terms method?
         refine.params.set(FacetParams.FACET_QUERY, fqueries.toArray(new String[fqueries.size()]));
@@ -148,14 +148,14 @@ public class  FacetComponent extends SearchComponent
           rb._facetInfo = fi = new FacetInfo();
           fi.parse(rb.req.getParams(), rb);
           // should already be true...
-          // sreq.params.set(FacetParams.FACET, "true");
+          // sreq.params.set(FacetParams.FACET, FacetParams.FACET_SORT_COUNT_LEGACY);
         }
 
         sreq.params.remove(FacetParams.FACET_MINCOUNT);
         sreq.params.remove(FacetParams.FACET_OFFSET);
         sreq.params.remove(FacetParams.FACET_LIMIT);
 
-        for (DistribFieldFacet dff : fi.topFacets.values()) {
+        for (DistribFieldFacet dff : fi.facets.values()) {
           String paramStart = "f." + dff.field + '.';
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
@@ -176,7 +176,7 @@ public class  FacetComponent extends SearchComponent
       }
     } else {
       // turn off faceting on other requests
-      sreq.params.set(FacetParams.FACET, "false");
+      sreq.params.set(FacetParams.FACET, FacetParams.FACET_SORT_LEX_LEGACY);
       // we could optionally remove faceting params
     }
   }
@@ -216,7 +216,7 @@ public class  FacetComponent extends SearchComponent
 
       // step through each facet.field, adding results from this shard
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");      
-      for (DistribFieldFacet dff : fi.topFacets.values()) {
+      for (DistribFieldFacet dff : fi.facets.values()) {
         dff.add(shardNum, (NamedList)facet_fields.get(dff.field), dff.initialLimit);
       }
     }
@@ -236,9 +236,10 @@ public class  FacetComponent extends SearchComponent
     }
 
 
-    for (DistribFieldFacet dff : fi.topFacets.values()) {
+    for (DistribFieldFacet dff : fi.facets.values()) {
       if (dff.limit <= 0) continue; // no need to check these facets for refinement
-      ShardFacetCount[] counts = dff.getSorted();
+      if (dff.minCount <= 1 && (dff.sort.equals(FacetParams.FACET_SORT_LEX) || dff.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY))) continue;
+      ShardFacetCount[] counts = dff.getCountSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
 
@@ -306,7 +307,7 @@ public class  FacetComponent extends SearchComponent
           String val = qparams.get(QueryParsing.V);
 
           // Find the right field.facet for this field
-          DistribFieldFacet dff = fi.topFacets.get(field);
+          DistribFieldFacet dff = fi.facets.get(field);
           if (dff == null) continue;  // maybe this wasn't for facet count refinement
 
           // Find the right constraint count for this value
@@ -351,13 +352,20 @@ public class  FacetComponent extends SearchComponent
     NamedList facet_fields = new SimpleOrderedMap();
     facet_counts.add("facet_fields", facet_fields);
 
-    for (DistribFieldFacet dff : fi.topFacets.values()) {
+    for (DistribFieldFacet dff : fi.facets.values()) {
       NamedList fieldCounts = new NamedList(); // order is more important for facets
       facet_fields.add(dff.field, fieldCounts);
 
-      ShardFacetCount[] counts = dff.countSorted;
-      if (counts == null || dff.needRefinements) {
-        counts = dff.getSorted();
+      ShardFacetCount[] counts;
+      if (dff.sort.equals(FacetParams.FACET_SORT_COUNT) || dff.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
+        counts = dff.countSorted;
+        if (counts == null || dff.needRefinements) {
+          counts = dff.getCountSorted();
+        }
+      } else if (dff.sort.equals(FacetParams.FACET_SORT_LEX) || dff.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY)) {
+          counts = dff.getLexSorted();
+      } else { // TODO: log error or throw exception?
+          counts = dff.getLexSorted();
       }
 
       int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
@@ -429,8 +437,7 @@ class FacetInfo {
 
   void parse(SolrParams params, ResponseBuilder rb) {
     queryFacets = new LinkedHashMap<String,Long>();
-    topFacets = new LinkedHashMap<String,DistribFieldFacet>();
-    listFacets = new LinkedHashMap<String,DistribFieldFacet>();
+    facets = new LinkedHashMap<String,DistribFieldFacet>();
 
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
     if (facetQs != null) {
@@ -444,18 +451,13 @@ class FacetInfo {
       for (String field : facetFs) {
         DistribFieldFacet ff = new DistribFieldFacet(rb, field);
         ff.fillParams(params, field);
-        if (ff.sort) {
-          topFacets.put(field, ff);
-        } else {
-          listFacets.put(field, ff);
-        }
+        facets.put(field, ff);
       }
     }
   }
 
   LinkedHashMap<String,Long> queryFacets;
-  LinkedHashMap<String,DistribFieldFacet> topFacets;   // field facets that order by constraint count (sort=true)
-  LinkedHashMap<String,DistribFieldFacet> listFacets;  // field facets that list values in term order
+  LinkedHashMap<String,DistribFieldFacet> facets;
 }
 
 
@@ -464,7 +466,7 @@ class FieldFacet {
   int offset;
   int limit;
   int minCount;
-  boolean sort;
+  String sort;
   boolean missing;
   String prefix;
   long missingCount;
@@ -482,8 +484,8 @@ class FieldFacet {
     }
     this.minCount = mincount;
     this.missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
-    // default to sorting if there is a limit.
-    this.sort = params.getFieldBool(field, FacetParams.FACET_SORT, limit>0);
+    // default to sorting by count if there is a limit.
+    this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
     this.prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
   }
 }
@@ -550,8 +552,18 @@ class DistribFieldFacet extends FieldFacet {
     counted[shardNum] = terms;
   }
 
+  ShardFacetCount[] getLexSorted() {
+    ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+    Arrays.sort(arr, new Comparator<ShardFacetCount>() {
+      public int compare(ShardFacetCount o1, ShardFacetCount o2) {
+        return o1.name.compareTo(o2.name);
+      }
+    });
+    countSorted = arr;
+    return arr;
+  }
 
-  ShardFacetCount[] getSorted() {
+  ShardFacetCount[] getCountSorted() {
     ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
     Arrays.sort(arr, new Comparator<ShardFacetCount>() {
       public int compare(ShardFacetCount o1, ShardFacetCount o2) {

@@ -103,6 +103,11 @@ New Features
 
 21. SOLR-819: Added factories for Arabic support (gsingers)
 
+22. SOLR-781: Distributed search ability to sort field.facet values
+    lexicographically.  facet.sort values "true" and "false" are
+    also deprecated and replaced with "count" and "lex".
+    (Lars Kotthoff via yonik
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

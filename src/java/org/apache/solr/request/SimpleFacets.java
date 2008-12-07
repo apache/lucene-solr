@@ -145,7 +145,7 @@ public class SimpleFacets {
     }
     boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting if there is a limit.
-    boolean sort = params.getFieldBool(field, FacetParams.FACET_SORT, limit>0);
+    String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? "count" : "lex");
     String prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
 
 
@@ -229,7 +229,7 @@ public class SimpleFacets {
    * Use the Lucene FieldCache to get counts for each unique field value in <code>docs</code>.
    * The field must have at most one indexed token per document.
    */
-  public static NamedList getFieldCacheCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix) throws IOException {
+  public static NamedList getFieldCacheCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix) throws IOException {
     // TODO: If the number of terms is high compared to docs.size(), and zeros==false,
     //  we should use an alternate strategy to avoid
     //  1) creating another huge int[] for the counts
@@ -286,7 +286,7 @@ public class SimpleFacets {
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
 
-      if (sort) {
+      if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
         int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
         maxsize = Math.min(maxsize, nTerms);
         final BoundedTreeSet<CountPair<String,Integer>> queue = new BoundedTreeSet<CountPair<String,Integer>>(maxsize);
@@ -344,7 +344,7 @@ public class SimpleFacets {
    * @see FacetParams#FACET_ZEROS
    * @see FacetParams#FACET_MISSING
    */
-  public NamedList getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix)
+  public NamedList getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, String sort, String prefix)
     throws IOException {
 
     /* :TODO: potential optimization...
@@ -360,7 +360,7 @@ public class SimpleFacets {
     FieldType ft = schema.getFieldType(field);
 
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;    
-    final BoundedTreeSet<CountPair<String,Integer>> queue = sort ? new BoundedTreeSet<CountPair<String,Integer>>(maxsize) : null;
+    final BoundedTreeSet<CountPair<String,Integer>> queue = (sort.equals("count") || sort.equals("true")) ? new BoundedTreeSet<CountPair<String,Integer>>(maxsize) : null;
     final NamedList res = new NamedList();
 
     int min=mincount-1;  // the smallest value in the top 'N' values    
@@ -400,7 +400,7 @@ public class SimpleFacets {
           }
         }
 
-        if (sort) {
+        if (sort.equals("count") || sort.equals("true")) {
           if (c>min) {
             queue.add(new CountPair<String,Integer>(t.text(), c));
             if (queue.size()>=maxsize) min=queue.last().val;
@@ -415,7 +415,7 @@ public class SimpleFacets {
     } while (te.next());
     }
 
-    if (sort) {
+    if (sort.equals("count") || sort.equals("true")) {
       for (CountPair<String,Integer> p : queue) {
         if (--off>=0) continue;
         if (--lim<0) break;
