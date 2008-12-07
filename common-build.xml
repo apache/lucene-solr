@@ -440,6 +440,7 @@
         <include name="org/xml/**" />
         <include name="org/w3c/**" />
         <include name="com/example/**" />
+      	<exclude name="org/apache/lucene/analysis/ASCIIFoldingFilter.java" /> <!-- Class too large for clover -->
       </fileset>
     </clover-setup>
   </target>
