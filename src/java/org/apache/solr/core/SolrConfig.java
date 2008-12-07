@@ -23,6 +23,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.lucene.search.BooleanQuery;
 
@@ -31,9 +32,7 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.IOException;
@@ -127,7 +126,19 @@ public class SolrConfig extends Config {
     filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
     queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
     documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
-    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
+    CacheConfig conf = CacheConfig.getConfig(this, "query/fieldValueCache");
+    if (conf == null) {
+      Map<String,String> args = new HashMap<String,String>();
+      args.put("name","fieldValueCache");
+      args.put("size","10000");
+      args.put("initialSize","10");
+      args.put("showItems","-1");
+      conf = new CacheConfig(FastLRUCache.class, args, null);
+    }
+    fieldValueCacheConfig = conf;
+
+    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");     
+
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
     hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor",0.75f);
@@ -161,6 +172,7 @@ public class SolrConfig extends Config {
   public final CacheConfig filterCacheConfig ;
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
+  public final CacheConfig fieldValueCacheConfig;
   public final CacheConfig[] userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;

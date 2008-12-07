@@ -39,15 +39,24 @@ import javax.xml.xpath.XPathConstants;
  */
 public class CacheConfig {
   private String nodeName;
+
+  private Class clazz;
   private Map<String,String> args;
+  private CacheRegenerator regenerator;
 
   private String cacheImpl;
-  private Class clazz;
 
   private Object[] persistence = new Object[1];
 
   private String regenImpl;
-  private CacheRegenerator regenerator;
+
+  public CacheConfig() {}
+
+  public CacheConfig(Class clazz, Map<String,String> args, CacheRegenerator regenerator) {
+    this.clazz = clazz;
+    this.args = args;
+    this.regenerator = regenerator;
+  }
 
   public CacheRegenerator getRegenerator() {
     return regenerator;

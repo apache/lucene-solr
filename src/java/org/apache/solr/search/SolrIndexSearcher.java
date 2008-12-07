@@ -31,6 +31,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.request.UnInvertedField;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
@@ -77,6 +78,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private final SolrCache filterCache;
   private final SolrCache queryResultCache;
   private final SolrCache documentCache;
+  private final SolrCache fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
   
@@ -140,6 +142,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     cachingEnabled=enableCache;
     if (cachingEnabled) {
       ArrayList<SolrCache> clist = new ArrayList<SolrCache>();
+      fieldValueCache = solrConfig.fieldValueCacheConfig==null ? null : solrConfig.fieldValueCacheConfig.newInstance();
+      if (fieldValueCache!=null) clist.add(fieldValueCache);
       filterCache= solrConfig.filterCacheConfig==null ? null : solrConfig.filterCacheConfig.newInstance();
       if (filterCache!=null) clist.add(filterCache);
       queryResultCache = solrConfig.queryResultCacheConfig==null ? null : solrConfig.queryResultCacheConfig.newInstance();
@@ -166,6 +170,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       filterCache=null;
       queryResultCache=null;
       documentCache=null;
+      fieldValueCache=null;
       cacheMap = noGenericCaches;
       cacheList= noCaches;
     }
@@ -232,6 +237,19 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   // Set default regenerators on filter and query caches if they don't have any
   //
   public static void initRegenerators(SolrConfig solrConfig) {
+    if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
+      solrConfig.fieldValueCacheConfig.setRegenerator(
+              new CacheRegenerator() {
+                public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
+                  if (oldVal instanceof UnInvertedField) {
+                    UnInvertedField.getUnInvertedField((String)oldKey, newSearcher);
+                  }
+                  return true;
+                }
+              }
+      );
+    }
+
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(
               new CacheRegenerator() {
@@ -451,6 +469,12 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   ////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////
+
+  /** expert: internal API, subject to change */
+  public SolrCache getFieldValueCache() {
+    return fieldValueCache;
+  }
+
 
   /**
    * Returns the first document number containing the term <code>t</code>

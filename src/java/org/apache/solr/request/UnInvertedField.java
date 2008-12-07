@@ -28,10 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.search.BitDocSet;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -42,6 +39,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -73,7 +71,7 @@ import java.util.WeakHashMap;
  *   much like Lucene's own internal term index).
  *
  */
-class UnInvertedField {
+public class UnInvertedField {
   private static int TNUM_OFFSET=2;
 
   static class TopTerm {
@@ -92,6 +90,10 @@ class UnInvertedField {
   int termsInverted;  // number of unique terms that were un-inverted
   long termInstances; // total number of references to term numbers
   final TermIndex ti;
+  long memsz;
+  int total_time;  // total time to uninvert the field
+  int phase1_time;  // time for phase1 of the uninvert process
+  final AtomicLong use = new AtomicLong(); // number of uses
 
   int[] index;
   byte[][] tnums = new byte[256][];
@@ -100,7 +102,9 @@ class UnInvertedField {
 
 
   public long memSize() {
-    long sz = 6*8 + 12; // local fields
+    // can cache the mem size since it shouldn't change
+    if (memsz!=0) return memsz;
+    long sz = 8*8 + 32; // local fields
     sz += bigTerms.size() * 64;
     for (TopTerm tt : bigTerms.values()) {
       sz += tt.memSize();
@@ -113,6 +117,7 @@ class UnInvertedField {
     if (maxTermCounts != null)
       sz += maxTermCounts.length * 4;
     sz += ti.memSize();
+    memsz = sz;
     return sz;
   }
 
@@ -396,6 +401,9 @@ class UnInvertedField {
           byte[] newtarget = new byte[pos];
           System.arraycopy(target, 0, newtarget, 0, pos);
           target = newtarget;
+          if (target.length > (1<<24)*.9) {
+            SolrCore.log.warn("Approaching too many values for UnInvertedField faceting on field '"+field+"' : bucket size=" + target.length);
+          }
         }
         
         tnums[pass] = target;
@@ -407,17 +415,18 @@ class UnInvertedField {
 
     long endTime = System.currentTimeMillis();
 
-    SolrCore.log.info("UnInverted multi-valued field " + field + ", memSize=" + memSize()
-            + ", time="+(endTime-startTime)+", phase1="+(midPoint-startTime)
-            + ", nTerms=" + numTermsInField + ", bigTerms=" + bigTerms.size()
-            + ", termInstances=" + termInstances
-            );
+    total_time = (int)(endTime-startTime);
+    phase1_time = (int)(midPoint-startTime);
+
+    SolrCore.log.info("UnInverted multi-valued field " + toString());
   }
 
 
 
 
   public NamedList getCounts(SolrIndexSearcher searcher, DocSet baseDocs, int offset, int limit, Integer mincount, boolean missing, String sort, String prefix) throws IOException {
+    use.incrementAndGet();
+
     FieldType ft = searcher.getSchema().getFieldType(field);
 
     NamedList res = new NamedList();  // order is important
@@ -613,63 +622,43 @@ class UnInvertedField {
     return te.term().text();
   }
 
+  public String toString() {
+    return "{field=" + field
+            + ",memSize="+memSize()
+            + ",tindexSize="+ti.memSize()
+            + ",time="+total_time
+            + ",phase1="+phase1_time
+            + ",nTerms="+numTermsInField
+            + ",bigTerms="+bigTerms.size()
+            + ",termInstances="+termInstances
+            + ",uses="+use.get()
+            + "}";
+  }
+
 
   //////////////////////////////////////////////////////////////////
   //////////////////////////// caching /////////////////////////////
   //////////////////////////////////////////////////////////////////
-  static final class CreationPlaceholder {
-    Object value;
-  }
-
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    return (UnInvertedField)multiValuedFieldCache.get(searcher, field);
-  }
-
-  static Cache multiValuedFieldCache = new Cache() {
-    protected Object createValue(SolrIndexSearcher searcher, Object key) throws IOException {
-      return new UnInvertedField((String)key, searcher);
+    SolrCache cache = searcher.getFieldValueCache();
+    if (cache == null) {
+      return new UnInvertedField(field, searcher);
     }
-  };
 
-    /** Internal cache. (from lucene FieldCache) */
-  abstract static class Cache {
-    private final Map readerCache = new WeakHashMap();
-
-    protected abstract Object createValue(SolrIndexSearcher searcher, Object key) throws IOException;
-
-    public Object get(SolrIndexSearcher searcher, Object key) throws IOException {
-      Map innerCache;
-      Object value;
-      synchronized (readerCache) {
-        innerCache = (Map) readerCache.get(searcher);
-        if (innerCache == null) {
-          innerCache = new HashMap();
-          readerCache.put(searcher, innerCache);
-          value = null;
-        } else {
-          value = innerCache.get(key);
-        }
-        if (value == null) {
-          value = new CreationPlaceholder();
-          innerCache.put(key, value);
+    UnInvertedField uif = (UnInvertedField)cache.get(field);
+    if (uif == null) {
+      synchronized (cache) {
+        uif = (UnInvertedField)cache.get(field);
+        if (uif == null) {
+          uif = new UnInvertedField(field, searcher);
+          cache.put(field, uif);
         }
       }
-      if (value instanceof CreationPlaceholder) {
-        synchronized (value) {
-          CreationPlaceholder progress = (CreationPlaceholder) value;
-          if (progress.value == null) {
-            progress.value = createValue(searcher, key);
-            synchronized (readerCache) {
-              innerCache.put(key, progress.value);
-            }
-          }
-          return progress.value;
-        }
-      }
-
-      return value;
     }
+
+    return uif;
   }
+
 }
 
 
@@ -743,7 +732,7 @@ class NumberedTermEnum extends TermEnum {
   }
 
   public void close() throws IOException {
-    tenum.close();
+    if (tenum!=null) tenum.close();
   }
 
   public boolean skipTo(String target) throws IOException {
@@ -758,6 +747,7 @@ class NumberedTermEnum extends TermEnum {
 
     if (startIdx >= 0) {
       // we hit the term exactly... lucky us!
+      if (tenum != null) tenum.close();
       tenum = reader.terms(target);
       pos = startIdx << tindex.intervalBits;
       return setTerm();
@@ -768,6 +758,7 @@ class NumberedTermEnum extends TermEnum {
 
     if (startIdx == 0) {
       // our target occurs *before* the first term
+      if (tenum != null) tenum.close();
       tenum = reader.terms(target);
       pos = 0;
       return setTerm();
@@ -781,6 +772,7 @@ class NumberedTermEnum extends TermEnum {
       // so we don't need to seek.
     } else {
       // seek to the right block
+      if (tenum != null) tenum.close();            
       tenum = reader.terms(target.createTerm(tindex.index[startIdx]));
       pos = startIdx << tindex.intervalBits;
       setTerm();  // should be true since it's in the index
@@ -802,6 +794,7 @@ class NumberedTermEnum extends TermEnum {
       String base = tindex.index[idx];
       pos = idx << tindex.intervalBits;
       delta = termNumber - pos;
+      if (tenum != null) tenum.close();
       tenum = reader.terms(tindex.createTerm(base));
     }
     while (--delta >= 0) {
@@ -895,7 +888,7 @@ class TermIndex {
 
 
   /**
-   * Returns the approximate amount of memory taken by this DocSet.
+   * Returns the approximate amount of memory taken by this TermIndex.
    * This is only an approximation and doesn't take into account java object overhead.
    *
    * @return

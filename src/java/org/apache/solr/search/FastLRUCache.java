@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -38,6 +39,7 @@ public class FastLRUCache implements SolrCache {
   private CacheRegenerator regenerator;
   private String description = "Concurrent LRU Cache";
   private ConcurrentLRUCache cache;
+  private int showItems = 0;
 
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     state = State.CREATED;
@@ -71,9 +73,13 @@ public class FastLRUCache implements SolrCache {
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get("cleanupThread");
     boolean newThread = str == null ? false : Boolean.parseBoolean(str);
-    
+
+    str = (String) args.get("showItems");
+    showItems = str == null ? 0 : Integer.parseInt(str);
+
+
     description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+" ,cleanupThread ="+newThread;
+            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread ="+newThread;
     if (autowarmCount > 0) {
       description += ", autowarmCount=" + autowarmCount
               + ", regenerator=" + regenerator;
@@ -234,6 +240,19 @@ public class FastLRUCache implements SolrCache {
     lst.add("cumulative_inserts", cinserts);
     lst.add("cumulative_evictions", cevictions);
 
+    if (showItems != 0) {
+      Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
+      for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
+        Object k = e.getKey();
+        Object v = e.getValue();
+
+        String ks = "item_" + k;
+        String vs = v.toString();
+        lst.add(ks,vs);
+      }
+      
+    }
+
     return lst;
   }
 
@@ -241,4 +260,6 @@ public class FastLRUCache implements SolrCache {
     return name + getStatistics().toString();
   }
 }
+
+
 
