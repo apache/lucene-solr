@@ -101,6 +101,8 @@ New Features
 
 20. SOLR-284: Added support for extracting content from binary documents like MS Word and PDF using Apache Tika.  See also contrib/extraction/CHANGES.txt (Eric Pugh, Chris Harris, gsingers)
 
+21. SOLR-819: Added factories for Arabic support (gsingers)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
@@ -175,6 +177,7 @@ Other Changes
 
  8. SOLR-875: Upgraded to Lucene 2.9-dev (r723985) and consolidated the BitSet implementations (Michael Busch, gsingers)
 
+ 9. SOLR-819: Upgraded to Lucene 2.9-dev (r724059) to get access to Arabic public constructors (gsingers)
 
 Build
 ----------------------
