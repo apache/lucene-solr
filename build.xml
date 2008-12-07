@@ -458,10 +458,13 @@
        <lib dir="${lib}">
          <exclude name="servlet-api*.jar" />
          <exclude name="easymock.jar" />
+         <exclude name="junit-*.jar" />
+         <exclude name="*.txt" />
+         <exclude name="*.template" />
        </lib>
        <lib dir="${dist}">
          <include name="${fullname}-solrj-${version}.jar" />
-         <include name="${fullname}-${version}.jar" />
+         <include name="${fullname}-core-${version}.jar" />
        </lib>
        <fileset dir="${src}/webapp/web" />
        
@@ -505,7 +508,7 @@
   <!-- Creates the solr jar. -->
   <target name="dist-jar"
           description="Creates the Solr JAR Distribution file."
-          depends="compile, make-manifest">
+          depends="dist-solrj, compile, make-manifest">
     <mkdir dir="${dist}" />
     <solr-jar destfile="${dist}/${fullname}-core-${version}.jar">
       <fileset dir="${dest}/solr" />
@@ -516,7 +519,7 @@
   <!-- Creates the solr jar. -->
   <target name="dist-solrj"
           description="Creates the Solr JAR Distribution file."
-          depends="compile-solrj, dist-jar">
+          depends="compile-solrj">
     <mkdir dir="${dist}" />
     <solr-jar
          destfile="${dist}/${fullname}-solrj-${version}.jar"
