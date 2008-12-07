@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="solr-extraction" default="build">
+<project name="solr-cell" default="build">
 
   <property name="solr-path" value="../.." />
   <property name="tika.version" value="0.2-SNAPSHOT"/>
@@ -33,7 +33,7 @@
     <pathelement location="${solr-path}/build/solr" />
     <pathelement location="${solr-path}/build/solrj" />
     <fileset dir="lib" includes="*.jar"/>
-    <fileset dir="${solr-path}/lib" includes="*.jar"></fileset>
+    <fileset dir="${solr-path}/lib" includes="*.jar"/>
   </path>
 
   <path id="test.classpath">
@@ -96,6 +96,17 @@
     </junit>
 
     <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+  <target name="test-reports"
+          description="Generates HTML test reports.">
+    <mkdir dir="${junit.reports}"/>
+    <junitreport todir="${junit.output.dir}">
+      <fileset dir="${junit.output.dir}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.reports}"/>
+    </junitreport>
   </target>
 
   <target name="dist" depends="build">
