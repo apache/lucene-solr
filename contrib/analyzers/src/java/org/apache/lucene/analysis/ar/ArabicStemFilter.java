@@ -32,7 +32,7 @@ public class ArabicStemFilter extends TokenFilter {
 
   protected ArabicStemmer stemmer = null;
 
-  protected ArabicStemFilter(TokenStream input) {
+  public ArabicStemFilter(TokenStream input) {
     super(input);
     stemmer = new ArabicStemmer();
   }

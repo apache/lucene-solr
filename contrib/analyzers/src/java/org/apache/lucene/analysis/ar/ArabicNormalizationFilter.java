@@ -32,7 +32,7 @@ public class ArabicNormalizationFilter extends TokenFilter {
 
   protected ArabicNormalizer normalizer = null;
 
-  protected ArabicNormalizationFilter(TokenStream input) {
+  public ArabicNormalizationFilter(TokenStream input) {
     super(input);
     normalizer = new ArabicNormalizer();
   }
