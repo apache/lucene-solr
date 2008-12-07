@@ -122,7 +122,7 @@ public class  FacetComponent extends SearchComponent
         }
 
         refine.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;
-        refine.params.set(FacetParams.FACET,FacetParams.FACET_SORT_COUNT_LEGACY);
+        refine.params.set(FacetParams.FACET, "true");
         refine.params.remove(FacetParams.FACET_FIELD);
         // TODO: perhaps create a more compact facet.terms method?
         refine.params.set(FacetParams.FACET_QUERY, fqueries.toArray(new String[fqueries.size()]));
@@ -160,8 +160,8 @@ public class  FacetComponent extends SearchComponent
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
 
-          if(dff.limit > 0) {          
-            // set the initial limit higher in increase accuracy
+          if(dff.sort.equals(FacetParams.FACET_SORT_COUNT) && dff.limit > 0) {          
+            // set the initial limit higher to increase accuracy
             dff.initialLimit = dff.offset + dff.limit;
             dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
           } else {
@@ -176,7 +176,7 @@ public class  FacetComponent extends SearchComponent
       }
     } else {
       // turn off faceting on other requests
-      sreq.params.set(FacetParams.FACET, FacetParams.FACET_SORT_LEX_LEGACY);
+      sreq.params.set(FacetParams.FACET, "false");
       // we could optionally remove faceting params
     }
   }
