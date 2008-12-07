@@ -238,7 +238,7 @@ public class  FacetComponent extends SearchComponent
 
     for (DistribFieldFacet dff : fi.facets.values()) {
       if (dff.limit <= 0) continue; // no need to check these facets for refinement
-      if (dff.minCount <= 1 && (dff.sort.equals(FacetParams.FACET_SORT_LEX) || dff.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY))) continue;
+      if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_LEX)) continue;
       ShardFacetCount[] counts = dff.getCountSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
@@ -357,12 +357,12 @@ public class  FacetComponent extends SearchComponent
       facet_fields.add(dff.field, fieldCounts);
 
       ShardFacetCount[] counts;
-      if (dff.sort.equals(FacetParams.FACET_SORT_COUNT) || dff.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
+      if (dff.sort.equals(FacetParams.FACET_SORT_COUNT)) {
         counts = dff.countSorted;
         if (counts == null || dff.needRefinements) {
           counts = dff.getCountSorted();
         }
-      } else if (dff.sort.equals(FacetParams.FACET_SORT_LEX) || dff.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY)) {
+      } else if (dff.sort.equals(FacetParams.FACET_SORT_LEX)) {
           counts = dff.getLexSorted();
       } else { // TODO: log error or throw exception?
           counts = dff.getLexSorted();
@@ -486,6 +486,11 @@ class FieldFacet {
     this.missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting by count if there is a limit.
     this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
+    if (this.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
+      this.sort = FacetParams.FACET_SORT_COUNT;
+    } else if (this.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY)) {
+      this.sort = FacetParams.FACET_SORT_LEX;
+    }
     this.prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
   }
 }
