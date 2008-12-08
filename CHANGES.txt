@@ -162,6 +162,8 @@ Bug Fixes
 15. SOLR-898: Fix null pointer exception for the JSON response writer
     based formats when nl.json=arrarr with null keys.  (yonik)
 
+16. SOLR-901: FastOutputStream ignores write(byte[]) call.  (Noble Paul via shalin)
+
 
 Other Changes
 ----------------------

@@ -51,6 +51,7 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   }
 
   public void write(byte b[]) throws IOException {
+    write(b,0,b.length);
   }
 
   public void write(byte b) throws IOException {
