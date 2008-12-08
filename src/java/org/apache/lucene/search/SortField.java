@@ -169,32 +169,17 @@ implements Serializable {
    *  subclass an existing numeric parser, or field is null
    */
   public SortField (String field, FieldCache.Parser parser, boolean reverse) {
-
-    if (parser instanceof FieldCache.IntParser) this.type=INT;
-    else if (parser instanceof FieldCache.FloatParser) this.type=FLOAT;
-    else if (parser instanceof FieldCache.ShortParser) this.type=SHORT;
-    else if (parser instanceof FieldCache.ByteParser) this.type=BYTE;
-    else if (parser instanceof ExtendedFieldCache.LongParser) this.type=LONG;
-    else if (parser instanceof ExtendedFieldCache.DoubleParser) this.type=DOUBLE;
+    if (parser instanceof FieldCache.IntParser) initFieldType(field, INT);
+    else if (parser instanceof FieldCache.FloatParser) initFieldType(field, FLOAT);
+    else if (parser instanceof FieldCache.ShortParser) initFieldType(field, SHORT);
+    else if (parser instanceof FieldCache.ByteParser) initFieldType(field, BYTE);
+    else if (parser instanceof ExtendedFieldCache.LongParser) initFieldType(field, LONG);
+    else if (parser instanceof ExtendedFieldCache.DoubleParser) initFieldType(field, DOUBLE);
     else
-      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache or ExtendedFieldCache (got" + parser + ")");
-
-    initFieldType(field, type);
+      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache or ExtendedFieldCache (got " + parser + ")");
 
     this.reverse = reverse;
     this.parser = parser;
-  }
-
-  // Sets field & type, and ensures field is not NULL unless
-  // type is SCORE or DOC
-  private void initFieldType(String field, int type) {
-    this.type = type;
-    if (field == null) {
-      if (type != SCORE && type != DOC)
-        throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
-    } else {
-      this.field = field.intern();
-    }
   }
 
   /** Creates a sort by terms in the given field sorted
@@ -236,6 +221,18 @@ implements Serializable {
     initFieldType(field, CUSTOM);
     this.reverse = reverse;
     this.factory = comparator;
+  }
+
+  // Sets field & type, and ensures field is not NULL unless
+  // type is SCORE or DOC
+  private void initFieldType(String field, int type) {
+    this.type = type;
+    if (field == null) {
+      if (type != SCORE && type != DOC)
+        throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
+    } else {
+      this.field = field.intern();
+    }
   }
 
   /** Returns the name of the field.  Could return <code>null</code>
