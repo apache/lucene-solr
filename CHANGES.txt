@@ -111,7 +111,7 @@ New features
     then this is likely a much faster way to create the filters than
     RangeFilter.  However, it comes at the expense of added RAM
     consumption and slower first-time usage due to populating the
-    FieldCache.  (Tim Sturge via Mike McCandless)
+    FieldCache.  (Tim Sturge, Matt Ericson via Mike McCandless)
 
  8. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
     to allow subclasses to choose which DocIdSet implementation to use
