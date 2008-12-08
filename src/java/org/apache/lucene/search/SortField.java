@@ -244,4 +244,31 @@ implements Serializable {
 
     return buffer.toString();
   }
+
+  /** Returns true if <code>o</code> is equal to this.  If a
+   *  {@link #SortComparatorSource} was provided, it must
+   *  properly implement equals. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SortField)) return false;
+    final SortField other = (SortField)o;
+    return (
+      other.field == this.field // field is always interned
+      && other.type == this.type
+      && other.reverse == this.reverse
+      && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
+      && (other.factory == null ? this.factory == null : other.factory.equals(this.factory))
+    );
+  }
+
+  /** Returns a hash code value for this object.  If a
+   *  {@link #SortComparatorSource} was provided, it must
+   *  properly implement hashCode. */
+  public int hashCode() {
+    int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
+    if (field != null) hash += field.hashCode()^0xff5685dd;
+    if (locale != null) hash += locale.hashCode()^0x08150815;
+    if (factory != null) hash += factory.hashCode()^0x34987555;
+    return hash;
+  }
 }

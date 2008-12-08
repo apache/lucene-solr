@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 
 /**
@@ -221,5 +222,21 @@ implements Serializable {
     }
 
     return buffer.toString();
+  }
+
+  /** Returns true if <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Sort)) return false;
+    final Sort other = (Sort)o;
+    return Arrays.equals(this.fields, other.fields);
+  }
+
+  /** Returns a hash code value for this object. */
+  public int hashCode() {
+    // TODO in Java 1.5: switch to Arrays.hashCode().  The 
+    // Java 1.4 workaround below calculates the same hashCode
+    // as Java 1.5's new Arrays.hashCode()
+    return 0x45aaf665 + Arrays.asList(fields).hashCode();
   }
 }
