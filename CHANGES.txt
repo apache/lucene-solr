@@ -124,6 +124,10 @@ New features
     handles a subset of this filter, has been deprecated.
     (Andi Vajda, Steven Rowe via Mark Miller)
 
+10. LUCENE-1478: Added new SortField constructor allowing you to
+    specify a custom FieldCache parser to generate numeric values from
+    terms for a field.  (Uwe Schindler via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

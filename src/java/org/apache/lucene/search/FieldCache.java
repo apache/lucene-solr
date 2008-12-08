@@ -74,10 +74,18 @@ public interface FieldCache {
     }
   }
 
+  /**
+   * Marker interface as super-interface to all parsers. It
+   * is used to specify a custom parser to {@link
+   * SortField#SortField(String, FieldCache.Parser)}.
+   */
+  public interface Parser {
+  }
+
   /** Interface to parse bytes from document fields.
    * @see FieldCache#getBytes(IndexReader, String, FieldCache.ByteParser)
    */
-  public interface ByteParser {
+  public interface ByteParser extends Parser {
     /** Return a single Byte representation of this field's value. */
     public byte parseByte(String string);
   }
@@ -85,7 +93,7 @@ public interface FieldCache {
   /** Interface to parse shorts from document fields.
    * @see FieldCache#getShorts(IndexReader, String, FieldCache.ShortParser)
    */
-  public interface ShortParser {
+  public interface ShortParser extends Parser {
     /** Return a short representation of this field's value. */
     public short parseShort(String string);
   }
@@ -93,7 +101,7 @@ public interface FieldCache {
   /** Interface to parse ints from document fields.
    * @see FieldCache#getInts(IndexReader, String, FieldCache.IntParser)
    */
-  public interface IntParser {
+  public interface IntParser extends Parser {
     /** Return an integer representation of this field's value. */
     public int parseInt(String string);
   }
@@ -101,7 +109,7 @@ public interface FieldCache {
   /** Interface to parse floats from document fields.
    * @see FieldCache#getFloats(IndexReader, String, FieldCache.FloatParser)
    */
-  public interface FloatParser {
+  public interface FloatParser extends Parser {
     /** Return an float representation of this field's value. */
     public float parseFloat(String string);
   }

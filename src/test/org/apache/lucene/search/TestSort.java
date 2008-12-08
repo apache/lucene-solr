@@ -98,21 +98,21 @@ implements Serializable {
 	// the string field to sort by string
     // the i18n field includes accented characters for testing locale-specific sorting
 	private String[][] data = new String[][] {
-	// tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte
-	{   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126"},//A, x
-	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1"},//B, y
-	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999",   "40.00002343", "125", "15"},//C, x
-	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",             String.valueOf(Long.MAX_VALUE),           String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE)},//D, y
-	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach",           String.valueOf(Long.MIN_VALUE),           String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE)},//E,x
-	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",           "343.034435444", "-3", "0"},//F,y
-	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544", "5", "100"},//G,x
-  {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545", "10", "-50"},//H,y
-	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546", "-340", "51"},//I,x
-	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343", "300", "2"},//J,y
-	{   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null},
-	{   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null},
-	{   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null},
-	{   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null}
+	// tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte, 'custom parser encoding'
+	{   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126", "J"},//A, x
+	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1", "I"},//B, y
+	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999",   "40.00002343", "125", "15", "H"},//C, x
+	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",             String.valueOf(Long.MAX_VALUE),           String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
+	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach",           String.valueOf(Long.MIN_VALUE),           String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
+	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",           "343.034435444", "-3", "0", "E"},//F,y
+	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544", "5", "100", "D"},//G,x
+  {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545", "10", "-50", "C"},//H,y
+	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546", "-340", "51", "B"},//I,x
+	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343", "300", "2", "A"},//J,y
+	{   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null, null},
+	{   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null, null},
+	{   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
+	{   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
  	};
 
 	// create an index of all the documents, or just the x, or just the y documents
@@ -132,8 +132,9 @@ implements Serializable {
 				if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][8] != null) doc.add (new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][8] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
-        if (data[i][8] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][9] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][10] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.setBoost(2);  // produce some scores above 1.0
 				writer.addDocument (doc);
 			}
@@ -216,6 +217,53 @@ implements Serializable {
     sort.setSort (new SortField[] { new SortField ("string", SortField.STRING), SortField.FIELD_DOC });
 		assertMatches (full, queryX, sort, "AIGEC");
 		assertMatches (full, queryY, sort, "DJHFB");
+	}
+
+	// test sorts where the type of field is specified and a custom field parser is used, that
+	// uses a simple char encoding. The sorted string contains a character beginning from 'A' that
+	// is mapped to a numeric value using some "funny" algorithm to be different for each data type.
+	public void testCustomFieldParserSort() throws Exception {
+		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.IntParser(){
+			public final int parseInt(final String val) {
+				return (int) (val.charAt(0)-'A') * 123456;
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+
+		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
+			public final float parseFloat(final String val) {
+				return (float) Math.sqrt( (double) val.charAt(0) );
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+
+		sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.LongParser(){
+			public final long parseLong(final String val) {
+				return (long) (val.charAt(0)-'A') * 1234567890L;
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+
+		sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.DoubleParser(){
+			public final double parseDouble(final String val) {
+				return Math.pow( (double) val.charAt(0), (double) (val.charAt(0)-'A') );
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+
+		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ByteParser(){
+			public final byte parseByte(final String val) {
+				return (byte) (val.charAt(0)-'A');
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+
+		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ShortParser(){
+			public final short parseShort(final String val) {
+				return (short) (val.charAt(0)-'A');
+			}
+		}), SortField.FIELD_DOC });
+		assertMatches (full, queryA, sort, "JIHGFEDCBA");
 	}
 
 	// test sorts when there's nothing in the index

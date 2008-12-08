@@ -88,7 +88,7 @@ implements FieldCache {
   static class Entry {
     final String field;        // which Fieldable
     final int type;            // which SortField type
-    final Object custom;       // which custom comparator
+    final Object custom;       // which custom comparator or parser
     final Locale locale;       // the locale we're sorting (if string)
 
     /** Creates one of these objects. */
@@ -99,11 +99,19 @@ implements FieldCache {
       this.locale = locale;
     }
 
-    /** Creates one of these objects for a custom comparator. */
+    /** Creates one of these objects for a custom comparator/parser. */
     Entry (String field, Object custom) {
       this.field = field.intern();
       this.type = SortField.CUSTOM;
       this.custom = custom;
+      this.locale = null;
+    }
+
+    /** Creates one of these objects for a custom type with parser, needed by FieldSortedHitQueue. */
+    Entry (String field, int type, Parser parser) {
+      this.field = field.intern();
+      this.type = type;
+      this.custom = parser;
       this.locale = null;
     }
 

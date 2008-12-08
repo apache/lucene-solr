@@ -21,6 +21,8 @@ import java.util.Date;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.ExtendedFieldCache;
 
 /**
  *This is a helper class to construct the trie-based index entries for numerical values.
@@ -68,6 +70,26 @@ public final class TrieUtils {
 	/** Character used as lower end */
 	public static final char TRIE_CODED_SYMBOL_MIN=(char)0x100;
 
+	/**
+	 * A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as longs,
+	 * auto detecting the trie encoding variant using the String length.
+	 */
+	public static final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER_AUTO=new ExtendedFieldCache.LongParser(){
+		public final long parseLong(String val) {
+			return trieCodedToLongAuto(val);
+		}
+	};
+	
+	/**
+	 * A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as doubles,
+	 * auto detecting the trie encoding variant using the String length.
+	 */
+	public static final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER_AUTO=new ExtendedFieldCache.DoubleParser(){
+		public final double parseDouble(String val) {
+			return trieCodedToDoubleAuto(val);
+		}
+	};
+	
 	private static TrieUtils defaultTrieVariant=TrieUtils.VARIANT_8BIT;
 
 	/**
@@ -130,6 +152,22 @@ public final class TrieUtils {
 		return autoDetectVariant(s).trieCodedToDate(s);
 	}
 
+	/**
+	 * A factory method, that generates a {@link SortField} instance for sorting trie encoded values,
+	 * automatically detecting the trie encoding variant using the String length.
+	 */
+	public static final SortField getSortFieldAuto(final String field) {
+		return new SortField(field, FIELD_CACHE_LONG_PARSER_AUTO);
+	}
+	
+	/**
+	 * A factory method, that generates a {@link SortField} instance for sorting trie encoded values,
+	 * automatically detecting the trie encoding variant using the String length.
+	 */
+	public static final SortField getSortFieldAuto(final String field, boolean reverse) {
+		return new SortField(field, FIELD_CACHE_LONG_PARSER_AUTO, reverse);
+	}
+	
 	// TrieUtils instance's part
 	
 	private TrieUtils(int bits) {
@@ -337,6 +375,30 @@ public final class TrieUtils {
 	) {
 		addConvertedTrieCodedDocumentField(ldoc, fieldname, longToTrieCoded(val), index, store);
 	}
+	
+	/** A factory method, that generates a {@link SortField} instance for sorting trie encoded values. */
+	public SortField getSortField(final String field) {
+		return new SortField(field, FIELD_CACHE_LONG_PARSER);
+	}
+	
+	/** A factory method, that generates a {@link SortField} instance for sorting trie encoded values. */
+	public SortField getSortField(final String field, boolean reverse) {
+		return new SortField(field, FIELD_CACHE_LONG_PARSER, reverse);
+	}
+	
+	/** A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as longs. */
+	public final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER=new ExtendedFieldCache.LongParser(){
+		public final long parseLong(String val) {
+			return trieCodedToLong(val);
+		}
+	};
+	
+	/** A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as doubles. */
+	public final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER=new ExtendedFieldCache.DoubleParser(){
+		public final double parseDouble(String val) {
+			return trieCodedToDouble(val);
+		}
+	};
 	
 	private final long mask;
 	

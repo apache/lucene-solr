@@ -99,13 +99,14 @@ implements Serializable {
   private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
   private SortComparatorSource factory;
+  private FieldCache.Parser parser;
 
   /** Creates a sort by terms in the given field where the type of term value
    * is determined dynamically ({@link #AUTO AUTO}).
    * @param field Name of field to sort by, cannot be <code>null</code>.
    */
   public SortField (String field) {
-    this.field = field.intern();
+    initFieldType(field, AUTO);
   }
 
   /** Creates a sort, possibly in reverse, by terms in the given field where
@@ -114,7 +115,7 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    */
   public SortField (String field, boolean reverse) {
-    this.field = field.intern();
+    initFieldType(field, AUTO);
     this.reverse = reverse;
   }
 
@@ -125,8 +126,7 @@ implements Serializable {
    * @param type   Type of values in the terms.
    */
   public SortField (String field, int type) {
-    this.field = (field != null) ? field.intern() : field;
-    this.type = type;
+    initFieldType(field, type);
   }
 
   /** Creates a sort, possibly in reverse, by terms in the given field with the
@@ -137,9 +137,64 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    */
   public SortField (String field, int type, boolean reverse) {
-    this.field = (field != null) ? field.intern() : field;
-    this.type = type;
+    initFieldType(field, type);
     this.reverse = reverse;
+  }
+
+  /** Creates a sort by terms in the given field, parsed
+   * to numeric values using a custom {@link FieldCache.Parser}.
+   * @param field  Name of field to sort by.  Must not be null.
+   * @param parser Instance of a {@link FieldCache.Parser},
+   *  which must subclass one of the existing numeric
+   *  parsers from {@link FieldCache} or {@link
+   *  ExtendedFieldCache}. Sort type is inferred by testing
+   *  which numeric parser the parser subclasses.
+   * @throws IllegalArgumentException if the parser fails to
+   *  subclass an existing numeric parser, or field is null
+   */
+  public SortField (String field, FieldCache.Parser parser) {
+    this(field, parser, false);
+  }
+
+  /** Creates a sort, possibly in reverse, by terms in the given field, parsed
+   * to numeric values using a custom {@link FieldCache.Parser}.
+   * @param field  Name of field to sort by.  Must not be null.
+   * @param parser Instance of a {@link FieldCache.Parser},
+   *  which must subclass one of the existing numeric
+   *  parsers from {@link FieldCache} or {@link
+   *  ExtendedFieldCache}. Sort type is inferred by testing
+   *  which numeric parser the parser subclasses.
+   * @param reverse True if natural order should be reversed.
+   * @throws IllegalArgumentException if the parser fails to
+   *  subclass an existing numeric parser, or field is null
+   */
+  public SortField (String field, FieldCache.Parser parser, boolean reverse) {
+
+    if (parser instanceof FieldCache.IntParser) this.type=INT;
+    else if (parser instanceof FieldCache.FloatParser) this.type=FLOAT;
+    else if (parser instanceof FieldCache.ShortParser) this.type=SHORT;
+    else if (parser instanceof FieldCache.ByteParser) this.type=BYTE;
+    else if (parser instanceof ExtendedFieldCache.LongParser) this.type=LONG;
+    else if (parser instanceof ExtendedFieldCache.DoubleParser) this.type=DOUBLE;
+    else
+      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache or ExtendedFieldCache (got" + parser + ")");
+
+    initFieldType(field, type);
+
+    this.reverse = reverse;
+    this.parser = parser;
+  }
+
+  // Sets field & type, and ensures field is not NULL unless
+  // type is SCORE or DOC
+  private void initFieldType(String field, int type) {
+    this.type = type;
+    if (field == null) {
+      if (type != SCORE && type != DOC)
+        throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
+    } else {
+      this.field = field.intern();
+    }
   }
 
   /** Creates a sort by terms in the given field sorted
@@ -148,8 +203,7 @@ implements Serializable {
    * @param locale Locale of values in the field.
    */
   public SortField (String field, Locale locale) {
-    this.field = field.intern();
-    this.type = STRING;
+    initFieldType(field, STRING);
     this.locale = locale;
   }
 
@@ -159,8 +213,7 @@ implements Serializable {
    * @param locale Locale of values in the field.
    */
   public SortField (String field, Locale locale, boolean reverse) {
-    this.field = field.intern();
-    this.type = STRING;
+    initFieldType(field, STRING);
     this.locale = locale;
     this.reverse = reverse;
   }
@@ -170,8 +223,7 @@ implements Serializable {
    * @param comparator Returns a comparator for sorting hits.
    */
   public SortField (String field, SortComparatorSource comparator) {
-    this.field = (field != null) ? field.intern() : field;
-    this.type = CUSTOM;
+    initFieldType(field, CUSTOM);
     this.factory = comparator;
   }
 
@@ -181,8 +233,7 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    */
   public SortField (String field, SortComparatorSource comparator, boolean reverse) {
-    this.field = (field != null) ? field.intern() : field;
-    this.type = CUSTOM;
+    initFieldType(field, CUSTOM);
     this.reverse = reverse;
     this.factory = comparator;
   }
@@ -208,6 +259,14 @@ implements Serializable {
    */
   public Locale getLocale() {
     return locale;
+  }
+
+  /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
+   * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
+   * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
+   */
+  public FieldCache.Parser getParser() {
+    return parser;
   }
 
   /** Returns whether the sort should be reversed.
@@ -240,14 +299,16 @@ implements Serializable {
     }
 
     if (locale != null) buffer.append('(').append(locale).append(')');
+    if (parser != null) buffer.append('(').append(parser).append(')');
     if (reverse) buffer.append('!');
 
     return buffer.toString();
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link #SortComparatorSource} was provided, it must
-   *  properly implement equals. */
+   *  {@link SortComparatorSource} or {@link
+   *  FieldCache.Parser} was provided, it must properly
+   *  implement equals (unless a singleton is always used). */
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SortField)) return false;
@@ -258,17 +319,21 @@ implements Serializable {
       && other.reverse == this.reverse
       && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
       && (other.factory == null ? this.factory == null : other.factory.equals(this.factory))
+      && (other.parser == null ? this.parser == null : other.parser.equals(this.parser))
     );
   }
 
-  /** Returns a hash code value for this object.  If a
-   *  {@link #SortComparatorSource} was provided, it must
-   *  properly implement hashCode. */
+  /** Returns true if <code>o</code> is equal to this.  If a
+   *  {@link SortComparatorSource} or {@link
+   *  FieldCache.Parser} was provided, it must properly
+   *  implement hashCode (unless a singleton is always
+   *  used). */
   public int hashCode() {
     int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (locale != null) hash += locale.hashCode()^0x08150815;
     if (factory != null) hash += factory.hashCode()^0x34987555;
+    if (parser != null) hash += parser.hashCode()^0x3aaf56ff;
     return hash;
   }
 }

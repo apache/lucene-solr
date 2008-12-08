@@ -163,7 +163,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
 	
 	private void testRangeSplit(final TrieUtils variant) throws Exception {
 		String field="ascfield"+variant.TRIE_BITS;
-		// 50 random tests, the tests may also return 0 results, if min>max, but this is ok
+		// 50 random tests
 		for (int i=0; i<50; i++) {
 			long lower=(long)(rnd.nextDouble()*10000L);
 			long upper=(long)(rnd.nextDouble()*10000L);
@@ -186,6 +186,42 @@ public class TestTrieRangeQuery extends LuceneTestCase
 	
 	public void testRangeSplit_2bit() throws Exception {
 		testRangeSplit(TrieUtils.VARIANT_2BIT);
+	}
+	
+	private void testSorting(final TrieUtils variant) throws Exception {
+		String field="field"+variant.TRIE_BITS;
+		// 10 random tests, the index order is ascending,
+		// so using a reverse sort field should retun descending documents
+		for (int i=0; i<10; i++) {
+			long lower=(long)(rnd.nextDouble()*10000L*distance);
+			long upper=(long)(rnd.nextDouble()*10000L*distance);
+			if (lower>upper) {
+				long a=lower; lower=upper; upper=a;
+			}
+			TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
+			TopDocs topDocs = searcher.search(tq, null, 10000, new Sort(variant.getSortField(field, true)));
+			if (topDocs.totalHits==0) continue;
+			ScoreDoc[] sd = topDocs.scoreDocs;
+			assertNotNull(sd);
+			long last=variant.trieCodedToLong(searcher.doc(sd[0].doc).get(field));
+			for (int j=1; j<sd.length; j++) {
+				long act=variant.trieCodedToLong(searcher.doc(sd[j].doc).get(field));
+				assertTrue("Docs should be sorted backwards", last>act );
+				last=act;
+			}
+		}
+	}
+
+	public void testSorting_8bit() throws Exception {
+		testSorting(TrieUtils.VARIANT_8BIT);
+	}
+	
+	public void testSorting_4bit() throws Exception {
+		testSorting(TrieUtils.VARIANT_4BIT);
+	}
+	
+	public void testSorting_2bit() throws Exception {
+		testSorting(TrieUtils.VARIANT_2BIT);
 	}
 	
 }

@@ -27,14 +27,14 @@ import java.io.IOException;
  *
  **/
 public interface ExtendedFieldCache extends FieldCache {
-  public interface LongParser {
+  public interface LongParser extends Parser {
     /**
      * Return an long representation of this field's value.
      */
     public long parseLong(String string);
   }
 
-  public interface DoubleParser {
+  public interface DoubleParser extends Parser {
     /**
      * Return an long representation of this field's value.
      */

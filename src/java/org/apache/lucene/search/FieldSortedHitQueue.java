@@ -52,12 +52,17 @@ extends PriorityQueue {
     this.fields = new SortField[n];
     for (int i=0; i<n; ++i) {
       String fieldname = fields[i].getField();
-      comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getLocale(), fields[i].getFactory());
-      
-      if (comparators[i].sortType() == SortField.STRING) {
-    	  this.fields[i] = new SortField (fieldname, fields[i].getLocale(), fields[i].getReverse());
+      comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getParser(), fields[i].getLocale(), fields[i].getFactory());
+      // new SortField instances must only be created when auto-detection is in use
+      if (fields[i].getType() == SortField.AUTO) {
+        if (comparators[i].sortType() == SortField.STRING) {
+          this.fields[i] = new SortField (fieldname, fields[i].getLocale(), fields[i].getReverse());
+        } else {
+          this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
+        }
       } else {
-    	  this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
+        assert comparators[i].sortType() == fields[i].getType();
+        this.fields[i] = fields[i];
       }
     }
     initialize (size);
@@ -157,13 +162,16 @@ extends PriorityQueue {
     return fields;
   }
   
-  static ScoreDocComparator getCachedComparator (IndexReader reader, String field, int type, Locale locale, SortComparatorSource factory)
+  static ScoreDocComparator getCachedComparator (IndexReader reader, String field, int type, FieldCache.Parser parser, Locale locale, SortComparatorSource factory)
   throws IOException {
     if (type == SortField.DOC) return ScoreDocComparator.INDEXORDER;
     if (type == SortField.SCORE) return ScoreDocComparator.RELEVANCE;
     FieldCacheImpl.Entry entry = (factory != null)
       ? new FieldCacheImpl.Entry (field, factory)
-      : new FieldCacheImpl.Entry (field, type, locale);
+      : ( (parser != null)
+		? new FieldCacheImpl.Entry (field, type, parser)
+		: new FieldCacheImpl.Entry (field, type, locale)
+	  );
     return (ScoreDocComparator)Comparators.get(reader, entry);
   }
 
@@ -177,29 +185,35 @@ extends PriorityQueue {
       String fieldname = entry.field;
       int type = entry.type;
       Locale locale = entry.locale;
-      SortComparatorSource factory = (SortComparatorSource) entry.custom;
+      FieldCache.Parser parser = null;
+      SortComparatorSource factory = null;
+      if (entry.custom instanceof SortComparatorSource) {
+        factory = (SortComparatorSource) entry.custom;
+      } else {
+        parser = (FieldCache.Parser) entry.custom;
+      }
       ScoreDocComparator comparator;
       switch (type) {
         case SortField.AUTO:
           comparator = comparatorAuto (reader, fieldname);
           break;
         case SortField.INT:
-          comparator = comparatorInt (reader, fieldname);
+          comparator = comparatorInt (reader, fieldname, (FieldCache.IntParser)parser);
           break;
         case SortField.FLOAT:
-          comparator = comparatorFloat (reader, fieldname);
+          comparator = comparatorFloat (reader, fieldname, (FieldCache.FloatParser)parser);
           break;
         case SortField.LONG:
-          comparator = comparatorLong(reader, fieldname);
+          comparator = comparatorLong(reader, fieldname, (ExtendedFieldCache.LongParser)parser);
           break;
         case SortField.DOUBLE:
-          comparator = comparatorDouble(reader, fieldname);
+          comparator = comparatorDouble(reader, fieldname, (ExtendedFieldCache.DoubleParser)parser);
           break;
         case SortField.SHORT:
-          comparator = comparatorShort(reader, fieldname);
+          comparator = comparatorShort(reader, fieldname, (FieldCache.ShortParser)parser);
           break;
         case SortField.BYTE:
-          comparator = comparatorByte(reader, fieldname);
+          comparator = comparatorByte(reader, fieldname, (FieldCache.ByteParser)parser);
           break;
         case SortField.STRING:
           if (locale != null) comparator = comparatorStringLocale (reader, fieldname, locale);
@@ -222,10 +236,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorByte(final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorByte(final IndexReader reader, final String fieldname, final FieldCache.ByteParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final byte[] fieldOrder = FieldCache.DEFAULT.getBytes(reader, field);
+    final byte[] fieldOrder = (parser==null)
+	  ? FieldCache.DEFAULT.getBytes(reader, field)
+	  : FieldCache.DEFAULT.getBytes(reader, field, parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -241,7 +257,7 @@ extends PriorityQueue {
       }
 
       public int sortType() {
-        return SortField.INT;
+        return SortField.BYTE;
       }
     };
   }
@@ -253,10 +269,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorShort(final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorShort(final IndexReader reader, final String fieldname, final FieldCache.ShortParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final short[] fieldOrder = FieldCache.DEFAULT.getShorts(reader, field);
+    final short[] fieldOrder = (parser==null)
+	  ? FieldCache.DEFAULT.getShorts(reader, field)
+	  : FieldCache.DEFAULT.getShorts(reader, field, parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -284,10 +302,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorInt (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorInt (final IndexReader reader, final String fieldname, final FieldCache.IntParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final int[] fieldOrder = FieldCache.DEFAULT.getInts (reader, field);
+    final int[] fieldOrder = (parser==null)
+	  ? FieldCache.DEFAULT.getInts(reader, field)
+	  : FieldCache.DEFAULT.getInts(reader, field, parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -315,10 +335,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname, final ExtendedFieldCache.LongParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final long[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getLongs (reader, field);
+    final long[] fieldOrder = (parser==null)
+	  ? ExtendedFieldCache.EXT_DEFAULT.getLongs (reader, field)
+	  : ExtendedFieldCache.EXT_DEFAULT.getLongs (reader, field, parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -347,10 +369,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorFloat (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorFloat (final IndexReader reader, final String fieldname, final FieldCache.FloatParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final float[] fieldOrder = FieldCache.DEFAULT.getFloats (reader, field);
+    final float[] fieldOrder = (parser==null)
+	  ? FieldCache.DEFAULT.getFloats (reader, field)
+	  : FieldCache.DEFAULT.getFloats (reader, field, parser);
     return new ScoreDocComparator () {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -378,10 +402,12 @@ extends PriorityQueue {
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname, final ExtendedFieldCache.DoubleParser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final double[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getDoubles (reader, field);
+    final double[] fieldOrder = (parser==null)
+	  ? ExtendedFieldCache.EXT_DEFAULT.getDoubles (reader, field)
+	  : ExtendedFieldCache.EXT_DEFAULT.getDoubles (reader, field, parser);
     return new ScoreDocComparator () {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -488,11 +514,11 @@ extends PriorityQueue {
     if (lookupArray instanceof FieldCache.StringIndex) {
       return comparatorString (reader, field);
     } else if (lookupArray instanceof int[]) {
-      return comparatorInt (reader, field);
+      return comparatorInt (reader, field, null);
     } else if (lookupArray instanceof long[]) {
-      return comparatorLong (reader, field);
+      return comparatorLong (reader, field, null);
     } else if (lookupArray instanceof float[]) {
-      return comparatorFloat (reader, field);
+      return comparatorFloat (reader, field, null);
     } else if (lookupArray instanceof String[]) {
       return comparatorString (reader, field);
     } else {
