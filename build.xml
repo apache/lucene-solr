@@ -283,7 +283,7 @@
               </linecontainsregexp>
               <linecontainsregexp negate="true">
                  <!-- no way to leverage these in Solr (yet) -->
-                 <regexp pattern="Sink\|Tee"/>
+                 <regexp pattern="Sink|Tee"/>
               </linecontainsregexp>
               <linecontainsregexp negate="true">
                  <!-- Solr already has a different impl for this -->

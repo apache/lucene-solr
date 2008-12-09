@@ -43,6 +43,8 @@ use warnings;
 use File::Find;
 
 
+my $errors = 0;
+
 my %classes = ();
 while (<STDIN>) {
     chomp;
@@ -106,13 +108,21 @@ sub wanted {
 			 } split /\s*,\s*/, $argline;
 	
 	# wacky, doesn't use Reader or TokenStream ... skip (maybe a Sink?)
-	return unless defined $mainArgType;
+	unless (defined $mainArgType) {
+	    warn "$class doesn't have a constructor with a Reader or TokenStream\n";
+	    return;
+	}
 
 	my $type = ("Reader" eq $mainArgType) ? "Tokenizer" : "TokenFilter";
 
 	my $facClass = "${class}Factory";
 	my $facFile = "${facClass}.java";
-	die "$facFile exists" if -e $facFile;
+
+	if (-e $facFile) {
+	    warn "$facFile already exists (maybe the return type isn't specific?)";
+	    $errors++;
+	    return;
+	}
 	open my $o, ">", $facFile
 	    or die "can't write to $facFile: $!";
 
@@ -140,15 +150,17 @@ sub wanted {
 	
 	delete $classes{$fullname}; # we're done with this one
     } else {
-	print STDERR "can't stub $class\n";
+	print STDERR "can't stub $class (no public constructor?)\n";
+	$errors++;
     }
 }
     
 if (keys %classes) {
-    print STDERR "Can't find java files for...\n";
+    print STDERR "Can't stub (or find java files) for...\n";
     foreach (keys %classes) {
 	print STDERR "$_\n";
     }
-    exit -1;
+    $errors++;
 }
+exit -1 if $errors;
 
