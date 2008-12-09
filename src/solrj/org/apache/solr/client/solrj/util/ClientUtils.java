@@ -111,7 +111,7 @@ public class ClientUtils
         if( boost != 1.0f ) {
           XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
         }
-        else {
+        else if (v != null) {
           XML.writeXML(writer, "field", v.toString(), "name", name );
         }
 
