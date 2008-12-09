@@ -443,7 +443,7 @@
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the Solr WAR Distribution file."
-          depends="compile, make-manifest, dist-jar">
+          depends="compile, make-manifest, dist-jar, dist-solrj">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
          webxml="${src}/webapp/web/WEB-INF/web.xml"
