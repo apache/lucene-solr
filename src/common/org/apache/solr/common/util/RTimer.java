@@ -122,6 +122,14 @@ public class RTimer {
     }
     return m;
   }
+  
+  /**
+   * Manipulating this map may have undefined results.
+   */
+  public SimpleOrderedMap<RTimer> getChildren()
+  {
+    return children;
+  }
 
   /*************** Testing *******/
   public static void main(String []argv) throws InterruptedException {
