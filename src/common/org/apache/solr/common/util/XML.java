@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.io.Writer;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @version $Id$
@@ -138,6 +139,31 @@ public class XML {
       out.write('=');
       out.write('"');
       escapeAttributeValue(attrs[i].toString(), out);
+      out.write('"');
+    }
+    if (val == null) {
+      out.write('/');
+      out.write('>');
+    } else {
+      out.write('>');
+      escapeCharData(val,out);
+      out.write('<');
+      out.write('/');
+      out.write(tag);
+      out.write('>');
+    }
+  }
+
+  /** escapes character data in val */
+  public static void writeXML(Writer out, String tag, String val, Map<String, String> attrs) throws IOException {
+    out.write('<');
+    out.write(tag);
+    for (Map.Entry<String, String> entry : attrs.entrySet()) {
+      out.write(' ');
+      out.write(entry.getKey());
+      out.write('=');
+      out.write('"');
+      escapeAttributeValue(entry.getValue(), out);
       out.write('"');
     }
     if (val == null) {
