@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class CharStreamAwareWhitespaceTokenizerFactory extends BaseTokenizerFactory {
 
-  public TokenStream create(Reader input) {
+  public CharStreamAwareWhitespaceTokenizer create(Reader input) {
     return new CharStreamAwareWhitespaceTokenizer( (CharStream)input );
   }
 }

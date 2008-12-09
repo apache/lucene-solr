@@ -12,7 +12,7 @@ import java.io.Reader;
  **/
 public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
 
-  public TokenStream create(Reader input) {
+  public ArabicLetterTokenizer create(Reader input) {
     return new ArabicLetterTokenizer(input);
   }
 }

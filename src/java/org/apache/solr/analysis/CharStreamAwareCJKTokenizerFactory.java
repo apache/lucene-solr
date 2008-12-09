@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class CharStreamAwareCJKTokenizerFactory extends BaseTokenizerFactory {
 
-  public TokenStream create(Reader input) {
+  public CharStreamAwareCJKTokenizer create(Reader input) {
     return new CharStreamAwareCJKTokenizer( (CharStream)input );
   }
 }

@@ -10,7 +10,7 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
  **/
 public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory{
 
-  public TokenStream create(TokenStream input) {
+  public ArabicNormalizationFilter create(TokenStream input) {
     return new ArabicNormalizationFilter(input);
   }
 }
