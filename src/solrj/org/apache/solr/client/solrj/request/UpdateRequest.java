@@ -240,6 +240,10 @@ public class UpdateRequest extends SolrRequest
   // 
   //--------------------------------------------------------------------------
 
+  public List<SolrInputDocument> getDocuments() {
+    return documents;
+  }
+  
   public boolean isWaitFlush() {
     return params != null && params.getBool(UpdateParams.WAIT_FLUSH, false);
   }
