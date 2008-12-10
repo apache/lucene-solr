@@ -665,7 +665,6 @@
     <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc"/>
 
     <!-- Maven artifacts -->
-    <sign-maven-artifacts artifact.id="solr-common"/>
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv"/>
     <sign-maven-artifacts artifact.id="solr-core"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler"/>

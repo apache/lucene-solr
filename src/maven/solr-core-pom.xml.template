@@ -41,11 +41,6 @@
     <!-- Solr -->
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>solr-common</artifactId>
-      <version>@maven_version@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
       <version>@maven_version@</version>
     </dependency>
