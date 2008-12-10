@@ -592,8 +592,15 @@
     </lst>
   </searchComponent>
 
-  <!-- a request handler utilizing the spellcheck component.  This is purely as an example.
-  You will likely want to add the component to your already specified request handlers. -->
+  <!-- A request handler utilizing the spellcheck component.  
+  ################################################################################################
+  NOTE: This is purely as an example.  The whole purpose of the SpellCheckComponent is to hook it into
+  the request handler that handles (i.e. the standard or dismax SearchHandler)
+  queries such that a separate request is not needed to get suggestions.
+
+  IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
+  ################################################################################################
+  -->
   <requestHandler name="/spellCheckCompRH" class="solr.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
