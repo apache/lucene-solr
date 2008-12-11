@@ -1,4 +1,4 @@
-﻿﻿﻿Lucene Change Log
+﻿﻿Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -878,6 +878,8 @@ New features
     and MultiPhraseQuery. Disabled by default (so by default
     the query parser ignores position increments).
     (Doron Cohen)
+
+13. LUCENE-1380: Added TokenFilter for setting position increment in special cases related to the ShingleFilter (Mck SembWever, Steve Rowe, Karl Wettin via Grant Ingersoll)
 
 
 
