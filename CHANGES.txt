@@ -108,8 +108,6 @@ New Features
     also deprecated and replaced with "count" and "lex".
     (Lars Kotthoff via yonik)
 
-23. SOLR-886: DataImportHandler should rollback when an import fails or it is aborted (shalin)
-
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
