@@ -207,12 +207,16 @@ public class DocBuilder {
       // Make sure that documents are not re-created
       allPks.removeAll(deletedKeys);
     }
+    deletedKeys = null;
 
     statusMessages.put("Total Changed Documents", allPks.size());
-    for (Map<String, Object> pk : allPks) {
-      VariableResolverImpl vri = getVariableResolver(dataImporter);
-      vri.addNamespace(DataConfig.IMPORTER_NS + ".delta", pk);
-      buildDocument(vri, null, pk, root, true, null);
+    VariableResolverImpl vri = getVariableResolver(dataImporter);
+    Iterator<Map<String, Object>> pkIter = allPks.iterator();
+    while (pkIter.hasNext()) {
+      Map<String, Object> map = pkIter.next();
+      vri.addNamespace(DataConfig.IMPORTER_NS + ".delta", map);
+      buildDocument(vri, null, map, root, true, null);
+      pkIter.remove();
     }
 
     if (!stop.get()) {
@@ -223,8 +227,11 @@ public class DocBuilder {
 
   private void deleteAll(Set<Map<String, Object>> deletedKeys) {
     LOG.info("Deleting stale documents ");
-    for (Map<String, Object> deletedKey : deletedKeys) {
-      writer.deleteDoc(deletedKey.get(root.pk));
+    Iterator<Map<String, Object>> iter = deletedKeys.iterator();
+    while (iter.hasNext()) {
+      Map<String, Object> map = iter.next();
+      writer.deleteDoc(map.get(root.pk));
+      iter.remove();
     }
   }
 

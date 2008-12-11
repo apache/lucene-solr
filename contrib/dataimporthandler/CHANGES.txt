@@ -35,11 +35,13 @@ New Features
 5. SOLR-887:  A Transformer to strip HTML tags.
               (Ahmed Hammad via shalin)
 
-6. SOLR-886: DataImportHandler should rollback when an import fails or it is aborted (shalin)
+6. SOLR-886:  DataImportHandler should rollback when an import fails or it is aborted
+              (shalin)
 
 Optimizations
 ----------------------
-
+1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
+              (Ricky Leung, Noble Paul via shalin)
 
 Bug Fixes
 ----------------------
