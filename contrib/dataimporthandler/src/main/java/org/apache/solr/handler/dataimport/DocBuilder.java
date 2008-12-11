@@ -139,8 +139,8 @@ public class DocBuilder {
     if (stop.get()) {
       if (DataImporter.ABORT_CMD.equals(requestParameters.command)) {
         // Dont commit if aborted using command=abort
-        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT
-                .format(new Date()));
+        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.format(new Date()));
+        rollback();
       } else if (requestParameters.commit) {
         // Debug mode, commit if commit=true was specified
         commit();
@@ -168,6 +168,12 @@ public class DocBuilder {
     if (requestParameters.optimize)
       addStatusMessage("Optimized");
 
+  }
+
+  void rollback() {
+    writer.rollback();
+    statusMessages.put("", "Indexing failed. Rolled back all changes.");
+    addStatusMessage("Rolledback");
   }
 
   @SuppressWarnings("unchecked")

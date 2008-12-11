@@ -106,7 +106,9 @@ New Features
 22. SOLR-781: Distributed search ability to sort field.facet values
     lexicographically.  facet.sort values "true" and "false" are
     also deprecated and replaced with "count" and "lex".
-    (Lars Kotthoff via yonik
+    (Lars Kotthoff via yonik)
+
+23. SOLR-886: DataImportHandler should rollback when an import fails or it is aborted (shalin)
 
 Optimizations
 ----------------------

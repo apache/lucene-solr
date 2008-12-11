@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,8 +178,17 @@ public class SolrWriter {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(optimize);
       processor.processCommit(commit);
-    } catch (Exception e) {
-      log.error("Exception while solr commit.", e);
+    } catch (Throwable t) {
+      log.error("Exception while solr commit.", t);
+    }
+  }
+
+  public void rollback()  {
+    try {
+      RollbackUpdateCommand rollback = new RollbackUpdateCommand();
+      processor.processRollback(rollback);
+    } catch (Throwable t) {
+      log.error("Exception while solr rollback.", t);
     }
   }
 

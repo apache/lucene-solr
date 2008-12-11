@@ -319,6 +319,7 @@ public class DataImporter {
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
       LOG.error("Full Import failed", t);
+      docBuilder.rollback();
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();
@@ -342,6 +343,7 @@ public class DataImporter {
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
       LOG.error("Delta Import Failed", t);
+      docBuilder.rollback();
     } finally {
       setStatus(Status.IDLE);
       config.clearCaches();
