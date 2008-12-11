@@ -1,5 +1,7 @@
 package org.apache.lucene.store.instantiated;
 
+import java.io.Serializable;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,7 +22,7 @@ package org.apache.lucene.store.instantiated;
 /**
  * For non package access see {@link org.apache.lucene.index.IndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)} 
  */
-class FieldSetting {
+class FieldSetting implements Serializable {
   String fieldName;
 
   boolean storeTermVector = false;

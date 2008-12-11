@@ -522,6 +522,9 @@ public class InstantiatedIndexWriter {
             tokenStream = analyzer.tokenStream(field.name(), new StringReader(field.stringValue()));
           }
 
+          // reset the TokenStream to the first token          
+          tokenStream.reset();
+
           final Token reusableToken = new Token();
           for (Token nextToken = tokenStream.next(reusableToken); nextToken != null; nextToken = tokenStream.next(reusableToken)) {
             tokens.add((Token) nextToken.clone()); // the vector will be built on commit.

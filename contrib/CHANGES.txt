@@ -15,6 +15,10 @@ Bug fixes
  1. LUCENE-1423: InstantiatedTermEnum#skipTo(Term) throws ArrayIndexOutOfBounds on empty index.
     (Karl Wettin) 
 
+ 2. LUCENE-1462: InstantiatedIndexWriter did not reset pre analyzed TokenStreams the
+    same way IndexWriter does. Parts of InstantiatedIndex was not Serializable.
+    (Karl Wettin)
+
 New features
 
  1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of
