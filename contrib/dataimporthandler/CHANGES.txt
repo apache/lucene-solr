@@ -68,6 +68,9 @@ Bug Fixes
 9. SOLR-893:  Unable to delete documents via SQL and deletedPkQuery with deltaimport
               (Dan Rosher via shalin)
 
+10. SOLR-888: DateFormatTransformer cannot convert non-string type
+              (Amit Nithian via shalin)
+
 Documentation
 ----------------------
 
