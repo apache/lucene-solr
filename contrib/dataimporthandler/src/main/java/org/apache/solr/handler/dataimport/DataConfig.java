@@ -205,6 +205,9 @@ public class DataConfig {
     public Field(Element e) {
       this.name = getStringAttribute(e, DataImporter.NAME, null);
       this.column = getStringAttribute(e, DataImporter.COLUMN, null);
+      if (column == null) {
+        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Field must have a column attribute");
+      }
       this.boost = Float.parseFloat(getStringAttribute(e, "boost", "1.0f"));
       allAttributes.putAll(getAllAttributes(e));
     }
