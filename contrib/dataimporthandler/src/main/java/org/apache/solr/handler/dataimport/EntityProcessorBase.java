@@ -341,6 +341,12 @@ public class EntityProcessorBase extends EntityProcessor {
             .get(query);
     List<Map<String, Object>> rows = null;
     Object key = resolver.resolve(cacheVariableName);
+    if (key == null) {
+      throw new DataImportHandlerException(DataImportHandlerException.WARN,
+              "The cache lookup value : " + cacheVariableName + " is resolved to be null in the entity :" +
+                      context.getEntityAttribute("name"));
+
+    }
     if (rowIdVsRows != null) {
       rows = rowIdVsRows.get(key);
       if (rows == null)
@@ -355,6 +361,17 @@ public class EntityProcessorBase extends EntityProcessor {
         rowIdVsRows = new HashMap<Object, List<Map<String, Object>>>();
         for (Map<String, Object> row : rows) {
           Object k = row.get(cachePk);
+          if (k == null) {
+            throw new DataImportHandlerException(DataImportHandlerException.WARN,
+                    "No value available for the cache key : " + cachePk + " in the entity : " +
+                            context.getEntityAttribute("name"));
+          }
+          if (!k.getClass().equals(key.getClass())) {
+            throw new DataImportHandlerException(DataImportHandlerException.WARN,
+                    "The key in the cache type : " + k.getClass().getName() +
+                            "is not same as the lookup value type " + key.getClass().getName() + " in the entity " +
+                            context.getEntityAttribute("name"));
+          }
           if (rowIdVsRows.get(k) == null)
             rowIdVsRows.put(k, new ArrayList<Map<String, Object>>());
           rowIdVsRows.get(k).add(row);

@@ -76,6 +76,9 @@ Bug Fixes
 11. SOLR-841: DataImportHandler should throw exception if a field does not have column attribute
               (Michael Henson, shalin)
 
+12. SOLR-884: CachedSqlEntityProcessor should check if the cache key is present in the query results
+              (Noble Paul via shalin)
+
 Documentation
 ----------------------
 
