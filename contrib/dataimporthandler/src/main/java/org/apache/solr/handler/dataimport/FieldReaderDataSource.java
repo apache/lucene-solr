@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,14 +70,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
       try {
         //Most of the JDBC drivers have getCharacterStream defined as public
         // so let us just check it
-        Method m = clob.getClass().getDeclaredMethod("getCharacterStream");
-        if (Modifier.isPublic(m.getModifiers())) {
-          return (Reader) m.invoke(clob);
-        } else {
-          // force invoke
-          m.setAccessible(true);
-          return (Reader) m.invoke(clob);
-        }
+        return readCharStream(clob);
       } catch (Exception e) {
         LOG.info("Unable to get data from CLOB");
         return null;
@@ -104,6 +99,22 @@ public class FieldReaderDataSource extends DataSource<Reader> {
       return new StringReader(o.toString());
     }
 
+  }
+
+  static Reader readCharStream(Clob clob) {
+    try {
+      Method m = clob.getClass().getDeclaredMethod("getCharacterStream");
+      if (Modifier.isPublic(m.getModifiers())) {
+        return (Reader) m.invoke(clob);
+      } else {
+        // force invoke
+        m.setAccessible(true);
+        return (Reader) m.invoke(clob);
+      }
+    } catch (Exception e) {
+      wrapAndThrow(SEVERE, e,"Unable to get reader from clob");
+      return null;//unreachable
+    }
   }
 
   private Reader getReader(Method m, Blob blob)
