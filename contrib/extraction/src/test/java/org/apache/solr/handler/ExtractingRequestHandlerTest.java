@@ -6,6 +6,8 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.extraction.ExtractingParams;
+import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 
 import java.util.List;
 import java.util.ArrayList;

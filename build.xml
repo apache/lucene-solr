@@ -198,11 +198,12 @@
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
-
+          <packageset dir="contrib/extraction/src/main/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
+          <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
         </sources>
       </invoke-javadoc>
     </sequential>
@@ -395,6 +396,7 @@
       <fileset dir="src/java"/>
       <fileset dir="src/webapp/src"/>
       <fileset dir="contrib/dataimporthandler/src/main/java" />
+      <fileset dir="contrib/extraction/src/main/java" />
     </clover-setup>
   </target>
 
@@ -485,6 +487,9 @@
   	
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src" />
+
+    <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
+              basedir="contrib/extraction/src" />
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -497,6 +502,8 @@
               basedir="${build.javadoc}/solrj" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
+    <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-cell" />
   </target>
 
   <!-- Creates the solr jar. -->
@@ -668,6 +675,7 @@
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv"/>
     <sign-maven-artifacts artifact.id="solr-core"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler"/>
+    <sign-maven-artifacts artifact.id="solr-cell"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-core"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-highlighter"/>
@@ -751,6 +759,16 @@
         </artifact-attachments>
       </m2-deploy>
 
+      <m2-deploy pom.xml="contrib/extraction/solr-cell-pom.xml.template"
+                 jar.file="${dist}/apache-solr-cell-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-cell-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-cell-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+
       <m2-deploy pom.xml="${src}/maven/solr-core-pom.xml.template"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
 
@@ -796,6 +814,8 @@
       </fileset>
       <fileset dir="contrib/dataimporthandler/src/main/java"/>
       <fileset dir="contrib/dataimporthandler/src/test/java"/>
+      <fileset dir="contrib/extraction/src/main/java"/>
+      <fileset dir="contrib/extraction/src/test/java"/>
     </rat:report>
   </target>
 

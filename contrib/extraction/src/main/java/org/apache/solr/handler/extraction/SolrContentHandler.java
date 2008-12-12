@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,7 +31,16 @@ import java.util.UUID;
 
 
 /**
- * This class is not thread-safe.  It is responsible for responding to Tika extraction events and producing a Solr document
+ * The class responsible for handling Tika events and translating them into {@link org.apache.solr.common.SolrInputDocument}s.
+ * <B>This class is not thread-safe.</B>
+ * <p/>
+ *
+ * User's may wish to override this class to provide their own functionality.
+ *
+ * @see org.apache.solr.handler.extraction.SolrContentHandlerFactory
+ * @see org.apache.solr.handler.extraction.ExtractingRequestHandler
+ * @see org.apache.solr.handler.extraction.ExtractingDocumentLoader
+ *
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
   private transient static Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
@@ -72,15 +81,15 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.params = params;
     this.schema = schema;
     this.dateFormats = dateFormats;
-    this.ignoreUndeclaredFields = params.getBool(ExtractingParams.IGNORE_UNDECLARED_FIELDS, false);
-    this.indexAttribs = params.getBool(ExtractingParams.INDEX_ATTRIBUTES, false);
-    this.defaultFieldName = params.get(ExtractingParams.DEFAULT_FIELDNAME);
-    this.metadataPrefix = params.get(ExtractingParams.METADATA_PREFIX, "");
+    this.ignoreUndeclaredFields = params.getBool(IGNORE_UNDECLARED_FIELDS, false);
+    this.indexAttribs = params.getBool(INDEX_ATTRIBUTES, false);
+    this.defaultFieldName = params.get(DEFAULT_FIELDNAME);
+    this.metadataPrefix = params.get(METADATA_PREFIX, "");
     //if there's no default field and we are intending to index, then throw an exception
-    if (defaultFieldName == null && params.getBool(ExtractingParams.EXTRACT_ONLY, false) == false) {
+    if (defaultFieldName == null && params.getBool(EXTRACT_ONLY, false) == false) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No default field name specified");
     }
-    String[] captureFields = params.getParams(ExtractingParams.CAPTURE_FIELDS);
+    String[] captureFields = params.getParams(CAPTURE_FIELDS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<String, StringBuilder>();
       for (int i = 0; i < captureFields.length; i++) {
@@ -186,7 +195,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   /**
    * Generate an ID for the document.  First try to get
-   * {@link org.apache.solr.handler.ExtractingMetadataConstants#STREAM_NAME} from the
+   * {@link ExtractingMetadataConstants#STREAM_NAME} from the
    * {@link org.apache.tika.metadata.Metadata}, then try {@link ExtractingMetadataConstants#STREAM_SOURCE_INFO}
    * then try {@link org.apache.tika.metadata.Metadata#IDENTIFIER}.
    * If those all are null, then generate a random UUID using {@link java.util.UUID#randomUUID()}.
@@ -331,7 +340,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    * @return The new name, if there is one, else <code>name</code>
    */
   protected String findMappedName(String name) {
-    return params.get(ExtractingParams.MAP_PREFIX + name, name);
+    return params.get(MAP_PREFIX + name, name);
   }
 
   /**
@@ -341,7 +350,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    * @return The new name, else <code>name</code>
    */
   protected String findMappedMetadataName(String name) {
-    return metadataPrefix + params.get(ExtractingParams.MAP_PREFIX + name, name);
+    return metadataPrefix + params.get(MAP_PREFIX + name, name);
   }
 
 

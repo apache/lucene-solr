@@ -1,8 +1,8 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 
 
 /**
- * The various parameters to use when extracting content.
+ * The various Solr Parameters names to use when extracting content.
  *
  **/
 public interface ExtractingParams {
@@ -47,7 +47,7 @@ public interface ExtractingParams {
   /**
    * Restrict the extracted parts of a document to be indexed
    *  by passing in an XPath expression.  All content that satisfies the XPath expr.
-   * will be passed to the {@link org.apache.solr.handler.SolrContentHandler}.
+   * will be passed to the {@link SolrContentHandler}.
    * <p/>
    * See Tika's docs for what the extracted document looks like.
    * <p/>
@@ -84,7 +84,7 @@ public interface ExtractingParams {
    * Capture the specified fields (and everything included below it that isn't capture by some other capture field) separately from the default.  This is different
    * then the case of passing in an XPath expression.
    * <p/>
-   * The Capture field is based on the localName returned to the {@link org.apache.solr.handler.SolrContentHandler}
+   * The Capture field is based on the localName returned to the {@link SolrContentHandler}
    * by Tika, not to be confused by the mapped field.  The field name can then
    * be mapped into the index schema.
    * <p/>

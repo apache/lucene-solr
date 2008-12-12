@@ -627,6 +627,16 @@
     </arr>
   </requestHandler>
 
+<!--
+<requestHandler name="/update/extract" class="solr.ExtractingRequestHandler">
+    <lst name="defaults">
+      <str name="ext.map.Last-Modified">last_modified</str>
+      <bool name="ext.ignore.und.fl">true</bool>
+    </lst>
+  </requestHandler>
+-->
+
+
 
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
 

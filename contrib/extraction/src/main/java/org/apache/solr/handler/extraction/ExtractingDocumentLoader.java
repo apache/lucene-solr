@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -10,6 +10,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -28,7 +29,7 @@ import java.io.StringWriter;
 
 
 /**
- *
+ * The class responsible for loading extracted content into Solr.
  *
  **/
 public class ExtractingDocumentLoader extends ContentStreamLoader {

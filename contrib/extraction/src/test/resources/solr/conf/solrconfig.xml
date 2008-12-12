@@ -308,7 +308,7 @@
   	<bool name="httpCaching">false</bool>
   </requestHandler>
   
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.ExtractingRequestHandler"/>
+  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler"/>
 
 
   <highlighting>

@@ -1,8 +1,8 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 
 
 /**
- *
+ * Constants used internally by the {@link ExtractingRequestHandler}.
  *
  **/
 public interface ExtractingMetadataConstants {

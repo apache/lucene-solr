@@ -1,4 +1,4 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.extraction;
 
 import org.apache.tika.metadata.Metadata;
 import org.apache.solr.common.params.SolrParams;
