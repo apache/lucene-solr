@@ -69,8 +69,6 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private Map<String, String> variables = new HashMap<String, String>();
 
-  @SuppressWarnings("unchecked")
-  private NamedList initArgs;
 
   private Map<String, Properties> dataSources = new HashMap<String, Properties>();
 
@@ -82,8 +80,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   @SuppressWarnings("unchecked")
   public void init(NamedList args) {
     super.init(args);
-
-    initArgs = args;
   }
 
   @SuppressWarnings("unchecked")
