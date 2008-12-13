@@ -17,23 +17,17 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * <p>
- * A DataSource implementation which can fetch data using JDBC.
- * </p>
- * <p/>
- * <p>
- * Refer to <a
- * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a>
- * for more details.
- * </p>
+ * <p> A DataSource implementation which can fetch data using JDBC. </p> <p/> <p> Refer to <a
+ * href="http://wiki.apache.org/solr/DataImportHandler">http://wiki.apache.org/solr/DataImportHandler</a> for more
+ * details. </p>
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
@@ -56,6 +50,8 @@ public class JdbcDataSource extends
 
   private int batchSize = FETCH_SIZE;
 
+  private int maxRows = 0;
+
   public void init(Context context, Properties initProps) {
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
@@ -70,7 +66,7 @@ public class JdbcDataSource extends
         if (batchSize == -1)
           batchSize = Integer.MIN_VALUE;
       } catch (NumberFormatException e) {
-        LOG.warn( "Invalid batch size: " + bsz);
+        LOG.warn("Invalid batch size: " + bsz);
       }
     }
 
@@ -114,6 +110,11 @@ public class JdbcDataSource extends
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
     }
 
+    String s = initProps.getProperty("maxRows");
+    if (s != null) {
+      maxRows = Integer.parseInt(s);
+    }
+
     factory = new Callable<Connection>() {
       public Connection call() throws Exception {
         LOG.info("Creating a connection for entity "
@@ -123,6 +124,34 @@ public class JdbcDataSource extends
         Connection c = null;
         try {
           c = DriverManager.getConnection(url, initProps);
+          if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
+            c.setReadOnly(true);
+            // Add other sane defaults
+            c.setAutoCommit(true);
+            c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+            c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
+          }
+          if (!Boolean.parseBoolean(initProps.getProperty("autoCommit"))) {
+            c.setAutoCommit(false);
+          }
+          String transactionIsolation = initProps.getProperty("transactionIsolation");
+          if ("TRANSACTION_READ_UNCOMMITTED".equals(transactionIsolation)) {
+            c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+          } else if ("TRANSACTION_READ_COMMITTED".equals(transactionIsolation)) {
+            c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+          } else if ("TRANSACTION_REPEATABLE_READ".equals(transactionIsolation)) {
+            c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+          } else if ("TRANSACTION_SERIALIZABLE".equals(transactionIsolation)) {
+            c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+          } else if ("TRANSACTION_NONE".equals(transactionIsolation)) {
+            c.setTransactionIsolation(Connection.TRANSACTION_NONE);
+          }
+          String holdability = initProps.getProperty("holdability");
+          if ("CLOSE_CURSORS_AT_COMMIT".equals(holdability)) {
+            c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
+          } else {
+            c.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
+          }
         } catch (SQLException e) {
           // DriverManager does not allow you to use a driver which is not loaded through
           // the class loader of the class which is trying to make the connection.
@@ -144,7 +173,7 @@ public class JdbcDataSource extends
   }
 
   private void logError(String msg, Exception e) {
-    LOG.warn( msg, e);
+    LOG.warn(msg, e);
   }
 
   private List<String> readFieldNames(ResultSetMetaData metaData)
@@ -170,9 +199,9 @@ public class JdbcDataSource extends
 
       try {
         Connection c = getConnection();
-        stmt = c.createStatement(ResultSet.TYPE_FORWARD_ONLY,
-                ResultSet.CONCUR_READ_ONLY);
+        stmt = c.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(batchSize);
+        stmt.setMaxRows(maxRows);
         LOG.debug("Executing SQL: " + query);
         long start = System.currentTimeMillis();
         if (stmt.execute(query)) {

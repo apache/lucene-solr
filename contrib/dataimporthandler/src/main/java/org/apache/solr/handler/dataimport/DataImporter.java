@@ -19,7 +19,6 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -37,9 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * <p>
- * Stores all configuration information for pulling and indexing data.
- * </p>
+ * <p> Stores all configuration information for pulling and indexing data. </p>
  * <p/>
  * <b>This API is experimental and subject to change</b>
  *
@@ -129,7 +126,7 @@ public class DataImporter {
       SchemaField field = schema.getFieldOrNull(fld.getName());
       if (field == null) {
         field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase());
-        if (field == null)  {
+        if (field == null) {
           errors.add("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
         }
       }
@@ -147,13 +144,14 @@ public class DataImporter {
 
   }
 
-  /**Used by tests
+  /**
+   * Used by tests
    */
-  void loadAndInit(String configStr){
+  void loadAndInit(String configStr) {
     loadDataConfig(configStr);
     Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
     DataConfig.Entity e = getConfig().documents.get(0).entities.get(0);
-    initEntity(e, fields, false);    
+    initEntity(e, fields, false);
   }
 
   void loadDataConfig(String configFile) {
@@ -191,9 +189,9 @@ public class DataImporter {
       for (DataConfig.Field f : e.fields) {
         if (schema != null) {
           SchemaField schemaField = schema.getFieldOrNull(f.getName());
-          if (schemaField == null)  {
+          if (schemaField == null) {
             schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase());
-            if(schemaField != null) f.name = schemaField.getName();
+            if (schemaField != null) f.name = schemaField.getName();
           }
           if (schemaField != null) {
             f.multiValued = schemaField.multiValued();
@@ -282,6 +280,14 @@ public class DataImporter {
     try {
       Properties copyProps = new Properties();
       copyProps.putAll(p);
+      Map<String, Object> map = ctx.getRequestParameters();
+      if (map.containsKey("rows")) {
+        int rows = Integer.parseInt((String) map.get("rows"));
+        if (map.containsKey("start")) {
+          rows += Integer.parseInt((String) map.get("start"));
+        }
+        copyProps.setProperty("maxRows", String.valueOf(rows));
+      }
       dataSrc.init(ctx, copyProps);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
