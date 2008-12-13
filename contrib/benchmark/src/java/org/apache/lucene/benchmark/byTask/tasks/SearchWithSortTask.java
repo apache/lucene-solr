@@ -50,7 +50,7 @@ public class SearchWithSortTask extends ReadTask {
       String typeString;
       if (index != -1) {
         fieldName = field.substring(0, index);
-        typeString = field.substring(index, field.length());
+        typeString = field.substring(1+index, field.length());
       } else {
         typeString = "auto";
         fieldName = field;
