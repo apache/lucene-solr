@@ -44,6 +44,9 @@ New Features
 8. SOLR-812:  Configurable JDBC settings in JdbcDataSource including optimized defaults for read only mode.
               (David Smiley, Glen Newton, shalin)
 
+9. SOLR-910:  Add a few utility commands to the DIH admin page such as full import, delta import, status, reload config.
+              (Ahmed Hammad via shalin) 
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

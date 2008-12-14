@@ -69,5 +69,28 @@
 	</tr>
 </table>
 </form>
+<form action="../dataimport" target="result" method="get">
+	<input type="hidden" name="clean" value="false">
+	<input type="hidden" name="commit" value="true">
+	<input class="stdbutton" type="submit" name="command" value="full-import">
+	<input class="stdbutton" type="submit" name="command" value="delta-import">
+	<input class="stdbutton" type="submit" name="command" value="status">
+	<input class="stdbutton" type="submit" name="command" value="reload-config">
+	<input class="stdbutton" type="submit" name="command" value="abort">
+</form>
+<form action="../select" target="result" method="get">
+	<input type="hidden" name="q" value="*:*">
+	<input type="hidden" name="start" value="0">
+	<input type="hidden" name="rows" value="0">
+	<input class="stdbutton" type="submit" value="Documents Count">
+</form>
+<form action="../dataimport" target="result" method="get">
+	<input type="hidden" name="verbose" value="true">
+	<input type="hidden" name="clean" value="true">
+	<input type="hidden" name="commit" value="true">
+	<input type="hidden" name="command" value="full-import">
+	<input class="stdbutton" type="submit" value="Full Import with Cleaning">
+</form>
+<a href="index.jsp" target="_parent">Return to Admin Page</a>
 </body>
 </html>
