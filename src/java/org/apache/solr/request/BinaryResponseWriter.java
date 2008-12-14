@@ -16,38 +16,34 @@
  */
 package org.apache.solr.request;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedListCodec;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.*;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
+  private static final Set<Class> KNOWN_TYPES = new HashSet<Class>();
 
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
-    if(omitHeader != null && omitHeader) response.getValues().remove("responseHeader");
+    if (omitHeader != null && omitHeader) response.getValues().remove("responseHeader");
     NamedListCodec codec = new NamedListCodec(resolver);
     codec.marshal(response.getValues(), out);
   }
@@ -77,10 +73,10 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public Resolver(SolrQueryRequest req, Set<String> returnFields) {
       this.schema = req.getSchema();
       this.searcher = req.getSearcher();
-      this.includeScore = returnFields!=null && returnFields.contains("score");
+      this.includeScore = returnFields != null && returnFields.contains("score");
 
       if (returnFields != null) {
-       if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
+        if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
           returnFields = null;  // null means return all stored fields
         }
       }
@@ -94,7 +90,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       if (o instanceof SolrDocument) {
         SolrDocument solrDocument = (SolrDocument) o;
-        codec.writeSolrDocument(solrDocument,returnFields);
+        codec.writeSolrDocument(solrDocument, returnFields);
         return null;
       }
       if (o instanceof Document) {
@@ -107,8 +103,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     public void writeDocList(DocList ids, NamedListCodec codec) throws IOException {
       codec.writeTag(NamedListCodec.SOLRDOCLST);
       List l = new ArrayList(3);
-      l.add((long)ids.matches());
-      l.add((long)ids.offset());
+      l.add((long) ids.matches());
+      l.add((long) ids.offset());
       Float maxScore = null;
       if (includeScore && ids.hasScores()) {
         maxScore = ids.maxScore();
@@ -137,21 +133,25 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (Fieldable f : (List<Fieldable>)doc.getFields()) {
+      for (Fieldable f : (List<Fieldable>) doc.getFields()) {
         String fieldName = f.name();
-        if (returnFields!=null && !returnFields.contains(fieldName)) continue;
+        if (returnFields != null && !returnFields.contains(fieldName)) continue;
         FieldType ft = schema.getFieldTypeNoEx(fieldName);
         Object val;
-        if (ft==null) {  // handle fields not in the schema
+        if (ft == null) {  // handle fields not in the schema
           if (f.isBinary()) val = f.binaryValue();
           else val = f.stringValue();
         } else {
           try {
-            val = useFieldObjects ? ft.toObject(f) : ft.toExternal(f);
+            if (useFieldObjects && KNOWN_TYPES.contains(ft.getClass())) {
+              val = ft.toObject(f);
+            } else {
+              val = ft.toExternal(f);
+            }
           } catch (Exception e) {
             // There is a chance of the underlying field not really matching the
             // actual field type . So ,it can throw exception
-            LOG.warn("Error reading a field from document : "+solrDoc, e);
+            LOG.warn("Error reading a field from document : " + solrDoc, e);
             //if it happens log it and continue
             continue;
           }
@@ -162,33 +162,55 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     }
 
   }
-  
+
 
   /**
    * TODO -- there may be a way to do this without marshal at all...
-   * 
+   *
    * @param req
    * @param rsp
-   * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
-   * become SolrDocuments, DocList becomes SolrDocumentList etc.
-   * 
+   *
+   * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents become
+   *         SolrDocuments, DocList becomes SolrDocumentList etc.
+   *
    * @since solr 1.4
    */
   @SuppressWarnings("unchecked")
-  public static NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
-  {
+  public static NamedList<Object> getParsedResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       NamedListCodec codec = new NamedListCodec(resolver);
       codec.marshal(rsp.getValues(), out);
-      
-      InputStream in = new ByteArrayInputStream( out.toByteArray() );
-      return codec.unmarshal( in );
+
+      InputStream in = new ByteArrayInputStream(out.toByteArray());
+      return codec.unmarshal(in);
     }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
+    catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
+  }
+
+  static {
+    KNOWN_TYPES.add(BoolField.class);
+    KNOWN_TYPES.add(BCDIntField.class);
+    KNOWN_TYPES.add(BCDLongField.class);
+    KNOWN_TYPES.add(BCDStrField.class);
+    KNOWN_TYPES.add(ByteField.class);
+    KNOWN_TYPES.add(DateField.class);
+    KNOWN_TYPES.add(DoubleField.class);
+    KNOWN_TYPES.add(FloatField.class);
+    KNOWN_TYPES.add(ShortField.class);
+    KNOWN_TYPES.add(IntField.class);
+    KNOWN_TYPES.add(LongField.class);
+    KNOWN_TYPES.add(SortableLongField.class);
+    KNOWN_TYPES.add(SortableIntField.class);
+    KNOWN_TYPES.add(SortableFloatField.class);
+    KNOWN_TYPES.add(SortableDoubleField.class);
+    KNOWN_TYPES.add(StrField.class);
+    KNOWN_TYPES.add(TextField.class);
+    // We do not add UUIDField because UUID object is not a supported type in NamedListCodec
+    // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
   }
 }

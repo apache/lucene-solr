@@ -164,6 +164,10 @@ Bug Fixes
 
 16. SOLR-901: FastOutputStream ignores write(byte[]) call.  (Noble Paul via shalin)
 
+17. SOLR-807: BinaryResponseWriter writes fieldType.toExternal if it is not a supported type,
+    otherwise it writes fieldType.toObject. This fixes the bug with encoding/decoding UUIDField.
+    (koji, Noble Paul, shalin)
+
 
 Other Changes
 ----------------------
