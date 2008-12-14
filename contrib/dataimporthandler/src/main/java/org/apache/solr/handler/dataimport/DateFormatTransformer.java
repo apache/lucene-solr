@@ -66,7 +66,9 @@ public class DateFormatTransformer extends Transformer {
           }
           aRow.put(column, results);
         } else {
-          aRow.put(column, process(o.toString(), fmt));
+          if (o != null)  {
+            aRow.put(column, process(o.toString(), fmt));
+          }
         }
       } catch (ParseException e) {
         LOG.warn( "Could not parse a Date field ", e);
