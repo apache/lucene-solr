@@ -34,13 +34,12 @@ import java.util.UUID;
  * The class responsible for handling Tika events and translating them into {@link org.apache.solr.common.SolrInputDocument}s.
  * <B>This class is not thread-safe.</B>
  * <p/>
- *
+ * <p/>
  * User's may wish to override this class to provide their own functionality.
  *
  * @see org.apache.solr.handler.extraction.SolrContentHandlerFactory
  * @see org.apache.solr.handler.extraction.ExtractingRequestHandler
  * @see org.apache.solr.handler.extraction.ExtractingDocumentLoader
- *
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
   private transient static Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
@@ -151,10 +150,16 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         //no need to map names here, since they are literals from the user
         SchemaField schFld = schema.getFieldOrNull(fieldName);
         if (schFld != null) {
-          String value = params.get(name);
+          String[] values = params.getParams(name);
+          if (schFld.multiValued() == false && values.length > 1) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The Field " + fieldName + " is not multivalued");
+          }
           boost = getBoost(fieldName);
-          //no need to transform here, b/c we can assume the user sent it in correctly
-          document.addField(fieldName, value, boost);
+          for (int i = 0; i < values.length; i++) {
+            //no need to transform here, b/c we can assume the user sent it in correctly
+            document.addField(fieldName, values[i], boost);
+
+          }
         } else {
           handleUndeclaredField(fieldName);
         }
@@ -219,10 +224,9 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         //last chance, just create one
         uniqId = UUID.randomUUID().toString();
       }
-    } else if (type instanceof UUIDField){
+    } else if (type instanceof UUIDField) {
       uniqId = UUID.randomUUID().toString();
-    }
-    else {
+    } else {
       uniqId = String.valueOf(getNextId());
     }
     return uniqId;
@@ -294,8 +298,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
 
-  
-
   /**
    * Can be used to transform input values based on their {@link org.apache.solr.schema.SchemaField}
    * <p/>
@@ -354,7 +356,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
 
-  protected synchronized long getNextId(){
+  protected synchronized long getNextId() {
     return identifier++;
   }
 

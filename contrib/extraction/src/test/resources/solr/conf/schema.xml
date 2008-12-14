@@ -402,6 +402,9 @@
    <field name="extractedLanguage" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="resourceName" type="string" indexed="true" stored="true" multiValued="true"/>
 
+   <field name="extractionLiteralMV" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="extractionLiteral" type="string" indexed="true" stored="true" multiValued="false"/>
+
    
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

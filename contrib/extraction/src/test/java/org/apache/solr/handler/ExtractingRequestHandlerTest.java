@@ -6,6 +6,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 
@@ -19,8 +20,15 @@ import java.io.File;
  *
  **/
 public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @Override
+  public String getSchemaFile() {
+    return "schema.xml";
+  }
+
+  @Override
+  public String getSolrConfigFile() {
+    return "solrconfig.xml";
+  }
 
 
   public void testExtraction() throws Exception {
@@ -32,9 +40,9 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.def.fl", "extractedContent",
             "ext.map.Last-Modified", "extractedDate"
     );
-    assertQ(req("title:solr-word"),"//*[@numFound='0']");
+    assertQ(req("title:solr-word"), "//*[@numFound='0']");
     assertU(commit());
-    assertQ(req("title:solr-word"),"//*[@numFound='1']");
+    assertQ(req("title:solr-word"), "//*[@numFound='1']");
 
     loadLocal("simple.html", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
@@ -43,9 +51,9 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.def.fl", "extractedContent",
             "ext.map.Last-Modified", "extractedDate"
     );
-    assertQ(req("title:Welcome"),"//*[@numFound='0']");
+    assertQ(req("title:Welcome"), "//*[@numFound='0']");
     assertU(commit());
-    assertQ(req("title:Welcome"),"//*[@numFound='1']");
+    assertQ(req("title:Welcome"), "//*[@numFound='1']");
 
     loadLocal("version_control.xml", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
@@ -53,13 +61,60 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.def.fl", "extractedContent",
             "ext.map.Last-Modified", "extractedDate"
     );
-    assertQ(req("stream_name:version_control.xml"),"//*[@numFound='0']");
+    assertQ(req("stream_name:version_control.xml"), "//*[@numFound='0']");
     assertU(commit());
-    assertQ(req("stream_name:version_control.xml"),"//*[@numFound='1']");
+    assertQ(req("stream_name:version_control.xml"), "//*[@numFound='1']");
+
+
   }
 
 
-  
+  public void testLiterals() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    //test literal
+    loadLocal("version_control.xml", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
+            "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
+            "ext.map.Author", "extractedAuthor",
+            "ext.def.fl", "extractedContent",
+            "ext.literal.extractionLiteralMV", "one",
+            "ext.literal.extractionLiteralMV", "two",
+            "ext.map.Last-Modified", "extractedDate"
+
+    );
+    assertQ(req("stream_name:version_control.xml"), "//*[@numFound='0']");
+    assertU(commit());
+    assertQ(req("stream_name:version_control.xml"), "//*[@numFound='1']");
+
+    assertQ(req("extractionLiteralMV:one"), "//*[@numFound='1']");
+    assertQ(req("extractionLiteralMV:two"), "//*[@numFound='1']");
+
+    try {
+      loadLocal("version_control.xml", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
+              "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
+              "ext.map.Author", "extractedAuthor",
+              "ext.def.fl", "extractedContent",
+              "ext.literal.extractionLiteral", "one",
+              "ext.literal.extractionLiteral", "two",
+              "ext.map.Last-Modified", "extractedDate"
+      );
+      assertTrue("Exception should have been thrown", false);
+    } catch (SolrException e) {
+      //nothing to see here, move along
+    }
+
+    loadLocal("version_control.xml", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
+            "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
+            "ext.map.Author", "extractedAuthor",
+            "ext.def.fl", "extractedContent",
+            "ext.literal.extractionLiteral", "one",
+            "ext.map.Last-Modified", "extractedDate"
+    );
+    assertU(commit());
+    assertQ(req("extractionLiteral:one"), "//*[@numFound='1']");
+
+  }
+
 
   public void testPlainTextSpecifyingMimeType() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
@@ -71,11 +126,11 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.Author", "extractedAuthor",
             "ext.map.language", "extractedLanguage",
             "ext.def.fl", "extractedContent",
-	    ExtractingParams.STREAM_TYPE, "text/plain"
+            ExtractingParams.STREAM_TYPE, "text/plain"
     );
-    assertQ(req("extractedContent:Apache"),"//*[@numFound='0']");
+    assertQ(req("extractedContent:Apache"), "//*[@numFound='0']");
     assertU(commit());
-    assertQ(req("extractedContent:Apache"),"//*[@numFound='1']");
+    assertQ(req("extractedContent:Apache"), "//*[@numFound='1']");
   }
 
   public void testPlainTextSpecifyingResourceName() throws Exception {
@@ -88,11 +143,11 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.Author", "extractedAuthor",
             "ext.map.language", "extractedLanguage",
             "ext.def.fl", "extractedContent",
-	    ExtractingParams.RESOURCE_NAME, "version_control.txt"
+            ExtractingParams.RESOURCE_NAME, "version_control.txt"
     );
-    assertQ(req("extractedContent:Apache"),"//*[@numFound='0']");
+    assertQ(req("extractedContent:Apache"), "//*[@numFound='0']");
     assertU(commit());
-    assertQ(req("extractedContent:Apache"),"//*[@numFound='1']");
+    assertQ(req("extractedContent:Apache"), "//*[@numFound='1']");
   }
 
   // Note: If you load a plain text file specifying neither MIME type nor filename, extraction will silently fail. This is because Tika's
@@ -128,7 +183,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
-    LocalSolrQueryRequest req =  (LocalSolrQueryRequest)req(args);
+    LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
 
     // TODO: stop using locally defined streams once stream.file and
     // stream.body work everywhere
