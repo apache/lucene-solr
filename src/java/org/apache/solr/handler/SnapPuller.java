@@ -947,11 +947,12 @@ public class SnapPuller {
   }
 
   static Integer readInterval(String interval) {
+    Pattern pattern = Pattern.compile(INTERVAL_PATTERN);
     if (interval == null)
       return null;
     int result = 0;
     if (interval != null) {
-      Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
+      Matcher m = pattern.matcher(interval.trim());
       if (m.find()) {
         String hr = m.group(1);
         String min = m.group(2);
@@ -1003,5 +1004,5 @@ public class SnapPuller {
 
   public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
 
-  private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
+  private static final String INTERVAL_PATTERN = "(\\d*?):(\\d*?):(\\d*)";
 }
