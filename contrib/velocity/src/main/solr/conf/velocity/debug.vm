@@ -1,0 +1,9 @@
+<h1>REQUEST</h1>
+<div>
+$esc.html($request)
+</div>
+
+<h1>RESPONSE</h1>
+<div>
+$esc.html($response)
+</div>
