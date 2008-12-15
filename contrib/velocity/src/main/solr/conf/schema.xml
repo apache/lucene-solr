@@ -354,6 +354,7 @@
    <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*"    type="string"  indexed="true"  stored="true" multiValued="true"/>
 
    <dynamicField name="random*" type="random" />
 

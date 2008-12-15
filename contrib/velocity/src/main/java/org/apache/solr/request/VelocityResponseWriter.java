@@ -18,9 +18,17 @@
 package org.apache.solr.request;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
+import org.apache.velocity.tools.generic.ComparisonDateTool;
+import org.apache.velocity.tools.generic.DateTool;
 import org.apache.velocity.tools.generic.EscapeTool;
+import org.apache.velocity.tools.generic.MathTool;
+import org.apache.velocity.tools.generic.NumberTool;
+import org.apache.velocity.tools.generic.SortTool;
 import org.apache.velocity.app.VelocityEngine;
 
 import java.io.File;
@@ -37,19 +45,47 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
     VelocityContext context = new VelocityContext();
 
-    // TODO: Make this use the SolrJ API, rather than "embedded" Solr API
-    context.put("request", request);    // TODO: inject a SolrRequest instead of a SolrQueryRequest
-    context.put("response", response);  // TODO: inject a SolrResponse instead of a SolrQueryResponse
+    context.put("request", request);
+
+    SolrResponse rsp = new QueryResponse();
+    rsp.setResponse(new EmbeddedSolrServer(request.getCore()).getParsedResponse(request, response));
+    context.put("response", rsp);
+
+    // Velocity context tools - TODO: make these pluggable
     context.put("page",new PageTool(request,response));
     context.put("esc", new EscapeTool());
+    context.put("sort", new SortTool());
+    context.put("number", new NumberTool());
+    context.put("date", new ComparisonDateTool());
+    context.put("math", new MathTool());
    
+    // TODO: check for v.layout, render to string, then render v.layout's template setting $content in the context
+    String layout_template = request.getParams().get("v.layout");
+    String json_wrapper = request.getParams().get("v.json");
+    boolean wrap_response = (layout_template != null) || (json_wrapper !=null);
+    
     // create output, optionally wrap it into a json object
-    if (request.getParams().get("v.json") != null) {
+    if (wrap_response) {
       StringWriter stringWriter = new StringWriter();
       template.merge(context, stringWriter);
-      writer.write(request.getParams().get("v.json") + "(");
-      writer.write(getJSONWrap(stringWriter.toString()));
-      writer.write(')');
+      
+      if (layout_template != null) {
+        context.put("content", stringWriter.toString());
+        stringWriter = new StringWriter();
+        try {
+          engine.getTemplate(layout_template + ".vm").merge(context, stringWriter);
+        } catch (Exception e) {
+          throw new IOException(e.getMessage());
+        }
+      }
+      
+      if (json_wrapper != null) {
+        writer.write(request.getParams().get("v.json") + "(");
+        writer.write(getJSONWrap(stringWriter.toString()));
+        writer.write(')');
+      } else {  // using a layout, but not JSON wrapping
+        writer.write(stringWriter.toString());
+      }
     } else {
       template.merge(context, writer);
     }
@@ -86,7 +122,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     return request.getParams().get("v.contentType","text/html");
   }
   
-  private String getJSONWrap(String xmlResult) {
+  private String getJSONWrap(String xmlResult) {  // TODO: maybe noggit or Solr's JSON utilities can make this cleaner?
     // escape the double quotes and backslashes
     String replace1 = xmlResult.replaceAll("\\\\", "\\\\\\\\");
     replace1 = replace1.replaceAll("\\n", "\\\\n");
