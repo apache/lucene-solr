@@ -29,15 +29,25 @@ import org.apache.lucene.store.Directory;
  */
 public class OpenReaderTask extends PerfTask {
 
+  private boolean readOnly = true;
+
   public OpenReaderTask(PerfRunData runData) {
     super(runData);
   }
 
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, readOnly);
     getRunData().setIndexReader(reader);
     return 1;
   }
 
+  public void setParams(String params) {
+    super.setParams(params);
+    readOnly = Boolean.valueOf(params).booleanValue();
+  }
+
+  public boolean supportsParams() {
+    return true;
+  }
 }

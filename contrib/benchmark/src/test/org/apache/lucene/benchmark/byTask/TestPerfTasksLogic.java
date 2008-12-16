@@ -109,7 +109,7 @@ public class TestPerfTasksLogic extends TestCase {
         "{ AddDoc } : 1000",
         "Optimize",
         "CloseIndex",
-        "OpenReader",
+        "OpenReader(true)",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
         "CloseReader",
     };
@@ -147,7 +147,7 @@ public class TestPerfTasksLogic extends TestCase {
         "{ AddDoc } : 1000",
         "Optimize",
         "CloseIndex",
-        "OpenReader",
+        "OpenReader(false)",
         "{ CountingHighlighterTest(size[1],highlight[1],mergeContiguous[true],maxFrags[1],fields[body]) } : 200",
         "CloseReader",
     };

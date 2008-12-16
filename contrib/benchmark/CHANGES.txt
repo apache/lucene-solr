@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/16/08
+  LUCENE-1492: Added optional readOnly param (default true) to OpenReader task.
+
 9/9/08
  LUCENE-1243: Added new sorting benchmark capabilities.  Also Reopen and commit tasks.  (Mark Miller via Grant Ingersoll)
 
