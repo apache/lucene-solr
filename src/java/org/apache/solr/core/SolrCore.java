@@ -740,7 +740,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  private List<CloseHook> closeHooks = null;
+  private Collection<CloseHook> closeHooks = null;
 
    /**
     * Add a close callback hook
