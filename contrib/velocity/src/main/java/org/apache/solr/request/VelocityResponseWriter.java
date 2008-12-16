@@ -59,7 +59,6 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     context.put("date", new ComparisonDateTool());
     context.put("math", new MathTool());
    
-    // TODO: check for v.layout, render to string, then render v.layout's template setting $content in the context
     String layout_template = request.getParams().get("v.layout");
     String json_wrapper = request.getParams().get("v.json");
     boolean wrap_response = (layout_template != null) || (json_wrapper !=null);
