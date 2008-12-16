@@ -20,7 +20,9 @@ package org.apache.solr.update;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
 
 import org.slf4j.Logger;
@@ -107,37 +109,18 @@ public class SolrIndexWriter extends IndexWriter {
     return d;
   }
   
+  /** @deprecated remove when getDirectory(String,SolrIndexConfig) is gone */
+  private static DirectoryFactory LEGACY_DIR_FACTORY 
+    = new StandardDirectoryFactory();
+  static {
+    LEGACY_DIR_FACTORY.init(new NamedList());
+  }
+
   /**
-   * @deprecated use getDirectory(DirectoryFactory directoryFactory, SolrIndexConfig config)
+   * @deprecated use getDirectory(String path, DirectoryFactory directoryFactory, SolrIndexConfig config)
    */
   public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
-    Directory d = FSDirectory.getDirectory(path);
-
-    String rawLockType = (null == config) ? null : config.lockType;
-    if (null == rawLockType) {
-      // we default to "simple" for backwards compatibility
-      log.warn("No lockType configured for " + path + " assuming 'simple'");
-      rawLockType = "simple";
-    }
-    final String lockType = rawLockType.toLowerCase().trim();
-
-    if ("simple".equals(lockType)) {
-      // multiple SimpleFSLockFactory instances should be OK
-      d.setLockFactory(new SimpleFSLockFactory(path));
-    } else if ("native".equals(lockType)) {
-      d.setLockFactory(new NativeFSLockFactory(path));
-    } else if ("single".equals(lockType)) {
-      if (!(d.getLockFactory() instanceof SingleInstanceLockFactory))
-        d.setLockFactory(new SingleInstanceLockFactory());
-    } else if ("none".equals(lockType)) {
-      // Recipe for disaster
-      log.error("CONFIGURATION WARNING: locks are disabled on " + path);      
-      d.setLockFactory(new NoLockFactory());
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Unrecognized lockType: " + rawLockType);
-    }
-    return d;
+    return getDirectory(path, LEGACY_DIR_FACTORY, config);
   }
   
   /**
