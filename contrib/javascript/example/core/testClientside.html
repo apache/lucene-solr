@@ -22,15 +22,15 @@
 		body { font-family: Arial, sans; font-size: 0.8em}
 	</style> 
 
-   <script src="../lib/jquery/jquery-1.2.6.js"></script>
-	<script src="../src/core/Core.js"></script>
-	<script src="../src/core/QueryItem.js"></script>
-	<script src="../src/core/Manager.js"></script>
-	<script src="../src/core/AbstractWidget.js"></script>
-	<script src="../src/core/AbstractServerSideWidget.js"></script>
-	<script src="../src/core/AbstractClientSideWidget.js"></script>
-	<script src="../src/clientside/ExtensibleResultWidget.js"/></script>
-	<script src="../src/clientside/FacetWidget.js"/></script>
+   <script src="../../lib/jquery/jquery-1.2.6.js"></script>
+	<script src="../../src/core/Core.js"></script>
+	<script src="../../src/core/QueryItem.js"></script>
+	<script src="../../src/core/Manager.js"></script>
+	<script src="../../src/core/AbstractWidget.js"></script>
+	<script src="../../src/core/AbstractServerSideWidget.js"></script>
+	<script src="../../src/core/AbstractClientSideWidget.js"></script>
+	<script src="../../src/clientside/ExtensibleResultWidget.js"/></script>
+	<script src="../../src/clientside/FacetWidget.js"/></script>
 	<script>
 	  var $sj = jQuery.noConflict();
 	</script>  
@@ -48,11 +48,10 @@
         renderResult : function(docs, pageSize, offset) { 
           var container = jQuery("<div/>");
           $sj.each(docs, function(i, item) {
-            jQuery("<h3/>").html(item["name"]).appendTo(container);
+            jQuery("<h3/>").html(item["id"]).appendTo(container);
             if (item["cat"] != null) {
               jQuery("<p/>").html(item["cat"].toString()).appendTo(container);
             }
-            jQuery("<p/>").html(item["name"]).appendTo(container);
             jQuery("<hr/>").appendTo(container);
           });
           container.appendTo(this.target);
@@ -60,7 +59,7 @@
       });     
 
       solrjsManager.addWidget(resultWidget);  
-      solrjsManager.addWidget(new $sj.solrjs.FacetWidget({id:"categories", target:"#categories", fieldName:"cat"}));	
+      solrjsManager.addWidget(new $sj.solrjs.FacetWidget({id:"cat", target:"#cat", fieldName:"cat"}));	
 			solrjsManager.doRequestAll(); 
 		});
 	</script>
@@ -68,8 +67,8 @@
 </head>
 <body>
 	<div id="facets" style="float:left;width:300px;">
-		<h3 style="margin-top:0px">categories</h3>		
-		<div id="categories"></div>
+		<h3 style="margin-top:0px">cat</h3>		
+		<div id="cat"></div>
 	</div>
   <div id="result" style="margin-left:300px;"></div>
 </body>

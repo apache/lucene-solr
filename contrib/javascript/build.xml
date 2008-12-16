@@ -80,33 +80,52 @@
 			<arg value="-p"/>
 		</java>
 	</target>
-		
-  <!-- import current solr.war to example -->
-	<target name="example-init" depends="dist">
-	  <copy file="../../dist/apache-solr-${version}.war" tofile="example/testsolr/webapps/solr.war"/>
-		<copy todir="example/testsolr/solr/lib" overwrite="true">
-			<fileset dir="../velocity/src/main/solr/lib/"/>
-		</copy>
-		<copy file="dist/solrjs-${version}-templates.jar" todir="example/testsolr/solr/lib"/>
-	</target>  
-
-	<!-- start server
-	<target name="example-start">
-	  <java jar="example/testsolr/start.jar" fork="true" failonerror="true" dir="example/testsolr/" />
-	</target>
-	 -->
 	
-	<!-- import testdata (server has to be online) 
-	  <target name="example-import">
-	    <java jar="example/testdata/reutersimporter.jar" fork="true" failonerror="true" dir="example/testdata/">
-	    	<arg value="http://localhost:8983/solr/"/>
-	    	<arg value="." />
-	    </java>
-	  </target>
-	-->
-
-  <target name="example" depends="build"/>
 	
+  <!--+ 
+      | Reuters example 
+      +-->
+	
+	<!-- start solr server, using example/reuters/testsolr/solr -->
+  <target name="reuters-start">
+  	<copy todir="example/reuters/testsolr/solr/lib" overwrite="true">
+  	  <fileset dir="../velocity/src/main/solr/lib/" />
+  	</copy>
+  	<copy file="dist/solrjs-${version}-templates.jar" todir="example/reuters/testsolr/solr/lib" />
+    <java jar="../../example/start.jar" fork="true" failonerror="true" dir="../../example">
+    	<sysproperty key="solr.solr.home" value="../contrib/javascript/example/reuters/testsolr/solr"/>	
+    </java>	
+  </target>
+
+  <!-- import testdata (server has to be online) -->
+  <target name="reuters-import">
+  	<javac srcdir="example/reuters/importer/java">
+  		<classpath>
+  		  <fileset dir="../../lib">
+  		    <include name="*.jar"/>
+  		  </fileset>
+  			<fileset dir="../../dist">
+	        <include name="*.jar"/>
+	      </fileset>
+  		</classpath>
+  	</javac>
+    <java classname="org.apache.solr.solrjs.ReutersService" fork="true" dir="example/reuters/testdata">
+    	<arg value="http://localhost:8983/solr/" />
+      <arg value="." />
+    	<classpath>
+        <fileset dir="../../lib">
+          <include name="*.jar"/>
+        </fileset>
+        <fileset dir="../../dist">
+          <include name="*.jar"/>
+        </fileset>
+    		<fileset dir="../../dist/solrj-lib">
+          <include name="*.jar"/>
+        </fileset>
+    		<path location="example/reuters/importer/java"/>
+      </classpath>
+    </java>
+  </target>
 
 	<!-- do nothing for now, required for generate maven artifacts -->
   <target name="build"/>
