@@ -31,7 +31,8 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -50,7 +51,9 @@ import org.apache.lucene.store.Directory;
  * <p/>
  * <p>Note: All ReadTasks reuse the reader if it is already open.
  * Otherwise a reader is opened at start and closed at the end.
- * <p/>
+ * <p>
+ * The <code>search.num.hits</code> config parameter sets
+ * the top number of hits to collect during searching.
  * <p>Other side effects: none.
  */
 public abstract class ReadTask extends PerfTask {
@@ -89,40 +92,45 @@ public abstract class ReadTask extends PerfTask {
       QueryMaker queryMaker = getQueryMaker();
       Query q = queryMaker.makeQuery();
       Sort sort = getSort();
-      Hits hits;
-      if(sort != null) {
-        hits = searcher.search(q, sort);
-      } else {
-        hits = searcher.search(q);
-      }
-      //System.out.println("searched: "+q);
+      TopDocs hits;
+      final int numHits = numHits();
+      if (numHits > 0) {
+        if (sort != null) {
+          hits = searcher.search(q, null, numHits, sort);
+        } else {
+          hits = searcher.search(q, numHits);
+        }
+        //System.out.println("q=" + q + ":" + hits.totalHits + " total hits"); 
 
-      if (withTraverse() && hits != null) {
-        int traversalSize = Math.min(hits.length(), traversalSize());
-        if (traversalSize > 0) {
-          boolean retrieve = withRetrieve();
-          int numHighlight = Math.min(numToHighlight(), hits.length());
-          Analyzer analyzer = getRunData().getAnalyzer();
-          Highlighter highlighter = null;
-          int maxFrags = 1;
-          if (numHighlight > 0) {
-            highlighter = getHighlighter(q);
-            maxFrags = maxNumFragments();
-          }
-          boolean merge = isMergeContiguousFragments();
-          for (int m = 0; m < traversalSize; m++) {
-            int id = hits.id(m);
-            res++;
-            if (retrieve) {
-              Document document = retrieveDoc(ir, id);
-              res += document != null ? 1 : 0;
-              if (numHighlight > 0 && m < numHighlight) {
-                Collection/*<String>*/ fieldsToHighlight = getFieldsToHighlight(document);
-                for (Iterator iterator = fieldsToHighlight.iterator(); iterator.hasNext();) {
-                  String field = (String) iterator.next();
-                  String text = document.get(field);
-                  TokenStream ts = TokenSources.getAnyTokenStream(ir, id, field, document, analyzer);
-                  res += doHighlight(ts, text, highlighter, merge, maxFrags);
+        if (withTraverse()) {
+          final ScoreDoc[] scoreDocs = hits.scoreDocs;
+          int traversalSize = Math.min(scoreDocs.length, traversalSize());
+
+          if (traversalSize > 0) {
+            boolean retrieve = withRetrieve();
+            int numHighlight = Math.min(numToHighlight(), scoreDocs.length);
+            Analyzer analyzer = getRunData().getAnalyzer();
+            Highlighter highlighter = null;
+            int maxFrags = 1;
+            if (numHighlight > 0) {
+              highlighter = getHighlighter(q);
+              maxFrags = maxNumFragments();
+            }
+            boolean merge = isMergeContiguousFragments();
+            for (int m = 0; m < traversalSize; m++) {
+              int id = scoreDocs[m].doc;
+              res++;
+              if (retrieve) {
+                Document document = retrieveDoc(ir, id);
+                res += document != null ? 1 : 0;
+                if (numHighlight > 0 && m < numHighlight) {
+                  Collection/*<String>*/ fieldsToHighlight = getFieldsToHighlight(document);
+                  for (Iterator iterator = fieldsToHighlight.iterator(); iterator.hasNext();) {
+                    String field = (String) iterator.next();
+                    String text = document.get(field);
+                    TokenStream ts = TokenSources.getAnyTokenStream(ir, id, field, document, analyzer);
+                    res += doHighlight(ts, text, highlighter, merge, maxFrags);
+                  }
                 }
               }
             }
@@ -176,6 +184,24 @@ public abstract class ReadTask extends PerfTask {
    */
   public int traversalSize() {
     return Integer.MAX_VALUE;
+  }
+
+  static final int DEFAULT_SEARCH_NUM_HITS = 10;
+  private int numHits;
+
+  public void setup() throws Exception {
+    super.setup();
+    numHits = getRunData().getConfig().get("search.num.hits", DEFAULT_SEARCH_NUM_HITS);
+  }
+
+  /**
+   * Specify the number of hits to retrieve.  Tasks should override this if they want to restrict the number
+   * of hits that are collected during searching. Must be greater than 0.
+   *
+   * @return 10 by default, or search.num.hits config if set.
+   */
+  public int numHits() {
+    return numHits;
   }
 
   /**

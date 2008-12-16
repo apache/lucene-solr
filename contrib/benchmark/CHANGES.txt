@@ -3,6 +3,9 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+12/16/08
+  LUCENE-1493: Stop using deprecated Hits API for searching; add new
+  param search.num.hits to set top N docs to collect.
 
 12/16/08
   LUCENE-1492: Added optional readOnly param (default true) to OpenReader task.
