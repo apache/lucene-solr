@@ -95,7 +95,17 @@ public class SnapPuller {
    * Disable the timer task for polling
    */
   private AtomicBoolean pollDisabled = new AtomicBoolean(false);
-  private final HttpClient client = new HttpClient(new MultiThreadedHttpConnectionManager());
+
+  private static final HttpClient client;
+
+  static {
+    MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+    // Keeping a very high number so that if you have a large number of cores
+    // no requests are kept waiting for an idle connection.
+    mgr.getParams().setDefaultMaxConnectionsPerHost(10000);
+    mgr.getParams().setMaxTotalConnections(10000);
+    client = new HttpClient(mgr);
+  }
 
   public SnapPuller(NamedList initArgs, ReplicationHandler handler, SolrCore sc) {
     solrCore = sc;
@@ -954,12 +964,11 @@ public class SnapPuller {
   }
 
   static Integer readInterval(String interval) {
-    Pattern pattern = Pattern.compile(INTERVAL_PATTERN);
     if (interval == null)
       return null;
     int result = 0;
     if (interval != null) {
-      Matcher m = pattern.matcher(interval.trim());
+      Matcher m = INTERVAL_PATTERN.matcher(interval.trim());
       if (m.find()) {
         String hr = m.group(1);
         String min = m.group(2);
@@ -988,7 +997,6 @@ public class SnapPuller {
 
   public void destroy() {
     if (executorService != null) executorService.shutdown();
-    client.getHttpConnectionManager().closeIdleConnections(0);
   }
 
   String getMasterUrl() {
@@ -1011,5 +1019,5 @@ public class SnapPuller {
 
   public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
 
-  private static final String INTERVAL_PATTERN = "(\\d*?):(\\d*?):(\\d*)";
+  private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
 }
