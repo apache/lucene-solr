@@ -122,7 +122,7 @@ public class TestReplicationHandler extends TestCase {
 
     //add 500 docs to master
     for (int i = 0; i < 500; i++)
-      index(masterClient, "id", i, "name", "name = " + String.valueOf(i));
+      index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
 
@@ -130,9 +130,9 @@ public class TestReplicationHandler extends TestCase {
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
-    //sleep for pollinterval time, 4s for letting slave to pull data.
-    Thread.sleep(4000);
-    //get docs from slave and check equal to master
+    //sleep for pollinterval time 4s, to let slave pull data.
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(500, slaveQueryResult.getNumFound());
@@ -145,9 +145,10 @@ public class TestReplicationHandler extends TestCase {
     masterClient.deleteByQuery("*:*");
     masterClient.commit();
 
-    copyFile(new File("." + System.getProperty("file.separator") +
-            "solr" + System.getProperty("file.separator") +
-            "conf" + System.getProperty("file.separator") + "schema-replication2.xml"),
+    //change the schema on master
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "schema-replication2.xml"),
             new File(master.getConfDir(), "schema.xml"));
 
     masterJetty.stop();
@@ -156,15 +157,82 @@ public class TestReplicationHandler extends TestCase {
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     //add a doc with new field and commit on master to trigger snappull from slave.
-    index(masterClient, "id", "2000", "name", "name = " + String.valueOf(2000), "newname", "newname = " + String.valueOf(2000));
+    index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
 
     //sleep for 4s for replication to happen.
-    Thread.sleep(4000);
+    Thread.sleep(3000);
 
     slaveQueryRsp = query("*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
+
+  }
+
+  public void testIndexAndConfigAliasReplication() throws Exception {
+
+    //add 500 docs to master
+    for (int i = 0; i < 500; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
+
+    //sleep for pollinterval time 3s, to let slave pull data.
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(500, slaveQueryResult.getNumFound());
+
+    //compare results
+    String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+
+    //start config files replication test
+    //clear master index
+    masterClient.deleteByQuery("*:*");
+    masterClient.commit();
+
+    //change solrconfig on master
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "solrconfig-master1.xml"),
+            new File(master.getConfDir(), "solrconfig.xml"));
+
+    //change schema on master
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "schema-replication2.xml"),
+            new File(master.getConfDir(), "schema.xml"));
+
+    //keep a copy of the new schema
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "schema-replication2.xml"),
+            new File(master.getConfDir(), "schema-replication2.xml"));
+
+    masterJetty.stop();
+
+    masterJetty = createJetty(master, 9999);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    //add a doc with new field and commit on master to trigger snappull from slave.
+    index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
+    masterClient.commit();
+
+    //sleep for 3s for replication to happen.
+    Thread.sleep(3000);
+
+    index(slaveClient, "id", "2000", "name", "name = " + 2001, "newname", "newname = " + 2001);
+    slaveClient.commit();
+
+    slaveQueryRsp = query("*:*", slaveClient);
+    SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
+    assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
 
   }
 
@@ -193,29 +261,30 @@ public class TestReplicationHandler extends TestCase {
     }
 
     public String getHomeDir() {
-      return homeDir.toString() + System.getProperty("file.separator");
+      return homeDir.toString();
     }
 
     @Override
     public String getSchemaFile() {
-      return "." + System.getProperty("file.separator") + "solr" + System.getProperty("file.separator") + "conf" + System.getProperty("file.separator") + "schema-replication1.xml";
+      return "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-replication1.xml";
     }
 
     public String getConfDir() {
-      return confDir.toString() + System.getProperty("file.separator");
+      return confDir.toString();
     }
 
     public String getDataDir() {
-      return dataDir.toString() + System.getProperty("file.separator");
+      return dataDir.toString();
     }
 
     @Override
     public String getSolrConfigFile() {
       String fname = "";
       if (type == 1)
-        fname = "." + System.getProperty("file.separator") + "solr" + System.getProperty("file.separator") + "conf" + System.getProperty("file.separator") + "solrconfig-master.xml";
+        fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-master.xml";
       if (type == 0)
-        fname = "." + System.getProperty("file.separator") + "solr" + System.getProperty("file.separator") + "conf" + System.getProperty("file.separator") + "solrconfig-slave.xml";
+        fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-slave.xml";
+      System.out.println(fname);
       return fname;
     }
 
@@ -224,18 +293,18 @@ public class TestReplicationHandler extends TestCase {
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
       String home = System.getProperty("java.io.tmpdir")
-              + System.getProperty("file.separator")
-              + getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator");
+              + File.separator
+              + getClass().getName() + "-" + System.currentTimeMillis();
 
       if (type == 1) {
-        homeDir = new File(home + "master" + System.getProperty("file.separator"));
-        dataDir = new File(home + "master" + System.getProperty("file.separator") + "data" + System.getProperty("file.separator"));
-        confDir = new File(home + "master" + System.getProperty("file.separator") + "conf" + System.getProperty("file.separator"));
+        homeDir = new File(home + "master");
+        dataDir = new File(home + "master", "data");
+        confDir = new File(home + "master", "conf");
       }
       if (type == 0) {
-        homeDir = new File(home + "slave" + System.getProperty("file.separator"));
-        dataDir = new File(home + "slave" + System.getProperty("file.separator") + "data" + System.getProperty("file.separator"));
-        confDir = new File(home + "slave" + System.getProperty("file.separator") + "conf" + System.getProperty("file.separator"));
+        homeDir = new File(home + "slave");
+        dataDir = new File(home + "slave", "data");
+        confDir = new File(home + "slave", "conf");
       }
 
       homeDir.mkdirs();
@@ -254,6 +323,3 @@ public class TestReplicationHandler extends TestCase {
     }
   }
 }
-
-
-

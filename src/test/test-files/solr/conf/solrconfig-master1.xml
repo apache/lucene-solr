@@ -34,7 +34,9 @@
     <maxFieldLength>10000</maxFieldLength>
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
+    <luceneAutoCommit>false</luceneAutoCommit>
 
+    <mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
 
@@ -58,6 +60,13 @@
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
+  <requestHandler name="/replication" class="solr.ReplicationHandler">
+    <lst name="master">
+      <str name="replicateAfter">commit</str>
+      <str name="confFiles">schema-replication2.xml:schema.xml</str>
+    </lst>
+  </requestHandler>
+
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">
@@ -77,14 +86,6 @@
   </requestHandler>
 
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
-
-  <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="slave">
-      <str name="masterUrl">http://localhost:9999/solr/replication</str>
-      <str name="pollInterval">00:00:01</str>
-    </lst>
-  </requestHandler>
-
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true">

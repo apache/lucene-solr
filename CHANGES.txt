@@ -108,6 +108,10 @@ New Features
     also deprecated and replaced with "count" and "lex".
     (Lars Kotthoff via yonik)
 
+23. SOLR-821: Add support for replication to copy conf file to slave with a different name. This allows replication
+    of solrconfig.xml
+    (Noble Paul, Akshay Ukey via shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

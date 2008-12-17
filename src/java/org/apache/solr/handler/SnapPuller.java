@@ -48,9 +48,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * <p/> Provides functionality equivalent to the snappull script as well as a
- * timer for scheduling pulls from the master.
- * </p>
+ * <p/> Provides functionality equivalent to the snappull script as well as a timer for scheduling pulls from the
+ * master. </p>
  *
  * @version $Id$
  * @since solr 1.4
@@ -189,12 +188,13 @@ public class SnapPuller {
   }
 
   /**
-   * This command downloads all the necessary files from master to install a
-   * index commit point. Only changed files are downloaded. It also downloads the
-   * conf files (if they are modified).
+   * This command downloads all the necessary files from master to install a index commit point. Only changed files are
+   * downloaded. It also downloads the conf files (if they are modified).
    *
    * @param core the SolrCore
+   *
    * @return true on success, false if slave is already in sync
+   *
    * @throws IOException if an exception occurs
    */
   @SuppressWarnings("unchecked")
@@ -290,8 +290,8 @@ public class SnapPuller {
   }
 
   /**
-   * Helper method to record the last replication's details so that we can show them on the
-   * statistics page across restarts.
+   * Helper method to record the last replication's details so that we can show them on the statistics page across
+   * restarts.
    */
   private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles) {
     FileOutputStream outFile = null;
@@ -392,7 +392,8 @@ public class SnapPuller {
               "Failed to create temporary config folder: " + tmpconfDir.getName());
     }
     for (Map<String, Object> file : confFilesToDownload) {
-      fileFetcher = new FileFetcher(tmpconfDir, file, (String) file.get(NAME), true, latestVersion);
+      String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+      fileFetcher = new FileFetcher(tmpconfDir, file, saveAs, true, latestVersion);
       currentFile = file;
       fileFetcher.fetchFile();
       confFilesDownloaded.add(new HashMap<String, Object>(file));
@@ -422,8 +423,8 @@ public class SnapPuller {
   }
 
   /**
-   * All the files which are common between master and slave must have
-   * same timestamp and size else we assume they are not compatible (stale).
+   * All the files which are common between master and slave must have same timestamp and size else we assume they are
+   * not compatible (stale).
    *
    * @return true if the index stale and we need to download a fresh copy, false otherwise.
    */
@@ -442,8 +443,7 @@ public class SnapPuller {
   }
 
   /**
-   * Copy a file by the File#renameTo() method. If it fails, it is considered
-   * a failure
+   * Copy a file by the File#renameTo() method. If it fails, it is considered a failure
    * <p/>
    * Todo may be we should try a simple copy if it fails
    */
@@ -466,8 +466,7 @@ public class SnapPuller {
   }
 
   /**
-   * Copy all index files from the temp index dir to the actual index.
-   * The segments_N file is copied last.
+   * Copy all index files from the temp index dir to the actual index. The segments_N file is copied last.
    */
   private boolean copyIndexFiles(File snapDir, File indexDir) {
     String segmentsFile = null;
@@ -494,8 +493,7 @@ public class SnapPuller {
   }
 
   /**
-   * The conf files are copied to the tmp dir to the conf dir.
-   * A backup of the old file is maintained
+   * The conf files are copied to the tmp dir to the conf dir. A backup of the old file is maintained
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) throws IOException {
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
@@ -556,26 +554,36 @@ public class SnapPuller {
     }
   }
 
+  private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
+
   /**
-   * The local conf files are compared with the conf files in the master. If they are
-   * same (by checksum) do not copy.
+   * The local conf files are compared with the conf files in the master. If they are same (by checksum) do not copy.
+   *
+   * @param confFilesToDownload The list of files obtained from master
    *
    * @return a list of configuration files which have changed on the master and need to be downloaded.
    */
   private Collection<Map<String, Object>> getModifiedConfFiles(List<Map<String, Object>> confFilesToDownload) {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.EMPTY_LIST;
+    //build a map with alias/name as the key
     Map<String, Map<String, Object>> nameVsFile = new HashMap<String, Map<String, Object>>();
+    NamedList names = new NamedList();
     for (Map<String, Object> map : confFilesToDownload) {
-      nameVsFile.put((String) map.get(NAME), map);
+      //if alias is present that is the name the file may have in the slave
+      String name = (String) (map.get(ALIAS) == null ? map.get(NAME) : map.get(ALIAS));
+      nameVsFile.put(name, map);
+      names.add(name, null);
     }
-    List<Map<String, Object>> localFilesInfo = replicationHandler.getConfFileCache(nameVsFile.keySet());
+    //get the details of the local conf files with the same alias/name
+    List<Map<String, Object>> localFilesInfo = replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
+    //compare their size/checksum to see if
     for (Map<String, Object> fileInfo : localFilesInfo) {
       String name = (String) fileInfo.get(NAME);
       Map<String, Object> m = nameVsFile.get(name);
-      if (m == null) continue;
+      if (m == null) continue; // the file is not even present locally (so must be downloaded)
       if (m.get(CHECKSUM).equals(fileInfo.get(CHECKSUM))) {
-        nameVsFile.remove(name);
+        nameVsFile.remove(name); //checksums are same so the file need not be downloaded
       }
     }
     return nameVsFile.isEmpty() ? Collections.EMPTY_LIST : nameVsFile.values();
@@ -685,8 +693,7 @@ public class SnapPuller {
   }
 
   /**
-   * The class acts as a client for ReplicationHandler.FileStream.
-   * It understands the protocol of wt=filestream
+   * The class acts as a client for ReplicationHandler.FileStream. It understands the protocol of wt=filestream
    *
    * @see org.apache.solr.handler.ReplicationHandler.FileStream
    */
@@ -826,9 +833,8 @@ public class SnapPuller {
     }
 
     /**
-     * The webcontainer flushes the data only after it fills the buffer size.
-     * So, all data has to be read as readFully() other wise it fails. So read
-     * everything as bytes and then extract an integer out of it
+     * The webcontainer flushes the data only after it fills the buffer size. So, all data has to be read as readFully()
+     * other wise it fails. So read everything as bytes and then extract an integer out of it
      */
     private int readInt(byte[] b) {
       return (((b[0] & 0xff) << 24) | ((b[1] & 0xff) << 16)
@@ -858,7 +864,8 @@ public class SnapPuller {
       }
       try {
         post.releaseConnection();
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
       if (bytesDownloaded != size) {
         //if the download is not complete then
         //delete the file being downloaded

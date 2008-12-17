@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.httpclient.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -48,27 +47,16 @@ import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
 
 /**
- * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves.
- * <p/>
- * </p>
- * <p>When running on the master, it provides the following commands
- * <ol>
- * <li>Get the current replicatable index version (command=indexversion)</li>
- * <li>Get the list of files for a given index version (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li>
- * <li>Get full or a part (chunk) of a given index or a config file (command=filecontent&amp;file=&lt;FILE_NAME&gt;)
- * You can optionally specify an offset and length to get that chunk of the file.
- * You can request a configuration file by using "cf" parameter instead of the "file" parameter.</li>
- * <li>Get status/statistics (command=details)</li>
- * </ol>
- * </p>
- * <p>When running on the slave, it provides the following commands
- * <ol>
- * <li>Perform a snap pull now (command=snappull)</li>
- * <li>Get status/statistics (command=details)</li>
- * <li>Abort a snap pull (command=abort)</li>
- * <li>Enable/Disable polling the master for new versions (command=enablepoll or command=disablepoll)</li>
- * </ol>
- * </p>
+ * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. <p/> </p>
+ * <p>When running on the master, it provides the following commands <ol> <li>Get the current replicatable index version
+ * (command=indexversion)</li> <li>Get the list of files for a given index version
+ * (command=filelist&amp;indexversion=&lt;VERSION&gt;)</li> <li>Get full or a part (chunk) of a given index or a config
+ * file (command=filecontent&amp;file=&lt;FILE_NAME&gt;) You can optionally specify an offset and length to get that
+ * chunk of the file. You can request a configuration file by using "cf" parameter instead of the "file" parameter.</li>
+ * <li>Get status/statistics (command=details)</li> </ol> </p> <p>When running on the slave, it provides the following
+ * commands <ol> <li>Perform a snap pull now (command=snappull)</li> <li>Get status/statistics (command=details)</li>
+ * <li>Abort a snap pull (command=abort)</li> <li>Enable/Disable polling the master for new versions (command=enablepoll
+ * or command=disablepoll)</li> </ol> </p>
  *
  * @version $Id$
  * @since solr 1.4
@@ -81,7 +69,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private ReentrantLock snapPullLock = new ReentrantLock();
 
-  private List<String> includeConfFiles;
+  private String includeConfFiles;
+
+  private NamedList<String> confFileNameAlias = new NamedList<String>();
 
   private boolean isMaster = false;
 
@@ -239,8 +229,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   /**
-   * This method adds an Object of FileStream to the resposnse .
-   * The FileStream implements a custom protocol which is understood by SnapPuller.FileFetcher
+   * This method adds an Object of FileStream to the resposnse . The FileStream implements a custom protocol which is
+   * understood by SnapPuller.FileFetcher
    *
    * @see org.apache.solr.handler.SnapPuller.FileFetcher
    */
@@ -281,27 +271,28 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               + version, e);
     }
     rsp.add(CMD_GET_FILE_LIST, result);
-    if (includeConfFiles == null)
+    if (confFileNameAlias.size() < 1)
       return;
     LOG.debug("Adding config files to list: " + includeConfFiles);
     //if configuration files need to be included get their details
-    List<Map<String, Object>> confFiles = getConfFileCache(includeConfFiles);
-    rsp.add(CONF_FILES, confFiles);
+    rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
   }
 
   /**
-   * For configuration files, checksum of the file is included
-   * because, unlike index files, they may have same content but different timestamps.
+   * For configuration files, checksum of the file is included because, unlike index files, they may have same content
+   * but different timestamps.
    * <p/>
-   * The local conf files information is cached so that everytime it does not have to
-   * compute the checksum. The cache is refreshed only if the lastModified of the file changes
+   * The local conf files information is cached so that everytime it does not have to compute the checksum. The cache is
+   * refreshed only if the lastModified of the file changes
    */
-  List<Map<String, Object>> getConfFileCache(Collection<String> filenames) {
+  List<Map<String, Object>> getConfFileInfoFromCache(NamedList<String> nameAndAlias,
+                                                     final Map<String, FileInfo> confFileInfoCache) {
     List<Map<String, Object>> confFiles = new ArrayList<Map<String, Object>>();
     synchronized (confFileInfoCache) {
       File confDir = new File(core.getResourceLoader().getConfigDir());
       Checksum checksum = null;
-      for (String cf : filenames) {
+      for (int i = 0; i < nameAndAlias.size(); i++) {
+        String cf = nameAndAlias.getName(i);
         File f = new File(confDir, cf);
         if (!f.exists() || f.isDirectory()) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
@@ -310,13 +301,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           info = new FileInfo(f.lastModified(), cf, f.length(), getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
-        confFiles.add(info.getAsMap());
+        Map<String, Object> m = info.getAsMap();
+        if (nameAndAlias.getVal(i) != null) m.put(ALIAS, nameAndAlias.getVal(i));
+        confFiles.add(m);
       }
     }
     return confFiles;
   }
 
-  private static class FileInfo {
+  static class FileInfo {
     long lastmodified;
     String name;
     long size;
@@ -329,7 +322,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       this.checksum = checksum;
     }
 
-    public Map<String, Object> getAsMap() {
+    Map<String, Object> getAsMap() {
       Map<String, Object> map = new HashMap<String, Object>();
       map.put(NAME, name);
       map.put(SIZE, size);
@@ -453,7 +446,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         list.add("isReplicating", String.valueOf(isReplicating()));
       }
       if (isMaster) {
-        list.add("confFilesToReplicate", includeConfFiles.toString());
+        if (includeConfFiles != null)
+          list.add("confFilesToReplicate", includeConfFiles);
         if (replicateOnCommit)
           list.add(REPLICATE_AFTER, "commit");
         if (replicateOnOptimize)
@@ -611,7 +605,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           totalPercent = (bytesDownloaded * 100) / bytesToDownload;
         if (timeElapsed > 0)
           downloadSpeed = (bytesDownloaded / timeElapsed);
-        details.add("currentFile", currFile);
+        if (currFile != null)
+          details.add("currentFile", currFile);
         details.add("currentFileSize", readableSize(currFileSize));
         details.add("currentFileSizeDownloaded", readableSize(currFileSizeDownloaded));
         details.add("currentFileSizePercent", String.valueOf(percentDownloaded));
@@ -627,7 +622,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     if (isMaster) {
-      details.add(CONF_FILES, includeConfFiles.toString());
+      if (includeConfFiles != null)
+        details.add(CONF_FILES, includeConfFiles);
       if (replicateOnCommit)
         details.add(REPLICATE_AFTER, "commit");
       if (replicateOnOptimize)
@@ -649,9 +645,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     NamedList master = (NamedList) initArgs.get("master");
     if (master != null) {
-      String includeFiles = (String) master.get(CONF_FILES);
-      if (includeFiles != null && !includeFiles.trim().equals("")) {
-        includeConfFiles = Arrays.asList(includeFiles.split(","));
+      includeConfFiles = (String) master.get(CONF_FILES);
+      if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
+        List<String> files = Arrays.asList(includeConfFiles.split(","));
+        for (String file : files) {
+          if (file.trim().length() == 0) continue;
+          String[] strs = file.split(":");
+          // if there is an alias add it or it is null
+          confFileNameAlias.add(strs[0], strs.length > 1 ? strs[1] : null);
+        }
         LOG.info("Replication enabled for following config files: " + includeConfFiles);
       }
       List snapshot = master.getAll("snapshot");
@@ -701,9 +703,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   /**
-   * A ResponseWriter is registered automatically for wt=filestream
-   * This response writer is used to transfer index files in a block-by-block manner within
-   * the same HTTP response.
+   * A ResponseWriter is registered automatically for wt=filestream This response writer is used to transfer index files
+   * in a block-by-block manner within the same HTTP response.
    */
   private void registerFileStreamResponseWriter() {
     core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
@@ -730,6 +731,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    *
    * @param snapshoot do a snapshoot
    * @param getCommit get a commitpoint also
+   *
    * @return an instance of the eventlistener
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
@@ -786,9 +788,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String sChecksum = params.get(CHECKSUM);
       String sindexVersion = params.get(CMD_INDEX_VERSION);
       if (sindexVersion != null) indexVersion = Long.parseLong(sindexVersion);
-      if (Boolean.parseBoolean(compress))  {
+      if (Boolean.parseBoolean(compress)) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
-      } else  {
+      } else {
         fos = new FastOutputStream(out);
       }
       FileInputStream inputStream = null;
@@ -911,6 +913,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CONF_FILE_SHORT = "cf";
 
   public static final String CHECKSUM = "checksum";
+
+  public static final String ALIAS = "alias";
 
   public static final String CONF_CHECKSUM = "confchecksum";
 
