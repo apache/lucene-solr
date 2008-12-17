@@ -22,7 +22,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
+
+import java.util.*;
 
 public abstract class QParser {
   String qstr;
@@ -33,11 +36,46 @@ public abstract class QParser {
 
   Query query;
 
+
   public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     this.qstr = qstr;
     this.localParams = localParams;
+
+    // insert tags into tagmap.
+    // WARNING: the internal representation of tagged objects in the request context is
+    // experimental and subject to change!
+    if (localParams != null) {
+      String tagStr = localParams.get("tag");
+      if (tagStr != null) {
+        Map context = req.getContext();
+        Map<String,Collection<Object>> tagMap = (Map<String, Collection<Object>>)req.getContext().get("tags");
+        if (tagMap == null) {
+          tagMap = new HashMap<String,Collection<Object>>();
+          context.put("tags", tagMap);          
+        }
+        if (tagStr.indexOf(',') >= 0) {
+          List<String> tags = StrUtils.splitSmart(tagStr, ',');
+          for (String tag : tags) {
+            addTag(tagMap, tag, this);
+          }
+        } else {
+          addTag(tagMap, tagStr, this);
+        }
+      }
+    }
+
     this.params = params;
     this.req = req;
+  }
+
+
+  private static void addTag(Map tagMap, Object key, Object val) {
+    Collection lst = (Collection)tagMap.get(key);
+    if (lst == null) {
+      lst = new ArrayList(2);
+      tagMap.put(key, lst);
+    }
+    lst.add(val);
   }
 
   /** Create and return the <code>Query</code> object represented by <code>qstr</code>

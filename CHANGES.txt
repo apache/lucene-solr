@@ -112,6 +112,13 @@ New Features
     of solrconfig.xml
     (Noble Paul, Akshay Ukey via shalin)
 
+24. SOLR-911: Add support for multi-select faceting by allowing filters to be
+    tagged and facet commands to exclude certain filters.  This patch also
+    added the ability to change the output key for facets in the response, and
+    optimized distributed faceting refinement by lowering parsing overhead and
+    by making requests and responses smaller.
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

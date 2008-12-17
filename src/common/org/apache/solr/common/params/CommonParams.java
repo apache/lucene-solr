@@ -115,5 +115,14 @@ public interface CommonParams {
       return null;
     }
   };
+
+  public static final String EXCLUDE = "ex";
+  public static final String TAG = "tag";
+  public static final String TERMS = "terms";
+  public static final String OUTPUT_KEY = "key";
+  public static final String FIELD = "f";
+  public static final String VALUE = "v";
+  public static final String TRUE = Boolean.TRUE.toString();
+  public static final String FALSE = Boolean.FALSE.toString();
 }
 

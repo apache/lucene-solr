@@ -86,7 +86,31 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
             ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
             );
- 
+
+    assertQ("check multi-select facets with naming",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.query", "{!ex=1}trait_s:Obnoxious"
+                ,"facet.query", "{!ex=2 key=foo}id:[42 TO 45]"    // tag=2 same as 1
+                ,"facet.query", "{!ex=3,4 key=bar}id:[43 TO 47]"  // tag=3,4 don't exist
+                ,"facet.field", "{!ex=3,1}trait_s"                // 3,1 same as 1
+                ,"fq", "{!tag=1,2}id:47"                          // tagged as 1 and 2
+                )
+            ,"*[count(//doc)=1]"
+
+            ,"//lst[@name='facet_counts']/lst[@name='facet_queries']"
+            ,"//lst[@name='facet_queries']/int[@name='{!ex=1}trait_s:Obnoxious'][.='2']"
+            ,"//lst[@name='facet_queries']/int[@name='foo'][.='4']"
+            ,"//lst[@name='facet_queries']/int[@name='bar'][.='1']"
+
+            ,"//lst[@name='facet_counts']/lst[@name='facet_fields']"
+            ,"//lst[@name='facet_fields']/lst[@name='trait_s']"
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
+            );
+
     assertQ("check counts for applied facet queries using filtering (fq)",
             req("q", "id:[42 TO 47]"
                 ,"facet", "true"

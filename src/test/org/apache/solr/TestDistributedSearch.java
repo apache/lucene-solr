@@ -548,6 +548,15 @@ public class TestDistributedSearch extends TestCase {
     query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
     ,"facet.field",t1);
 
+    // test filter tagging, facet exclusion, and naming (multi-select facet support)
+    query("q","*:*", "rows",100, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
+    ,"facet.field","{!key=mykey ex=a}"+t1
+    ,"facet.field","{!key=other ex=b}"+t1
+    ,"facet.field","{!key=again ex=a,b}"+t1
+    ,"facet.field",t1
+    ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"
+    );
+
     // test field that is valid in schema but missing in all shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
     // test field that is valid in schema and missing in some shards

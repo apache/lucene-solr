@@ -27,10 +27,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QueryParsing;
 import org.apache.lucene.queryParser.ParseException;
 
@@ -64,13 +64,15 @@ public class  FacetComponent extends SearchComponent
       SolrParams params = rb.req.getParams();
       SimpleFacets f = new SimpleFacets(rb.req,
               rb.getResults().docSet,
-              params );
+              params,
+              rb );
 
       // TODO ???? add this directly to the response, or to the builder?
       rb.rsp.add( "facet_counts", f.getFacetCounts() );
     }
   }
 
+  private static final String commandPrefix = "{!" + CommonParams.TERMS + "=$";
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
@@ -86,12 +88,42 @@ public class  FacetComponent extends SearchComponent
       // We do this in distributedProcess so we can look at all of the
       // requests in the outgoing queue at once.
 
+
+
       for (int shardNum=0; shardNum<rb.shards.length; shardNum++) {
-        List<String> fqueries = rb._facetInfo._toRefine[shardNum];
-        if (fqueries == null || fqueries.size()==0) continue;
+        List<String> refinements = null;
+
+        for (DistribFieldFacet dff : rb._facetInfo.facets.values()) {
+          if (!dff.needRefinements) continue;
+          List<String> refList = dff._toRefine[shardNum];
+          if (refList == null | refList.size()==0) continue;
+
+          String key = dff.getKey();  // reuse the same key that was used for the main facet
+          String termsKey = key + "__terms";
+          String termsVal = StrUtils.join(refList, ',');
+
+          String facetCommand;
+          // add terms into the original facet.field command
+          // do it via parameter reference to avoid another layer of encoding.
+          if (dff.localParams != null) {
+            facetCommand = commandPrefix+termsKey+dff.facetStr.substring(2);
+          } else {
+            facetCommand = commandPrefix+termsKey+'}'+dff.field;
+          }
+
+          if (refinements == null) {
+            refinements = new ArrayList<String>();
+          }
+
+          refinements.add(facetCommand);
+          refinements.add(termsKey);
+          refinements.add(termsVal);
+        }
+
+        if (refinements == null) continue;
+
 
         String shard = rb.shards[shardNum];
-
         ShardRequest refine = null;
         boolean newRequest = false;
 
@@ -100,7 +132,7 @@ public class  FacetComponent extends SearchComponent
         // scalability.
         for (ShardRequest sreq : rb.outgoing) {
           if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS)!=0
-                  && sreq.shards != null 
+                  && sreq.shards != null
                   && sreq.shards.length==1
                   && sreq.shards[0].equals(shard))
           {
@@ -124,8 +156,16 @@ public class  FacetComponent extends SearchComponent
         refine.purpose |= ShardRequest.PURPOSE_REFINE_FACETS;
         refine.params.set(FacetParams.FACET, "true");
         refine.params.remove(FacetParams.FACET_FIELD);
-        // TODO: perhaps create a more compact facet.terms method?
-        refine.params.set(FacetParams.FACET_QUERY, fqueries.toArray(new String[fqueries.size()]));
+        refine.params.remove(FacetParams.FACET_QUERY);
+
+        for (int i=0; i<refinements.size();) {
+          String facetCommand=refinements.get(i++);
+          String termsKey=refinements.get(i++);
+          String termsVal=refinements.get(i++);
+
+          refine.params.add(FacetParams.FACET_FIELD, facetCommand);
+          refine.params.set(termsKey, termsVal);
+        }
 
         if (newRequest) {
           rb.addRequest(this, refine);
@@ -148,7 +188,7 @@ public class  FacetComponent extends SearchComponent
           rb._facetInfo = fi = new FacetInfo();
           fi.parse(rb.req.getParams(), rb);
           // should already be true...
-          // sreq.params.set(FacetParams.FACET, FacetParams.FACET_SORT_COUNT_LEGACY);
+          // sreq.params.set(FacetParams.FACET, "true");
         }
 
         sreq.params.remove(FacetParams.FACET_MINCOUNT);
@@ -206,18 +246,17 @@ public class  FacetComponent extends SearchComponent
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
       if (facet_queries != null) {
         for (int i=0; i<facet_queries.size(); i++) {
-          String facet_q = (String)facet_queries.getName(i);
+          String returnedKey = (String)facet_queries.getName(i);
           long count = ((Number)facet_queries.getVal(i)).longValue();
-          Long prevCount = fi.queryFacets.get(facet_q);
-          if (prevCount != null) count += prevCount;
-          fi.queryFacets.put(facet_q, count);
+          QueryFacet qf = fi.queryFacets.get(returnedKey);
+          qf.count += count;
         }
       }
 
       // step through each facet.field, adding results from this shard
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");      
       for (DistribFieldFacet dff : fi.facets.values()) {
-        dff.add(shardNum, (NamedList)facet_fields.get(dff.field), dff.initialLimit);
+        dff.add(shardNum, (NamedList)facet_fields.get(dff.getKey()), dff.initialLimit);
       }
     }
 
@@ -228,24 +267,17 @@ public class  FacetComponent extends SearchComponent
     // otherwise we would need to wait until all facet responses were received.
     //
 
-    // list of queries to send each shard
-    List<String>[] toRefine = new List[rb.shards.length];
-    fi._toRefine = toRefine;
-    for (int i=0; i<toRefine.length; i++) {
-      toRefine[i] = new ArrayList<String>();
-    }
-
-
     for (DistribFieldFacet dff : fi.facets.values()) {
       if (dff.limit <= 0) continue; // no need to check these facets for refinement
       if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_LEX)) continue;
+
+      dff._toRefine = new List[rb.shards.length];
       ShardFacetCount[] counts = dff.getCountSorted();
       int ntop = Math.min(counts.length, dff.offset + dff.limit);
       long smallestCount = counts.length == 0 ? 0 : counts[ntop-1].count;
 
       for (int i=0; i<counts.length; i++) {
         ShardFacetCount sfc = counts[i];
-        String query = null;
         boolean needRefinement = false;
 
         if (i<ntop) {
@@ -274,8 +306,11 @@ public class  FacetComponent extends SearchComponent
             OpenBitSet obs = dff.counted[shardNum];
             if (!obs.get(sfc.termNum) && dff.maxPossible(sfc,shardNum)>0) {
               dff.needRefinements = true;
-              if (query==null) query = dff.makeQuery(sfc);
-              toRefine[shardNum].add(query);
+              List<String> lst = dff._toRefine[shardNum];
+              if (lst == null) {
+                lst = dff._toRefine[shardNum] = new ArrayList<String>();
+              }
+              lst.add(sfc.name);
             }
           }
         }
@@ -290,44 +325,20 @@ public class  FacetComponent extends SearchComponent
     for (ShardResponse srsp: sreq.responses) {
       // int shardNum = rb.getShardNum(srsp.shard);
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
-      NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
+      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");      
 
-      // These are single term queries used to fill in missing counts
-      // for facet.field queries
-      for (int i=0; i<facet_queries.size(); i++) {
-        try {
-          
-          String facet_q = (String)facet_queries.getName(i);
-          long count = ((Number)facet_queries.getVal(i)).longValue();
+      for (int i=0; i<facet_fields.size(); i++) {
+        String key = facet_fields.getName(i);
+        DistribFieldFacet dff = (DistribFieldFacet)fi.facets.get(key);
+        if (dff == null) continue;
 
-          // expect {!field f=field}value style params
-          SolrParams qparams = QueryParsing.getLocalParams(facet_q,null);
-          if (qparams == null) continue;  // not a refinement
-          String field = qparams.get(QueryParsing.F);
-          String val = qparams.get(QueryParsing.V);
+        NamedList shardCounts = (NamedList)facet_fields.getVal(i);
 
-          // Find the right field.facet for this field
-          DistribFieldFacet dff = fi.facets.get(field);
-          if (dff == null) continue;  // maybe this wasn't for facet count refinement
-
-          // Find the right constraint count for this value
-          ShardFacetCount sfc = dff.counts.get(val);
-
-          if (sfc == null) {
-            continue;
-            // Just continue, since other components might have added
-            // this facet.query for other purposes.  But if there are charset
-            // issues then the values coming back may not match the values sent.
-          }
-
-// TODO REMOVE
-// System.out.println("Got " + facet_q + " , refining count: " + sfc + " += " + count);
-
+        for (int j=0; j<shardCounts.size(); j++) {
+          String name = shardCounts.getName(j);
+          long count = ((Number)shardCounts.getVal(j)).longValue();
+          ShardFacetCount sfc = dff.counts.get(name);
           sfc.count += count;
-
-        } catch (ParseException e) {
-          // shouldn't happen, so fail for now rather than covering it up
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
     }
@@ -345,8 +356,8 @@ public class  FacetComponent extends SearchComponent
     NamedList facet_counts = new SimpleOrderedMap();
     NamedList facet_queries = new SimpleOrderedMap();
     facet_counts.add("facet_queries",facet_queries);
-    for (Map.Entry<String,Long> entry : fi.queryFacets.entrySet()) {
-      facet_queries.add(entry.getKey(), num(entry.getValue()));
+    for (QueryFacet qf : fi.queryFacets.values()) {
+      facet_queries.add(qf.getKey(), num(qf.count));
     }
 
     NamedList facet_fields = new SimpleOrderedMap();
@@ -354,7 +365,7 @@ public class  FacetComponent extends SearchComponent
 
     for (DistribFieldFacet dff : fi.facets.values()) {
       NamedList fieldCounts = new NamedList(); // order is more important for facets
-      facet_fields.add(dff.field, fieldCounts);
+      facet_fields.add(dff.getKey(), fieldCounts);
 
       ShardFacetCount[] counts;
       if (dff.sort.equals(FacetParams.FACET_SORT_COUNT)) {
@@ -379,7 +390,6 @@ public class  FacetComponent extends SearchComponent
       }
     }
 
-    // TODO: list facets (sorted by natural order)
     // TODO: facet dates
     facet_counts.add("facet_dates", new SimpleOrderedMap());
 
@@ -433,36 +443,76 @@ public class  FacetComponent extends SearchComponent
 
 
 class FacetInfo {
-  List<String>[] _toRefine;
-
+  LinkedHashMap<String,QueryFacet> queryFacets;
+  LinkedHashMap<String,DistribFieldFacet> facets;
+  
   void parse(SolrParams params, ResponseBuilder rb) {
-    queryFacets = new LinkedHashMap<String,Long>();
+    queryFacets = new LinkedHashMap<String,QueryFacet>();
     facets = new LinkedHashMap<String,DistribFieldFacet>();
 
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
     if (facetQs != null) {
       for (String query : facetQs) {
-        queryFacets.put(query,0L);
+        QueryFacet queryFacet = new QueryFacet(rb, query);
+        queryFacets.put(queryFacet.getKey(), queryFacet);
       }
     }
 
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
     if (facetFs != null) {
+
       for (String field : facetFs) {
         DistribFieldFacet ff = new DistribFieldFacet(rb, field);
-        ff.fillParams(params, field);
-        facets.put(field, ff);
+        facets.put(ff.getKey(), ff);
       }
     }
   }
-
-  LinkedHashMap<String,Long> queryFacets;
-  LinkedHashMap<String,DistribFieldFacet> facets;
 }
 
+class FacetBase {
+  String facetType;  // facet.field, facet.query, etc (make enum?)
+  String facetStr;   // original parameter value of facetStr
+  String facetOn;    // the field or query, absent localParams if appropriate
+  private String key; // label in the response for the result... "foo" for {!key=foo}myfield
+  SolrParams localParams;  // any local params for the facet
 
-class FieldFacet {
-  String field;
+  public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
+    this.facetType = facetType;
+    this.facetStr = facetStr;
+    try {
+      this.localParams = QueryParsing.getLocalParams(facetStr, rb.req.getParams());
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    this.facetOn = facetStr;
+    this.key = facetStr;
+
+    if (localParams != null) {
+      // remove local params unless it's a query
+      if (!facetType.equals(FacetParams.FACET_QUERY)) {
+        facetOn = localParams.get(CommonParams.VALUE);
+        key = facetOn;
+      }
+
+      key = localParams.get(CommonParams.OUTPUT_KEY, key);
+    }
+  }
+
+  /** returns the key in the response that this facet will be under */
+  String getKey() { return key; }
+  String getType() { return facetType; }
+}
+
+class QueryFacet extends FacetBase {
+  long count;
+
+  public QueryFacet(ResponseBuilder rb, String facetStr) {
+    super(rb, FacetParams.FACET_QUERY, facetStr);
+  }
+}
+
+class FieldFacet extends FacetBase {
+  String field;     // the field to facet on... "myfield" for {!key=foo}myfield
   int offset;
   int limit;
   int minCount;
@@ -471,7 +521,12 @@ class FieldFacet {
   String prefix;
   long missingCount;
 
-  void fillParams(SolrParams params, String field) {
+  public FieldFacet(ResponseBuilder rb, String facetStr) {
+    super(rb, FacetParams.FACET_FIELD, facetStr);
+    fillParams(rb.req.getParams(), facetOn);
+  }
+
+  private void fillParams(SolrParams params, String field) {
     this.field = field;
     this.offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     this.limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
@@ -496,7 +551,9 @@ class FieldFacet {
 }
 
 class DistribFieldFacet extends FieldFacet {
-  SchemaField sf;
+  List<String>[] _toRefine; // a List<String> of refinements needed, one for each shard.
+
+  // SchemaField sf;    // currently unneeded
 
   // the max possible count for a term appearing on no list
   long missingMaxPossible;
@@ -505,17 +562,16 @@ class DistribFieldFacet extends FieldFacet {
   OpenBitSet[] counted; // a bitset for each shard, keeping track of which terms seen
   HashMap<String,ShardFacetCount> counts = new HashMap<String,ShardFacetCount>(128);
   int termNum;
-  String queryPrefix;
 
   int initialLimit;  // how many terms requested in first phase
   boolean needRefinements;  
   ShardFacetCount[] countSorted;
 
-  DistribFieldFacet(ResponseBuilder rb, String field) {
-    sf = rb.req.getSchema().getField(field);
+  DistribFieldFacet(ResponseBuilder rb, String facetStr) {
+    super(rb, facetStr);
+    // sf = rb.req.getSchema().getField(field);
     missingMax = new long[rb.shards.length];
     counted = new OpenBitSet[rb.shards.length];
-    queryPrefix = "{!field f=" + field + '}';
   }
 
   void add(int shardNum, NamedList shardCounts, int numRequested) {
@@ -582,10 +638,6 @@ class DistribFieldFacet extends FieldFacet {
     return arr;
   }
 
-  String makeQuery(ShardFacetCount sfc) {
-    return queryPrefix + sfc.name;    
-  }
-
   // returns the max possible value this ShardFacetCount could have for this shard
   // (assumes the shard did not report a count for this value)
   long maxPossible(ShardFacetCount sfc, int shardNum) {
@@ -593,7 +645,6 @@ class DistribFieldFacet extends FieldFacet {
     // TODO: could store the last term in the shard to tell if this term
     // comes before or after it.  If it comes before, we could subtract 1
   }
-
 }
 
 

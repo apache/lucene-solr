@@ -27,9 +27,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams.FacetDateOther;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
@@ -39,14 +41,10 @@ import org.apache.solr.schema.DateField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.handler.component.ResponseBuilder;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Set;
-import java.util.EnumSet;
+import java.util.*;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -63,15 +61,91 @@ public class SimpleFacets {
   /** Searcher to use for all calculations */
   protected SolrIndexSearcher searcher;
   protected SolrQueryRequest req;
+  protected ResponseBuilder rb;
+
+  // per-facet values
+  SolrParams localParams; // localParams on this particular facet command
+  String facetValue;      // the field to or query to facet on (minus local params)
+  DocSet base;            // the base docset for this particular facet
+  String key;             // what name should the results be stored under
 
   public SimpleFacets(SolrQueryRequest req,
                       DocSet docs,
                       SolrParams params) {
+    this(req,docs,params,null);
+  }
+
+  public SimpleFacets(SolrQueryRequest req,
+                      DocSet docs,
+                      SolrParams params,
+                      ResponseBuilder rb) {
     this.req = req;
     this.searcher = req.getSearcher();
-    this.docs = docs;
+    this.base = this.docs = docs;
     this.params = params;
+    this.rb = rb;
   }
+
+
+  void parseParams(String type, String param) throws ParseException, IOException {
+    localParams = QueryParsing.getLocalParams(param, req.getParams());
+    base = docs;
+    facetValue = param;
+    key = param;
+
+    if (localParams == null) return;
+
+    // remove local params unless it's a query
+    if (type != FacetParams.FACET_QUERY) {
+      facetValue = localParams.get(CommonParams.VALUE);
+    }
+
+    // reset set the default key now that localParams have been removed
+    key = facetValue;
+
+    // allow explicit set of the key
+    key = localParams.get(CommonParams.OUTPUT_KEY, key);
+
+    // figure out if we need a new base DocSet
+    String excludeStr = localParams.get(CommonParams.EXCLUDE);
+    if (excludeStr == null) return;
+
+    Map tagMap = (Map)req.getContext().get("tags");
+    if (tagMap != null && rb != null) {
+      List<String> excludeTagList = StrUtils.splitSmart(excludeStr,',');
+
+      IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<Query,Boolean>();
+      for (String excludeTag : excludeTagList) {
+        Object olst = tagMap.get(excludeTag);
+        // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
+        if (!(olst instanceof Collection)) continue;
+        for (Object o : (Collection)olst) {
+          if (!(o instanceof QParser)) continue;
+          QParser qp = (QParser)o;
+          excludeSet.put(qp.getQuery(), Boolean.TRUE);
+        }
+      }
+      if (excludeSet.size() == 0) return;
+
+      List<Query> qlist = new ArrayList<Query>();
+
+      // add the base query
+      qlist.add(rb.getQuery());
+
+      // add the filters
+      for (Query q : rb.getFilters()) {
+        if (!excludeSet.containsKey(q)) {
+          qlist.add(q);
+        }
+
+      }
+
+      // get the new base docset for this facet
+      base = searcher.getDocSet(qlist);
+    }
+
+  }
+
 
   /**
    * Looks at various Params to determing if any simple Facet Constraint count
@@ -123,8 +197,11 @@ public class SimpleFacets {
     String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
     if (null != facetQs && 0 != facetQs.length) {
       for (String q : facetQs) {
+        parseParams(FacetParams.FACET_QUERY, q);
+
+        // TODO: slight optimization would prevent double-parsing of any localParams
         Query qobj = QParser.getParser(q, null, req).getQuery();
-        res.add(q, searcher.numDocs(qobj, docs));
+        res.add(key, searcher.numDocs(qobj, base));
       }
     }
 
@@ -164,15 +241,15 @@ public class SimpleFacets {
 
     // unless the enum method is explicitly specified, use a counting method.
     if (enumMethod) {
-      counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix);
+      counts = getFacetTermEnumCounts(searcher, base, field, offset, limit, mincount,missing,sort,prefix);
     } else {
       if (multiToken) {
         UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
-        counts = uif.getCounts(searcher, docs, offset, limit, mincount,missing,sort,prefix);
+        counts = uif.getCounts(searcher, base, offset, limit, mincount,missing,sort,prefix);
       } else {
         // TODO: future logic could use filters instead of the fieldcache if
         // the number of terms in the field is small enough.
-        counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
+        counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
       }
     }
 
@@ -189,17 +266,38 @@ public class SimpleFacets {
    * @see #getFacetTermEnumCounts
    */
   public NamedList getFacetFieldCounts()
-          throws IOException {
+          throws IOException, ParseException {
 
     NamedList res = new SimpleOrderedMap();
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
     if (null != facetFs) {
       for (String f : facetFs) {
-        res.add(f, getTermCounts(f));
+        parseParams(FacetParams.FACET_FIELD, f);
+        String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
+        if (termList != null) {
+          res.add(key, getListedTermCounts(facetValue, termList));
+        } else {
+          res.add(key, getTermCounts(facetValue));
+        }
       }
     }
     return res;
   }
+
+
+  private NamedList getListedTermCounts(String field, String termList) throws IOException {
+    FieldType ft = searcher.getSchema().getFieldType(field);
+    List<String> terms = StrUtils.splitSmart(termList, ",", true);
+    NamedList res = new NamedList();
+    Term t = new Term(field);
+    for (String term : terms) {
+      String internal = ft.toInternal(term);
+      int count = searcher.numDocs(new TermQuery(t.createTerm(internal)), base);
+      res.add(term, count);
+    }
+    return res;    
+  }
+
 
   /**
    * Returns a count of the documents in the set which do not have any 
@@ -441,7 +539,7 @@ public class SimpleFacets {
    * @see FacetParams#FACET_DATE
    */
   public NamedList getFacetDateCounts()
-          throws IOException {
+          throws IOException, ParseException {
 
     final SolrParams required = new RequiredSolrParams(params);
     final NamedList resOuter = new SimpleOrderedMap();
@@ -452,8 +550,12 @@ public class SimpleFacets {
     
     final IndexSchema schema = searcher.getSchema();
     for (String f : fields) {
+      parseParams(FacetParams.FACET_DATE, f);
+      f = facetValue;
+
+
       final NamedList resInner = new SimpleOrderedMap();
-      resOuter.add(f, resInner);
+      resOuter.add(key, resInner);
       final FieldType trash = schema.getFieldType(f);
       if (! (trash instanceof DateField)) {
         throw new SolrException
@@ -571,7 +673,7 @@ public class SimpleFacets {
                            boolean iLow, boolean iHigh) throws IOException {
     return searcher.numDocs(new ConstantScoreRangeQuery(field,low,high,
                                                         iLow,iHigh),
-                            docs);
+                            base);
   }
   
   /**
