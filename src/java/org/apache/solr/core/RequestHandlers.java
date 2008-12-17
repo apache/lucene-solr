@@ -229,29 +229,34 @@ final class RequestHandlers {
      * Wait for the first request before initializing the wrapped handler 
      */
     public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp)  {
-      getWrappedHandler().handleRequest( req, rsp );
+      SolrRequestHandler handler = _handler;
+      if (handler == null) {
+        handler = getWrappedHandler();
+      }
+      handler.handleRequest( req, rsp );
     }
 
-    public synchronized SolrRequestHandler getWrappedHandler() 
+    public synchronized SolrRequestHandler getWrappedHandler()
     {
       if( _handler == null ) {
         try {
-          _handler = core.createRequestHandler(_className);
-          _handler.init( _args );
-          
-          if( _handler instanceof ResourceLoaderAware ) {
+          SolrRequestHandler handler = core.createRequestHandler(_className);
+          handler.init( _args );
+
+          if( handler instanceof ResourceLoaderAware ) {
             ((ResourceLoaderAware)_handler).inform( core.getSolrConfig().getResourceLoader() );
           }
-          
-          if( _handler instanceof SolrCoreAware ) {
-            ((SolrCoreAware)_handler).inform( core );
+
+          if( handler instanceof SolrCoreAware ) {
+            ((SolrCoreAware)handler).inform( core );
           }
+          _handler = handler;
         }
         catch( Exception ex ) {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "lazy loading error", ex );
         }
       }
-      return _handler; 
+      return _handler;
     }
 
     public String getHandlerClass()
