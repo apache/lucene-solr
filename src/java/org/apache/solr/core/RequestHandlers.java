@@ -97,7 +97,7 @@ final class RequestHandlers {
     SolrRequestHandler old = handlers.put(norm, handler);
     if (handlerName != null && handlerName != "") {
       if (handler instanceof SolrInfoMBean) {
-        core.getInfoRegistry().put(handlerName, (SolrInfoMBean)handler);
+        core.getInfoRegistry().put(handlerName, handler);
       }
     }
     return old;

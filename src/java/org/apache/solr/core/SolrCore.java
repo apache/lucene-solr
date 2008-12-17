@@ -498,7 +498,7 @@ public final class SolrCore implements SolrInfoMBean {
         infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, config.jmxConfig);
       } else  {
         log.info("JMX monitoring not detected for core: " + name);
-        infoRegistry = new LinkedHashMap<String, SolrInfoMBean>();
+        infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
       }
 
       this.schema = schema;
