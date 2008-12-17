@@ -47,7 +47,7 @@ class SegmentReader extends DirectoryIndexReader {
   private int readBufferSize;
 
   FieldInfos fieldInfos;
-  private FieldsReader fieldsReader;
+  private FieldsReader fieldsReaderOrig = null;
 
   TermInfosReader tis;
   TermVectorsReader termVectorsReaderOrig = null;
@@ -78,6 +78,16 @@ class SegmentReader extends DirectoryIndexReader {
   // indicates the SegmentReader with which the resources are being shared,
   // in case this is a re-opened reader
   private SegmentReader referencedSegmentReader = null;
+  
+  /**
+   * Sets the initial value 
+   */
+  private class FieldsReaderLocal extends CloseableThreadLocal {
+    protected Object initialValue() {
+      return (FieldsReader) fieldsReaderOrig.clone();
+    }
+  }
+  CloseableThreadLocal fieldsReaderLocal = new FieldsReaderLocal();
   
   private class Norm {
     volatile int refCount;
@@ -354,12 +364,12 @@ class SegmentReader extends DirectoryIndexReader {
         fieldsSegment = segment;
 
       if (doOpenStores) {
-        fieldsReader = new FieldsReader(storeDir, fieldsSegment, fieldInfos, readBufferSize,
-                                        si.getDocStoreOffset(), si.docCount);
+        fieldsReaderOrig = new FieldsReader(storeDir, fieldsSegment, fieldInfos, readBufferSize,
+                                            si.getDocStoreOffset(), si.docCount);
 
         // Verify two sources of "maxDoc" agree:
-        if (si.getDocStoreOffset() == -1 && fieldsReader.size() != si.docCount) {
-          throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
+        if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
+          throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
         }
       }
 
@@ -456,7 +466,7 @@ class SegmentReader extends DirectoryIndexReader {
     }    
     
 
-      // clone reader
+    // clone reader
     SegmentReader clone;
     if (readOnly) 
       clone = new ReadOnlySegmentReader();
@@ -479,31 +489,9 @@ class SegmentReader extends DirectoryIndexReader {
       clone.proxStream = proxStream;
       clone.termVectorsReaderOrig = termVectorsReaderOrig;
   
-      
-      // we have to open a new FieldsReader, because it is not thread-safe
-      // and can thus not be shared among multiple SegmentReaders
-      // TODO: Change this in case FieldsReader becomes thread-safe in the future
-      final String fieldsSegment;
-  
-      Directory storeDir = directory();
-      
-      if (si.getDocStoreOffset() != -1) {
-        fieldsSegment = si.getDocStoreSegment();
-        if (storeCFSReader != null) {
-          storeDir = storeCFSReader;
-        }
-      } else {
-        fieldsSegment = segment;
-        if (cfsReader != null) {
-          storeDir = cfsReader;
-        }
-      }
-  
-      if (fieldsReader != null) {
-        clone.fieldsReader = new FieldsReader(storeDir, fieldsSegment, fieldInfos, readBufferSize,
-                                        si.getDocStoreOffset(), si.docCount);
-      }
-      
+      if (fieldsReaderOrig != null) {
+        clone.fieldsReaderOrig = (FieldsReader) fieldsReaderOrig.clone();
+      }      
       
       if (!deletionsUpToDate) {
         // load deleted docs
@@ -613,13 +601,14 @@ class SegmentReader extends DirectoryIndexReader {
   }
 
   FieldsReader getFieldsReader() {
-    return fieldsReader;
+    return (FieldsReader) fieldsReaderLocal.get();
   }
 
   protected void doClose() throws IOException {
     boolean hasReferencedReader = (referencedSegmentReader != null);
 
     termVectorsLocal.close();
+    fieldsReaderLocal.close();
 
     if (hasReferencedReader) {
       referencedSegmentReader.decRefReaderNotNorms();
@@ -637,11 +626,6 @@ class SegmentReader extends DirectoryIndexReader {
       singleNormStream = null;
     }
     
-    // re-opened SegmentReaders have their own instance of FieldsReader
-    if (fieldsReader != null) {
-      fieldsReader.close();
-    }
-
     if (!hasReferencedReader) { 
       // close everything, nothing is shared anymore with other readers
       if (tis != null) {
@@ -655,6 +639,9 @@ class SegmentReader extends DirectoryIndexReader {
   
       if (termVectorsReaderOrig != null)
         termVectorsReaderOrig.close();
+  
+      if (fieldsReaderOrig != null)
+        fieldsReaderOrig.close();
   
       if (cfsReader != null)
         cfsReader.close();
@@ -725,12 +712,12 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public synchronized Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     if (isDeleted(n))
       throw new IllegalArgumentException
               ("attempt to access a deleted document");
-    return fieldsReader.doc(n, fieldSelector);
+    return getFieldsReader().doc(n, fieldSelector);
   }
 
   public synchronized boolean isDeleted(int n) {

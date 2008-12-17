@@ -138,6 +138,9 @@ Optimizations
  2. LUCENE-1443: Performance improvement for OpenBitSetDISI.inPlaceAnd()
     (Paul Elschot via yonik)
 
+ 3. LUCENE-1484: Remove synchronization of IndexReader.document() by
+    using CloseableThreadLocal internally.  (Jason Rutherglen via Mike
+    McCandless).
 
 Documentation
 

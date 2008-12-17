@@ -38,7 +38,7 @@ import java.util.zip.Inflater;
  *
  * @version $Id$
  */
-final class FieldsReader {
+final class FieldsReader implements Cloneable {
   private final FieldInfos fieldInfos;
 
   // The main fieldStream, used only for cloning.
@@ -48,6 +48,7 @@ final class FieldsReader {
   // It should not be cloned outside of a synchronized context.
   private final IndexInput fieldsStream;
 
+  private final IndexInput cloneableIndexStream;
   private final IndexInput indexStream;
   private int numTotalDocs;
   private int size;
@@ -60,7 +61,33 @@ final class FieldsReader {
   private int docStoreOffset;
 
   private CloseableThreadLocal fieldsStreamTL = new CloseableThreadLocal();
+  private boolean isOriginal = false;
 
+  /** Returns a cloned FieldsReader that shares open
+   *  IndexInputs with the original one.  It is the caller's
+   *  job not to close the original FieldsReader until all
+   *  clones are called (eg, currently SegmentReader manages
+   *  this logic). */
+  public Object clone() {
+    ensureOpen();
+    return new FieldsReader(fieldInfos, numTotalDocs, size, format, formatSize, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
+  }
+  
+  // Used only by clone
+  private FieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, int format, int formatSize,
+                       int docStoreOffset, IndexInput cloneableFieldsStream, IndexInput cloneableIndexStream) {
+    this.fieldInfos = fieldInfos;
+    this.numTotalDocs = numTotalDocs;
+    this.size = size;
+    this.format = format;
+    this.formatSize = formatSize;
+    this.docStoreOffset = docStoreOffset;
+    this.cloneableFieldsStream = cloneableFieldsStream;
+    this.cloneableIndexStream = cloneableIndexStream;
+    fieldsStream = (IndexInput) cloneableFieldsStream.clone();
+    indexStream = (IndexInput) cloneableIndexStream.clone();
+  }
+  
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE, -1, 0);
   }
@@ -71,17 +98,17 @@ final class FieldsReader {
 
   FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize, int docStoreOffset, int size) throws IOException {
     boolean success = false;
-
+    isOriginal = true;
     try {
       fieldInfos = fn;
 
       cloneableFieldsStream = d.openInput(segment + "." + IndexFileNames.FIELDS_EXTENSION, readBufferSize);
-      indexStream = d.openInput(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION, readBufferSize);
-
+      cloneableIndexStream = d.openInput(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION, readBufferSize);
+      
       // First version of fdx did not include a format
       // header, but, the first int will always be 0 in that
       // case
-      int firstInt = indexStream.readInt();
+      int firstInt = cloneableIndexStream.readInt();
       if (firstInt == 0)
         format = 0;
       else
@@ -101,8 +128,8 @@ final class FieldsReader {
 
       fieldsStream = (IndexInput) cloneableFieldsStream.clone();
 
-      final long indexSize = indexStream.length()-formatSize;
-
+      final long indexSize = cloneableIndexStream.length()-formatSize;
+      
       if (docStoreOffset != -1) {
         // We read only a slice out of this shared fields file
         this.docStoreOffset = docStoreOffset;
@@ -116,6 +143,7 @@ final class FieldsReader {
         this.size = (int) (indexSize >> 3);
       }
 
+      indexStream = (IndexInput) cloneableIndexStream.clone();
       numTotalDocs = (int) (indexSize >> 3);
       success = true;
     } finally {
@@ -150,8 +178,13 @@ final class FieldsReader {
       if (fieldsStream != null) {
         fieldsStream.close();
       }
-      if (cloneableFieldsStream != null) {
-        cloneableFieldsStream.close();
+      if (isOriginal) {
+        if (cloneableFieldsStream != null) {
+          cloneableFieldsStream.close();
+        }
+        if (cloneableIndexStream != null) {
+          cloneableIndexStream.close();
+        }
       }
       if (indexStream != null) {
         indexStream.close();
