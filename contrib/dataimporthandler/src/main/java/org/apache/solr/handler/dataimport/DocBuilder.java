@@ -172,8 +172,10 @@ public class DocBuilder {
 
   void rollback() {
     writer.rollback();
+    writer.commit(false);
     statusMessages.put("", "Indexing failed. Rolled back all changes.");
     addStatusMessage("Rolledback");
+    requestParameters.optimize = false;
   }
 
   @SuppressWarnings("unchecked")
