@@ -21,6 +21,8 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +52,8 @@ final class RequestHandlers {
   protected final SolrCore core;
   // Use a synchronized map - since the handlers can be changed at runtime, 
   // the map implementation should be thread safe
-  private final Map<String, SolrRequestHandler> handlers = Collections.synchronizedMap(
-      new HashMap<String,SolrRequestHandler>() );
+  private final Map<String, SolrRequestHandler> handlers =
+      new ConcurrentHashMap<String,SolrRequestHandler>() ;
 
   /**
    * Trim the trailing '/' if its there.
@@ -64,6 +66,7 @@ final class RequestHandlers {
    */
   private static String normalize( String p )
   {
+    if(p == null) return "";
     if( p != null && p.endsWith( "/" ) && p.length() > 1 )
       return p.substring( 0, p.length()-1 );
     
@@ -90,6 +93,7 @@ final class RequestHandlers {
    * @return the previous handler at the given path or null
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
+    if(handlerName == null) return null;
     String norm = normalize( handlerName );
     if( handler == null ) {
       return handlers.remove( norm );
@@ -175,7 +179,6 @@ final class RequestHandlers {
         register(RequestHandlers.DEFAULT_HANDLER_NAME, defaultHandler);
       }
     }
-    register(null, defaultHandler);
     register("", defaultHandler);
   }
     
