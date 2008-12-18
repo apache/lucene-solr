@@ -360,10 +360,13 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), solrConfig.mainIndexConfig);
-        if (dir != null && IndexWriter.isLocked(dir)) {
-          log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
-          IndexWriter.unlock(dir);
+        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), getDirectoryFactory(), solrConfig.mainIndexConfig);
+        if (dir != null)  {
+          if (IndexWriter.isLocked(dir)) {
+            log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+            IndexWriter.unlock(dir);
+          }
+          dir.close();
         }
       }
 

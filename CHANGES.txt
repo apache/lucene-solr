@@ -182,6 +182,9 @@ Bug Fixes
     otherwise it writes fieldType.toObject. This fixes the bug with encoding/decoding UUIDField.
     (koji, Noble Paul, shalin)
 
+18. SOLR-863: SolrCore.initIndex should close the directory it gets for clearing the lock and
+    use the DirectoryFactory. (Mark Miller via shalin)
+
 
 Other Changes
 ----------------------
