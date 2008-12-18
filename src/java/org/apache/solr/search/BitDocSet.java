@@ -179,7 +179,7 @@ public class BitDocSet extends DocSetBase {
   @Override
    public DocSet andNot(DocSet other) {
     OpenBitSet newbits = (OpenBitSet)(bits.clone());
-     if (other instanceof OpenBitSet) {
+     if (other instanceof BitDocSet) {
        newbits.andNot(((BitDocSet)other).bits);
      } else {
        DocIterator iter = other.iterator();
