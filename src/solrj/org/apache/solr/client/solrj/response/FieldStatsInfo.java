@@ -41,7 +41,6 @@ public class FieldStatsInfo implements Serializable {
   Double mean = null;
   Double sumOfSquares = null;
   Double stddev = null;
-  Double median = null;
   
   Map<String,List<FieldStatsInfo>> facets;
   
@@ -73,9 +72,6 @@ public class FieldStatsInfo implements Serializable {
       }
       else if( "stddev".equals( entry.getKey() ) ) {
         stddev = (Double)entry.getValue();
-      }
-      else if( "median".equals( entry.getKey() ) ) {
-        median = (Double)entry.getValue();
       }
       else if( "facets".equals( entry.getKey() ) ) {
         NamedList<Object> fields = (NamedList<Object>)entry.getValue();
@@ -119,9 +115,6 @@ public class FieldStatsInfo implements Serializable {
     if( mean != null ) {
       sb.append( " mean:").append( mean );
     }
-    if( median != null ) {
-      sb.append( " median:").append(median);
-    }
     if( stddev != null ) {
       sb.append( " stddev:").append(stddev);
     }
@@ -159,10 +152,6 @@ public class FieldStatsInfo implements Serializable {
 
   public Double getStddev() {
     return stddev;
-  }
-
-  public Double getMedian() {
-    return median;
   }
 
   public Map<String, List<FieldStatsInfo>> getFacets() {

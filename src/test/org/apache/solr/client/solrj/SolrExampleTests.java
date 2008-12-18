@@ -343,7 +343,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.setRows( 0 );
-    query.setGetFieldStatistics( "popularity", true );
+    query.setGetFieldStatistics( "popularity" );
     
     QueryResponse rsp = server.query( query );
     FieldStatsInfo stats = rsp.getFieldStatsInfo().get( "popularity" );
@@ -353,7 +353,6 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertEquals( 94.0, stats.getMax() );
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
-    assertEquals( (nums[4]+nums[5])/2.0, stats.getMedian() );
     assertEquals( "26.4", stats.getStddev().toString().substring(0,4) );
     
     // now lets try again with a new set...  (odd median)
@@ -380,7 +379,6 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertEquals( 20.0, stats.getMax() );
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
-    assertEquals( 10.0, stats.getMedian() );
     
     // Now try again with faceting
     //---------------------------------

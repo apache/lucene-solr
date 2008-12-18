@@ -352,11 +352,10 @@ public class SolrQuery extends ModifiableSolrParams
     this.set( StatsParams.STATS, v );
   }
   
-  public void setGetFieldStatistics( String field, boolean twopass )
+  public void setGetFieldStatistics( String field )
   {
     this.set( StatsParams.STATS, true );
     this.add( StatsParams.STATS_FIELD, field );
-    this.set( "f."+field+"."+StatsParams.STATS_TWOPASS, twopass+"" );
   }
   
   public void addStatsFieldFacets( String field, String ... facets )

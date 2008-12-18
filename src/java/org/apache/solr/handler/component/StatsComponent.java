@@ -181,7 +181,6 @@ class StatsValues {
   double sumOfSquares;
   long count;
   long missing;
-  Double median = null;
   
   // facetField   facetValue
   Map<String, Map<String,StatsValues>> facets;
@@ -251,7 +250,6 @@ class StatsValues {
     max = Double.MIN_VALUE;
     sum = count = missing = 0;
     sumOfSquares = 0;
-    median = null;
     facets = null;
   }
   
@@ -264,9 +262,6 @@ class StatsValues {
     res.add("missing", missing);
     res.add("sumOfSquares", sumOfSquares );
     res.add("mean", getAverage());
-    if( median != null ) {
-      res.add( "median", median );
-    }
     res.add( "stddev", getStandardDeviation() );
     
     // add the facet stats
@@ -433,34 +428,6 @@ class SimpleStats {
       for( FieldFacetStats f : finfo ) {
         f.facet(docID, v);
       }
-    }
-    
-    // Find things that require a 2nd pass
-    if( params.getFieldBool(fieldName, StatsParams.STATS_TWOPASS, false) ) {
-      if( allstats.count > 1 ) { // must be 2 or more...
-        iter = docs.iterator();
-        boolean isEven = ( allstats.count % 2) == 0;
-        int medianIndex = (int) Math.ceil( allstats.count/2.0 );
-        for ( i=0; iter.hasNext(); ) {
-          String raw = all.getTermText(iter.nextDoc());
-          if( raw != null ) {
-            if( ++i == medianIndex ) {
-              double val0 = Double.parseDouble(  all.ft.indexedToReadable(raw) );
-              if( isEven ) {
-                do {
-                  raw = all.getTermText(iter.nextDoc());
-                } while( raw == null );
-                double val1 = Double.parseDouble(  all.ft.indexedToReadable(raw) );
-                allstats.median = (val0+val1)/2.0;
-              }
-              else {
-                allstats.median = val0;
-              }
-              break;
-            }
-          }
-        }
-      } // get median
     }
     
     if( finfo.length > 0 ) {
