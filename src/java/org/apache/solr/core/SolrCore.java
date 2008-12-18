@@ -694,10 +694,12 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public void close() {
     int count = refCount.decrementAndGet();
-    if (count > 0) return;
+    if (count > 0){
+      log.warn( "Attempted close on {} did not succeed because the new reference count {} is > 0. ", this, count );
+      return;
+    }
     if (count < 0) {
-      //throw new RuntimeException("Too many closes on " + this);
-      log.error("Too many close {count:"+count+"} on " + this + ". Please report this exception to solr-user@lucene.apache.org");
+      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this );
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
