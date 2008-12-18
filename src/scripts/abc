@@ -146,7 +146,7 @@ then
 fi
 
 # successful commit creates a snapshot file synchronously
-lastsnap=`ls -drt1 ${data_dir}/snapshot.* 2> /dev/null | tail -1 `
+lastsnap=`find ${data_dir} -type d -name 'snapshot.*' 2>/dev/null| sort -r | head -1`
 
 if [[ $lastsnap == "" ]]
 then

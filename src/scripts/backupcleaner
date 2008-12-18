@@ -122,7 +122,7 @@ elif [[ -n ${num} ]]
 then
     logMessage cleaning up all backups except for the most recent ${num} ones
     unset backups count
-    backups=`ls -cd ${data_dir}/backup.* 2>/dev/null`
+    backups=`find ${data_dir} -type d -name 'backup.*' 2>/dev/null| sort -r`
     if [[ $? == 0 ]]
     then
         count=`echo $backups|wc -w`

@@ -134,7 +134,7 @@ elif [[ -n ${num} ]]
 then
     logMessage cleaning up all snapshots except for the most recent ${num} ones
     unset snapshots count
-    snapshots=`ls -cd ${data_dir}/snapshot.* 2>/dev/null`
+    snapshots=`find ${data_dir} -type d -name 'snapshot.*' 2>/dev/null| sort -r`
     if [[ $? == 0 ]]
     then
         count=`echo $snapshots|wc -w`

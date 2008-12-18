@@ -242,6 +242,8 @@ Bug Fixes
 
  3. SOLR-830: Use perl regex to improve accuracy of finding latest snapshot in snappuller (billa)
 
+ 4. SOLR-897: Fixed Argument list too long error when there are lots of snapshots/backups (Dan Rosher via billa)
+
 
 ================== Release 1.3.0 20080915 ==================
 
