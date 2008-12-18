@@ -252,6 +252,36 @@
       </analyzer>
     </fieldtype>
 
+    <fieldtype name="numericsubword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
+      <analyzer type="index">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.StopFilterFactory"/>
+          <filter class="solr.EnglishPorterFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.StopFilterFactory"/>
+          <filter class="solr.EnglishPorterFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <fieldtype name="protectedsubword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
+      <analyzer type="index">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" protected="protwords.txt" splitOnNumerics="0" splitOnCaseChange="0" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+
     <!-- more flexible in matching skus, but more chance of a false match -->
     <fieldtype name="skutype1" class="solr.TextField">
       <analyzer type="index">
@@ -387,6 +417,9 @@
    <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true"/>
 
    <field name="subword" type="subword" indexed="true" stored="true"/>
+   <field name="numericsubword" type="numericsubword" indexed="true" stored="true"/>
+   <field name="protectedsubword" type="protectedsubword" indexed="true" stored="true"/>
+
    <field name="sku1" type="skutype1" indexed="true" stored="true"/>
    <field name="sku2" type="skutype2" indexed="true" stored="true"/>
 

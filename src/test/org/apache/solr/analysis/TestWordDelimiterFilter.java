@@ -278,4 +278,53 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     assertEquals(12, t.startOffset());
     assertEquals(15, t.endOffset());
   }
+
+  public void testAlphaNumericWords(){
+     assertU(adoc("id",  "68","numericsubword","Java/J2SE"));
+     assertU(commit());
+
+     assertQ("j2se found",
+            req("numericsubword:(J2SE)")
+            ,"//result[@numFound=1]"
+    );
+      assertQ("no j2 or se",
+            req("numericsubword:(J2 OR SE)")
+            ,"//result[@numFound=0]"
+    );
+  }
+
+  public void testProtectedWords(){
+    assertU(adoc("id", "70","protectedsubword","c# c++ .net Java/J2SE"));
+    assertU(commit());
+
+    assertQ("java found",
+            req("protectedsubword:(java)")
+            ,"//result[@numFound=1]"
+    );
+
+    assertQ(".net found",
+            req("protectedsubword:(.net)")
+            ,"//result[@numFound=1]"
+    );
+
+    assertQ("c# found",
+            req("protectedsubword:(c#)")
+            ,"//result[@numFound=1]"
+    );
+
+    assertQ("c++ found",
+            req("protectedsubword:(c++)")
+            ,"//result[@numFound=1]"
+    );
+
+    assertQ("c found?",
+            req("protectedsubword:c")
+            ,"//result[@numFound=0]"
+    );
+    assertQ("net found?",
+            req("protectedsubword:net")
+            ,"//result[@numFound=0]"
+    );
+  }
+
 }
