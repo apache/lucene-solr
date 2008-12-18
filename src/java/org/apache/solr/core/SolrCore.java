@@ -357,6 +357,9 @@ public final class SolrCore implements SolrInfoMBean {
       boolean indexExists = dirFile.canRead();
       boolean firstTime = dirs.add(dirFile.getCanonicalPath());
       boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
+
+      initDirectoryFactory();
+
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
@@ -378,8 +381,6 @@ public final class SolrCore implements SolrInfoMBean {
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getIndexDir(), true, schema, solrConfig.mainIndexConfig);
         writer.close();
       }
-      
-      initDirectoryFactory();
 
     } catch (IOException e) {
       throw new RuntimeException(e);
