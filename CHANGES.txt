@@ -122,6 +122,8 @@ New Features
     option, as well as a list of protected terms.
     (Dan Rosher via hossman)
 
+25. SOLR-928: SolrDocument and SolrInputDocument now implement the Map<String,?>
+    interface.  This should make plugging into other standard tools easier. (ryan)
 
 
 Optimizations

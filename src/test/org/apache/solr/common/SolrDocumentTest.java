@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -174,6 +175,17 @@ public class SolrDocumentTest extends TestCase
       doc.addField( "f", fval2, 1.0f );
     }
     assertEquals( (3*5), doc.getField("f").getValueCount() );
+  }
+  
+  public void testMapInterface()
+  {
+    SolrDocument doc = new SolrDocument();
+    assertTrue( doc instanceof Map );
+    assertTrue( Map.class.isAssignableFrom( SolrDocument.class ) );
+    
+    SolrInputDocument indoc = new SolrInputDocument();
+    assertTrue( indoc instanceof Map );
+    assertTrue( Map.class.isAssignableFrom( indoc.getClass() ) );
   }
 }
 

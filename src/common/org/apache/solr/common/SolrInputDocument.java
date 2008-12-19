@@ -18,11 +18,11 @@
 package org.apache.solr.common;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Represent the field and boost information needed to construct and index
@@ -32,13 +32,12 @@ import java.util.Collection;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrInputDocument implements Iterable<SolrInputField>, Serializable
+public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<SolrInputField>, Serializable
 {
   private final Map<String,SolrInputField> _fields;
   private float _documentBoost = 1.0f;
 
-  public SolrInputDocument()
-  {
+  public SolrInputDocument() {
     _fields = new LinkedHashMap<String,SolrInputField>();
   }
   
@@ -172,5 +171,65 @@ public class SolrInputDocument implements Iterable<SolrInputField>, Serializable
   public String toString()
   {
     return "SolrInputDocument["+_fields+"]";
+  }
+  
+
+  //---------------------------------------------------
+  // MAP interface
+  //---------------------------------------------------
+
+  @Override
+  public boolean containsKey(Object key) {
+    return _fields.containsKey(key);
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    return _fields.containsValue(value);
+  }
+
+  @Override
+  public Set<Entry<String, SolrInputField>> entrySet() {
+    return _fields.entrySet();
+  }
+
+  @Override
+  public SolrInputField get(Object key) {
+    return _fields.get(key);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return _fields.isEmpty();
+  }
+
+  @Override
+  public Set<String> keySet() {
+    return _fields.keySet();
+  }
+
+  @Override
+  public SolrInputField put(String key, SolrInputField value) {
+    return _fields.put(key, value);
+  }
+
+  @Override
+  public void putAll(Map<? extends String, ? extends SolrInputField> t) {
+    _fields.putAll( t );
+  }
+
+  @Override
+  public SolrInputField remove(Object key) {
+    return _fields.remove(key);
+  }
+
+  @Override
+  public int size() {
+    return _fields.size();
+  }
+
+  @Override
+  public Collection<SolrInputField> values() {
+    return _fields.values();
   }
 }
