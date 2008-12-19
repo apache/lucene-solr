@@ -59,36 +59,34 @@ public class PluginInfoHandler extends RequestHandlerBase
       SimpleOrderedMap<Object> category = new SimpleOrderedMap<Object>();
       list.add( cat.name(), category );
       Map<String, SolrInfoMBean> reg = core.getInfoRegistry();
-      synchronized(reg) {
-        for (Map.Entry<String,SolrInfoMBean> entry : reg.entrySet()) {
-          SolrInfoMBean m = entry.getValue();
-          if (m.getCategory() != cat) continue;
-      
-          String na = "Not Declared";
-          SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
-          category.add( entry.getKey(), info );
-          
-          info.add( "name",        (m.getName()       !=null ? m.getName()        : na) );
-          info.add( "version",     (m.getVersion()    !=null ? m.getVersion()     : na) );
-          info.add( "description", (m.getDescription()!=null ? m.getDescription() : na) );
-          
-          info.add( "sourceId",    (m.getSourceId()   !=null ? m.getSourceId()    : na) );
-          info.add( "source",      (m.getSource()     !=null ? m.getSource()      : na) );
-        
-          URL[] urls = m.getDocs();
-          if ((urls != null) && (urls.length > 0)) {
-            ArrayList<String> docs = new ArrayList<String>(urls.length);
-            for( URL u : urls ) {
-              docs.add( u.toExternalForm() );
-            }
-            info.add( "docs", docs );
+      for (Map.Entry<String,SolrInfoMBean> entry : reg.entrySet()) {
+        SolrInfoMBean m = entry.getValue();
+        if (m.getCategory() != cat) continue;
+
+        String na = "Not Declared";
+        SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+        category.add( entry.getKey(), info );
+
+        info.add( "name",        (m.getName()       !=null ? m.getName()        : na) );
+        info.add( "version",     (m.getVersion()    !=null ? m.getVersion()     : na) );
+        info.add( "description", (m.getDescription()!=null ? m.getDescription() : na) );
+
+        info.add( "sourceId",    (m.getSourceId()   !=null ? m.getSourceId()    : na) );
+        info.add( "source",      (m.getSource()     !=null ? m.getSource()      : na) );
+
+        URL[] urls = m.getDocs();
+        if ((urls != null) && (urls.length > 0)) {
+          ArrayList<String> docs = new ArrayList<String>(urls.length);
+          for( URL u : urls ) {
+            docs.add( u.toExternalForm() );
           }
-        
-          if( stats ) {
-            info.add( "stats", m.getStatistics() );
-          }
+          info.add( "docs", docs );
         }
-      }  
+
+        if( stats ) {
+          info.add( "stats", m.getStatistics() );
+        }
+      }
     }
     return list;
   }
