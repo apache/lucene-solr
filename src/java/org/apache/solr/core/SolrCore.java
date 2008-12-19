@@ -698,10 +698,7 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public void close() {
     int count = refCount.decrementAndGet();
-    if (count > 0){
-      log.warn( "Attempted close on {} did not succeed because the new reference count {} is > 0. ", this, count );
-      return;
-    }
+    if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
       log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this );
       return;
