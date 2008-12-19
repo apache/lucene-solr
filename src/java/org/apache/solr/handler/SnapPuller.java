@@ -171,7 +171,7 @@ public class SnapPuller {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
                 "Request failed for the url " + method);
       }
-      return new NamedListCodec().unmarshal(method.getResponseBodyAsStream());
+      return (NamedList) new NamedListCodec().unmarshal(method.getResponseBodyAsStream());
     } finally {
       try {
         method.releaseConnection();

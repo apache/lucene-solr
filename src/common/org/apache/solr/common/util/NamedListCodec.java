@@ -30,6 +30,9 @@ import java.util.*;
  * It is expected that this class is used on both end of the pipes.
  * The class has one read method and one write method for each of the datatypes
  *
+ * Note -- Never re-use an instance of this class for more than one marshal or unmarshall operation.
+ * Always create a new instance.
+ *
  */
 public class NamedListCodec {
 
@@ -63,9 +66,9 @@ public class NamedListCodec {
           EXTERN_STRING = (byte)(7 << 5);
 
 
-  private byte VERSION = 1;
+  private static byte VERSION = 1;
   private ObjectResolver resolver;
-  private FastOutputStream daos;
+  protected FastOutputStream daos;
 
   public NamedListCodec() { }
 
@@ -73,20 +76,24 @@ public class NamedListCodec {
     this.resolver = resolver;
   }
   
-  public void marshal(NamedList nl, OutputStream os) throws IOException {
+  public void marshal(Object nl, OutputStream os) throws IOException {
     daos = FastOutputStream.wrap(os);
     try {
       daos.writeByte(VERSION);
-      writeNamedList(nl);
+      writeVal(nl);
     } finally {
       daos.flushBuffer();      
     }
   }
+  byte version;
 
-  public NamedList unmarshal(InputStream is) throws IOException {
+  public Object unmarshal(InputStream is) throws IOException {
     FastInputStream dis = FastInputStream.wrap(is);
-    byte version = dis.readByte();
-    return (NamedList)readVal(dis);
+    version = dis.readByte();
+    if(version != VERSION){
+      throw new RuntimeException("Invalid version or the data in not in 'javabin' format");
+    }
+    return (Object)readVal(dis);
   }
 
 
@@ -136,7 +143,7 @@ public class NamedListCodec {
 
     writeVal(val.getClass().getName() + ':' + val.toString());
   }
-  private static final Object END_OBJ = new Object();
+  protected static final Object END_OBJ = new Object();
 
   byte tagByte;
   public Object readVal(FastInputStream dis) throws IOException {
@@ -386,7 +393,7 @@ public class NamedListCodec {
 
 
   char[] charArr;
-  private String readStr(FastInputStream dis) throws IOException {
+  public String readStr(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
     if (charArr==null || charArr.length < sz) {
       charArr = new char[sz];

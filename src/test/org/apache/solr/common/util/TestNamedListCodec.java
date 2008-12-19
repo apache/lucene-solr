@@ -79,7 +79,7 @@ public class TestNamedListCodec  extends TestCase {
 
     new NamedListCodec(null).marshal(nl,baos);
     byte[] arr = baos.toByteArray();
-    nl = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+    nl = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
 
 
     assertEquals(3, nl.size());
@@ -119,7 +119,7 @@ public class TestNamedListCodec  extends TestCase {
 
     new NamedListCodec(null).marshal(nl,baos);
     byte[] arr = baos.toByteArray();
-    nl = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+    nl = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
 
     List l = (List) nl.get("zzz");
     assertEquals(list.size(), l.size());
@@ -143,7 +143,7 @@ public class TestNamedListCodec  extends TestCase {
     byte[] arr = baos.toByteArray();
 
     try {
-      NamedList result = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+      NamedList result = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
       assertTrue("result is null and it shouldn't be", result != null);
       List keys = (List) result.get("keys");
       assertTrue("keys is null and it shouldn't be", keys != null);
@@ -247,7 +247,7 @@ public class TestNamedListCodec  extends TestCase {
       new NamedListCodec(null).marshal(nl,baos);
       byte[] arr = baos.toByteArray();
       // System.out.println(arr.length);
-      res = new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+      res = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
       cmp = TestDistributedSearch.compare(nl,res, 0, null);
 
       if (cmp != null) {
