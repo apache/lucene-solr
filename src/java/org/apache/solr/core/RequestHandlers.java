@@ -56,10 +56,10 @@ final class RequestHandlers {
       new ConcurrentHashMap<String,SolrRequestHandler>() ;
 
   /**
-   * Trim the trailing '/' if its there.
+   * Trim the trailing '/' if its there, and convert null to empty string.
    * 
    * we want:
-   *  /update/csv
+   *  /update/csv   and
    *  /update/csv/
    * to map to the same handler 
    * 
@@ -67,7 +67,7 @@ final class RequestHandlers {
   private static String normalize( String p )
   {
     if(p == null) return "";
-    if( p != null && p.endsWith( "/" ) && p.length() > 1 )
+    if( p.endsWith( "/" ) && p.length() > 1 )
       return p.substring( 0, p.length()-1 );
     
     return p;
@@ -93,16 +93,13 @@ final class RequestHandlers {
    * @return the previous handler at the given path or null
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
-    if(handlerName == null) return null;
     String norm = normalize( handlerName );
     if( handler == null ) {
       return handlers.remove( norm );
     }
     SolrRequestHandler old = handlers.put(norm, handler);
-    if (handlerName != null && handlerName != "") {
-      if (handler instanceof SolrInfoMBean) {
-        core.getInfoRegistry().put(handlerName, handler);
-      }
+    if (0 != norm.length() && handler instanceof SolrInfoMBean) {
+      core.getInfoRegistry().put(handlerName, handler);
     }
     return old;
   }
