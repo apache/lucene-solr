@@ -254,57 +254,46 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   // MAP interface
   //---------------------------------------------------
 
-  @Override
   public boolean containsKey(Object key) {
     return _fields.containsKey(key);
   }
 
-  @Override
   public boolean containsValue(Object value) {
     return _fields.containsValue(value);
   }
 
-  @Override
   public Set<Entry<String, Object>> entrySet() {
     return _fields.entrySet();
   }
 
-  @Override
   public Object get(Object key) {
     return _fields.get(key);
   }
 
-  @Override
   public boolean isEmpty() {
     return _fields.isEmpty();
   }
 
-  @Override
   public Set<String> keySet() {
     return _fields.keySet();
   }
 
-  @Override
   public Object put(String key, Object value) {
     return _fields.put(key, value);
   }
 
-  @Override
   public void putAll(Map<? extends String, ? extends Object> t) {
     _fields.putAll( t );
   }
 
-  @Override
   public Object remove(Object key) {
     return _fields.remove(key);
   }
 
-  @Override
   public int size() {
     return _fields.size();
   }
 
-  @Override
   public Collection<Object> values() {
     return _fields.values();
   }
