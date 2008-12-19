@@ -40,6 +40,11 @@
     <section id="news">
       <title>News</title>
 
+       <section><title>19 December 2008 - Solr Logo Contest Results</title>
+	<p>Many great logos were submitted, but only one could be chosen.  Congratulations Michiel,
+	the creator of the winning logo that is proudly displayed at the top of this page.  
+	</p>
+       </section>
        <section><title>03 October 2008 - Solr Logo Contest</title>
 	<p>By popular demand, Solr is holding a contest to pick a new Solr logo.  Details about how to submit an entry can be found <a href="http://wiki.apache.org/solr/LogoContest">on the wiki</a>.  The Deadline for submissions is November 20th, 2008 @ 11:59PM GMT.
 	</p>
