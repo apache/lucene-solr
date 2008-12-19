@@ -118,9 +118,11 @@ New Features
     optimized distributed faceting refinement by lowering parsing overhead and
     by making requests and responses smaller.
 
-15. SOLR-876: WOrdDelimiterFilter now supports a splitOnNumerics 
+25. SOLR-876: WOrdDelimiterFilter now supports a splitOnNumerics 
     option, as well as a list of protected terms.
     (Dan Rosher via hossman)
+
+
 
 Optimizations
 ----------------------
