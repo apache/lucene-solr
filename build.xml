@@ -571,25 +571,19 @@
   <target name="run-example" depends="example">
     <property name="example.solr.home" location="example/solr"/>
     <property name="example.data.dir" location="example/solr/data"/>
-    <java jar="${example}/start.jar" fork="true" dir="${example}">
+    <property name="example.debug.suspend" value="n"/>
+    <condition property="example.jvm.line" value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${example.debug.suspend},address=5005">
+      <isset property="example.debug"/>
+    </condition>
+    <property name="example.jvm.line" value=""/>
+    <property name="example.heap.size" value="512M"/>
+    <java jar="${example}/start.jar" fork="true" dir="${example}" maxmemory="${example.heap.size}">
+      <jvmarg line="${example.jvm.line}"/>
       <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
       <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
     </java>
 
   </target>
-
-    <target name="run-example-debug" depends="example">
-        <property name="heap.size" value="512"/>
-        <property name="suspend" value="n"/>
-       <property name="example.solr.home" location="example/solr"/>
-       <property name="example.data.dir" location="example/solr/data"/>
-       <java jar="${example}/start.jar" fork="true" dir="${example}">
-         <jvmarg line="-Xmx${heap.size}M -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=${suspend},address=5005"/>
-         <sysproperty key="solr.solr.home" file="${example.solr.home}"/>
-         <sysproperty key="solr.data.dir" file="${example.data.dir}"/>
-       </java>
-
-     </target>
 
   <!-- make a distribution -->
   <target name="package" depends="generate-maven-artifacts"/>
