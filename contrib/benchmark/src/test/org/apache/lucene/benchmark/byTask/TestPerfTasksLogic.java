@@ -98,6 +98,29 @@ public class TestPerfTasksLogic extends TestCase {
     ir.close();
   }
 
+  /**
+   * Test timed sequence task.
+   */
+  public void testTimedSearchTask() throws Exception {
+    String algLines[] = {
+        "ResetSystemErase",
+        "CreateIndex",
+        "{ AddDoc } : 1000",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{ CountingSearchTest } : 1.5s",
+        "CloseReader",
+    };
+    
+    long t0 = System.currentTimeMillis();
+    Benchmark benchmark = execBenchmark(algLines);
+    long t1 = System.currentTimeMillis();
+    assertTrue(CountingSearchTestTask.numSearches > 0);
+    long elapsed = t1-t0;
+    assertTrue(elapsed > 1500 && elapsed < 2000);
+  }
+
   public void testHighlighting() throws Exception {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {

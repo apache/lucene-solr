@@ -124,9 +124,18 @@ public class Algorithm {
               if ((char)stok.ttype == '*') {
                 ((TaskSequence)prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
               } else {
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER) 
-                  throw new Exception("expected repetitions number: - "+stok.toString());
-                ((TaskSequence)prevTask).setRepetitions((int)stok.nval);
+                if (stok.ttype!=StreamTokenizer.TT_NUMBER)  {
+                  throw new Exception("expected repetitions number or XXXs: - "+stok.toString());
+                } else {
+                  double num = stok.nval;
+                  stok.nextToken();
+                  if (stok.ttype == StreamTokenizer.TT_WORD && stok.sval.equals("s")) {
+                    ((TaskSequence) prevTask).setRunTime(num);
+                  } else {
+                    stok.pushBack();
+                    ((TaskSequence) prevTask).setRepetitions((int) num);
+                  }
+                }
               }
               // check for rate specification (ops/min)
               stok.nextToken();

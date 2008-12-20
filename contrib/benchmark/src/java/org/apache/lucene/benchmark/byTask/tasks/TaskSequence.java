@@ -42,6 +42,9 @@ public class TaskSequence extends PerfTask {
   private boolean anyExhaustibleTasks;
   private boolean collapsable = false; // to not collapse external sequence named in alg.  
   
+  private boolean fixedTime;                      // true if we run for fixed time
+  private double runTimeSec;                      // how long to run for
+
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
     collapsable = (name == null);
@@ -79,11 +82,17 @@ public class TaskSequence extends PerfTask {
     return repetitions;
   }
 
+  public void setRunTime(double sec) throws Exception {
+    runTimeSec = sec;
+    fixedTime = true;
+  }
+
   /**
    * @param repetitions The repetitions to set.
    * @throws Exception 
    */
   public void setRepetitions(int repetitions) throws Exception {
+    fixedTime = false;
     this.repetitions = repetitions;
     if (repetitions==REPEAT_EXHAUST) {
       if (isParallel()) {
@@ -119,8 +128,12 @@ public class TaskSequence extends PerfTask {
     
     initTasksArray();
     int count = 0;
-    
-    for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
+
+    final long t0 = System.currentTimeMillis();
+
+    final long runTime = (long) (runTimeSec*1000);
+
+    for (int k=0; fixedTime || (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       for(int l=0;l<tasksArray.length;l++)
         try {
           final PerfTask task = tasksArray[l];
@@ -130,6 +143,10 @@ public class TaskSequence extends PerfTask {
         } catch (NoMoreDataException e) {
           exhausted = true;
         }
+      if (fixedTime && System.currentTimeMillis()-t0 > runTime) {
+        repetitions = k+1;
+        break;
+      }
     }
     return count;
   }
