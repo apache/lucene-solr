@@ -268,9 +268,9 @@
   	
   <target name="javadocs-all" description="Generate javadoc for core, demo and contrib classes" depends="build-contrib">
   	<sequential>
-      <mkdir dir="${javadoc.dir}"/>
+      <mkdir dir="${javadoc.dir}/all"/>
       <invoke-javadoc
-        destdir="${javadoc.dir}">
+        destdir="${javadoc.dir}/all">
         <sources>
           <!-- TODO: find a dynamic way to do include multiple source roots -->
           <packageset dir="src/java"/>

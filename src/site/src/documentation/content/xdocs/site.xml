@@ -92,7 +92,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   -->
 
   <external-refs>
-    <javadocs-all href="api/index.html"/>
+    <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-demo href="api/demo/index.html"/>
 	<javadocs-contrib-analyzers href="api/contrib-analyzers/index.html"/>

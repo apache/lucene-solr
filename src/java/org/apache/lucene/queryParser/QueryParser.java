@@ -66,7 +66,7 @@ import org.apache.lucene.util.Parameter;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="http://lucene.apache.org/java/docs/queryparsersyntax.html">query syntax
+ * href="../../../../../../queryparsersyntax.html">query syntax
  * documentation</a>.
  * </p>
  *
