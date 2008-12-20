@@ -261,8 +261,12 @@ public class CoreContainer
   }
   
   @Override
-  protected void finalize() {
-    shutdown();
+  protected void finalize() throws Throwable {
+    try { 
+      shutdown();
+    } finally { 
+      super.finalize();
+    }
   }
 
   /**

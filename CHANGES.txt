@@ -223,6 +223,10 @@ Other Changes
 10. SOLR-900: Moved solrj into /src/solrj.  The contents of solr-common.jar is now included
     in the solr-solrj.jar. (ryan)
 
+11. SOLR-924: Code cleanup: make all existing finalize() methods call
+    super.finalize() in a finally block.  All current instances extend
+    Object, so this doesn't fix any bugs, but helps protect against
+    future changes.  (Kay Kay via hossman)
 
 Build
 ----------------------

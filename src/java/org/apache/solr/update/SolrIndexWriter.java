@@ -198,11 +198,13 @@ public class SolrIndexWriter extends IndexWriter {
   }
 
   @Override
-  protected void finalize() {
+  protected void finalize() throws Throwable {
     try {
       super.close();
-    } catch (IOException e) {
+    } finally { 
+      super.finalize();
     }
+    
   }
 
 }

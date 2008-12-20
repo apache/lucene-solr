@@ -530,6 +530,10 @@ public class ConcurrentLRUCache<K,V> {
   }
 
   protected void finalize() throws Throwable {
-    destroy();
+    try {
+      destroy();
+    } finally { 
+      super.finalize();
+    }
   }
 }

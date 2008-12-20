@@ -741,9 +741,14 @@ public final class SolrCore implements SolrInfoMBean {
       return refCount.get() <= 0;
   }
   
-  protected void finalize() {
-    if (getOpenCount() != 0) {
-      log.error("REFCOUNT ERROR: unreferenced " + this + " (" + getName() + ") has a reference count of " + getOpenCount());
+  protected void finalize() throws Throwable {
+    try {
+      if (getOpenCount() != 0) {
+        log.error("REFCOUNT ERROR: unreferenced " + this + " (" + getName()
+            + ") has a reference count of " + getOpenCount());
+      }
+    } finally {
+      super.finalize();
     }
   }
 

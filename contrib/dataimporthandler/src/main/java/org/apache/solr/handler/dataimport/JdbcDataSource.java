@@ -335,10 +335,11 @@ public class JdbcDataSource extends
     }
   }
 
-  protected void finalize() {
+  protected void finalize() throws Throwable {
     try {
       conn.close();
-    } catch (Exception e) {
+    } finally { 
+      super.finalize(); 
     }
   }
 
