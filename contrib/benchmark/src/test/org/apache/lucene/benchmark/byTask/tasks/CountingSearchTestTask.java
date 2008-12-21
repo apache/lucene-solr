@@ -25,6 +25,8 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 public class CountingSearchTestTask extends SearchTask {
 
   public static int numSearches = 0; 
+  public static long startMillis;
+  public static long lastMillis;
 
   public CountingSearchTestTask(PerfRunData runData) {
     super(runData);
@@ -37,7 +39,13 @@ public class CountingSearchTestTask extends SearchTask {
   }
 
   private static synchronized void incrNumSearches() {
+    lastMillis = System.currentTimeMillis();
+    if (0 == numSearches)
+      startMillis = lastMillis;
     numSearches++;
   }
 
+  public long getElapsedMillis() {
+    return lastMillis - startMillis;
+  }
 }

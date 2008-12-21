@@ -112,13 +112,12 @@ public class TestPerfTasksLogic extends TestCase {
         "{ CountingSearchTest } : 1.5s",
         "CloseReader",
     };
-    
-    long t0 = System.currentTimeMillis();
+
+    CountingSearchTestTask.numSearches = 0;
     Benchmark benchmark = execBenchmark(algLines);
-    long t1 = System.currentTimeMillis();
     assertTrue(CountingSearchTestTask.numSearches > 0);
-    long elapsed = t1-t0;
-    assertTrue(elapsed > 1500 && elapsed < 2000);
+    long elapsed = CountingSearchTestTask.lastMillis - CountingSearchTestTask.startMillis;
+    assertTrue("elapsed time was " + elapsed + " msec", elapsed < 2000);
   }
 
   public void testHighlighting() throws Exception {
