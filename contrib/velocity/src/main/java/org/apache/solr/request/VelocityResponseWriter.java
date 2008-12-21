@@ -20,6 +20,7 @@ package org.apache.solr.request;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -47,12 +48,31 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
     context.put("request", request);
 
+    // Turn the SolrQueryResponse into a SolrResponse.
+    // QueryResponse has lots of conveniences suitable for a view
+    // Problem is, which SolrResponse class to use?
+    // One patch to SOLR-620 solved this by passing in a class name as
+    // as a parameter and using reflection and Solr's class loader to
+    // create a new instance.  But for now the implementation simply
+    // uses QueryResponse, and if it chokes in a known way, fall back
+    // to bare bones SolrResponseBase.
+    // TODO: Can this writer know what the handler class is?  With echoHandler=true it can get its string name at least
     SolrResponse rsp = new QueryResponse();
-    rsp.setResponse(new EmbeddedSolrServer(request.getCore()).getParsedResponse(request, response));
+    NamedList<Object> parsedResponse = new EmbeddedSolrServer(request.getCore()).getParsedResponse(request, response);
+    try {
+      rsp.setResponse(parsedResponse);
+
+      // page only injected if QueryResponse works
+      context.put("page",new PageTool(request,response));  // page tool only makes sense for a SearchHandler request... *sigh*
+    } catch (ClassCastException e) {
+      // known edge case where QueryResponse's extraction assumes "response" is a SolrDocumentList
+      // (AnalysisRequestHandler emits a "response")
+      rsp = new SolrResponseBase();
+      rsp.setResponse(parsedResponse);
+    }
     context.put("response", rsp);
 
     // Velocity context tools - TODO: make these pluggable
-    context.put("page",new PageTool(request,response));
     context.put("esc", new EscapeTool());
     context.put("sort", new SortTool());
     context.put("number", new NumberTool());
