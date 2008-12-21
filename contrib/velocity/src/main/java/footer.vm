@@ -1,3 +1,5 @@
+## This template currently lives in the java src/ tree as an example of templates being loaded from the classpath
+
 #if($params.getBool("debugQuery",false))
   #parse("debug.vm")
 #end
