@@ -21,10 +21,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 
 /**
- * An UpdateRequestProcessorFactory that constructs a chain of UpdateRequestProcessor.
- * 
- * This is the default implementation and can be configured via solrconfig.xml with:
- * 
+ * Manages a chain of UpdateRequestProcessorFactories.
+ * <p>
+ * Chain can be configured via solrconfig.xml:
+ * </p>
+ * <pre>
  * &lt;updateRequestProcessors name="key" default="true"&gt;
  *   &lt;processor class="PathToClass1" /&gt;
  *   &lt;processor class="PathToClass2" /&gt;
@@ -33,7 +34,9 @@ import org.apache.solr.request.SolrQueryResponse;
  *   &lt;/processor&gt;
  *   &lt;processor class="solr.RunUpdateProcessorFactory" /&gt;
  * &lt;/updateRequestProcessors&gt;
- * 
+ * </pre>
+ *
+ * @see UpdateRequestProcessorFactory
  * @since solr 1.3
  */
 public final class UpdateRequestProcessorChain 
