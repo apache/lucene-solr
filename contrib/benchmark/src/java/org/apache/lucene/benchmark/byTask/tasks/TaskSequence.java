@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
@@ -277,10 +278,11 @@ public class TaskSequence extends PerfTask {
     }
     sb.append(padd);
     sb.append(!letChildReport ? ">" : (parallel ? "]" : "}"));
-    if (repetitions>1) {
+    if (fixedTime) {
+      sb.append(" " + NumberFormat.getNumberInstance().format(runTimeSec) + "s");
+    } else if (repetitions>1) {
       sb.append(" * " + repetitions);
-    }
-    if (repetitions==REPEAT_EXHAUST) {
+    } else if (repetitions==REPEAT_EXHAUST) {
       sb.append(" * EXHAUST");
     }
     if (rate>0) {
