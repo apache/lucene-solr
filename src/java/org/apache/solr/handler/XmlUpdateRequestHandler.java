@@ -94,9 +94,7 @@ public class XmlUpdateRequestHandler extends ContentStreamHandlerBase {
    * success or failure from an XML formated Update (from the Reader)
    *
    * @since solr 1.2
-   * @deprecated Use
-   *             {@link XMLLoader#processUpdate(UpdateRequestProcessor, XMLStreamReader)}
-   *             instead.
+   * @deprecated Use {@link XMLLoader#load(SolrQueryRequest,SolrQueryResponse,ContentStream)} instead.
    */
   @Deprecated
   public void doLegacyUpdate(Reader input, Writer output) {
