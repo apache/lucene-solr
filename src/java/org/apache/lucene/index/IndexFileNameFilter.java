@@ -28,11 +28,12 @@ import java.util.HashSet;
  */
 public class IndexFileNameFilter implements FilenameFilter {
 
-  static IndexFileNameFilter singleton = new IndexFileNameFilter();
+  private static IndexFileNameFilter singleton = new IndexFileNameFilter();
   private HashSet extensions;
   private HashSet extensionsInCFS;
 
-  public IndexFileNameFilter() {
+  // Prevent instantiation.
+  private IndexFileNameFilter() {
     extensions = new HashSet();
     for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
       extensions.add(IndexFileNames.INDEX_EXTENSIONS[i]);
