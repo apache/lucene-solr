@@ -15,7 +15,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin {
   /**
    * Opens a Lucene directory
    * 
-   * @return
    * @throws IOException
    */
   public abstract Directory open(String path) throws IOException;
