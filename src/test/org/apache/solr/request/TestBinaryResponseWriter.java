@@ -20,7 +20,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedListCodec;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.ByteArrayInputStream;
@@ -55,7 +55,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    NamedList res = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    NamedList res = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()));
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {
       SolrDocument document = (SolrDocument) doc;

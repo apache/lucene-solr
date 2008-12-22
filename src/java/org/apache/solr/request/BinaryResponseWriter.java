@@ -21,7 +21,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedListCodec;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -44,7 +44,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
     if (omitHeader != null && omitHeader) response.getValues().remove("responseHeader");
-    NamedListCodec codec = new NamedListCodec(resolver);
+    JavaBinCodec codec = new JavaBinCodec(resolver);
     codec.marshal(response.getValues(), out);
   }
 
@@ -60,7 +60,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     /* NOOP */
   }
 
-  private static class Resolver implements NamedListCodec.ObjectResolver {
+  private static class Resolver implements JavaBinCodec.ObjectResolver {
     private final IndexSchema schema;
     private final SolrIndexSearcher searcher;
     private final Set<String> returnFields;
@@ -83,7 +83,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       this.returnFields = returnFields;
     }
 
-    public Object resolve(Object o, NamedListCodec codec) throws IOException {
+    public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof DocList) {
         writeDocList((DocList) o, codec);
         return null; // null means we completely handled it
@@ -100,8 +100,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       return o;
     }
 
-    public void writeDocList(DocList ids, NamedListCodec codec) throws IOException {
-      codec.writeTag(NamedListCodec.SOLRDOCLST);
+    public void writeDocList(DocList ids, JavaBinCodec codec) throws IOException {
+      codec.writeTag(JavaBinCodec.SOLRDOCLST);
       List l = new ArrayList(3);
       l.add((long) ids.matches());
       l.add((long) ids.offset());
@@ -113,7 +113,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       codec.writeArray(l);
 
       int sz = ids.size();
-      codec.writeTag(NamedListCodec.ARR, sz);
+      codec.writeTag(JavaBinCodec.ARR, sz);
 
       DocIterator iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
@@ -181,10 +181,10 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
-      new NamedListCodec(resolver).marshal(rsp.getValues(), out);
+      new JavaBinCodec(resolver).marshal(rsp.getValues(), out);
 
       InputStream in = new ByteArrayInputStream(out.toByteArray());
-      return (NamedList<Object>) new NamedListCodec(resolver).unmarshal(in);
+      return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
     }
     catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -209,7 +209,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     KNOWN_TYPES.add(SortableDoubleField.class);
     KNOWN_TYPES.add(StrField.class);
     KNOWN_TYPES.add(TextField.class);
-    // We do not add UUIDField because UUID object is not a supported type in NamedListCodec
+    // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
   }
 }

@@ -228,6 +228,9 @@ Other Changes
     Object, so this doesn't fix any bugs, but helps protect against
     future changes.  (Kay Kay via hossman)
 
+12. SOLR-885: NamedListCodec is renamed to JavaBinCodec and returns Object instead of NamedList.
+    (Noble Paul, yonik via shalin)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

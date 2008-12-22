@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedListCodec;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -171,7 +171,7 @@ public class SnapPuller {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
                 "Request failed for the url " + method);
       }
-      return (NamedList) new NamedListCodec().unmarshal(method.getResponseBodyAsStream());
+      return (NamedList) new JavaBinCodec().unmarshal(method.getResponseBodyAsStream());
     } finally {
       try {
         method.releaseConnection();

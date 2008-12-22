@@ -22,7 +22,6 @@ import org.apache.solr.TestDistributedSearch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
@@ -77,9 +76,9 @@ public class TestNamedListCodec  extends TestCase {
 
     nl.add("zzz",doc);
 
-    new NamedListCodec(null).marshal(nl,baos);
+    new JavaBinCodec(null).marshal(nl,baos);
     byte[] arr = baos.toByteArray();
-    nl = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
 
 
     assertEquals(3, nl.size());
@@ -117,9 +116,9 @@ public class TestNamedListCodec  extends TestCase {
 
     nl.add("zzz",list.iterator());
 
-    new NamedListCodec(null).marshal(nl,baos);
+    new JavaBinCodec(null).marshal(nl,baos);
     byte[] arr = baos.toByteArray();
-    nl = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
 
     List l = (List) nl.get("zzz");
     assertEquals(list.size(), l.size());
@@ -139,11 +138,11 @@ public class TestNamedListCodec  extends TestCase {
     r.add("more", "less");
     r.add("values", map.values());
     r.add("finally", "the end");
-    new NamedListCodec(null).marshal(r,baos);
+    new JavaBinCodec(null).marshal(r,baos);
     byte[] arr = baos.toByteArray();
 
     try {
-      NamedList result = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+      NamedList result = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
       assertTrue("result is null and it shouldn't be", result != null);
       List keys = (List) result.get("keys");
       assertTrue("keys is null and it shouldn't be", keys != null);
@@ -244,10 +243,10 @@ public class TestNamedListCodec  extends TestCase {
     for (int i=0; i<10000; i++) { // pump up the iterations for good stress testing
       nl = rNamedList(3);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      new NamedListCodec(null).marshal(nl,baos);
+      new JavaBinCodec(null).marshal(nl,baos);
       byte[] arr = baos.toByteArray();
       // System.out.println(arr.length);
-      res = (NamedList) new NamedListCodec().unmarshal(new ByteArrayInputStream(arr));
+      res = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(arr));
       cmp = TestDistributedSearch.compare(nl,res, 0, null);
 
       if (cmp != null) {
