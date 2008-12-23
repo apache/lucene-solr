@@ -25,7 +25,7 @@
 
 <body>
 <h1>Welcome to Solr!</h1>
-<a href="."><img border="0" align="right" height="61" width="142" src="admin/solr-head.gif" alt="Solr"/></a>
+<a href="."><img border="0" align="right" height="78" width="142" src="admin/solr_small.png" alt="Solr"/></a>
 
 <% 
   org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");

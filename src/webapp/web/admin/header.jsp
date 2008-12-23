@@ -33,7 +33,7 @@ var host_name="<%= hostname %>"
 </head>
 
 <body>
-<a href="."><img border="0" align="right" height="61" width="142" src="solr-head.gif" alt="Solr"></a>
+<a href="."><img border="0" align="right" height="78" width="142" src="solr_small.png" alt="Solr"></a>
 <h1>Solr Admin (<%= collectionName %>)
 <%= enabledStatus==null ? "" : (isEnabled ? " - Enabled" : " - Disabled") %> </h1>
 

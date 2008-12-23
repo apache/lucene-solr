@@ -68,7 +68,7 @@ if("false".equals((String)detailsMap.get("isMaster"))){
 </head>
 
 <body>
-<a href=".."><img border="0" align="right" height="61" width="142" src="../solr-head.gif" alt="Solr"></a>
+<a href=".."><img border="0" align="right" height="78" width="142" src="../solr_small.png" alt="Solr"></a>
 <h1>Solr replication (<%= collectionName %>) 
 <%
 if("true".equals((String)detailsMap.get("isMaster")))

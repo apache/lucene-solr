@@ -54,7 +54,7 @@ public final class LogLevelSelection extends HttpServlet {
     out.write("<title>Solr Admin: JDK Log Level Selector</title>\n");
     out.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"solr-admin.css\" />");
     out.write("</head><body>\n");
-    out.write("<a href=\".\"><img border=\"0\" align=\"right\" height=\"61\" width=\"142\" src=\"solr-head.gif\" alt=\"Solr\"></a>");
+    out.write("<a href=\".\"><img border=\"0\" align=\"right\" height=\"78\" width=\"142\" src=\"solr_small.png\" alt=\"Solr\"></a>");
     out.write("<h1>JDK Log Level Selector</h1>");
 
     out.write("<p>Below is the complete JDK Log hierarchy with " +
