@@ -319,37 +319,19 @@ public class SnapPuller {
       if (f.exists()) {
         inFile = new FileInputStream(f);
         props.load(inFile);
-        if (!props.isEmpty()) {
-          if (props.containsKey("timesIndexReplicated"))
-            indexCount = Integer.valueOf(props.getProperty("timesIndexReplicated")) + 1;
-
-          props.setProperty("timesIndexReplicated", String.valueOf(indexCount));
-          props.setProperty("indexReplicatedAt", String.valueOf(replicationTime));
-
-          if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
-            props.setProperty("confFilesReplicated", confFiles.toString());
-            props.setProperty("confFilesReplicatedAt", String.valueOf(replicationTime));
-            if (props.containsKey("timesConfigReplicated"))
-              confFilesCount = Integer.valueOf(props.getProperty("timesConfigReplicated")) + 1;
-            props.setProperty("timesConfigReplicated", String.valueOf(confFilesCount));
-          }
-        } else {
-          props.setProperty("timesIndexReplicated", String.valueOf(indexCount));
-          props.setProperty("indexReplicatedAt", String.valueOf(replicationTime));
-          if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
-            props.setProperty("confFilesReplicated", confFiles.toString());
-            props.setProperty("confFilesReplicatedAt", String.valueOf(replicationTime));
-            props.setProperty("timesConfigReplicated", String.valueOf(confFilesCount));
-          }
+      }
+      if (props.containsKey("timesIndexReplicated")) {
+        indexCount = Integer.valueOf(props.getProperty("timesIndexReplicated")) + 1;
+      }
+      props.setProperty("timesIndexReplicated", String.valueOf(indexCount));
+      props.setProperty("indexReplicatedAt", String.valueOf(replicationTime));
+      if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
+        props.setProperty("confFilesReplicated", confFiles.toString());
+        props.setProperty("confFilesReplicatedAt", String.valueOf(replicationTime));
+        if (props.containsKey("timesConfigReplicated")) {
+          confFilesCount = Integer.valueOf(props.getProperty("timesConfigReplicated")) + 1;
         }
-      } else {
-        props.setProperty("timesIndexReplicated", String.valueOf(indexCount));
-        props.setProperty("indexReplicatedAt", String.valueOf(replicationTime));
-        if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
-          props.setProperty("confFilesReplicated", confFiles.toString());
-          props.setProperty("confFilesReplicatedAt", String.valueOf(replicationTime));
-          props.setProperty("timesConfigReplicated", String.valueOf(confFilesCount));
-        }
+        props.setProperty("timesConfigReplicated", String.valueOf(confFilesCount));
       }
       outFile = new FileOutputStream(f);
       props.store(outFile, "Replication details");
