@@ -271,6 +271,9 @@ public class QueryResponse extends SolrResponseBase
     return _spellResponse;
   }
 
+  /**
+   * See also: {@link #getLimitingFacets()}
+   */
   public List<FacetField> getFacetFields() {
     return _facetFields;
   }
@@ -301,6 +304,13 @@ public class QueryResponse extends SolrResponseBase
     return null;
   }
   
+  /**
+   * @return a list of FacetFields where the count is less then
+   * then #getResults() {@link SolrDocumentList#getNumFound()}
+   * 
+   * If you want all results exactly as returned by solr, use:
+   * {@link #getFacetFields()}
+   */
   public List<FacetField> getLimitingFacets() {
     return _limitingFacets;
   }
