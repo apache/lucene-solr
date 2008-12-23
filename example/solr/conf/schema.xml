@@ -27,6 +27,9 @@
 
  For more information, on how to customize this file, please see
  http://wiki.apache.org/solr/SchemaXml
+
+ NOTE: this schema includes many optional features and should not
+ be used for benchmarking.
 -->
 
 <schema name="example" version="1.1">
