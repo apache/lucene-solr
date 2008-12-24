@@ -213,7 +213,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       tempSnapPuller = snapPuller;
       if (masterUrl != null) {
-        tempSnapPuller = new SnapPuller(solrParams.toNamedList(), this, core);
+        NamedList<Object> nl = solrParams.toNamedList();
+        nl.remove(SnapPuller.POLL_INTERVAL);
+        tempSnapPuller = new SnapPuller(nl, this, core);
       }
       tempSnapPuller.fetchLatestIndex(core);
     } catch (Exception e) {
