@@ -91,7 +91,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    SolrParams solrParams = req.getParams();
+    final SolrParams solrParams = req.getParams();
     String command = solrParams.get(COMMAND);
     if (command == null) {
       rsp.add("status", "OK");
@@ -119,7 +119,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_SNAP_PULL)) {
       new Thread() {
         public void run() {
-          doSnapPull();
+          doSnapPull(solrParams);
         }
       }.start();
       rsp.add("status", "OK");
@@ -202,16 +202,24 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return null;
   }
 
-  void doSnapPull() {
-    if (!isSlave)
+  private volatile SnapPuller tempSnapPuller;
+
+  void doSnapPull(SolrParams solrParams) {
+    String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
+    if (!isSlave && masterUrl == null)
       return;
     if (!snapPullLock.tryLock())
       return;
     try {
-      snapPuller.fetchLatestIndex(core);
+      tempSnapPuller = snapPuller;
+      if (masterUrl != null) {
+        tempSnapPuller = new SnapPuller(solrParams.toNamedList(), this, core);
+      }
+      tempSnapPuller.fetchLatestIndex(core);
     } catch (Exception e) {
       LOG.error("SnapPull failed ", e);
     } finally {
+      tempSnapPuller = snapPuller;
       snapPullLock.unlock();
     }
   }
@@ -437,7 +445,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       list.add("indexPath", core.getIndexDir());
       list.add("isMaster", String.valueOf(isMaster));
 
-      if (isSlave) {
+      SnapPuller snapPuller = tempSnapPuller;
+      if (snapPuller != null) {
         list.add(MASTER_URL, snapPuller.getMasterUrl());
         if (snapPuller.getPollInterval() != null) {
           list.add(SnapPuller.POLL_INTERVAL, snapPuller.getPollInterval());
@@ -477,8 +486,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       details.add("replicatable" + CMD_INDEX_VERSION, commit.getVersion());
       details.add("replicatable" + GENERATION, commit.getGeneration());
     }
-
-    if (isSlave) {
+    SnapPuller snapPuller = tempSnapPuller;
+    if (snapPuller != null) {
       try {
         Properties props = new Properties();
         File f = new File(core.getDataDir(), SnapPuller.REPLICATION_PROPERTIES);
@@ -500,7 +509,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } finally {
         closeNoExp(inFile);
       }
-
       try {
         NamedList nl = snapPuller.getCommandResponse(CMD_DETAILS);
         details.add("masterDetails", nl.get(CMD_DETAILS));
@@ -640,7 +648,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     registerCloseHook();
     NamedList slave = (NamedList) initArgs.get("slave");
     if (slave != null) {
-      snapPuller = new SnapPuller(slave, this, core);
+      tempSnapPuller = snapPuller = new SnapPuller(slave, this, core);
       isSlave = true;
     }
     NamedList master = (NamedList) initArgs.get("master");
@@ -860,6 +868,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         closeNoExp(inputStream);
       }
     }
+
 
     /**
      * Used to write a marker for EOF

@@ -32,6 +32,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.*;
+import java.net.URL;
 
 /**
  * Test for ReplicationHandler
@@ -234,6 +235,97 @@ public class TestReplicationHandler extends TestCase {
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
 
+  }
+
+
+  public void testStopPoll() throws Exception {
+    // Test:
+    // setup master/slave.
+    // stop polling on slave, add a doc to master and verify slave hasn't picked it.
+
+    //add 500 docs to master
+    for (int i = 0; i < 500; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
+
+    //sleep for pollinterval time 3s, to let slave pull data.
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(500, slaveQueryResult.getNumFound());
+
+    //compare results
+    String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+
+    // start stop polling test
+    String masterUrl = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=disablepoll";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+    index(masterClient, "id", 501, "name", "name = " + 501);
+    masterClient.commit();
+    //sleep for pollinterval time 3s, to let slave pull data.
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = query("*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(500, slaveQueryResult.getNumFound());
+    //get docs from slave and check if number is equal to master
+    slaveQueryRsp = query("*:*", masterClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(501, slaveQueryResult.getNumFound());
+  }
+
+  public void testSnapPullWithMasterUrl() throws Exception {
+    //change solrconfig on slave
+    //this has no entry for pollinginterval
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "solrconfig-slave1.xml"),
+            new File(slave.getConfDir(), "solrconfig.xml"));
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave, 0);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+
+    //add 500 docs to master
+    for (int i = 0; i < 500; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
+
+    // snappull
+    String masterUrl = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=snappull&masterUrl=";
+    masterUrl += "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(500, slaveQueryResult.getNumFound());
+    //compare results
+    String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
   }
 
   void copyFile(File src, File dst) throws IOException {

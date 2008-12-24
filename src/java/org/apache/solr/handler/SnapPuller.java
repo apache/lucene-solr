@@ -21,8 +21,8 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastInputStream;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -135,7 +135,7 @@ public class SnapPuller {
         }
         try {
           executorStartTime = System.currentTimeMillis();
-          replicationHandler.doSnapPull();
+          replicationHandler.doSnapPull(null);
         } catch (Exception e) {
           LOG.error("Exception in pulling snapshot", e);
         }

@@ -125,6 +125,8 @@ New Features
 26. SOLR-928: SolrDocument and SolrInputDocument now implement the Map<String,?>
     interface.  This should make plugging into other standard tools easier. (ryan)
 
+27. SOLR-847: Enhance the snappull command in ReplicationHandler to accept masterUrl.
+    (Noble Paul, Preetam Rao via shalin)
 
 Optimizations
 ----------------------
