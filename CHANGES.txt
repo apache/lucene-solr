@@ -118,7 +118,7 @@ New Features
     optimized distributed faceting refinement by lowering parsing overhead and
     by making requests and responses smaller.
 
-25. SOLR-876: WOrdDelimiterFilter now supports a splitOnNumerics 
+25. SOLR-876: WordDelimiterFilter now supports a splitOnNumerics 
     option, as well as a list of protected terms.
     (Dan Rosher via hossman)
 
@@ -199,6 +199,8 @@ Bug Fixes
 21. SOLR-830: Use perl regex to improve accuracy of finding latest snapshot in snappuller (billa)
 
 22. SOLR-897: Fixed Argument list too long error when there are lots of snapshots/backups (Dan Rosher via billa)
+
+23. SOLR-925: Fixed highlighting on fields with multiValued="true" and termOffsets="true" (koji)
 
 
 Other Changes

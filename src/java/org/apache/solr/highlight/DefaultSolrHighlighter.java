@@ -271,11 +271,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter
 
           String[] summaries = null;
           List<TextFragment> frags = new ArrayList<TextFragment>();
+          TermOffsetsTokenStream tots = null;
           for (int j = 0; j < docTexts.length; j++) {
             // create TokenStream
             try {
               // attempt term vectors
-              tstream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+              if( tots == null )
+                tots = new TermOffsetsTokenStream( TokenSources.getTokenStream(searcher.getReader(), docId, fieldName) );
+              tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
             }
             catch (IllegalArgumentException e) {
               // fall back to anaylzer
@@ -408,5 +411,46 @@ class TokenOrderingFilter extends TokenFilter {
     }
 
     return queue.isEmpty() ? null : queue.removeFirst();
+  }
+}
+
+class TermOffsetsTokenStream {
+
+  TokenStream bufferedTokenStream = null;
+  Token bufferedToken;
+  int startOffset;
+  int endOffset;
+
+  public TermOffsetsTokenStream( TokenStream tstream ){
+    bufferedTokenStream = tstream;
+    startOffset = 0;
+    bufferedToken = null;
+  }
+
+  public TokenStream getMultiValuedTokenStream( final int length ){
+    endOffset = startOffset + length;
+    return new TokenStream(){
+      Token token;
+      public Token next() throws IOException {
+        while( true ){
+          if( bufferedToken == null )
+            bufferedToken = bufferedTokenStream.next();
+          if( bufferedToken == null ) return null;
+          if( startOffset <= bufferedToken.startOffset() &&
+              bufferedToken.endOffset() <= endOffset ){
+            token = bufferedToken;
+            bufferedToken = null;
+            token.setStartOffset( token.startOffset() - startOffset );
+            token.setEndOffset( token.endOffset() - startOffset );
+            return token;
+          }
+          else if( bufferedToken.endOffset() > endOffset ){
+            startOffset += length + 1;
+            return null;
+          }
+          bufferedToken = null;
+        }
+      }
+    };
   }
 }

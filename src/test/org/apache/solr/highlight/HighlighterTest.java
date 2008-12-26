@@ -17,10 +17,16 @@
 
 package org.apache.solr.highlight;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.*;
 import org.apache.solr.common.params.HighlightParams;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.HashMap;
 
 /**
@@ -138,6 +144,47 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which']",
             "//arr[@name='tv_text']/str[.=' <em>long</em> fragments.']"
+            );
+  }
+  
+  public void testTermOffsetsTokenStream() throws Exception {
+    String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
+    Analyzer a1 = new WhitespaceAnalyzer();
+    TermOffsetsTokenStream tots = new TermOffsetsTokenStream(
+        a1.tokenStream( "", new StringReader( "a b c d e f g h i j k l m n" ) ) );
+    for( String v : multivalued ){
+      TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
+      Analyzer a2 = new WhitespaceAnalyzer();
+      TokenStream ts2 = a2.tokenStream( "", new StringReader( v ) );
+      Token t1 = new Token();
+      Token t2 = new Token();
+      for( t1 = ts1.next( t1 ); t1 != null; t1 = ts1.next( t1 ) ){
+        t2 = ts2.next( t2 );
+        assertEquals( t2, t1 );
+      }
+    }
+  }
+
+  public void testTermVecMultiValuedHighlight() throws Exception {
+
+    // do summarization using term vectors on multivalued field
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_mv_text");
+    args.put("hl.snippets", "2");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard",0,200,args);
+    
+    assertU(adoc("tv_mv_text", LONG_TEXT, 
+                 "tv_mv_text", LONG_TEXT, 
+                 "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Basic summarization",
+            sumLRF.makeRequest("tv_mv_text:long"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='tv_mv_text']/str[.='a <em>long</em> days night this should be a piece of text which']",
+            "//arr[@name='tv_mv_text']/str[.=' <em>long</em> fragments.']"
             );
   }
 

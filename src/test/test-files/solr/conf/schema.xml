@@ -455,6 +455,8 @@
    <dynamicField name="t_*"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="tv_*"  type="text" indexed="true"  stored="true" 
       termVectors="true" termPositions="true" termOffsets="true"/>
+   <dynamicField name="tv_mv_*"  type="text" indexed="true"  stored="true" multivalued="true"
+      termVectors="true" termPositions="true" termOffsets="true"/>
 
    <!-- special fields for dynamic copyField test -->
    <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
