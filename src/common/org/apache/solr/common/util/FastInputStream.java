@@ -105,7 +105,7 @@ public class FastInputStream extends InputStream implements DataInput {
       return r;
     }
     
-    return -1;
+    return r > 0 ? r : -1;
   }
 
   @Override

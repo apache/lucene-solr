@@ -118,7 +118,7 @@ New Features
     optimized distributed faceting refinement by lowering parsing overhead and
     by making requests and responses smaller.
 
-25. SOLR-876: WordDelimiterFilter now supports a splitOnNumerics 
+25. SOLR-876: WordDelimiterFilter now supports a splitOnNumerics
     option, as well as a list of protected terms.
     (Dan Rosher via hossman)
 
@@ -147,7 +147,7 @@ Bug Fixes
 
  2. SOLR-771: CoreAdminHandler STATUS should display 'normalized' paths (koji, hossman, shalin)
 
- 3. SOLR-532: WordDelimiterFilter now respects payloads and other attributes of the original Token by 
+ 3. SOLR-532: WordDelimiterFilter now respects payloads and other attributes of the original Token by
     using Token.clone() (Tricia Williams, gsingers)
 
  4. SOLR-805: DisMax queries are not being cached in QueryResultCache (Todd Feak via koji)
@@ -193,7 +193,7 @@ Bug Fixes
 
 19. SOLR-802: Fix a potential null pointer error in the distributed FacetComponent
     (David Bowen via ryan)
-    
+
 20. SOLR-346: Use perl regex to improve accuracy of finding latest snapshot in snapinstaller (billa)
 
 21. SOLR-830: Use perl regex to improve accuracy of finding latest snapshot in snappuller (billa)
@@ -201,6 +201,9 @@ Bug Fixes
 22. SOLR-897: Fixed Argument list too long error when there are lots of snapshots/backups (Dan Rosher via billa)
 
 23. SOLR-925: Fixed highlighting on fields with multiValued="true" and termOffsets="true" (koji)
+
+24. SOLR-902: FastInputStream#read(byte b[], int off, int len) gives incorrect results when amount left to read is less
+    than buffer size (Noble Paul via shalin)
 
 
 Other Changes
