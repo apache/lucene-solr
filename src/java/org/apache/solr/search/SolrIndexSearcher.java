@@ -31,6 +31,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -92,6 +93,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
   private static final SolrCache[] noCaches = new SolrCache[0];
+  
+  private final Collection<String> fieldNames;
+  private Collection<String> storedHighlightFieldNames;
 
   /** Creates a searcher searching the index in the named directory.
    * 
@@ -179,6 +183,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     // for DocSets
     HASHSET_INVERSE_LOAD_FACTOR = solrConfig.hashSetInverseLoadFactor;
     HASHDOCSET_MAXSIZE = solrConfig.hashDocSetMaxSize;
+
+    fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
   }
 
 
@@ -233,6 +239,36 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   public IndexReader getReader() { return reader; }
   /** Direct access to the IndexSchema for use with this searcher */
   public IndexSchema getSchema() { return schema; }
+  
+  /**
+   * Returns a collection of all field names the index reader knows about.
+   */
+  public Collection<String> getFieldNames() {
+    return fieldNames;
+  }
+
+  /**
+   * Returns a collection of the names of all stored fields which can be
+   * highlighted the index reader knows about.
+   */
+  public Collection<String> getStoredHighlightFieldNames() {
+    if (storedHighlightFieldNames == null) {
+      storedHighlightFieldNames = new LinkedList<String>();
+      for (String fieldName : fieldNames) {
+        try {
+          SchemaField field = schema.getField(fieldName);
+          if (field.stored() &&
+                  ((field.getType() instanceof org.apache.solr.schema.TextField) ||
+                  (field.getType() instanceof org.apache.solr.schema.StrField))) {
+            storedHighlightFieldNames.add(fieldName);
+          }
+        } catch (RuntimeException e) { // getField() throws a SolrException, but it arrives as a RuntimeException
+            log.warn("Field \"" + fieldName + "\" found in index, but not defined in schema.");
+        }
+      }
+    }
+    return storedHighlightFieldNames;
+  }
   //
   // Set default regenerators on filter and query caches if they don't have any
   //

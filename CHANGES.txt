@@ -128,6 +128,11 @@ New Features
 27. SOLR-847: Enhance the snappull command in ReplicationHandler to accept masterUrl.
     (Noble Paul, Preetam Rao via shalin)
 
+28. SOLR-540: Add support for globbing in field names to highlight.
+    For example, hl.fl=*_text will highlight all fieldnames ending with
+    _text.  (Lars Kotthoff via yonik)
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

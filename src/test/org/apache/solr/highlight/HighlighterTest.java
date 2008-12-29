@@ -22,12 +22,15 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.*;
 import org.apache.solr.common.params.HighlightParams;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -629,5 +632,44 @@ public class HighlighterTest extends AbstractSolrTestCase {
         "//lst[@name='highlighting']/lst[@name='1']",
         oldHighlight1, oldHighlight2, oldHighlight3
         );
+  }
+  
+  public void testGetHighlightFields() {
+    HashMap<String, String> args = new HashMap<String, String>();
+    args.put("fl", "id score");
+    args.put("hl", "true");
+    args.put("hl.fl", "t*");
+
+    assertU(adoc("id", "0", "title", "test", // static stored
+        "text", "test", // static not stored
+        "foo_s", "test", // dynamic stored
+        "foo_sI", "test", // dynamic not stored
+        "weight", "1.0")); // stored but not text
+    assertU(commit());
+    assertU(optimize());
+
+    TestHarness.LocalRequestFactory lrf = h.getRequestFactory("standard", 0,
+        10, args);
+    SolrQueryRequest request = lrf.makeRequest("test");
+    SolrHighlighter highlighter = request.getCore().getHighlighter();
+    List<String> highlightFieldNames = Arrays.asList(highlighter
+        .getHighlightFields(null, request, new String[] {}));
+    assertTrue("Expected to highlight on field \"title\"", highlightFieldNames
+        .contains("title"));
+    assertFalse("Expected to not highlight on field \"text\"",
+        highlightFieldNames.contains("text"));
+    assertFalse("Expected to not highlight on field \"weight\"",
+        highlightFieldNames.contains("weight"));
+
+    args.put("hl.fl", "foo_*");
+    lrf = h.getRequestFactory("standard", 0, 10, args);
+    request = lrf.makeRequest("test");
+    highlighter = request.getCore().getHighlighter();
+    highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
+        request, new String[] {}));
+    assertEquals("Expected one field to highlight on", 1, highlightFieldNames
+        .size());
+    assertEquals("Expected to highlight on field \"foo_s\"", "foo_s",
+        highlightFieldNames.get(0));
   }
 }
