@@ -268,7 +268,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
     try {
       //get all the files in the commit
-      Collection<String> files = commit.getFileNames();
+      //use a set to workaround possible Lucene bug which returns same file name multiple times
+      Collection<String> files = new HashSet<String>(commit.getFileNames());
       for (String fileName : files) {
         File file = new File(core.getIndexDir(), fileName);
         Map<String, Object> fileMeta = getFileInfo(file);
