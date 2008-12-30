@@ -32,7 +32,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.spatial.tier.DistanceQuery;
+import org.apache.lucene.spatial.tier.DistanceQueryBuilder;
 import org.apache.lucene.spatial.tier.DistanceSortSource;
 import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;

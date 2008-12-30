@@ -24,7 +24,7 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SerialChainFilter;
 
 
-public class DistanceQuery {
+public class DistanceQueryBuilder {
 
   private static final long serialVersionUID = 1L;
   
@@ -47,14 +47,14 @@ public class DistanceQuery {
    * @param lng
    * @param miles
    */
-  public DistanceQuery (double lat, double lng, double miles, String latField, String lngField, boolean needPrecise){
+  public DistanceQueryBuilder (double lat, double lng, double miles, String latField, String lngField, boolean needPrecise){
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
     
     
-    CartesianPolyFilter cpf = new CartesianPolyFilter();
+    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder();
     cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
 
     /* create precise distance filter */

@@ -35,7 +35,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.spatial.tier.DistanceQuery;
+import org.apache.lucene.spatial.tier.DistanceQueryBuilder;
 import org.apache.lucene.spatial.tier.DistanceSortSource;
 import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
@@ -149,7 +149,7 @@ public class TestCartesian extends TestCase{
     final double miles = 6.0;
     
     // create a distance query
-    final DistanceQuery dq = new DistanceQuery(lat, lng, miles, latField, lngField, true);
+    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, latField, lngField, true);
      
     System.out.println(dq);
     //create a term query to search against all documents

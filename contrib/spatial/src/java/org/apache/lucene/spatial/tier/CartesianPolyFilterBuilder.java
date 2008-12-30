@@ -31,7 +31,7 @@ import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 /**
  *
  */
-public class CartesianPolyFilter {
+public class CartesianPolyFilterBuilder {
 
   private IProjector projector = new SinusoidalProjector();
   private Logger log = Logger.getLogger(getClass().getName());
