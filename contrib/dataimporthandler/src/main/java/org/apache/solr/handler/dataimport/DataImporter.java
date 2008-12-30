@@ -95,15 +95,13 @@ public class DataImporter {
       config.lowerNameVsSchemaField.put(entry.getKey().toLowerCase(), entry.getValue());
     }
 
-    for (DataConfig.Document document : config.documents) {
-      for (DataConfig.Entity e : document.entities) {
-        Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
-        initEntity(e, fields, false);
-        String errs = verifyWithSchema(fields);
-        if (errs != null) {
-          throw new DataImportHandlerException(
-                  DataImportHandlerException.SEVERE, errs);
-        }
+    for (DataConfig.Entity e : config.document.entities) {
+      Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
+      initEntity(e, fields, false);
+      String errs = verifyWithSchema(fields);
+      if (errs != null) {
+        throw new DataImportHandlerException(
+                DataImportHandlerException.SEVERE, errs);
       }
     }
   }
@@ -150,8 +148,9 @@ public class DataImporter {
   void loadAndInit(String configStr) {
     loadDataConfig(configStr);
     Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
-    DataConfig.Entity e = getConfig().documents.get(0).entities.get(0);
-    initEntity(e, fields, false);
+    for (DataConfig.Entity entity : config.document.entities) {
+      initEntity(entity, fields, false);
+    }
   }
 
   void loadDataConfig(String configFile) {
@@ -308,8 +307,7 @@ public class DataImporter {
     return importLock.isLocked();
   }
 
-  public void doFullImport(SolrWriter writer, RequestParams requestParams,
-                           Map<String, String> variables) {
+  public void doFullImport(SolrWriter writer, RequestParams requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
 
@@ -319,8 +317,8 @@ public class DataImporter {
     try {
       if (requestParams.clean)
         writer.doDeleteAll();
-      docBuilder = new DocBuilder(this, writer, requestParams, variables);
-      docBuilder.execute(getConfig().documents.get(0).name);
+      docBuilder = new DocBuilder(this, writer, requestParams);
+      docBuilder.execute();
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
@@ -334,8 +332,7 @@ public class DataImporter {
 
   }
 
-  public void doDeltaImport(SolrWriter writer, RequestParams requestParams,
-                            Map<String, String> variables) {
+  public void doDeltaImport(SolrWriter writer, RequestParams requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
 
@@ -343,8 +340,8 @@ public class DataImporter {
       if (requestParams.commit) {
         setIndexStartTime(new Date());
       }
-      docBuilder = new DocBuilder(this, writer, requestParams, variables);
-      docBuilder.execute(config.documents.get(0).name);
+      docBuilder = new DocBuilder(this, writer, requestParams);
+      docBuilder.execute();
       if (!requestParams.debug)
         cumulativeStatistics.add(docBuilder.importStatistics);
     } catch (Throwable t) {
@@ -358,17 +355,16 @@ public class DataImporter {
 
   }
 
-  public void runAsync(final RequestParams reqParams, final SolrWriter sw,
-                       final Map<String, String> variables) {
+  public void runAsync(final RequestParams reqParams, final SolrWriter sw) {
     new Thread() {
       @Override
       public void run() {
-        runCmd(reqParams, sw, variables);
+        runCmd(reqParams, sw);
       }
     }.start();
   }
 
-  void runCmd(RequestParams reqParams, SolrWriter sw, Map<String, String> variables) {
+  void runCmd(RequestParams reqParams, SolrWriter sw) {
     String command = reqParams.command;
     if (command.equals(ABORT_CMD)) {
       if (docBuilder != null) {
@@ -382,9 +378,9 @@ public class DataImporter {
       Date lastModified = sw.loadIndexStartTime();
       setLastIndexTime(lastModified);
       if (command.equals("full-import")) {
-        doFullImport(sw, reqParams, variables);
+        doFullImport(sw, reqParams);
       } else if (command.equals(DELTA_IMPORT_CMD)) {
-        doDeltaImport(sw, reqParams, variables);
+        doDeltaImport(sw, reqParams);
       }
     } finally {
       importLock.unlock();

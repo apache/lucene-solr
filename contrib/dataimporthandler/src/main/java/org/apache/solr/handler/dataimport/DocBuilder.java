@@ -59,50 +59,43 @@ public class DocBuilder {
 
   boolean verboseDebug = false;
 
-  private Map<String, String> defaultVariables;
-
   private Map<String, Object> session = new HashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
 
-  public DocBuilder(DataImporter context, SolrWriter writer,
-                    DataImporter.RequestParams reqParams, Map<String, String> variables) {
+  public DocBuilder(DataImporter context, SolrWriter writer, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
     this.dataImporter = context;
     this.writer = writer;
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     requestParameters = reqParams;
     verboseDebug = requestParameters.debug && requestParameters.verbose;
-    defaultVariables = Collections.unmodifiableMap(variables);
   }
 
-  public VariableResolverImpl getVariableResolver(DataImporter context) {
+  public VariableResolverImpl getVariableResolver() {
     VariableResolverImpl resolver = new VariableResolverImpl();
     Map<String, Object> indexerNamespace = new HashMap<String, Object>();
-    if (context.getLastIndexTime() != null)
+    if (dataImporter.getLastIndexTime() != null)
       indexerNamespace.put(LAST_INDEX_TIME, DataImporter.DATE_TIME_FORMAT
-              .format(context.getLastIndexTime()));
-    indexerNamespace.put(INDEX_START_TIME, context.getIndexStartTime());
+              .format(dataImporter.getLastIndexTime()));
+    indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
     indexerNamespace.put("request", requestParameters.requestParams);
-    indexerNamespace.put("defaults", defaultVariables);
     indexerNamespace.put("functions", EvaluatorBag.getFunctionsNamespace(resolver,
             dataImporter.getConfig().functions, this));
-    if (context.getConfig().script != null) {
+    if (dataImporter.getConfig().script != null) {
       indexerNamespace
-              .put(DataConfig.SCRIPT, context.getConfig().script.script);
+              .put(DataConfig.SCRIPT, dataImporter.getConfig().script.script);
       indexerNamespace.put(DataConfig.SCRIPT_LANG,
-              context.getConfig().script.language);
+              dataImporter.getConfig().script.language);
     }
     resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
     return resolver;
   }
 
   @SuppressWarnings("unchecked")
-  public void execute(String docName) {
+  public void execute() {
     dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
-    document = dataImporter.getConfig().getDocumentByName(docName);
-    if (document == null)
-      return;
+    document = dataImporter.getConfig().document;
     final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
     statusMessages.put(TIME_ELAPSED, new Object() {
       public String toString() {
@@ -180,14 +173,14 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   private void doFullDump() {
     addStatusMessage("Full Dump Started");
-    buildDocument(getVariableResolver(dataImporter), null, null, root, true,
+    buildDocument(getVariableResolver(), null, null, root, true,
             null);
   }
 
   @SuppressWarnings("unchecked")
   private void doDelta() {
     addStatusMessage("Delta Dump started");
-    VariableResolverImpl resolver = getVariableResolver(dataImporter);
+    VariableResolverImpl resolver = getVariableResolver();
 
     if (document.deleteQuery != null) {
       writer.deleteByQuery(document.deleteQuery);
@@ -211,7 +204,7 @@ public class DocBuilder {
     deletedKeys = null;
 
     statusMessages.put("Total Changed Documents", allPks.size());
-    VariableResolverImpl vri = getVariableResolver(dataImporter);
+    VariableResolverImpl vri = getVariableResolver();
     Iterator<Map<String, Object>> pkIter = allPks.iterator();
     while (pkIter.hasNext()) {
       Map<String, Object> map = pkIter.next();

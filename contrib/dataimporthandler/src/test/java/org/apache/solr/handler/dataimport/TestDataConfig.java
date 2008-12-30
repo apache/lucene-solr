@@ -75,8 +75,7 @@ public class TestDataConfig extends AbstractDataImportHandlerTest {
 
     DataConfig dc = new DataConfig();
     dc.readFromXml(doc.getDocumentElement());
-    Assert.assertEquals("atrimlisting",
-            dc.documents.get(0).entities.get(0).name);
+    Assert.assertEquals("atrimlisting", dc.document.entities.get(0).name);
   }
 
   private static final String xml = "<dataConfig>\n"

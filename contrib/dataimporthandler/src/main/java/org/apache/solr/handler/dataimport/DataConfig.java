@@ -41,9 +41,7 @@ import java.util.*;
  * @since solr 1.3
  */
 public class DataConfig {
-  public List<Document> documents;
-
-  private Map<String, Document> documentCache;
+  public Document document;
 
   public List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
 
@@ -53,20 +51,7 @@ public class DataConfig {
 
   public Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
 
-  public Document getDocumentByName(String name) {
-    if (documentCache == null) {
-      documentCache = new HashMap<String, Document>();
-      for (Document document : documents)
-        documentCache.put(document.name, document);
-    }
-
-    return documentCache.get(name);
-  }
-
   public static class Document {
-    // TODO - remove this
-    public String name;
-
     // TODO - remove from here and add it to entity
     public String deleteQuery;
 
@@ -76,7 +61,6 @@ public class DataConfig {
     }
 
     public Document(Element element) {
-      this.name = getStringAttribute(element, NAME, null);
       this.deleteQuery = getStringAttribute(element, "deleteQuery", null);
       List<Element> l = getChildNodes(element, "entity");
       for (Element e : l)
@@ -222,10 +206,11 @@ public class DataConfig {
 
   public void readFromXml(Element e) {
     List<Element> n = getChildNodes(e, "document");
-    if (!n.isEmpty())
-      documents = new ArrayList<Document>();
-    for (Element element : n)
-      documents.add(new Document(element));
+    if (n.isEmpty()) {
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "DataImportHandler " +
+              "configuration file must have one <document> node.");
+    }
+    document = new Document(n.get(0));
 
     n = getChildNodes(e, SCRIPT);
     if (!n.isEmpty()) {
@@ -307,10 +292,8 @@ public class DataConfig {
   }
 
   public void clearCaches() {
-    for (Document document : documents)
-      for (Entity entity : document.entities)
-        entity.clearCache();
-
+    for (Entity entity : document.entities)
+      entity.clearCache();
   }
 
   public static final String SCRIPT = "script";

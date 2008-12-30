@@ -161,7 +161,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     }
 
     if (command != null && DataImporter.ABORT_CMD.equals(command)) {
-      importer.runCmd(requestParams, null, null);
+      importer.runCmd(requestParams, null);
     } else if (importer.isBusy()) {
       message = DataImporter.MSG.CMD_RUNNING;
     } else if (command != null) {
@@ -177,7 +177,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         if (requestParams.debug) {
           if (debugEnabled) {
             // Synchronous request for the debug mode
-            importer.runCmd(requestParams, sw, variables);
+            importer.runCmd(requestParams, sw);
             rsp.add("mode", "debug");
             rsp.add("documents", debugDocuments);
             if (sw.debugLogger != null)
@@ -188,7 +188,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           }
         } else {
           // Asynchronous request for normal mode
-          importer.runAsync(requestParams, sw, variables);
+          importer.runAsync(requestParams, sw);
         }
       } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) {
         importer = null;
@@ -222,8 +222,7 @@ public class DataImportHandler extends RequestHandlerBase implements
   @SuppressWarnings("unchecked")
   private void processConfiguration(NamedList defaults) {
     if (defaults == null) {
-      LOG
-              .info("No configuration specified in solrconfig.xml for DataImportHandler");
+      LOG.info("No configuration specified in solrconfig.xml for DataImportHandler");
       return;
     }
 

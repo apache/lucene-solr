@@ -43,7 +43,7 @@ public class TestFieldReader {
     List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
     l.add(createMap("xml", xml));
     MockDataSource.setIterator("select * from a", l.iterator());
-    di.runCmd(rp, sw, new HashMap<String, String>());
+    di.runCmd(rp, sw);
     Assert.assertEquals(sw.docs.get(0).getFieldValue("y"), "Hello");
     MockDataSource.clearCache();
   }

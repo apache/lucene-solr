@@ -48,14 +48,14 @@ public class TestDocBuilder {
       DataImporter di = new DataImporter();
       di.loadDataConfig(dc_singleEntity);
       DataConfig cfg = di.getConfig();
-      DataConfig.Entity ent = cfg.documents.get(0).entities.get(0);
+      DataConfig.Entity ent = cfg.document.entities.get(0);
       MockDataSource.setIterator("select * from x", new ArrayList().iterator());
       ent.dataSrc = new MockDataSource();
       ent.isDocRoot = true;
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.runCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(0, swi.docs.size());
@@ -76,7 +76,7 @@ public class TestDocBuilder {
       DataImporter di = new DataImporter();
       di.loadDataConfig(dc_singleEntity);
       DataConfig cfg = di.getConfig();
-      DataConfig.Entity ent = cfg.documents.get(0).entities.get(0);
+      DataConfig.Entity ent = cfg.document.entities.get(0);
       List l = new ArrayList();
       l.add(createMap("id", 1, "desc", "one"));
       MockDataSource.setIterator("select * from x", l.iterator());
@@ -85,7 +85,7 @@ public class TestDocBuilder {
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.runCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(1, swi.docs.size());
@@ -115,7 +115,7 @@ public class TestDocBuilder {
       DataImporter di = new DataImporter();
       di.loadDataConfig(dc_singleEntity);
       DataConfig cfg = di.getConfig();
-      DataConfig.Entity ent = cfg.documents.get(0).entities.get(0);
+      DataConfig.Entity ent = cfg.document.entities.get(0);
       ent.isDocRoot = true;
       DataImporter.RequestParams rp = new DataImporter.RequestParams();
       rp.command = "full-import";
@@ -127,7 +127,7 @@ public class TestDocBuilder {
       MockDataSource.setIterator("select * from x", l.iterator());
       ent.dataSrc = new MockDataSource();
       SolrWriterImpl swi = new SolrWriterImpl();
-      di.runCmd(rp, swi, Collections.EMPTY_MAP);
+      di.runCmd(rp, swi);
       Assert.assertEquals(Boolean.TRUE, swi.deleteAllCalled);
       Assert.assertEquals(Boolean.TRUE, swi.commitCalled);
       Assert.assertEquals(3, swi.docs.size());
