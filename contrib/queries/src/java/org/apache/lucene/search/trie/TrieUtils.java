@@ -25,11 +25,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.ExtendedFieldCache;
 
 /**
- *This is a helper class to construct the trie-based index entries for numerical values.
- * <p>For more information, how the algorithm works, see the package description {@link org.apache.lucene.search.trie}. The format of how the
- * numerical values are stored in index is documented here:
+ * This is a helper class to construct the trie-based index entries for numerical values.
+ * <p>For more information on how the algorithm works, see the package description {@link org.apache.lucene.search.trie}.
+ * The format of how the numerical values are stored in index is documented here:
  * <p>All numerical values are first converted to special <code>unsigned long</code>s by applying some bit-wise transformations. This means:<ul>
- * <li>{@link Date}s are casted to unix timestamps (milliseconds since 1970-01-01, this is how Java represents date/time
+ * <li>{@link Date}s are casted to UNIX timestamps (milliseconds since 1970-01-01, this is how Java represents date/time
  * internally): {@link Date#getTime()}. The resulting <code>signed long</code> is transformed to the unsigned form like so:</li>
  * <li><code>signed long</code>s are shifted, so that {@link Long#MIN_VALUE} is mapped to <code>0x0000000000000000</code>,
  * {@link Long#MAX_VALUE} is mapped to <code>0xffffffffffffffff</code>.</li>
@@ -42,13 +42,12 @@ import org.apache.lucene.search.ExtendedFieldCache;
  * The resulting {@link String} is comparable like the corresponding <code>unsigned long</code>.
  * <p>To store the different precisions of the long values (from one character [only the most significant one] to the full encoded length),
  * each lower precision is prefixed by the length ({@link #TRIE_CODED_PADDING_START}<code>+precision == 0x20+precision</code>),
- * in an extra "helper" field with a suffixed field name (i.e. fieldname "numeric" => lower precision's name "numeric#trie").
+ * in an extra "helper" field with a suffixed field name (i.e. fieldname "numeric" =&gt; lower precision's name "numeric#trie").
  * The full long is not prefixed at all and indexed and stored according to the given flags in the original field name.
  * By this it is possible to get the correct enumeration of terms in correct precision
  * of the term list by just jumping to the correct fieldname and/or prefix. The full precision value may also be
  * stored in the document. Having the full precision value as term in a separate field with the original name,
  * sorting of query results agains such fields is possible using the original field name.
- * @author Uwe Schindler (panFMP developer)
  */
 public final class TrieUtils {
 

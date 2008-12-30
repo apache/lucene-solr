@@ -16,52 +16,48 @@ We have developed an extension to Apache Lucene that stores
 the numerical values in a special string-encoded format with variable precision
 (all numerical values like doubles, longs, and timestamps are converted to lexicographic sortable string representations
 and stored with different precisions from one byte to the full 8 bytes - depending on the variant used).
-For a more detailed description, how the values are stored, see {@link org.apache.lucene.search.trie.TrieUtils}.
+For a more detailed description of how the values are stored, see {@link org.apache.lucene.search.trie.TrieUtils}.
 A range is then divided recursively into multiple intervals for searching:
-The center of the range is searched only with the lowest possible precision in the trie, the boundaries are matched
+The center of the range is searched only with the lowest possible precision in the trie, while the boundaries are matched
 more exactly. This reduces the number of terms dramatically.</p>
 
-<p>For the variant, that uses a lowest precision of 1-byte the index only
-contains a maximum of 256 distinct values in the lowest precision.
+<p>For the variant that uses a lowest precision of 1-byte the index 
+contains only a maximum of 256 distinct values in the lowest precision.
 Overall, a range could consist of a theoretical maximum of
 <code>7*255*2 + 255 = 3825</code> distinct terms (when there is a term for every distinct value of an
 8-byte-number in the index and the range covers all of them; a maximum of 255 distinct values is used
 because it would always be possible to reduce the full 256 values to one term with degraded precision).
 In practise, we have seen up to 300 terms in most cases (index with 500,000 metadata records
-and a homogeneous dispersion of values).</p>
+and a uniform value distribution).</p>
 
 <p>There are two other variants of encoding: 4bit and 2bit. Each variant stores more different precisions
-of the longs and so needs more storage space (because it generates more and longer terms -
+of the longs and thus needs more storage space (because it generates more and longer terms -
 4bit: two times the length and number of terms; 2bit: four times the length and number of terms).
 But on the other hand, the maximum number of distinct terms used for range queries is
 <code>15*15*2 + 15 = 465</code> for the 4bit variant, and
 <code>31*3*2 + 3 = 189</code> for the 2bit variant.</p>
 
 <p>This dramatically improves the performance of Apache Lucene with range queries, which
-is no longer dependent on the index size and number of distinct values because there is
-an upper limit not related to any of these properties.</p>
+are no longer dependent on the index size and the number of distinct values because there is
+an upper limit unrelated to either of these properties.</p>
 
 <h3>Usage</h3>
 <p>To use the new query types the numerical values, which may be <code>long</code>, <code>double</code> or <code>Date</code>,
-during indexing the values must be stored in a special format in index (using {@link org.apache.lucene.search.trie.TrieUtils}).
+the values must be stored during indexing in a special format in the index (using {@link org.apache.lucene.search.trie.TrieUtils}).
 This can be done like this:</p>
 
 <pre>
-	Document doc=new Document();
+	Document doc = new Document();
 	// add some standard fields:
-	String svalue="anything to index";
-	doc.add(new Field("exampleString",
-		svalue, Field.Store.YES, Field.Index.ANALYZED) ;
+	String svalue = "anything to index";
+	doc.add(new Field("exampleString", svalue, Field.Store.YES, Field.Index.ANALYZED) ;
 	// add some numerical fields:
-	double fvalue=1.057E17;
-	TrieUtils.VARIANT_8BIT.addDoubleTrieCodedDocumentField(doc, "exampleDouble", 
-		fvalue, true /* index the field */, Field.Store.YES);
-	long lvalue=121345L;
-	TrieUtils.VARIANT_8BIT.addLongTrieCodedDocumentField(doc, "exampleLong",
-		lvalue, true /* index the field */, Field.Store.YES);
-	Date dvalue=new Date(); // actual time
-	TrieUtils.VARIANT_8BIT.addDateTrieCodedDocumentField(doc, "exampleDate", 
-		dvalue, true /* index the field */, Field.Store.YES);
+	double fvalue = 1.057E17;
+	TrieUtils.VARIANT_8BIT.addDoubleTrieCodedDocumentField(doc, "exampleDouble", fvalue, true /* index the field */, Field.Store.YES);
+	long lvalue = 121345L;
+	TrieUtils.VARIANT_8BIT.addLongTrieCodedDocumentField(doc, "exampleLong", lvalue, true /* index the field */, Field.Store.YES);
+	Date dvalue = new Date(); // actual time
+	TrieUtils.VARIANT_8BIT.addDateTrieCodedDocumentField(doc, "exampleDate", dvalue, true /* index the field */, Field.Store.YES);
 	// add document to IndexWriter
 </pre>
 
@@ -69,21 +65,21 @@ This can be done like this:</p>
 
 <pre>
 	// Java 1.4, because Double.valueOf(double) is not available:
-	Query q=new TrieRangeQuery("exampleDouble", new Double(1.0E17), new Double(2.0E17), TrieUtils.VARIANT_8BIT);
+	Query q = new TrieRangeQuery("exampleDouble", new Double(1.0E17), new Double(2.0E17), TrieUtils.VARIANT_8BIT);
 	// OR, Java 1.5, using autoboxing:
-	Query q=new TrieRangeQuery("exampleDouble", 1.0E17, 2.0E17, TrieUtils.VARIANT_8BIT);
-	TopDocs docs=searcher.search(q, 10);
-	for (int i=0; i&lt;docs.scoreDocs.length; i++) {
-		Document doc=searcher.doc(docs.scoreDocs[i].doc);
+	Query q = new TrieRangeQuery("exampleDouble", 1.0E17, 2.0E17, TrieUtils.VARIANT_8BIT);
+	TopDocs docs = searcher.search(q, 10);
+	for (int i = 0; i&lt;docs.scoreDocs.length; i++) {
+		Document doc = searcher.doc(docs.scoreDocs[i].doc);
 		System.out.println(doc.get("exampleString"));
 		// decode the stored numerical value (important!!!):
-		System.out.println( TrieUtils.VARIANT_8BIT.trieCodedToDouble(doc.get("exampleDouble")) );
+		System.out.println(TrieUtils.VARIANT_8BIT.trieCodedToDouble(doc.get("exampleDouble")));
 	}
 </pre>
 
 <h3>Performance</h3>
 
-<p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed,
+<p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed
 that the old {@link org.apache.lucene.search.RangeQuery} (with raised 
 {@link org.apache.lucene.search.BooleanQuery} clause count) took about 30-40 secs to complete,
 {@link org.apache.lucene.search.ConstantScoreRangeQuery} took 5 secs and
