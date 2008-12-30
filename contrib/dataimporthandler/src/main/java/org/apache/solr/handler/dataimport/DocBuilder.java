@@ -378,7 +378,7 @@ public class DocBuilder {
         // All fields starting with $ are special values and don't need to be added
         continue;
       }
-      DataConfig.Field field = entity.colNameVsField.get(key);
+      List<DataConfig.Field> field = entity.colNameVsField.get(key);
       if (field == null && dataImporter.getSchema() != null) {
         // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
         SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
@@ -390,11 +390,12 @@ public class DocBuilder {
         }
         //else do nothing. if we add it it may fail
       } else {
-        if (field != null && field.toWrite) {
-          addFieldToDoc(entry.getValue(), field.getName(), field.boost, field.multiValued, doc);
+        if (field != null ) {
+          for (DataConfig.Field f : field) {
+            if(f.toWrite) addFieldToDoc(entry.getValue(), f.getName(), f.boost, f.multiValued, doc);
+          }
         }
       }
-
     }
   }
 

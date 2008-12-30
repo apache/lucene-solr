@@ -100,7 +100,7 @@ public class DataConfig {
 
     public Script script;
 
-    public Map<String, Field> colNameVsField;
+    public Map<String, List<Field>> colNameVsField;
 
     public Entity() {
     }
@@ -114,11 +114,14 @@ public class DataConfig {
       allAttributes = getAllAttributes(element);
       List<Element> n = getChildNodes(element, "field");
       fields = new ArrayList<Field>();
-      colNameVsField = new HashMap<String, Field>();
+      colNameVsField = new HashMap<String, List<Field>>();
       for (Element elem : n)  {
         Field field = new Field(elem);
         fields.add(field);
-        colNameVsField.put(field.column, field);
+        List<Field> l = colNameVsField.get(field.column);
+        if(l == null) l = new ArrayList<Field>();
+        l.add(field);
+        colNameVsField.put(field.column, l);
       }
       n = getChildNodes(element, "entity");
       if (!n.isEmpty())

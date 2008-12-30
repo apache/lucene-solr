@@ -135,9 +135,9 @@ public class TestDocBuilder {
         Map<String, Object> map = (Map<String, Object>) l.get(i);
         SolrInputDocument doc = swi.docs.get(i);
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-          Assert.assertEquals(entry.getValue(), doc.getFieldValue(entry
-                  .getKey()));
+          Assert.assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
         }
+        Assert.assertEquals(map.get("desc"), doc.getFieldValue("desc_s"));
       }
       Assert.assertEquals(1, di.getDocBuilder().importStatistics.queryCount
               .get());
@@ -182,7 +182,8 @@ public class TestDocBuilder {
           + "    <document name=\"X\" >\n"
           + "        <entity name=\"x\" query=\"select * from x\">\n"
           + "          <field column=\"id\"/>\n"
-          + "          <field column=\"desc\"/>\n" + "        </entity>\n"
+          + "          <field column=\"desc\"/>\n"
+          + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
           + "    </document>\n" + "</dataConfig>";
 
 }
