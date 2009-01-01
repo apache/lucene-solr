@@ -317,6 +317,28 @@ public class QueryParsing {
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
       writeFieldVal(t.text(), ft, out, flags);
+    } else if (query instanceof ConstantScoreRangeQuery) {
+      ConstantScoreRangeQuery q = (ConstantScoreRangeQuery)query;
+      String fname = q.getField();
+      FieldType ft = writeFieldName(fname, schema, out, flags);
+      out.append( q.includesLower() ? '[' : '{' );
+      String lt = q.getLowerVal();
+      String ut = q.getUpperVal();
+      if (lt==null) {
+        out.append('*');
+      } else {
+        writeFieldVal(lt, ft, out, flags);
+      }
+
+      out.append(" TO ");
+
+      if (ut==null) {
+        out.append('*');
+      } else {
+        writeFieldVal(ut, ft, out, flags);
+      }
+
+      out.append( q.includesUpper() ? ']' : '}' );
     } else if (query instanceof RangeQuery) {
       RangeQuery q = (RangeQuery)query;
       String fname = q.getField();
@@ -340,28 +362,6 @@ public class QueryParsing {
 
       out.append( q.isInclusive() ? ']' : '}' );
 
-    } else if (query instanceof ConstantScoreRangeQuery) {
-      ConstantScoreRangeQuery q = (ConstantScoreRangeQuery)query;
-      String fname = q.getField();
-      FieldType ft = writeFieldName(fname, schema, out, flags);
-      out.append( q.includesLower() ? '[' : '{' );
-      String lt = q.getLowerVal();
-      String ut = q.getUpperVal();
-      if (lt==null) {
-        out.append('*');
-      } else {
-        writeFieldVal(lt, ft, out, flags);
-      }
-
-      out.append(" TO ");
-
-      if (ut==null) {
-        out.append('*');
-      } else {
-        writeFieldVal(ut, ft, out, flags);
-      }
-
-      out.append( q.includesUpper() ? ']' : '}' );
     } else if (query instanceof BooleanQuery) {
       BooleanQuery q = (BooleanQuery)query;
       boolean needParens=false;
