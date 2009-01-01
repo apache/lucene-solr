@@ -28,10 +28,10 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-instantiated</artifactId>
-  <name>Lucene InstantiatedIndex</name>
+  <artifactId>lucene-spatial</artifactId>
+  <name>Lucene Spatial</name>
   <version>@version@</version>
-  <description>InstantiatedIndex, alternative RAM store for small corpora.</description>
+  <description>Spatial search package.</description>
   <packaging>jar</packaging>
 
   <build>
