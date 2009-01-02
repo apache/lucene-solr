@@ -21,6 +21,7 @@ package org.apache.lucene.spatial.tier.projections;
  * 
  */
 public class CartesianTierPlotter {
+  public static final String DEFALT_FIELD_PREFIX = "_tier_";
   
   final int tierLevel;
   int tierLength;
@@ -39,10 +40,6 @@ public class CartesianTierPlotter {
     setTierLength();
     setTierBoxes();
     setTierVerticalPosDivider();
-  }
-
-  public CartesianTierPlotter (int tierLevel, IProjector projector) {
-    this( tierLevel, projector, "_localTier" );
   }
   
   private void setTierLength (){

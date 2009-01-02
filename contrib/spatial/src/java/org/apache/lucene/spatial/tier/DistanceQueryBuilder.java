@@ -47,14 +47,15 @@ public class DistanceQueryBuilder {
    * @param lng
    * @param miles
    */
-  public DistanceQueryBuilder (double lat, double lng, double miles, String latField, String lngField, boolean needPrecise){
+  public DistanceQueryBuilder (double lat, double lng, double miles, 
+      String latField, String lngField, String tierFieldPrefix, boolean needPrecise){
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
     
     
-    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder();
+    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
     cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
 
     /* create precise distance filter */

@@ -36,6 +36,12 @@ public class CartesianPolyFilterBuilder {
   private IProjector projector = new SinusoidalProjector();
   private Logger log = Logger.getLogger(getClass().getName());
   
+  private final String tierPrefix;
+  
+  public CartesianPolyFilterBuilder( String tierPrefix ) {
+    this.tierPrefix = tierPrefix;
+  }
+  
   public Shape getBoxShape(double latitude, double longitude, int miles)
   {  
     Rectangle box = DistanceUtils.getInstance().getBoundary(latitude, longitude, miles);
@@ -46,11 +52,11 @@ public class CartesianPolyFilterBuilder {
     double longY = box.getMaxPoint().getX(); ///box.getX();
     double longX = box.getMinPoint().getX();//box.getMaxX();
     
-    CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector);
+    CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector,tierPrefix);
     int bestFit = ctp.bestFit(miles);
     
     log.info("Best Fit is : " + bestFit);
-    ctp = new CartesianTierPlotter(bestFit, projector);
+    ctp = new CartesianTierPlotter(bestFit, projector,tierPrefix);
     Shape shape = new Shape(ctp.getTierFieldName());
     
     // generate shape

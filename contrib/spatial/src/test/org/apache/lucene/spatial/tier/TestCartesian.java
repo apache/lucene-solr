@@ -88,8 +88,8 @@ public class TestCartesian extends TestCase{
   private void setUpPlotter(int base, int top) {
     
     for (; base <= top; base ++){
-      ctps.add(new CartesianTierPlotter(base,project ));
-    
+      ctps.add(new CartesianTierPlotter(base,project,
+          CartesianTierPlotter.DEFALT_FIELD_PREFIX));
     }
   }
   
@@ -149,7 +149,8 @@ public class TestCartesian extends TestCase{
     final double miles = 6.0;
     
     // create a distance query
-    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, latField, lngField, true);
+    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, 
+        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
      
     System.out.println(dq);
     //create a term query to search against all documents
