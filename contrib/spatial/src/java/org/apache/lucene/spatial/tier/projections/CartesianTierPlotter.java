@@ -22,24 +22,28 @@ package org.apache.lucene.spatial.tier.projections;
  */
 public class CartesianTierPlotter {
   
-  int tierLevel;
+  final int tierLevel;
   int tierLength;
   int tierBoxes;
   int tierVerticalPosDivider;
-  IProjector projector;
-  final String fieldPrefix = "_localTier";
+  final IProjector projector;
+  final String fieldPrefix;
   Double idd = new Double(180);
   
-  public CartesianTierPlotter (int tierLevel, IProjector projector) {
+  public CartesianTierPlotter (int tierLevel, IProjector projector, String fieldPrefix) {
   
     this.tierLevel  = tierLevel;
     this.projector = projector;
+    this.fieldPrefix = fieldPrefix;
     
     setTierLength();
     setTierBoxes();
     setTierVerticalPosDivider();
   }
-  
+
+  public CartesianTierPlotter (int tierLevel, IProjector projector) {
+    this( tierLevel, projector, "_localTier" );
+  }
   
   private void setTierLength (){
     this.tierLength = (int) Math.pow(2 , this.tierLevel);
