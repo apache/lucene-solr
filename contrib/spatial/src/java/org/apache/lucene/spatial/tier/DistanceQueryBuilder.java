@@ -32,9 +32,9 @@ public class DistanceQueryBuilder {
   public BoundaryBoxFilter lngFilter;
   public DistanceFilter distanceFilter;
   
-  private double lat;
-  private double lng;
-  private double miles;
+  private final double lat;
+  private final double lng;
+  private final double miles;
   private Filter cartesianFilter;
   
   /**
@@ -74,12 +74,9 @@ public class DistanceQueryBuilder {
   * @param miles
   */
   public Filter getFilter() {
-    
-      return new SerialChainFilter(new Filter[] {cartesianFilter, distanceFilter},
+    return new SerialChainFilter(new Filter[] {cartesianFilter, distanceFilter},
                     new int[] {SerialChainFilter.AND,
                            SerialChainFilter.SERIALAND});
-
-   
   }
   
   public Filter getFilter(Query query) {
@@ -95,6 +92,18 @@ public class DistanceQueryBuilder {
     
   public Query getQuery() {
       return new ConstantScoreQuery(getFilter());
+  }
+
+  public double getLat() {
+    return lat;
+  }
+
+  public double getLng() {
+    return lng;
+  }
+
+  public double getMiles() {
+    return miles;
   }
     
   @Override
