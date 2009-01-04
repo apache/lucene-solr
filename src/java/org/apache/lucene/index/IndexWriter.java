@@ -548,7 +548,7 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of tokens/terms: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -608,7 +608,7 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of terms/tokens: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -668,7 +668,7 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of terms/tokens: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -724,7 +724,7 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of terms/tokens: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -775,7 +775,7 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of terms/tokens: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -826,7 +826,7 @@ public class IndexWriter {
    *
    * @param d the index directory
    * @param a the analyzer to use
-   * @param mfl Maximum field length: LIMITED, UNLIMITED, or user-specified
+   * @param mfl Maximum field length in number of terms/tokens: LIMITED, UNLIMITED, or user-specified
    *   via the MaxFieldLength constructor.
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -994,7 +994,7 @@ public class IndexWriter {
    *  the existing one; <code>false</code> to append to the existing
    *  index
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl whether or not to limit field lengths
+   * @param mfl {@link org.apache.lucene.index.IndexWriter.MaxFieldLength}, whether or not to limit field lengths.  Value is in number of terms/tokens
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
@@ -1028,7 +1028,7 @@ public class IndexWriter {
    *  the existing one; <code>false</code> to append to the existing
    *  index
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl whether or not to limit field lengths
+   * @param mfl whether or not to limit field lengths, value is in number of terms/tokens.  See {@link org.apache.lucene.index.IndexWriter.MaxFieldLength}.
    * @param indexingChain the {@link DocConsumer} chain to be used to 
    *  process documents
    * @param commit which commit to open
@@ -1104,7 +1104,7 @@ public class IndexWriter {
    * @param d the index directory
    * @param a the analyzer to use
    * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @param mfl whether or not to limit field lengths
+   * @param mfl whether or not to limit field lengths, value is in number of terms/tokens.  See {@link org.apache.lucene.index.IndexWriter.MaxFieldLength}.
    * @param commit which commit to open
    * @throws CorruptIndexException if the index is corrupt
    * @throws LockObtainFailedException if another writer
@@ -4993,7 +4993,7 @@ public class IndexWriter {
   }
 
   /**
-   * Specifies maximum field length in {@link IndexWriter} constructors.
+   * Specifies maximum field length (in number of tokens/terms) in {@link IndexWriter} constructors.
    * {@link #setMaxFieldLength(int)} overrides the value set by
    * the constructor.
    */
