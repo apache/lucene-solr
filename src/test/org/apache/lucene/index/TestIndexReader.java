@@ -1558,4 +1558,35 @@ public class TestIndexReader extends LuceneTestCase
       // expected
     }
   }
+
+  // LUCENE-1509
+  public void testNoDupCommitFileNames() throws Throwable {
+
+    Directory dir = new MockRAMDirectory();
+    
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+
+    writer.setMaxBufferedDocs(2);
+    writer.addDocument(createDocument("a"));
+    writer.addDocument(createDocument("a"));
+    writer.addDocument(createDocument("a"));
+    writer.close();
+    
+    Collection commits = IndexReader.listCommits(dir);
+    Iterator it = commits.iterator();
+    while(it.hasNext()) {
+      IndexCommit commit = (IndexCommit) it.next();
+      Collection files = commit.getFileNames();
+      HashSet seen = new HashSet();
+      Iterator it2 = files.iterator();
+      while(it2.hasNext()) {
+        String fileName = (String) it2.next();
+        assertTrue("file " + fileName + " was duplicated", !seen.contains(fileName));
+        seen.add(fileName);
+      }
+    }
+
+    dir.close();
+  }
 }

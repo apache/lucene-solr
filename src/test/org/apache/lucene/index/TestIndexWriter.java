@@ -1164,9 +1164,9 @@ public class TestIndexWriter extends LuceneTestCase
       // and it doesn't delete intermediate segments then it
       // will exceed this 100X:
       // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
-      assertTrue("writer used to much space while adding documents when autoCommit=false",     
+      assertTrue("writer used too much space while adding documents when autoCommit=false: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage,
                  midDiskUsage < 100*startDiskUsage);
-      assertTrue("writer used to much space after close when autoCommit=false endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
+      assertTrue("writer used too much space after close when autoCommit=false endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
                  endDiskUsage < 100*startDiskUsage);
     }
 

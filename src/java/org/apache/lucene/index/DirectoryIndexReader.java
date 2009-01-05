@@ -23,7 +23,8 @@ import java.io.FileNotFoundException;
 import java.util.HashSet;
 import java.util.Collection;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Collections;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
@@ -64,12 +65,7 @@ abstract class DirectoryIndexReader extends IndexReader {
     if (!readOnly && segmentInfos != null) {
       // We assume that this segments_N was previously
       // properly sync'd:
-      for(int i=0;i<segmentInfos.size();i++) {
-        final SegmentInfo info = segmentInfos.info(i);
-        List files = info.files();
-        for(int j=0;j<files.size();j++)
-          synced.add(files.get(j));
-      }
+      synced.addAll(segmentInfos.files(directory, true));
     }
   }
   
@@ -284,16 +280,13 @@ abstract class DirectoryIndexReader extends IndexReader {
           commitChanges();
 
           // Sync all files we just wrote
-          for(int i=0;i<segmentInfos.size();i++) {
-            final SegmentInfo info = segmentInfos.info(i);
-            final List files = info.files();
-            for(int j=0;j<files.size();j++) {
-              final String fileName = (String) files.get(j);
-              if (!synced.contains(fileName)) {
-                assert directory.fileExists(fileName);
-                directory.sync(fileName);
-                synced.add(fileName);
-              }
+          Iterator it = segmentInfos.files(directory, false).iterator();
+          while(it.hasNext()) {
+            final String fileName = (String) it.next();
+            if (!synced.contains(fileName)) {
+              assert directory.fileExists(fileName);
+              directory.sync(fileName);
+              synced.add(fileName);
             }
           }
 
@@ -426,15 +419,8 @@ abstract class DirectoryIndexReader extends IndexReader {
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
       this.dir = dir;
-      final int size = infos.size();
       userData = infos.getUserData();
-      files = new ArrayList(size);
-      files.add(segmentsFileName);
-      for(int i=0;i<size;i++) {
-        SegmentInfo info = infos.info(i);
-        if (info.dir == dir)
-          files.addAll(info.files());
-      }
+      files = Collections.unmodifiableCollection(infos.files(dir, true));
       version = infos.getVersion();
       generation = infos.getGeneration();
       isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();

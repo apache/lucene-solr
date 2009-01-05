@@ -266,9 +266,9 @@ final class IndexFileDeleter {
         if (infoStream != null) {
           message("deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
-        int size2 = commit.files.size();
-        for(int j=0;j<size2;j++) {
-          decRef((String) commit.files.get(j));
+        Iterator it = commit.files.iterator();
+        while(it.hasNext()) {
+          decRef((String) it.next());
         }
       }
       commitsToDelete.clear();
@@ -340,7 +340,7 @@ final class IndexFileDeleter {
     int size = lastFiles.size();
     if (size > 0) {
       for(int i=0;i<size;i++)
-        decRef((List) lastFiles.get(i));
+        decRef((Collection) lastFiles.get(i));
       lastFiles.clear();
     }
 
@@ -419,55 +419,46 @@ final class IndexFileDeleter {
       int size = lastFiles.size();
       if (size > 0) {
         for(int i=0;i<size;i++)
-          decRef((List) lastFiles.get(i));
+          decRef((Collection) lastFiles.get(i));
         lastFiles.clear();
       }
 
       // Save files so we can decr on next checkpoint/commit:
-      size = segmentInfos.size();
-      for(int i=0;i<size;i++) {
-        SegmentInfo segmentInfo = segmentInfos.info(i);
-        if (segmentInfo.dir == directory) {
-          lastFiles.add(segmentInfo.files());
-        }
-      }
+      lastFiles.add(segmentInfos.files(directory, false));
+
       if (docWriterFiles != null)
         lastFiles.add(docWriterFiles);
     }
   }
 
   void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
-    int size = segmentInfos.size();
-    for(int i=0;i<size;i++) {
-      SegmentInfo segmentInfo = segmentInfos.info(i);
-      if (segmentInfo.dir == directory) {
-        incRef(segmentInfo.files());
-      }
-    }
-
-    if (isCommit) {
-      // Since this is a commit point, also incref its
-      // segments_N file:
-      getRefCount(segmentInfos.getCurrentSegmentFileName()).IncRef();
+     // If this is a commit point, also incRef the
+     // segments_N file:
+    Iterator it = segmentInfos.files(directory, isCommit).iterator();
+    while(it.hasNext()) {
+      incRef((String) it.next());
     }
   }
 
   void incRef(List files) throws IOException {
     int size = files.size();
     for(int i=0;i<size;i++) {
-      String fileName = (String) files.get(i);
-      RefCount rc = getRefCount(fileName);
-      if (infoStream != null && VERBOSE_REF_COUNTS) {
-        message("  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
-      }
-      rc.IncRef();
+      incRef((String) files.get(i));
     }
   }
 
-  void decRef(List files) throws IOException {
-    int size = files.size();
-    for(int i=0;i<size;i++) {
-      decRef((String) files.get(i));
+  void incRef(String fileName) throws IOException {
+    RefCount rc = getRefCount(fileName);
+    if (infoStream != null && VERBOSE_REF_COUNTS) {
+      message("  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
+    }
+    rc.IncRef();
+  }
+
+  void decRef(Collection files) throws IOException {
+    Iterator it = files.iterator();
+    while(it.hasNext()) {
+      decRef((String) it.next());
     }
   }
 
@@ -485,12 +476,9 @@ final class IndexFileDeleter {
   }
 
   void decRef(SegmentInfos segmentInfos) throws IOException {
-    final int size = segmentInfos.size();
-    for(int i=0;i<size;i++) {
-      SegmentInfo segmentInfo = segmentInfos.info(i);
-      if (segmentInfo.dir == directory) {
-        decRef(segmentInfo.files());
-      }
+    Iterator it = segmentInfos.files(directory, false).iterator();
+    while(it.hasNext()) {
+      decRef((String) it.next());
     }
   }
 
@@ -511,7 +499,7 @@ final class IndexFileDeleter {
       deleteFile((String) files.get(i));
   }
 
-  /** Delets the specified files, but only if they are new
+  /** Deletes the specified files, but only if they are new
    *  (have not yet been incref'd). */
   void deleteNewFiles(Collection files) throws IOException {
     final Iterator it = files.iterator();
@@ -577,7 +565,7 @@ final class IndexFileDeleter {
   final private static class CommitPoint extends IndexCommit implements Comparable {
 
     long gen;
-    List files;
+    Collection files;
     String segmentsFileName;
     boolean deleted;
     Directory directory;
@@ -594,17 +582,11 @@ final class IndexFileDeleter {
       segmentsFileName = segmentInfos.getCurrentSegmentFileName();
       version = segmentInfos.getVersion();
       generation = segmentInfos.getGeneration();
-      int size = segmentInfos.size();
-      files = new ArrayList(size);
-      files.add(segmentsFileName);
+      files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
       gen = segmentInfos.getGeneration();
-      for(int i=0;i<size;i++) {
-        SegmentInfo segmentInfo = segmentInfos.info(i);
-        if (segmentInfo.dir == directory) {
-          files.addAll(segmentInfo.files());
-        }
-      } 
       isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
+
+      assert !segmentInfos.hasExternalSegments(directory);
     }
 
     public boolean isOptimized() {
@@ -616,7 +598,7 @@ final class IndexFileDeleter {
     }
 
     public Collection getFileNames() throws IOException {
-      return Collections.unmodifiableCollection(files);
+      return files;
     }
 
     public Directory getDirectory() {

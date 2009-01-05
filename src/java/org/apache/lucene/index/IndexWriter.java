@@ -1187,12 +1187,7 @@ public class IndexWriter {
 
         // We assume that this segments_N was previously
         // properly sync'd:
-        for(int i=0;i<segmentInfos.size();i++) {
-          final SegmentInfo info = segmentInfos.info(i);
-          List files = info.files();
-          for(int j=0;j<files.size();j++)
-            synced.add(files.get(j));
-        }
+        synced.addAll(segmentInfos.files(directory, true));
       }
 
       this.autoCommit = autoCommit;
@@ -1231,7 +1226,7 @@ public class IndexWriter {
 
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
-    assert !hasExternalSegments(rollbackSegmentInfos);
+    assert !rollbackSegmentInfos.hasExternalSegments(directory);
     rollbackSegments = new HashMap();
     final int size = rollbackSegmentInfos.size();
     for(int i=0;i<size;i++)
@@ -2721,7 +2716,7 @@ public class IndexWriter {
     try {
       localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
 
-      assert !hasExternalSegments(segmentInfos);
+      assert !hasExternalSegments();
 
       localAutoCommit = autoCommit;
       localFlushedDocCount = docWriter.getFlushedDocCount();
@@ -3244,15 +3239,7 @@ public class IndexWriter {
   }
 
   private boolean hasExternalSegments() {
-    return hasExternalSegments(segmentInfos);
-  }
-
-  private boolean hasExternalSegments(SegmentInfos infos) {
-    final int numSegments = infos.size();
-    for(int i=0;i<numSegments;i++)
-      if (infos.info(i).dir != directory)
-        return true;
-    return false;
+    return segmentInfos.hasExternalSegments(directory);
   }
 
   /* If any of our segments are using a directory != ours
@@ -4098,17 +4085,9 @@ public class IndexWriter {
   }
 
   private void decrefMergeSegments(MergePolicy.OneMerge merge) throws IOException {
-    final SegmentInfos sourceSegmentsClone = merge.segmentsClone;
-    final int numSegmentsToMerge = sourceSegmentsClone.size();
     assert merge.increfDone;
     merge.increfDone = false;
-    for(int i=0;i<numSegmentsToMerge;i++) {
-      final SegmentInfo previousInfo = sourceSegmentsClone.info(i);
-      // Decref all files for this SegmentInfo (this
-      // matches the incref in mergeInit):
-      if (previousInfo.dir == directory)
-        deleter.decRef(previousInfo.files());
-    }
+    deleter.decRef(merge.segmentsClone);
   }
 
   final private void handleMergeException(Throwable t, MergePolicy.OneMerge merge) throws IOException {
@@ -4373,14 +4352,7 @@ public class IndexWriter {
     // properly merge deletes in commitMerge()
     merge.segmentsClone = (SegmentInfos) merge.segments.clone();
 
-    for (int i = 0; i < end; i++) {
-      SegmentInfo si = merge.segmentsClone.info(i);
-
-      // IncRef all files for this segment info to make sure
-      // they are not removed while we are trying to merge.
-      if (si.dir == directory)
-        deleter.incRef(si.files());
-    }
+    deleter.incRef(merge.segmentsClone, false);
 
     merge.increfDone = true;
 
@@ -4814,6 +4786,8 @@ public class IndexWriter {
         // copied the segmentInfos we intend to sync:
         blockAddIndexes(false);
 
+        // On commit the segmentInfos must never
+        // reference a segment in another directory:
         assert !hasExternalSegments();
 
         try {
@@ -4858,24 +4832,21 @@ public class IndexWriter {
 
           final Collection pending = new ArrayList();
 
-          for(int i=0;i<toSync.size();i++) {
-            final SegmentInfo info = toSync.info(i);
-            final List files = info.files();
-            for(int j=0;j<files.size();j++) {
-              final String fileName = (String) files.get(j);
-              if (startSync(fileName, pending)) {
-                boolean success = false;
-                try {
-                  // Because we incRef'd this commit point, above,
-                  // the file had better exist:
-                  assert directory.fileExists(fileName): "file '" + fileName + "' does not exist dir=" + directory;
-                  if (infoStream != null)
-                    message("now sync " + fileName);
-                  directory.sync(fileName);
-                  success = true;
-                } finally {
-                  finishSync(fileName, success);
-                }
+          Iterator it = toSync.files(directory, false).iterator();
+          while(it.hasNext()) {
+            final String fileName = (String) it.next();
+            if (startSync(fileName, pending)) {
+              boolean success = false;
+              try {
+                // Because we incRef'd this commit point, above,
+                // the file had better exist:
+                assert directory.fileExists(fileName): "file '" + fileName + "' does not exist dir=" + directory;
+                if (infoStream != null)
+                  message("now sync " + fileName);
+                directory.sync(fileName);
+                success = true;
+              } finally {
+                finishSync(fileName, success);
               }
             }
           }

@@ -30,6 +30,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
+import java.util.Collection;
+import java.util.HashSet;
 
 final class SegmentInfos extends Vector {
 
@@ -794,6 +796,26 @@ final class SegmentInfos extends Vector {
     write(dir);
   }
 
+  /** Returns all file names referenced by SegmentInfo
+   *  instances matching the provided Directory (ie files
+   *  associated with any "external" segments are skipped).
+   *  The returned collection is recomputed on each
+   *  invocation.  */
+  public Collection files(Directory dir, boolean includeSegmentsFile) throws IOException {
+    HashSet files = new HashSet();
+    if (includeSegmentsFile) {
+      files.add(getCurrentSegmentFileName());
+    }
+    final int size = size();
+    for(int i=0;i<size;i++) {
+      final SegmentInfo info = info(i);
+      if (info.dir == dir) {
+        files.addAll(info(i).files());
+      }
+    }
+    return files;
+  }
+
   public final void finishCommit(Directory dir) throws IOException {
     if (pendingOutput == null)
       throw new IllegalStateException("prepareCommit was not called");
@@ -890,5 +912,14 @@ final class SegmentInfos extends Vector {
     clear();
     addAll(other);
     lastGeneration = other.lastGeneration;
+  }
+
+  // Used only for testing
+  boolean hasExternalSegments(Directory dir) {
+    final int numSegments = size();
+    for(int i=0;i<numSegments;i++)
+      if (info(i).dir != dir)
+        return true;
+    return false;
   }
 }
