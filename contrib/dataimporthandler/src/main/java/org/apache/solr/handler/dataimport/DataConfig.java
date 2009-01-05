@@ -145,7 +145,7 @@ public class DataConfig {
       processor = null;
       if (dataSrc != null)
         dataSrc.close();
-
+        dataSrc = null;
     }
   }
 
