@@ -58,13 +58,6 @@ public class TestIndexInput extends LuceneTestCase {
       // null bytes
       0x01, 0x00,
       0x08, 'L', 'u', 0x00, 'c', 'e', 0x00, 'n', 'e',
-      
-      // Modified UTF-8 null bytes
-      0x02, (byte) 0xC0, (byte) 0x80,
-      0x0A, 'L', 'u', (byte) 0xC0, (byte) 0x80, 
-            'c', 'e', (byte) 0xC0, (byte) 0x80, 
-            'n', 'e',
-
     });
         
     assertEquals(128,is.readVInt());
@@ -83,9 +76,6 @@ public class TestIndexInput extends LuceneTestCase {
     assertEquals("\uD834\uDD1E\uD834\uDD60",is.readString());
     assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne",is.readString());
     
-    assertEquals("\u0000",is.readString());
-    assertEquals("Lu\u0000ce\u0000ne",is.readString());
-
     assertEquals("\u0000",is.readString());
     assertEquals("Lu\u0000ce\u0000ne",is.readString());
   }
