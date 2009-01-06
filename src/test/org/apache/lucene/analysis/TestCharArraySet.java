@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestCharArraySet extends LuceneTestCase
-{
+public class TestCharArraySet extends LuceneTestCase {
+  
   public void testRehash() throws Exception {
     CharArraySet cas = new CharArraySet(0, true);
     for(int i=0;i<StopAnalyzer.ENGLISH_STOP_WORDS.length;i++)
@@ -39,5 +39,13 @@ public class TestCharArraySet extends LuceneTestCase
     set.addAll(Arrays.asList(words));
     assertTrue(set.contains(findme, 1, 4));
     assertTrue(set.contains(new String(findme,1,4)));
+  }
+  
+  public void testObjectContains() {
+    CharArraySet set = new CharArraySet(10, true);
+    Integer val = new Integer(1);
+    set.add(val);
+    assertTrue(set.contains(val));
+    assertTrue(set.contains(new Integer(1)));
   }
 }

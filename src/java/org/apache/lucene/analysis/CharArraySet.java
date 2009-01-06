@@ -191,22 +191,15 @@ public class CharArraySet extends AbstractSet {
   }
 
   private int getHashCode(CharSequence text) {
-    int code;
+    int code = 0;
+    int len = text.length();
     if (ignoreCase) {
-      code = 0;
-      int len = text.length();
       for (int i=0; i<len; i++) {
         code = code*31 + Character.toLowerCase(text.charAt(i));
       }
     } else {
-      if (false && text instanceof String) {
-        code = text.hashCode();
-      } else {
-        code = 0;
-        int len = text.length();
-        for (int i=0; i<len; i++) {
-          code = code*31 + text.charAt(i);
-        }
+      for (int i=0; i<len; i++) {
+        code = code*31 + text.charAt(i);
       }
     }
     return code;
@@ -225,22 +218,15 @@ public class CharArraySet extends AbstractSet {
     if (o instanceof char[]) {
       char[] text = (char[])o;
       return contains(text, 0, text.length);
-    } else if (o instanceof CharSequence) {
-      return contains((CharSequence)o);
-    }
-    return false;
+    } 
+    return contains(o.toString());
   }
 
   public boolean add(Object o) {
     if (o instanceof char[]) {
       return add((char[])o);
-    } else if (o instanceof String) {
-      return add((String)o);
-    } else if (o instanceof CharSequence) {
-      return add((CharSequence)o);
-    } else {
-      return add(o.toString());
     }
+    return add(o.toString());
   }
 
   /** The Iterator<String> for this set.  Strings are constructed on the fly, so
