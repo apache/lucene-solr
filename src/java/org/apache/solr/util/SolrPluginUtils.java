@@ -22,6 +22,8 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -36,6 +38,9 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
+import org.apache.solr.update.DocumentBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -55,6 +60,7 @@ import java.util.regex.Pattern;
  * default parameter settings.  
  */
 public class SolrPluginUtils {
+  final static Logger log = LoggerFactory.getLogger( SolrPluginUtils.class );
 
   /**
    * Set defaults on a SolrQueryRequest.
@@ -870,9 +876,72 @@ public class SolrPluginUtils {
       newCache.put(oldKey,oldVal);
       return true;
     }
-            
   }
 
+  /**
+   * Convert a DocList to a SolrDocumentList
+   * 
+   * The optional param "ids" is populated with the lucene document id 
+   * for each SolrDocument.  
+   * 
+   * @since solr 1.4
+   */
+  public static SolrDocumentList docListToSolrDocumentList( 
+      DocList docs, 
+      SolrIndexSearcher searcher, 
+      Set<String> fields, 
+      Map<SolrDocument, Integer> ids ) throws IOException
+  {
+    DocumentBuilder db = new DocumentBuilder(searcher.getSchema());
+    SolrDocumentList list = new SolrDocumentList();
+    list.setNumFound(docs.matches());
+    list.setMaxScore(docs.maxScore());
+    list.setStart(docs.offset());
+
+    DocIterator dit = docs.iterator();
+
+    while (dit.hasNext()) {
+      int docid = dit.nextDoc();
+      
+      Document luceneDoc = searcher.doc(docid, fields);
+      SolrDocument doc = new SolrDocument();
+      db.loadStoredFields(doc, luceneDoc);
+
+      // this may be removed if XMLWriter gets patched to
+      // include score from doc iterator in solrdoclist
+      if (docs.hasScores()) {
+        doc.addField("score", dit.score());
+      } else {
+        doc.addField("score", 0.0f); 
+      }
+      list.add( doc );
+      
+      if( ids != null ) {
+        ids.put( doc, new Integer(docid) );
+      }
+    }
+    return list;
+  }
+
+  /**
+   * Given a SolrQueryResponse replace the DocList if it is in the result.  
+   * Otherwise add it to the response
+   * 
+   * @since solr 1.4
+   */
+  public static void addOrReplaceResults(SolrQueryResponse rsp, SolrDocumentList docs) 
+  {
+    NamedList vals = rsp.getValues();
+    int idx = vals.indexOf( "response", 0 );
+    if( idx >= 0 ) {
+      log.debug("Replacing DocList with SolrDocumentList " + docs.size());
+      vals.setVal( idx, docs );
+    }
+    else {
+      log.debug("Adding SolrDocumentList response" + docs.size());
+      vals.add( "response", docs );
+    }
+  }
 }
 
 
