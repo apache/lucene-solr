@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -171,9 +172,22 @@ public class UpdateRequest extends SolrRequest
   public Collection<ContentStream> getContentStreams() throws IOException {
     return ClientUtils.toContentStreams( getXML(), ClientUtils.TEXT_XML );
   }
-  
+
   public String getXML() throws IOException {
     StringWriter writer = new StringWriter();
+    writeXML( writer );
+    writer.flush();
+
+    // If action is COMMIT or OPTIMIZE, it is sent with params
+    String xml = writer.toString();
+    //System.out.println( "SEND:"+xml );
+    return (xml.length() > 0) ? xml : null;
+  }
+  
+  /**
+   * @since solr 1.4
+   */
+  public void writeXML( Writer writer ) throws IOException {
     if( documents != null && documents.size() > 0 ) {
       if( commitWithin > 0 ) {
         writer.write("<add commitWithin=\""+commitWithin+"\">");
@@ -210,11 +224,6 @@ public class UpdateRequest extends SolrRequest
       }
       writer.append( "</delete>" );
     }
-    
-    // If action is COMMIT or OPTIMIZE, it is sent with params
-    String xml = writer.toString();
-    //System.out.println( "SEND:"+xml );
-    return (xml.length() > 0) ? xml : null;
   }
 
 

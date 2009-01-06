@@ -132,6 +132,12 @@ New Features
     For example, hl.fl=*_text will highlight all fieldnames ending with
     _text.  (Lars Kotthoff via yonik)
 
+29. SOLR-906: Adding a StreamingUpdateSolrServer that writes update commands to 
+    an open HTTP connection.  If you are using solrj for bulk update requests
+    you should consider switching to this implementaion.  However, note that
+    the error handling is not immediate as it is with the standard SolrServer.
+    (ryan)
+
 
 Optimizations
 ----------------------
