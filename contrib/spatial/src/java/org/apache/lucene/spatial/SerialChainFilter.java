@@ -22,18 +22,20 @@ import java.util.BitSet;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.DocIdBitSet;
 
 /**
  * 
  * Provide a serial chain filter, passing the bitset in with the
  * index reader to each of the filters in an ordered fashion.
  * 
- * Based off chain filter, but will some improvements to allow a narrowed down
+ * Based off chain filter, but with some improvements to allow a narrowed down
  * filtering. Traditional filter required iteration through an IndexReader.
  * 
  * By implementing the ISerialChainFilter class, you can create a bits(IndexReader reader, BitSet bits)
- * @see org.apache.lucene.spatial.ISerialChainFilter
+ * @see org.apache.lucene.search.ISerialChainFilter
  * 
  */
 public class SerialChainFilter extends Filter {
@@ -65,7 +67,16 @@ public class SerialChainFilter extends Filter {
    * @see org.apache.lucene.search.Filter#bits(org.apache.lucene.index.IndexReader)
    */
   @Override
-  public BitSet bits(IndexReader reader) throws CorruptIndexException, IOException {
+  public BitSet bits(IndexReader reader) throws IOException {
+	  return ((DocIdBitSet)getDocIdSet(reader)).getBitSet();
+  }
+  
+  
+  /* (non-Javadoc)
+   * @see org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.IndexReader)
+   */
+  @Override
+  public DocIdSet getDocIdSet(IndexReader reader) throws CorruptIndexException, IOException {
     
     BitSet bits = new BitSet(reader.maxDoc());
     int chainSize = chain.length;
@@ -77,12 +88,12 @@ public class SerialChainFilter extends Filter {
      */
     if (actionType[i] == AND){
        try {
-        bits = (BitSet) chain[i].bits(reader).clone();
+        bits = (BitSet) ((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet().clone();
       } catch (IOException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
-           ++i;
+      ++i;
     }
     
     for( ; i < chainSize; i++) {
@@ -114,18 +125,17 @@ public class SerialChainFilter extends Filter {
           }
         break;
       case (AND):
-        bits.and(chain[i].bits(reader));
+        bits.and(((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet());
         break;
       case (OR):
-        bits.and(chain[i].bits(reader));
+        bits.or(((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet());
         break;
       }
-  
     }
-    return bits;
+    return new DocIdBitSet(bits);
   }
 
-    /**
+  /**
    * @return the chain
    */
   Filter[] getChain() {
