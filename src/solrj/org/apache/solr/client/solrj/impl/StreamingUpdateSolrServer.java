@@ -82,6 +82,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
     public void run() {
       lock.lock();
 
+      // info is ok since this should only happen once for each thread
       log.info( "starting runner: {}" , this );
       PostMethod method = null;
       try {
@@ -97,7 +98,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
               writer.append( "<stream>" ); // can be anything...
               UpdateRequest req = queue.poll( 250, TimeUnit.MILLISECONDS );
               while( req != null ) {
-                log.info( "sending: {}" , req );
+                log.debug( "sending: {}" , req );
                 req.writeXML( writer ); 
                 
                 // check for commit or optimize
