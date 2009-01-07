@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.tier;
 
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.ISerialChainFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SerialChainFilter;

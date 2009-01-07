@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.spatial.tier;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,20 +34,16 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.function.CustomScoreQuery;
+import org.apache.lucene.search.function.FieldScoreQuery;
+import org.apache.lucene.search.function.FieldScoreQuery.Type;
+import org.apache.lucene.spatial.NumberUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
-import org.apache.lucene.spatial.tier.DistanceQueryBuilder;
-import org.apache.lucene.spatial.tier.DistanceSortSource;
-import org.apache.lucene.spatial.tier.DistanceUtils;
-import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.spatial.NumberUtils;
-import org.apache.lucene.search.function.CustomScoreQuery;
-import org.apache.lucene.search.function.FieldScoreQuery;
-import org.apache.lucene.search.function.FieldScoreQuery.Type;
 
 
 /**

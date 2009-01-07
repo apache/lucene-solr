@@ -26,12 +26,9 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
-
 import org.apache.lucene.spatial.tier.DistanceFilter;
 import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
-
-import org.apache.lucene.spatial.NumberUtils;
 
 
 

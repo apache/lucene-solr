@@ -18,8 +18,6 @@ package org.apache.lucene.spatial.tier;
 
 import java.text.DecimalFormat;
 
-import org.apache.lucene.spatial.tier.DistanceUtils;
-
 
 public class DistanceCheck {
 
