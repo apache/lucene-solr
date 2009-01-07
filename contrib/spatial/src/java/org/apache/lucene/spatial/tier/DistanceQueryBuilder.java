@@ -19,9 +19,11 @@ package org.apache.lucene.spatial.tier;
 
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.ISerialChainFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.SerialChainFilter;
+import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
 
 
 public class DistanceQueryBuilder {
@@ -48,7 +50,7 @@ public class DistanceQueryBuilder {
    * @param miles
    */
   public DistanceQueryBuilder (double lat, double lng, double miles, 
-      String latField, String lngField, String tierFieldPrefix, boolean needPrecise){
+      String latField, String lngField, String tierFieldPrefix,boolean needPrecise){
 
     this.lat = lat;
     this.lng = lng;
@@ -60,10 +62,38 @@ public class DistanceQueryBuilder {
 
     /* create precise distance filter */
     if( needPrecise)
-    	distanceFilter = new DistanceFilter(lat, lng, miles, latField, lngField);
+    	distanceFilter = new LatLongDistanceFilter(lat, lng, miles, latField, lngField);
     
   }
 
+  /**
+   * Create a distance query using
+   * a boundary box wrapper around a more precise
+   * DistanceFilter.
+   * 
+   * @see SerialChainFilter
+   * @param lat
+   * @param lng
+   * @param miles
+   */
+  public DistanceQueryBuilder (double lat, double lng, double miles, 
+      String geoHashFieldPrefix, String tierFieldPrefix,boolean needPrecise){
+
+    this.lat = lat;
+    this.lng = lng;
+    this.miles = miles;
+    
+    
+    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
+    cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
+
+    /* create precise distance filter */
+    if( needPrecise)
+    	distanceFilter = new GeoHashDistanceFilter(lat, lng, miles, geoHashFieldPrefix);
+    
+  }
+
+  
    /**
   * Create a distance query using
   * a boundary box wrapper around a more precise

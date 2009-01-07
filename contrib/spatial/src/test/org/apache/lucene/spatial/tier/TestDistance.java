@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
-import java.util.Map;
 
 import junit.framework.TestCase;
 
@@ -25,19 +24,9 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.spatial.tier.DistanceQueryBuilder;
-import org.apache.lucene.spatial.tier.DistanceSortSource;
-import org.apache.lucene.spatial.tier.DistanceUtils;
-import org.apache.lucene.spatial.tier.InvalidGeoException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.store.RAMDirectory;
 
 
 /**
