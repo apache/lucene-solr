@@ -399,7 +399,7 @@ public class CommonsHttpSolrServer extends SolrServer
   //-------------------------------------------------------------------
   
   /**
-   * Parameters are added to ever request regardless.  This may be a place to add 
+   * Parameters are added to every request regardless.  This may be a place to add 
    * something like an authentication token.
    */
   public ModifiableSolrParams getInvariantParams()
