@@ -92,6 +92,21 @@ public class DocBuilder {
     return resolver;
   }
 
+  private void invokeEventListener(String className) {
+    try {
+      EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
+      int currentProcess = -1;
+      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
+        currentProcess = Context.DELTA_DUMP;
+      } else  {
+        currentProcess = Context.FULL_DUMP;
+      }
+      listener.onEvent(new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this));
+    } catch (Exception e) {
+      DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e, "Unable to load class : " + className);
+    }
+  }
+
   @SuppressWarnings("unchecked")
   public void execute() {
     dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
@@ -113,6 +128,11 @@ public class DocBuilder {
             importStatistics.skipDocCount);
 
     List<String> entities = requestParameters.entities;
+
+    // Trigger onImportStart
+    if (document.onImportStart != null) {
+      invokeEventListener(document.onImportStart);
+    }
 
     for (DataConfig.Entity e : document.entities) {
       if (entities != null && !entities.contains(e.name))
@@ -137,10 +157,16 @@ public class DocBuilder {
       } else if (requestParameters.commit) {
         // Debug mode, commit if commit=true was specified
         commit();
+        if (document.onImportEnd != null) {
+          invokeEventListener(document.onImportEnd);
+        }
       }
     } else {
       // Finished operation normally, commit now
       commit();
+      if (document.onImportEnd != null) {
+        invokeEventListener(document.onImportEnd);
+      }
     }
 
     statusMessages.remove(TIME_ELAPSED);

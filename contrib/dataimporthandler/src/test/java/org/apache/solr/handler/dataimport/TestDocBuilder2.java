@@ -78,6 +78,8 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     super.runFullImport(dataConfigWithCaseInsensitiveFields);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
+    assertTrue("Start event listener was not called", StartEventListener.executed);
+    assertTrue("End event listener was not called", EndEventListener.executed);
   }
 
   @Test
@@ -137,6 +139,22 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   }
 
+  public static class StartEventListener extends EventListener {
+    public static boolean executed = false;
+
+    public void onEvent(Context ctx) {
+      executed = true;
+    }
+  }
+
+  public static class EndEventListener extends EventListener {
+    public static boolean executed = false;
+
+    public void onEvent(Context ctx) {
+      executed = true;
+    }
+  }
+
   private final String requestParamAsVariable = "<dataConfig>\n" +
           "    <dataSource type=\"MockDataSource\" />\n" +
           "    <document>\n" +
@@ -158,7 +176,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "</dataConfig>";
 
   private final String dataConfigWithCaseInsensitiveFields = "<dataConfig>\n" +
-          "    <document>\n" +
+          "    <document onImportStart=\"TestDocBuilder2$StartEventListener\" onImportEnd=\"TestDocBuilder2$EndEventListener\">\n" +
           "        <entity name=\"books\" query=\"select * from x\">\n" +
           "            <field column=\"ID\" />\n" +
           "            <field column=\"Desc\" />\n" +

@@ -45,7 +45,10 @@ New Features
               (David Smiley, Glen Newton, shalin)
 
 9. SOLR-910:  Add a few utility commands to the DIH admin page such as full import, delta import, status, reload config.
-              (Ahmed Hammad via shalin) 
+              (Ahmed Hammad via shalin)
+
+10.SOLR-938:  Add event listener API for import start and end.
+              (Kay Kay, Noble Paul via shalin)
 
 Optimizations
 ----------------------

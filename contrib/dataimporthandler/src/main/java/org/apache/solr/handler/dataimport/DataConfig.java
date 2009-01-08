@@ -57,11 +57,15 @@ public class DataConfig {
 
     public List<Entity> entities = new ArrayList<Entity>();
 
+    public String onImportStart, onImportEnd;
+
     public Document() {
     }
 
     public Document(Element element) {
       this.deleteQuery = getStringAttribute(element, "deleteQuery", null);
+      this.onImportStart = getStringAttribute(element, "onImportStart", null);
+      this.onImportEnd = getStringAttribute(element, "onImportEnd", null);
       List<Element> l = getChildNodes(element, "entity");
       for (Element e : l)
         entities.add(new Entity(e));
