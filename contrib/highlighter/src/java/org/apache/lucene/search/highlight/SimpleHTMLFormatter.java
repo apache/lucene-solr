@@ -1,4 +1,5 @@
 package org.apache.lucene.search.highlight;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,45 +18,42 @@ package org.apache.lucene.search.highlight;
  */
 
 /**
- * Simple {@link Formatter} implementation to highlight terms with a pre and post tag
- *
+ * Simple {@link Formatter} implementation to highlight terms with a pre and
+ * post tag.
  */
-public class SimpleHTMLFormatter implements Formatter
-{
-	String preTag;
-	String postTag;
+public class SimpleHTMLFormatter implements Formatter {
+  
+  private static final String DEFAULT_PRE_TAG = "<B>";
+  private static final String DEFAULT_POST_TAG = "</B>";
+  
+	private String preTag;
+	private String postTag;
 	
-
-	public SimpleHTMLFormatter(String preTag, String postTag)
-	{
+	public SimpleHTMLFormatter(String preTag, String postTag) {
 		this.preTag = preTag;
 		this.postTag = postTag;
 	}
 
-	/**
-	 * Default constructor uses HTML: &lt;B&gt; tags to markup terms
-	 * 
-	 **/
-	public SimpleHTMLFormatter()
-	{
-		this.preTag = "<B>";
-		this.postTag = "</B>";
+	/** Default constructor uses HTML: &lt;B&gt; tags to markup terms. */
+	public SimpleHTMLFormatter() {
+	  this(DEFAULT_PRE_TAG, DEFAULT_POST_TAG);
 	}
 
 	/* (non-Javadoc)
 	 * @see org.apache.lucene.search.highlight.Formatter#highlightTerm(java.lang.String, org.apache.lucene.search.highlight.TokenGroup)
 	 */
-	public String highlightTerm(String originalText, TokenGroup tokenGroup)
-	{
-		StringBuffer returnBuffer;
-		if(tokenGroup.getTotalScore()>0)
-		{
-			returnBuffer=new StringBuffer();
-			returnBuffer.append(preTag);
-			returnBuffer.append(originalText);
-			returnBuffer.append(postTag);
-			return returnBuffer.toString();
-		}
-		return originalText;
+	public String highlightTerm(String originalText, TokenGroup tokenGroup) {
+	  if (tokenGroup.getTotalScore() <= 0) {
+	    return originalText;
+	  }
+	  
+	  // Allocate StringBuffer with the right number of characters from the
+    // beginning, to avoid char[] allocations in the middle of appends.
+	  StringBuffer returnBuffer = new StringBuffer(preTag.length() + originalText.length() + postTag.length());
+	  returnBuffer.append(preTag);
+	  returnBuffer.append(originalText);
+	  returnBuffer.append(postTag);
+	  return returnBuffer.toString();
 	}
+	
 }
