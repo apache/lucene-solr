@@ -19,6 +19,9 @@ Bug fixes
     same way IndexWriter does. Parts of InstantiatedIndex was not Serializable.
     (Karl Wettin)
 
+ 3. LUCENE-1510: InstantiatedIndexReader#norms methods throws NullPointerException on empty index.
+    (Karl Wettin, Robert Newson)
+
 New features
 
  1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of

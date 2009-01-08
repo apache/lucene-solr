@@ -280,6 +280,9 @@ public class InstantiatedIndexReader extends IndexReader {
    */
   public byte[] norms(String field) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
+    if (norms == null) {
+      return new byte[0]; // todo a static final zero length attribute?
+    }
     if (updatedNormsByFieldNameAndDocumentNumber != null) {
       norms = norms.clone();
       List<NormUpdate> updated = updatedNormsByFieldNameAndDocumentNumber.get(field);
@@ -294,6 +297,9 @@ public class InstantiatedIndexReader extends IndexReader {
 
   public void norms(String field, byte[] bytes, int offset) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
+    if (norms == null) {
+      return;
+    }
     System.arraycopy(norms, 0, bytes, offset, norms.length);
   }
 

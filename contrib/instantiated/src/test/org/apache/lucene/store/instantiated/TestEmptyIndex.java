@@ -17,15 +17,18 @@
 package org.apache.lucene.store.instantiated;
 
 import junit.framework.TestCase;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocCollector;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.util.Arrays;
+import java.io.IOException;
 
 public class TestEmptyIndex extends TestCase {
 
@@ -45,6 +48,38 @@ public class TestEmptyIndex extends TestCase {
     r.close();
     ii.close();
 
+  }
+
+  public void testNorms() throws Exception {
+
+    InstantiatedIndex ii = new InstantiatedIndex();
+    IndexReader r = new InstantiatedIndexReader(ii);
+    testNorms(r);
+    r.close();
+    ii.close();
+
+    // make sure a Directory acts the same
+
+    Directory d = new RAMDirectory();
+    new IndexWriter(d, null, true, IndexWriter.MaxFieldLength.UNLIMITED).close();
+    r = IndexReader.open(d);
+    testNorms(r);
+    r.close();
+    d.close();
+
+  }
+
+  private void testNorms(IndexReader r) throws IOException {
+    byte[] norms;
+    norms = r.norms("foo");
+    assertNotNull(norms);
+    assertEquals(0, norms.length);
+    norms = new byte[10];
+    Arrays.fill(norms, (byte)10);
+    r.norms("foo", norms, 10);
+    for (byte b : norms) {
+      assertEquals((byte)10, b);
+    }
   }
 
   public void testTermEnum() throws Exception {
