@@ -22,6 +22,9 @@ Bug fixes
  3. LUCENE-1510: InstantiatedIndexReader#norms methods throws NullPointerException on empty index.
     (Karl Wettin, Robert Newson)
 
+ 4. LUCENE-1514: ShingleMatrixFilter#next(Token) easily throws a StackOverflowException
+    due to recursive invocation. (Karl Wettin)
+
 New features
 
  1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of

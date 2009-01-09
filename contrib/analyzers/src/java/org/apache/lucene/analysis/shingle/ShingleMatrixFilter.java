@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.shingle;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,7 +51,7 @@ import org.apache.lucene.index.Payload;
  * in several languages, notebly the northern Germanic branch.
  *
  * <p>Shingles are amongst many things also known to solve problems
- * in spell checking, language detection and document clustering.  
+ * in spell checking, language detection and document clustering.
  *
  * <p>This filter is backed by a three dimensional column oriented matrix
  * used to create permutations of the second dimension, the rows,
@@ -90,7 +89,7 @@ import org.apache.lucene.index.Payload;
  * "and_salutations_tellus"
  * "salutations_tellus"
  *  </pre>
- * 
+ *
  * <p>This implementation can be rather heap demanding
  * if (maximum shingle size - minimum shingle size) is a great number and the stream contains many columns,
  * or if each column contains a great number of rows.
@@ -304,6 +303,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
   private Matrix matrix;
 
+
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     if (matrix == null) {
@@ -313,6 +313,30 @@ public class ShingleMatrixFilter extends TokenStream {
         // this loop looks ugly
       }
     }
+
+    // this loop exists in order to avoid recursive calls to the next method
+    // as the complexity of a large matrix
+    // then would require a multi gigabyte sized stack.
+    Token token;
+    do {
+      token = produceNextToken(reusableToken);
+    } while (token == request_next_token);
+    return token;
+  }
+
+  
+  private static final Token request_next_token = new Token();
+
+  /**
+   * This method exists in order to avoid reursive calls to the method
+   * as the complexity of a fairlt small matrix then easily would require
+   * a gigabyte sized stack per thread.
+   *
+   * @param reusableToken
+   * @return null if exhausted, instance request_next_token if one more call is required for an answer, or instance parameter resuableToken.
+   * @throws IOException
+   */
+  private Token produceNextToken(final Token reusableToken) throws IOException {
 
     if (currentPermuationTokens != null) {
       currentShingleLength++;
@@ -343,7 +367,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
         // only produce shingles that not already has been created
         if (!shinglesSeen.add(shingle)) {
-          return next(reusableToken);
+          return request_next_token;
         }
 
         // shingle token factory
@@ -368,7 +392,7 @@ public class ShingleMatrixFilter extends TokenStream {
           // reset shingle size and move one step to the right in the current tokens permutation
           currentPermutationTokensStartOffset++;
           currentShingleLength = minimumShingleSize - 1;
-          return next(reusableToken);
+          return request_next_token;
         }
 
 
@@ -423,7 +447,7 @@ public class ShingleMatrixFilter extends TokenStream {
         }
 
         nextTokensPermutation();
-        return next(reusableToken);
+        return request_next_token;
 
       }
     }
@@ -438,7 +462,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
     nextTokensPermutation();
 
-    return next(reusableToken);
+    return request_next_token;
   }
 
   /**
@@ -494,7 +518,7 @@ public class ShingleMatrixFilter extends TokenStream {
    * weight +=  shingle part token weight * (1 / sqrt(all shingle part token weights summed))
    *
    * This algorithm gives a slightly greater score for longer shingles
-   * and is rather penalising to great shingle token part weights.  
+   * and is rather penalising to great shingle token part weights.
    *
    * @param shingleToken token returned to consumer
    * @param shingle tokens the tokens used to produce the shingle token.
