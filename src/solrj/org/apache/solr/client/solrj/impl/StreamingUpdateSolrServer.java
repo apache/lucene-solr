@@ -156,9 +156,6 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
           method.releaseConnection();
         }
         catch( Exception ex ){}
-        if( !queue.isEmpty() ) {
-          run(); // run again, just in case
-        }
         
         // remove it from the list of running things...
         synchronized (runners) {
