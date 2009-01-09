@@ -219,8 +219,6 @@ Bug Fixes
 25. SOLR-947: ConstantScoreRangeQuery should be checked before RangeQuery in QueryParsing.toString().
     This causes NPE when requesting open ended range query with debugQuery=on (koji)
 
-26. SOLR-950: Exception in distributed search with facet requests during facet refinement. (Jayson Minard via shalin) 
-
 
 Other Changes
 ----------------------
