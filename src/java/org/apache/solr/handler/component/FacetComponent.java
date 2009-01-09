@@ -96,7 +96,7 @@ public class  FacetComponent extends SearchComponent
         for (DistribFieldFacet dff : rb._facetInfo.facets.values()) {
           if (!dff.needRefinements) continue;
           List<String> refList = dff._toRefine[shardNum];
-          if (refList == null | refList.size()==0) continue;
+          if (refList == null || refList.size()==0) continue;
 
           String key = dff.getKey();  // reuse the same key that was used for the main facet
           String termsKey = key + "__terms";
