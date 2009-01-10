@@ -216,9 +216,6 @@ Bug Fixes
 24. SOLR-902: FastInputStream#read(byte b[], int off, int len) gives incorrect results when amount left to read is less
     than buffer size (Noble Paul via shalin)
 
-25. SOLR-947: ConstantScoreRangeQuery should be checked before RangeQuery in QueryParsing.toString().
-    This causes NPE when requesting open ended range query with debugQuery=on (koji)
-
 
 Other Changes
 ----------------------
