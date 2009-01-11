@@ -33,258 +33,257 @@ import org.apache.lucene.util.OpenBitSet;
  * This filter depends on a specific structure of terms in the index that can only be created
  * by {@link TrieUtils} methods.
  * For more information, how the algorithm works, see the package description {@link org.apache.lucene.search.trie}.
- * @author Uwe Schindler (panFMP developer)
  */
 public final class TrieRangeFilter extends Filter {
 
-	/**
-	 * Universal constructor (expert use only): Uses already trie-converted min/max values.
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 */
-	public TrieRangeFilter(final String field, final String min, final String max, final TrieUtils variant) {
-		if (min==null && max==null) throw new IllegalArgumentException("The min and max values cannot be both null.");
-		this.trieVariant=variant;
-		this.minUnconverted=min;
-		this.maxUnconverted=max;
-		this.min=(min==null) ? trieVariant.TRIE_CODED_NUMERIC_MIN : min;
-		this.max=(max==null) ? trieVariant.TRIE_CODED_NUMERIC_MAX : max;
-		this.field=field.intern();
-	}
+  /**
+   * Universal constructor (expert use only): Uses already trie-converted min/max values.
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   */
+  public TrieRangeFilter(final String field, final String min, final String max, final TrieUtils variant) {
+    if (min==null && max==null) throw new IllegalArgumentException("The min and max values cannot be both null.");
+    this.trieVariant=variant;
+    this.minUnconverted=min;
+    this.maxUnconverted=max;
+    this.min=(min==null) ? trieVariant.TRIE_CODED_NUMERIC_MIN : min;
+    this.max=(max==null) ? trieVariant.TRIE_CODED_NUMERIC_MAX : max;
+    this.field=field.intern();
+  }
 
-	/**
-	 * Universal constructor (expert use only): Uses already trie-converted min/max values.
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 * <p>This constructor uses the trie package returned by {@link TrieUtils#getDefaultTrieVariant()}.
-	 */
-	public TrieRangeFilter(final String field, final String min, final String max) {
-		this(field,min,max,TrieUtils.getDefaultTrieVariant());
-	}
-	
-	/**
-	 * Generates a trie query using the supplied field with range bounds in numeric form (double).
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 */
-	public TrieRangeFilter(final String field, final Double min, final Double max, final TrieUtils variant) {
-		this(
-			field,
-			(min==null) ? null : variant.doubleToTrieCoded(min.doubleValue()),
-			(max==null) ? null : variant.doubleToTrieCoded(max.doubleValue()),
-			variant
-		);
-		this.minUnconverted=min;
-		this.maxUnconverted=max;
-	}
+  /**
+   * Universal constructor (expert use only): Uses already trie-converted min/max values.
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   * <p>This constructor uses the trie package returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   */
+  public TrieRangeFilter(final String field, final String min, final String max) {
+    this(field,min,max,TrieUtils.getDefaultTrieVariant());
+  }
+  
+  /**
+   * Generates a trie query using the supplied field with range bounds in numeric form (double).
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   */
+  public TrieRangeFilter(final String field, final Double min, final Double max, final TrieUtils variant) {
+    this(
+      field,
+      (min==null) ? null : variant.doubleToTrieCoded(min.doubleValue()),
+      (max==null) ? null : variant.doubleToTrieCoded(max.doubleValue()),
+      variant
+    );
+    this.minUnconverted=min;
+    this.maxUnconverted=max;
+  }
 
-	/**
-	 * Generates a trie query using the supplied field with range bounds in numeric form (double).
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
-	 */
-	public TrieRangeFilter(final String field, final Double min, final Double max) {
-		this(field,min,max,TrieUtils.getDefaultTrieVariant());
-	}
+  /**
+   * Generates a trie query using the supplied field with range bounds in numeric form (double).
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   */
+  public TrieRangeFilter(final String field, final Double min, final Double max) {
+    this(field,min,max,TrieUtils.getDefaultTrieVariant());
+  }
 
-	/**
-	 * Generates a trie query using the supplied field with range bounds in date/time form.
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 */
-	public TrieRangeFilter(final String field, final Date min, final Date max, final TrieUtils variant) {
-		this(
-			field,
-			(min==null) ? null : variant.dateToTrieCoded(min),
-			(max==null) ? null : variant.dateToTrieCoded(max),
-			variant
-		);
-		this.minUnconverted=min;
-		this.maxUnconverted=max;
-	}
+  /**
+   * Generates a trie query using the supplied field with range bounds in date/time form.
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   */
+  public TrieRangeFilter(final String field, final Date min, final Date max, final TrieUtils variant) {
+    this(
+      field,
+      (min==null) ? null : variant.dateToTrieCoded(min),
+      (max==null) ? null : variant.dateToTrieCoded(max),
+      variant
+    );
+    this.minUnconverted=min;
+    this.maxUnconverted=max;
+  }
 
-	/**
-	 * Generates a trie query using the supplied field with range bounds in date/time form.
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
-	 */
-	public TrieRangeFilter(final String field, final Date min, final Date max) {
-		this(field,min,max,TrieUtils.getDefaultTrieVariant());
-	}
+  /**
+   * Generates a trie query using the supplied field with range bounds in date/time form.
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   */
+  public TrieRangeFilter(final String field, final Date min, final Date max) {
+    this(field,min,max,TrieUtils.getDefaultTrieVariant());
+  }
 
-	/**
-	 * Generates a trie query using the supplied field with range bounds in integer form (long).
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 */
-	public TrieRangeFilter(final String field, final Long min, final Long max, final TrieUtils variant) {
-		this(
-			field,
-			(min==null) ? null : variant.longToTrieCoded(min.longValue()),
-			(max==null) ? null : variant.longToTrieCoded(max.longValue()),
-			variant
-		);
-		this.minUnconverted=min;
-		this.maxUnconverted=max;
-	}
+  /**
+   * Generates a trie query using the supplied field with range bounds in integer form (long).
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   */
+  public TrieRangeFilter(final String field, final Long min, final Long max, final TrieUtils variant) {
+    this(
+      field,
+      (min==null) ? null : variant.longToTrieCoded(min.longValue()),
+      (max==null) ? null : variant.longToTrieCoded(max.longValue()),
+      variant
+    );
+    this.minUnconverted=min;
+    this.maxUnconverted=max;
+  }
 
-	/**
-	 * Generates a trie query using the supplied field with range bounds in integer form (long).
-	 * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-	 * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
-	 */
-	public TrieRangeFilter(final String field, final Long min, final Long max) {
-		this(field,min,max,TrieUtils.getDefaultTrieVariant());
-	}
+  /**
+   * Generates a trie query using the supplied field with range bounds in integer form (long).
+   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   */
+  public TrieRangeFilter(final String field, final Long min, final Long max) {
+    this(field,min,max,TrieUtils.getDefaultTrieVariant());
+  }
 
-	//@Override
-	public String toString() {
-		return toString(null);
-	}
+  //@Override
+  public String toString() {
+    return toString(null);
+  }
 
-	public String toString(final String field) {
-		final StringBuffer sb=new StringBuffer();
-		if (!this.field.equals(field)) sb.append(this.field).append(':');
-		return sb.append('[').append(minUnconverted).append(" TO ").append(maxUnconverted).append(']').toString();
-	}
+  public String toString(final String field) {
+    final StringBuffer sb=new StringBuffer();
+    if (!this.field.equals(field)) sb.append(this.field).append(':');
+    return sb.append('[').append(minUnconverted).append(" TO ").append(maxUnconverted).append(']').toString();
+  }
 
-	//@Override
-	public final boolean equals(final Object o) {
-		if (o instanceof TrieRangeFilter) {
-			TrieRangeFilter q=(TrieRangeFilter)o;
-			// trieVariants are singleton per type, so no equals needed
-			return (field==q.field && min.equals(q.min) && max.equals(q.max) && trieVariant==q.trieVariant);
-		} else return false;
-	}
+  //@Override
+  public final boolean equals(final Object o) {
+    if (o instanceof TrieRangeFilter) {
+      TrieRangeFilter q=(TrieRangeFilter)o;
+      // trieVariants are singleton per type, so no equals needed
+      return (field==q.field && min.equals(q.min) && max.equals(q.max) && trieVariant==q.trieVariant);
+    } else return false;
+  }
 
-	//@Override
-	public final int hashCode() {
-		// the hash code uses from the variant only the number of bits, as this is unique for the variant
-		return field.hashCode()+(min.hashCode()^0x14fa55fb)+(max.hashCode()^0x733fa5fe)+(trieVariant.TRIE_BITS^0x64365465);
-	}
-	
-	/** prints the String in hexadecimal \\u notation (for debugging of <code>setBits()</code>) */
-	private String stringToHexDigits(final String s) {
-		StringBuffer sb=new StringBuffer(s.length()*3);
-		for (int i=0,c=s.length(); i<c; i++) {
-			char ch=s.charAt(i);
-			sb.append("\\u").append(Integer.toHexString((int)ch));
-		}
-		return sb.toString();
-	}
+  //@Override
+  public final int hashCode() {
+    // the hash code uses from the variant only the number of bits, as this is unique for the variant
+    return field.hashCode()+(min.hashCode()^0x14fa55fb)+(max.hashCode()^0x733fa5fe)+(trieVariant.TRIE_BITS^0x64365465);
+  }
+  
+  /** prints the String in hexadecimal \\u notation (for debugging of <code>setBits()</code>) */
+  private String stringToHexDigits(final String s) {
+    StringBuffer sb=new StringBuffer(s.length()*3);
+    for (int i=0,c=s.length(); i<c; i++) {
+      char ch=s.charAt(i);
+      sb.append("\\u").append(Integer.toHexString((int)ch));
+    }
+    return sb.toString();
+  }
 
-	/** Marks documents in a specific range. Code borrowed from original RangeFilter and simplified (and returns number of terms) */
-	private int setBits(final IndexReader reader, final TermDocs termDocs, final OpenBitSet bits, String lowerTerm, String upperTerm) throws IOException {
-		//System.out.println(stringToHexDigits(lowerTerm)+" TO "+stringToHexDigits(upperTerm));
-		int count=0,len=lowerTerm.length();
-		final String field;
-		if (len<trieVariant.TRIE_CODED_LENGTH) {
-			// lower precision value is in helper field
-			field=(this.field + trieVariant.LOWER_PRECISION_FIELD_NAME_SUFFIX).intern();
-			// add padding before lower precision values to group them
-			lowerTerm=new StringBuffer(len+1).append((char)(trieVariant.TRIE_CODED_PADDING_START+len)).append(lowerTerm).toString();
-			upperTerm=new StringBuffer(len+1).append((char)(trieVariant.TRIE_CODED_PADDING_START+len)).append(upperTerm).toString();
-			// length is longer by 1 char because of padding
-			len++;
-		} else {
-			// full precision value is in original field
-			field=this.field;
-		}
-		final TermEnum enumerator = reader.terms(new Term(field, lowerTerm));
-		try {
-			do {
-				final Term term = enumerator.term();
-				if (term!=null && term.field()==field) {
-					// break out when upperTerm reached or length of term is different
-					final String t=term.text();
-					if (len!=t.length() || t.compareTo(upperTerm)>0) break;
-					// we have a good term, find the docs
-					count++;
-					termDocs.seek(enumerator);
-					while (termDocs.next()) bits.set(termDocs.doc());
-				} else break;
-			} while (enumerator.next());
-		} finally {
-			enumerator.close();
-		}
-		return count;
-	}
+  /** Marks documents in a specific range. Code borrowed from original RangeFilter and simplified (and returns number of terms) */
+  private int setBits(final IndexReader reader, final TermDocs termDocs, final OpenBitSet bits, String lowerTerm, String upperTerm) throws IOException {
+    //System.out.println(stringToHexDigits(lowerTerm)+" TO "+stringToHexDigits(upperTerm));
+    int count=0,len=lowerTerm.length();
+    final String field;
+    if (len<trieVariant.TRIE_CODED_LENGTH) {
+      // lower precision value is in helper field
+      field=(this.field + trieVariant.LOWER_PRECISION_FIELD_NAME_SUFFIX).intern();
+      // add padding before lower precision values to group them
+      lowerTerm=new StringBuffer(len+1).append((char)(trieVariant.TRIE_CODED_PADDING_START+len)).append(lowerTerm).toString();
+      upperTerm=new StringBuffer(len+1).append((char)(trieVariant.TRIE_CODED_PADDING_START+len)).append(upperTerm).toString();
+      // length is longer by 1 char because of padding
+      len++;
+    } else {
+      // full precision value is in original field
+      field=this.field;
+    }
+    final TermEnum enumerator = reader.terms(new Term(field, lowerTerm));
+    try {
+      do {
+        final Term term = enumerator.term();
+        if (term!=null && term.field()==field) {
+          // break out when upperTerm reached or length of term is different
+          final String t=term.text();
+          if (len!=t.length() || t.compareTo(upperTerm)>0) break;
+          // we have a good term, find the docs
+          count++;
+          termDocs.seek(enumerator);
+          while (termDocs.next()) bits.set(termDocs.doc());
+        } else break;
+      } while (enumerator.next());
+    } finally {
+      enumerator.close();
+    }
+    return count;
+  }
 
-	/** Splits range recursively (and returns number of terms) */
-	private int splitRange(
-		final IndexReader reader, final TermDocs termDocs, final OpenBitSet bits,
-		final String min, final boolean lowerBoundOpen, final String max, final boolean upperBoundOpen
-	) throws IOException {
-		int count=0;
-		final int length=min.length();
-		final String minShort=lowerBoundOpen ? min.substring(0,length-1) : trieVariant.incrementTrieCoded(min.substring(0,length-1));
-		final String maxShort=upperBoundOpen ? max.substring(0,length-1) : trieVariant.decrementTrieCoded(max.substring(0,length-1));
+  /** Splits range recursively (and returns number of terms) */
+  private int splitRange(
+    final IndexReader reader, final TermDocs termDocs, final OpenBitSet bits,
+    final String min, final boolean lowerBoundOpen, final String max, final boolean upperBoundOpen
+  ) throws IOException {
+    int count=0;
+    final int length=min.length();
+    final String minShort=lowerBoundOpen ? min.substring(0,length-1) : trieVariant.incrementTrieCoded(min.substring(0,length-1));
+    final String maxShort=upperBoundOpen ? max.substring(0,length-1) : trieVariant.decrementTrieCoded(max.substring(0,length-1));
 
-		if (length==1 || minShort.compareTo(maxShort)>=0) {
-			// we are in the lowest precision or the current precision is not existent
-			count+=setBits(reader, termDocs, bits, min, max);
-		} else {
-			// Avoid too much seeking: first go deeper into lower precision
-			// (in IndexReader's TermEnum these terms are earlier).
-			// Do this only, if the current length is not trieVariant.TRIE_CODED_LENGTH (not full precision),
-			// because terms from the highest prec come before all lower prec terms
-			// (because the field name is ordered before the suffixed one).
-			if (length!=trieVariant.TRIE_CODED_LENGTH) count+=splitRange(
-				reader,termDocs,bits,
-				minShort,lowerBoundOpen,
-				maxShort,upperBoundOpen
-			);
-			// Avoid too much seeking: set bits for lower part of current (higher) precision.
-			// These terms come later in IndexReader's TermEnum.
-			if (!lowerBoundOpen) {
-				count+=setBits(reader, termDocs, bits, min, trieVariant.decrementTrieCoded(minShort+trieVariant.TRIE_CODED_SYMBOL_MIN));
-			}
-			// Avoid too much seeking: set bits for upper part of current precision.
-			// These terms come later in IndexReader's TermEnum.
-			if (!upperBoundOpen) {
-				count+=setBits(reader, termDocs, bits, trieVariant.incrementTrieCoded(maxShort+trieVariant.TRIE_CODED_SYMBOL_MAX), max);
-			}
-			// If the first step (see above) was not done (because length==trieVariant.TRIE_CODED_LENGTH) we do it now.
-			if (length==trieVariant.TRIE_CODED_LENGTH) count+=splitRange(
-				reader,termDocs,bits,
-				minShort,lowerBoundOpen,
-				maxShort,upperBoundOpen
-			);
-		}
-		return count;
-	}
+    if (length==1 || minShort.compareTo(maxShort)>=0) {
+      // we are in the lowest precision or the current precision is not existent
+      count+=setBits(reader, termDocs, bits, min, max);
+    } else {
+      // Avoid too much seeking: first go deeper into lower precision
+      // (in IndexReader's TermEnum these terms are earlier).
+      // Do this only, if the current length is not trieVariant.TRIE_CODED_LENGTH (not full precision),
+      // because terms from the highest prec come before all lower prec terms
+      // (because the field name is ordered before the suffixed one).
+      if (length!=trieVariant.TRIE_CODED_LENGTH) count+=splitRange(
+        reader,termDocs,bits,
+        minShort,lowerBoundOpen,
+        maxShort,upperBoundOpen
+      );
+      // Avoid too much seeking: set bits for lower part of current (higher) precision.
+      // These terms come later in IndexReader's TermEnum.
+      if (!lowerBoundOpen) {
+        count+=setBits(reader, termDocs, bits, min, trieVariant.decrementTrieCoded(minShort+trieVariant.TRIE_CODED_SYMBOL_MIN));
+      }
+      // Avoid too much seeking: set bits for upper part of current precision.
+      // These terms come later in IndexReader's TermEnum.
+      if (!upperBoundOpen) {
+        count+=setBits(reader, termDocs, bits, trieVariant.incrementTrieCoded(maxShort+trieVariant.TRIE_CODED_SYMBOL_MAX), max);
+      }
+      // If the first step (see above) was not done (because length==trieVariant.TRIE_CODED_LENGTH) we do it now.
+      if (length==trieVariant.TRIE_CODED_LENGTH) count+=splitRange(
+        reader,termDocs,bits,
+        minShort,lowerBoundOpen,
+        maxShort,upperBoundOpen
+      );
+    }
+    return count;
+  }
 
-	/**
-	 * Returns a DocIdSet that provides the documents which should be permitted or prohibited in search results.
-	 */
-	//@Override
-	public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-		final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-		final TermDocs termDocs=reader.termDocs();
-		try {
-			final int count=splitRange(
-				reader,termDocs,bits,
-				min,trieVariant.TRIE_CODED_NUMERIC_MIN.equals(min),
-				max,trieVariant.TRIE_CODED_NUMERIC_MAX.equals(max)
-			);
-			lastNumberOfTerms=new Integer(count);
-			//System.out.println("Found "+count+" distinct terms in filtered range for field '"+field+"'.");
-		} finally {
-			termDocs.close();
-		}
-		return bits;
-	}
-	
-	/**
-	 * EXPERT: Return the number of terms visited during the last execution of {@link #getDocIdSet}.
-	 * This may be used for performance comparisons of different trie variants and their effectiveness.
-	 * This method is not thread safe, be sure to only call it when no query is running!
-	 * @throws IllegalStateException if {@link #getDocIdSet} was not yet executed.
-	 */
-	//@Override
-	public int getLastNumberOfTerms() {
-		if (lastNumberOfTerms==null) throw new IllegalStateException();
-		return lastNumberOfTerms.intValue();
-	}
+  /**
+   * Returns a DocIdSet that provides the documents which should be permitted or prohibited in search results.
+   */
+  //@Override
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+    final TermDocs termDocs=reader.termDocs();
+    try {
+      final int count=splitRange(
+        reader,termDocs,bits,
+        min,trieVariant.TRIE_CODED_NUMERIC_MIN.equals(min),
+        max,trieVariant.TRIE_CODED_NUMERIC_MAX.equals(max)
+      );
+      lastNumberOfTerms=new Integer(count);
+      //System.out.println("Found "+count+" distinct terms in filtered range for field '"+field+"'.");
+    } finally {
+      termDocs.close();
+    }
+    return bits;
+  }
+  
+  /**
+   * EXPERT: Return the number of terms visited during the last execution of {@link #getDocIdSet}.
+   * This may be used for performance comparisons of different trie variants and their effectiveness.
+   * This method is not thread safe, be sure to only call it when no query is running!
+   * @throws IllegalStateException if {@link #getDocIdSet} was not yet executed.
+   */
+  //@Override
+  public int getLastNumberOfTerms() {
+    if (lastNumberOfTerms==null) throw new IllegalStateException();
+    return lastNumberOfTerms.intValue();
+  }
 
-	// members
-	private final String field,min,max;
-	private final TrieUtils trieVariant;
-	private Object minUnconverted,maxUnconverted;
-	private Integer lastNumberOfTerms=null;
+  // members
+  private final String field,min,max;
+  private final TrieUtils trieVariant;
+  private Object minUnconverted,maxUnconverted;
+  private Integer lastNumberOfTerms=null;
 }

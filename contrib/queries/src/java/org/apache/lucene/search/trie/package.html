@@ -47,34 +47,34 @@ the values must be stored during indexing in a special format in the index (usin
 This can be done like this:</p>
 
 <pre>
-	Document doc = new Document();
-	// add some standard fields:
-	String svalue = "anything to index";
-	doc.add(new Field("exampleString", svalue, Field.Store.YES, Field.Index.ANALYZED) ;
-	// add some numerical fields:
-	double fvalue = 1.057E17;
-	TrieUtils.VARIANT_8BIT.addDoubleTrieCodedDocumentField(doc, "exampleDouble", fvalue, true /* index the field */, Field.Store.YES);
-	long lvalue = 121345L;
-	TrieUtils.VARIANT_8BIT.addLongTrieCodedDocumentField(doc, "exampleLong", lvalue, true /* index the field */, Field.Store.YES);
-	Date dvalue = new Date(); // actual time
-	TrieUtils.VARIANT_8BIT.addDateTrieCodedDocumentField(doc, "exampleDate", dvalue, true /* index the field */, Field.Store.YES);
-	// add document to IndexWriter
+  Document doc = new Document();
+  // add some standard fields:
+  String svalue = "anything to index";
+  doc.add(new Field("exampleString", svalue, Field.Store.YES, Field.Index.ANALYZED) ;
+  // add some numerical fields:
+  double fvalue = 1.057E17;
+  TrieUtils.VARIANT_8BIT.addDoubleTrieCodedDocumentField(doc, "exampleDouble", fvalue, true /* index the field */, Field.Store.YES);
+  long lvalue = 121345L;
+  TrieUtils.VARIANT_8BIT.addLongTrieCodedDocumentField(doc, "exampleLong", lvalue, true /* index the field */, Field.Store.YES);
+  Date dvalue = new Date(); // actual time
+  TrieUtils.VARIANT_8BIT.addDateTrieCodedDocumentField(doc, "exampleDate", dvalue, true /* index the field */, Field.Store.YES);
+  // add document to IndexWriter
 </pre>
 
 <p>The numeric index fields you prepared in this way can be searched by {@link org.apache.lucene.search.trie.TrieRangeQuery}:</p>
 
 <pre>
-	// Java 1.4, because Double.valueOf(double) is not available:
-	Query q = new TrieRangeQuery("exampleDouble", new Double(1.0E17), new Double(2.0E17), TrieUtils.VARIANT_8BIT);
-	// OR, Java 1.5, using autoboxing:
-	Query q = new TrieRangeQuery("exampleDouble", 1.0E17, 2.0E17, TrieUtils.VARIANT_8BIT);
-	TopDocs docs = searcher.search(q, 10);
-	for (int i = 0; i&lt;docs.scoreDocs.length; i++) {
-		Document doc = searcher.doc(docs.scoreDocs[i].doc);
-		System.out.println(doc.get("exampleString"));
-		// decode the stored numerical value (important!!!):
-		System.out.println(TrieUtils.VARIANT_8BIT.trieCodedToDouble(doc.get("exampleDouble")));
-	}
+  // Java 1.4, because Double.valueOf(double) is not available:
+  Query q = new TrieRangeQuery("exampleDouble", new Double(1.0E17), new Double(2.0E17), TrieUtils.VARIANT_8BIT);
+  // OR, Java 1.5, using autoboxing:
+  Query q = new TrieRangeQuery("exampleDouble", 1.0E17, 2.0E17, TrieUtils.VARIANT_8BIT);
+  TopDocs docs = searcher.search(q, 10);
+  for (int i = 0; i&lt;docs.scoreDocs.length; i++) {
+    Document doc = searcher.doc(docs.scoreDocs[i].doc);
+    System.out.println(doc.get("exampleString"));
+    // decode the stored numerical value (important!!!):
+    System.out.println(TrieUtils.VARIANT_8BIT.trieCodedToDouble(doc.get("exampleDouble")));
+  }
 </pre>
 
 <h3>Performance</h3>
