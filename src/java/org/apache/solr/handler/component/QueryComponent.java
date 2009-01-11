@@ -120,6 +120,10 @@ public class QueryComponent extends SearchComponent
     SolrIndexSearcher searcher = req.getSearcher();
     SolrParams params = req.getParams();
 
+    if (rb.getQueryCommand().getOffset() < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
+    }
+
     // -1 as flag if not set.
     long timeAllowed = (long)params.getInt( CommonParams.TIME_ALLOWED, -1 );
 
