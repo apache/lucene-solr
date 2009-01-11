@@ -254,15 +254,14 @@ public final class TrieRangeFilter extends Filter {
   //@Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-    final TermDocs termDocs=reader.termDocs();
+    final TermDocs termDocs = reader.termDocs();
     try {
-      final int count=splitRange(
+      lastNumberOfTerms=splitRange(
         reader,termDocs,bits,
         min,trieVariant.TRIE_CODED_NUMERIC_MIN.equals(min),
         max,trieVariant.TRIE_CODED_NUMERIC_MAX.equals(max)
       );
-      lastNumberOfTerms=new Integer(count);
-      //System.out.println("Found "+count+" distinct terms in filtered range for field '"+field+"'.");
+      //System.out.println("Found "+lastNumberOfTerms+" distinct terms in filtered range for field '"+field+"'.");
     } finally {
       termDocs.close();
     }
@@ -275,15 +274,14 @@ public final class TrieRangeFilter extends Filter {
    * This method is not thread safe, be sure to only call it when no query is running!
    * @throws IllegalStateException if {@link #getDocIdSet} was not yet executed.
    */
-  //@Override
   public int getLastNumberOfTerms() {
-    if (lastNumberOfTerms==null) throw new IllegalStateException();
-    return lastNumberOfTerms.intValue();
+    if (lastNumberOfTerms < 0) throw new IllegalStateException();
+    return lastNumberOfTerms;
   }
 
   // members
   private final String field,min,max;
   private final TrieUtils trieVariant;
   private Object minUnconverted,maxUnconverted;
-  private Integer lastNumberOfTerms=null;
+  private int lastNumberOfTerms=-1;
 }
