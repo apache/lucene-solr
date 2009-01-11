@@ -84,7 +84,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
     long lower=96666L, upper=lower + count*distance + 1234L;
     TrieRangeQuery q=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
     TopDocs topDocs = searcher.search(q, null, 10000, Sort.INDEXORDER);
-    System.out.println("Found "+q.getFilter().getLastNumberOfTerms()+" distinct terms in range for field '"+field+"'.");
+    System.out.println("Found "+q.getLastNumberOfTerms()+" distinct terms in range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score docs must match "+count+" docs, found "+sd.length+" docs", sd.length, count );
@@ -112,7 +112,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
     long upper=(count-1)*distance + 1234L;
     TrieRangeQuery q=new TrieRangeQuery(field, null, new Long(upper), variant);
     TopDocs topDocs = searcher.search(q, null, 10000, Sort.INDEXORDER);
-    System.out.println("Found "+q.getFilter().getLastNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
+    System.out.println("Found "+q.getLastNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score docs must match "+count+" docs, found "+sd.length+" docs", sd.length, count );

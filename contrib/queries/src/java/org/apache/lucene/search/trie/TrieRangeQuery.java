@@ -18,21 +18,18 @@ package org.apache.lucene.search.trie;
  */
 
 import java.util.Date;
-import java.io.IOException;
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.util.ToStringUtils;
-import org.apache.lucene.index.IndexReader;
 
 /**
- * Implementation of a Lucene {@link Query} that implements a trie-based range query.
+ * A Lucene {@link Query} that implements a trie-based range query.
  * This query depends on a specific structure of terms in the index that can only be created
  * by {@link TrieUtils} methods.
- * <p>This class wraps a {@link TrieRangeFilter} using a {@link ConstantScoreQuery}.
+ * <p>This class wraps a {@link TrieRangeFilter}.
  * @see TrieRangeFilter
  */
-public final class TrieRangeQuery extends Query {
+public final class TrieRangeQuery extends ConstantScoreQuery {
 
   /**
    * Universal constructor (expert use only): Uses already trie-converted min/max values.
@@ -40,7 +37,7 @@ public final class TrieRangeQuery extends Query {
    * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
    */
   public TrieRangeQuery(final String field, final String min, final String max) {
-    filter=new TrieRangeFilter(field,min,max);
+    super(new TrieRangeFilter(field,min,max));
   }
 
   /**
@@ -48,97 +45,86 @@ public final class TrieRangeQuery extends Query {
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    */
   public TrieRangeQuery(final String field, final String min, final String max, final TrieUtils variant) {
-    filter=new TrieRangeFilter(field,min,max,variant);
+    super(new TrieRangeFilter(field,min,max,variant));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in numeric form (double).
+   * A trie query using the supplied field with range bounds in numeric form (double).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
    */
   public TrieRangeQuery(final String field, final Double min, final Double max) {
-    filter=new TrieRangeFilter(field,min,max);
+    super(new TrieRangeFilter(field,min,max));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in numeric form (double).
+   * A trie query using the supplied field with range bounds in numeric form (double).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    */
   public TrieRangeQuery(final String field, final Double min, final Double max, final TrieUtils variant) {
-    filter=new TrieRangeFilter(field,min,max,variant);
+    super(new TrieRangeFilter(field,min,max,variant));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in date/time form.
+   * A trie query using the supplied field with range bounds in date/time form.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
    */
   public TrieRangeQuery(final String field, final Date min, final Date max) {
-    filter=new TrieRangeFilter(field,min,max);
+    super(new TrieRangeFilter(field,min,max));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in date/time form.
+   * A trie query using the supplied field with range bounds in date/time form.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    */
   public TrieRangeQuery(final String field, final Date min, final Date max, final TrieUtils variant) {
-    filter=new TrieRangeFilter(field,min,max,variant);
+    super(new TrieRangeFilter(field,min,max,variant));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in integer form (long).
+   * A trie query using the supplied field with range bounds in integer form (long).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
    */
   public TrieRangeQuery(final String field, final Long min, final Long max) {
-    filter=new TrieRangeFilter(field,min,max);
+    super(new TrieRangeFilter(field,min,max));
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in integer form (long).
+   * A trie query using the supplied field with range bounds in integer form (long).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
    */
   public TrieRangeQuery(final String field, final Long min, final Long max, final TrieUtils variant) {
-    filter=new TrieRangeFilter(field,min,max,variant);
+    super(new TrieRangeFilter(field,min,max,variant));
+  }
+
+  /**
+   * EXPERT: Return the number of terms visited during the last execution of the query.
+   * This may be used for performance comparisons of different trie variants and their effectiveness.
+   * This method is not thread safe, be sure to only call it when no query is running!
+   * @throws IllegalStateException if query was not yet executed.
+   */
+  public int getLastNumberOfTerms() {
+    return ((TrieRangeFilter) filter).getLastNumberOfTerms();
   }
 
   //@Override
   public String toString(final String field) {
-    return filter.toString(field)+ToStringUtils.boost(getBoost());
+    // return a more convenient representation of this query than ConstantScoreQuery does:
+    return ((TrieRangeFilter) filter).toString(field)+ToStringUtils.boost(getBoost());
   }
 
   //@Override
   public final boolean equals(final Object o) {
-    if (o instanceof TrieRangeQuery) {
-      TrieRangeQuery q=(TrieRangeQuery)o;
-      return (filter.equals(q.filter) && getBoost()==q.getBoost());
-    } else return false;
+    if (!(o instanceof TrieRangeQuery)) return false;
+    return super.equals(o);
   }
 
   //@Override
   public final int hashCode() {
-    return filter.hashCode()^0x1756fa55+Float.floatToIntBits(getBoost());
+    // make hashCode a little bit different:
+    return super.hashCode()^0x1756fa55;
   }
-
-  /**
-   * Rewrites the query to native Lucene {@link Query}'s. This implementation uses a {@link ConstantScoreQuery} with
-   * a {@link TrieRangeFilter} as implementation of the trie algorithm.
-   */
-  //@Override
-  public Query rewrite(final IndexReader reader) throws IOException {
-    final ConstantScoreQuery q = new ConstantScoreQuery(filter);
-    q.setBoost(getBoost());
-    return q.rewrite(reader);
-  }
-  
-  /**
-   * Returns the underlying filter.
-   */
-  public TrieRangeFilter getFilter() {
-    return filter;
-  }
-
-  // members
-  private final TrieRangeFilter filter;
 
 }
