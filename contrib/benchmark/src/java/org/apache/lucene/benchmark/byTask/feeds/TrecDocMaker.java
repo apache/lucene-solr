@@ -33,7 +33,6 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 
-
 /**
  * A DocMaker using the (compressed) Trec collection for its input.
  * <p>
@@ -44,7 +43,14 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  */
 public class TrecDocMaker extends BasicDocMaker {
 
-  private static final String newline = System.getProperty("line.separator");
+  private static final String DATE = "Date: ";
+  private static final String DOCHDR = "<DOCHDR>";
+  private static final String TERM_DOCHDR = "</DOCHDR>";
+  private static final String TERM_DOCNO = "</DOCNO>";
+  private static final String DOCNO = "<DOCNO>";
+  private static final String TERM_DOC = "</DOC>";
+  private static final String DOC = "<DOC>";
+  private static final String NEW_LINE = System.getProperty("line.separator");
   
   protected ThreadLocal dateFormat = new ThreadLocal();
   protected File dataDir = null;
@@ -135,25 +141,37 @@ public class TrecDocMaker extends BasicDocMaker {
   }
   
   // read until finding a line that starts with the specified prefix
-  protected StringBuffer read (String prefix, StringBuffer sb, boolean collectMatchLine, boolean collectAll) throws Exception {
+  protected StringBuffer read(String prefix, StringBuffer sb,
+                              boolean collectMatchLine, boolean collectAll,
+                              String terminatingTag) throws Exception {
     sb = (sb==null ? new StringBuffer() : sb);
     String sep = "";
     while (true) {
       String line = reader.readLine();
-      if (line==null) {
+      if (line == null) {
         openNextFile();
         continue;
       }
       if (line.startsWith(prefix)) {
         if (collectMatchLine) {
-          sb.append(sep+line);
-          sep = newline;
+          sb.append(sep).append(line);
+          sep = NEW_LINE;
         }
         break;
       }
+      
+      if (terminatingTag != null && line.startsWith(terminatingTag)) {
+    	  // didn't find the prefix that was asked, but the terminating
+    	  // tag was found. set the length to 0 to signal no match was
+    	  // found.
+    	  sb.setLength(0);
+    	  break;
+      }
+		
+
       if (collectAll) {
-        sb.append(sep+line);
-        sep = newline;
+        sb.append(sep).append(line);
+        sep = NEW_LINE;
       }
     }
     //System.out.println("read: "+sb);
@@ -165,22 +183,31 @@ public class TrecDocMaker extends BasicDocMaker {
       openNextFile();
     }
     // 1. skip until doc start
-    read("<DOC>",null,false,false); 
+    read(DOC,null,false,false,null); 
     // 2. name
-    StringBuffer sb = read("<DOCNO>",null,true,false);
-    String name = sb.substring("<DOCNO>".length());
-    name = name.substring(0,name.indexOf("</DOCNO>"))+"_"+iteration;
+    StringBuffer sb = read(DOCNO,null,true,false,null);
+    String name = sb.substring(DOCNO.length(), sb.indexOf(TERM_DOCNO, DOCNO.length()));
+    name = name + "_" + iteration;
     // 3. skip until doc header
-    read("<DOCHDR>",null,false,false); 
+    read(DOCHDR,null,false,false,null);
+    boolean findTerminatingDocHdr = false;
     // 4. date
-    sb = read("Date: ",null,true,false);
-    String dateStr = sb.substring("Date: ".length());
+    sb = read(DATE,null,true,false,TERM_DOCHDR);
+    String dateStr = null;
+    if (sb.length() != 0) {
+      // Date found.
+      dateStr = sb.substring(DATE.length());
+      findTerminatingDocHdr = true;
+    }
+
     // 5. skip until end of doc header
-    read("</DOCHDR>",null,false,false); 
+    if (findTerminatingDocHdr) {
+      read(TERM_DOCHDR,null,false,false,null); 
+    }
     // 6. collect until end of doc
-    sb = read("</DOC>",null,false,true);
+    sb = read(TERM_DOC,null,false,true,null);
     // this is the next document, so parse it 
-    Date date = parseDate(dateStr);
+    Date date = dateStr != null ? parseDate(dateStr) : null;
     HTMLParser p = getHtmlParser();
     DocData docData = p.parse(name, date, sb, getDateFormat(0));
     addBytes(sb.length()); // count char length of parsed html text (larger than the plain doc body text). 
@@ -202,18 +229,14 @@ public class TrecDocMaker extends BasicDocMaker {
   }
 
   protected Date parseDate(String dateStr) {
-    Date date = null;
-    for (int i=0; i<DATE_FORMATS.length; i++) {
+    for (int i = 0; i < DATE_FORMATS.length; i++) {
       try {
-        date = getDateFormat(i).parse(dateStr.trim());
-        return date;
-      } catch (ParseException e) {
-      }
+        return getDateFormat(i).parse(dateStr.trim());
+      } catch (ParseException e) {}
     }
     // do not fail test just because a date could not be parsed
-    System.out.println("ignoring date parse exception (assigning 'now') for: "+dateStr);
-    date = new Date(); // now 
-    return date;
+    System.out.println("ignoring date parse exception (assigning 'null') for: "+dateStr);
+    return null;
   }
 
 
