@@ -480,6 +480,14 @@ public class TestDistributedSearch extends TestCase {
     index(id,12, i1, 379 ,t1,"Great works are performed, not by strength, but by perseverance.");
     index(id,13, i1, 232 ,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
 
+    index(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
+    index(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+    index(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+    String[] vals = new String[100];
+    for (int i=0; i<100; i++) {
+      vals[i] = "test " + i;
+    }
+    index(id, 17, "SubjectTerms_mfacet", vals);
     commit();
 
     handle.clear();
@@ -551,6 +559,7 @@ public class TestDistributedSearch extends TestCase {
     ,"facet.field",t1
     ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"
     );
+    query("q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1");
 
     // test field that is valid in schema but missing in all shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
