@@ -29,7 +29,15 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpConnectionManager;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpMethodBase;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.NoHttpResponseException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -65,6 +73,11 @@ public class CommonsHttpSolrServer extends SolrServer
    */
   protected String _baseURL;
   protected ModifiableSolrParams _invariantParams;
+  
+  /**
+   * Default response parser is BinaryResponseParser 
+   * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
+   */
   protected ResponseParser _parser;
   
   private final HttpClient _httpClient;
@@ -73,6 +86,8 @@ public class CommonsHttpSolrServer extends SolrServer
   private int _maxRetries = 0;
   
   /**
+   * Default value: <b> false </b> 
+   * <p>
    * If set to false, add the query parameters as URL-encoded parameters to the
    * POST request in a single part. If set to true, create a new part of a
    * multi-part request for each parameter.
@@ -125,14 +140,13 @@ public class CommonsHttpSolrServer extends SolrServer
     this(baseURL, null, new BinaryResponseParser(), false);
   }
 
-  public CommonsHttpSolrServer(URL baseURL, HttpClient client){
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client) {
     this(baseURL, client, new BinaryResponseParser(), false);
   }
-  
-  public CommonsHttpSolrServer(URL baseURL, HttpClient client, boolean useMultiPartPost){
+
+  public CommonsHttpSolrServer(URL baseURL, HttpClient client, boolean useMultiPartPost) {
     this(baseURL, client, new BinaryResponseParser(), useMultiPartPost);
   }
-
 
   public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser, boolean useMultiPartPost) {
     _baseURL = baseURL.toExternalForm();
@@ -153,7 +167,6 @@ public class CommonsHttpSolrServer extends SolrServer
       this.setMaxTotalConnections( 128 ); // 20
     }
 
-    // by default use the binary response parser
     _parser = parser;
     
     this.useMultiPartPost = useMultiPartPost;
@@ -420,8 +433,9 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   * Note: Setting this value is not thread-safe.
-   * @param processor The {@link org.apache.solr.client.solrj.ResponseParser}
+   * Note: This setter method is <b>not thread-safe</b>.
+   * @param processor Default Response Parser chosen to parse the response if the parser were not specified as part of the request.
+   * @see  org.apache.solr.client.solrj.SolrRequest#getResponseParser()
    */
   public void setParser(ResponseParser processor) {
     _parser = processor;
@@ -478,9 +492,9 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   *  set maximum number of retries to attempt in the event of
-   *  transient errors.  Default: 0 (no) retries. No more than 1
-   *  recommended.
+   * set maximum number of retries to attempt in the event of
+   * transient errors.  Default: 0 (no) retries. No more than 1
+   * recommended.
    */
   public void setMaxRetries( int maxRetries ) {
     _maxRetries = maxRetries;
