@@ -301,7 +301,7 @@ public final class TrieUtils {
     final Document ldoc, final String fieldname, final String val,
     final boolean index, final Field.Store store
   ) {
-    Field f=new Field(fieldname, val, store, index?Field.Index.NOT_ANALYZED:Field.Index.NO);
+    Field f=new Field(fieldname, val, store, index?Field.Index.NOT_ANALYZED_NO_NORMS:Field.Index.NO);
     if (index) {
       f.setOmitTf(true);
       ldoc.add(f);
@@ -313,7 +313,7 @@ public final class TrieUtils {
           f=new Field(
             fieldname + LOWER_PRECISION_FIELD_NAME_SUFFIX,
             sb.append( (char)(TRIE_CODED_PADDING_START+i) ).append( val.substring(0,i) ).toString(),
-            Field.Store.NO, Field.Index.NOT_ANALYZED
+            Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS
           );
           f.setOmitTf(true);
           ldoc.add(f);
