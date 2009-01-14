@@ -75,7 +75,7 @@ class LuceneGapFragmenter extends SimpleFragmenter {
    * the gap as a fragment delimiter.
    */
   public static final int INCREMENT_THRESHOLD = 50;
-  protected int fragOffsetAccum = 0;
+  protected int fragOffset = 0;
   
   public LuceneGapFragmenter() {
   }
@@ -88,7 +88,7 @@ class LuceneGapFragmenter extends SimpleFragmenter {
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
   public void start(String originalText) {
-    fragOffsetAccum = 0;
+    fragOffset = 0;
   }
 
   /* (non-Javadoc)
@@ -96,10 +96,10 @@ class LuceneGapFragmenter extends SimpleFragmenter {
    */
   public boolean isNewFragment(Token token) {
     boolean isNewFrag = 
-      token.endOffset() >= fragOffsetAccum + getFragmentSize() ||
+      token.endOffset() >= fragOffset + getFragmentSize() ||
       token.getPositionIncrement() > INCREMENT_THRESHOLD;
     if(isNewFrag) {
-        fragOffsetAccum += token.endOffset() - fragOffsetAccum;
+        fragOffset = token.endOffset();
     }
     return isNewFrag;
   }
