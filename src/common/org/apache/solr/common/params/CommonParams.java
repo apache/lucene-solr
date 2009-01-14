@@ -47,7 +47,7 @@ public interface CommonParams {
   /** stylesheet to apply to XML results */
   public static final String XSL ="xsl";
   
-  /** stylesheet to apply to XML results */
+  /** version parameter to check request-response compatibility */
   public static final String VERSION ="version";
   
   /** query and init param for field list */
