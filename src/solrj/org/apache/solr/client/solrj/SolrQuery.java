@@ -32,7 +32,7 @@ import org.apache.solr.common.params.StatsParams;
  * @since solr 1.3
  */
 public class SolrQuery extends ModifiableSolrParams 
-{
+{  
   public enum ORDER { desc, asc;
     public ORDER reverse() {
       return (this == asc) ? desc : asc;
@@ -53,9 +53,9 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
 
-  /** add a field for facet computation
+  /** Add field(s) for facet computation.
    * 
-   * @param fields the field name from the IndexSchema
+   * @param fields Array of field names from the IndexSchema
    * @return this
    */
   public SolrQuery addFacetField(String ... fields) {
@@ -76,6 +76,10 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** remove a facet field
    * 
+   * @param name Name of the facet field to be removed.
+   * 
+   * @return true, if the item was removed. <br />
+   *           false, if the facet field was null or did not exist.
    */
   public boolean removeFacetField(String name) {
     boolean b = this.remove(FacetParams.FACET_FIELD, name);
@@ -87,8 +91,8 @@ public class SolrQuery extends ModifiableSolrParams
   
   /** enable/disable faceting.  
    * 
-   * @param b flag to indicate faceting should be enabled.  if b==false removes all other faceting parameters
-   * @return this
+   * @param b flag to indicate faceting should be enabled. <br /> if b==false, removes all other faceting parameters
+   * @return Current reference (<i>this</i>)
    */
   public SolrQuery setFacet(boolean b) {
     if (b) {
@@ -151,7 +155,7 @@ public class SolrQuery extends ModifiableSolrParams
     return b;
   }
 
-  /** se the facet limit
+  /** set the facet limit
    * 
    * @param lim number facet items to return
    */
@@ -185,13 +189,19 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(FacetParams.FACET_MINCOUNT, 1);
   }
 
+  /**
+   * Sets facet missing boolean flag 
+   * 
+   * @param v flag to indicate the field of  {@link FacetParams#FACET_MISSING} .
+   * @return
+   */
   public SolrQuery setFacetMissing(Boolean v) {
     this.set(FacetParams.FACET_MISSING, v);
     return this;
   }
 
   /**
-   * @deprecated use {@link #setFacetMissing(String)}
+   * @deprecated use {@link #setFacetMissing(Boolean)}
    */
   public SolrQuery setMissing(String fld) {
     return setFacetMissing(Boolean.valueOf(fld));
@@ -199,7 +209,7 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** get facet sort
    * 
-   * @return facet sort or default of FacetParams.FACET_SORT_COUNT
+   * @return facet sort or default of {@link FacetParams#FACET_SORT_COUNT}
    */
   public String getFacetSortString() {
     return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
@@ -207,9 +217,11 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** get facet sort
    * 
-   * @return facet sort or default of true
-   * @deprecated Use {@link #getFacetSortString()} instead, true corresponds to
-   * FacetParams.FACET_SORT_COUNT and false to FacetParams.FACET_SORT_LEX.
+   * @return facet sort or default of true. <br />
+   * true corresponds to
+   * {@link FacetParams#FACET_SORT_COUNT} and <br />false to {@link FacetParams#FACET_SORT_LEX}
+   * 
+   * @deprecated Use {@link #getFacetSortString()} instead.
    */
   @Deprecated
   public boolean getFacetSort() {
@@ -231,10 +243,10 @@ public class SolrQuery extends ModifiableSolrParams
    * @param sort sort facets
    * @return this
    * @deprecated Use {@link #setFacetSort(String)} instead, true corresponds to
-   * FacetParams.FACET_SORT_COUNT and false to FacetParams.FACET_SORT_LEX.
+   * {@link FacetParams#FACET_SORT_COUNT} and false to {@link FacetParams#FACET_SORT_LEX}.
    */
   @Deprecated
-  public SolrQuery setFacetSort(boolean sort) {
+  public SolrQuery setFacetSort(boolean sort) { 
     this.set(FacetParams.FACET_SORT, sort == true ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
     return this;
   }
@@ -252,7 +264,7 @@ public class SolrQuery extends ModifiableSolrParams
   /** remove a field for highlighting
    * 
    * @param f field name to not highlight
-   * @return true if removed, false otherwise
+   * @return <i>true</i>, if removed, <br /> <i>false</i>, otherwise
    */
   public boolean removeHighlightField(String f) {
     boolean b = this.remove(HighlightParams.FIELDS, f);
@@ -262,9 +274,9 @@ public class SolrQuery extends ModifiableSolrParams
     return b;
   }
 
-  /** get list of hl fields
+  /** get list of highlighted fields
    * 
-   * @return highlight fields or null if not set/empty
+   * @return Array of highlight fields or null if not set/empty
    */
   public String[] getHighlightFields() {
     return this.getParams(HighlightParams.FIELDS);
@@ -472,10 +484,6 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
   }
 
-// use addSortField( sort, order 
-//  public void setSort(String ... sort) {
-//    this.set(CommonParams.SORT, sort);
-//  }
 
   public SolrQuery setStart(Integer start) {
     if( start == null ) {
@@ -492,6 +500,13 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(CommonParams.START);
   }
 
+  /**
+   * Query type used to determine the request handler. 
+   * @see org.apache.solr.client.solrj.request.QueryRequest#getPath()
+   * 
+   * @param qt Query Type that corresponds to the query request handler on the server.
+   * @return this
+   */
   public SolrQuery setQueryType(String qt) {
     this.set(CommonParams.QT, qt);
     return this;
@@ -501,17 +516,30 @@ public class SolrQuery extends ModifiableSolrParams
     return this.get(CommonParams.QT);
   }
 
+  /**
+   * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, String ...)
+   * @param name
+   * @param values
+   *  
+   * @return
+   */
   public SolrQuery setParam(String name, String ... values) {
     this.set(name, values);
     return this;
   }
 
+  /**
+   * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, boolean)
+   * @param name
+   * @param value
+   * @return
+   */
   public SolrQuery setParam(String name, boolean value) {
     this.set(name, value);
     return this;
   }
 
-  /** get a deep copy of this object * */
+  /** get a deep copy of this object **/
   public SolrQuery getCopy() {
     SolrQuery q = new SolrQuery();
     for (String name : this.getParameterNames()) {
