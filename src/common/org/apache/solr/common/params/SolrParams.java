@@ -130,8 +130,10 @@ public abstract class SolrParams implements Serializable {
     }
   }
   
-  /** Returns the int value of the field param,
-  or the value for param, or def if neither is set. */
+  /**
+   * @return The int value of the field param, or the value for param 
+   * or <code>null</code> if neither is set. 
+   **/
   public Integer getFieldInt(String field, String param) {
     String val = getFieldParam(field, param);
     try {
