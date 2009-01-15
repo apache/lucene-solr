@@ -251,7 +251,7 @@ public class JdbcDataSource extends
 
           Integer type = fieldNameVsType.get(colName);
           if (type == null)
-            type = 12;
+            type = Types.VARCHAR;
           switch (type) {
             case Types.INTEGER:
               result.put(colName, resultSet.getInt(colName));
@@ -269,8 +269,7 @@ public class JdbcDataSource extends
               result.put(colName, resultSet.getDate(colName));
               break;
             case Types.BOOLEAN:
-              result
-                      .put(colName, resultSet.getBoolean(colName));
+              result.put(colName, resultSet.getBoolean(colName));
               break;
             default:
               result.put(colName, resultSet.getString(colName));
