@@ -88,23 +88,16 @@ public class ModifiableSolrParams extends SolrParams
   public ModifiableSolrParams add( String name, String ... val ) {
     String[] old = vals.put(name, val);
     if( old != null ) {
-      int i =0;
       if( val == null || val.length < 1 ) {
         String[] both = new String[old.length+1];
-        for( String v : old ) {
-          both[i++] = v;
-        }
-        both[i++] = null;
+        System.arraycopy(old, 0, both, 0, old.length);
+        both[old.length] = null;
         vals.put( name, both );
       }
       else {
         String[] both = new String[old.length+val.length];
-        for( String v : old ) {
-          both[i++] = v;
-        }
-        for( String v : val ) {
-          both[i++] = v;
-        }
+        System.arraycopy(old, 0, both, 0, old.length);
+        System.arraycopy(val, 0, both, old.length, val.length);
         vals.put( name, both );
       }
     }
