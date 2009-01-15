@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -97,6 +98,12 @@ public class CommonsHttpSolrServer extends SolrServer
    * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
    */
   protected ResponseParser _parser;
+
+  /**
+   * The RequestWriter used to write all requests to Solr
+   * @see org.apache.solr.client.solrj.request.RequestWriter
+   */
+  protected RequestWriter requestWriter = new RequestWriter();
   
   private final HttpClient _httpClient;
   
@@ -241,8 +248,8 @@ public class CommonsHttpSolrServer extends SolrServer
   public NamedList<Object> request(final SolrRequest request, ResponseParser processor) throws SolrServerException, IOException {
     HttpMethod method = null;
     SolrParams params = request.getParams();
-    Collection<ContentStream> streams = request.getContentStreams();
-    String path = request.getPath();
+    Collection<ContentStream> streams = requestWriter.getContentStreams(request);
+    String path = requestWriter.getPath(request);
     if( path == null || !path.startsWith( "/" ) ) {
       path = "/select";
     }
@@ -564,5 +571,9 @@ public class CommonsHttpSolrServer extends SolrServer
       log.warn("CommonsHttpSolrServer: maximum Retries " + maxRetries + " > 1. Maximum recommended retries is 1.");
     }
     _maxRetries = maxRetries;
+  }
+
+  public void setRequestWriter(RequestWriter requestWriter) {
+    this.requestWriter = requestWriter;
   }
 }

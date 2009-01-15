@@ -138,6 +138,9 @@ New Features
     the error handling is not immediate as it is with the standard SolrServer.
     (ryan)
 
+30. SOLR-865: Adding support for document updates in binary format and corresponding support in Solrj client.
+    (Noble Paul via shalin)
+
 
 Optimizations
 ----------------------

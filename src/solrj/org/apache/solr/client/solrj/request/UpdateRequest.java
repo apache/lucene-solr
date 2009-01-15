@@ -252,7 +252,16 @@ public class UpdateRequest extends SolrRequest
   public List<SolrInputDocument> getDocuments() {
     return documents;
   }
-  
+
+
+  public List<String> getDeleteById() {
+    return deleteById;
+  }
+
+  public List<String> getDeleteQuery() {
+    return deleteQuery;
+  }
+
   public boolean isWaitFlush() {
     return params != null && params.getBool(UpdateParams.WAIT_FLUSH, false);
   }
