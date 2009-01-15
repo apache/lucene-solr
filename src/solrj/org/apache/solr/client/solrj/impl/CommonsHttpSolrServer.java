@@ -58,6 +58,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -66,23 +68,55 @@ import org.apache.solr.common.util.NamedList;
  */
 public class CommonsHttpSolrServer extends SolrServer 
 {
+  /**
+   * User-Agent String as identified by the HTTP request by the {@link
+   * org.apache.commons.httpclient.HttpClient HttpClient} to the Solr
+   * server from the client.
+   */
   public static final String AGENT = "Solr["+CommonsHttpSolrServer.class.getName()+"] 1.0"; 
   
+  private static Logger log = LoggerFactory.getLogger(CommonsHttpSolrServer.class);
+
   /**
    * The URL of the Solr server.
    */
   protected String _baseURL;
+  
+  /**
+   * Default value: null / empty. <p/>
+   * Parameters that are added to every request regardless.  This may be a place to add 
+   * something like an authentication token.
+   */
   protected ModifiableSolrParams _invariantParams;
   
   /**
-   * Default response parser is BinaryResponseParser 
+   * Default response parser is BinaryResponseParser <p/>
+   * This parser represents the default Response Parser chosen to
+   * parse the response if the parser were not specified as part of
+   * the request.
    * @see org.apache.solr.client.solrj.impl.BinaryResponseParser
    */
   protected ResponseParser _parser;
   
   private final HttpClient _httpClient;
+  
+  /**
+   * This defaults to false under the
+   * assumption that if you are following a redirect to get to a Solr
+   * installation, something is misconfigured somewhere.
+   */
   private boolean _followRedirects = false;
+  
+  /**
+   * If compression is enabled, both gzip and deflate compression will
+   * be accepted in the HTTP response.
+   */
   private boolean _allowCompression = false;
+  
+  /**
+   * Maximum number of retries to attempt in the event of transient
+   * errors.  Default: 0 (no) retries. No more than 1 recommended.
+   */
   private int _maxRetries = 0;
   
   /**
@@ -112,7 +146,8 @@ public class CommonsHttpSolrServer extends SolrServer
     this(new URL(solrServerUrl));
   }
 
-  /** Talk to the Solr server via the given HttpClient.  The connection manager
+  /**
+   * Talk to the Solr server via the given HttpClient.  The connection manager
    * for the client should be a MultiThreadedHttpConnectionManager if this
    * client is being reused across SolrServer instances, or of multiple threads
    * will use this SolrServer.
@@ -130,10 +165,9 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   * @param baseURL The URL of the Solr server.  For 
-   * example, "<code>http://localhost:8983/solr/</code>"
-   * if you are using the standard distribution Solr webapp 
-   * on your local machine.
+   * @param baseURL The URL of the Solr server.  For example,
+   * "<code>http://localhost:8983/solr/</code>" if you are using the
+   * standard distribution Solr webapp on your local machine.
    */
   public CommonsHttpSolrServer(URL baseURL) 
   {
@@ -144,10 +178,17 @@ public class CommonsHttpSolrServer extends SolrServer
     this(baseURL, client, new BinaryResponseParser(), false);
   }
 
+  /**
+   * 
+   * @see #useMultiPartPost
+   */
   public CommonsHttpSolrServer(URL baseURL, HttpClient client, boolean useMultiPartPost) {
     this(baseURL, client, new BinaryResponseParser(), useMultiPartPost);
   }
 
+  /**
+   * @see {@link #useMultiPartPost}, {@link #_parser}
+   */
   public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser, boolean useMultiPartPost) {
     _baseURL = baseURL.toExternalForm();
     if( _baseURL.endsWith( "/" ) ) {
@@ -197,8 +238,7 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   
-  public NamedList<Object> request(final SolrRequest request, ResponseParser processor) throws SolrServerException, IOException{
-    
+  public NamedList<Object> request(final SolrRequest request, ResponseParser processor) throws SolrServerException, IOException {
     HttpMethod method = null;
     SolrParams params = request.getParams();
     Collection<ContentStream> streams = request.getContentStreams();
@@ -412,8 +452,9 @@ public class CommonsHttpSolrServer extends SolrServer
   //-------------------------------------------------------------------
   
   /**
-   * Parameters are added to every request regardless.  This may be a place to add 
-   * something like an authentication token.
+   * Retrieve the default list of parameters are added to every request regardless.
+   * 
+   * @see #_invariantParams
    */
   public ModifiableSolrParams getInvariantParams()
   {
@@ -449,17 +490,39 @@ public class CommonsHttpSolrServer extends SolrServer
     return _httpClient.getHttpConnectionManager();
   }
   
-  /** set connectionTimeout on the underlying HttpConnectionManager */
+  /** set connectionTimeout on the underlying HttpConnectionManager
+   * @param timeout Timeout in milliseconds 
+   **/ 
   public void setConnectionTimeout(int timeout) {
     getConnectionManager().getParams().setConnectionTimeout(timeout);
   }
   
-  /** set connectionManagerTimeout on the HttpClient.**/
+  /** set connectionManagerTimeout on the HttpClient.
+   * @param timeout Timeout in milliseconds
+   * @deprecated Use {@link #setConnectionManagerTimeout(long)} **/
+  @Deprecated
   public void setConnectionManagerTimeout(int timeout) {
     _httpClient.getParams().setConnectionManagerTimeout(timeout);
   }
   
-  /** set soTimeout (read timeout) on the underlying HttpConnectionManager.  This is desirable for queries, but probably not for indexing. */
+  /**
+   * Sets soTimeout (read timeout) on the underlying
+   * HttpConnectionManager.  This is desirable for queries, but
+   * probably not for indexing.
+   * 
+   * @param timeout Timeout in milliseconds
+   */
+  public void setConnectionManagerTimeout(long timeout) {
+    _httpClient.getParams().setConnectionManagerTimeout(timeout);
+  }
+  
+  
+  /**
+   * Sets soTimeout (read timeout) on the underlying
+   * HttpConnectionManager.  This is desirable for queries, but
+   * probably not for indexing.
+   * @param timeout Timeout in milliseconds  
+   **/
   public void setSoTimeout(int timeout) {
     getConnectionManager().getParams().setSoTimeout(timeout);
   }
@@ -475,17 +538,16 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   * set followRedirects.  This defaults to false under the
-   * assumption that if you are following a redirect to get to a Solr
-   * installation, something is misconfigured somewhere.
+   * set followRedirects.  
+   * @see #_followRedirects
    */
   public void setFollowRedirects( boolean followRedirects ) {
     _followRedirects = followRedirects;
   }
 
   /**
-   * set allowCompression.  If compression is enabled, both gzip and
-   * deflate compression will be accepted in the HTTP response.
+   * set allowCompression.  
+   * @see #_allowCompression
    */
   public void setAllowCompression( boolean allowCompression ) {
     _allowCompression = allowCompression;
@@ -493,10 +555,14 @@ public class CommonsHttpSolrServer extends SolrServer
 
   /**
    * set maximum number of retries to attempt in the event of
-   * transient errors.  Default: 0 (no) retries. No more than 1
-   * recommended.
+   * transient errors.
+   * @param maxRetries No more than 1 recommended
+   * @see #_maxRetries
    */
   public void setMaxRetries( int maxRetries ) {
+    if (maxRetries > 1) { 
+      log.warn("CommonsHttpSolrServer: maximum Retries " + maxRetries + " > 1. Maximum recommended retries is 1.");
+    }
     _maxRetries = maxRetries;
   }
 }
