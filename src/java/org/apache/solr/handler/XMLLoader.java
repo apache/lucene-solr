@@ -70,7 +70,7 @@ class XMLLoader extends ContentStreamLoader {
     }
     catch (XMLStreamException e) {
       //Hmmm, not quite right
-      throw new IOException(e.getMessage());
+      throw (IOException) new IOException(e.getMessage()).initCause(e);
     } finally {
       IOUtils.closeQuietly(reader);
     }
