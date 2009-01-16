@@ -414,7 +414,8 @@ public class CheckIndex {
         Iterator it = fieldNames.iterator();
         while(it.hasNext()) {
           final String fieldName = (String) it.next();
-          byte[] b = reader.norms(fieldName);
+          final byte[] b = new byte[reader.maxDoc()];
+          reader.norms(fieldName, b, 0);
           if (b.length != info.docCount)
             throw new RuntimeException("norms for field \"" + fieldName + "\" is length " + b.length + " != maxDoc " + info.docCount);
 
