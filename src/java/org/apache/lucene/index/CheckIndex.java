@@ -407,18 +407,17 @@ public class CheckIndex {
           }
           msg("OK");
         }
+        if (reader.maxDoc() != info.docCount)
+          throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
 
         if (infoStream != null)
           infoStream.print("    test: fields, norms.......");
         Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         Iterator it = fieldNames.iterator();
+        final byte[] b = new byte[reader.maxDoc()];
         while(it.hasNext()) {
           final String fieldName = (String) it.next();
-          final byte[] b = new byte[reader.maxDoc()];
           reader.norms(fieldName, b, 0);
-          if (b.length != info.docCount)
-            throw new RuntimeException("norms for field \"" + fieldName + "\" is length " + b.length + " != maxDoc " + info.docCount);
-
         }
         msg("OK [" + fieldNames.size() + " fields]");
         segInfoStat.numFields = fieldNames.size();
