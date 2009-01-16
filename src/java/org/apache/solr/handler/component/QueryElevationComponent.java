@@ -319,6 +319,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     if( !params.getBool( ENABLE, true ) ) {
       return;
     }
+
+    // A runtime parameter can alter the config value for forceElevation
+    boolean force = params.getBool( FORCE_ELEVATION, forceElevation );
     
     Query query = rb.getQuery();
     if( query == null ) {
@@ -364,7 +367,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         SortField[] current = sortSpec.getSort().getSort();
         ArrayList<SortField> sorts = new ArrayList<SortField>( current.length + 1 );
         // Perhaps force it to always sort by score
-        if( forceElevation && current[0].getType() != SortField.SCORE ) {
+        if( force && current[0].getType() != SortField.SCORE ) {
           sorts.add( new SortField(idField, 
               new ElevationComparatorSource(booster.priority), false ) );
           modify = true;
