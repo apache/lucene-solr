@@ -34,6 +34,7 @@ public class FuzzyQuery extends MultiTermQuery {
   
   private float minimumSimilarity;
   private int prefixLength;
+  private boolean termLongEnough = false;
   
   /**
    * Create a new FuzzyQuery that will match terms with a similarity 
@@ -60,6 +61,10 @@ public class FuzzyQuery extends MultiTermQuery {
       throw new IllegalArgumentException("minimumSimilarity < 0");
     if (prefixLength < 0)
       throw new IllegalArgumentException("prefixLength < 0");
+    
+    if (term.text().length() > 1.0f / (1.0f - minimumSimilarity)) {
+      this.termLongEnough = true;
+    }
     
     this.minimumSimilarity = minimumSimilarity;
     this.prefixLength = prefixLength;
@@ -105,6 +110,10 @@ public class FuzzyQuery extends MultiTermQuery {
   }
   
   public Query rewrite(IndexReader reader) throws IOException {
+    if(!termLongEnough) {  // can't match
+      return new BooleanQuery();
+    }
+
     FilteredTermEnum enumerator = getEnum(reader);
     int maxClauseCount = BooleanQuery.getMaxClauseCount();
     ScoreTermQueue stQueue = new ScoreTermQueue(maxClauseCount);

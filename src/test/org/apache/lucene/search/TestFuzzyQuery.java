@@ -249,6 +249,38 @@ public class TestFuzzyQuery extends LuceneTestCase {
     directory.close();
   }
   
+  public void testTokenLengthOpt() throws IOException {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
+        true, IndexWriter.MaxFieldLength.LIMITED);
+    addDoc("12345678911", writer);
+    addDoc("segment", writer);
+    writer.optimize();
+    writer.close();
+    IndexSearcher searcher = new IndexSearcher(directory);
+
+    Query query;
+    // term not over 10 chars, so optimization shortcuts
+    query = new FuzzyQuery(new Term("field", "1234569"), 0.9f);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
+
+    // 10 chars, so no optimization
+    query = new FuzzyQuery(new Term("field", "1234567891"), 0.9f);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
+    
+    // over 10 chars, so no optimization
+    query = new FuzzyQuery(new Term("field", "12345678911"), 0.9f);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+
+    // over 10 chars, no match
+    query = new FuzzyQuery(new Term("field", "sdfsdfsdfsdf"), 0.9f);
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
+  }
+  
   private void addDoc(String text, IndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
