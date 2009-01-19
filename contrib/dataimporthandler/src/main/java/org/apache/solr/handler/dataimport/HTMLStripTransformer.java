@@ -51,6 +51,8 @@ public class HTMLStripTransformer extends Transformer {
         List<String> inputs = (List<String>) tmpVal;
         List results = new ArrayList();
         for (String input : inputs) {
+          if (input == null)
+            continue;
           Object o = stripHTML(input, col);
           if (o != null)
             results.add(o);
