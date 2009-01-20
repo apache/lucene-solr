@@ -39,7 +39,7 @@ import org.apache.lucene.index.IndexFileNameFilter;
  */
 public abstract class Directory {
 
-  volatile boolean isOpen = true;
+  volatile protected boolean isOpen = true;
 
   /** Holds the LockFactory instance (implements locking for
    * this Directory instance). */
