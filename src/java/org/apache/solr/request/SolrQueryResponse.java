@@ -41,12 +41,18 @@ import java.util.*;
  *  <li>{@link Boolean}</li>
  *  <li>{@link Date}</li>
  *  <li>{@link org.apache.solr.search.DocList}</li>
+ *  <li>{@link org.apache.solr.common.SolrDocument} (since 1.3)</li>
+ *  <li>{@link org.apache.solr.common.SolrDocumentList} (since 1.3)</li>
  *  <li>{@link Map} containing any of the items in this list</li>
  *  <li>{@link NamedList} containing any of the items in this list</li>
  *  <li>{@link Collection} containing any of the items in this list</li>
  *  <li>Array containing any of the items in this list</li>
  *  <li>null</li>
  * </ul>
+ * <p>
+ * Other data types may be added to the SolrQueryResponse, but there is no garuntee
+ * that QueryResponseWriters will be able to deal with unexpected types.
+ * </p>
  *
  * @version $Id$
  * @since solr 0.9
