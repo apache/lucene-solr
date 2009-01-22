@@ -677,7 +677,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   /**
-   * Close all resources allocated by the core...
+   * Close all resources allocated by the core if it is no longer in use...
    * <ul>
    *   <li>searcher</li>
    *   <li>updateHandler</li>
@@ -686,15 +686,23 @@ public final class SolrCore implements SolrInfoMBean {
    *       </li>
    * </ul>
    * <p>
-   * This should always be called when the core is obtained through {@link CoreContainer#getCore} or {@link CoreContainer#getAdminCore}
+   * This method should always be called when the core is obtained through
+   * {@link CoreContainer#getCore} or {@link CoreContainer#getAdminCore}.
    * </p>
    * <p>
-   * The actual close is performed if the core usage count is 1.
-   * (A core is created with a usage count of 1).
-   * If usage count is > 1, the usage count is decreased by 1.
-   * If usage count is &lt; 0, this is an error and a runtime exception 
-   * is thrown.
+   * The behavior of this method is determined by the result of decrementing
+   * the core's reference count (A core is created with a refrence count of 1)...
    * </p>
+   * <ul>
+   *   <li>If reference count is > 0, the usage count is decreased by 1 and no
+   *       resources are released.
+   *   </li>
+   *   <li>If reference count is == 0, the resources are released.
+   *   <li>If reference count is &lt; 0, and error is logged and no further action
+   *       is taken.
+   *   </li>
+   * </ul>
+   * @see #isClosed() 
    */
   public void close() {
     int count = refCount.decrementAndGet();
