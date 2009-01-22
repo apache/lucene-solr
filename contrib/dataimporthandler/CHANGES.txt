@@ -101,6 +101,9 @@ Other
              Removed support for 'default' variables, they are automatically available as request parameters.
              (Noble Paul via shalin)
 
+2. SOLR-964: XPathEntityProcessor now ignores DTD validations
+             (Fergus McMenemie, Noble Paul via shalin)
+
 ================== Release 1.3.0 20080915 ==================
 
 Status

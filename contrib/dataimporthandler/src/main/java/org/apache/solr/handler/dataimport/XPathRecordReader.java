@@ -329,6 +329,10 @@ public class XPathRecordReader {
   }
 
   static XMLInputFactory factory = XMLInputFactory.newInstance();
+  static{
+    factory.setProperty(XMLInputFactory.IS_VALIDATING , Boolean.FALSE); 
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD , Boolean.FALSE);
+  }
 
   public static interface Handler {
     public void handle(Map<String, Object> record, String xpath);
