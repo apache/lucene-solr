@@ -587,21 +587,27 @@ public class SnapPuller {
   static boolean delTree(File dir) {
     if (dir == null || !dir.exists())
       return false;
+    boolean isSuccess = true;
     File contents[] = dir.listFiles();
     if (contents != null) {
       for (File file : contents) {
         if (file.isDirectory()) {
           boolean success = delTree(file);
-          if (!success)
-            return false;
+          if (!success) {
+            LOG.warn("Unable to delete directory : " + file);
+            isSuccess = false;
+          }
         } else {
           boolean success = file.delete();
-          if (!success)
+          if (!success) {
+            LOG.warn("Unable to delete file : " + file);
+            isSuccess = false;
             return false;
+          }
         }
       }
     }
-    return dir.delete();
+    return isSuccess && dir.delete();
   }
 
   /**
@@ -853,6 +859,7 @@ public class SnapPuller {
         //close the file
         fileChannel.close();
       } catch (Exception e) {/* noop */
+          LOG.error("Error closing the file stream: "+ this.saveAs ,e);
       }
       try {
         post.releaseConnection();
