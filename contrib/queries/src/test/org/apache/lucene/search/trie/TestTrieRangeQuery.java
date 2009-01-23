@@ -71,8 +71,9 @@ public class TestTrieRangeQuery extends LuceneTestCase
         writer.addDocument(doc);
       }
     
+      writer.optimize();
       writer.close();
-      searcher=new IndexSearcher(directory);			
+      searcher=new IndexSearcher(directory);
     } catch (Exception e) {
       throw new Error(e);
     }
