@@ -63,7 +63,7 @@ CloseIndex
 > 
 
 { "Deletions"
-   OpenReader  DeleteDoc   CloseReader
+   OpenReader(false)  DeleteDoc   CloseReader
 } : 4000
 
 RepSumByName
