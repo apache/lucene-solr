@@ -848,7 +848,7 @@ public class SolrPluginUtils {
   public static List<Query> parseQueryStrings(SolrQueryRequest req, 
                                               String[] queries) throws ParseException {    
     if (null == queries || 0 == queries.length) return null;
-    List<Query> out = new LinkedList<Query>();
+    List<Query> out = new ArrayList<Query>(queries.length);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
         out.add(QParser.getParser(q, null, req).getQuery());

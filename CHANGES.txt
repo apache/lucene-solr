@@ -154,6 +154,9 @@ Optimizations
     Controllable via the facet.method parameter - "fc" is the new default method and "enum"
     is the original method.  (yonik)
 
+ 4. SOLR-970: Use an ArrayList in SolrPluginUtils.parseQueryStrings
+    since we know exactly how long the List will be in advance.
+    (Kay Kay via hossman)
 
 Bug Fixes
 ----------------------
