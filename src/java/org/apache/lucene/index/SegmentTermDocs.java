@@ -46,7 +46,9 @@ class SegmentTermDocs implements TermDocs {
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
     this.freqStream = (IndexInput) parent.freqStream.clone();
-    this.deletedDocs = parent.deletedDocs;
+    synchronized (parent) {
+      this.deletedDocs = parent.deletedDocs;
+    }
     this.skipInterval = parent.tis.getSkipInterval();
     this.maxSkipLevels = parent.tis.getMaxSkipLevels();
   }

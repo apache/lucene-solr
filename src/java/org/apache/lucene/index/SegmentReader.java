@@ -724,6 +724,14 @@ class SegmentReader extends DirectoryIndexReader {
     return (deletedDocs != null && deletedDocs.get(n));
   }
 
+  public TermDocs termDocs(Term term) throws IOException {
+    if (term == null) {
+      return new AllTermDocs(this);
+    } else {
+      return super.termDocs(term);
+    }
+  }
+
   public TermDocs termDocs() throws IOException {
     ensureOpen();
     return new SegmentTermDocs(this);

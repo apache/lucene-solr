@@ -123,7 +123,7 @@ public class TestParallelReader extends LuceneTestCase {
   
   public void testIsCurrent() throws IOException {
     Directory dir1 = getDir1();
-    Directory dir2 = getDir1();
+    Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1));
     pr.add(IndexReader.open(dir2));
@@ -147,7 +147,7 @@ public class TestParallelReader extends LuceneTestCase {
 
   public void testIsOptimized() throws IOException {
     Directory dir1 = getDir1();
-    Directory dir2 = getDir1();
+    Directory dir2 = getDir2();
     
     // add another document to ensure that the indexes are not optimized
     IndexWriter modifier = new IndexWriter(dir1, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
@@ -194,6 +194,25 @@ public class TestParallelReader extends LuceneTestCase {
 
   }
 
+  public void testAllTermDocs() throws IOException {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir2();
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    int NUM_DOCS = 2;
+    TermDocs td = pr.termDocs(null);
+    for(int i=0;i<NUM_DOCS;i++) {
+      assertTrue(td.next());
+      assertEquals(i, td.doc());
+      assertEquals(1, td.freq());
+    }
+    td.close();
+    pr.close();
+    dir1.close();
+    dir2.close();
+  }
+    
   
   private void queryTest(Query query) throws IOException {
     ScoreDoc[] parallelHits = parallel.search(query, null, 1000).scoreDocs;

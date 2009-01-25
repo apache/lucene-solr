@@ -125,6 +125,15 @@ public class TestFilterIndexReader extends LuceneTestCase {
       assertTrue((positions.doc() % 2) == 1);
     }
 
+    int NUM_DOCS = 3;
+
+    TermDocs td = reader.termDocs(null);
+    for(int i=0;i<NUM_DOCS;i++) {
+      assertTrue(td.next());
+      assertEquals(i, td.doc());
+      assertEquals(1, td.freq());
+    }
+    td.close();
     reader.close();
     directory.close();
   }

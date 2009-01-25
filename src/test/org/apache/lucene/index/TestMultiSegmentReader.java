@@ -149,6 +149,19 @@ public class TestMultiSegmentReader extends LuceneTestCase {
     mr.close();
   }
 
+  public void testAllTermDocs() throws IOException {
+    IndexReader reader = openReader();
+    int NUM_DOCS = 2;
+    TermDocs td = reader.termDocs(null);
+    for(int i=0;i<NUM_DOCS;i++) {
+      assertTrue(td.next());
+      assertEquals(i, td.doc());
+      assertEquals(1, td.freq());
+    }
+    td.close();
+    reader.close();
+  }
+
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
     IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(), create, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();

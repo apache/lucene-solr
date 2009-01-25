@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -531,7 +530,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
   
       readerTermDocs = new TermDocs[r.length];
     }
-  
+
     public int doc() {
       return base + current.doc();
     }
@@ -601,8 +600,6 @@ class MultiSegmentReader extends DirectoryIndexReader {
     }
   
     private TermDocs termDocs(int i) throws IOException {
-      if (term == null)
-        return null;
       TermDocs result = readerTermDocs[i];
       if (result == null)
         result = readerTermDocs[i] = termDocs(readers[i]);
@@ -612,7 +609,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
   
     protected TermDocs termDocs(IndexReader reader)
       throws IOException {
-      return reader.termDocs();
+      return term==null ? reader.termDocs(null) : reader.termDocs();
     }
   
     public void close() throws IOException {

@@ -145,6 +145,13 @@ Optimizations
  4. LUCENE-1224: Short circuit FuzzyQuery.rewrite when input token length 
     is small compared to minSimilarity. (Timo Nentwig, Mark Miller)
 
+ 5. LUCENE-1316: MatchAllDocsQuery now avoids the synchronized
+    IndexReader.isDeleted() call per document, by directly accessing
+    the underlying deleteDocs BitVector.  This improves performance
+    with non-readOnly readers, especially in a multi-threaded
+    environment.  (Todd Feak, Yonik Seeley, Jason Rutherglen via Mike
+    McCandless)
+
 Documentation
 
 Build

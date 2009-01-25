@@ -18,15 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.util.Set;
+import java.io.IOException;
 
 /**
  * A query that matches all documents.
@@ -38,17 +34,13 @@ public class MatchAllDocsQuery extends Query {
   }
 
   private class MatchAllScorer extends Scorer {
-
-    final IndexReader reader;
-    int id;
-    final int maxId;
+    final TermDocs termDocs;
     final float score;
 
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w) {
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w) throws IOException
+    {
       super(similarity);
-      this.reader = reader;
-      id = -1;
-      maxId = reader.maxDoc() - 1;
+      this.termDocs = reader.termDocs(null);
       score = w.getValue();
     }
 
@@ -57,26 +49,19 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public int doc() {
-      return id;
+      return termDocs.doc();
     }
 
-    public boolean next() {
-      while (id < maxId) {
-        id++;
-        if (!reader.isDeleted(id)) {
-          return true;
-        }
-      }
-      return false;
+    public boolean next() throws IOException {
+      return termDocs.next();
     }
 
     public float score() {
       return score;
     }
 
-    public boolean skipTo(int target) {
-      id = target - 1;
-      return next();
+    public boolean skipTo(int target) throws IOException {
+      return termDocs.skipTo(target);
     }
 
   }
@@ -112,7 +97,7 @@ public class MatchAllDocsQuery extends Query {
       queryWeight *= this.queryNorm;
     }
 
-    public Scorer scorer(IndexReader reader) {
+    public Scorer scorer(IndexReader reader) throws IOException {
       return new MatchAllScorer(reader, similarity, this);
     }
 

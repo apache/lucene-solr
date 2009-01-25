@@ -523,7 +523,12 @@ public class ParallelReader extends IndexReader {
     protected TermDocs termDocs;
 
     public ParallelTermDocs() {}
-    public ParallelTermDocs(Term term) throws IOException { seek(term); }
+    public ParallelTermDocs(Term term) throws IOException {
+      if (term == null)
+        termDocs = readers.isEmpty() ? null : ((IndexReader)readers.get(0)).termDocs(null);
+      else
+        seek(term);
+    }
 
     public int doc() { return termDocs.doc(); }
     public int freq() { return termDocs.freq(); }

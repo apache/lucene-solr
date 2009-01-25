@@ -796,7 +796,9 @@ public abstract class IndexReader {
 
   /** Returns an enumeration of all the documents which contain
    * <code>term</code>. For each document, the document number, the frequency of
-   * the term in that document is also provided, for use in search scoring.
+   * the term in that document is also provided, for use in
+   * search scoring.  If term is null, then all non-deleted
+   * docs are returned with freq=1.
    * Thus, this method implements the mapping:
    * <p><ul>
    * Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq&gt;<sup>*</sup>

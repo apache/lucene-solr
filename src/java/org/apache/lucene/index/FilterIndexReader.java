@@ -198,6 +198,11 @@ public class FilterIndexReader extends IndexReader {
     return in.termDocs();
   }
 
+  public TermDocs termDocs(Term term) throws IOException {
+    ensureOpen();
+    return in.termDocs(term);
+  }
+
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return in.termPositions();

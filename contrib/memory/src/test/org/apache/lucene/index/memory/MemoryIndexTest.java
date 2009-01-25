@@ -51,6 +51,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.TermDocs;
 
 /**
 Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
@@ -282,7 +283,9 @@ public class MemoryIndexTest extends TestCase {
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, true, stopWords),        
 //        new SnowballAnalyzer("English", StopAnalyzer.ENGLISH_STOP_WORDS),
     };
-    
+
+    boolean first = true;
+
     for (int iter=0; iter < iters; iter++) {
       System.out.println("\n########### iteration=" + iter);
       long start = System.currentTimeMillis();            
@@ -306,6 +309,18 @@ public class MemoryIndexTest extends TestCase {
               boolean measureIndexing = false; // toggle this to measure query performance
               MemoryIndex memind = null;
               if (useMemIndex && !measureIndexing) memind = createMemoryIndex(doc);
+              
+              if (first) {
+                IndexSearcher s = memind.createSearcher();
+                TermDocs td = s.getIndexReader().termDocs(null);
+                assertTrue(td.next());
+                assertEquals(0, td.doc());
+                assertEquals(1, td.freq());
+                td.close();
+                s.close();
+                first = false;
+              }
+
               RAMDirectory ramind = null;
               if (useRAMIndex && !measureIndexing) ramind = createRAMIndex(doc);
               

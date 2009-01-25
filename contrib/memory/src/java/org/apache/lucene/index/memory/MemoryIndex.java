@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -847,13 +846,19 @@ public class MemoryIndex implements Serializable {
         private boolean hasNext;
         private int cursor = 0;
         private ArrayIntList current;
+        private Term term;
         
         public void seek(Term term) {
+          this.term = term;
           if (DEBUG) System.err.println(".seek: " + term);
-          Info info = getInfo(term.field());
-          current = info == null ? null : info.getPositions(term.text());
-          hasNext = (current != null);
-          cursor = 0;
+          if (term == null) {
+            hasNext = true;  // term==null means match all docs
+          } else {
+            Info info = getInfo(term.field());
+            current = info == null ? null : info.getPositions(term.text());
+            hasNext = (current != null);
+            cursor = 0;
+          }
         }
   
         public void seek(TermEnum termEnum) {
@@ -867,7 +872,7 @@ public class MemoryIndex implements Serializable {
         }
   
         public int freq() {
-          int freq = current != null ? numPositions(current) : 0;
+          int freq = current != null ? numPositions(current) : (term == null ? 1 : 0);
           if (DEBUG) System.err.println(".freq: " + freq);
           return freq;
         }
