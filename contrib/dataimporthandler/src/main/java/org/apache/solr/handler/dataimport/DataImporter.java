@@ -315,8 +315,6 @@ public class DataImporter {
       setIndexStartTime(new Date());
 
     try {
-      if (requestParams.clean)
-        writer.doDeleteAll();
       docBuilder = new DocBuilder(this, writer, requestParams);
       docBuilder.execute();
       if (!requestParams.debug)
@@ -480,6 +478,9 @@ public class DataImporter {
         clean = false;
         verbose = "true".equals(requestParams.get("verbose"))
                 || "on".equals(requestParams.get("verbose"));
+      }
+      if (DELTA_IMPORT_CMD.equals(command)) {
+        clean = false;
       }
       if (requestParams.containsKey("commit"))
         commit = Boolean.parseBoolean((String) requestParams.get("commit"));

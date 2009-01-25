@@ -133,18 +133,32 @@ public class DocBuilder {
     if (document.onImportStart != null) {
       invokeEventListener(document.onImportStart);
     }
-
+    AtomicBoolean fullCleanDone = new AtomicBoolean(false);
+    //we must not do a delete of *:* multiple times if there are multiple root entities to be run
     for (DataConfig.Entity e : document.entities) {
       if (entities != null && !entities.contains(e.name))
         continue;
 
       root = e;
+      String delQuery = e.allAttributes.get("preImportDeleteQuery");
+      if(delQuery == null) delQuery="*:*";
       if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP
               && dataImporter.getLastIndexTime() != null) {
+        cleanByQuery(delQuery , fullCleanDone);
         doDelta();
-
+        delQuery = e.allAttributes.get("postImportDeleteQuery");
+        if(delQuery != null)  {
+          fullCleanDone.set(false);
+          cleanByQuery(delQuery, fullCleanDone);
+        }
       } else {
+        cleanByQuery(delQuery, fullCleanDone);
         doFullDump();
+        delQuery = e.allAttributes.get("postImportDeleteQuery");
+        if(delQuery != null)  {
+          fullCleanDone.set(false);
+          cleanByQuery(delQuery, fullCleanDone);
+        }
       }
       statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
     }
@@ -634,6 +648,18 @@ public class DocBuilder {
       this.queryCount.addAndGet(stats.queryCount.get());
 
       return this;
+    }
+  }
+
+  private void cleanByQuery(String delQuery, AtomicBoolean completeCleanDone) {
+    delQuery = getVariableResolver().replaceTokens(delQuery);
+    if (requestParameters.clean) {
+      if (delQuery == null && !completeCleanDone.get()) {
+        writer.deleteByQuery("*:*");
+        completeCleanDone.set(true);
+      } else {
+        writer.deleteByQuery(delQuery);
+      }
     }
   }
 
