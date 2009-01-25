@@ -187,7 +187,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
-    
+
     // if there is no ID field, use allowDups
     if( idField == null ) {
       cmd.allowDups = true;
@@ -259,7 +259,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     } finally {
       iwCommit.unlock();
     }
-    
+
     if( tracker.timeUpperBound > 0 ) {
       tracker.scheduleCommitWithin( tracker.timeUpperBound );
     }
@@ -294,7 +294,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
          deleteAll();
        } else {
         openWriter();
-        writer.deleteDocuments(q);         
+        writer.deleteDocuments(q);
        }
      } finally {
        iwCommit.unlock();
@@ -313,7 +313,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
-
+  public void forceOpenWriter() throws IOException  {
+    iwCommit.lock();
+    try {
+      openWriter();
+    } finally {
+      iwCommit.unlock();
+    }
+  }
 
   public void commit(CommitUpdateCommand cmd) throws IOException {
 
@@ -419,14 +426,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         tracker.pending.cancel( true );
         tracker.pending = null;
       }
-      tracker.scheduler.shutdown(); 
+      tracker.scheduler.shutdown();
       closeWriter();
     } finally {
       iwCommit.unlock();
     }
     log.info("closed " + this);
   }
-    
+
   /** Helper class for tracking autoCommit state.
    *
    * Note: This is purely an implementation detail of autoCommit and will
@@ -435,8 +442,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
    *
    * Note: all access must be synchronized.
    */
-  class CommitTracker implements Runnable 
-  {  
+  class CommitTracker implements Runnable
+  {
     // scheduler delay for maxDoc-triggered autocommits
     public final int DOC_COMMIT_DELAY_MS = 250;
 
@@ -447,12 +454,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     private final ScheduledExecutorService scheduler =
        Executors.newScheduledThreadPool(1);
     private ScheduledFuture pending;
-    
+
     // state
-    long docsSinceCommit;    
+    long docsSinceCommit;
     int autoCommitCount = 0;
     long lastAddedTime = -1;
-    
+
     public CommitTracker() {
       docsSinceCommit = 0;
       pending = null;
@@ -464,27 +471,27 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     /** schedule individual commits */
-    public synchronized void scheduleCommitWithin(long commitMaxTime) 
+    public synchronized void scheduleCommitWithin(long commitMaxTime)
     {
       _scheduleCommitWithin( commitMaxTime );
     }
-    
-    private void _scheduleCommitWithin(long commitMaxTime) 
+
+    private void _scheduleCommitWithin(long commitMaxTime)
     {
       // Check if there is a commit already scheduled for longer then this time
-      if( pending != null && 
-          pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime ) 
+      if( pending != null &&
+          pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime )
       {
         pending.cancel(false);
         pending = null;
       }
-      
+
       // schedule a new commit
       if( pending == null ) {
         pending = scheduler.schedule( this, commitMaxTime, TimeUnit.MILLISECONDS );
       }
     }
-    
+
     /** Indicate that documents have been added
      */
     public void addedDocument( int commitWithin ) {
@@ -494,7 +501,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
         _scheduleCommitWithin( DOC_COMMIT_DELAY_MS );
       }
-      
+
       // maxTime-triggered autoCommit
       long ctime = (commitWithin>0) ? commitWithin : timeUpperBound;
       if( ctime > 0 ) {
@@ -530,7 +537,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         //no need for command.maxOptimizeSegments = 1;  since it is not optimizing
         commit( command );
         autoCommitCount++;
-      } 
+      }
       catch (Exception e) {
         log.error( "auto commit error..." );
         e.printStackTrace();
@@ -555,7 +562,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     public String toString() {
       if(timeUpperBound > 0 || docsUpperBound > 0) {
-        return 
+        return
           (timeUpperBound > 0 ? ("if uncommited for " + timeUpperBound + "ms; ") : "") +
           (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommited docs ") : "");
 
@@ -564,8 +571,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
     }
   }
-      
-  
+
+
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////

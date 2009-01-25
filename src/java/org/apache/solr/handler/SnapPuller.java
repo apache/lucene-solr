@@ -27,6 +27,7 @@ import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,14 +282,14 @@ public class SnapPuller {
         replicationStartTime = 0;
         return successfulInstall;
       } catch (ReplicationHandlerException e) {
-        delTree(tmpIndexDir);
         LOG.error("User aborted Replication");
       } catch (SolrException e) {
-        delTree(tmpIndexDir);
         throw e;
       } catch (Exception e) {
         delTree(tmpIndexDir);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Snappull failed : ", e);
+      } finally {
+        delTree(tmpIndexDir);
       }
       return successfulInstall;
     } finally {
@@ -349,6 +350,14 @@ public class SnapPuller {
     cmd.waitFlush = true;
     cmd.waitSearcher = true;
     solrCore.getUpdateHandler().commit(cmd);
+    if (solrCore.getUpdateHandler() instanceof DirectUpdateHandler2) {
+      LOG.info("Force open index writer to make sure older index files get deleted");
+      DirectUpdateHandler2 handler = (DirectUpdateHandler2) solrCore.getUpdateHandler();
+      handler.forceOpenWriter();
+    } else  {
+      LOG.warn("The update handler is not an instance or sub-class of DirectUpdateHandler2. " +
+              "ReplicationHandler may not be able to cleanup un-used index files.");
+    }
   }
 
 

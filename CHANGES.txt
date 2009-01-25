@@ -219,6 +219,8 @@ Bug Fixes
 24. SOLR-902: FastInputStream#read(byte b[], int off, int len) gives incorrect results when amount left to read is less
     than buffer size (Noble Paul via shalin)
 
+25. SOLR-978: Old files are not removed from slaves after replication (Jaco, Noble Paul, shalin)
+
 
 Other Changes
 ----------------------
