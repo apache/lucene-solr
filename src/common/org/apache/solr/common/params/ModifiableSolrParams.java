@@ -84,6 +84,11 @@ public class ModifiableSolrParams extends SolrParams
 
   /**
    * Add the given values to any existing name
+   * @param name Key
+   * @param val Array of value(s) added to the name. NOTE: If val is null 
+   *     or a member of val is null, then a corresponding null reference 
+   *     will be included when a get method is called on the key later.
+   *  @return this
    */
   public ModifiableSolrParams add( String name, String ... val ) {
     String[] old = vals.put(name, val);
