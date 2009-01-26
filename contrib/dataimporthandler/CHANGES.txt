@@ -94,6 +94,9 @@ Bug Fixes
 12. SOLR-884: CachedSqlEntityProcessor should check if the cache key is present in the query results
               (Noble Paul via shalin)
 
+13. SOLR-985: Fix thread-safety issue with TemplateString for concurrent imports with multiple cores.
+              (Ryuuichi Kumai via shalin)
+
 Documentation
 ----------------------
 

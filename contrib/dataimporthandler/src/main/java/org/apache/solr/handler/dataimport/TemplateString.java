@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,7 +45,7 @@ public class TemplateString {
   private Map<String, TemplateString> cache;
 
   public TemplateString() {
-    cache = new HashMap<String, TemplateString>();
+    cache = new ConcurrentHashMap<String, TemplateString>();
   }
 
   private TemplateString(String s) {
