@@ -256,6 +256,8 @@ Other Changes
 
 13. SOLR-84: Use new Solr logo in admin (Michiel via koji)
 
+14. SOLR-981: groupId for Woodstox dependency in maven solrj changed to org.codehaus.woodstox (Tim Taranov via shalin)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
