@@ -141,7 +141,6 @@ public class DocBuilder {
 
       root = e;
       String delQuery = e.allAttributes.get("preImportDeleteQuery");
-      if(delQuery == null) delQuery="*:*";
       if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP
               && dataImporter.getLastIndexTime() != null) {
         cleanByQuery(delQuery , fullCleanDone);
@@ -655,7 +654,7 @@ public class DocBuilder {
     delQuery = getVariableResolver().replaceTokens(delQuery);
     if (requestParameters.clean) {
       if (delQuery == null && !completeCleanDone.get()) {
-        writer.deleteByQuery("*:*");
+        writer.doDeleteAll();
         completeCleanDone.set(true);
       } else {
         writer.deleteByQuery(delQuery);
