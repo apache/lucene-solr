@@ -27,6 +27,7 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.SortedVIntList;
 
 /**
  * Implementation of a Lucene {@link Filter} that implements trie-based range filtering.
@@ -257,19 +258,24 @@ public final class TrieRangeFilter extends Filter {
    */
   //@Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-    final TermDocs termDocs = reader.termDocs();
-    try {
-      lastNumberOfTerms=splitRange(
-        reader,termDocs,bits,
-        min,trieVariant.TRIE_CODED_NUMERIC_MIN.equals(min),
-        max,trieVariant.TRIE_CODED_NUMERIC_MAX.equals(max)
-      );
-      //System.out.println("Found "+lastNumberOfTerms+" distinct terms in filtered range for field '"+field+"'.");
-    } finally {
-      termDocs.close();
+    if (min.compareTo(max) > 0) {
+      // shortcut: if min>max, no docs will match!
+      lastNumberOfTerms=0;
+      return EMPTY_DOCIDSET;
+    } else {
+      final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+      final TermDocs termDocs = reader.termDocs();
+      try {
+        lastNumberOfTerms=splitRange(
+          reader,termDocs,bits,
+          min,trieVariant.TRIE_CODED_NUMERIC_MIN.equals(min),
+          max,trieVariant.TRIE_CODED_NUMERIC_MAX.equals(max)
+        );
+      } finally {
+        termDocs.close();
+      }
+      return bits;
     }
-    return bits;
   }
   
   /**
@@ -289,4 +295,6 @@ public final class TrieRangeFilter extends Filter {
   private final boolean minInclusive,maxInclusive;
   private Object minUnconverted,maxUnconverted;
   private int lastNumberOfTerms=-1;
+  
+  private static final DocIdSet EMPTY_DOCIDSET = new SortedVIntList(new int[0]);
 }
