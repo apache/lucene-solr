@@ -39,35 +39,44 @@ public final class TrieRangeFilter extends Filter {
   /**
    * Universal constructor (expert use only): Uses already trie-converted min/max values.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeFilter(final String field, final String min, final String max, final TrieUtils variant) {
+  public TrieRangeFilter(final String field, String min, String max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
     if (min==null && max==null) throw new IllegalArgumentException("The min and max values cannot be both null.");
     this.trieVariant=variant;
+    this.field=field.intern();
+    // just for toString()
     this.minUnconverted=min;
     this.maxUnconverted=max;
-    this.min=(min==null) ? trieVariant.TRIE_CODED_NUMERIC_MIN : min;
-    this.max=(max==null) ? trieVariant.TRIE_CODED_NUMERIC_MAX : max;
-    this.field=field.intern();
+    this.minInclusive=minInclusive;
+    this.maxInclusive=maxInclusive;
+    // encode bounds
+    this.min=(min==null) ? trieVariant.TRIE_CODED_NUMERIC_MIN : (
+      minInclusive ? min : variant.incrementTrieCoded(min)
+    );
+    this.max=(max==null) ? trieVariant.TRIE_CODED_NUMERIC_MAX : (
+      maxInclusive ? max : variant.decrementTrieCoded(max)
+    );
   }
 
   /**
-   * Universal constructor (expert use only): Uses already trie-converted min/max values.
+   * Generates a trie filter using the supplied field with range bounds in numeric form (double).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie package returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeFilter(final String field, final String min, final String max) {
-    this(field,min,max,TrieUtils.getDefaultTrieVariant());
-  }
-  
-  /**
-   * Generates a trie query using the supplied field with range bounds in numeric form (double).
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeFilter(final String field, final Double min, final Double max, final TrieUtils variant) {
+  public TrieRangeFilter(final String field, final Double min, final Double max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
     this(
       field,
       (min==null) ? null : variant.doubleToTrieCoded(min.doubleValue()),
       (max==null) ? null : variant.doubleToTrieCoded(max.doubleValue()),
+      minInclusive,
+      maxInclusive,
       variant
     );
     this.minUnconverted=min;
@@ -75,23 +84,20 @@ public final class TrieRangeFilter extends Filter {
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in numeric form (double).
+   * Generates a trie filter using the supplied field with range bounds in date/time form.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeFilter(final String field, final Double min, final Double max) {
-    this(field,min,max,TrieUtils.getDefaultTrieVariant());
-  }
-
-  /**
-   * Generates a trie query using the supplied field with range bounds in date/time form.
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeFilter(final String field, final Date min, final Date max, final TrieUtils variant) {
+  public TrieRangeFilter(final String field, final Date min, final Date max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
     this(
       field,
       (min==null) ? null : variant.dateToTrieCoded(min),
       (max==null) ? null : variant.dateToTrieCoded(max),
+      minInclusive,
+      maxInclusive,
       variant
     );
     this.minUnconverted=min;
@@ -99,36 +105,24 @@ public final class TrieRangeFilter extends Filter {
   }
 
   /**
-   * Generates a trie query using the supplied field with range bounds in date/time form.
+   * Generates a trie filter using the supplied field with range bounds in integer form (long).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeFilter(final String field, final Date min, final Date max) {
-    this(field,min,max,TrieUtils.getDefaultTrieVariant());
-  }
-
-  /**
-   * Generates a trie query using the supplied field with range bounds in integer form (long).
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeFilter(final String field, final Long min, final Long max, final TrieUtils variant) {
+  public TrieRangeFilter(final String field, final Long min, final Long max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
     this(
       field,
       (min==null) ? null : variant.longToTrieCoded(min.longValue()),
       (max==null) ? null : variant.longToTrieCoded(max.longValue()),
+      minInclusive,
+      maxInclusive,
       variant
     );
     this.minUnconverted=min;
     this.maxUnconverted=max;
-  }
-
-  /**
-   * Generates a trie query using the supplied field with range bounds in integer form (long).
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
-   */
-  public TrieRangeFilter(final String field, final Long min, final Long max) {
-    this(field,min,max,TrieUtils.getDefaultTrieVariant());
   }
 
   //@Override
@@ -139,14 +133,24 @@ public final class TrieRangeFilter extends Filter {
   public String toString(final String field) {
     final StringBuffer sb=new StringBuffer();
     if (!this.field.equals(field)) sb.append(this.field).append(':');
-    return sb.append('[').append(minUnconverted).append(" TO ").append(maxUnconverted).append(']').toString();
+    return sb.append(minInclusive ? '[' : '{')
+      .append((minUnconverted==null) ? "*" : minUnconverted.toString())
+      .append(" TO ")
+      .append((maxUnconverted==null) ? "*" : maxUnconverted.toString())
+      .append(maxInclusive ? ']' : '}').toString();
   }
 
+  /**
+   * Two instances are equal if they have the same trie-encoded range bounds, same field, and same variant.
+   * If one of the instances uses an exclusive lower bound, it is equal to a range with inclusive bound,
+   * when the inclusive lower bound is equal to the incremented exclusive lower bound of the other one.
+   * The same applys for the upper bound in other direction.
+   */
   //@Override
   public final boolean equals(final Object o) {
     if (o instanceof TrieRangeFilter) {
       TrieRangeFilter q=(TrieRangeFilter)o;
-      // trieVariants are singleton per type, so no equals needed
+      // trieVariants are singleton per type, so no equals needed.
       return (field==q.field && min.equals(q.min) && max.equals(q.max) && trieVariant==q.trieVariant);
     } else return false;
   }
@@ -282,6 +286,7 @@ public final class TrieRangeFilter extends Filter {
   // members
   private final String field,min,max;
   private final TrieUtils trieVariant;
+  private final boolean minInclusive,maxInclusive;
   private Object minUnconverted,maxUnconverted;
   private int lastNumberOfTerms=-1;
 }

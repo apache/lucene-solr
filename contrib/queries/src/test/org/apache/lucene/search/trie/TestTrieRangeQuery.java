@@ -58,7 +58,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
         TrieUtils.VARIANT_2BIT.addLongTrieCodedDocumentField(
           doc, "field2", distance*l, true /*index it*/, Field.Store.YES
         );
-        // add ascending fields with a distance of 1 to test the correct splitting of range
+        // add ascending fields with a distance of 1 to test the correct splitting of range and inclusive/exclusive
         TrieUtils.VARIANT_8BIT.addLongTrieCodedDocumentField(
           doc, "ascfield8", l, true /*index it*/, Field.Store.NO
         );
@@ -83,7 +83,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
     String field="field"+variant.TRIE_BITS;
     int count=3000;
     long lower=96666L, upper=lower + count*distance + 1234L;
-    TrieRangeQuery q=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
+    TrieRangeQuery q=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, true, variant);
     TopDocs topDocs = searcher.search(q, null, 10000, Sort.INDEXORDER);
     System.out.println("Found "+q.getLastNumberOfTerms()+" distinct terms in range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
@@ -111,7 +111,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
     String field="field"+variant.TRIE_BITS;
     int count=3000;
     long upper=(count-1)*distance + 1234L;
-    TrieRangeQuery q=new TrieRangeQuery(field, null, new Long(upper), variant);
+    TrieRangeQuery q=new TrieRangeQuery(field, null, new Long(upper), true, true, variant);
     TopDocs topDocs = searcher.search(q, null, 10000, Sort.INDEXORDER);
     System.out.println("Found "+q.getLastNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
@@ -141,11 +141,33 @@ public class TestTrieRangeQuery extends LuceneTestCase
     for (int i=0; i<50; i++) {
       long lower=(long)(rnd.nextDouble()*10000L*distance);
       long upper=(long)(rnd.nextDouble()*10000L*distance);
-      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
+      // test inclusive range
+      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, true, variant);
       RangeQuery cq=new RangeQuery(field, variant.longToTrieCoded(lower), variant.longToTrieCoded(upper), true, true);
       cq.setConstantScoreRewrite(true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
+      assertEquals("Returned count for TrieRangeQuery and RangeQuery must be equal", tTopDocs.totalHits, cTopDocs.totalHits );
+      // test exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, false, variant);
+      cq=new RangeQuery(field, variant.longToTrieCoded(lower), variant.longToTrieCoded(upper), false, false);
+      cq.setConstantScoreRewrite(true);
+      tTopDocs = searcher.search(tq, 1);
+      cTopDocs = searcher.search(cq, 1);
+      assertEquals("Returned count for TrieRangeQuery and RangeQuery must be equal", tTopDocs.totalHits, cTopDocs.totalHits );
+      // test left exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, true, variant);
+      cq=new RangeQuery(field, variant.longToTrieCoded(lower), variant.longToTrieCoded(upper), false, true);
+      cq.setConstantScoreRewrite(true);
+      tTopDocs = searcher.search(tq, 1);
+      cTopDocs = searcher.search(cq, 1);
+      assertEquals("Returned count for TrieRangeQuery and RangeQuery must be equal", tTopDocs.totalHits, cTopDocs.totalHits );
+      // test right exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, false, variant);
+      cq=new RangeQuery(field, variant.longToTrieCoded(lower), variant.longToTrieCoded(upper), true, false);
+      cq.setConstantScoreRewrite(true);
+      tTopDocs = searcher.search(tq, 1);
+      cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for TrieRangeQuery and RangeQuery must be equal", tTopDocs.totalHits, cTopDocs.totalHits );
     }
   }
@@ -171,9 +193,22 @@ public class TestTrieRangeQuery extends LuceneTestCase
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
-      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
+      // test inclusive range
+      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, true, variant);
       TopDocs tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to inclusive range length", tTopDocs.totalHits, upper-lower+1 );
+      // test exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, false, variant);
+      tTopDocs = searcher.search(tq, 1);
+      assertEquals("Returned count of range query must be equal to exclusive range length", tTopDocs.totalHits, upper-lower-1 );
+      // test left exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, true, variant);
+      tTopDocs = searcher.search(tq, 1);
+      assertEquals("Returned count of range query must be equal to half exclusive range length", tTopDocs.totalHits, upper-lower );
+      // test right exclusive range
+      tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, false, variant);
+      tTopDocs = searcher.search(tq, 1);
+      assertEquals("Returned count of range query must be equal to half exclusive range length", tTopDocs.totalHits, upper-lower );
     }
   }
 
@@ -199,7 +234,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
-      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), variant);
+      TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, true, variant);
       TopDocs topDocs = searcher.search(tq, null, 10000, new Sort(variant.getSortField(field, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;

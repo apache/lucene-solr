@@ -34,69 +34,49 @@ public final class TrieRangeQuery extends ConstantScoreQuery {
   /**
    * Universal constructor (expert use only): Uses already trie-converted min/max values.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeQuery(final String field, final String min, final String max) {
-    super(new TrieRangeFilter(field,min,max));
-  }
-
-  /**
-   * Universal constructor (expert use only): Uses already trie-converted min/max values.
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeQuery(final String field, final String min, final String max, final TrieUtils variant) {
-    super(new TrieRangeFilter(field,min,max,variant));
+  public TrieRangeQuery(final String field, final String min, final String max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
+    super(new TrieRangeFilter(field,min,max,minInclusive,maxInclusive,variant));
   }
 
   /**
    * A trie query using the supplied field with range bounds in numeric form (double).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeQuery(final String field, final Double min, final Double max) {
-    super(new TrieRangeFilter(field,min,max));
-  }
-
-  /**
-   * A trie query using the supplied field with range bounds in numeric form (double).
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeQuery(final String field, final Double min, final Double max, final TrieUtils variant) {
-    super(new TrieRangeFilter(field,min,max,variant));
+  public TrieRangeQuery(final String field, final Double min, final Double max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
+    super(new TrieRangeFilter(field,min,max,minInclusive,maxInclusive,variant));
   }
 
   /**
    * A trie query using the supplied field with range bounds in date/time form.
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeQuery(final String field, final Date min, final Date max) {
-    super(new TrieRangeFilter(field,min,max));
-  }
-
-  /**
-   * A trie query using the supplied field with range bounds in date/time form.
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeQuery(final String field, final Date min, final Date max, final TrieUtils variant) {
-    super(new TrieRangeFilter(field,min,max,variant));
+  public TrieRangeQuery(final String field, final Date min, final Date max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
+    super(new TrieRangeFilter(field,min,max,minInclusive,maxInclusive,variant));
   }
 
   /**
    * A trie query using the supplied field with range bounds in integer form (long).
    * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   * <p>This constructor uses the trie variant returned by {@link TrieUtils#getDefaultTrieVariant()}.
+   * With <code>minInclusive</code> and <code>maxInclusive</code> can be choosen, if the corresponding
+   * bound should be included or excluded from the range.
    */
-  public TrieRangeQuery(final String field, final Long min, final Long max) {
-    super(new TrieRangeFilter(field,min,max));
-  }
-
-  /**
-   * A trie query using the supplied field with range bounds in integer form (long).
-   * You can set <code>min</code> or <code>max</code> (but not both) to <code>null</code> to leave one bound open.
-   */
-  public TrieRangeQuery(final String field, final Long min, final Long max, final TrieUtils variant) {
-    super(new TrieRangeFilter(field,min,max,variant));
+  public TrieRangeQuery(final String field, final Long min, final Long max,
+    final boolean minInclusive, final boolean maxInclusive, final TrieUtils variant
+  ) {
+    super(new TrieRangeFilter(field,min,max,minInclusive,maxInclusive,variant));
   }
 
   /**
@@ -116,6 +96,12 @@ public final class TrieRangeQuery extends ConstantScoreQuery {
     return ((TrieRangeFilter) filter).toString(field)+ToStringUtils.boost(getBoost());
   }
 
+  /**
+   * Two instances are equal if they have the same trie-encoded range bounds, same field, same boost, and same variant.
+   * If one of the instances uses an exclusive lower bound, it is equal to a range with inclusive bound,
+   * when the inclusive lower bound is equal to the decremented exclusive lower bound.
+   * The same applys for the upper bound in other direction.
+   */
   //@Override
   public final boolean equals(final Object o) {
     if (!(o instanceof TrieRangeQuery)) return false;

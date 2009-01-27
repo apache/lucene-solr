@@ -51,13 +51,16 @@ import org.apache.lucene.search.ExtendedFieldCache;
  */
 public final class TrieUtils {
 
-  /** Instance of TrieUtils using a trie factor of 8 bit. */
+  /** Instance of TrieUtils using a trie factor of 8 bit.
+   * This is the <b>recommended<b> one (rather fast and storage optimized) */
   public static final TrieUtils VARIANT_8BIT=new TrieUtils(8);
 
   /** Instance of TrieUtils using a trie factor of 4 bit. */
   public static final TrieUtils VARIANT_4BIT=new TrieUtils(4);
 
-  /** Instance of TrieUtils using a trie factor of 2 bit. */
+  /** Instance of TrieUtils using a trie factor of 2 bit.
+   * This may be good for some indexes, but it needs much storage space
+   * and is not much faster than 8 bit in most cases. */
   public static final TrieUtils VARIANT_2BIT=new TrieUtils(2);
 
   /** Marker (PADDING)  before lower-precision trie entries to signal the precision value. See class description! */
@@ -88,27 +91,6 @@ public final class TrieUtils {
       return trieCodedToDoubleAuto(val);
     }
   };
-  
-  private static TrieUtils defaultTrieVariant=TrieUtils.VARIANT_8BIT;
-
-  /**
-   * Sets the default variant used for generating trie values and ranges.
-   * It is used by the constructors of {@link TrieRangeQuery} and {@link TrieRangeFilter} without <code>TrieUtils</code> parameter
-   * and can be used to get a default value through your whole application.
-   */
-  public synchronized static final void setDefaultTrieVariant(final TrieUtils variant) {
-    defaultTrieVariant=variant;
-  }
-
-  /**
-   * Gets the default variant used for generating trie values and ranges.
-   * It is used by the constructors of {@link TrieRangeQuery} and {@link TrieRangeFilter} without <code>TrieUtils</code> parameter
-   * and can be used to get a default value through your whole application.
-   * <p>The default, if not set by {@link #setDefaultTrieVariant}, is {@link #VARIANT_8BIT}.
-   */
-  public synchronized static final TrieUtils getDefaultTrieVariant() {
-    return defaultTrieVariant;
-  }
   
   /**
    * Detects and returns the variant of a trie encoded string using the length.
