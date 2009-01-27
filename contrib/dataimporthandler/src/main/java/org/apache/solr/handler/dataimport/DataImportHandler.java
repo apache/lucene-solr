@@ -32,7 +32,6 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.RawResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -67,14 +66,13 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private DataImporter importer;
 
-  private Map<String, String> variables = new HashMap<String, String>();
-
-
   private Map<String, Properties> dataSources = new HashMap<String, Properties>();
 
   private List<SolrInputDocument> debugDocuments;
 
   private boolean debugEnabled = true;
+
+  private Map<String , Object> coreScopeSession = new HashMap<String, Object>();
 
   @Override
   @SuppressWarnings("unchecked")
@@ -96,7 +94,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
           importer = new DataImporter(SolrWriter.getResourceAsString(core
                   .getResourceLoader().openResource(configLoc)), core,
-                  dataSources);
+                  dataSources, coreScopeSession);
         }
       }
     } catch (Throwable e) {
@@ -142,7 +140,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         try {
           processConfiguration((NamedList) initArgs.get("defaults"));
           importer = new DataImporter(requestParams.dataConfig, req.getCore()
-                  , dataSources);
+                  , dataSources, coreScopeSession);
         } catch (RuntimeException e) {
           rsp.add("exception", DebugLogger.getStacktraceString(e));
           importer = null;
@@ -229,7 +227,6 @@ public class DataImportHandler extends RequestHandlerBase implements
     LOG.info("Processing configuration from solrconfig.xml: " + defaults);
 
     dataSources = new HashMap<String, Properties>();
-    variables = new HashMap<String, String>();
 
     int position = 0;
 
@@ -245,9 +242,6 @@ public class DataImportHandler extends RequestHandlerBase implements
           props.put(dsConfig.getName(i), dsConfig.getVal(i));
         LOG.info("Adding properties to datasource: " + props);
         dataSources.put((String) dsConfig.get("name"), props);
-      } else if (!name.equals("config")) {
-        String value = (String) defaults.getVal(position);
-        variables.put(name, value);
       }
       position++;
     }

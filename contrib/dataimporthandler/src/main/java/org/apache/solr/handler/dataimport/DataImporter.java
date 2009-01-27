@@ -75,20 +75,25 @@ public class DataImporter {
 
   private ReentrantLock importLock = new ReentrantLock();
 
+  private final Map<String , Object> coreScopeSession;
+
   /**
    * Only for testing purposes
    */
   DataImporter() {
+    coreScopeSession = new HashMap<String, Object>();
   }
 
-  DataImporter(String dataConfig, SolrCore core,
-               Map<String, Properties> ds) {
+  DataImporter(String dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
     if (dataConfig == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Configuration not found");
     this.core = core;
     this.schema = core.getSchema();
     dataSourceProps = ds;
+    if (session == null)
+      session = new HashMap<String, Object>();
+    coreScopeSession = session;
     loadDataConfig(dataConfig);
 
     for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
@@ -514,6 +519,10 @@ public class DataImporter {
 
   IndexSchema getSchema() {
     return schema;
+  }
+
+  Map<String, Object> getCoreScopeSession() {
+    return coreScopeSession;
   }
 
   SolrCore getCore() {

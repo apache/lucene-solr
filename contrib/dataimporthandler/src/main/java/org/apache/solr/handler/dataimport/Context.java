@@ -41,8 +41,26 @@ import java.util.Map;
 public abstract class Context {
   public static final int FULL_DUMP = 1, DELTA_DUMP = 2, FIND_DELTA = 3;
 
-  public static final String SCOPE_ENTITY = "entity", SCOPE_GLOBAL = "global",
-          SCOPE_DOC = "document";
+  /**
+   * An object stored in entity scope is valid only for the current entity for the current document only.
+   */
+  public static final String SCOPE_ENTITY = "entity";
+
+  /**
+   * An object stored in global scope is available for the current import only but across entities and documents.
+   */
+  public static final String SCOPE_GLOBAL = "global";
+
+  /**
+   * An object stored in document scope is available for the current document only but across entities.
+   */
+  public static final String SCOPE_DOC = "document";
+
+  /**
+   * An object stored in 'solrcore' scope is available across imports, entities and documents throughout the life of
+   * a solr core. A solr core unload or reload will destroy this data. 
+   */
+  public static final String SCOPE_SOLR_CORE = "solrcore";
 
   /**
    * Get the value of any attribute put into this entity

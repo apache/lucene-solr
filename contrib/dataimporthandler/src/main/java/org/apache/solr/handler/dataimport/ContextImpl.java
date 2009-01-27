@@ -126,6 +126,8 @@ public class ContextImpl extends Context {
       Map<String, Object> docsession = getDocSession();
       if (docsession != null)
         docsession.put(name, val);
+    } else if (SCOPE_SOLR_CORE.equals(scope)){
+      if(dataImporter != null) dataImporter.getCoreScopeSession().put(name, val);
     }
   }
 
@@ -142,6 +144,8 @@ public class ContextImpl extends Context {
       Map<String, Object> docsession = getDocSession();
       if (docsession != null)
         return docsession.get(name);
+    } else if (SCOPE_SOLR_CORE.equals(scope)){
+       return dataImporter == null ? null : dataImporter.getCoreScopeSession().get(name);
     }
     return null;
   }

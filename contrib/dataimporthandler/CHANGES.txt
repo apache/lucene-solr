@@ -53,6 +53,9 @@ New Features
 11.SOLR-801:  Add support for configurable pre-import and post-import delete query per root-entity.
               (Noble Paul via shalin)
 
+12.SOLR-988:  Add a new scope for session data stored in Context to store objects across imports.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
