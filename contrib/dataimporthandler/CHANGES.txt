@@ -61,6 +61,9 @@ Optimizations
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
               (Ricky Leung, Noble Paul via shalin)
 
+2. SOLR-974:  DataImportHandler skips commit if no data has been updated.
+              (Wojtek Piaseczny, shalin)
+
 Bug Fixes
 ----------------------
 1. SOLR-800:  Deep copy collections to avoid ConcurrentModificationException in XPathEntityprocessor while streaming

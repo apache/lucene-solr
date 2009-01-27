@@ -21,10 +21,7 @@ import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.c
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * <p>
@@ -65,6 +62,31 @@ public class TestDocBuilder {
               .assertEquals(0, di.getDocBuilder().importStatistics.docCount.get());
       Assert.assertEquals(0, di.getDocBuilder().importStatistics.rowsCount
               .get());
+    } finally {
+      MockDataSource.clearCache();
+    }
+  }
+
+  @Test
+  public void testDeltaImportNoRows_MustNotCommit() {
+    try {
+      DataImporter di = new DataImporter();
+      di.loadDataConfig(dc_deltaConfig);
+      DataConfig cfg = di.getConfig();
+      DataConfig.Entity ent = cfg.document.entities.get(0);
+      MockDataSource.setIterator("select * from x", new ArrayList().iterator());
+      MockDataSource.setIterator("select id from x", new ArrayList().iterator());
+      ent.dataSrc = new MockDataSource();
+      ent.isDocRoot = true;
+      DataImporter.RequestParams rp = new DataImporter.RequestParams(createMap("command", "delta-import"));
+      SolrWriterImpl swi = new SolrWriterImpl();
+      di.runCmd(rp, swi);
+      Assert.assertEquals(Boolean.FALSE, swi.deleteAllCalled);
+      Assert.assertEquals(Boolean.FALSE, swi.commitCalled);
+      Assert.assertEquals(0, swi.docs.size());
+      Assert.assertEquals(1, di.getDocBuilder().importStatistics.queryCount.get());
+      Assert.assertEquals(0, di.getDocBuilder().importStatistics.docCount.get());
+      Assert.assertEquals(0, di.getDocBuilder().importStatistics.rowsCount.get());
     } finally {
       MockDataSource.clearCache();
     }
@@ -153,9 +175,9 @@ public class TestDocBuilder {
   static class SolrWriterImpl extends SolrWriter {
     List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
 
-    Boolean deleteAllCalled;
+    Boolean deleteAllCalled = Boolean.FALSE;
 
-    Boolean commitCalled;
+    Boolean commitCalled = Boolean.FALSE;
 
     public SolrWriterImpl() {
       super(null, ".");
@@ -181,6 +203,14 @@ public class TestDocBuilder {
   public static final String dc_singleEntity = "<dataConfig>\n"
           + "    <document name=\"X\" >\n"
           + "        <entity name=\"x\" query=\"select * from x\">\n"
+          + "          <field column=\"id\"/>\n"
+          + "          <field column=\"desc\"/>\n"
+          + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
+          + "    </document>\n" + "</dataConfig>";
+
+  public static final String dc_deltaConfig = "<dataConfig>\n"
+          + "    <document name=\"X\" >\n"
+          + "        <entity name=\"x\" query=\"select * from x\" deltaQuery=\"select id from x\">\n"
           + "          <field column=\"id\"/>\n"
           + "          <field column=\"desc\"/>\n"
           + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"

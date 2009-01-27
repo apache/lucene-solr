@@ -175,8 +175,15 @@ public class DocBuilder {
         }
       }
     } else {
-      // Finished operation normally, commit now
-      commit();
+      // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
+      if (!requestParameters.clean)  {
+        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0)  {
+          commit();
+        }
+      } else  {
+        // Finished operation normally, commit now
+        commit();
+      }
       if (document.onImportEnd != null) {
         invokeEventListener(document.onImportEnd);
       }
