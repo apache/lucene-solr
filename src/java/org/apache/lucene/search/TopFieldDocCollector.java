@@ -28,8 +28,10 @@ import org.apache.lucene.index.IndexReader;
  * <p>This may be extended, overriding the collect method to, e.g.,
  * conditionally invoke <code>super()</code> in order to filter which
  * documents are collected.
+ *
+ * @deprecated Please use {@link TopFieldCollector} instead.
  **/
-public class TopFieldDocCollector extends TopDocCollector {
+public class TopFieldDocCollector extends TopScoreDocCollector {
 
   private FieldDoc reusableFD;
 
@@ -48,15 +50,15 @@ public class TopFieldDocCollector extends TopDocCollector {
     if (score > 0.0f) {
       totalHits++;
       if (reusableFD == null)
-        reusableFD = new FieldDoc(doc, score);
+        reusableFD = new FieldDoc(doc + docBase, score);
       else {
-        // Whereas TopDocCollector can skip this if the
+        // Whereas TopScoreDocCollector can skip this if the
         // score is not competitive, we cannot because the
         // comparators in the FieldSortedHitQueue.lessThan
         // aren't in general congruent with "higher score
         // wins"
         reusableFD.score = score;
-        reusableFD.doc = doc;
+        reusableFD.doc = doc + docBase;
       }
       reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
     }

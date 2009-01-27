@@ -34,7 +34,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.TopDocCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
 
 /** Simple command-line based search demo. */
 public class SearchFiles {
@@ -193,7 +193,7 @@ public class SearchFiles {
                                      int hitsPerPage, boolean raw, boolean interactive) throws IOException {
  
     // Collect enough docs to show 5 pages
-    TopDocCollector collector = new TopDocCollector(5 * hitsPerPage);
+    TopScoreDocCollector collector = new TopScoreDocCollector(5 * hitsPerPage);
     searcher.search(query, collector);
     ScoreDoc[] hits = collector.topDocs().scoreDocs;
     
@@ -212,7 +212,7 @@ public class SearchFiles {
           break;
         }
 
-        collector = new TopDocCollector(numTotalHits);
+        collector = new TopScoreDocCollector(numTotalHits);
         searcher.search(query, collector);
         hits = collector.topDocs().scoreDocs;
       }

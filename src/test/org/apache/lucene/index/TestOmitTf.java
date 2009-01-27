@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiReaderHitCollector;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
@@ -348,16 +348,21 @@ public class TestOmitTf extends LuceneTestCase {
     dir.close();
   }
      
-  public static class CountingHitCollector extends HitCollector {
+  public static class CountingHitCollector extends MultiReaderHitCollector {
     static int count=0;
     static int sum=0;
+    private int docBase = -1;
     CountingHitCollector(){count=0;sum=0;}
     public void collect(int doc, float score) {
       count++;
-      sum += doc;  // use it to avoid any possibility of being optimized away
+      sum += doc + docBase;  // use it to avoid any possibility of being optimized away
     }
 
     public static int getCount() { return count; }
     public static int getSum() { return sum; }
+    
+    public void setNextReader(IndexReader reader, int docBase) {
+      this.docBase = docBase;
+    }
   }
 }

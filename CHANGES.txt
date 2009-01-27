@@ -46,6 +46,11 @@ API Changes
    newly added NoSuchDirectoryException if the directory does not
    exist.  (Marcel Reutegger, Mike McCandless)
 
+7. LUCENE-1483: Added new MultiReaderHitCollector which enables faster
+   hit collection by notifying the collector for each sub-reader
+   that's visited.  All core collectors now use this API.  (Mark
+   Miller, Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -150,6 +155,13 @@ Optimizations
     the underlying deleteDocs BitVector.  This improves performance
     with non-readOnly readers, especially in a multi-threaded
     environment.  (Todd Feak, Yonik Seeley, Jason Rutherglen via Mike
+    McCandless)
+
+ 6. LUCENE-1483: When searching over multiple segments we now visit
+    each sub-reader one at a time.  This speeds up warming, since
+    FieldCache entries (if required) can be shared across reopens for
+    those segments that did not change, and also speeds up searches
+    that sort by relevance or by field values.  (Mark Miller, Mike
     McCandless)
 
 Documentation

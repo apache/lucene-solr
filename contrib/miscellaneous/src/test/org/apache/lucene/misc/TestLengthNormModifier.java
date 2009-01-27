@@ -23,10 +23,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiReaderHitCollector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -59,8 +59,6 @@ public class TestLengthNormModifier extends TestCase {
     public void setUp() throws Exception {
 	IndexWriter writer = new
 	    IndexWriter(store, new SimpleAnalyzer(), true);
-	
-	IndexSearcher searcher;
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();
@@ -130,15 +128,17 @@ public class TestLengthNormModifier extends TestCase {
 	float lastScore = 0.0f;
 	
 	// default similarity should put docs with shorter length first
-	searcher = new IndexSearcher(store);
-	searcher.search
-	    (new TermQuery(new Term("field", "word")),
-	     new HitCollector() {
-		 public final void collect(int doc, float score) {
-		     scores[doc] = score;
-		 }
-	     });
-	searcher.close();
+  searcher = new IndexSearcher(store);
+  searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
+    private int docBase = -1;
+    public final void collect(int doc, float score) {
+      scores[doc + docBase] = score;
+    }
+    public void setNextReader(IndexReader reader, int docBase) {
+      this.docBase = docBase;
+    }
+  });
+  searcher.close();
 	
 	lastScore = Float.MAX_VALUE;
 	for (int i = 0; i < NUM_DOCS; i++) {
@@ -159,14 +159,16 @@ public class TestLengthNormModifier extends TestCase {
 
 	// new norm (with default similarity) should put longer docs first
 	searcher = new IndexSearcher(store);
-	searcher.search
-	    (new TermQuery(new Term("field", "word")),
-	     new HitCollector() {
-		 public final void collect(int doc, float score) {
-		     scores[doc] = score;
-		 }
-	     });
-	searcher.close();
+	searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
+      private int docBase = -1;
+      public final void collect(int doc, float score) {
+        scores[doc + docBase] = score;
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        this.docBase = docBase;
+      }
+    });
+    searcher.close();
 	
 	lastScore = 0.0f;
 	for (int i = 0; i < NUM_DOCS; i++) {

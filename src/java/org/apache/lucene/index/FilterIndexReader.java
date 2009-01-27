@@ -232,4 +232,8 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.isOptimized();
   }
+  
+  public IndexReader[] getSequentialSubReaders() {
+    return in.getSequentialSubReaders();
+  }
 }

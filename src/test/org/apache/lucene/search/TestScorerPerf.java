@@ -5,7 +5,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Random;
 import java.util.BitSet;
-import java.util.Set;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
@@ -51,6 +50,7 @@ public class TestScorerPerf extends LuceneTestCase {
     // This could possibly fail if Lucene starts checking for docid ranges...
     RAMDirectory rd = new RAMDirectory();
     IndexWriter iw = new IndexWriter(rd,new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    iw.addDocument(new Document());
     iw.close();
     s = new IndexSearcher(rd);
   }
@@ -96,17 +96,22 @@ public class TestScorerPerf extends LuceneTestCase {
     return sets;
   }
 
-  public static class CountingHitCollector extends HitCollector {
+  public static class CountingHitCollector extends MultiReaderHitCollector {
     int count=0;
     int sum=0;
+    protected int docBase = -1;
 
     public void collect(int doc, float score) {
       count++;
-      sum += doc;  // use it to avoid any possibility of being optimized away
+      sum += docBase+doc;  // use it to avoid any possibility of being optimized away
     }
 
     public int getCount() { return count; }
     public int getSum() { return sum; }
+
+    public void setNextReader(IndexReader reader, int base) {
+      docBase = base;
+    }
   }
 
 
@@ -119,8 +124,8 @@ public class TestScorerPerf extends LuceneTestCase {
 
     public void collect(int doc, float score) {
       pos = answer.nextSetBit(pos+1);
-      if (pos != doc) {
-        throw new RuntimeException("Expected doc " + pos + " but got " + doc);
+      if (pos != doc + docBase) {
+        throw new RuntimeException("Expected doc " + pos + " but got " + doc + docBase);
       }
       super.collect(doc,score);
     }
@@ -158,6 +163,7 @@ public class TestScorerPerf extends LuceneTestCase {
                                          : new CountingHitCollector();
       s.search(bq, hc);
       ret += hc.getSum();
+
       if (validate) assertEquals(result.cardinality(), hc.getCount());
       // System.out.println(hc.getCount());
     }

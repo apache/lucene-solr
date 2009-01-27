@@ -19,7 +19,9 @@ package org.apache.lucene.search;
 
 /** Lower-level search API.
  * <br>HitCollectors are primarily meant to be used to implement queries,
- * sorting and filtering.
+ * sorting and filtering.  See {@link
+ * MultiReaderHitCollector} for a lower level and
+ * higher performance (on a multi-segment index) API.
  * @see Searcher#search(Query,HitCollector)
  * @version $Id$
  */

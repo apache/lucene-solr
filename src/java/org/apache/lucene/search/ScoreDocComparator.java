@@ -25,6 +25,7 @@ package org.apache.lucene.search;
  *
  * @since   lucene 1.4
  * @version $Id$
+ * @deprecated use {@link FieldComparator}
  */
 public interface ScoreDocComparator {
 

@@ -1136,4 +1136,15 @@ public abstract class IndexReader {
   public static Collection listCommits(Directory dir) throws IOException {
     return DirectoryIndexReader.listCommits(dir);
   }
+
+  /** Returns the sequential sub readers that this reader is
+   *  logically composed of.  IndexSearcher uses this API to
+   *  drive searching by one sub reader at a time.  If this
+   *  reader is not composed of sequential child readers, it
+   *  should return null.  If this method returns an empty
+   *  array, that means this reader is a null reader (for
+   *  example a MultiReader that has no sub readers).*/
+  public IndexReader[] getSequentialSubReaders() {
+    return null;
+  }
 }

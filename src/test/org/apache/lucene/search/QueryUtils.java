@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.apache.lucene.index.IndexReader;
+
 /**
  * Copyright 2005 Apache Software Foundation
  *
@@ -151,8 +153,10 @@ public class QueryUtils {
 
       final int[] sdoc = new int[] {-1};
       final float maxDiff = 1e-5f;
-      s.search(q,new HitCollector() {
+      s.search(q,new MultiReaderHitCollector() {
+        private int base = -1;
         public void collect(int doc, float score) {
+          doc = doc + base;
           try {
             int op = order[(opidx[0]++)%order.length];
             //System.out.println(op==skip_op ? "skip("+(sdoc[0]+1)+")":"next()");
@@ -183,6 +187,9 @@ public class QueryUtils {
             throw new RuntimeException(e);
           }
         }
+        public void setNextReader(IndexReader reader, int docBase) {
+          base = docBase;
+        }
       });
       
       // make sure next call to scorer is false.
@@ -198,9 +205,11 @@ public class QueryUtils {
     //System.out.println("checkFirstSkipTo: "+q);
     final float maxDiff = 1e-5f;
     final int lastDoc[] = {-1};
-    s.search(q,new HitCollector() {
+    s.search(q,new MultiReaderHitCollector() {
+      private int base = -1;
       public void collect(int doc, float score) {
         //System.out.println("doc="+doc);
+        doc = doc + base;
         try {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
@@ -215,6 +224,9 @@ public class QueryUtils {
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        base = docBase;
       }
     });
     Weight w = q.weight(s);

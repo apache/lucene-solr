@@ -34,6 +34,7 @@ import java.util.Locale;
  * @version $Id$
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
+ * @deprecated see {@link FieldValueHitQueue}
  */
 public class FieldSortedHitQueue
 extends PriorityQueue {
@@ -52,18 +53,10 @@ extends PriorityQueue {
     this.fields = new SortField[n];
     for (int i=0; i<n; ++i) {
       String fieldname = fields[i].getField();
+      // AUTO is resolved before we are called
+      assert fields[i].getType() != SortField.AUTO;
       comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getParser(), fields[i].getLocale(), fields[i].getFactory());
-      // new SortField instances must only be created when auto-detection is in use
-      if (fields[i].getType() == SortField.AUTO) {
-        if (comparators[i].sortType() == SortField.STRING) {
-          this.fields[i] = new SortField (fieldname, fields[i].getLocale(), fields[i].getReverse());
-        } else {
-          this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
-        }
-      } else {
-        assert comparators[i].sortType() == fields[i].getType();
-        this.fields[i] = fields[i];
-      }
+      this.fields[i] = fields[i];
     }
     initialize (size);
   }
@@ -194,9 +187,6 @@ extends PriorityQueue {
       }
       ScoreDocComparator comparator;
       switch (type) {
-        case SortField.AUTO:
-          comparator = comparatorAuto (reader, fieldname);
-          break;
         case SortField.INT:
           comparator = comparatorInt (reader, fieldname, (FieldCache.IntParser)parser);
           break;
@@ -222,6 +212,8 @@ extends PriorityQueue {
         case SortField.CUSTOM:
           comparator = factory.newComparator (reader, fieldname);
           break;
+        case SortField.AUTO:
+          throw new IllegalStateException("Auto should be resolved before now");
         default:
           throw new RuntimeException ("unknown field type: "+type);
       }
@@ -495,34 +487,5 @@ extends PriorityQueue {
         return SortField.STRING;
       }
     };
-  }
-
-  /**
-   * Returns a comparator for sorting hits according to values in the given field.
-   * The terms in the field are looked at to determine whether they contain integers,
-   * floats or strings.  Once the type is determined, one of the other static methods
-   * in this class is called to get the comparator.
-   * @param reader  Index to use.
-   * @param fieldname  Fieldable containg values.
-   * @return  Comparator for sorting hits.
-   * @throws IOException If an error occurs reading the index.
-   */
-  static ScoreDocComparator comparatorAuto (final IndexReader reader, final String fieldname)
-  throws IOException {
-    final String field = fieldname.intern();
-    Object lookupArray = ExtendedFieldCache.EXT_DEFAULT.getAuto (reader, field);
-    if (lookupArray instanceof FieldCache.StringIndex) {
-      return comparatorString (reader, field);
-    } else if (lookupArray instanceof int[]) {
-      return comparatorInt (reader, field, null);
-    } else if (lookupArray instanceof long[]) {
-      return comparatorLong (reader, field, null);
-    } else if (lookupArray instanceof float[]) {
-      return comparatorFloat (reader, field, null);
-    } else if (lookupArray instanceof String[]) {
-      return comparatorString (reader, field);
-    } else {
-      throw new RuntimeException ("unknown data type in field '"+field+"'");
-    }
   }
 }

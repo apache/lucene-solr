@@ -18,27 +18,30 @@ package org.apache.lucene.search;
  */
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 /**
@@ -51,472 +54,640 @@ import java.util.regex.Pattern;
  */
 
 public class TestSort
-extends TestCase
+extends LuceneTestCase
 implements Serializable {
 
-	private Searcher full;
-	private Searcher searchX;
-	private Searcher searchY;
-	private Query queryX;
-	private Query queryY;
-	private Query queryA;
-	private Query queryE;
-	private Query queryF;
-	private Query queryG;
-	private Sort sort;
+  private static final int NUM_STRINGS = 6000;
+  private Searcher full;
+  private Searcher searchX;
+  private Searcher searchY;
+  private Query queryX;
+  private Query queryY;
+  private Query queryA;
+  private Query queryE;
+  private Query queryF;
+  private Query queryG;
+  private Sort sort;
 
 
-	public TestSort (String name) {
-		super (name);
-	}
+  public TestSort (String name) {
+    super (name);
+  }
 
-	public static void main (String[] argv) {
-		if (argv == null || argv.length < 1)
-			TestRunner.run (suite());
-		else if ("server".equals (argv[0])) {
-			TestSort test = new TestSort (null);
-			try {
-				test.startServer();
-				Thread.sleep (500000);
-			} catch (Exception e) {
-				System.out.println (e);
-				e.printStackTrace();
-			}
-		}
-	}
+  public static void main (String[] argv) {
+    if (argv == null || argv.length < 1)
+      TestRunner.run (suite());
+    else if ("server".equals (argv[0])) {
+      TestSort test = new TestSort (null);
+      try {
+        test.startServer();
+        Thread.sleep (500000);
+      } catch (Exception e) {
+        System.out.println (e);
+        e.printStackTrace();
+      }
+    }
+  }
 
-	public static Test suite() {
-		return new TestSuite (TestSort.class);
-	}
+  public static Test suite() {
+    return new TestSuite (TestSort.class);
+  }
 
 
-	// document data:
-	// the tracer field is used to determine which document was hit
-	// the contents field is used to search and sort by relevance
-	// the int field to sort by int
-	// the float field to sort by float
-	// the string field to sort by string
+  // document data:
+  // the tracer field is used to determine which document was hit
+  // the contents field is used to search and sort by relevance
+  // the int field to sort by int
+  // the float field to sort by float
+  // the string field to sort by string
     // the i18n field includes accented characters for testing locale-specific sorting
-	private String[][] data = new String[][] {
-	// tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte, 'custom parser encoding'
-	{   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126", "J"},//A, x
-	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1", "I"},//B, y
-	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999",   "40.00002343", "125", "15", "H"},//C, x
-	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",             String.valueOf(Long.MAX_VALUE),           String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
-	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach",           String.valueOf(Long.MIN_VALUE),           String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
-	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",           "343.034435444", "-3", "0", "E"},//F,y
-	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544", "5", "100", "D"},//G,x
+  private String[][] data = new String[][] {
+  // tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte, 'custom parser encoding'
+  {   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126", "J"},//A, x
+  {   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1", "I"},//B, y
+  {   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9", "99999999",   "40.00002343", "125", "15", "H"},//C, x
+  {   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT",             String.valueOf(Long.MAX_VALUE),           String.valueOf(Double.MIN_VALUE), String.valueOf(Short.MIN_VALUE), String.valueOf(Byte.MIN_VALUE), "G"},//D, y
+  {   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach",           String.valueOf(Long.MIN_VALUE),           String.valueOf(Double.MAX_VALUE), String.valueOf(Short.MAX_VALUE),           String.valueOf(Byte.MAX_VALUE), "F"},//E,x
+  {   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T",        "-44",           "343.034435444", "-3", "0", "E"},//F,y
+  {   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin",             "323254543543", "4.043544", "5", "100", "D"},//G,x
   {   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T",        "1023423423005","4.043545", "10", "-50", "C"},//H,y
-	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546", "-340", "51", "B"},//I,x
-	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343", "300", "2", "A"},//J,y
-	{   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null, null},
-	{   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null, null},
-	{   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
-	{   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
- 	};
+  {   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn",        "332422459999", "4.043546", "-340", "51", "B"},//I,x
+  {   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT",             "34334543543",  "4.0000220343", "300", "2", "A"},//J,y
+  {   "W",   "g",             "1",           null,           null,    null,    null,              null,           null, null, null, null},
+  {   "X",   "g",             "1",           "0.1",          null,    null,    null,              null,           null, null, null, null},
+  {   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
+  {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
+  };
 
-	// create an index of all the documents, or just the x, or just the y documents
-	private Searcher getIndex (boolean even, boolean odd)
-	throws IOException {
-		RAMDirectory indexStore = new RAMDirectory ();
-		IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-		for (int i=0; i<data.length; ++i) {
-			if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
-				Document doc = new Document();
-				doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
-				doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
-				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED));
-				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED));
-				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
-				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
-				if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
+  // create an index of all the documents, or just the x, or just the y documents
+  private Searcher getIndex (boolean even, boolean odd)
+  throws IOException {
+    RAMDirectory indexStore = new RAMDirectory ();
+    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(2);
+    writer.setMergeFactor(1000);
+    for (int i=0; i<data.length; ++i) {
+      if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
+        Document doc = new Document();
+        doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
+        doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
+        if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.NOT_ANALYZED));
+        if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][7] != null) doc.add (new Field ("long",     data[i][7], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][8] != null) doc.add (new Field ("double",     data[i][8], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][9] != null) doc.add (new Field ("short",     data[i][9], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][10] != null) doc.add (new Field ("byte",     data[i][10], Field.Store.NO, Field.Index.NOT_ANALYZED));
         if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.setBoost(2);  // produce some scores above 1.0
-				writer.addDocument (doc);
-			}
-		}
-		writer.optimize ();
-		writer.close ();
-		return new IndexSearcher (indexStore);
-	}
+        writer.addDocument (doc);
+      }
+    }
+    //writer.optimize ();
+    writer.close ();
+    return new IndexSearcher (indexStore);
+  }
 
-	private Searcher getFullIndex()
-	throws IOException {
-		return getIndex (true, true);
-	}
+  private Searcher getFullIndex()
+  throws IOException {
+    return getIndex (true, true);
+  }
+  
+  private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
+    RAMDirectory indexStore = new RAMDirectory ();
+    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMaxBufferedDocs(4);
+    writer.setMergeFactor(97);
+    for (int i=0; i<NUM_STRINGS; i++) {
+        Document doc = new Document();
+        String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
+        doc.add (new Field ("tracer", num, Field.Store.YES, Field.Index.NO));
+        //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
+        doc.add (new Field ("string", num, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
+        doc.add (new Field ("string2", num2, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add (new Field ("tracer2", num2, Field.Store.YES, Field.Index.NO));
+        doc.setBoost(2);  // produce some scores above 1.0
+        writer.setMaxBufferedDocs(getRandomNumber(2, 12));
+        writer.addDocument (doc);
+      
+    }
+    //writer.optimize ();
+    //System.out.println(writer.getSegmentCount());
+    writer.close ();
+    return new IndexSearcher (indexStore);
+  }
+  
+  public static String getRandomNumberString(int num, int low, int high) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < num; i++) {
+      sb.append(getRandomNumber(low, high));
+    }
+    return sb.toString();
+  }
+  
+  public static String getRandomCharString(int num) {
+    return getRandomCharString(num, 48, 122);
+  }
+  
+  public static String getRandomCharString(int num, int start, int end) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < num; i++) {
+      sb.append(new Character((char) getRandomNumber(start, end)));
+    }
+    return sb.toString();
+  }
+  
+  static Random r = new Random();
+  
+  public static int getRandomNumber(final int low, final int high) {
+  
+    int randInt = (Math.abs(r.nextInt()) % (high - low)) + low;
 
-	private Searcher getXIndex()
-	throws IOException {
-		return getIndex (true, false);
-	}
+    return randInt;
+  }
 
-	private Searcher getYIndex()
-	throws IOException {
-		return getIndex (false, true);
-	}
+  private Searcher getXIndex()
+  throws IOException {
+    return getIndex (true, false);
+  }
 
-	private Searcher getEmptyIndex()
-	throws IOException {
-		return getIndex (false, false);
-	}
+  private Searcher getYIndex()
+  throws IOException {
+    return getIndex (false, true);
+  }
 
-	public void setUp() throws Exception {
-		full = getFullIndex();
-		searchX = getXIndex();
-		searchY = getYIndex();
-		queryX = new TermQuery (new Term ("contents", "x"));
-		queryY = new TermQuery (new Term ("contents", "y"));
-		queryA = new TermQuery (new Term ("contents", "a"));
+  private Searcher getEmptyIndex()
+  throws IOException {
+    return getIndex (false, false);
+  }
+
+  public void setUp() throws Exception {
+    super.setUp();
+    full = getFullIndex();
+    searchX = getXIndex();
+    searchY = getYIndex();
+    queryX = new TermQuery (new Term ("contents", "x"));
+    queryY = new TermQuery (new Term ("contents", "y"));
+    queryA = new TermQuery (new Term ("contents", "a"));
     queryE = new TermQuery (new Term ("contents", "e"));
-		queryF = new TermQuery (new Term ("contents", "f"));
-		queryG = new TermQuery (new Term ("contents", "g"));
-		sort = new Sort();
-	}
+    queryF = new TermQuery (new Term ("contents", "f"));
+    queryG = new TermQuery (new Term ("contents", "g"));
+    sort = new Sort();
+  }
 
-	// test the sorts by score and document number
-	public void testBuiltInSorts() throws Exception {
-		sort = new Sort();
-		assertMatches (full, queryX, sort, "ACEGI");
-		assertMatches (full, queryY, sort, "BDFHJ");
+  // test the sorts by score and document number
+  public void testBuiltInSorts() throws Exception {
+    sort = new Sort();
+    assertMatches (full, queryX, sort, "ACEGI");
+    assertMatches (full, queryY, sort, "BDFHJ");
 
-		sort.setSort(SortField.FIELD_DOC);
-		assertMatches (full, queryX, sort, "ACEGI");
-		assertMatches (full, queryY, sort, "BDFHJ");
-	}
+    sort.setSort(SortField.FIELD_DOC);
+    assertMatches (full, queryX, sort, "ACEGI");
+    assertMatches (full, queryY, sort, "BDFHJ");
+  }
 
-	// test sorts where the type of field is specified
-	public void testTypedSort() throws Exception {
-		sort.setSort (new SortField[] { new SortField ("int", SortField.INT), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "IGAEC");
-		assertMatches (full, queryY, sort, "DHFJB");
+  // test sorts where the type of field is specified
+  public void testTypedSort() throws Exception {
+    sort.setSort (new SortField[] { new SortField ("int", SortField.INT), SortField.FIELD_DOC });
+    assertMatches (full, queryX, sort, "IGAEC");
+    assertMatches (full, queryY, sort, "DHFJB");
 
-		sort.setSort (new SortField[] { new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "GCIEA");
-		assertMatches (full, queryY, sort, "DHJFB");
+    sort.setSort (new SortField[] { new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC });
+    assertMatches (full, queryX, sort, "GCIEA");
+    assertMatches (full, queryY, sort, "DHJFB");
 
     sort.setSort (new SortField[] { new SortField ("long", SortField.LONG), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "EACGI");
-		assertMatches (full, queryY, sort, "FBJHD");
+    assertMatches (full, queryX, sort, "EACGI");
+    assertMatches (full, queryY, sort, "FBJHD");
 
     sort.setSort (new SortField[] { new SortField ("double", SortField.DOUBLE), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "AGICE");
-		assertMatches (full, queryY, sort, "DJHBF");
+    assertMatches (full, queryX, sort, "AGICE");
+    assertMatches (full, queryY, sort, "DJHBF");
 
     sort.setSort (new SortField[] { new SortField ("byte", SortField.BYTE), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "CIGAE");
-		assertMatches (full, queryY, sort, "DHFBJ");
+    assertMatches (full, queryX, sort, "CIGAE");
+    assertMatches (full, queryY, sort, "DHFBJ");
 
     sort.setSort (new SortField[] { new SortField ("short", SortField.SHORT), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "IAGCE");
-		assertMatches (full, queryY, sort, "DFHBJ");
+    assertMatches (full, queryX, sort, "IAGCE");
+    assertMatches (full, queryY, sort, "DFHBJ");
 
     sort.setSort (new SortField[] { new SortField ("string", SortField.STRING), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "AIGEC");
-		assertMatches (full, queryY, sort, "DJHFB");
-	}
+    assertMatches (full, queryX, sort, "AIGEC");
+    assertMatches (full, queryY, sort, "DJHFB");
+  }
+  
+  /**
+   * Test String sorting: small queue to many matches, multi field sort, reverse sort
+   */
+  public void testStringSort() throws IOException, ParseException {
+    ScoreDoc[] result = null;
+    IndexSearcher searcher = getFullStrings();
+    sort.setSort(new SortField[] {
+        new SortField("string", SortField.STRING),
+        new SortField("string2", SortField.STRING, true),
+        SortField.FIELD_DOC });
 
-	// test sorts where the type of field is specified and a custom field parser is used, that
-	// uses a simple char encoding. The sorted string contains a character beginning from 'A' that
-	// is mapped to a numeric value using some "funny" algorithm to be different for each data type.
-	public void testCustomFieldParserSort() throws Exception {
-		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.IntParser(){
-			public final int parseInt(final String val) {
-				return (int) (val.charAt(0)-'A') * 123456;
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    result = searcher.search(new MatchAllDocsQuery(), null, 500, sort).scoreDocs;
 
-		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
-			public final float parseFloat(final String val) {
-				return (float) Math.sqrt( (double) val.charAt(0) );
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    StringBuffer buff = new StringBuffer();
+    int n = result.length;
+    String last = null;
+    String lastSub = null;
+    int lastDocId = 0;
+    boolean fail = false;
+    for (int x = 0; x < n; ++x) {
+      Document doc2 = searcher.doc(result[x].doc);
+      String[] v = doc2.getValues("tracer");
+      String[] v2 = doc2.getValues("tracer2");
+      for (int j = 0; j < v.length; ++j) {
+        if (last != null) {
+          int cmp = v[j].compareTo(last);
+          if (!(cmp >= 0)) { // ensure first field is in order
+            fail = true;
+            System.out.println("fail:" + v[j] + " < " + last);
+          }
+          if (cmp == 0) { // ensure second field is in reverse order
+            cmp = v2[j].compareTo(lastSub);
+            if (cmp > 0) {
+              fail = true;
+              System.out.println("rev field fail:" + v2[j] + " > " + lastSub);
+            } else if(cmp == 0) { // ensure docid is in order
+              if (result[x].doc < lastDocId) {
+                fail = true;
+                System.out.println("doc fail:" + result[x].doc + " > " + lastDocId);
+              }
+            }
+          }
+        }
+        last = v[j];
+        lastSub = v2[j];
+        lastDocId = result[x].doc;
+        buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+") ");
+      }
+    }
+    if(fail) {
+      System.out.println("topn field1(field2)(docID):" + buff);
+    }
+    assertFalse("Found sort results out of order", fail);
 
-		sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.LongParser(){
-			public final long parseLong(final String val) {
-				return (long) (val.charAt(0)-'A') * 1234567890L;
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+  }
+  
+  // test sorts where the type of field is specified and a custom field parser is used, that
+  // uses a simple char encoding. The sorted string contains a character beginning from 'A' that
+  // is mapped to a numeric value using some "funny" algorithm to be different for each data type.
+  public void testCustomFieldParserSort() throws Exception {
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.IntParser(){
+      public final int parseInt(final String val) {
+        return (int) (val.charAt(0)-'A') * 123456;
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-		sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.DoubleParser(){
-			public final double parseDouble(final String val) {
-				return Math.pow( (double) val.charAt(0), (double) (val.charAt(0)-'A') );
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
+      public final float parseFloat(final String val) {
+        return (float) Math.sqrt( (double) val.charAt(0) );
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ByteParser(){
-			public final byte parseByte(final String val) {
-				return (byte) (val.charAt(0)-'A');
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.LongParser(){
+      public final long parseLong(final String val) {
+        return (long) (val.charAt(0)-'A') * 1234567890L;
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-		sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ShortParser(){
-			public final short parseShort(final String val) {
-				return (short) (val.charAt(0)-'A');
-			}
-		}), SortField.FIELD_DOC });
-		assertMatches (full, queryA, sort, "JIHGFEDCBA");
-	}
+    sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.DoubleParser(){
+      public final double parseDouble(final String val) {
+        return Math.pow( (double) val.charAt(0), (double) (val.charAt(0)-'A') );
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-	// test sorts when there's nothing in the index
-	public void testEmptyIndex() throws Exception {
-		Searcher empty = getEmptyIndex();
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ByteParser(){
+      public final byte parseByte(final String val) {
+        return (byte) (val.charAt(0)-'A');
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-		sort = new Sort();
-		assertMatches (empty, queryX, sort, "");
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ShortParser(){
+      public final short parseShort(final String val) {
+        return (short) (val.charAt(0)-'A');
+      }
+    }), SortField.FIELD_DOC });
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
+  }
 
-		sort.setSort(SortField.FIELD_DOC);
-		assertMatches (empty, queryX, sort, "");
+  // test sorts when there's nothing in the index
+  public void testEmptyIndex() throws Exception {
+    Searcher empty = getEmptyIndex();
 
-		sort.setSort (new SortField[] { new SortField ("int", SortField.INT), SortField.FIELD_DOC });
-		assertMatches (empty, queryX, sort, "");
+    sort = new Sort();
+    assertMatches (empty, queryX, sort, "");
 
-		sort.setSort (new SortField[] { new SortField ("string", SortField.STRING, true), SortField.FIELD_DOC });
-		assertMatches (empty, queryX, sort, "");
+    sort.setSort(SortField.FIELD_DOC);
+    assertMatches (empty, queryX, sort, "");
 
-		sort.setSort (new SortField[] { new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING) });
-		assertMatches (empty, queryX, sort, "");
-	}
+    sort.setSort (new SortField[] { new SortField ("int", SortField.INT), SortField.FIELD_DOC });
+    assertMatches (empty, queryX, sort, "");
 
-	// test sorts where the type of field is determined dynamically
-	public void testAutoSort() throws Exception {
-		sort.setSort("int");
-		assertMatches (full, queryX, sort, "IGAEC");
-		assertMatches (full, queryY, sort, "DHFJB");
+    sort.setSort (new SortField[] { new SortField ("string", SortField.STRING, true), SortField.FIELD_DOC });
+    assertMatches (empty, queryX, sort, "");
 
-		sort.setSort("float");
-		assertMatches (full, queryX, sort, "GCIEA");
-		assertMatches (full, queryY, sort, "DHJFB");
+    sort.setSort (new SortField[] { new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING) });
+    assertMatches (empty, queryX, sort, "");
+  }
 
-		sort.setSort("string");
-		assertMatches (full, queryX, sort, "AIGEC");
-		assertMatches (full, queryY, sort, "DJHFB");
-	}
+  static class MyFieldComparator extends FieldComparator {
+    int[] docValues;
+    int[] slotValues;
+    int bottomValue;
 
-	// test sorts in reverse
-	public void testReverseSort() throws Exception {
-		sort.setSort (new SortField[] { new SortField (null, SortField.SCORE, true), SortField.FIELD_DOC });
-		assertMatches (full, queryX, sort, "IEGCA");
-		assertMatches (full, queryY, sort, "JFHDB");
+    MyFieldComparator(int numHits) {
+      slotValues = new int[numHits];
+    }
 
-		sort.setSort (new SortField (null, SortField.DOC, true));
-		assertMatches (full, queryX, sort, "IGECA");
-		assertMatches (full, queryY, sort, "JHFDB");
+    public void copy(int slot, int doc, float score) {
+      slotValues[slot] = docValues[doc];
+    }
 
-		sort.setSort ("int", true);
-		assertMatches (full, queryX, sort, "CAEGI");
-		assertMatches (full, queryY, sort, "BJFHD");
+    public int compare(int slot1, int slot2) {
+      return slotValues[slot1] - slotValues[slot2];
+    }
 
-		sort.setSort ("float", true);
-		assertMatches (full, queryX, sort, "AECIG");
-		assertMatches (full, queryY, sort, "BFJHD");
+    public int compareBottom(int doc, float score) {
+      return bottomValue - docValues[doc];
+    }
 
-		sort.setSort ("string", true);
-		assertMatches (full, queryX, sort, "CEGIA");
-		assertMatches (full, queryY, sort, "BFHJD");
-	}
+    public void setBottom(int bottom) {
+      bottomValue = slotValues[bottom];
+    }
 
-	// test sorting when the sort field is empty (undefined) for some of the documents
-	public void testEmptyFieldSort() throws Exception {
-		sort.setSort ("string");
-		assertMatches (full, queryF, sort, "ZJI");
+    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+      docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
+          public final int parseInt(final String val) {
+            return (int) (val.charAt(0)-'A') * 123456;
+          }
+        });
+    }
 
-		sort.setSort ("string", true);
-		assertMatches (full, queryF, sort, "IJZ");
-		
-		sort.setSort (new SortField ("i18n", Locale.ENGLISH));
-		assertMatches (full, queryF, sort, "ZJI");
-		
-		sort.setSort (new SortField ("i18n", Locale.ENGLISH, true));
-		assertMatches (full, queryF, sort, "IJZ");
+    public int sortType() {
+      return 0;
+    }
 
-		sort.setSort ("int");
-		assertMatches (full, queryF, sort, "IZJ");
+    public Comparable value(int slot) {
+      return new Integer(slotValues[slot]);
+    }
+  }
 
-		sort.setSort ("int", true);
-		assertMatches (full, queryF, sort, "JZI");
+  static class MyFieldComparatorSource extends FieldComparatorSource {
+    FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed) {
+      return new MyFieldComparator(numHits);
+    }
+  }
 
-		sort.setSort ("float");
-		assertMatches (full, queryF, sort, "ZJI");
+  // Test sorting w/ custom FieldComparator
+  public void testNewCustomFieldParserSort() throws Exception {
+    sort.setSort (new SortField[] { new SortField ("parser", new MyFieldComparatorSource())});
+    assertMatches (full, queryA, sort, "JIHGFEDCBA");
+  }
 
-		// using a nonexisting field as first sort key shouldn't make a difference:
-		sort.setSort (new SortField[] { new SortField ("nosuchfield", SortField.STRING),
-				new SortField ("float") });
-		assertMatches (full, queryF, sort, "ZJI");
+  // test sorts where the type of field is determined dynamically
+  public void testAutoSort() throws Exception {
+    sort.setSort("int");
+    assertMatches (full, queryX, sort, "IGAEC");
+    assertMatches (full, queryY, sort, "DHFJB");
 
-		sort.setSort ("float", true);
-		assertMatches (full, queryF, sort, "IJZ");
+    sort.setSort("float");
+    assertMatches (full, queryX, sort, "GCIEA");
+    assertMatches (full, queryY, sort, "DHJFB");
 
-		// When a field is null for both documents, the next SortField should be used.
+    sort.setSort("string");
+    assertMatches (full, queryX, sort, "AIGEC");
+    assertMatches (full, queryY, sort, "DJHFB");
+  }
+
+  // test sorts in reverse
+  public void testReverseSort() throws Exception {
+    sort.setSort (new SortField[] { new SortField (null, SortField.SCORE, true), SortField.FIELD_DOC });
+    assertMatches (full, queryX, sort, "IEGCA");
+    assertMatches (full, queryY, sort, "JFHDB");
+
+    sort.setSort (new SortField (null, SortField.DOC, true));
+    assertMatches (full, queryX, sort, "IGECA");
+    assertMatches (full, queryY, sort, "JHFDB");
+
+    sort.setSort ("int", true);
+    assertMatches (full, queryX, sort, "CAEGI");
+    assertMatches (full, queryY, sort, "BJFHD");
+
+    sort.setSort ("float", true);
+    assertMatches (full, queryX, sort, "AECIG");
+    assertMatches (full, queryY, sort, "BFJHD");
+
+    sort.setSort ("string", true);
+    assertMatches (full, queryX, sort, "CEGIA");
+    assertMatches (full, queryY, sort, "BFHJD");
+  }
+
+  // test sorting when the sort field is empty (undefined) for some of the documents
+  public void testEmptyFieldSort() throws Exception {
+    sort.setSort ("string");
+    assertMatches (full, queryF, sort, "ZJI");
+
+    sort.setSort ("string", true);
+    assertMatches (full, queryF, sort, "IJZ");
+    
+    sort.setSort (new SortField ("i18n", Locale.ENGLISH));
+    assertMatches (full, queryF, sort, "ZJI");
+    
+    sort.setSort (new SortField ("i18n", Locale.ENGLISH, true));
+    assertMatches (full, queryF, sort, "IJZ");
+
+    sort.setSort ("int");
+    assertMatches (full, queryF, sort, "IZJ");
+
+    sort.setSort ("int", true);
+    assertMatches (full, queryF, sort, "JZI");
+
+    sort.setSort ("float");
+    assertMatches (full, queryF, sort, "ZJI");
+
+    // using a nonexisting field as first sort key shouldn't make a difference:
+    sort.setSort (new SortField[] { new SortField ("nosuchfield", SortField.STRING),
+        new SortField ("float") });
+    assertMatches (full, queryF, sort, "ZJI");
+
+    sort.setSort ("float", true);
+    assertMatches (full, queryF, sort, "IJZ");
+
+    // When a field is null for both documents, the next SortField should be used.
                 // Works for
-		sort.setSort (new SortField[] { new SortField ("int"),
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float") });
-		assertMatches (full, queryG, sort, "ZWXY");
+        new SortField ("float") });
+    assertMatches (full, queryG, sort, "ZWXY");
 
-		// Reverse the last criterium to make sure the test didn't pass by chance
-		sort.setSort (new SortField[] { new SortField ("int"),
+    // Reverse the last criterium to make sure the test didn't pass by chance
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float", true) });
-		assertMatches (full, queryG, sort, "ZYXW");
+        new SortField ("float", true) });
+    assertMatches (full, queryG, sort, "ZYXW");
 
-		// Do the same for a MultiSearcher
-		Searcher multiSearcher=new MultiSearcher (new Searchable[] { full });
+    // Do the same for a MultiSearcher
+    Searcher multiSearcher=new MultiSearcher (new Searchable[] { full });
 
-		sort.setSort (new SortField[] { new SortField ("int"),
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float") });
-		assertMatches (multiSearcher, queryG, sort, "ZWXY");
+        new SortField ("float") });
+    assertMatches (multiSearcher, queryG, sort, "ZWXY");
 
-		sort.setSort (new SortField[] { new SortField ("int"),
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float", true) });
-		assertMatches (multiSearcher, queryG, sort, "ZYXW");
-		// Don't close the multiSearcher. it would close the full searcher too!
+        new SortField ("float", true) });
+    assertMatches (multiSearcher, queryG, sort, "ZYXW");
+    // Don't close the multiSearcher. it would close the full searcher too!
 
-		// Do the same for a ParallelMultiSearcher
+    // Do the same for a ParallelMultiSearcher
                 Searcher parallelSearcher=new ParallelMultiSearcher (new Searchable[] { full });
 
-		sort.setSort (new SortField[] { new SortField ("int"),
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float") });
-		assertMatches (parallelSearcher, queryG, sort, "ZWXY");
+        new SortField ("float") });
+    assertMatches (parallelSearcher, queryG, sort, "ZWXY");
 
-		sort.setSort (new SortField[] { new SortField ("int"),
+    sort.setSort (new SortField[] { new SortField ("int"),
                                 new SortField ("string", SortField.STRING),
-				new SortField ("float", true) });
-		assertMatches (parallelSearcher, queryG, sort, "ZYXW");
-		// Don't close the parallelSearcher. it would close the full searcher too!
-	}
+        new SortField ("float", true) });
+    assertMatches (parallelSearcher, queryG, sort, "ZYXW");
+    // Don't close the parallelSearcher. it would close the full searcher too!
+  }
 
-	// test sorts using a series of fields
-	public void testSortCombos() throws Exception {
-		sort.setSort (new String[] {"int","float"});
-		assertMatches (full, queryX, sort, "IGEAC");
+  // test sorts using a series of fields
+  public void testSortCombos() throws Exception {
+    sort.setSort (new String[] {"int","float"});
+    assertMatches (full, queryX, sort, "IGEAC");
 
-		sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
-		assertMatches (full, queryX, sort, "CEAGI");
+    sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
+    assertMatches (full, queryX, sort, "CEAGI");
 
-		sort.setSort (new String[] {"float","string"});
-		assertMatches (full, queryX, sort, "GICEA");
-	}
+    sort.setSort (new String[] {"float","string"});
+    assertMatches (full, queryX, sort, "GICEA");
+  }
 
-	// test using a Locale for sorting strings
-	public void testLocaleSort() throws Exception {
-		sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
-		assertMatches (full, queryX, sort, "AIGEC");
-		assertMatches (full, queryY, sort, "DJHFB");
+  // test using a Locale for sorting strings
+  public void testLocaleSort() throws Exception {
+    sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
+    assertMatches (full, queryX, sort, "AIGEC");
+    assertMatches (full, queryY, sort, "DJHFB");
 
-		sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
-		assertMatches (full, queryX, sort, "CEGIA");
-		assertMatches (full, queryY, sort, "BFHJD");
-	}
+    sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
+    assertMatches (full, queryX, sort, "CEGIA");
+    assertMatches (full, queryY, sort, "BFHJD");
+  }
 
-	// test using various international locales with accented characters
-	// (which sort differently depending on locale)
-	public void testInternationalSort() throws Exception {
-		sort.setSort (new SortField ("i18n", Locale.US));
-		assertMatches (full, queryY, sort, "BFJDH");
+  // test using various international locales with accented characters
+  // (which sort differently depending on locale)
+  public void testInternationalSort() throws Exception {
+    sort.setSort (new SortField ("i18n", Locale.US));
+    assertMatches (full, queryY, sort, "BFJDH");
 
-		sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
-		assertMatches (full, queryY, sort, "BJDFH");
+    sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
+    assertMatches (full, queryY, sort, "BJDFH");
 
-		sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
-		assertMatches (full, queryY, sort, "BJDHF");
+    sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
+    assertMatches (full, queryY, sort, "BJDHF");
 
-		sort.setSort (new SortField ("i18n", Locale.US));
-		assertMatches (full, queryX, sort, "ECAGI");
+    sort.setSort (new SortField ("i18n", Locale.US));
+    assertMatches (full, queryX, sort, "ECAGI");
 
-		sort.setSort (new SortField ("i18n", Locale.FRANCE));
-		assertMatches (full, queryX, sort, "EACGI");
-	}
+    sort.setSort (new SortField ("i18n", Locale.FRANCE));
+    assertMatches (full, queryX, sort, "EACGI");
+  }
     
     // Test the MultiSearcher's ability to preserve locale-sensitive ordering
     // by wrapping it around a single searcher
-	public void testInternationalMultiSearcherSort() throws Exception {
-		Searcher multiSearcher = new MultiSearcher (new Searchable[] { full });
-		
-		sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
-		assertMatches (multiSearcher, queryY, sort, "BJDFH");
-		
-		sort.setSort (new SortField ("i18n", Locale.US));
-		assertMatches (multiSearcher, queryY, sort, "BFJDH");
-		
-		sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
-		assertMatches (multiSearcher, queryY, sort, "BJDHF");
-	} 
+  public void testInternationalMultiSearcherSort() throws Exception {
+    Searcher multiSearcher = new MultiSearcher (new Searchable[] { full });
     
-	// test a custom sort function
-	public void testCustomSorts() throws Exception {
-		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
-		assertMatches (full, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
-		assertMatches (full, queryY, sort, "HJDBF");
-		SortComparator custom = SampleComparable.getComparator();
-		sort.setSort (new SortField ("custom", custom));
-		assertMatches (full, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", custom, true));
-		assertMatches (full, queryY, sort, "HJDBF");
-	}
+    sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
+    assertMatches (multiSearcher, queryY, sort, "BJDFH");
+    
+    sort.setSort (new SortField ("i18n", Locale.US));
+    assertMatches (multiSearcher, queryY, sort, "BFJDH");
+    
+    sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
+    assertMatches (multiSearcher, queryY, sort, "BJDHF");
+  } 
+    
+  // test a custom sort function
+  public void testCustomSorts() throws Exception {
+    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
+    assertMatches (full, queryX, sort, "CAIEG");
+    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
+    assertMatches (full, queryY, sort, "HJDBF");
+    SortComparator custom = SampleComparable.getComparator();
+    sort.setSort (new SortField ("custom", custom));
+    assertMatches (full, queryX, sort, "CAIEG");
+    sort.setSort (new SortField ("custom", custom, true));
+    assertMatches (full, queryY, sort, "HJDBF");
+  }
 
-	// test a variety of sorts using more than one searcher
-	public void testMultiSort() throws Exception {
-		MultiSearcher searcher = new MultiSearcher (new Searchable[] { searchX, searchY });
-		runMultiSorts (searcher);
-	}
+  // test a variety of sorts using more than one searcher
+  public void testMultiSort() throws Exception {
+    MultiSearcher searcher = new MultiSearcher (new Searchable[] { searchX, searchY });
+    runMultiSorts (searcher);
+  }
 
-	// test a variety of sorts using a parallel multisearcher
-	public void testParallelMultiSort() throws Exception {
-		Searcher searcher = new ParallelMultiSearcher (new Searchable[] { searchX, searchY });
-		runMultiSorts (searcher);
-	}
+  // test a variety of sorts using a parallel multisearcher
+  public void testParallelMultiSort() throws Exception {
+    Searcher searcher = new ParallelMultiSearcher (new Searchable[] { searchX, searchY });
+    runMultiSorts (searcher);
+  }
 
-	// test a variety of sorts using a remote searcher
-	public void testRemoteSort() throws Exception {
-		Searchable searcher = getRemote();
-		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-		runMultiSorts (multi);
-	}
+  // test a variety of sorts using a remote searcher
+  public void testRemoteSort() throws Exception {
+    Searchable searcher = getRemote();
+    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
+    runMultiSorts (multi);
+  }
 
-	// test custom search when remote
-	public void testRemoteCustomSort() throws Exception {
-		Searchable searcher = getRemote();
-		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
-		assertMatches (multi, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
-		assertMatches (multi, queryY, sort, "HJDBF");
-		SortComparator custom = SampleComparable.getComparator();
-		sort.setSort (new SortField ("custom", custom));
-		assertMatches (multi, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", custom, true));
-		assertMatches (multi, queryY, sort, "HJDBF");
-	}
+  // test custom search when remote
+  public void testRemoteCustomSort() throws Exception {
+    Searchable searcher = getRemote();
+    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
+    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
+    assertMatches (multi, queryX, sort, "CAIEG");
+    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
+    assertMatches (multi, queryY, sort, "HJDBF");
+    SortComparator custom = SampleComparable.getComparator();
+    sort.setSort (new SortField ("custom", custom));
+    assertMatches (multi, queryX, sort, "CAIEG");
+    sort.setSort (new SortField ("custom", custom, true));
+    assertMatches (multi, queryY, sort, "HJDBF");
+  }
 
-	// test that the relevancy scores are the same even if
-	// hits are sorted
-	public void testNormalizedScores() throws Exception {
+  // test that the relevancy scores are the same even if
+  // hits are sorted
+  public void testNormalizedScores() throws Exception {
 
-		// capture relevancy scores
+    // capture relevancy scores
     HashMap scoresX = getScores (full.search (queryX, null, 1000).scoreDocs, full);
     HashMap scoresY = getScores (full.search (queryY, null, 1000).scoreDocs, full);
     HashMap scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
-		// we'll test searching locally, remote and multi
-		MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
-		MultiSearcher multi  = new MultiSearcher (new Searchable[] { searchX, searchY });
+    // we'll test searching locally, remote and multi
+    MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
+    MultiSearcher multi  = new MultiSearcher (new Searchable[] { searchX, searchY });
 
-		// change sorting and make sure relevancy stays the same
+    // change sorting and make sure relevancy stays the same
 
-		sort = new Sort();
+    sort = new Sort();
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -527,7 +698,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort(SortField.FIELD_DOC);
+    sort.setSort(SortField.FIELD_DOC);
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -538,7 +709,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort ("int");
+    sort.setSort ("int");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -549,7 +720,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort ("float");
+    sort.setSort ("float");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -560,7 +731,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort ("string");
+    sort.setSort ("string");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -571,7 +742,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort (new String[] {"int","float"});
+    sort.setSort (new String[] {"int","float"});
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -582,7 +753,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
+    sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -593,7 +764,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-		sort.setSort (new String[] {"float","string"});
+    sort.setSort (new String[] {"float","string"});
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
@@ -604,7 +775,7 @@ implements Serializable {
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
-	}
+  }
 
   public void testTopDocsScores() throws Exception {
 
@@ -621,6 +792,7 @@ implements Serializable {
     Filter filt = new Filter() {
       public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
         BitSet bs = new BitSet(reader.maxDoc());
+        bs.set(0, reader.maxDoc());
         bs.set(docs1.scoreDocs[0].doc);
         return new DocIdBitSet(bs);
       }
@@ -631,121 +803,123 @@ implements Serializable {
     assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
   }
 
-
   // runs a variety of sorts useful for multisearchers
-	private void runMultiSorts (Searcher multi) throws Exception {
-		sort.setSort (SortField.FIELD_DOC);
-		assertMatchesPattern (multi, queryA, sort, "[AB]{2}[CD]{2}[EF]{2}[GH]{2}[IJ]{2}");
+  private void runMultiSorts (Searcher multi) throws Exception {
+    sort.setSort (SortField.FIELD_DOC);
+    assertMatchesPattern (multi, queryA, sort, "[AB]{2}[CD]{2}[EF]{2}[GH]{2}[IJ]{2}");
 
-		sort.setSort (new SortField ("int", SortField.INT));
-		assertMatchesPattern (multi, queryA, sort, "IDHFGJ[ABE]{3}C");
+    sort.setSort (new SortField ("int", SortField.INT));
+    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[ABE]{3}C");
 
-		sort.setSort (new SortField[] {new SortField ("int", SortField.INT), SortField.FIELD_DOC});
-		assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
+    sort.setSort (new SortField[] {new SortField ("int", SortField.INT), SortField.FIELD_DOC});
+    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
 
-		sort.setSort ("int");
-		assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
+    sort.setSort ("int");
+    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
 
-		sort.setSort (new SortField[] {new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC});
-		assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
+    sort.setSort (new SortField[] {new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC});
+    assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
 
-		sort.setSort ("float");
-		assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
+    sort.setSort ("float");
+    assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
 
-		sort.setSort ("string");
-		assertMatches (multi, queryA, sort, "DJAIHGFEBC");
+    sort.setSort ("string");
+    assertMatches (multi, queryA, sort, "DJAIHGFEBC");
 
-		sort.setSort ("int", true);
-		assertMatchesPattern (multi, queryA, sort, "C[AB]{2}EJGFHDI");
+    sort.setSort ("int", true);
+    assertMatchesPattern (multi, queryA, sort, "C[AB]{2}EJGFHDI");
 
-		sort.setSort ("float", true);
-		assertMatchesPattern (multi, queryA, sort, "BAFE[IC]{2}JHDG");
+    sort.setSort ("float", true);
+    assertMatchesPattern (multi, queryA, sort, "BAFE[IC]{2}JHDG");
 
-		sort.setSort ("string", true);
-		assertMatches (multi, queryA, sort, "CBEFGHIAJD");
+    sort.setSort ("string", true);
+    assertMatches (multi, queryA, sort, "CBEFGHIAJD");
 
-		sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
-		assertMatches (multi, queryA, sort, "DJAIHGFEBC");
+    sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
+    assertMatches (multi, queryA, sort, "DJAIHGFEBC");
 
-		sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
-		assertMatches (multi, queryA, sort, "CBEFGHIAJD");
+    sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
+    assertMatches (multi, queryA, sort, "CBEFGHIAJD");
 
-		sort.setSort (new String[] {"int","float"});
-		assertMatches (multi, queryA, sort, "IDHFGJEABC");
+    sort.setSort (new String[] {"int","float"});
+    assertMatches (multi, queryA, sort, "IDHFGJEABC");
 
-		sort.setSort (new String[] {"float","string"});
-		assertMatches (multi, queryA, sort, "GDHJICEFAB");
+    sort.setSort (new String[] {"float","string"});
+    assertMatches (multi, queryA, sort, "GDHJICEFAB");
 
-		sort.setSort ("int");
-		assertMatches (multi, queryF, sort, "IZJ");
+    sort.setSort ("int");
+    assertMatches (multi, queryF, sort, "IZJ");
 
-		sort.setSort ("int", true);
-		assertMatches (multi, queryF, sort, "JZI");
+    sort.setSort ("int", true);
+    assertMatches (multi, queryF, sort, "JZI");
 
-		sort.setSort ("float");
-		assertMatches (multi, queryF, sort, "ZJI");
+    sort.setSort ("float");
+    assertMatches (multi, queryF, sort, "ZJI");
 
-		sort.setSort ("string");
-		assertMatches (multi, queryF, sort, "ZJI");
+    sort.setSort ("string");
+    assertMatches (multi, queryF, sort, "ZJI");
 
-		sort.setSort ("string", true);
-		assertMatches (multi, queryF, sort, "IJZ");
-	}
+    sort.setSort ("string", true);
+    assertMatches (multi, queryF, sort, "IJZ");
+  }
 
-	// make sure the documents returned by the search match the expected list
-	private void assertMatches (Searcher searcher, Query query, Sort sort, String expectedResult)
-	throws IOException {
-    ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-		StringBuffer buff = new StringBuffer(10);
+  // make sure the documents returned by the search match the expected list
+  private void assertMatches (Searcher searcher, Query query, Sort sort, String expectedResult)
+  throws IOException {
+    //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
+    TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
+    ScoreDoc[] result = hits.scoreDocs;
+    assertEquals(hits.totalHits, expectedResult.length());
+    StringBuffer buff = new StringBuffer(10);
     int n = result.length;
-		for (int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(result[i].doc);
-			String[] v = doc.getValues("tracer");
-			for (int j=0; j<v.length; ++j) {
-				buff.append (v[j]);
-			}
-		}
-		assertEquals (expectedResult, buff.toString());
-	}
+      String[] v = doc.getValues("tracer");
+      for (int j=0; j<v.length; ++j) {
+        buff.append (v[j]);
+      }
+    }
+    assertEquals (expectedResult, buff.toString());
+  }
 
-	// make sure the documents returned by the search match the expected list pattern
-	private void assertMatchesPattern (Searcher searcher, Query query, Sort sort, String pattern)
-	throws IOException {
+  // make sure the documents returned by the search match the expected list pattern
+  private void assertMatchesPattern (Searcher searcher, Query query, Sort sort, String pattern)
+  throws IOException {
     ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-		StringBuffer buff = new StringBuffer(10);
+    StringBuffer buff = new StringBuffer(10);
     int n = result.length;
-		for (int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(result[i].doc);
-			String[] v = doc.getValues("tracer");
-			for (int j=0; j<v.length; ++j) {
-				buff.append (v[j]);
-			}
-		}
-		// System.out.println ("matching \""+buff+"\" against pattern \""+pattern+"\"");
-		assertTrue (Pattern.compile(pattern).matcher(buff.toString()).matches());
-	}
+      String[] v = doc.getValues("tracer");
+      for (int j=0; j<v.length; ++j) {
+        buff.append (v[j]);
+      }
+    }
+    // System.out.println ("matching \""+buff+"\" against pattern \""+pattern+"\"");
+    assertTrue (Pattern.compile(pattern).matcher(buff.toString()).matches());
+  }
 
   private HashMap getScores (ScoreDoc[] hits, Searcher searcher)
-	throws IOException {
-		HashMap scoreMap = new HashMap();
+  throws IOException {
+    HashMap scoreMap = new HashMap();
     int n = hits.length;
-		for (int i=0; i<n; ++i) {
+    for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(hits[i].doc);
-			String[] v = doc.getValues("tracer");
-			assertEquals (v.length, 1);
+      String[] v = doc.getValues("tracer");
+      assertEquals (v.length, 1);
       scoreMap.put (v[0], new Float(hits[i].score));
-		}
-		return scoreMap;
-	}
+    }
+    return scoreMap;
+  }
 
-	// make sure all the values in the maps match
-	private void assertSameValues (HashMap m1, HashMap m2) {
-		int n = m1.size();
-		int m = m2.size();
-		assertEquals (n, m);
-		Iterator iter = m1.keySet().iterator();
-		while (iter.hasNext()) {
-			Object key = iter.next();
+  // make sure all the values in the maps match
+  private void assertSameValues (HashMap m1, HashMap m2) {
+    int n = m1.size();
+    int m = m2.size();
+    assertEquals (n, m);
+    Iterator iter = m1.keySet().iterator();
+    while (iter.hasNext()) {
+      Object key = iter.next();
       Object o1 = m1.get(key);
       Object o2 = m2.get(key);
       if (o1 instanceof Float) {
@@ -753,31 +927,31 @@ implements Serializable {
       } else {
         assertEquals (m1.get(key), m2.get(key));
       }
-		}
-	}
+    }
+  }
 
-	private Searchable getRemote () throws Exception {
-		try {
-			return lookupRemote ();
-		} catch (Throwable e) {
-			startServer ();
-			return lookupRemote ();
-		}
-	}
+  private Searchable getRemote () throws Exception {
+    try {
+      return lookupRemote ();
+    } catch (Throwable e) {
+      startServer ();
+      return lookupRemote ();
+    }
+  }
 
-	private Searchable lookupRemote () throws Exception {
-		return (Searchable) Naming.lookup ("//localhost/SortedSearchable");
-	}
+  private Searchable lookupRemote () throws Exception {
+    return (Searchable) Naming.lookup ("//localhost/SortedSearchable");
+  }
 
-	private void startServer () throws Exception {
-		// construct an index
-		Searcher local = getFullIndex();
-		// local.search (queryA, new Sort());
+  private void startServer () throws Exception {
+    // construct an index
+    Searcher local = getFullIndex();
+    // local.search (queryA, new Sort());
 
-		// publish it
-		Registry reg = LocateRegistry.createRegistry (1099);
-		RemoteSearchable impl = new RemoteSearchable (local);
-		Naming.rebind ("//localhost/SortedSearchable", impl);
-	}
+    // publish it
+    LocateRegistry.createRegistry (1099);
+    RemoteSearchable impl = new RemoteSearchable (local);
+    Naming.rebind ("//localhost/SortedSearchable", impl);
+  }
 
 }

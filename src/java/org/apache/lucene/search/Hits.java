@@ -40,9 +40,9 @@ import org.apache.lucene.index.CorruptIndexException;
  * (but <code>n</code> &lt; {@link #length()}_at_start). 
  * 
  * @deprecated Hits will be removed in Lucene 3.0. <p>
- * Instead e. g. {@link TopDocCollector} and {@link TopDocs} can be used:<br>
+ * Instead e. g. {@link TopScoreDocCollector} and {@link TopDocs} can be used:<br>
  * <pre>
- *   TopDocCollector collector = new TopDocCollector(hitsPerPage);
+ *   TopScoreDocCollector collector = new TopScoreDocCollector(hitsPerPage);
  *   searcher.search(query, collector);
  *   ScoreDoc[] hits = collector.topDocs().scoreDocs;
  *   for (int i = 0; i < hits.length; i++) {

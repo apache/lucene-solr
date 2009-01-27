@@ -431,8 +431,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
     return fieldSet;
   } 
   
-  // for testing
-  SegmentReader[] getSubReaders() {
+  public IndexReader[] getSequentialSubReaders() {
     return subReaders;
   }
 

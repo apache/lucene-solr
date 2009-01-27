@@ -22,14 +22,11 @@ import java.util.Arrays;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiReaderHitCollector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -126,9 +123,13 @@ public class TestFieldNormModifier extends TestCase {
     float lastScore = 0.0f;
     
     // default similarity should put docs with shorter length first
-    searcher.search(new TermQuery(new Term("field", "word")), new HitCollector() {
+    searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
+      private int docBase = -1;
       public final void collect(int doc, float score) {
-        scores[doc] = score;
+        scores[doc + docBase] = score;
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        this.docBase = docBase;
       }
     });
     searcher.close();
@@ -146,9 +147,13 @@ public class TestFieldNormModifier extends TestCase {
     
     // new norm (with default similarity) should put longer docs first
     searcher = new IndexSearcher(store);
-    searcher.search(new TermQuery(new Term("field", "word")),  new HitCollector() {
+    searcher.search(new TermQuery(new Term("field", "word")),  new MultiReaderHitCollector() {
+      private int docBase = -1;
       public final void collect(int doc, float score) {
-        scores[doc] = score;
+        scores[doc + docBase] = score;
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        this.docBase = docBase;
       }
     });
     searcher.close();
@@ -183,9 +188,14 @@ public class TestFieldNormModifier extends TestCase {
     float lastScore = 0.0f;
     
     // default similarity should return the same score for all documents for this query
-    searcher.search(new TermQuery(new Term("untokfield", "20061212")), new HitCollector() {
+    searcher.search(new TermQuery(new Term("untokfield", "20061212")), new MultiReaderHitCollector() {
+      private int docBase = -1;
+      private int lastMax; 
       public final void collect(int doc, float score) {
-        scores[doc] = score;
+        scores[doc + docBase] = score;
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        this.docBase = docBase;
       }
     });
     searcher.close();

@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
  *
@@ -79,11 +80,11 @@ final class BooleanScorer extends Scorer {
     public boolean done;
     public boolean required = false;
     public boolean prohibited = false;
-    public HitCollector collector;
+    public MultiReaderHitCollector collector;
     public SubScorer next;
 
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
-                     HitCollector collector, SubScorer next)
+        MultiReaderHitCollector collector, SubScorer next)
       throws IOException {
       this.scorer = scorer;
       this.done = !scorer.next();
@@ -248,12 +249,12 @@ final class BooleanScorer extends Scorer {
 
     public final int size() { return SIZE; }
 
-    public HitCollector newCollector(int mask) {
+    public MultiReaderHitCollector newCollector(int mask) {
       return new Collector(mask, this);
     }
   }
 
-  static final class Collector extends HitCollector {
+  static final class Collector extends MultiReaderHitCollector {
     private BucketTable bucketTable;
     private int mask;
     public Collector(int mask, BucketTable bucketTable) {
@@ -280,6 +281,9 @@ final class BooleanScorer extends Scorer {
         bucket.bits |= mask;                      // add bits in mask
         bucket.coord++;                           // increment coord
       }
+    }
+    public void setNextReader(IndexReader reader, int docBase) {
+      // not needed by this implementation
     }
   }
 

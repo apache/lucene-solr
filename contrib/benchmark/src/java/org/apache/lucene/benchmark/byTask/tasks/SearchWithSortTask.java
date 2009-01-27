@@ -45,18 +45,24 @@ public class SearchWithSortTask extends ReadTask {
     SortField[] sortFields = new SortField[fields.length];
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
-      int index = field.lastIndexOf(":");
-      String fieldName;
-      String typeString;
-      if (index != -1) {
-        fieldName = field.substring(0, index);
-        typeString = field.substring(1+index, field.length());
+      SortField sortField0;
+      if (field.equals("doc")) {
+        sortField0 = SortField.FIELD_DOC;
       } else {
-        typeString = "auto";
-        fieldName = field;
+        int index = field.lastIndexOf(":");
+        String fieldName;
+        String typeString;
+        if (index != -1) {
+          fieldName = field.substring(0, index);
+          typeString = field.substring(1+index, field.length());
+        } else {
+          typeString = "auto";
+          fieldName = field;
+        }
+        int type = getType(typeString);
+        sortField0 = new SortField(fieldName, type);
       }
-      int type = getType(typeString);
-      sortFields[i] = new SortField(fieldName, type);
+      sortFields[i] = sortField0;
     }
     this.sort = new Sort(sortFields);
   }
@@ -69,6 +75,8 @@ public class SearchWithSortTask extends ReadTask {
       type = SortField.INT;
     } else if (typeString.equals("string")) {
       type = SortField.STRING;
+    } else if (typeString.equals("string_val")) {
+      type = SortField.STRING_VAL;
     } else {
       type = SortField.AUTO;
     }

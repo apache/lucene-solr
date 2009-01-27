@@ -168,9 +168,13 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // must use a non score normalizing method for this.
     Query q = csrq("data", "1", "6", T, T);
     q.setBoost(100);
-    search.search(q, null, new HitCollector() {
+    search.search(q, null, new MultiReaderHitCollector() {
+      private int base = -1;
       public void collect(int doc, float score) {
-        assertEquals("score for doc " + doc + " was not correct", 1.0f, score);
+        assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, score);
+      }
+      public void setNextReader(IndexReader reader, int docBase) {
+        base = docBase;
       }
     });
 
@@ -588,7 +592,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     IndexReader reader = IndexReader.open(danishIndex);
     IndexSearcher search = new IndexSearcher(reader);
-    Query q = new TermQuery(new Term("body","body"));
 
     Collator c = Collator.getInstance(new Locale("da", "dk"));
 

@@ -21,9 +21,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collection;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -75,10 +75,11 @@ public class TestSimilarity extends LuceneTestCase {
 
     searcher.search
       (new TermQuery(b),
-       new HitCollector() {
+       new MultiReaderHitCollector() {
          public final void collect(int doc, float score) {
            assertTrue(score == 1.0f);
          }
+         public void setNextReader(IndexReader reader, int docBase) {}
        });
 
     BooleanQuery bq = new BooleanQuery();
@@ -87,10 +88,14 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(bq.toString("field"));
     searcher.search
       (bq,
-       new HitCollector() {
+       new MultiReaderHitCollector() {
+         private int base = -1;
          public final void collect(int doc, float score) {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(score == (float)doc+1);
+           assertTrue(score == (float)doc+base+1);
+         }
+         public void setNextReader(IndexReader reader, int docBase) {
+           base = docBase;
          }
        });
 
@@ -100,22 +105,24 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(pq.toString("field"));
     searcher.search
       (pq,
-       new HitCollector() {
+       new MultiReaderHitCollector() {
          public final void collect(int doc, float score) {
            //System.out.println("Doc=" + doc + " score=" + score);
            assertTrue(score == 1.0f);
          }
+         public void setNextReader(IndexReader reader, int docBase) {}
        });
 
     pq.setSlop(2);
     //System.out.println(pq.toString("field"));
     searcher.search
       (pq,
-       new HitCollector() {
+       new MultiReaderHitCollector() {
          public final void collect(int doc, float score) {
            //System.out.println("Doc=" + doc + " score=" + score);
            assertTrue(score == 2.0f);
          }
+         public void setNextReader(IndexReader reader, int docBase) {}
        });
   }
 }

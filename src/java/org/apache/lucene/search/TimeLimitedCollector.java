@@ -1,5 +1,7 @@
 package org.apache.lucene.search;
 
+import org.apache.lucene.index.IndexReader;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,13 +19,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 /**
  * <p>The TimeLimitedCollector is used to timeout search requests that
  * take longer than the maximum allowed search time limit.  After this
  * time is exceeded, the search thread is stopped by throwing a
  * TimeExceeded Exception.</p>
+ * 
  */
-public class TimeLimitedCollector extends HitCollector {
+public class TimeLimitedCollector extends MultiReaderHitCollector {
   
   /** 
    * Default timer resolution.
@@ -138,7 +143,7 @@ public class TimeLimitedCollector extends HitCollector {
 
   private final long t0;
   private final long timeout;
-  private final HitCollector hc;
+  private final MultiReaderHitCollector hc;
 
   /**
    * Create a TimeLimitedCollector wrapper over another HitCollector with a specified timeout.
@@ -146,7 +151,11 @@ public class TimeLimitedCollector extends HitCollector {
    * @param timeAllowed max time allowed for collecting hits after which {@link TimeExceededException} is thrown
    */
   public TimeLimitedCollector( final HitCollector hc, final long timeAllowed ) {
-    this.hc = hc;
+    if (hc instanceof MultiReaderHitCollector) {
+      this.hc = (MultiReaderHitCollector) hc;
+    } else {
+      this.hc = new IndexSearcher.MultiReaderCollectorWrapper(hc);
+    }
     t0 = TIMER_THREAD.getMilliseconds();
     this.timeout = t0 + timeAllowed;
   }
@@ -215,5 +224,9 @@ public class TimeLimitedCollector extends HitCollector {
    */
   public void setGreedy(boolean greedy) {
     this.greedy = greedy;
+  }
+  
+  public void setNextReader(IndexReader reader, int base) throws IOException {
+    hc.setNextReader(reader, base);
   }
 }

@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -258,12 +259,34 @@ public class MultiSearcher extends Searcher {
 
       final int start = starts[i];
 
-      searchables[i].search(weight, filter, new HitCollector() {
-	  public void collect(int doc, float score) {
-	    results.collect(doc + start, score);
-	  }
-	});
+      final MultiReaderHitCollector hc;
+      if (results instanceof MultiReaderHitCollector) {
+        // results can shift
+        final MultiReaderHitCollector resultsMulti = (MultiReaderHitCollector) results;
+        hc = new MultiReaderHitCollector() {
+            public void collect(int doc, float score) {
+              resultsMulti.collect(doc, score);
+            }
 
+            public void setNextReader(IndexReader reader, int docBase) throws IOException {
+              resultsMulti.setNextReader(reader, start+docBase);
+            }
+          };
+      } else {
+        // We must shift the docIDs
+        hc = new MultiReaderHitCollector() {
+            private int docBase;
+            public void collect(int doc, float score) {
+              results.collect(doc + docBase + start, score);
+            }
+
+            public void setNextReader(IndexReader reader, int docBase) {
+              this.docBase = docBase;
+            }
+          };
+      }
+      
+      searchables[i].search(weight, filter, hc);
     }
   }
 

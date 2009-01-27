@@ -364,8 +364,7 @@ public class MultiReader extends IndexReader {
     throw new UnsupportedOperationException("MultiReader does not support this method.");
   }
   
-  // for testing
-  IndexReader[] getSubReaders() {
+  public IndexReader[] getSequentialSubReaders() {
     return subReaders;
   }
 }

@@ -89,9 +89,14 @@ public class CheckHits {
     }
     
     final Set actual = new TreeSet();
-    searcher.search(query, new HitCollector() {
+    searcher.search(query, new MultiReaderHitCollector() {
+        private int base = -1;
         public void collect(int doc, float score) {
-          actual.add(new Integer(doc));
+          actual.add(new Integer(doc + base));
+        }
+
+        public void setNextReader(IndexReader reader, int docBase) {
+          base = docBase;
         }
       });
     TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
@@ -143,7 +148,7 @@ public class CheckHits {
   /** Tests that a Hits has an expected order of documents */
   public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits)
   throws IOException {
-    TestCase.assertEquals(mes + " nr of hits", results.length, hits.length);
+    TestCase.assertEquals(mes + " nr of hits", hits.length, results.length);
     for (int i = 0; i < results.length; i++) {
       TestCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
     }
@@ -390,7 +395,7 @@ public class CheckHits {
       super.search(query,results);
     }
     public void search(Query query, Filter filter,
-                       HitCollector results) throws IOException {
+        HitCollector results) throws IOException {
       checkExplanations(query);
       super.search(query,filter, results);
     }
@@ -411,7 +416,7 @@ public class CheckHits {
    *
    * @see CheckHits#verifyExplanation
    */
-  public static class ExplanationAsserter extends HitCollector {
+  public static class ExplanationAsserter extends MultiReaderHitCollector {
 
     /**
      * @deprecated
@@ -423,7 +428,9 @@ public class CheckHits {
     Searcher s;
     String d;
     boolean deep;
-    
+
+    private int base = -1;
+
     /** Constructs an instance which does shallow tests on the Explanation */
     public ExplanationAsserter(Query q, String defaultFieldName, Searcher s) {
       this(q,defaultFieldName,s,false);
@@ -437,7 +444,7 @@ public class CheckHits {
 
     public void collect(int doc, float score) {
       Explanation exp = null;
-      
+      doc = doc + base;
       try {
         exp = s.explain(q, doc);
       } catch (IOException e) {
@@ -448,6 +455,9 @@ public class CheckHits {
       TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
       verifyExplanation(d,doc,score,deep,exp);
+    }
+    public void setNextReader(IndexReader reader, int docBase) {
+      base = docBase;
     }
     
   }

@@ -17,20 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
-/** A {@link HitCollector} implementation that collects the top-scoring
- * documents, returning them as a {@link TopDocs}.  This is used by {@link
- * IndexSearcher} to implement {@link TopDocs}-based search.
+/** A {@link MultiReaderHitCollector} implementation that
+ *  collects the top-scoring documents, returning them as a
+ *  {@link TopDocs}.  This is used by {@link IndexSearcher}
+ *  to implement {@link TopDocs}-based search.
  *
- * <p>This may be extended, overriding the collect method to, e.g.,
- * conditionally invoke <code>super()</code> in order to filter which
- * documents are collected.
- *
- * @deprecated Please use {@link TopScoreDocCollector}
- * instead, which has better performance.
- **/
-public class TopDocCollector extends HitCollector {
+ *  <p>This may be extended, overriding the {@link
+ *  MultiReaderHitCollector#collect} method to, e.g.,
+ *  conditionally invoke <code>super()</code> in order to
+ *  filter which documents are collected, but sure you
+ *  either take docBase into account, or also override
+ *  {@link MultiReaderHitCollector#setNextReader} method. */
+public class TopScoreDocCollector extends MultiReaderHitCollector {
 
   private ScoreDoc reusableSD;
   
@@ -39,25 +40,20 @@ public class TopDocCollector extends HitCollector {
   
   /** The priority queue which holds the top-scoring documents. */
   protected PriorityQueue hq;
+
+  protected int docBase = 0;
     
   /** Construct to collect a given number of hits.
    * @param numHits the maximum number of hits to collect
    */
-  public TopDocCollector(int numHits) {
+  public TopScoreDocCollector(int numHits) {
     this(new HitQueue(numHits));
-  }
-
-  /** @deprecated use TopDocCollector(hq) instead. numHits is not used by this
-   * constructor. It will be removed in a future release.
-   */
-  TopDocCollector(int numHits, PriorityQueue hq) {
-    this.hq = hq;
   }
 
   /** Constructor to collect the top-scoring documents by using the given PQ.
    * @param hq the PQ to use by this instance.
    */
-  protected TopDocCollector(PriorityQueue hq) {
+  protected TopScoreDocCollector(PriorityQueue hq) {
     this.hq = hq;
   }
 
@@ -66,12 +62,12 @@ public class TopDocCollector extends HitCollector {
     if (score > 0.0f) {
       totalHits++;
       if (reusableSD == null) {
-        reusableSD = new ScoreDoc(doc, score);
+        reusableSD = new ScoreDoc(doc + docBase, score);
       } else if (score >= reusableSD.score) {
         // reusableSD holds the last "rejected" entry, so, if
         // this new score is not better than that, there's no
         // need to try inserting it
-        reusableSD.doc = doc;
+        reusableSD.doc = doc + docBase;
         reusableSD.score = score;
       } else {
         return;
@@ -81,18 +77,25 @@ public class TopDocCollector extends HitCollector {
   }
 
   /** The total number of documents that matched this query. */
-  public int getTotalHits() { return totalHits; }
+  public int getTotalHits() {
+    return totalHits;
+  }
 
   /** The top-scoring hits. */
   public TopDocs topDocs() {
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--)      // put docs in array
-      scoreDocs[i] = (ScoreDoc)hq.pop();
+    for (int i = hq.size()-1; i >= 0; i--) {     // put docs in array
+      scoreDocs[i] = (ScoreDoc) hq.pop();
+    }
       
     float maxScore = (totalHits==0)
       ? Float.NEGATIVE_INFINITY
       : scoreDocs[0].score;
     
     return new TopDocs(totalHits, scoreDocs, maxScore);
+  }
+  
+  public void setNextReader(IndexReader reader, int base) {
+    docBase = base;
   }
 }

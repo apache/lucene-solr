@@ -82,14 +82,18 @@ public class TestTermScorer extends LuceneTestCase
         //must call next first
 
 
-        ts.score(new HitCollector()
+        ts.score(new MultiReaderHitCollector()
         {
+            private int base = -1;
             public void collect(int doc, float score)
             {
-                docs.add(new TestHit(doc, score));
+                docs.add(new TestHit(doc + base, score));
                 assertTrue("score " + score + " is not greater than 0", score > 0);
                 assertTrue("Doc: " + doc + " does not equal: " + 0 +
                         " or doc does not equaal: " + 5, doc == 0 || doc == 5);
+            }
+            public void setNextReader(IndexReader reader, int docBase) {
+              base = docBase;
             }
         });
         assertTrue("docs Size: " + docs.size() + " is not: " + 2, docs.size() == 2);

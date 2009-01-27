@@ -62,9 +62,13 @@ public class TestSetNorm extends LuceneTestCase {
 
     new IndexSearcher(store).search
       (new TermQuery(new Term("field", "word")),
-       new HitCollector() {
+       new MultiReaderHitCollector() {
+         private int base = -1;
          public final void collect(int doc, float score) {
-           scores[doc] = score;
+           scores[doc + base] = score;
+         }
+         public void setNextReader(IndexReader reader, int docBase) {
+           base = docBase;
          }
        });
 

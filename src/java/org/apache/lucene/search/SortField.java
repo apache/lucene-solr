@@ -17,8 +17,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
+
+import org.apache.lucene.index.IndexReader;
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -67,25 +70,27 @@ implements Serializable {
    * lower values are at the front. */
   public static final int DOUBLE = 7;
 
-    /**
-   * Sort using term values as encoded Shorts.  Sort values are shorts and lower values are at the front
-   */
+  /** Sort using term values as encoded Shorts.  Sort values are Short and
+   * lower values are at the front. */
   public static final int SHORT = 8;
-
 
   /** Sort using a custom Comparator.  Sort values are any Comparable and
    * sorting is done according to natural order. */
   public static final int CUSTOM = 9;
-  /**
-   * Sort using term values as encoded bytes.  Sort values are bytes and lower values are at the front
-   */
+
+  /** Sort using term values as encoded Bytes.  Sort values are Byte and
+   * lower values are at the front. */
   public static final int BYTE = 10;
-
-
+  
+  /** Sort using term values as Strings, but comparing by
+   * value (using String.compareTo) for all comparisons.
+   * This is typically slower than {@link #STRING}, which
+   * uses ordinals to do the sorting. */
+  public static final int STRING_VAL = 11;
+  
   // IMPLEMENTATION NOTE: the FieldCache.STRING_INDEX is in the same "namespace"
   // as the above static int values.  Any new values must not have the same value
   // as FieldCache.STRING_INDEX.
-
 
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
@@ -93,13 +98,17 @@ implements Serializable {
   /** Represents sorting by document number (index order). */
   public static final SortField FIELD_DOC = new SortField (null, DOC);
 
-
   private String field;
   private int type = AUTO;  // defaults to determining type dynamically
   private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
   private SortComparatorSource factory;
   private FieldCache.Parser parser;
+
+  // Used for CUSTOM sort
+  private FieldComparatorSource comparatorSource;
+
+  private boolean useLegacy = false; // remove in Lucene 3.0
 
   /** Creates a sort by terms in the given field where the type of term value
    * is determined dynamically ({@link #AUTO AUTO}).
@@ -206,21 +215,45 @@ implements Serializable {
   /** Creates a sort with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
+   * @deprecated use SortField (String field, FieldComparatorSource comparator)
    */
   public SortField (String field, SortComparatorSource comparator) {
     initFieldType(field, CUSTOM);
+    setUseLegacySearch(true);
     this.factory = comparator;
+  }
+  
+  /** Creates a sort with a custom comparison function.
+   * @param field Name of field to sort by; cannot be <code>null</code>.
+   * @param comparator Returns a comparator for sorting hits.
+   */
+  public SortField (String field, FieldComparatorSource comparator) {
+    initFieldType(field, CUSTOM);
+    this.comparatorSource = comparator;
   }
 
   /** Creates a sort, possibly in reverse, with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
    * @param reverse True if natural order should be reversed.
+   * @deprecated use SortField (String field, FieldComparatorSource comparator, boolean reverse)
    */
   public SortField (String field, SortComparatorSource comparator, boolean reverse) {
     initFieldType(field, CUSTOM);
+    setUseLegacySearch(true);
     this.reverse = reverse;
     this.factory = comparator;
+  }
+  
+  /** Creates a sort, possibly in reverse, with a custom comparison function.
+   * @param field Name of field to sort by; cannot be <code>null</code>.
+   * @param comparator Returns a comparator for sorting hits.
+   * @param reverse True if natural order should be reversed.
+   */
+  public SortField (String field, FieldComparatorSource comparator, boolean reverse) {
+    initFieldType(field, CUSTOM);
+    this.reverse = reverse;
+    this.comparatorSource = comparator;
   }
 
   // Sets field & type, and ensures field is not NULL unless
@@ -273,26 +306,91 @@ implements Serializable {
     return reverse;
   }
 
+  /**
+   * @deprecated use {@link #getComparatorSource()}
+   */
   public SortComparatorSource getFactory() {
     return factory;
+  }
+  
+  public FieldComparatorSource getComparatorSource() {
+    return comparatorSource;
+  }
+  
+  /**
+   * Use legacy IndexSearch implementation: search with a MultiSegmentReader rather
+   * than passing a single hit collector to multiple SegmentReaders.
+   * 
+   * @param legacy true for legacy behavior
+   * @deprecated will be removed in Lucene 3.0.
+   */
+  public void setUseLegacySearch(boolean legacy) {
+    this.useLegacy = legacy;
+  }
+  
+  /**
+   * @return if true, IndexSearch will use legacy sorting search implementation.
+   * eg. multiple Priority Queues.
+   * @deprecated will be removed in Lucene 3.0.
+   */
+  public boolean getUseLegacySearch() {
+    return this.useLegacy;
   }
 
   public String toString() {
     StringBuffer buffer = new StringBuffer();
     switch (type) {
-      case SCORE: buffer.append("<score>");
-                  break;
+      case SCORE:
+        buffer.append("<score>");
+        break;
 
-      case DOC: buffer.append("<doc>");
-                break;
+      case DOC:
+        buffer.append("<doc>");
+        break;
+
+      case AUTO:
+        buffer.append("<auto: \"").append(field).append("\">");
+        break;
+
+      case STRING:
+        buffer.append("<string: \"").append(field).append("\">");
+        break;
+
+      case STRING_VAL:
+        buffer.append("<string_val: \"").append(field).append("\">");
+        break;
+
+      case BYTE:
+        buffer.append("<byte: \"").append(field).append("\">");
+        break;
+
+      case SHORT:
+        buffer.append("<short: \"").append(field).append("\">");
+        break;
+
+      case INT:
+        buffer.append("<int: \"").append(field).append("\">");
+        break;
+
+      case LONG:
+        buffer.append("<long: \"").append(field).append("\">");
+        break;
+
+      case FLOAT:
+        buffer.append("<float: \"").append(field).append("\">");
+        break;
+
+      case DOUBLE:
+        buffer.append("<double: \"").append(field).append("\">");
+        break;
 
       case CUSTOM:
-                buffer.append("<custom:\"").append(field).append("\": ").append(factory).append('>');
-                break;
+        buffer.append("<custom:\"").append(field).append("\": ").append(factory).append('>');
+        break;
 
       default:
-               buffer.append('\"').append(field).append('\"');
-               break;
+        buffer.append("<???: \"").append(field).append("\">");
+        break;
     }
 
     if (locale != null) buffer.append('(').append(locale).append(')');
@@ -332,5 +430,66 @@ implements Serializable {
     if (factory != null) hash += factory.hashCode()^0x34987555;
     if (parser != null) hash += parser.hashCode()^0x3aaf56ff;
     return hash;
+  }
+
+
+  /** Returns the {@link FieldComparator} to use for sorting.
+   * @param subReaders array of {@link IndexReader} search
+   *   will step through
+   * @param numHits number of top hits the queue will store
+   * @param sortPos position of this SortField within {@link
+   *   Sort}.  The comparator is primary if sortPos==0,
+   *   secondary if sortPos==1, etc.  Some comparators can
+   *   optimize themselves when they are the primary sort.
+   * @param reversed True if the SortField is reversed
+   * @return {@link FieldComparator} to use when sorting
+   */
+  protected FieldComparator getComparator(final IndexReader[] subReaders, final int numHits, final int sortPos, final boolean reversed) throws IOException {
+
+    if (locale != null) {
+      // TODO: it'd be nice to allow FieldCache.getStringIndex
+      // to optionally accept a Locale so sorting could then use
+      // the faster StringComparator impls
+      return new FieldComparator.StringComparatorLocale(numHits, field, locale);
+    }
+
+    switch (type) {
+    case SortField.SCORE:
+      return new FieldComparator.RelevanceComparator(numHits);
+
+    case SortField.DOC:
+      return new FieldComparator.DocComparator(numHits);
+
+    case SortField.INT:
+      return new FieldComparator.IntComparator(numHits, field, parser);
+
+    case SortField.FLOAT:
+      return new FieldComparator.FloatComparator(numHits, field, parser);
+
+    case SortField.LONG:
+      return new FieldComparator.LongComparator(numHits, field, parser);
+
+    case SortField.DOUBLE:
+      return new FieldComparator.DoubleComparator(numHits, field, parser);
+
+    case SortField.BYTE:
+      return new FieldComparator.ByteComparator(numHits, field, parser);
+
+    case SortField.SHORT:
+      return new FieldComparator.ShortComparator(numHits, field, parser);
+
+    case SortField.CUSTOM:
+      assert factory == null && comparatorSource != null;
+      return comparatorSource.newComparator(field, subReaders, numHits, sortPos, reversed);
+
+    case SortField.STRING:
+      return new FieldComparator.StringOrdValComparator(numHits, field, sortPos, reversed);
+
+    case SortField.STRING_VAL:
+      return new FieldComparator.StringValComparator(numHits, field);
+        
+    default:
+      throw new IllegalStateException("Illegal sort type: " + type);
+    }
   }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -65,9 +66,13 @@ public class TestDocBoost extends LuceneTestCase {
 
     new IndexSearcher(store).search
       (new TermQuery(new Term("field", "word")),
-       new HitCollector() {
+       new MultiReaderHitCollector() {
+         private int base = -1;
          public final void collect(int doc, float score) {
-           scores[doc] = score;
+           scores[doc + base] = score;
+         }
+         public void setNextReader(IndexReader reader, int docBase) {
+           base = docBase;
          }
        });
 

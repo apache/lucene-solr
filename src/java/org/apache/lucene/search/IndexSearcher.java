@@ -17,14 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import org.apache.lucene.util.SorterTemplate;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
 
 /** Implements search over a single IndexReader.
  *
@@ -38,6 +40,8 @@ import java.io.IOException;
 public class IndexSearcher extends Searcher {
   IndexReader reader;
   private boolean closeReader;
+  private IndexReader[] sortedSubReaders;
+  private int[] sortedStarts;
 
   /** Creates a searcher searching the index in the named directory.
    * @throws CorruptIndexException if the index is corrupt
@@ -63,8 +67,60 @@ public class IndexSearcher extends Searcher {
   private IndexSearcher(IndexReader r, boolean closeReader) {
     reader = r;
     this.closeReader = closeReader;
+    sortSubReaders();
   }
 
+  protected void gatherSubReaders(List allSubReaders, IndexReader r) {
+    IndexReader[] subReaders = r.getSequentialSubReaders();
+    if (subReaders == null) {
+      // Add the reader itself, and do not recurse
+      allSubReaders.add(r);
+    } else {
+      for(int i=0;i<subReaders.length;i++) {
+        gatherSubReaders(allSubReaders, subReaders[i]);
+      }
+    }
+  }
+
+  static private final IndexReader[] indexReaderZeroArray = new IndexReader[0];
+
+  protected void sortSubReaders() {
+
+    List subReadersList = new ArrayList();
+    gatherSubReaders(subReadersList, reader);
+    sortedSubReaders = (IndexReader[]) subReadersList.toArray(indexReaderZeroArray);
+    final int length = sortedSubReaders.length;
+    sortedStarts = new int[length];
+    int maxDoc = 0;
+    for (int i = 0; i < sortedSubReaders.length; i++) {
+      sortedStarts[i] = maxDoc;
+      maxDoc += sortedSubReaders[i].maxDoc();          // compute maxDocs
+    }
+
+    // sort readers and starts
+    SorterTemplate sorter = new SorterTemplate() {
+        protected int compare(int i, int j) {
+          int num1 = sortedSubReaders[i].numDocs();
+          int num2 = sortedSubReaders[j].numDocs();
+          if (num1 > num2)
+            return -1;
+          if (num1 < num2)
+            return 1;
+          return 0;
+        }
+        protected void swap(int i, int j) {
+          IndexReader temp = sortedSubReaders[i];
+          sortedSubReaders[i] = sortedSubReaders[j];
+          sortedSubReaders[j] = temp;
+
+          int tempInt = sortedStarts[i];
+          sortedStarts[i] = sortedStarts[j];
+          sortedStarts[j] = tempInt;
+        }
+      };
+    sorter.quickSort(0, length - 1);
+  }
+  
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
@@ -108,7 +164,7 @@ public class IndexSearcher extends Searcher {
     if (nDocs <= 0)  // null might be returned from hq.top() below.
       throw new IllegalArgumentException("nDocs must be > 0");
 
-    TopDocCollector collector = new TopDocCollector(nDocs);
+    TopScoreDocCollector collector = new TopScoreDocCollector(nDocs);
     search(weight, filter, collector);
     return collector.topDocs();
   }
@@ -117,16 +173,73 @@ public class IndexSearcher extends Searcher {
   public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort)
       throws IOException {
+    return search(weight, filter, nDocs, sort, true);
+  }
+  
+  /** 
+   * Just like {@link #search(Weight, Filter, int, Sort)},
+   * but you choose whether or not the fields in the
+   * returned {@link FieldDoc} instances should be set by
+   * specifying fillFields.
+   */
+  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
+                             Sort sort, boolean fillFields)
+      throws IOException {
+    
+    SortField[] fields = sort.fields;
+    boolean legacy = false;
+    for(int i = 0; i < fields.length; i++) {
+      SortField field = fields[i];
+      String fieldname = field.getField();
+      int type = field.getType();
+      // Resolve AUTO into its true type
+      if (type == SortField.AUTO) {
+        int autotype = FieldValueHitQueue.detectFieldType(reader, fieldname);
+        if (autotype == SortField.STRING) {
+          fields[i] = new SortField (fieldname, field.getLocale(), field.getReverse());
+        } else {
+          fields[i] = new SortField (fieldname, autotype, field.getReverse());
+        }
+      }
 
-    TopFieldDocCollector collector =
-      new TopFieldDocCollector(reader, sort, nDocs);
-    search(weight, filter, collector);
-    return (TopFieldDocs)collector.topDocs();
+      if (field.getUseLegacySearch()) {
+        legacy = true;
+      }
+    }
+    
+    if (legacy) {
+      // Search the single top-level reader
+      TopScoreDocCollector collector = new TopFieldDocCollector(reader, sort, nDocs);
+      collector.setNextReader(reader, 0);
+      doSearch(reader, weight, filter, collector);
+      return (TopFieldDocs) collector.topDocs();
+    } else {
+      // Search each sub-reader
+      TopFieldCollector collector = new TopFieldCollector(sort, nDocs, sortedSubReaders, fillFields);
+      search(weight, filter, collector);
+      return (TopFieldDocs) collector.topDocs();
+    }
   }
 
   // inherit javadoc
-  public void search(Weight weight, Filter filter,
-                     final HitCollector results) throws IOException {
+  public void search(Weight weight, Filter filter, HitCollector results)
+      throws IOException {
+
+    final MultiReaderHitCollector collector;
+    if (results instanceof MultiReaderHitCollector) {
+      collector = (MultiReaderHitCollector) results;
+    } else {
+      collector = new MultiReaderCollectorWrapper(results);
+    }
+
+    for (int i = 0; i < sortedSubReaders.length; i++) { // search each subreader
+      collector.setNextReader(sortedSubReaders[i], sortedStarts[i]);
+      doSearch(sortedSubReaders[i], weight, filter, collector);
+    }
+  }
+  
+  private void doSearch(IndexReader reader, Weight weight, Filter filter,
+      final HitCollector results) throws IOException {
 
     Scorer scorer = weight.scorer(reader);
     if (scorer == null)
@@ -168,5 +281,27 @@ public class IndexSearcher extends Searcher {
 
   public Explanation explain(Weight weight, int doc) throws IOException {
     return weight.explain(reader, doc);
+  }
+  
+  /**
+   * Wrapper for non expert ({@link HitCollector})
+   * implementations, which simply re-bases the incoming
+   * docID before calling {@link HitCollector#collect}.
+   */
+  static class MultiReaderCollectorWrapper extends MultiReaderHitCollector {
+    private HitCollector collector;
+    private int base = -1;
+
+    public MultiReaderCollectorWrapper(HitCollector collector) {
+      this.collector = collector;
+    }
+    
+    public void collect(int doc, float score) {
+      collector.collect(doc + base, score);
+    }
+
+    public void setNextReader(IndexReader reader, int docBase) {
+      base = docBase;
+    }
   }
 }

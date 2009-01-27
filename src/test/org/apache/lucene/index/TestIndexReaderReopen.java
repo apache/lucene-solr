@@ -320,7 +320,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       assertRefCountEquals(1, reader0);
 
       assertTrue(reader0 instanceof MultiSegmentReader);
-      SegmentReader[] subReaders0 = ((MultiSegmentReader) reader0).getSubReaders();
+      IndexReader[] subReaders0 = reader0.getSequentialSubReaders();
       for (int i = 0; i < subReaders0.length; i++) {
         assertRefCountEquals(1, subReaders0[i]);
       }
@@ -332,7 +332,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       IndexReader reader1 = refreshReader(reader0, true).refreshedReader;
       assertTrue(reader1 instanceof MultiSegmentReader);
-      SegmentReader[] subReaders1 = ((MultiSegmentReader) reader1).getSubReaders();
+      IndexReader[] subReaders1 = reader1.getSequentialSubReaders();
       assertEquals(subReaders0.length, subReaders1.length);
       
       for (int i = 0; i < subReaders0.length; i++) {
@@ -349,7 +349,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
       IndexReader reader2 = refreshReader(reader1, true).refreshedReader;
       assertTrue(reader2 instanceof MultiSegmentReader);
-      SegmentReader[] subReaders2 = ((MultiSegmentReader) reader2).getSubReaders();
+      IndexReader[] subReaders2 = reader2.getSequentialSubReaders();
       assertEquals(subReaders1.length, subReaders2.length);
       
       for (int i = 0; i < subReaders2.length; i++) {
@@ -373,7 +373,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       IndexReader reader3 = refreshReader(reader0, true).refreshedReader;
       assertTrue(reader3 instanceof MultiSegmentReader);
-      SegmentReader[] subReaders3 = ((MultiSegmentReader) reader3).getSubReaders();
+      IndexReader[] subReaders3 = reader3.getSequentialSubReaders();
       assertEquals(subReaders3.length, subReaders0.length);
       
       // try some permutations
@@ -945,14 +945,14 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     if (checkSubReaders) {
       if (reader instanceof MultiSegmentReader) {
-        SegmentReader[] subReaders = ((MultiSegmentReader) reader).getSubReaders();
+        IndexReader[] subReaders = reader.getSequentialSubReaders();
         for (int i = 0; i < subReaders.length; i++) {
           assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
         }
       }
       
       if (reader instanceof MultiReader) {
-        IndexReader[] subReaders = ((MultiReader) reader).getSubReaders();
+        IndexReader[] subReaders = reader.getSequentialSubReaders();
         for (int i = 0; i < subReaders.length; i++) {
           assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
         }
@@ -971,7 +971,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     reader.ensureOpen();
     
     if (reader instanceof MultiSegmentReader) {
-      SegmentReader[] subReaders = ((MultiSegmentReader) reader).getSubReaders();
+      IndexReader[] subReaders = reader.getSequentialSubReaders();
       for (int i = 0; i < subReaders.length; i++) {
         assertReaderOpen(subReaders[i]);
       }

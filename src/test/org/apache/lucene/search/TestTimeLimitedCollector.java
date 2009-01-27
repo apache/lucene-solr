@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.QueryParser;
@@ -125,6 +126,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
       search(tlCollector);
       totalTLCResults = myHc.hitCount();
     } catch (Exception e) {
+      e.printStackTrace();
       assertTrue("Unexpected exception: "+e, false); //==fail
     }
     assertEquals( "Wrong number of results!", totalResults, totalTLCResults );
@@ -293,11 +295,12 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
   }
   
   // counting hit collector that can slow down at collect().
-  private class MyHitCollector extends HitCollector
+  private class MyHitCollector extends MultiReaderHitCollector
   {
     private final BitSet bits = new BitSet();
     private int slowdown = 0;
     private int lastDocCollected = -1;
+    private int docBase = -1;
 
     /**
      * amount of time to wait on each collect to simulate a long iteration
@@ -307,6 +310,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     }
     
     public void collect( final int doc, final float score ) {
+      int docId = doc + docBase;
       if( slowdown > 0 ) {
         try {
           Thread.sleep(slowdown);
@@ -315,8 +319,9 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
           System.out.println("caught " + x);
         }
       }
-      bits.set( doc );
-      lastDocCollected = doc;
+      assert docId >= 0: " base=" + docBase + " doc=" + doc;
+      bits.set( docId );
+      lastDocCollected = docId;
     }
     
     public int hitCount() {
@@ -325,6 +330,10 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
 
     public int getLastDocCollected() {
       return lastDocCollected;
+    }
+
+    public void setNextReader(IndexReader reader, int base) {
+      docBase = base;
     }
     
   }
