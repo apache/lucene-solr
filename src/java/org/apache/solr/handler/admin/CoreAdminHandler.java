@@ -103,6 +103,8 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
         if (opts != null)
           dcore.setSchemaName(opts);
 
+        dcore.setCoreProperties(null);
+
         SolrCore core = cores.create(dcore);
         cores.register(name, core,false);
         rsp.add("core", core.getName());

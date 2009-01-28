@@ -221,6 +221,8 @@ Bug Fixes
 
 25. SOLR-978: Old files are not removed from slaves after replication (Jaco, Noble Paul, shalin)
 
+26. SOLR-883: Implicit properties are not set for Cores created through CoreAdmin (Noble Paul via shalin)
+
 
 Other Changes
 ----------------------

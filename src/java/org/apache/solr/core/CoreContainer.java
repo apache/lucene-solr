@@ -202,7 +202,6 @@ public class CoreContainer
           List<String> aliases = StrUtils.splitSmart(names,',');
           String name = aliases.get(0);
           CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
-          p.setCoreProperties(readProperties(cfg, node));
 
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
@@ -213,6 +212,8 @@ public class CoreContainer
           if (opt != null) {
             p.setSchemaName(opt);
           }
+
+          p.setCoreProperties(readProperties(cfg, node));
 
           SolrCore core = create(p);
 
