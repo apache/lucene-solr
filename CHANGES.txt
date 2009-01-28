@@ -1,4 +1,4 @@
-﻿﻿﻿Lucene Change Log
+Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
@@ -135,6 +135,12 @@ New features
 
 11. LUCENE-1528: Add support for Ideographic Space to the queryparser.
     (Luis Alves via Michael Busch)
+
+12. LUCENE-1487: Added FieldCacheTermsFilter, to filter by multiple
+    terms on single-valued fields.  The filter loads the FieldCache
+    for the field the first time it's called, and subsequent usage of
+    that field, even with different Terms in the filter, are fast.
+    (Tim Sturge, Shalin Shekhar Mangar via Mike McCandless).
 
 Optimizations
 
