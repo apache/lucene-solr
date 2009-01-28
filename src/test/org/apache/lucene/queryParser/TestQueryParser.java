@@ -223,6 +223,13 @@ public class TestQueryParser extends LuceneTestCase {
     }
   }
 
+  public void testCJK() throws Exception {
+	 // Test Ideographic Space - As wide as a CJK character cell (fullwidth)
+	 // used google to translate the word "term" to japanese -> 用語
+	 assertQueryEquals("term\u3000term\u3000term", null, "term\u0020term\u0020term");
+	 assertQueryEquals("用語\u3000用語\u3000用語", null, "用語\u0020用語\u0020用語");
+  }
+  
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", new WhitespaceAnalyzer(), "türm term term");

@@ -133,6 +133,9 @@ New features
     specify a custom FieldCache parser to generate numeric values from
     terms for a field.  (Uwe Schindler via Mike McCandless)
 
+11. LUCENE-1528: Add support for Ideographic Space to the queryparser.
+    (Luis Alves via Michael Busch)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
