@@ -56,6 +56,9 @@ New Features
 12.SOLR-988:  Add a new scope for session data stored in Context to store objects across imports.
               (Noble Paul via shalin)
 
+13.SOLR-980:  A PlainTextEntityProcessor which can read from any DataSource<Reader> and output a String.
+              (Nathan Adams, Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
