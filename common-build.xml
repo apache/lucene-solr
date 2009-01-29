@@ -38,6 +38,8 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
+  <!-- default arguments to pass to jvm executing tests -->
+  <property name="args" value="" />
 
   <!-- Example directory -->
   <property name="example" value="${common.dir}/example" />
@@ -71,6 +73,7 @@
        where X.Y.M is the last version released (on this branch).
     -->
   <property name="specversion" value="1.3.0.${dateversion}" />
+
   
     <!-- Type of checksum to compute for distribution files -->
   <property name="checksum.algorithm" value="md5" />
