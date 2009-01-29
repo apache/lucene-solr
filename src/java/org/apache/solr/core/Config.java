@@ -104,6 +104,12 @@ public class Config {
       doc = builder.parse(lis);
 
         DOMUtil.substituteProperties(doc, loader.getCoreProperties());
+    } catch (ParserConfigurationException e)  {
+      SolrException.log(log, "Exception during parsing file: " + name, e);
+      throw e;
+    } catch (SAXException e)  {
+      SolrException.log(log, "Exception during parsing file: " + name, e);
+      throw e;
     } catch( SolrException e ){
     	SolrException.log(log,"Error in "+name,e);
     	throw e;

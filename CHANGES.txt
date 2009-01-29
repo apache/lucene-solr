@@ -223,6 +223,9 @@ Bug Fixes
 
 26. SOLR-883: Implicit properties are not set for Cores created through CoreAdmin (Noble Paul via shalin)
 
+27. SOLR-991: Better error message when parsing solrconfig.xml fails due to malformed XML. Error message notes the name
+    of the file being parsed. (Michael Henson via shalin)
+
 
 Other Changes
 ----------------------
