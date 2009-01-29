@@ -18,11 +18,18 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import org.apache.lucene.util.SortedVIntList;
 
 /**
- * A DocIdSet contains a set of doc ids. Implementing classes must provide
- * a {@link DocIdSetIterator} to access the set. 
+ * A DocIdSet contains a set of doc ids. Implementing classes must
+ * only implement {@link #iterator} to provide access to the set. 
  */
 public abstract class DocIdSet {
-	public abstract DocIdSetIterator iterator() throws IOException;
+
+  /** An empty {@code DocIdSet} instance for easy use (this is currently
+   * implemented using a {@link SortedVIntList}). */
+  public static final DocIdSet EMPTY_DOCIDSET = new SortedVIntList(new int[0]);
+    
+  /** Provides a {@link DocIdSetIterator} to access the set. */
+  public abstract DocIdSetIterator iterator() throws IOException;
 }

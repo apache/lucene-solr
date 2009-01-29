@@ -27,7 +27,6 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.SortedVIntList;
 
 /**
  * Implementation of a Lucene {@link Filter} that implements trie-based range filtering.
@@ -261,7 +260,7 @@ public final class TrieRangeFilter extends Filter {
     if (min.compareTo(max) > 0) {
       // shortcut: if min>max, no docs will match!
       lastNumberOfTerms=0;
-      return EMPTY_DOCIDSET;
+      return DocIdSet.EMPTY_DOCIDSET;
     } else {
       final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
       final TermDocs termDocs = reader.termDocs();
@@ -295,6 +294,4 @@ public final class TrieRangeFilter extends Filter {
   private final boolean minInclusive,maxInclusive;
   private Object minUnconverted,maxUnconverted;
   private int lastNumberOfTerms=-1;
-  
-  private static final DocIdSet EMPTY_DOCIDSET = new SortedVIntList(new int[0]);
 }
