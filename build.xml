@@ -359,6 +359,7 @@
            failureProperty="tests.failed"
            dir="src/test/test-files/"
            >
+      <jvmarg line="${args}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>
       <formatter type="xml"/>
