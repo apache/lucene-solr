@@ -60,6 +60,11 @@ public final class TrieRangeFilter extends Filter {
     this.max=(max==null) ? trieVariant.TRIE_CODED_NUMERIC_MAX : (
       maxInclusive ? max : variant.decrementTrieCoded(max)
     );
+    // check encoded values
+    if (
+      this.min.length() != trieVariant.TRIE_CODED_LENGTH ||
+      this.max.length() != trieVariant.TRIE_CODED_LENGTH
+    ) throw new NumberFormatException("Invalid trie encoded numerical value representation (incompatible length).");
   }
 
   /**
