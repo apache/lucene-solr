@@ -52,7 +52,7 @@ import org.apache.lucene.search.ExtendedFieldCache;
 public final class TrieUtils {
 
   /** Instance of TrieUtils using a trie factor of 8 bit.
-   * This is the <b>recommended<b> one (rather fast and storage optimized) */
+   * This is the <b>recommended</b> one (rather fast and storage optimized) */
   public static final TrieUtils VARIANT_8BIT=new TrieUtils(8);
 
   /** Instance of TrieUtils using a trie factor of 4 bit. */
