@@ -80,6 +80,6 @@ class SingleInstanceLock extends Lock {
   }
 
   public String toString() {
-      return "SingleInstanceLock: " + lockName;
+    return super.toString() + ": " + lockName;
   }
 }

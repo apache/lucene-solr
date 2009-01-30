@@ -67,7 +67,7 @@ import java.util.Collection;
 
  @version $Id$
 */
-public abstract class IndexReader {
+public abstract class IndexReader implements Cloneable {
 
   // NOTE: in 3.0 this will change to true
   final static boolean READ_ONLY_DEFAULT = false;
@@ -328,12 +328,13 @@ public abstract class IndexReader {
    * If the index has not changed since this instance was (re)opened, then this
    * call is a NOOP and returns this instance. Otherwise, a new instance is 
    * returned. The old instance is <b>not</b> closed and remains usable.<br>
-   * <b>Note:</b> The re-opened reader instance and the old instance might share
-   * the same resources. For this reason no index modification operations 
-   * (e. g. {@link #deleteDocument(int)}, {@link #setNorm(int, String, byte)}) 
-   * should be performed using one of the readers until the old reader instance
-   * is closed. <b>Otherwise, the behavior of the readers is undefined.</b> 
    * <p>   
+   * If the reader is reopened, even though they share
+   * resources internally, it's safe to make changes
+   * (deletions, norms) with the new reader.  All shared
+   * mutable state obeys "copy on write" semantics to ensure
+   * the changes are not seen by other readers.
+   * <p>
    * You can determine whether a reader was actually reopened by comparing the
    * old instance with the instance returned by this method: 
    * <pre>
@@ -353,6 +354,48 @@ public abstract class IndexReader {
    */  
   public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
     throw new UnsupportedOperationException("This reader does not support reopen().");
+  }
+  
+
+  /** Just like {@link #reopen()}, except you can change the
+   *  readOnly of the original reader.  If the index is
+   *  unchanged but readOnly is different then a new reader
+   *  will be returned. */
+  public synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen().");
+  }
+  
+  /**
+   * Efficiently clones the IndexReader (sharing most
+   * internal state).
+   * <p>
+   * On cloning a reader with pending changes (deletions,
+   * norms), the original reader transfers its write lock to
+   * the cloned reader.  This means only the cloned reader
+   * may make further changes to the index, and commit the
+   * changes to the index on close, but the old reader still
+   * reflects all changes made up until it was cloned.
+   * <p>
+   * Like {@link #reopen()}, it's safe to make changes to
+   * either the original or the cloned reader: all shared
+   * mutable state obeys "copy on write" semantics to ensure
+   * the changes are not seen by other readers.
+   * <p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public synchronized Object clone() {
+    throw new UnsupportedOperationException("This reader does not implement clone()");
+  }
+  
+  /**
+   * Clones the IndexReader and optionally changes readOnly.  A readOnly 
+   * reader cannot open a writeable reader.  
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not implement clone()");
   }
 
   /** 

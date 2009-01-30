@@ -37,7 +37,7 @@ import org.apache.lucene.store.FSDirectory;
  * "own" the directory, which means that they try to acquire a write lock
  * whenever index modifications are performed.
  */
-abstract class DirectoryIndexReader extends IndexReader {
+abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   protected Directory directory;
   protected boolean closeDirectory;
   private IndexDeletionPolicy deletionPolicy;
@@ -62,11 +62,23 @@ abstract class DirectoryIndexReader extends IndexReader {
     this.closeDirectory = closeDirectory;
     this.readOnly = readOnly;
 
+    if (readOnly) {
+      assert this instanceof ReadOnlySegmentReader ||
+        this instanceof ReadOnlyMultiSegmentReader;
+    } else {
+      assert !(this instanceof ReadOnlySegmentReader) &&
+        !(this instanceof ReadOnlyMultiSegmentReader);
+    }
+
     if (!readOnly && segmentInfos != null) {
       // We assume that this segments_N was previously
       // properly sync'd:
       synced.addAll(segmentInfos.files(directory, true));
     }
+  }
+
+  boolean hasSegmentInfos() {
+    return segmentInfos != null;
   }
   
   protected DirectoryIndexReader() {}
@@ -134,14 +146,73 @@ abstract class DirectoryIndexReader extends IndexReader {
 
     return reader;
   }
-
+  
   public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    // Preserve current readOnly
+    return doReopen(readOnly);
+  }
+
+  public final synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
+    return doReopen(openReadOnly);
+  }
+
+  public final synchronized Object clone() {
+    try { 
+      // Preserve current readOnly
+      return clone(readOnly);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
+  public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+
+    final SegmentInfos infos = (SegmentInfos) segmentInfos.clone();
+    DirectoryIndexReader newReader = doReopen(infos, true, openReadOnly);
+    
+    if (this != newReader) {
+      newReader.init(directory, infos, closeDirectory, openReadOnly);
+      newReader.deletionPolicy = deletionPolicy;
+    }
+
+    // If we're cloning a non-readOnly reader, move the
+    // writeLock (if there is one) to the new reader:
+    if (!openReadOnly && writeLock != null) {
+      newReader.writeLock = writeLock;
+      writeLock = null;
+      hasChanges = false;
+    }
+    
+    return newReader;
+  }
+  
+  // If there are no changes to the index, simply return
+  // ourself.  If there are changes, load the latest
+  // SegmentInfos and reopen based on that
+  protected final synchronized IndexReader doReopen(final boolean openReadOnly) throws CorruptIndexException, IOException {
     ensureOpen();
 
-    if (this.hasChanges || this.isCurrent()) {
-      // this has changes, therefore we have the lock and don't need to reopen
-      // OR: the index in the directory hasn't changed - nothing to do here
-      return this;
+    if (hasChanges) {
+      // We have changes, which means we are not readOnly:
+      assert readOnly == false;
+      // and we hold the write lock:
+      assert writeLock != null;
+      // so no other writer holds the write lock, which
+      // means no changes could have been done to the index:
+      assert isCurrent();
+
+      if (openReadOnly) {
+        return (IndexReader) clone(openReadOnly);
+      } else {
+        return this;
+      }
+    } else if (isCurrent()) {
+      if (openReadOnly != readOnly) {
+        // Just fallback to clone
+        return (IndexReader) clone(openReadOnly);
+      } else {
+        return this;
+      }
     }
 
     final SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
@@ -149,11 +220,10 @@ abstract class DirectoryIndexReader extends IndexReader {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-
-        DirectoryIndexReader newReader = doReopen(infos);
+        DirectoryIndexReader newReader = doReopen(infos, false, openReadOnly);
         
         if (DirectoryIndexReader.this != newReader) {
-          newReader.init(directory, infos, closeDirectory, readOnly);
+          newReader.init(directory, infos, closeDirectory, openReadOnly);
           newReader.deletionPolicy = deletionPolicy;
         }
 
@@ -193,7 +263,7 @@ abstract class DirectoryIndexReader extends IndexReader {
   /**
    * Re-opens the index using the passed-in SegmentInfos 
    */
-  protected abstract DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException;
+  protected abstract DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException;
   
   public void setDeletionPolicy(IndexDeletionPolicy deletionPolicy) {
     this.deletionPolicy = deletionPolicy;
@@ -341,6 +411,14 @@ abstract class DirectoryIndexReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   protected void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+
+    if (readOnly) {
+      // NOTE: we should not reach this code w/ the core
+      // IndexReader classes; however, an external subclass
+      // of IndexReader could reach this.
+      ReadOnlySegmentReader.noWrite();
+    }
+
     if (segmentInfos != null) {
       ensureOpen();
       if (stale)

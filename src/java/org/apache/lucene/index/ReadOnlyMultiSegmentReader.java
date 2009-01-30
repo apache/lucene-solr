@@ -27,8 +27,8 @@ class ReadOnlyMultiSegmentReader extends MultiSegmentReader {
     super(directory, sis, closeDirectory, true);
   }
 
-  ReadOnlyMultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache) throws IOException {
-    super(directory, infos, closeDirectory, oldReaders, oldStarts, oldNormsCache, true);
+  ReadOnlyMultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone) throws IOException {
+    super(directory, infos, closeDirectory, oldReaders, oldStarts, oldNormsCache, true, doClone);
   }
 
   protected void acquireWriteLock() {

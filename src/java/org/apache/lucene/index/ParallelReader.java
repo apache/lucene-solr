@@ -122,7 +122,15 @@ public class ParallelReader extends IndexReader {
     }
     decrefOnClose.add(Boolean.valueOf(incRefReaders));
   }
-
+  
+  public synchronized Object clone() {
+    try {
+      return doReopen(true);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
   /**
    * Tries to reopen the subreaders.
    * <br>
@@ -142,69 +150,72 @@ public class ParallelReader extends IndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error 
    */
-  public IndexReader reopen() throws CorruptIndexException, IOException {
+  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    return doReopen(false);
+  }
+    
+  protected IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean reopened = false;
     List newReaders = new ArrayList();
-    List newDecrefOnClose = new ArrayList();
     
     boolean success = false;
     
     try {
-    
       for (int i = 0; i < readers.size(); i++) {
         IndexReader oldReader = (IndexReader) readers.get(i);
-        IndexReader newReader = oldReader.reopen();
+        IndexReader newReader = null;
+        if (doClone) {
+          newReader = (IndexReader) oldReader.clone();
+        } else {
+          newReader = oldReader.reopen();
+        }
         newReaders.add(newReader);
         // if at least one of the subreaders was updated we remember that
-        // and return a new MultiReader
+        // and return a new ParallelReader
         if (newReader != oldReader) {
           reopened = true;
         }
       }
-  
-      if (reopened) {
-        ParallelReader pr = new ParallelReader();
-        for (int i = 0; i < readers.size(); i++) {
-          IndexReader oldReader = (IndexReader) readers.get(i);
-          IndexReader newReader = (IndexReader) newReaders.get(i);
-          if (newReader == oldReader) {
-            newDecrefOnClose.add(Boolean.TRUE);
-            newReader.incRef();
-          } else {
-            // this is a new subreader instance, so on close() we don't
-            // decRef but close it 
-            newDecrefOnClose.add(Boolean.FALSE);
-          }
-          pr.add(newReader, !storedFieldReaders.contains(oldReader));
-        }
-        pr.decrefOnClose = newDecrefOnClose;
-        pr.incRefReaders = incRefReaders;
-        success = true;
-        return pr;
-      } else {
-        success = true; 
-       // No subreader was refreshed
-        return this;
-      }
+      success = true;
     } finally {
       if (!success && reopened) {
         for (int i = 0; i < newReaders.size(); i++) {
           IndexReader r = (IndexReader) newReaders.get(i);
-          if (r != null) {
+          if (r != readers.get(i)) {
             try {
-              if (((Boolean) newDecrefOnClose.get(i)).booleanValue()) {
-                r.decRef();
-              } else {
-                r.close();
-              }
+              r.close();
             } catch (IOException ignore) {
               // keep going - we want to clean up as much as possible
             }
           }
         }
       }
+    }
+
+    if (reopened) {
+      List newDecrefOnClose = new ArrayList();
+      ParallelReader pr = new ParallelReader();
+      for (int i = 0; i < readers.size(); i++) {
+        IndexReader oldReader = (IndexReader) readers.get(i);
+        IndexReader newReader = (IndexReader) newReaders.get(i);
+        if (newReader == oldReader) {
+          newDecrefOnClose.add(Boolean.TRUE);
+          newReader.incRef();
+        } else {
+          // this is a new subreader instance, so on close() we don't
+          // decRef but close it 
+          newDecrefOnClose.add(Boolean.FALSE);
+        }
+        pr.add(newReader, !storedFieldReaders.contains(oldReader));
+      }
+      pr.decrefOnClose = newDecrefOnClose;
+      pr.incRefReaders = incRefReaders;
+      return pr;
+    } else {
+      // No subreader was refreshed
+      return this;
     }
   }
 

@@ -142,6 +142,13 @@ New features
     that field, even with different Terms in the filter, are fast.
     (Tim Sturge, Shalin Shekhar Mangar via Mike McCandless).
 
+13. LUCENE-1314: Add clone(), clone(boolean readOnly) and
+    reopen(boolean readOnly) to IndexReader.  Cloning an IndexReader
+    gives you a new reader which you can make changes to (deletions,
+    norms) without affecting the original reader.  Now, with clone or
+    reopen you can change the readOnly of the original reader.  (Jason
+    Rutherglen, Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

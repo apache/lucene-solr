@@ -32,7 +32,7 @@ import org.apache.lucene.index.MultiSegmentReader.MultiTermPositions;
  *
  * @version $Id$
  */
-public class MultiReader extends IndexReader {
+public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
@@ -86,7 +86,7 @@ public class MultiReader extends IndexReader {
     }
     starts[subReaders.length] = maxDoc;
   }
-
+  
   /**
    * Tries to reopen the subreaders.
    * <br>
@@ -106,59 +106,84 @@ public class MultiReader extends IndexReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error 
    */
-  public IndexReader reopen() throws CorruptIndexException, IOException {
+  public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    return doReopen(false);
+  }
+  
+  /**
+   * Clones the subreaders.
+   * (see {@link IndexReader#clone()}).
+   * <br>
+   * <p>
+   * If subreaders are shared, then the reference count of those
+   * readers is increased to ensure that the subreaders remain open
+   * until the last referring reader is closed.
+   */
+  public synchronized Object clone() {
+    try {
+      return doReopen(true);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
+  /**
+   * If clone is true then we clone each of the subreaders
+   * @param doClone
+   * @return New IndexReader, or same one (this) if
+   *   reopen/clone is not necessary
+   * @throws CorruptIndexException
+   * @throws IOException
+   */
+  protected IndexReader doReopen(boolean doClone) throws CorruptIndexException, IOException {
     ensureOpen();
     
     boolean reopened = false;
     IndexReader[] newSubReaders = new IndexReader[subReaders.length];
-    boolean[] newDecrefOnClose = new boolean[subReaders.length];
     
     boolean success = false;
     try {
       for (int i = 0; i < subReaders.length; i++) {
-        newSubReaders[i] = subReaders[i].reopen();
+        if (doClone)
+          newSubReaders[i] = (IndexReader) subReaders[i].clone();
+        else
+          newSubReaders[i] = subReaders[i].reopen();
         // if at least one of the subreaders was updated we remember that
         // and return a new MultiReader
         if (newSubReaders[i] != subReaders[i]) {
           reopened = true;
-          // this is a new subreader instance, so on close() we don't
-          // decRef but close it 
-          newDecrefOnClose[i] = false;
         }
       }
-
-      if (reopened) {
-        for (int i = 0; i < subReaders.length; i++) {
-          if (newSubReaders[i] == subReaders[i]) {
-            newSubReaders[i].incRef();
-            newDecrefOnClose[i] = true;
-          }
-        }
-        
-        MultiReader mr = new MultiReader(newSubReaders);
-        mr.decrefOnClose = newDecrefOnClose;
-        success = true;
-        return mr;
-      } else {
-        success = true;
-        return this;
-      }
+      success = true;
     } finally {
       if (!success && reopened) {
         for (int i = 0; i < newSubReaders.length; i++) {
-          if (newSubReaders[i] != null) {
+          if (newSubReaders[i] != subReaders[i]) {
             try {
-              if (newDecrefOnClose[i]) {
-                newSubReaders[i].decRef();
-              } else {
-                newSubReaders[i].close();
-              }
+              newSubReaders[i].close();
             } catch (IOException ignore) {
               // keep going - we want to clean up as much as possible
             }
           }
         }
       }
+    }
+
+    if (reopened) {
+      boolean[] newDecrefOnClose = new boolean[subReaders.length];
+      for (int i = 0; i < subReaders.length; i++) {
+        if (newSubReaders[i] == subReaders[i]) {
+          newSubReaders[i].incRef();
+          newDecrefOnClose[i] = true;
+        }
+      }
+      MultiReader mr = new MultiReader(newSubReaders);
+      mr.decrefOnClose = newDecrefOnClose;
+      success = true;
+      return mr;
+    } else {
+      success = true;
+      return this;
     }
   }
 

@@ -32,7 +32,7 @@ import org.apache.lucene.store.Directory;
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
-class MultiSegmentReader extends DirectoryIndexReader {
+class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   protected SegmentReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private Map normsCache = new HashMap();
@@ -70,7 +70,8 @@ class MultiSegmentReader extends DirectoryIndexReader {
   }
 
   /** This contructor is only used for {@link #reopen()} */
-  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean readOnly) throws IOException {
+  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts,
+                     Map oldNormsCache, boolean readOnly, boolean doClone) throws IOException {
     super(directory, infos, closeDirectory, readOnly);
 
     // we put the old SegmentReaders in a map, that allows us
@@ -108,7 +109,20 @@ class MultiSegmentReader extends DirectoryIndexReader {
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i));
         } else {
-          newReader = (SegmentReader) newReaders[i].reopenSegment(infos.info(i));
+          newReader = (SegmentReader) newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
+          if (newReader == newReaders[i] && newReaders[i].hasSegmentInfos()) {
+            // Special case when a single-segment reader was
+            // reopened to a multi-segment reader -- we must
+            // get a private clone, to clear its
+            // SegmentInfos, so it does not attempt to
+            // obtain the write lock
+            newReader = (SegmentReader) newReaders[i].clone(readOnly);
+            newReader.init(directory, null, false, readOnly);
+          } 
+
+          // Make sure reopenSegment did not carry over a
+          // segmentInfos instance
+          assert !newReader.hasSegmentInfos();
         }
         if (newReader == newReaders[i]) {
           // this reader will be shared between the old and the new one,
@@ -194,15 +208,15 @@ class MultiSegmentReader extends DirectoryIndexReader {
     starts[subReaders.length] = maxDoc;
   }
 
-  protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos) throws CorruptIndexException, IOException {
+  protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     if (infos.size() == 1) {
       // The index has only one segment now, so we can't refresh the MultiSegmentReader.
       // Return a new [ReadOnly]SegmentReader instead
-      return SegmentReader.get(readOnly, infos, infos.info(0), false);
-    } else if (readOnly) {
-      return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache);
+      return SegmentReader.get(openReadOnly, infos, infos.info(0), false);
+    } else if (openReadOnly) {
+      return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
     } else {
-      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false);
+      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
     }            
   }
 

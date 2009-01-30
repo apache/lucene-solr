@@ -919,9 +919,13 @@ final class DocumentsWriter {
         if (reader != null) {
           try {
             if (success)
-              reader.doCommit();
+              reader.commit();
           } finally {
-            reader.doClose();
+            // Force reader to not have changes; if we hit
+            // an exception during commit, we don't want
+            // close to retry the commit:
+            reader.hasChanges = false;
+            reader.close();
           }
         }
       }

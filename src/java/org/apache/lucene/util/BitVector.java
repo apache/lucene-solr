@@ -35,7 +35,7 @@ import org.apache.lucene.store.IndexOutput;
 
   @version $Id$
   */
-public final class BitVector {
+public final class BitVector implements Cloneable {
 
   private byte[] bits;
   private int size;
@@ -46,7 +46,19 @@ public final class BitVector {
     size = n;
     bits = new byte[(size >> 3) + 1];
   }
-
+  
+  BitVector(byte[] bits, int size, int count) {
+    this.bits = bits;
+    this.size = size;
+    this.count = count;
+  }
+  
+  public Object clone() {
+    byte[] copyBits = new byte[bits.length];
+    System.arraycopy(bits, 0, copyBits, 0, bits.length);
+    return new BitVector(copyBits, size, count);
+  }
+  
   /** Sets the value of <code>bit</code> to one. */
   public final void set(int bit) {
     if (bit >= size) {
