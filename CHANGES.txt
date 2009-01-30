@@ -141,6 +141,8 @@ New Features
 30. SOLR-865: Adding support for document updates in binary format and corresponding support in Solrj client.
     (Noble Paul via shalin)
 
+31. SOLR-763: Add support for Lucene's PositionFilter (Mck SembWever via shalin)
+
 
 Optimizations
 ----------------------
