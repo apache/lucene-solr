@@ -265,7 +265,7 @@ Other Changes
 
 14. SOLR-981: groupId for Woodstox dependency in maven solrj changed to org.codehaus.woodstox (Tim Taranov via shalin)
 
-15. Upgraded to Lucene 2.9-dev 20090129 r738622 (yonik)
+15. Upgraded to Lucene 2.9-dev r738218 (yonik)
 
 Build
 ----------------------
