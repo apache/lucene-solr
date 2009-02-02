@@ -162,19 +162,20 @@ public class XPathRecordReader {
             skipNextEvent = true;
             String text = parser.getText();
             event = parser.next();
-            while (event == CDATA || event == CHARACTERS || event == SPACE) {
-              text = text + parser.getText();
+
+            while (true) {
+              if(event == CDATA || event == CHARACTERS || event == SPACE) {
+                text = text + parser.getText();
+              } else if(event == START_ELEMENT) {
+                handleStartElement(parser, childrenFound, handler, values, stack, recordStarted);
+              } else {
+                break;
+              }
               event = parser.next();
             }
             putText(values, text, fieldName, multiValued);
           } else if (event == START_ELEMENT) {
-            Node n = getMatchingChild(parser);
-            if (n != null) {
-              childrenFound.add(n);
-              n.parse(parser, handler, values, stack, recordStarted);
-            } else {
-              skipTag(parser);
-            }
+            handleStartElement(parser, childrenFound, handler, values, stack, recordStarted);
           }
         }
       } finally {
@@ -190,6 +191,19 @@ public class XPathRecordReader {
             values.remove(fld);
           }
         }
+      }
+    }
+
+    private void handleStartElement(XMLStreamReader parser, Set<Node> childrenFound,
+                                    Handler handler, Map<String, Object> values,
+                                    Stack<Set<String>> stack, boolean recordStarted)
+            throws IOException, XMLStreamException {
+      Node n = getMatchingChild(parser);
+      if (n != null) {
+        childrenFound.add(n);
+        n.parse(parser, handler, values, stack, recordStarted);
+      } else {
+        skipTag(parser);
       }
     }
 

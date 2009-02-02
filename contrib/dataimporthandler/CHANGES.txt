@@ -106,6 +106,9 @@ Bug Fixes
 13. SOLR-985: Fix thread-safety issue with TemplateString for concurrent imports with multiple cores.
               (Ryuuichi Kumai via shalin)
 
+14. SOLR-999: XPathRecordReader fails on XMLs with nodes mixed with CDATA content.
+              (Fergus McMenemie, Noble Paul via shalin)
+
 Documentation
 ----------------------
 

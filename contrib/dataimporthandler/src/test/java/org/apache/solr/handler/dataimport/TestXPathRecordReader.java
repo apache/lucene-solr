@@ -25,9 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p>
- * Test for XPathRecordReader
- * </p>
+ * <p> Test for XPathRecordReader </p>
  *
  * @version $Id$
  * @since solr 1.3
@@ -133,6 +131,28 @@ public class TestXPathRecordReader {
     Assert.assertEquals(2, l.size());
     Assert.assertNull(((List) l.get(1).get("a")).get(1));
     Assert.assertNull(((List) l.get(1).get("b")).get(0));
+  }
+
+  @Test
+  public void mixedContent() {
+    String xml = "<xhtml:p xmlns:xhtml=\"http://xhtml.com/\" >This text is \n" +
+            "  <xhtml:b>bold</xhtml:b> and this text is \n" +
+            "  <xhtml:u>underlined</xhtml:u>!\n" +
+            "</xhtml:p>";
+    XPathRecordReader rr = new XPathRecordReader("/p");
+    rr.addField("p", "/p", true);
+    rr.addField("b", "/p/b", true);
+    rr.addField("u", "/p/u", true);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Map<String, Object> row = l.get(0);
+
+    Assert.assertEquals("bold", ((List) row.get("b")).get(0));
+    Assert.assertEquals("underlined", ((List) row.get("u")).get(0));
+    String p = (String) ((List) row.get("p")).get(0);
+    Assert.assertTrue(p.contains("This text is"));
+    Assert.assertTrue(p.contains("and this text is"));
+    Assert.assertTrue(p.contains("!"));
+
   }
 
   @Test
