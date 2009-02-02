@@ -48,7 +48,7 @@ public class IndexSearcher extends Searcher {
    * @throws IOException if there is a low-level IO error
    */
   public IndexSearcher(String path) throws CorruptIndexException, IOException {
-    this(IndexReader.open(path), true);
+    this(IndexReader.open(path), true, false);
   }
 
   /** Creates a searcher searching the index in the provided directory.
@@ -56,18 +56,28 @@ public class IndexSearcher extends Searcher {
    * @throws IOException if there is a low-level IO error
    */
   public IndexSearcher(Directory directory) throws CorruptIndexException, IOException {
-    this(IndexReader.open(directory), true);
+    this(IndexReader.open(directory), true, false);
   }
 
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
-    this(r, false);
+    this(r, false, false);
   }
   
-  private IndexSearcher(IndexReader r, boolean closeReader) {
+  /** Expert: Creates a searcher searching the provided
+   *  index, specifying whether searches must visit the
+   *  documents in order.  By default, segments are searched
+   *  in order of decreasing numDocs(); if you pass true for
+   *  docsInOrder, they will instead be searched in their
+   *  natural (unsorted) order.*/
+  public IndexSearcher(IndexReader r, boolean docsInOrder) {
+    this(r, false, docsInOrder);
+  }
+  
+  private IndexSearcher(IndexReader r, boolean closeReader, boolean docsInOrder) {
     reader = r;
     this.closeReader = closeReader;
-    sortSubReaders();
+    sortSubReaders(docsInOrder);
   }
 
   protected void gatherSubReaders(List allSubReaders, IndexReader r) {
@@ -84,7 +94,7 @@ public class IndexSearcher extends Searcher {
 
   static private final IndexReader[] indexReaderZeroArray = new IndexReader[0];
 
-  protected void sortSubReaders() {
+  protected void sortSubReaders(boolean docsInOrder) {
 
     List subReadersList = new ArrayList();
     gatherSubReaders(subReadersList, reader);
@@ -97,28 +107,31 @@ public class IndexSearcher extends Searcher {
       maxDoc += sortedSubReaders[i].maxDoc();          // compute maxDocs
     }
 
-    // sort readers and starts
-    SorterTemplate sorter = new SorterTemplate() {
-        protected int compare(int i, int j) {
-          int num1 = sortedSubReaders[i].numDocs();
-          int num2 = sortedSubReaders[j].numDocs();
-          if (num1 > num2)
-            return -1;
-          if (num1 < num2)
-            return 1;
-          return 0;
-        }
-        protected void swap(int i, int j) {
-          IndexReader temp = sortedSubReaders[i];
-          sortedSubReaders[i] = sortedSubReaders[j];
-          sortedSubReaders[j] = temp;
+    if (!docsInOrder) {
 
-          int tempInt = sortedStarts[i];
-          sortedStarts[i] = sortedStarts[j];
-          sortedStarts[j] = tempInt;
-        }
-      };
-    sorter.quickSort(0, length - 1);
+      // sort readers and starts
+      SorterTemplate sorter = new SorterTemplate() {
+          protected int compare(int i, int j) {
+            int num1 = sortedSubReaders[i].numDocs();
+            int num2 = sortedSubReaders[j].numDocs();
+            if (num1 > num2)
+              return -1;
+            if (num1 < num2)
+              return 1;
+            return 0;
+          }
+          protected void swap(int i, int j) {
+            IndexReader temp = sortedSubReaders[i];
+            sortedSubReaders[i] = sortedSubReaders[j];
+            sortedSubReaders[j] = temp;
+
+            int tempInt = sortedStarts[i];
+            sortedStarts[i] = sortedStarts[j];
+            sortedStarts[j] = tempInt;
+          }
+        };
+      sorter.quickSort(0, length - 1);
+    }
   }
   
   /** Return the {@link IndexReader} this searches. */

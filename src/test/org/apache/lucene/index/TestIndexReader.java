@@ -40,8 +40,10 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiReaderHitCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1588,5 +1590,56 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     dir.close();
+  }
+
+  // LUCENE-1483
+  public void testDocsInOrderSearch() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    writer.addDocument(createDocument("a"));
+    writer.commit();
+    writer.addDocument(createDocument("a"));
+    writer.addDocument(createDocument("a"));
+    writer.close();
+
+    Query q = new TermQuery(new Term("id", "a"));
+
+    IndexSearcher s = new IndexSearcher(dir);
+    s.search(q, new MultiReaderHitCollector() {
+        int lastDocBase = -1;
+        public void setNextReader(IndexReader reader, int docBase) {
+          if (lastDocBase == -1) {
+            assertEquals(1, docBase);
+          } else if (lastDocBase == 1) {
+            assertEquals(0, docBase);
+          } else {
+            fail();
+          }
+          lastDocBase = docBase;
+        }
+        public void collect(int doc, float score) {}
+      });
+    s.close();
+
+    IndexReader r = IndexReader.open(dir);
+    s = new IndexSearcher(r, true);
+    s.search(q, new MultiReaderHitCollector() {
+        int lastDocBase = -1;
+        public void setNextReader(IndexReader reader, int docBase) {
+          if (lastDocBase == -1) {
+            assertEquals(0, docBase);
+          } else if (lastDocBase == 0) {
+            assertEquals(1, docBase);
+          } else {
+            fail();
+          }
+          lastDocBase = docBase;
+        }
+        public void collect(int doc, float score) {}
+      });
+    s.close();
+    r.close();
   }
 }
