@@ -109,6 +109,9 @@ Bug Fixes
 14. SOLR-999: XPathRecordReader fails on XMLs with nodes mixed with CDATA content.
               (Fergus McMenemie, Noble Paul via shalin)
 
+15.SOLR-1000: FileListEntityProcessor should not apply fileName filter to directory names.
+              (Fergus McMenemie via shalin)
+
 Documentation
 ----------------------
 

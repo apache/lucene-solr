@@ -85,11 +85,10 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     if (r != null)
       recursive = Boolean.parseBoolean(r);
     excludes = context.getEntityAttribute(EXCLUDES);
-    if (excludes != null)
+    if (excludes != null) {
       excludes = resolver.replaceTokens(excludes);
-    if (excludes != null)
       excludesPattern = Pattern.compile(excludes);
-
+    }
   }
 
   private Date getDate(String dateStr) {
@@ -148,20 +147,23 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     }
   }
 
-  private void getFolderFiles(File dir,
-                              final List<Map<String, Object>> fileDetails) {
+  private void getFolderFiles(File dir, final List<Map<String, Object>> fileDetails) {
+    // Fetch an array of file objects that pass the filter, however the
+    // returned array is never populated; accept() always returns false.
+    // Rather we make use of the fileDetails array which is populated as
+    // a side affect of the accept method.
     dir.list(new FilenameFilter() {
       public boolean accept(File dir, String name) {
-        if (fileNamePattern == null) {
+        File fileObj = new File(dir, name);
+        if (fileObj.isDirectory()) {
+          if (recursive) getFolderFiles(fileObj, fileDetails);
+        } else if (fileNamePattern == null) {
           addDetails(fileDetails, dir, name);
-          return false;
-        }
-        if (fileNamePattern.matcher(name).find()) {
+        } else if (fileNamePattern.matcher(name).find()) {
           if (excludesPattern != null && excludesPattern.matcher(name).find())
             return false;
           addDetails(fileDetails, dir, name);
         }
-
         return false;
       }
     });
@@ -170,12 +172,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
   private void addDetails(List<Map<String, Object>> files, File dir, String name) {
     Map<String, Object> details = new HashMap<String, Object>();
     File aFile = new File(dir, name);
-    if (aFile.isDirectory()) {
-      if (!recursive)
-        return;
-      getFolderFiles(aFile, files);
-      return;
-    }
+    if (aFile.isDirectory()) return;
     long sz = aFile.length();
     Date lastModified = new Date(aFile.lastModified());
     if (biggerThan != -1 && sz <= biggerThan)

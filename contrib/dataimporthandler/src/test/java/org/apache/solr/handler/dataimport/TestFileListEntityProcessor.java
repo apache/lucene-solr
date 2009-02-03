@@ -91,7 +91,7 @@ public class TestFileListEntityProcessor {
     System.out.println("List of files when given OLDER_THAN -- " + fList);
     Assert.assertEquals(2, fList.size());
     attrs = AbstractDataImportHandlerTest.createMap(
-            FileListEntityProcessor.FILE_NAME, "xml$",
+            FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
     c = AbstractDataImportHandlerTest.getContext(null,
@@ -105,6 +105,39 @@ public class TestFileListEntityProcessor {
       fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
     }
     System.out.println("List of files when given NEWER_THAN -- " + fList);
+    Assert.assertEquals(2, fList.size());
+  }
+
+  @Test
+  public void testRECURSION() throws IOException {
+    long time = System.currentTimeMillis();
+    File tmpdir = new File("." + time);
+    tmpdir.mkdir();
+    tmpdir.deleteOnExit();
+    File childdir = new File(tmpdir + "/child" );
+    childdir.mkdirs();
+    childdir.deleteOnExit();
+    createFile(childdir, "a.xml", "a.xml".getBytes(), true);
+    createFile(childdir, "b.xml", "b.xml".getBytes(), true);
+    createFile(childdir, "c.props", "c.props".getBytes(), true);
+    Map attrs = AbstractDataImportHandlerTest.createMap(
+            FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
+            FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
+            FileListEntityProcessor.RECURSIVE, "true");
+    Context c = AbstractDataImportHandlerTest.getContext(null,
+            new VariableResolverImpl(), null, 0, Collections.EMPTY_LIST, attrs);
+    FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
+    fileListEntityProcessor.init(c);
+    List<String> fList = new ArrayList<String>();
+    while (true) {
+      // Add the documents to the index. NextRow() should only
+      // find two filesnames that match the pattern in fileName
+      Map<String, Object> f = fileListEntityProcessor.nextRow();
+      if (f == null)
+        break;
+      fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
+    }
+    System.out.println("List of files indexed -- " + fList);
     Assert.assertEquals(2, fList.size());
   }
 
