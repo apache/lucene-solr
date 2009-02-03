@@ -34,12 +34,14 @@ public class RangeMapFloatFunction extends ValueSource {
   protected final float min;
   protected final float max;
   protected final float target;
+  protected final Float defaultVal;
 
-  public RangeMapFloatFunction(ValueSource source, float min, float max, float target) {
+  public RangeMapFloatFunction(ValueSource source, float min, float max, float target, Float def) {
     this.source = source;
     this.min = min;
     this.max = max;
     this.target = target;
+    this.defaultVal = def;
   }
 
   public String description() {
@@ -51,7 +53,7 @@ public class RangeMapFloatFunction extends ValueSource {
     return new DocValues() {
       public float floatVal(int doc) {
         float val = vals.floatVal(doc);
-        return (val>=min && val<=max) ? target : val;
+        return (val>=min && val<=max) ? target : (defaultVal == null ? val : defaultVal);
       }
       public int intVal(int doc) {
         return (int)floatVal(doc);
@@ -74,11 +76,13 @@ public class RangeMapFloatFunction extends ValueSource {
   public int hashCode() {
     int h = source.hashCode();
     h ^= (h << 10) | (h >>> 23);
-    Float.floatToIntBits(min);
+    h += Float.floatToIntBits(min);
     h ^= (h << 14) | (h >>> 19);
     h += Float.floatToIntBits(max);
     h ^= (h << 13) | (h >>> 20);
     h += Float.floatToIntBits(target);
+    if (defaultVal != null)
+      h += defaultVal.hashCode();
     return h;
   }
 
@@ -88,6 +92,7 @@ public class RangeMapFloatFunction extends ValueSource {
     return  this.min == other.min
          && this.max == other.max
          && this.target == other.target
-         && this.source.equals(other.source);
+         && this.source.equals(other.source)
+         && (this.defaultVal == other.defaultVal || (this.defaultVal != null && this.defaultVal.equals(other.defaultVal)));
   }
 }

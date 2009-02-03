@@ -143,6 +143,8 @@ New Features
 
 31. SOLR-763: Add support for Lucene's PositionFilter (Mck SembWever via shalin)
 
+32. SOLR-966: Enhance the map() function query to take in an optional default value (Noble Paul, shalin)
+
 
 Optimizations
 ----------------------
