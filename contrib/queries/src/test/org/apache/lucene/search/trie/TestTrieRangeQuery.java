@@ -196,11 +196,11 @@ public class TestTrieRangeQuery extends LuceneTestCase
       // test inclusive range
       TrieRangeQuery tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), true, true, variant);
       TopDocs tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to inclusive range length", tTopDocs.totalHits, upper-lower+1 );
+      assertEquals("Returned count of range query must be equal to inclusive range length", tTopDocs.totalHits, Math.max(upper-lower+1, 0) );
       // test exclusive range
       tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, false, variant);
       tTopDocs = searcher.search(tq, 1);
-      assertEquals("Returned count of range query must be equal to exclusive range length", tTopDocs.totalHits, upper-lower-1 );
+      assertEquals("Returned count of range query must be equal to exclusive range length", tTopDocs.totalHits, Math.max(upper-lower-1, 0) );
       // test left exclusive range
       tq=new TrieRangeQuery(field, new Long(lower), new Long(upper), false, true, variant);
       tTopDocs = searcher.search(tq, 1);
