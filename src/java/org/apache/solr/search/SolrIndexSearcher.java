@@ -990,10 +990,17 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
       HitCollector hc = new HitCollector() {
+        private FieldDoc reusableFD;
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
           numHits[0]++;
-          hq.insert(new FieldDoc(doc, score));
+          if (reusableFD == null)
+            reusableFD = new FieldDoc(doc, score);
+          else {
+            reusableFD.score = score;
+            reusableFD.doc = doc;
+          }
+          reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
         }
       };
       if( timeAllowed > 0 ) {
@@ -1029,17 +1036,26 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
       HitCollector hc = new HitCollector() {
-        float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
+        private ScoreDoc reusableSD;
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
-          if (numHits[0]++ < lastDocRequested || score >= minScore) {
             // TODO: if docs are always delivered in order, we could use "score>minScore"
             // instead of "score>=minScore" and avoid tiebreaking scores
             // in the priority queue.
             // but might BooleanScorer14 might still be used and deliver docs out-of-order?
-            hq.insert(new ScoreDoc(doc, score));
-            minScore = ((ScoreDoc)hq.top()).score;
-          }
+            int nhits = numHits[0]++;
+            if (reusableSD == null) {
+              reusableSD = new ScoreDoc(doc, score);
+            } else if (nhits < lastDocRequested || score >= reusableSD.score) {
+              // reusableSD holds the last "rejected" entry, so, if
+              // this new score is not better than that, there's no
+              // need to try inserting it
+              reusableSD.doc = doc;
+              reusableSD.score = score;
+            } else {
+              return;
+            }
+            reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
         }
       };
       if( timeAllowed > 0 ) {
@@ -1192,11 +1208,18 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
       try {
         searcher.search(query, new HitCollector() {
+          private FieldDoc reusableFD;
           public void collect(int doc, float score) {
             hitCollector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
             numHits[0]++;
-            hq.insert(new FieldDoc(doc, score));
+            if (reusableFD == null)
+              reusableFD = new FieldDoc(doc, score);
+            else {
+              reusableFD.score = score;
+              reusableFD.doc = doc;
+            }
+            reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
           }
         }
         );
@@ -1229,17 +1252,26 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final int[] numHits = new int[1];
       try {
         searcher.search(query, new HitCollector() {
-          float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
+          private ScoreDoc reusableSD;
           public void collect(int doc, float score) {
             hitCollector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
-            if (numHits[0]++ < lastDocRequested || score >= minScore) {
               // if docs are always delivered in order, we could use "score>minScore"
               // but might BooleanScorer14 might still be used and deliver docs out-of-order?
-              hq.insert(new ScoreDoc(doc, score));
-              minScore = ((ScoreDoc)hq.top()).score;
+              int nhits = numHits[0]++;
+              if (reusableSD == null) {
+                reusableSD = new ScoreDoc(doc, score);
+              } else if (nhits < lastDocRequested || score >= reusableSD.score) {
+                // reusableSD holds the last "rejected" entry, so, if
+                // this new score is not better than that, there's no
+                // need to try inserting it
+                reusableSD.doc = doc;
+                reusableSD.score = score;
+              } else {
+                return;
+              }
+              reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
             }
-          }
         }
         );
       }
@@ -1507,10 +1539,16 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
             new FieldSortedHitQueue(reader, sort.getSort(), nDocs);
     DocIterator iter = set.iterator();
     int hits=0;
+    FieldDoc reusableFD = null;
     while(iter.hasNext()) {
       int doc = iter.nextDoc();
       hits++;   // could just use set.size(), but that would be slower for a bitset
-      hq.insert(new FieldDoc(doc,1.0f));
+      if(reusableFD == null) {
+        reusableFD = new FieldDoc(doc, 1.0f);
+      } else {
+        reusableFD.doc = doc;
+      }
+      reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
     }
 
     int numCollected = hq.size();

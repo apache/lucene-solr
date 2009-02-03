@@ -160,6 +160,10 @@ Optimizations
     since we know exactly how long the List will be in advance.
     (Kay Kay via hossman)
 
+ 5. SOLR-1002: Change SolrIndexSearcher to use insertWithOverflow 
+    with reusable priority queue entries to reduce the amount of
+    generated garbage during searching.  (Mark Miller via yonik)
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
