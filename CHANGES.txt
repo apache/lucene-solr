@@ -145,6 +145,8 @@ New Features
 
 32. SOLR-966: Enhance the map() function query to take in an optional default value (Noble Paul, shalin)
 
+33. SOLR-820: Support replication on startup of master with new index. (Noble Paul, Akshay Ukey via shalin)
+
 
 Optimizations
 ----------------------

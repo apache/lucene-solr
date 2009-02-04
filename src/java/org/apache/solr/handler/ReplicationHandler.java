@@ -31,6 +31,7 @@ import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -684,6 +685,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (replicateAfter.contains("startup")) {
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
+          if (core.getUpdateHandler() instanceof DirectUpdateHandler2) {
+            ((DirectUpdateHandler2) core.getUpdateHandler()).forceOpenWriter();
+          } else {
+            LOG.warn("The update handler being used is not an instance or sub-class of DirectUpdateHandler2. " +
+                    "Replicate on Startup cannot work.");
+          }
           indexCommitPoint = s.get().getReader().getIndexCommit();
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
