@@ -99,9 +99,7 @@ public final class BitVector implements Cloneable {
   /** Returns <code>true</code> if <code>bit</code> is one and
     <code>false</code> if it is zero. */
   public final boolean get(int bit) {
-    if (bit >= size) {
-      throw new ArrayIndexOutOfBoundsException(bit);
-    }
+    assert bit >= 0 && bit < size: "bit " + bit + " is out of bounds 0.." + (size-1);
     return (bits[bit >> 3] & (1 << (bit & 7))) != 0;
   }
 
