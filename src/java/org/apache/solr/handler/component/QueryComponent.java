@@ -74,7 +74,12 @@ public class QueryComponent extends SearchComponent
     defType = defType==null ? OldLuceneQParserPlugin.NAME : defType;
 
     if (rb.getQueryString() == null) {
-      rb.setQueryString( params.get( CommonParams.Q ) );
+      rb.setQueryString(params.get(CommonParams.Q));
+      String queryString = params.get(CommonParams.Q);
+      if (queryString == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Missing or empty required parameter: q");
+      }
     }
 
     try {
