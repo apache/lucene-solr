@@ -122,9 +122,14 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         for (Map<String, String> field : context.getAllEntityFields()) {
           if (field.get(XPATH) == null)
             continue;
+          int flags = 0;
+          if ("true".equals(field.get("flatten"))) {
+            flags = XPathRecordReader.FLATTEN;
+          }
           xpathReader.addField(field.get(DataImporter.COLUMN),
-                  field.get(XPATH), Boolean.parseBoolean(field
-                          .get(DataImporter.MULTI_VALUED)));
+                  field.get(XPATH),
+                  Boolean.parseBoolean(field.get(DataImporter.MULTI_VALUED)),
+                  flags);
         }
       } catch (RuntimeException e) {
         throw new DataImportHandlerException(SEVERE,

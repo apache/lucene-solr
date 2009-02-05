@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
  */
 public class XPathRecordReader {
   private Node rootNode = new Node("/", null);
+  public static final int FLATTEN = 1;
 
   public XPathRecordReader(String forEachXpath) {
     String[] splits = forEachXpath.split("\\|");
@@ -46,24 +47,30 @@ public class XPathRecordReader {
       split = split.trim();
       if (split.length() == 0)
         continue;
-      addField0(split, split, false, true);
+      addField0(split, split, false, true, 0);
     }
   }
 
-  public synchronized XPathRecordReader addField(String name, String xpath,
-                                                 boolean multiValued) {
+  public synchronized XPathRecordReader addField(String name, String xpath, boolean multiValued) {
     if (!xpath.startsWith("/"))
       throw new RuntimeException("xpath must start with '/' : " + xpath);
-    addField0(xpath, name, multiValued, false);
+    addField0(xpath, name, multiValued, false, 0);
+    return this;
+  }
+
+  public synchronized XPathRecordReader addField(String name, String xpath, boolean multiValued, int flags) {
+    if (!xpath.startsWith("/"))
+      throw new RuntimeException("xpath must start with '/' : " + xpath);
+    addField0(xpath, name, multiValued, false, flags);
     return this;
   }
 
   private void addField0(String xpath, String name, boolean multiValued,
-                         boolean isRecord) {
+                         boolean isRecord, int flags) {
     List<String> paths = new LinkedList<String>(Arrays.asList(xpath.split("/")));
     if ("".equals(paths.get(0).trim()))
       paths.remove(0);
-    rootNode.build(paths, name, multiValued, isRecord);
+    rootNode.build(paths, name, multiValued, isRecord, flags);
   }
 
   public List<Map<String, Object>> getAllRecords(Reader r) {
@@ -96,6 +103,8 @@ public class XPathRecordReader {
     Node parent;
 
     boolean hasText = false, multiValued = false, isRecord = false;
+
+    private boolean flatten;
 
     public Node(String name, Node p) {
       xpathName = this.name = name;
@@ -167,7 +176,22 @@ public class XPathRecordReader {
               if(event == CDATA || event == CHARACTERS || event == SPACE) {
                 text = text + parser.getText();
               } else if(event == START_ELEMENT) {
-                handleStartElement(parser, childrenFound, handler, values, stack, recordStarted);
+                if (flatten) {
+                  int starts = 1;
+                  while (true) {
+                    event = parser.next();
+                    if (event == CDATA || event == CHARACTERS || event == SPACE) {
+                      text = text + parser.getText();
+                    } else if (event == START_ELEMENT) {
+                      starts++;
+                    } else if (event == END_ELEMENT) {
+                      starts--;
+                      if (starts == 0) break;
+                    }
+                  }
+                } else {
+                  handleStartElement(parser, childrenFound, handler, values, stack, recordStarted);
+                }
               } else {
                 break;
               }
@@ -275,7 +299,7 @@ public class XPathRecordReader {
     }
 
     public void build(List<String> paths, String fieldName,
-                      boolean multiValued, boolean record) {
+                      boolean multiValued, boolean record, int flags) {
       String name = paths.remove(0);
       if (paths.isEmpty() && name.startsWith("@")) {
         if (attributes == null) {
@@ -296,9 +320,10 @@ public class XPathRecordReader {
             n.hasText = true;
             n.fieldName = fieldName;
             n.multiValued = multiValued;
+            n.flatten = flags == FLATTEN;
           }
         } else {
-          n.build(paths, fieldName, multiValued, record);
+          n.build(paths, fieldName, multiValued, record, flags);
         }
       }
     }

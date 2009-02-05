@@ -152,7 +152,23 @@ public class TestXPathRecordReader {
     Assert.assertTrue(p.contains("This text is"));
     Assert.assertTrue(p.contains("and this text is"));
     Assert.assertTrue(p.contains("!"));
+    // Should not contain content from child elements
+    Assert.assertFalse(p.contains("bold"));
+  }
 
+  @Test
+  public void mixedContentFlattened() {
+    String xml = "<xhtml:p xmlns:xhtml=\"http://xhtml.com/\" >This text is \n" +
+            "  <xhtml:b>bold</xhtml:b> and this text is \n" +
+            "  <xhtml:u>underlined</xhtml:u>!\n" +
+            "</xhtml:p>";
+    XPathRecordReader rr = new XPathRecordReader("/p");
+    rr.addField("p", "/p", false, XPathRecordReader.FLATTEN);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Map<String, Object> row = l.get(0);
+    Assert.assertEquals("This text is \n" +
+            "  bold and this text is \n" +
+            "  underlined!", ((String)row.get("p")).trim() );
   }
 
   @Test
