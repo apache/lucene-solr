@@ -168,6 +168,9 @@ Optimizations
     with reusable priority queue entries to reduce the amount of
     generated garbage during searching.  (Mark Miller via yonik)
 
+ 6. SOLR-971: Replace StringBuffer with StringBuilder for instances that do not require thread-safety.
+    (Kay Kay via shalin)
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)

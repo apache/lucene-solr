@@ -235,7 +235,7 @@ public class ReutersService {
 	 * @throws java.io.IOException
 	 */
 	private static String readFileAsString(File file) throws java.io.IOException {
-        StringBuffer fileData = new StringBuffer(1000);
+        StringBuilder fileData = new StringBuilder(1000);
         BufferedReader reader = new BufferedReader(new FileReader(file));
         char[] buf = new char[1024];
         int numRead=0;

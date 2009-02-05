@@ -129,7 +129,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
     if(deltaImportQuery != null){
       return resolver.replaceTokens(deltaImportQuery);
     }
-    StringBuffer sb = new StringBuffer(queryString);
+    StringBuilder sb = new StringBuilder(queryString);
     if (SELECT_WHERE_PATTERN.matcher(queryString).find()) {
       sb.append(" and ");
     } else {

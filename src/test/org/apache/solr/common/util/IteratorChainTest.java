@@ -96,7 +96,7 @@ public class IteratorChainTest extends TestCase {
   
   /** dump the contents of it to a String */
   private String getString(Iterator<String> it) {
-    final StringBuffer sb = new StringBuffer();
+    final StringBuilder sb = new StringBuilder();
     sb.append("");
     while(it.hasNext()) {
       sb.append(it.next());

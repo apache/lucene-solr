@@ -107,7 +107,7 @@ public class VariableResolverImpl extends VariableResolver {
   private String mergeAll(String[] parts, int i) {
     if (i == parts.length - 1)
       return parts[parts.length - 1];
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int j = i; j < parts.length; j++) {
       sb.append(parts[j]);
       if (j < parts.length - 1)

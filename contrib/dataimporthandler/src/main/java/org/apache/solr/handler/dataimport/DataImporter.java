@@ -136,7 +136,7 @@ public class DataImporter {
     }
 
     if (!errors.isEmpty()) {
-      StringBuffer sb = new StringBuffer("There are errors in the Schema\n");
+      StringBuilder sb = new StringBuilder("There are errors in the Schema\n");
       for (String error : errors) {
         sb.append(error).append("\n");
       }

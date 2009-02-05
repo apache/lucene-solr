@@ -86,7 +86,7 @@ public class TemplateString {
       s[i] = val == null ? "" : getObjectAsString(val);
     }
 
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < pcs.size(); i++) {
       sb.append(pcs.get(i));
       if (i < s.length) {

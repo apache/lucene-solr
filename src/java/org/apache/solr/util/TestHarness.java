@@ -263,7 +263,7 @@ public class TestHarness {
   public String validateAddDoc(String... fieldsAndValues)
     throws XPathExpressionException, SAXException, IOException {
 
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     buf.append("<add>");
     appendSimpleDoc(buf, fieldsAndValues);
     buf.append("</add>");
@@ -392,7 +392,19 @@ public class TestHarness {
   /**
    * A helper that adds an xml &lt;doc&gt; containing all of the
    * fields and values specified (odds are fields, evens are values)
+   * to a StringBuilder
+   */
+  public void appendSimpleDoc(StringBuilder buf, String... fieldsAndValues)
+    throws IOException {
+
+    buf.append(makeSimpleDoc(fieldsAndValues));
+  }
+
+  /**
+   * A helper that adds an xml &lt;doc&gt; containing all of the
+   * fields and values specified (odds are fields, evens are values)
    * to a StringBuffer.
+   * @deprecated see {@link #appendSimpleDoc(StringBuilder, String...)}
    */
   public void appendSimpleDoc(StringBuffer buf, String... fieldsAndValues)
     throws IOException {

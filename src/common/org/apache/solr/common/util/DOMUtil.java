@@ -287,7 +287,7 @@ public class DOMUtil {
     List<String> propertyRefs = new ArrayList<String>();
     parsePropertyString(value, fragments, propertyRefs);
 
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     Iterator<String> i = fragments.iterator();
     Iterator<String> j = propertyRefs.iterator();
 

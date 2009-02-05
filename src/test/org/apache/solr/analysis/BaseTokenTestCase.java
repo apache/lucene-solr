@@ -34,7 +34,7 @@ import junit.framework.TestCase;
 public abstract class BaseTokenTestCase extends AnalysisTestCase
 {
   public static String tsToString(TokenStream in) throws IOException {
-    StringBuffer out = new StringBuffer();
+    StringBuilder out = new StringBuilder();
     Token t = in.next();
     if (null != t)
       out.append(new String(t.termBuffer(), 0, t.termLength()));

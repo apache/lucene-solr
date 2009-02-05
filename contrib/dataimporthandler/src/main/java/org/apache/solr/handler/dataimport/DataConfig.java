@@ -163,7 +163,7 @@ public class DataConfig {
 
     public Script(Element e) {
       this.language = getStringAttribute(e, "language", "JavaScript");
-      StringBuffer buffer = new StringBuffer();
+      StringBuilder buffer = new StringBuilder();
       String script = getTxt(e, buffer);
       if (script != null)
         this.script = script.trim();
@@ -268,8 +268,7 @@ public class DataConfig {
     return m;
   }
 
-  public static String getTxt(Node elem, StringBuffer buffer) {
-
+  public static String getTxt(Node elem, StringBuilder buffer) {
     if (elem.getNodeType() != Node.CDATA_SECTION_NODE) {
       NodeList childs = elem.getChildNodes();
       for (int i = 0; i < childs.getLength(); i++) {
