@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -38,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Unit test for sorting code.
@@ -45,7 +45,7 @@ import org.apache.lucene.store.RAMDirectory;
  */
 
 public class TestCustomSearcherSort
-extends TestCase
+extends LuceneTestCase
 implements Serializable {
 
     private Directory index = null;
@@ -71,7 +71,7 @@ implements Serializable {
 	throws IOException {
 	        RAMDirectory indexStore = new RAMDirectory ();
 	        IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-	        RandomGen random = new RandomGen();
+	        RandomGen random = new RandomGen(newRandom());
 	        for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
 	        Document doc = new Document();
 	            if((i%5)!=0) { // some documents must not have an entry in the first sort field
@@ -93,8 +93,9 @@ implements Serializable {
 	 * Create index and query for test cases. 
 	 */
 	public void setUp() throws Exception {
-		index = getIndex();
-	    query = new TermQuery( new Term("content", "test"));
+          super.setUp();
+          index = getIndex();
+          query = new TermQuery( new Term("content", "test"));
 	}
 
 	/**
@@ -164,7 +165,6 @@ implements Serializable {
     ScoreDoc[] resultSort = searcher.search (query, null, 1000, sort).scoreDocs;
 		checkHits(resultSort, "Sort by custom criteria: "); // check for duplicates
 		
-        String lf = System.getProperty("line.separator", "\n");
         // besides the sorting both sets of hits must be identical
         for(int hitid=0;hitid<resultSort.length; ++hitid) {
             Integer idHitDate = new Integer(resultSort[hitid].doc); // document ID from sorted search
@@ -263,12 +263,15 @@ implements Serializable {
         }
     }
     private class RandomGen {
-        private Random random = new Random(0); // to generate some arbitrary contents
-	    private Calendar base = new GregorianCalendar(1980, 1, 1);
+      RandomGen(Random random) {
+        this.random = random;
+      }
+      private Random random;
+      private Calendar base = new GregorianCalendar(1980, 1, 1);
 
-	    // Just to generate some different Lucene Date strings
-        private String getLuceneDate() {
-    	    return DateTools.timeToString(base.getTimeInMillis() + random.nextInt() - Integer.MIN_VALUE, DateTools.Resolution.DAY);
-        }
+      // Just to generate some different Lucene Date strings
+      private String getLuceneDate() {
+        return DateTools.timeToString(base.getTimeInMillis() + random.nextInt() - Integer.MIN_VALUE, DateTools.Resolution.DAY);
+      }
     }
 }

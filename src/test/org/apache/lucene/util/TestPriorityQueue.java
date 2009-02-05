@@ -45,13 +45,12 @@ public class TestPriorityQueue
     public void testPQ()
 	throws Exception
     {
-	testPQ(10000);
+	testPQ(10000, newRandom());
     }
 
-    public static void testPQ(int count)
+  public static void testPQ(int count, Random gen)
     {
 	PriorityQueue pq = new IntegerQueue(count);
-	Random gen = new Random();
 	int sum = 0, sum2 = 0;
 
 	for (int i = 0; i < count; i++)

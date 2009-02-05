@@ -180,7 +180,7 @@ implements Serializable {
     return new IndexSearcher (indexStore);
   }
   
-  public static String getRandomNumberString(int num, int low, int high) {
+  public String getRandomNumberString(int num, int low, int high) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < num; i++) {
       sb.append(getRandomNumber(low, high));
@@ -188,11 +188,11 @@ implements Serializable {
     return sb.toString();
   }
   
-  public static String getRandomCharString(int num) {
+  public String getRandomCharString(int num) {
     return getRandomCharString(num, 48, 122);
   }
   
-  public static String getRandomCharString(int num, int start, int end) {
+  public String getRandomCharString(int num, int start, int end) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < num; i++) {
       sb.append(new Character((char) getRandomNumber(start, end)));
@@ -200,9 +200,9 @@ implements Serializable {
     return sb.toString();
   }
   
-  static Random r = new Random();
+  Random r;
   
-  public static int getRandomNumber(final int low, final int high) {
+  public int getRandomNumber(final int low, final int high) {
   
     int randInt = (Math.abs(r.nextInt()) % (high - low)) + low;
 
@@ -284,6 +284,7 @@ implements Serializable {
    * Test String sorting: small queue to many matches, multi field sort, reverse sort
    */
   public void testStringSort() throws IOException, ParseException {
+    r = newRandom();
     ScoreDoc[] result = null;
     IndexSearcher searcher = getFullStrings();
     sort.setSort(new SortField[] {

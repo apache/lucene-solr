@@ -23,11 +23,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.LuceneTestCase;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -46,7 +45,7 @@ import com.sleepycat.je.Transaction;
  * Adapted from Andi Vajda's org.apache.lucene.db.DbStoreTest.
  *
  */
-public class JEStoreTest extends TestCase {
+public class JEStoreTest extends LuceneTestCase {
     protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
 
     protected Environment env;
@@ -112,7 +111,9 @@ public class JEStoreTest extends TestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random gen = new Random(1251971);
+        Random r = newRandom();
+        final long seed = r.nextLong();
+        Random gen = new Random(seed);
         int totalLength = 0;
         int duration;
         Date end;
@@ -171,7 +172,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -220,7 +221,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -257,7 +258,9 @@ public class JEStoreTest extends TestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random gen = new Random(1251971);
+        Random r = newRandom();
+        final long seed = r.nextLong();
+        Random gen = new Random(seed);
         int totalLength = 0;
         int duration;
         Date end;
@@ -316,7 +319,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -357,7 +360,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -412,7 +415,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -486,7 +489,9 @@ public class JEStoreTest extends TestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random gen = new Random(1251971);
+        Random r = newRandom();
+        final long seed = r.nextLong();
+        Random gen = new Random(seed);
         int totalLength = 0;
         int duration;
         Date end;
@@ -543,7 +548,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -593,7 +598,7 @@ public class JEStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new JEDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
             for (int i = 0; i < count; i++) {
                 String name = i + ".dat";

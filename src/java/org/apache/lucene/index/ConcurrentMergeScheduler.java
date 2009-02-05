@@ -329,6 +329,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Used for testing */
   public static boolean anyUnhandledExceptions() {
+    if (allInstances == null) {
+      throw new RuntimeException("setTestMode() was not called; often this is because your test case's setUp method fails to call super.setUp in LuceneTestCase");
+    }
     synchronized(allInstances) {
       final int count = allInstances.size();
       // Make sure all outstanding threads are done so we see

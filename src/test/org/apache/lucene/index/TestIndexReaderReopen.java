@@ -710,7 +710,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final List readers = Collections.synchronizedList(new ArrayList());
     IndexReader firstReader = IndexReader.open(dir);
     IndexReader reader = firstReader;
-    final Random rnd = new Random();
+    final Random rnd = newRandom();
     
     ReaderThread[] threads = new ReaderThread[n];
     final Set readersToClose = Collections.synchronizedSet(new HashSet());
@@ -1113,7 +1113,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     IndexReader lastReader = IndexReader.open(indexDir2);
     
-    Random r = new Random(42);
+    Random r = newRandom();
     for(int i=0;i<10;i++) {
       int mod = r.nextInt(5);
       modifyIndex(mod, lastReader.directory());

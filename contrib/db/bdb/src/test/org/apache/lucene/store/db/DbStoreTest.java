@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
 import com.sleepycat.db.EnvironmentConfig;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.Transaction;
@@ -37,13 +35,14 @@ import com.sleepycat.db.DatabaseException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests {@link DbDirectory}.
  *
  * Adapted from org.apache.lucene.StoreTest with larger files and random bytes.
  */
-public class DbStoreTest extends TestCase {
+public class DbStoreTest extends LuceneTestCase {
     protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
     protected Environment env;
     protected Database index, blocks;
@@ -117,7 +116,10 @@ public class DbStoreTest extends TestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random gen = new Random(1251971);
+        Random r = newRandom();
+        final long seed = r.nextLong();
+
+        Random gen = new Random(seed);
         int totalLength = 0;
         int duration;
         Date end;
@@ -177,7 +179,7 @@ public class DbStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -227,7 +229,7 @@ public class DbStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -267,7 +269,10 @@ public class DbStoreTest extends TestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random gen = new Random(1251971);
+        Random r = newRandom();
+        final long seed = r.nextLong();
+
+        Random gen = new Random(seed);
         int totalLength = 0;
         int duration;
         Date end;
@@ -325,7 +330,7 @@ public class DbStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {
@@ -376,7 +381,7 @@ public class DbStoreTest extends TestCase {
             txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
-            gen = new Random(1251971);
+            gen = new Random(seed);
             start = new Date();
 
             for (int i = 0; i < count; i++) {

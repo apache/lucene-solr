@@ -17,16 +17,14 @@
 
 package org.apache.lucene.util;
 
-import junit.framework.TestCase;
-
 import java.util.Random;
 import java.util.BitSet;
 
 /**
  * @version $Id$
  */
-public class TestOpenBitSet extends TestCase {
-  static Random rand = new Random();
+public class TestOpenBitSet extends LuceneTestCase {
+  Random rand;
 
   void doGet(BitSet a, OpenBitSet b) {
     int max = a.size();
@@ -184,17 +182,20 @@ public class TestOpenBitSet extends TestCase {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() {
+    rand = newRandom();
     doRandomSets(1200,1000, 1);
     doRandomSets(1200,1000, 2);
   }
 
   public void testBig() {
     // uncomment to run a bigger test (~2 minutes).
+    // rand = newRandom();
     // doRandomSets(2000,200000, 1);
     // doRandomSets(2000,200000, 2);
   }
 
   public void testEquals() {
+    rand = newRandom();
     OpenBitSet b1 = new OpenBitSet(1111);
     OpenBitSet b2 = new OpenBitSet(2222);
     assertTrue(b1.equals(b2));
@@ -218,6 +219,7 @@ public class TestOpenBitSet extends TestCase {
   
   public void testBitUtils()
   {
+    rand = newRandom();
     long num = 100000;
     assertEquals( 5, BitUtil.ntz(num) );
     assertEquals( 5, BitUtil.ntz2(num) );

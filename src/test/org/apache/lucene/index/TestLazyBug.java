@@ -25,7 +25,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.util.*;
-import java.lang.reflect.Array;
 
 
 /**
@@ -33,8 +32,6 @@ import java.lang.reflect.Array;
  * if other docs have allready been accessed.
  */
 public class TestLazyBug extends LuceneTestCase {
-
-  public static int BASE_SEED = 13;
 
   public static int NUM_DOCS = 500;
   public static int NUM_FIELDS = 100;
@@ -62,10 +59,10 @@ public class TestLazyBug extends LuceneTestCase {
       }
     };
   
-  private static Directory makeIndex() throws RuntimeException { 
+  private Directory makeIndex() throws RuntimeException { 
     Directory dir = new RAMDirectory();
     try {
-      Random r = new Random(BASE_SEED + 42) ; 
+      Random r = newRandom();
       Analyzer analyzer = new SimpleAnalyzer();
       IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
       
@@ -89,12 +86,12 @@ public class TestLazyBug extends LuceneTestCase {
     return dir;
   }
   
-  public static void doTest(int[] docs) throws Exception {
+  public void doTest(int[] docs) throws Exception {
     Directory dir = makeIndex();
     IndexReader reader = IndexReader.open(dir);
     for (int i = 0; i < docs.length; i++) {
       Document d = reader.document(docs[i], SELECTOR);
-      String trash = d.get(MAGIC_FIELD);
+      d.get(MAGIC_FIELD);
       
       List fields = d.getFields();
       for (Iterator fi = fields.iterator(); fi.hasNext(); ) {

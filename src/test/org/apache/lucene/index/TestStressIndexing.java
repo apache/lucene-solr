@@ -28,7 +28,7 @@ import java.io.File;
 
 public class TestStressIndexing extends LuceneTestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
-  private static final Random RANDOM = new Random();
+  private Random RANDOM;
 
   private static abstract class TimedThread extends Thread {
     boolean failed;
@@ -67,7 +67,7 @@ public class TestStressIndexing extends LuceneTestCase {
     }
   }
 
-  private static class IndexerThread extends TimedThread {
+  private class IndexerThread extends TimedThread {
     IndexWriter writer;
     public int count;
     int nextID;
@@ -164,6 +164,7 @@ public class TestStressIndexing extends LuceneTestCase {
     FSDirectory.
   */
   public void testStressIndexAndSearching() throws Exception {
+    RANDOM = newRandom();
 
     // RAMDir
     Directory directory = new MockRAMDirectory();

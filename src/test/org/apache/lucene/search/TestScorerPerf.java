@@ -38,7 +38,7 @@ import org.apache.lucene.document.Field;
  * @version $Id$
  */
 public class TestScorerPerf extends LuceneTestCase {
-  Random r = new Random(0);
+  Random r;
   boolean validate = true;  // set to false when doing performance testing
 
   BitSet[] sets;
@@ -306,6 +306,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public void testConjunctions() throws Exception {
     // test many small sets... the bugs will be found on boundary conditions
+    r = newRandom();
     createDummySearcher();
     validate=true;
     sets=randBitSets(1000,10);
@@ -318,6 +319,7 @@ public class TestScorerPerf extends LuceneTestCase {
   int bigIter=10;
 
   public void testConjunctionPerf() throws Exception {
+    r = newRandom();
     createDummySearcher();
     validate=false;
     sets=randBitSets(32,1000000);
@@ -331,6 +333,7 @@ public class TestScorerPerf extends LuceneTestCase {
   }
 
   public void testNestedConjunctionPerf() throws Exception {
+    r = newRandom();
     createDummySearcher();
     validate=false;
     sets=randBitSets(32,1000000);
@@ -345,6 +348,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
 
   public void testConjunctionTerms() throws Exception {
+    r = newRandom();
     validate=false;
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
@@ -361,6 +365,7 @@ public class TestScorerPerf extends LuceneTestCase {
   }
 
   public void testNestedConjunctionTerms() throws Exception {
+    r = newRandom();
     validate=false;    
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
@@ -378,6 +383,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
 
   public void testSloppyPhrasePerf() throws Exception {
+    r = newRandom();
     validate=false;    
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");

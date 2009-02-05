@@ -58,7 +58,7 @@ class RepeatingTokenStream extends TokenStream {
 public class TestTermdocPerf extends LuceneTestCase {
 
   void addDocs(Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
-    final Random random = new Random(0);
+    final Random random = newRandom();
     final RepeatingTokenStream ts = new RepeatingTokenStream(val);
 
     Analyzer analyzer = new Analyzer() {

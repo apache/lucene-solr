@@ -34,7 +34,7 @@ import java.io.IOException;
  * @version $Id$
  */
 public class TestThreadSafe extends LuceneTestCase {
-  Random r = new Random();
+  Random r;
   Directory dir1;
   Directory dir2;
 
@@ -48,7 +48,7 @@ public class TestThreadSafe extends LuceneTestCase {
     final int iter;
     final Random rand;
     // pass in random in case we want to make things reproducable
-    public Thr(int iter, Random rand, int level) {
+    public Thr(int iter, Random rand) {
       this.iter = iter;
       this.rand = rand;
     }
@@ -132,7 +132,7 @@ public class TestThreadSafe extends LuceneTestCase {
   void doTest(int iter, int nThreads) throws Exception {
     Thr[] tarr = new Thr[nThreads];
     for (int i=0; i<nThreads; i++) {
-      tarr[i] = new Thr(iter, new Random(), 1);
+      tarr[i] = new Thr(iter, new Random(r.nextLong()));
       tarr[i].start();
     }
     for (int i=0; i<nThreads; i++) {
@@ -144,6 +144,7 @@ public class TestThreadSafe extends LuceneTestCase {
   }
 
   public void testLazyLoadThreadSafety() throws Exception{
+    r = newRandom();
     dir1 = new RAMDirectory();
     // test w/ field sizes bigger than the buffer of an index input
     buildDir(dir1, 15, 5, 2000);

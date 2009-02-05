@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import junit.framework.TestCase;
+import java.util.Random;
 
 /** Base class for all Lucene unit tests.  Currently the
  *  only added functionality over JUnit's TestCase is
@@ -54,4 +55,48 @@ public abstract class LuceneTestCase extends TestCase {
       fail("ConcurrentMergeScheduler hit unhandled exceptions");
     }
   }
+  
+  /**
+   * Returns a {@link Random} instance for generating random numbers during the test.
+   * The random seed is logged during test execution and printed to System.out on any failure
+   * for reproducing the test using {@link #newRandom(long)} with the recorded seed
+   *.
+   */
+  public Random newRandom() {
+    if (seed != null) {
+      throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
+    }
+    return newRandom(seedRnd.nextLong());
+  }
+  
+  /**
+   * Returns a {@link Random} instance for generating random numbers during the test.
+   * If an error occurs in the test that is not reproducible, you can use this method to
+   * initialize the number generator with the seed that was printed out during the failing test.
+   */
+  public Random newRandom(long seed) {
+    if (this.seed != null) {
+      throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
+    }
+    this.seed = new Long(seed);
+    return new Random(seed);
+  }
+  
+  protected void runTest() throws Throwable {
+    try {
+      seed = null;
+      super.runTest();
+    } catch (Throwable e) {
+      if (seed != null) {
+        System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
+      }
+      throw e;
+    }
+  }
+  
+  // recorded seed
+  protected Long seed = null;
+  
+  // static members
+  private static final Random seedRnd = new Random();
 }

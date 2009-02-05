@@ -152,7 +152,7 @@ public class TestBoolean2 extends LuceneTestCase {
   }
 
   public void testRandomQueries() throws Exception {
-    Random rnd = new Random(0);
+    Random rnd = newRandom();
 
     String[] vals = {"w1","w2","w3","w4","w5","xx","yy","zzz"};
 
@@ -163,7 +163,7 @@ public class TestBoolean2 extends LuceneTestCase {
       // increase number of iterations for more complete testing
       for (int i=0; i<1000; i++) {
         int level = rnd.nextInt(3);
-        BooleanQuery q1 = randBoolQuery(new Random(i), level, field, vals, null);
+        BooleanQuery q1 = randBoolQuery(new Random(rnd.nextLong()), level, field, vals, null);
 
         // Can't sort by relevance since floating point numbers may not quite
         // match up.

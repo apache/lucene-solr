@@ -29,7 +29,7 @@ import java.io.IOException;
 
 public class TestAtomicUpdate extends LuceneTestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
-  private static final Random RANDOM = new Random();
+  private Random RANDOM;
 
   public class MockIndexWriter extends IndexWriter {
 
@@ -179,7 +179,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     FSDirectory.
   */
   public void testAtomicUpdates() throws Exception {
-
+    RANDOM = newRandom();
     Directory directory;
 
     // First in a RAM directory:

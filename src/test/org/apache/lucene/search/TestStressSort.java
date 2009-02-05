@@ -35,7 +35,7 @@ public class TestStressSort extends LuceneTestCase {
   // NOTE: put seed in here to make failures
   // deterministic, but do not commit with a seed (to
   // better test):
-  private final Random r = new Random();
+  private Random r;
   private Directory dir, dir2, dir3;
   private IndexSearcher searcherMultiSegment;
   private IndexSearcher searcherFewSegment;
@@ -67,7 +67,6 @@ public class TestStressSort extends LuceneTestCase {
     // NOTE: put seed in here to make failures
     // deterministic, but do not commit with a seed (to
     // better test):
-    final Random r = new Random();
     dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(17);
@@ -180,6 +179,7 @@ public class TestStressSort extends LuceneTestCase {
   }
 
   public void testSort() throws Throwable {
+    r = newRandom();
 
     // reverse & not
     // all types

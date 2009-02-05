@@ -32,7 +32,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     public static final boolean F = false;
     public static final boolean T = true;
     
-    Random rand = new Random(101); // use a set seed to test is deterministic
+    protected Random rand;
 
     /** 
      * Collation interacts badly with hyphens -- collation produces different
@@ -83,10 +83,12 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
     public BaseTestRangeFilter(String name) {
 	super(name);
+        rand = newRandom();
         build(signedIndex);
         build(unsignedIndex);
     }
     public BaseTestRangeFilter() {
+        rand = newRandom();
         build(signedIndex);
         build(unsignedIndex);
     }

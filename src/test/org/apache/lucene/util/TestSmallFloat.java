@@ -16,7 +16,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
 import java.util.Random;
 
 /**
@@ -74,7 +73,7 @@ public class TestSmallFloat extends LuceneTestCase {
   }
 
   public void testFloatToByte() {
-    Random rand = new Random(0);
+    Random rand = newRandom();
     // up iterations for more exhaustive test after changing something
     for (int i=0; i<100000; i++) {
       float f = Float.intBitsToFloat(rand.nextInt());

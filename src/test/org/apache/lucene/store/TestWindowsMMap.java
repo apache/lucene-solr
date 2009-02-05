@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.FSDirectory;
 
 public class TestWindowsMMap extends LuceneTestCase {
 	
@@ -37,7 +36,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 	
 	public void setUp() throws Exception {
 		super.setUp();
-		random = new Random();
+		random = newRandom();
 		System.setProperty("org.apache.lucene.FSDirectory.class", "org.apache.lucene.store.MMapDirectory");
 	}
 	

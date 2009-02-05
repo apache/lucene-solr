@@ -47,6 +47,7 @@ public class TestPayloads extends LuceneTestCase {
     
     // Simple tests to test the Payload class
     public void testPayload() throws Exception {
+        rnd = newRandom();
         byte[] testData = "This is a test!".getBytes();
         Payload payload = new Payload(testData);
         assertEquals("Wrong payload length.", testData.length, payload.length());
@@ -95,6 +96,7 @@ public class TestPayloads extends LuceneTestCase {
     // Tests whether the DocumentWriter and SegmentMerger correctly enable the
     // payload bit in the FieldInfo
     public void testPayloadFieldBit() throws Exception {
+        rnd = newRandom();
         Directory ram = new RAMDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
@@ -151,6 +153,7 @@ public class TestPayloads extends LuceneTestCase {
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
     public void testPayloadsEncoding() throws Exception {
+        rnd = newRandom();
         // first perform the test using a RAMDirectory
         Directory dir = new RAMDirectory();
         performTest(dir);
@@ -333,13 +336,13 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
-    private static Random rnd = new Random();
+    private Random rnd;
     
-    private static void generateRandomData(byte[] data) {
+    private void generateRandomData(byte[] data) {
         rnd.nextBytes(data);
     }
 
-    private static byte[] generateRandomData(int n) {
+    private byte[] generateRandomData(int n) {
         byte[] data = new byte[n];
         generateRandomData(data);
         return data;
@@ -473,6 +476,7 @@ public class TestPayloads extends LuceneTestCase {
     }
     
     public void testThreadSafety() throws IOException {
+        rnd = newRandom();
         final int numThreads = 5;
         final int numDocs = 50;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
@@ -525,7 +529,7 @@ public class TestPayloads extends LuceneTestCase {
         assertEquals(pool.size(), numThreads);
     }
     
-    private static class PoolingPayloadTokenStream extends TokenStream {
+    private class PoolingPayloadTokenStream extends TokenStream {
         private byte[] payload;
         private boolean first;
         private ByteArrayPool pool;

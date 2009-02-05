@@ -157,7 +157,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     public void testSetBufferSize() throws IOException {
       File indexDir = new File(System.getProperty("tempDir"), "testSetBufferSize");
-      MockFSDirectory dir = new MockFSDirectory(indexDir);
+      MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
       try {
         IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setUseCompoundFile(false);
@@ -205,11 +205,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       List allIndexInputs = new ArrayList();
 
-      Random rand = new Random(788);
+      Random rand;
 
       private Directory dir;
 
-      public MockFSDirectory(File path) throws IOException {
+      public MockFSDirectory(File path, Random rand) throws IOException {
+        this.rand = rand;
         lockFactory = new NoLockFactory();
         dir = FSDirectory.getDirectory(path);
       }

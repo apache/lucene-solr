@@ -1411,7 +1411,7 @@ public class TestIndexWriter extends LuceneTestCase
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setRAMBufferSizeMB(0.5);
-      Random rand = new Random(31415);
+      Random rand = newRandom();
       for(int i=0;i<3;i++) {
         // First, docs where every term is unique (heavy on
         // Posting instances)
@@ -3442,7 +3442,7 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
-  Random r = new Random();
+  Random r;
 
   private int nextInt(int lim) {
     return r.nextInt(lim);
@@ -3498,6 +3498,7 @@ public class TestIndexWriter extends LuceneTestCase
 
   // LUCENE-510
   public void testRandomUnicodeStrings() throws Throwable {
+    r = newRandom();
 
     char[] buffer = new char[20];
     char[] expected = new char[20];
@@ -3525,6 +3526,7 @@ public class TestIndexWriter extends LuceneTestCase
 
   // LUCENE-510
   public void testIncrementalUnicodeStrings() throws Throwable {
+    r = newRandom();
     char[] buffer = new char[20];
     char[] expected = new char[20];
 

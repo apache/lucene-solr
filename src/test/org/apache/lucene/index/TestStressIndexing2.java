@@ -36,7 +36,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int maxBufferedDocs=3;
   static int seed=0;
 
-  static Random r = new Random(0);
+  Random r;
 
   public class MockIndexWriter extends IndexWriter {
 
@@ -53,6 +53,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
 
   public void testRandom() throws Throwable {
+    r = newRandom();
     Directory dir1 = new MockRAMDirectory();
     // dir1 = FSDirectory.getDirectory("foofoofoo");
     Directory dir2 = new MockRAMDirectory();
@@ -69,6 +70,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   public void testMultiConfig() throws Throwable {
     // test lots of smaller different params together
+    r = newRandom();
     for (int i=0; i<100; i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       autoCommit=r.nextBoolean();

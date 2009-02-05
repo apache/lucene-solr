@@ -52,7 +52,7 @@ public class TestByteSlices extends LuceneTestCase {
     int[] uptos = new int[NUM_STREAM];
     int[] counters = new int[NUM_STREAM];
 
-    Random r = new Random(1);
+    Random r = newRandom();
 
     ByteSliceReader reader = new ByteSliceReader();
 

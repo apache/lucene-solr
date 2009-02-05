@@ -36,11 +36,10 @@ public class TestTrieRangeQuery extends LuceneTestCase
 {
   private static final long distance=66666;
   
-  private static Random rnd=new Random();
-  private static RAMDirectory directory;
-  private static IndexSearcher searcher;
+  private static final RAMDirectory directory;
+  private static final IndexSearcher searcher;
   static {
-    try {
+    try {    
       directory = new RAMDirectory();
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
       true, MaxFieldLength.UNLIMITED);
@@ -136,6 +135,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
   }
   
   private void testRandomTrieAndClassicRangeQuery(final TrieUtils variant) throws Exception {
+    final Random rnd=newRandom();
     String field="field"+variant.TRIE_BITS;
     // 50 random tests, the tests may also return 0 results, if min>max, but this is ok
     for (int i=0; i<50; i++) {
@@ -185,6 +185,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
   }
   
   private void testRangeSplit(final TrieUtils variant) throws Exception {
+    final Random rnd=newRandom();
     String field="ascfield"+variant.TRIE_BITS;
     // 50 random tests
     for (int i=0; i<50; i++) {
@@ -225,6 +226,7 @@ public class TestTrieRangeQuery extends LuceneTestCase
   }
   
   private void testSorting(final TrieUtils variant) throws Exception {
+    final Random rnd=newRandom();
     String field="field"+variant.TRIE_BITS;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents

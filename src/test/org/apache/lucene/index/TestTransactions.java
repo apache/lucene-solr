@@ -26,7 +26,7 @@ import org.apache.lucene.document.*;
 
 public class TestTransactions extends LuceneTestCase
 {
-  private static final Random RANDOM = new Random();
+  private Random RANDOM;
   private static volatile boolean doFail;
 
   private class RandomFailure extends MockRAMDirectory.Failure {
@@ -68,7 +68,7 @@ public class TestTransactions extends LuceneTestCase
     }
   }
 
-  private static class IndexerThread extends TimedThread {
+  private class IndexerThread extends TimedThread {
     Directory dir1;
     Directory dir2;
     Object lock;
@@ -183,6 +183,7 @@ public class TestTransactions extends LuceneTestCase
   }
 
   public void testTransactions() throws Throwable {
+    RANDOM = newRandom();
     MockRAMDirectory dir1 = new MockRAMDirectory();
     MockRAMDirectory dir2 = new MockRAMDirectory();
     dir1.setPreventDoubleWrite(false);

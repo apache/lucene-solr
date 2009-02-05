@@ -296,7 +296,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
 
     public void testRandomQueries() throws Exception {
-      final Random rnd = new Random(0);
+      final Random rnd = newRandom();
 
       String field="data";
       String[] vals = {"1","2","3","4","5","6","A","Z","B","Y","Z","X","foo"};
@@ -319,9 +319,10 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
       // increase number of iterations for more complete testing      
       for (int i=0; i<1000; i++) {
         int lev = rnd.nextInt(maxLev);
-        BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(i), lev, field, vals, null);
-        // BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(i), lev, field, vals, minNrCB);
-        BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(i), lev, field, vals, null);
+        final long seed = rnd.nextLong();
+        BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, null);
+        // BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, minNrCB);
+        BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, null);
         // only set minimumNumberShouldMatch on the top level query since setting
         // at a lower level can change the score.
         minNrCB.postCreate(q2);
