@@ -239,6 +239,8 @@ Bug Fixes
 27. SOLR-991: Better error message when parsing solrconfig.xml fails due to malformed XML. Error message notes the name
     of the file being parsed. (Michael Henson via shalin)
 
+28. SOLR-1008: Fix stats.jsp XML encoding for <stat> item entries with ampersands in their names.  (ehatcher)
+
 
 Other Changes
 ----------------------

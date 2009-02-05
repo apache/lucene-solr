@@ -70,7 +70,7 @@ for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
 <%
       for (int i = 0; i < nl.size() ; i++) {
 %>
-        <stat name="<%= nl.getName(i) %>" >
+        <stat name="<%XML.escapeCharData(nl.getName(i), out);  %>" >
           <%= nl.getVal(i).toString() %>
         </stat>
 <%
