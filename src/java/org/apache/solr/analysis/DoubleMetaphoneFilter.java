@@ -45,7 +45,7 @@ public class DoubleMetaphoneFilter extends TokenFilter {
     }
 
     Token t = input.next(in);
-    if (t != null) {
+    if (t != null && t.termLength() > 0) {
       if (inject) {
         remainingTokens.addLast(t);
       }
