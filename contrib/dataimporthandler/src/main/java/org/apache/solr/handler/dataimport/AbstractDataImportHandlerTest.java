@@ -81,6 +81,7 @@ public abstract class AbstractDataImportHandlerTest extends
                                    VariableResolverImpl resolver, DataSource parentDataSource,
                                    int currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
+    if (resolver == null) resolver = new VariableResolverImpl();
     final Context delegate = new ContextImpl(parentEntity, resolver,
             parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);
