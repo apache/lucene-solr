@@ -55,6 +55,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
+  // socket timeout measured in ms, closes a socket if read
+  // takes longer than x ms to complete. throws
+  // java.net.SocketTimeoutException: Read timed out exception
+  static final String INIT_SO_TIMEOUT = "shard-socket-timeout";
+
+  // connection timeout measures in ms, closes a socket if connection
+  // cannot be established within x ms. with a
+  // java.net.SocketTimeoutException: Connection timed out
+  static final String INIT_CONNECTION_TIMEOUT = "shard-connection-timeout";
+  static int soTimeout = 0; //current default values
+  static int connectionTimeout = 0; //current default values
+
   protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
   protected List<SearchComponent> components = null;
@@ -123,6 +135,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     if (makeDebugLast == true && dbgCmp != null){
       components.add(dbgCmp);
       log.info("Adding  debug component:" + dbgCmp);
+    }
+
+    Object co = initArgs.get(INIT_CONNECTION_TIMEOUT);
+    if (co != null) {
+      connectionTimeout = (Integer) co;
+      log.info("Setting shard-connection-timeout to: " + connectionTimeout);
+    }
+
+    Object so = initArgs.get(INIT_SO_TIMEOUT);
+    if (so != null) {
+      soTimeout = (Integer) so;
+      log.info("Setting shard-socket-timeout to: " + soTimeout);
     }
   }
 
@@ -334,6 +358,8 @@ class HttpCommComponent {
     MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
     mgr.getParams().setDefaultMaxConnectionsPerHost(20);
     mgr.getParams().setMaxTotalConnections(10000);
+    mgr.getParams().setConnectionTimeout(SearchHandler.connectionTimeout);
+    mgr.getParams().setSoTimeout(SearchHandler.soTimeout);
     // mgr.getParams().setStaleCheckingEnabled(false);
     client = new HttpClient(mgr);    
   }

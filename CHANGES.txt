@@ -150,6 +150,9 @@ New Features
 34. SOLR-943: Make it possible to specify dataDir in solr.xml and accept the dataDir as a request parameter for
     the CoreAdmin create command. (Noble Paul via shalin)
 
+25. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
+    'shard-connection-timeout' parameters in SearchHandler. (Patrick O'Leary via shalin)
+
 
 Optimizations
 ----------------------
