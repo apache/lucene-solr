@@ -27,9 +27,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * Implementations of <code>QueryResponseWriter</code> are used to format responses to query requests.
  *
  * Different <code>QueryResponseWriter</code>s are registered with the <code>SolrCore</code>.
- * One way to register a QueryResponseWriter with the core is thorugh the <code>solrconfig.xml</code> file.
+ * One way to register a QueryResponseWriter with the core is through the <code>solrconfig.xml</code> file.
  * <p>
- * Example <code>solrconfig.xml</code> entry to register a <code>QueryResponseWRiter</code> implementation to
+ * Example <code>solrconfig.xml</code> entry to register a <code>QueryResponseWriter</code> implementation to
  * handle all queries with a writer type of "simple":
  * <p>
  * <code>
