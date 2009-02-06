@@ -103,7 +103,9 @@ public abstract class CoreAdminHandler extends RequestHandlerBase
         if (opts != null)
           dcore.setSchemaName(opts);
 
-        dcore.setCoreProperties(null);
+        opts = params.get(CoreAdminParams.DATA_DIR);
+        if (opts != null)
+          dcore.setDataDir(opts);
 
         SolrCore core = cores.create(dcore);
         cores.register(name, core,false);

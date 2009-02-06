@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import java.util.Properties;
+import java.io.File;
 
 /**
  * A Solr core descriptor
@@ -27,6 +28,7 @@ import java.util.Properties;
 public class CoreDescriptor implements Cloneable {
   protected String name;
   protected String instanceDir;
+  protected String dataDir;
   protected String configName;
   protected String schemaName;
   private final CoreContainer coreContainer;
@@ -52,6 +54,7 @@ public class CoreDescriptor implements Cloneable {
     this.configName = descr.configName;
     this.schemaName = descr.schemaName;
     this.name = descr.name;
+    this.dataDir = descr.dataDir;
     coreContainer = descr.coreContainer;
   }
 
@@ -59,6 +62,7 @@ public class CoreDescriptor implements Cloneable {
     Properties implicitProperties = new Properties(coreContainer.getContainerProperties());
     implicitProperties.setProperty("solr.core.name", name);
     implicitProperties.setProperty("solr.core.instanceDir", instanceDir);
+    implicitProperties.setProperty("solr.core.dataDir", getDataDir());
     implicitProperties.setProperty("solr.core.configName", configName);
     implicitProperties.setProperty("solr.core.schemaName", schemaName);
     return implicitProperties;
@@ -76,9 +80,22 @@ public class CoreDescriptor implements Cloneable {
   
   /**@return the default data directory. */
   public String getDefaultDataDir() {
-    return this.instanceDir + "data/";
+    return this.instanceDir + "data"+File.separator;
   }
- 
+
+  public String getDataDir() {
+    if (dataDir == null) return getDefaultDataDir();
+    String absolutePath = new File(dataDir).getAbsolutePath();
+    if (absolutePath.equals(dataDir) || (absolutePath + File.separator).equals(dataDir)) return dataDir;
+    return dataDir.endsWith(File.separator) ?
+            instanceDir + dataDir :
+            instanceDir + dataDir + File.separator;
+  }
+
+  public void setDataDir(String s) {
+    dataDir = s;
+  }
+
   /**@return the core instance directory. */
   public String getInstanceDir() {
     return instanceDir;

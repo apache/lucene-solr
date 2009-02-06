@@ -491,7 +491,7 @@ public final class SolrCore implements SolrInfoMBean {
       this.setName( name );
       SolrResourceLoader loader = config.getResourceLoader();
       if (dataDir == null)
-        dataDir = config.get("dataDir",loader.getInstanceDir()+"data/");
+        dataDir = config.get("dataDir",cd.getDataDir());
 
       dataDir = SolrResourceLoader.normalizeDir(dataDir);
 

@@ -35,6 +35,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.StrUtils;
@@ -211,6 +212,10 @@ public class CoreContainer
           opt = DOMUtil.getAttr(node, "schema", null);
           if (opt != null) {
             p.setSchemaName(opt);
+          }
+          opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
+          if (opt != null) {
+            p.setDataDir(opt);
           }
 
           p.setCoreProperties(readProperties(cfg, node));
