@@ -37,10 +37,11 @@ public class HTMLStripTransformer extends Transformer {
   @Override
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
+    VariableResolver resolver = context.getVariableResolver();
     List<Map<String, String>> fields = context.getAllEntityFields();
     for (Map<String, String> field : fields) {
       String col = field.get(DataImporter.COLUMN);
-      String splitHTML = field.get(STRIP_HTML);
+      String splitHTML = resolver.replaceTokens(field.get(STRIP_HTML));
       if (!TRUE.equals(splitHTML))
         continue;
       Object tmpVal = row.get(col);

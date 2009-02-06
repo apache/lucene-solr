@@ -45,12 +45,16 @@ public class RegexTransformer extends Transformer {
   @SuppressWarnings("unchecked")
   public Map<String, Object> transformRow(Map<String, Object> row,
                                           Context context) {
+    VariableResolver vr = context.getVariableResolver();
     List<Map<String, String>> fields = context.getAllEntityFields();
     for (Map<String, String> field : fields) {
       String col = field.get(DataImporter.COLUMN);
       String reStr = field.get(REGEX);
+      reStr = vr.replaceTokens(reStr);
       String splitBy = field.get(SPLIT_BY);
+      splitBy =  vr.replaceTokens(splitBy);
       String replaceWith = field.get(REPLACE_WITH);
+      replaceWith = vr.replaceTokens(replaceWith);
       if (reStr != null || splitBy != null) {
         String srcColName = field.get(SRC_COL_NAME);
         if (srcColName == null) {

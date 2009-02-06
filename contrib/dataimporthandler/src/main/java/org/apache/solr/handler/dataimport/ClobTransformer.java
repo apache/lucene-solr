@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import static org.apache.solr.handler.dataimport.HTMLStripTransformer.TRUE;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Clob;
@@ -37,7 +39,7 @@ import java.util.Map;
 public class ClobTransformer extends Transformer {
   public Object transformRow(Map<String, Object> aRow, Context context) {
     for (Map<String, String> map : context.getAllEntityFields()) {
-      if (!"true".equals(map.get(CLOB))) continue;
+      if (!TRUE.equals(map.get(CLOB))) continue;
       String column = map.get(DataImporter.COLUMN);
       String srcCol = map.get(RegexTransformer.SRC_COL_NAME);
       if (srcCol == null)

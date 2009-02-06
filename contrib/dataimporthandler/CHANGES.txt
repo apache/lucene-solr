@@ -62,6 +62,10 @@ New Features
 14.SOLR-1003: XPathEntityprocessor must allow slurping all text from a given xml node and its children.
               (Noble Paul via shalin)
 
+15.SOLR-1001: Allow variables in various attributes of RegexTransformer, HTMLStripTransformer
+              and NumberFormatTransformer.
+              (Fergus McMenemie, Noble Paul, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
