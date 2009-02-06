@@ -174,4 +174,9 @@ public class ContextImpl extends Context {
   public SolrCore getSolrCore() {
     return dataImporter == null ? null : dataImporter.getCore();
   }
+
+
+  public Map<String, Object> getStats() {
+    return docBuilder != null ? docBuilder.importStatistics.getStatsSnapshot() : Collections.<String, Object>emptyMap();
+  }
 }

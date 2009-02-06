@@ -66,6 +66,9 @@ New Features
               and NumberFormatTransformer.
               (Fergus McMenemie, Noble Paul, shalin)
 
+16.SOLR-989:  Expose running statistics from the Context API.
+              (Noble Paul, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

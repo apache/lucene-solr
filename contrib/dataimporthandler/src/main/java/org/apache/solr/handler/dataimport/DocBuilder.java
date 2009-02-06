@@ -637,9 +637,9 @@ public class DocBuilder {
   }
 
   public static class Statistics {
-    public AtomicInteger docCount = new AtomicInteger();
+    public AtomicLong docCount = new AtomicLong();
 
-    public AtomicInteger deletedDocCount = new AtomicInteger();
+    public AtomicLong deletedDocCount = new AtomicLong();
 
     public AtomicLong rowsCount = new AtomicLong();
 
@@ -655,6 +655,17 @@ public class DocBuilder {
 
       return this;
     }
+
+    public Map<String, Object> getStatsSnapshot() {
+      Map<String, Object> result = new HashMap<String, Object>();
+      result.put("docCount",docCount.get());
+      result.put("deletedDocCount",deletedDocCount.get());
+      result.put("rowCount",rowsCount.get());
+      result.put("queryCount",rowsCount.get());
+      result.put("skipDocCount",skipDocCount.get());
+      return result;
+    }
+
   }
 
   private void cleanByQuery(String delQuery, AtomicBoolean completeCleanDone) {

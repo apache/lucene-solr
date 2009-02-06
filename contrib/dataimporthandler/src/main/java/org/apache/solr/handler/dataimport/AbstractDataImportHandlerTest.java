@@ -139,6 +139,10 @@ public abstract class AbstractDataImportHandlerTest extends
       public SolrCore getSolrCore() {
         return delegate.getSolrCore();
       }
+
+      public Map<String, Object> getStats() {
+        return delegate.getStats();
+      }
     };
   }
 
