@@ -42,6 +42,9 @@ import java.net.URL;
  */
 public class TestReplicationHandler extends TestCase {
 
+  private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
+  private static final String SLAVE_CONFIG = CONF_DIR + "solrconfig-slave.xml";
+
   JettySolrRunner masterJetty, slaveJetty;
   SolrServer masterClient, slaveClient;
   SolrInstance master = null, slave = null;
@@ -49,36 +52,30 @@ public class TestReplicationHandler extends TestCase {
   String context = "/solr";
 
   public void setUp() throws Exception {
-    master = new SolrInstance("master", 1);
-    slave = new SolrInstance("slave", 0);
+    master = new SolrInstance("master", null);
     master.setUp();
-    slave.setUp();
-
-    masterJetty = createJetty(master, 9999);
+    masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    slaveJetty = createJetty(slave, 0);
+    slave = new SolrInstance("slave", masterJetty.getLocalPort());
+    slave.setUp();
+    slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
-
   }
 
   @Override
   public void tearDown() throws Exception {
-    destroyServers();
+    masterJetty.stop();
+    slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
   }
 
-  private void destroyServers() throws Exception {
-    masterJetty.stop();
-    slaveJetty.stop();
-  }
-
-  private JettySolrRunner createJetty(SolrInstance instance, int port) throws Exception {
+  private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.solr.home", instance.getHomeDir());
     System.setProperty("solr.data.dir", instance.getDataDir());
 
-    JettySolrRunner jetty = new JettySolrRunner("/solr", port);
+    JettySolrRunner jetty = new JettySolrRunner("/solr", 0);
 
     jetty.start();
     return jetty;
@@ -147,15 +144,18 @@ public class TestReplicationHandler extends TestCase {
     masterClient.commit();
 
     //change the schema on master
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "schema-replication2.xml"),
-            new File(master.getConfDir(), "schema.xml"));
+    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master, 9999);
+    masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //add a doc with new field and commit on master to trigger snappull from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
@@ -199,27 +199,24 @@ public class TestReplicationHandler extends TestCase {
     masterClient.commit();
 
     //change solrconfig on master
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "solrconfig-master1.xml"),
-            new File(master.getConfDir(), "solrconfig.xml"));
+    copyFile(new File(CONF_DIR + "solrconfig-master1.xml"), new File(master.getConfDir(), "solrconfig.xml"));
 
     //change schema on master
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "schema-replication2.xml"),
-            new File(master.getConfDir(), "schema.xml"));
+    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema.xml"));
 
     //keep a copy of the new schema
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "schema-replication2.xml"),
-            new File(master.getConfDir(), "schema-replication2.xml"));
+    copyFile(new File(CONF_DIR + "schema-replication2.xml"), new File(master.getConfDir(), "schema-replication2.xml"));
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master, 9999);
+    masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+
+    slaveJetty.stop();
+    slaveJetty = createJetty(slave);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //add a doc with new field and commit on master to trigger snappull from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
@@ -290,12 +287,9 @@ public class TestReplicationHandler extends TestCase {
   public void testSnapPullWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "solrconfig-slave1.xml"),
-            new File(slave.getConfDir(), "solrconfig.xml"));
+    copyFile(new File(CONF_DIR + "solrconfig-slave1.xml"), new File(slave.getConfDir(), "solrconfig.xml"));
     slaveJetty.stop();
-    slaveJetty = createJetty(slave, 0);
+    slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //add 500 docs to master
@@ -327,11 +321,11 @@ public class TestReplicationHandler extends TestCase {
     String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
   }
-  
-  public void testReplicateAfterStartup() throws Exception{
+
+  public void testReplicateAfterStartup() throws Exception {
     //stop slave
     slaveJetty.stop();
-    
+
     //add 500 docs to master
     for (int i = 0; i < 500; i++)
       index(masterClient, "id", i, "name", "name = " + i);
@@ -343,18 +337,18 @@ public class TestReplicationHandler extends TestCase {
     assertEquals(500, masterQueryResult.getNumFound());
 
     //change solrconfig having 'replicateAfter startup' option on master
-    copyFile(new File("." + File.separator +
-            "solr" + File.separator +
-            "conf" + File.separator + "solrconfig-master2.xml"),
+    copyFile(new File(CONF_DIR + "solrconfig-master2.xml"),
             new File(master.getConfDir(), "solrconfig.xml"));
 
     masterJetty.stop();
 
-    masterJetty = createJetty(master, 9999);
+    masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
+    copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
+
     //start slave
-    slaveJetty = createJetty(slave, 0);
+    slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     //sleep for pollinterval time 3s, to let slave pull data.
@@ -367,17 +361,27 @@ public class TestReplicationHandler extends TestCase {
     //compare results
     String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
-    
+
   }
 
+  /* character copy of file using UTF-8 */
   void copyFile(File src, File dst) throws IOException {
-    InputStream in = new FileInputStream(src);
-    OutputStream out = new FileOutputStream(dst);
+    copyFile(src, dst, null);
+  }
 
-    byte[] buf = new byte[1024];
-    int len;
-    while ((len = in.read(buf)) > 0)
-      out.write(buf, 0, len);
+  /**
+   * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
+   */
+  private void copyFile(File src, File dst, Integer port) throws IOException {
+    BufferedReader in = new BufferedReader(new FileReader(src));
+    Writer out = new FileWriter(dst);
+
+    for (String line = in.readLine(); null != line; line = in.readLine()) {
+
+      if (null != port)
+        line = line.replace("TEST_PORT", port.toString());
+      out.write(line);
+    }
     in.close();
     out.close();
   }
@@ -385,13 +389,17 @@ public class TestReplicationHandler extends TestCase {
   private class SolrInstance extends AbstractSolrTestCase {
 
     String name;
-    int type;
+    Integer masterPort;
     File homeDir;
     File confDir;
 
-    public SolrInstance(String name, int type) {
+    /**
+     * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
+     * on localhost at the specified port.
+     */
+    public SolrInstance(String name, Integer port) {
       this.name = name;
-      this.type = type;
+      this.masterPort = port;
     }
 
     public String getHomeDir() {
@@ -400,7 +408,7 @@ public class TestReplicationHandler extends TestCase {
 
     @Override
     public String getSchemaFile() {
-      return "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-replication1.xml";
+      return CONF_DIR + "schema-replication1.xml";
     }
 
     public String getConfDir() {
@@ -414,11 +422,10 @@ public class TestReplicationHandler extends TestCase {
     @Override
     public String getSolrConfigFile() {
       String fname = "";
-      if (type == 1)
-        fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-master.xml";
-      if (type == 0)
-        fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-slave.xml";
-      System.out.println(fname);
+      if (null == masterPort)
+        fname = CONF_DIR + "solrconfig-master.xml";
+      else
+        fname = SLAVE_CONFIG;
       return fname;
     }
 
@@ -430,12 +437,11 @@ public class TestReplicationHandler extends TestCase {
               + File.separator
               + getClass().getName() + "-" + System.currentTimeMillis();
 
-      if (type == 1) {
+      if (null == masterPort) {
         homeDir = new File(home + "master");
         dataDir = new File(home + "master", "data");
         confDir = new File(home + "master", "conf");
-      }
-      if (type == 0) {
+      } else {
         homeDir = new File(home + "slave");
         dataDir = new File(home + "slave", "data");
         confDir = new File(home + "slave", "conf");
@@ -446,7 +452,7 @@ public class TestReplicationHandler extends TestCase {
       confDir.mkdirs();
 
       File f = new File(confDir, "solrconfig.xml");
-      copyFile(new File(getSolrConfigFile()), f);
+      copyFile(new File(getSolrConfigFile()), f, masterPort);
       f = new File(confDir, "schema.xml");
       copyFile(new File(getSchemaFile()), f);
     }

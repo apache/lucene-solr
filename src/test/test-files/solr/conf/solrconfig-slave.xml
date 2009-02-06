@@ -60,29 +60,20 @@
 
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
-    <lst name="defaults">
-      <int name="rows">4</int>
-      <bool name="hl">true</bool>
-      <str name="hl.fl">text,name,subject,title,whitetok</str>
-    </lst>
+
   </requestHandler>
 
   <!-- test query parameter defaults -->
   <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
-    <lst name="defaults">
-      <int name="rows">4</int>
-      <bool name="hl">true</bool>
-      <str name="hl.fl">text,name,subject,title,whitetok</str>
-    </lst>
   </requestHandler>
 
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="slave">
-      <str name="masterUrl">http://localhost:9999/solr/replication</str>
-      <str name="pollInterval">00:00:01</str>
-    </lst>
+	<lst name="slave">
+		<str name="masterUrl">http://localhost:TEST_PORT/solr/replication</str>
+		<str name="pollInterval">00:00:01</str>
+	</lst>
   </requestHandler>
 
 
