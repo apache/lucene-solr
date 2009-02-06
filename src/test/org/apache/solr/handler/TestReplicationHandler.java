@@ -131,7 +131,7 @@ public class TestReplicationHandler extends TestCase {
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
-    //sleep for pollinterval time 4s, to let slave pull data.
+    //sleep for pollinterval time 3s, to let slave pull data.
     Thread.sleep(3000);
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
@@ -161,7 +161,7 @@ public class TestReplicationHandler extends TestCase {
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
 
-    //sleep for 4s for replication to happen.
+    //sleep for 3s for replication to happen.
     Thread.sleep(3000);
 
     slaveQueryRsp = query("*:*", slaveClient);
@@ -326,6 +326,48 @@ public class TestReplicationHandler extends TestCase {
     //compare results
     String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
     assertEquals(null, cmp);
+  }
+  
+  public void testReplicateAfterStartup() throws Exception{
+    //stop slave
+    slaveJetty.stop();
+    
+    //add 500 docs to master
+    for (int i = 0; i < 500; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
+
+    //change solrconfig having 'replicateAfter startup' option on master
+    copyFile(new File("." + File.separator +
+            "solr" + File.separator +
+            "conf" + File.separator + "solrconfig-master2.xml"),
+            new File(master.getConfDir(), "solrconfig.xml"));
+
+    masterJetty.stop();
+
+    masterJetty = createJetty(master, 9999);
+    masterClient = createNewSolrServer(masterJetty.getLocalPort());
+
+    //start slave
+    slaveJetty = createJetty(slave, 0);
+    slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
+
+    //sleep for pollinterval time 3s, to let slave pull data.
+    Thread.sleep(3000);
+    //get docs from slave and check if number is equal to master
+    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(500, slaveQueryResult.getNumFound());
+
+    //compare results
+    String cmp = TestDistributedSearch.compare(masterQueryResult, slaveQueryResult, 0, null);
+    assertEquals(null, cmp);
+    
   }
 
   void copyFile(File src, File dst) throws IOException {
