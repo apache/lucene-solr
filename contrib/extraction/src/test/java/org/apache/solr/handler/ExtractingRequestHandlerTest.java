@@ -38,6 +38,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
             "ext.def.fl", "extractedContent",
+           "ext.literal.id", "one",
             "ext.map.Last-Modified", "extractedDate"
     );
     assertQ(req("title:solr-word"), "//*[@numFound='0']");
@@ -48,6 +49,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
             "ext.map.language", "extractedLanguage",
+            "ext.literal.id", "two",
             "ext.def.fl", "extractedContent",
             "ext.map.Last-Modified", "extractedDate"
     );
@@ -58,6 +60,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     loadLocal("version_control.xml", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
+            "ext.literal.id", "three",
             "ext.def.fl", "extractedContent",
             "ext.map.Last-Modified", "extractedDate"
     );
@@ -77,6 +80,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
             "ext.def.fl", "extractedContent",
+            "ext.literal.id", "one",
             "ext.literal.extractionLiteralMV", "one",
             "ext.literal.extractionLiteralMV", "two",
             "ext.map.Last-Modified", "extractedDate"
@@ -94,6 +98,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
               "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
               "ext.map.Author", "extractedAuthor",
               "ext.def.fl", "extractedContent",
+              "ext.literal.id", "two",
               "ext.literal.extractionLiteral", "one",
               "ext.literal.extractionLiteral", "two",
               "ext.map.Last-Modified", "extractedDate"
@@ -107,6 +112,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
             "ext.def.fl", "extractedContent",
+            "ext.literal.id", "three",
             "ext.literal.extractionLiteral", "one",
             "ext.map.Last-Modified", "extractedDate"
     );
@@ -124,6 +130,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     loadLocal("version_control.txt", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
+            "ext.literal.id", "one",
             "ext.map.language", "extractedLanguage",
             "ext.def.fl", "extractedContent",
             ExtractingParams.STREAM_TYPE, "text/plain"
@@ -141,6 +148,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     loadLocal("version_control.txt", "ext.map.created", "extractedDate", "ext.map.producer", "extractedProducer",
             "ext.map.creator", "extractedCreator", "ext.map.Keywords", "extractedKeywords",
             "ext.map.Author", "extractedAuthor",
+            "ext.literal.id", "one",
             "ext.map.language", "extractedLanguage",
             "ext.def.fl", "extractedContent",
             ExtractingParams.RESOURCE_NAME, "version_control.txt"

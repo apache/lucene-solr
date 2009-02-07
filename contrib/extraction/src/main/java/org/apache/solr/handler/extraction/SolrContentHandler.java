@@ -180,57 +180,12 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         }
       }
     }
-    //make sure we have a unique id, if one is needed
-    SchemaField uniqueField = schema.getUniqueKeyField();
-    if (uniqueField != null) {
-      String uniqueFieldName = uniqueField.getName();
-      SolrInputField uniqFld = document.getField(uniqueFieldName);
-      if (uniqFld == null) {
-        String uniqId = generateId(uniqueField);
-        if (uniqId != null) {
-          document.addField(uniqueFieldName, uniqId);
-        }
-      }
-    }
     if (log.isDebugEnabled()) {
       log.debug("Doc: " + document);
     }
     return document;
   }
 
-  /**
-   * Generate an ID for the document.  First try to get
-   * {@link ExtractingMetadataConstants#STREAM_NAME} from the
-   * {@link org.apache.tika.metadata.Metadata}, then try {@link ExtractingMetadataConstants#STREAM_SOURCE_INFO}
-   * then try {@link org.apache.tika.metadata.Metadata#IDENTIFIER}.
-   * If those all are null, then generate a random UUID using {@link java.util.UUID#randomUUID()}.
-   *
-   * @param uniqueField The SchemaField representing the unique field.
-   * @return The id as a string
-   */
-  protected String generateId(SchemaField uniqueField) {
-    //we don't have a unique field specified, so let's add one
-    String uniqId = null;
-    FieldType type = uniqueField.getType();
-    if (type instanceof StrField || type instanceof TextField) {
-      uniqId = metadata.get(ExtractingMetadataConstants.STREAM_NAME);
-      if (uniqId == null) {
-        uniqId = metadata.get(ExtractingMetadataConstants.STREAM_SOURCE_INFO);
-      }
-      if (uniqId == null) {
-        uniqId = metadata.get(Metadata.IDENTIFIER);
-      }
-      if (uniqId == null) {
-        //last chance, just create one
-        uniqId = UUID.randomUUID().toString();
-      }
-    } else if (type instanceof UUIDField) {
-      uniqId = UUID.randomUUID().toString();
-    } else {
-      uniqId = String.valueOf(getNextId());
-    }
-    return uniqId;
-  }
 
 
   @Override

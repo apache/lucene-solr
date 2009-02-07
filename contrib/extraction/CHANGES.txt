@@ -23,3 +23,5 @@ $Id:$
 ================== Release 1.4-dev ==================
 
 1. SOLR-284:  Added in support for extraction. (Eric Pugh, Chris Harris, gsingers)
+
+2. SOLR-284: Removed "silent success" key generation (gsingers)
