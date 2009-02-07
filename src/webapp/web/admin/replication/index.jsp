@@ -333,7 +333,7 @@
   <td><strong>Cores:</strong><br></td>
   <td><%
     for (String name : names) {
-  %>[<a href="../../<%=name%>/admin/"><%=name%>
+  %>[<a href="../../../<%=name%>/admin/index.jsp"><%=name%>
   </a>]<%
     }%></td>
 </tr>
