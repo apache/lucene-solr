@@ -722,7 +722,8 @@ class SegmentReader extends DirectoryIndexReader {
         if (doClone || !fieldNormsChanged[i]) {
           final String curField = fieldInfos.fieldInfo(i).name;
           Norm norm = (Norm) this.norms.get(curField);
-          clone.norms.put(curField, norm.clone());
+          if (norm != null)
+            clone.norms.put(curField, norm.clone());
         }
       }
       
