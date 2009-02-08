@@ -231,6 +231,8 @@ class XMLLoader extends ContentStreamLoader {
                     "unexpected XML tag /delete/" + currTag);
           }
           processor.processDelete(deleteCmd);
+          deleteCmd.id = null;
+          deleteCmd.query = null;
           break;
 
           // Add everything to the text

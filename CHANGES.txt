@@ -247,6 +247,13 @@ Bug Fixes
 
 28. SOLR-1008: Fix stats.jsp XML encoding for <stat> item entries with ampersands in their names.  (ehatcher)
 
+29. SOLR-976: deleteByQuery is ignored when deleteById is placed prior to deleteByQuery in a <delete>.
+    Now both delete by id and delete by query can be specified at the same time as follows. (koji)
+      <delete>
+        <id>05991</id><id>06000</id>
+        <query>office:Bridgewater</query><query>office:Osaka</query>
+      </delete>
+
 
 Other Changes
 ----------------------
