@@ -18,6 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -108,53 +109,40 @@ public class ValueSourceQuery extends Query {
    * be used. (assuming field is indexed for this doc, with a single token.)   
    */
   private class ValueSourceScorer extends Scorer {
-    private final IndexReader reader;
     private final ValueSourceWeight weight;
-    private final int maxDoc;
     private final float qWeight;
-    private int doc=-1;
     private final DocValues vals;
+    private final TermDocs termDocs;
 
     // constructor
     private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
-      this.reader = reader;
-      this.maxDoc = reader.maxDoc();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);
+      termDocs = reader.termDocs(null);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#next() */
     public boolean next() throws IOException {
-      for(;;) {
-        ++doc;
-        if (doc>=maxDoc) {
-          return false;
-        }
-        if (reader.isDeleted(doc)) {
-          continue;
-        }
-        return true;
-      }
+      return termDocs.next();
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#doc()
      */
     public int doc() {
-      return doc;
+      return termDocs.doc();
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     public float score() throws IOException {
-      return qWeight * vals.floatVal(doc);
+      return qWeight * vals.floatVal(termDocs.doc());
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#skipTo(int) */
     public boolean skipTo(int target) throws IOException {
-      doc=target-1;
-      return next();
+      return termDocs.skipTo(target);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#explain(int) */
