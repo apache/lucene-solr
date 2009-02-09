@@ -114,8 +114,8 @@ public class SolrRequestParsers
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
     SolrQueryRequest sreq = buildRequestFrom( core, params, streams );
 
-    // Handlers and loggin will want to know the path. If it contains a ':' 
-    // the handler could use it for RESTfull URLs
+    // Handlers and login will want to know the path. If it contains a ':'
+    // the handler could use it for RESTful URLs
     sreq.getContext().put( "path", path );
     return sreq;
   }
