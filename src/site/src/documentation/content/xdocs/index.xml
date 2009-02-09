@@ -39,7 +39,28 @@
 
     <section id="news">
       <title>News</title>
+<section>
+    <title>09 February 2009 - Lucene at ApacheCon Europe 2009 in Amsterdam</title>
+    <p>
+               <a title="ApacheCon EU 2009" href="http://www.eu.apachecon.com/c/aceu2009/"><img src="http://www.eu.apachecon.com/page_attachments/0000/0115/125x125_basic.gif" class="float-right" alt="ApacheCon EU 2009 Logo" /></a>
 
+	                Lucene will be extremely well represented at 
+	                <a href="http://us.apachecon.com/c/acus2008/">ApacheCon US 2009</a> 
+			         in Amsterdam, Netherlands this March 23-27, 2009:  
+			        </p>
+            <ul>
+	               <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/197">Lucene Boot Camp</a> - A two day training session, March 23 &amp; 24th</li>
+		                <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/201">Solr Boot Camp</a> - A one day training session, March 24th</li>
+				         <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/136">Introducing Apache Mahout</a> - Grant Ingersoll. March 25th @ 10:30</li>
+					          <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/137">Lucene/Solr Case Studies</a> - Erik Hatcher. March 25th @ 11:30</li>
+						  <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/138">Advanced Indexing Techniques with Apache Lucene</a> - Michael Busch. March 25th @ 14:00</li>
+						      <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/251">Apache Solr - A Case Study</a> - Uri Boness. March 26th @ 17:30</li>
+						          <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/250">Best of breed - httpd, forrest, solr and droids</a> - Thorsten Scherler. March 27th @ 17:30</li>
+							      <li><a href="http://eu.apachecon.com/c/aceu2009/sessions/165">Apache Droids - an intelligent standalone robot framework</a> - Thorsten Scherler. March 26th @ 15:00</li>
+
+							              </ul>
+	    
+	    </section>
        <section><title>19 December 2008 - Solr Logo Contest Results</title>
 	<p>Many great logos were submitted, but only one could be chosen.  Congratulations Michiel,
 	the creator of the winning logo that is proudly displayed at the top of this page.  
