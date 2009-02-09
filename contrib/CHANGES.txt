@@ -31,6 +31,9 @@ New features
     RangeQuery at the expense of added space (additional indexed
     tokens) consumed in the index.  (Uwe Schindler via Mike McCandless)
 
+ 2. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
+
+
 Documentation
 
  (None)

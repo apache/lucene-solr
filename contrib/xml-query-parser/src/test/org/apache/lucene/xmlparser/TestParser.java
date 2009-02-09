@@ -1,9 +1,6 @@
 package org.apache.lucene.xmlparser;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 
 import junit.framework.TestCase;
 
@@ -74,7 +71,7 @@ public class TestParser extends TestCase {
 				line=d.readLine();
 			}			
 			d.close();
-                        writer.close();
+      writer.close();
 		}
 		reader=IndexReader.open(dir);
 		searcher=new IndexSearcher(reader);
@@ -148,7 +145,12 @@ public class TestParser extends TestCase {
 			Query q=parse("TermsFilterQuery.xml");
 			dumpResults("Terms Filter",q, 5);
 	}
-	public void testSpanTermXML() throws Exception
+  public void testBoostingTermQueryXML() throws Exception
+	{
+			Query q=parse("BoostingTermQuery.xml");
+			dumpResults("BoostingTermQuery",q, 5);
+	}
+  public void testSpanTermXML() throws Exception
 	{
 			Query q=parse("SpanQuery.xml");
 			dumpResults("Span Query",q, 5);

@@ -8,22 +8,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.xmlparser.builders.BooleanQueryBuilder;
-import org.apache.lucene.xmlparser.builders.ConstantScoreQueryBuilder;
-import org.apache.lucene.xmlparser.builders.FilteredQueryBuilder;
-import org.apache.lucene.xmlparser.builders.MatchAllDocsQueryBuilder;
-import org.apache.lucene.xmlparser.builders.CachedFilterBuilder;
-import org.apache.lucene.xmlparser.builders.RangeFilterBuilder;
-import org.apache.lucene.xmlparser.builders.SpanFirstBuilder;
-import org.apache.lucene.xmlparser.builders.SpanNearBuilder;
-import org.apache.lucene.xmlparser.builders.SpanNotBuilder;
-import org.apache.lucene.xmlparser.builders.SpanOrBuilder;
-import org.apache.lucene.xmlparser.builders.SpanOrTermsBuilder;
-import org.apache.lucene.xmlparser.builders.SpanQueryBuilderFactory;
-import org.apache.lucene.xmlparser.builders.SpanTermBuilder;
-import org.apache.lucene.xmlparser.builders.TermQueryBuilder;
-import org.apache.lucene.xmlparser.builders.TermsQueryBuilder;
-import org.apache.lucene.xmlparser.builders.UserInputQueryBuilder;
+import org.apache.lucene.xmlparser.builders.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -113,7 +98,11 @@ public class CoreParser implements QueryBuilder
 		sqof.addBuilder("SpanNear",snb);
 		queryFactory.addBuilder("SpanNear",snb);
 
-		SpanTermBuilder snt=new SpanTermBuilder();
+    BoostingTermBuilder btb=new BoostingTermBuilder();
+    sqof.addBuilder("BoostingTermQuery",btb);
+    queryFactory.addBuilder("BoostingTermQuery",btb);        
+
+    SpanTermBuilder snt=new SpanTermBuilder();
 		sqof.addBuilder("SpanTerm",snt);
 		queryFactory.addBuilder("SpanTerm",snt);
 		

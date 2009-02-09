@@ -15,7 +15,8 @@
 				<SpanNear slop="6" inOrder="false">		
 					<SpanTerm>mine</SpanTerm>					
 					<SpanOrTerms>worker workers</SpanOrTerms>
-				</SpanNear>
+          <BoostingTermQuery>heavy</BoostingTermQuery>
+        </SpanNear>
 			</SpanOr>
 	</SpanNear>	
 	<SpanFirst end="10">

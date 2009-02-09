@@ -53,8 +53,8 @@
 -->
 
 <!-- @hidden Define core types of XML elements -->
-<!ENTITY % coreSpanQueries "SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm" >
-<!ENTITY % coreQueries "BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery" >
+<!ENTITY % coreSpanQueries "SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm|BoostingTermQuery" >
+<!ENTITY % coreQueries "BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery|BoostingTermQuery" >
 <!ENTITY % coreFilters "RangeFilter|CachedFilter" >
 
 <!-- @hidden Allow for extensions -->
@@ -183,6 +183,29 @@ Passes content directly through to the standard LuceneQuery parser see "Lucene Q
 <!-- Optional boost for matches on this query. Values > 1 -->
 <!ATTLIST TermQuery boost CDATA "1.0">
 <!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST TermQuery fieldName CDATA #IMPLIED>
+
+
+<!--
+  A boosted term query - no analysis is done of the child text. Also a span member.
+
+  (Text below is copied from the javadocs of BoostingTermQuery)
+   
+  The BoostingTermQuery is very similar to the {@link org.apache.lucene.search.spans.SpanTermQuery} except
+  that it factors in the value of the payload located at each of the positions where the
+  {@link org.apache.lucene.index.Term} occurs.
+
+  In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
+  which returns 1 by default.
+
+  Payload scores are averaged across term occurrences in the document.
+
+  @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
+-->
+<!ELEMENT BoostingTermQuery (#PCDATA)>
+<!-- Optional boost for matches on this query. Values > 1 -->
+<!ATTLIST TermQuery boost CDATA "1.0">
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->
 <!ATTLIST TermQuery fieldName CDATA #IMPLIED>
 
 
