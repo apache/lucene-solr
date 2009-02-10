@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.IndexSchema;
@@ -43,7 +44,7 @@ public class AddUpdateCommand extends UpdateCommand {
    public boolean overwritePending;
    public boolean overwriteCommitted;
    
-   
+   public Term updateTerm;
    public int commitWithin = -1;
    
 

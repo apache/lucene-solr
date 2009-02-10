@@ -432,6 +432,14 @@
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 
-
+  <updateRequestProcessorChain name="dedupe">
+    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
+      <bool name="enabled">false</bool>
+      <bool name="overwriteDupes">true</bool>
+      <str name="fields">v_t,t_field</str>
+      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
 </config>

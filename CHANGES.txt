@@ -153,6 +153,8 @@ New Features
 25. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
     'shard-connection-timeout' parameters in SearchHandler. (Patrick O'Leary via shalin)
 
+26. SOLR-799: Add support for hash based exact/near duplicate document
+    handling. (Mark Miller, yonik)
 
 Optimizations
 ----------------------

@@ -20,9 +20,15 @@
 
 package org.apache.solr.update;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -210,12 +216,28 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
       // this is the only unsynchronized code in the iwAccess block, which
       // should account for most of the time
+			Term updateTerm = null;
 
       if (cmd.overwriteCommitted || cmd.overwritePending) {
         if (cmd.indexedId == null) {
           cmd.indexedId = getIndexedId(cmd.doc);
         }
-        writer.updateDocument(idTerm.createTerm(cmd.indexedId), cmd.getLuceneDocument(schema));
+        Term idTerm = this.idTerm.createTerm(cmd.indexedId);
+        boolean del = false;
+        if (cmd.updateTerm == null) {
+          updateTerm = idTerm;
+        } else {
+          del = true;
+        	updateTerm = cmd.updateTerm;
+        }
+
+        writer.updateDocument(updateTerm, cmd.getLuceneDocument(schema));
+        if(del) { // ensure id remains unique
+          BooleanQuery bq = new BooleanQuery();
+          bq.add(new BooleanClause(new TermQuery(updateTerm), Occur.MUST_NOT));
+          bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
+          writer.deleteDocuments(bq);
+        }
       } else {
         // allow duplicates
         writer.addDocument(cmd.getLuceneDocument(schema));

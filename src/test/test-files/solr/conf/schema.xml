@@ -348,6 +348,7 @@
 
  <fields>
    <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="uuid" type="uuid" stored="true" />
    <field name="name" type="nametext" indexed="true" stored="true"/>
    <field name="text" type="text" indexed="true" stored="false"/>

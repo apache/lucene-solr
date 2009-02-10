@@ -354,7 +354,7 @@
     -->
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048000" />
 
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
@@ -757,6 +757,24 @@
     </lst>
    </formatter>
   </highlighting>
+
+  <!-- An example dedup update processor that creates the "id" field on the fly
+       based on the hash code of some other fields.  This example has overwriteDupes
+       set to false since we are using the id field as the signatureField and Solr
+       will maintain uniqueness based on that anyway. -->
+  <!--
+  <updateRequestProcessorChain name="dedupe">
+    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
+      <bool name="enabled">true</bool>
+      <str name="signatureField">id</str>
+      <bool name="overwriteDupes">false</bool>
+      <str name="fields">name,features,cat</str>
+      <str name="signatureClass">org.apache.solr.update.processor.Lookup3Signature</str>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  -->
 
 
   <!-- queryResponseWriter plugins... query responses will be written using the
