@@ -58,9 +58,13 @@ public class QueryComponent extends SearchComponent
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
   {
+
     SolrQueryRequest req = rb.req;
-    SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+    SolrQueryResponse rsp = rb.rsp;
 
     // Set field flags
     String fl = params.get(CommonParams.FL);
@@ -117,8 +121,11 @@ public class QueryComponent extends SearchComponent
   {
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
-    SolrIndexSearcher searcher = req.getSearcher();
     SolrParams params = req.getParams();
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+    SolrIndexSearcher searcher = req.getSearcher();
 
     if (rb.getQueryCommand().getOffset() < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' parameter cannot be negative");
