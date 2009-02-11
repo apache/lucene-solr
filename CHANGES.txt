@@ -256,6 +256,8 @@ Bug Fixes
         <query>office:Bridgewater</query><query>office:Osaka</query>
       </delete>
 
+30. SOLR-1016: HTTP 503 error changes 500 in SolrCore (koji)
+
 
 Other Changes
 ----------------------

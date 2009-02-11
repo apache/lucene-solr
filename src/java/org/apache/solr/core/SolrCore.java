@@ -1361,9 +1361,17 @@ public final class SolrCore implements SolrInfoMBean {
     // TODO should check that responseHeader has not been replaced by handler
 	NamedList responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
-    responseHeader.add("status",rsp.getException()==null ? 0 : 500);
+    int status = 0;
+    Exception exception = rsp.getException();
+    if( exception != null ){
+      if( exception instanceof SolrException )
+        status = ((SolrException)exception).code();
+      else
+        status = 500;
+    }
+    responseHeader.add("status",status);
     responseHeader.add("QTime",qtime);
-    rsp.getToLog().add("status",rsp.getException()==null ? 0 : 500);
+    rsp.getToLog().add("status",status);
     rsp.getToLog().add("QTime",qtime);
     
     SolrParams params = req.getParams();
