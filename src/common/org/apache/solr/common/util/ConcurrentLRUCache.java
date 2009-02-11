@@ -55,6 +55,10 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
+  public ConcurrentLRUCache(int size, int lowerWatermark) {
+    this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2),
+            (int) Math.ceil(0.75 * size), false, false, null);
+  }
 
   public void setAlive(boolean live) {
     islive = live;
@@ -74,7 +78,6 @@ public class ConcurrentLRUCache<K,V> {
     CacheEntry<K,V> cacheEntry = map.remove(key);
     if (cacheEntry != null) {
       stats.size.decrementAndGet();
-      if(evictionListener != null) evictionListener.evictedEntry(cacheEntry.key , cacheEntry.value);
       return cacheEntry.value;
     }
     return null;
@@ -363,8 +366,41 @@ public class ConcurrentLRUCache<K,V> {
     if(evictionListener != null) evictionListener.evictedEntry(o.key,o.value);
   }
 
+  /**
+   * Returns 'n' number of oldest accessed entries present in this cache.
+   *
+   * This uses a TreeSet to collect the 'n' oldest items ordered by ascending last access time
+   *  and returns a LinkedHashMap containing 'n' or less than 'n' entries.
+   * @param n the number of oldest items needed
+   * @return a LinkedHashMap containing 'n' or less than 'n' entries
+   */
+  public Map<K, V> getOldestAccessedItems(int n) {
+    markAndSweepLock.lock();
+    Map<K, V> result = new LinkedHashMap<K, V>();
+    TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    try {
+      for (Map.Entry<Object, CacheEntry> entry : map.entrySet()) {
+        CacheEntry ce = entry.getValue();
+        ce.lastAccessedCopy = ce.lastAccessed;
+        if (tree.size() < n) {
+          tree.add(ce);
+        } else {
+          if (ce.lastAccessedCopy < tree.first().lastAccessedCopy) {
+            tree.remove(tree.first());
+            tree.add(ce);
+          }
+        }
+      }
+    } finally {
+      markAndSweepLock.unlock();
+    }
+    for (CacheEntry<K, V> e : tree) {
+      result.put(e.key, e.value);
+    }
+    return result;
+  }
 
-  public Map getLatestAccessedItems(long n) {
+  public Map<K,V> getLatestAccessedItems(int n) {
     // we need to grab the lock since we are changing lastAccessedCopy
     markAndSweepLock.lock();
     Map<K,V> result = new LinkedHashMap<K,V>();
@@ -378,7 +414,7 @@ public class ConcurrentLRUCache<K,V> {
         } else {
           if (ce.lastAccessedCopy > tree.last().lastAccessedCopy) {
             tree.remove(tree.last());
-            tree.add(entry.getValue());
+            tree.add(ce);
           }
         }
       }

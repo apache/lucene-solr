@@ -65,6 +65,22 @@ public class TestFastLRUCache extends TestCase {
     assertEquals(102L, nl.get("cumulative_inserts"));
   }
 
+  public void testOldestItems() {
+    ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<Integer, String>(100, 90);
+    for (int i = 0; i < 50; i++) {
+      cache.put(i + 1, "" + (i + 1));
+    }
+    cache.get(1);
+    cache.get(3);
+    Map<Integer, String> m = cache.getOldestAccessedItems(5);
+    //7 6 5 4 2
+    assertNotNull(m.get(7));
+    assertNotNull(m.get(6));
+    assertNotNull(m.get(5));
+    assertNotNull(m.get(4));
+    assertNotNull(m.get(2));
+  }
+
   void doPerfTest(int iter, int cacheSize, int maxKey) {
     long start = System.currentTimeMillis();
 
@@ -87,7 +103,7 @@ public class TestFastLRUCache extends TestCase {
       }
     }
 
-    long end = System.currentTimeMillis();    
+    long end = System.currentTimeMillis();
     System.out.println("time=" + (end-start) + ", minSize="+minSize+",maxSize="+maxSize);
   }
 
@@ -105,7 +121,7 @@ public class TestFastLRUCache extends TestCase {
   int useCache(SolrCache sc, int numGets, int maxKey, int seed) {
     int ret = 0;
     Random r = new Random(seed);
-    
+
     // use like a cache... gets and a put if not found
     for (int i=0; i<numGets; i++) {
       Integer k = r.nextInt(maxKey);
@@ -127,7 +143,7 @@ public class TestFastLRUCache extends TestCase {
     }
   }
 
-  
+
   void cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
     Map l = new HashMap();
     l.put("size", ""+cacheSize);
