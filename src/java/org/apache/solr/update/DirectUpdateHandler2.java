@@ -185,8 +185,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // must only be called when iwCommit lock held
   protected void rollbackWriter() throws IOException {
-    numDocsPending.set(0);
-    if (writer!=null) writer.rollback();
+    try {
+      numDocsPending.set(0);
+      if (writer!=null) writer.rollback();
+    } finally {
+      writer = null;
+    }
   }
 
   public int addDoc(AddUpdateCommand cmd) throws IOException {

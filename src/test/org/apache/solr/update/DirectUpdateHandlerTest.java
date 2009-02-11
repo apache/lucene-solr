@@ -173,7 +173,6 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // rollback "B"
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
     updater.rollback(rbkCmd);
-    updater.commit(cmtCmd);
     
     // search - "B" should not be found.
     Map<String,String> args = new HashMap<String, String>();
@@ -183,6 +182,15 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     assertQ("\"B\" should not be found.", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='A']"
+            );
+
+    // Add a doc after the rollback to make sure we can continue to add/delete documents
+    // after a rollback as normal
+    addSimpleDoc("ZZZ");
+    assertU(commit());
+    assertQ("\"ZZZ\" must be found.", req("q", "id:ZZZ")
+            ,"//*[@numFound='1']"
+            ,"//result/doc[1]/int[@name='id'][.='ZZZ']"
             );
   }
 
@@ -221,7 +229,6 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // rollback "B"
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
     updater.rollback(rbkCmd);
-    updater.commit(cmtCmd);
     
     // search - "B" should be found.
     assertQ("\"B\" should be found.", req
@@ -229,6 +236,15 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
         ,"//result/doc[1]/int[@name='id'][.='A']"
         ,"//result/doc[2]/int[@name='id'][.='B']"
         );
+
+    // Add a doc after the rollback to make sure we can continue to add/delete documents
+    // after a rollback as normal
+    addSimpleDoc("ZZZ");
+    assertU(commit());
+    assertQ("\"ZZZ\" must be found.", req("q", "id:ZZZ")
+            ,"//*[@numFound='1']"
+            ,"//result/doc[1]/int[@name='id'][.='ZZZ']"
+            );
   }
   
   private void addSimpleDoc(String id) throws Exception {
