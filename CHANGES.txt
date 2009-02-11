@@ -297,7 +297,10 @@ Other Changes
 
 16. SOLR-959: Refactored TestReplicationHandler to remove hardcoded port numbers (hossman, Akshay Ukey via shalin)
 
+17. Upgraded to Lucene 2.9-dev r742220 (yonik)
+
 Build
+
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
 

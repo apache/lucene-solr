@@ -67,7 +67,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private long registerTime = 0;
   private long warmupTime = 0;
   private final IndexSearcher searcher;
-  private final IndexReader reader;
+  private final SolrIndexReader reader;
   private final boolean closeReader;
 
   private final int queryResultWindowSize;
@@ -124,16 +124,23 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
-
     log.info("Opening " + this.name);
+
+    // wrap the reader
+    if (!(r instanceof SolrIndexReader)) {
+      reader = new SolrIndexReader(r, null, 0);
+      reader.associateInfo(null);
+    } else {
+      reader = (SolrIndexReader)r;
+    }
+    SolrIndexReader.setSearcher(reader, this);
 
     if (r.directory() instanceof FSDirectory) {
       FSDirectory fsDirectory = (FSDirectory) r.directory();
       indexDir = fsDirectory.getFile().getAbsolutePath();
     }
 
-    reader = r;
-    searcher = new IndexSearcher(r);
+    searcher = new IndexSearcher(reader);
     this.closeReader = closeReader;
     searcher.setSimilarity(schema.getSimilarity());
 
@@ -236,7 +243,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   /** Direct access to the IndexReader used by this searcher */
-  public IndexReader getReader() { return reader; }
+  public SolrIndexReader getReader() { return reader; }
   /** Direct access to the IndexSchema for use with this searcher */
   public IndexSchema getSchema() { return schema; }
   
@@ -1707,7 +1714,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
-    lst.add("readerImpl", reader.getClass().getSimpleName());
+    lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
     lst.add("openedAt", new Date(openTime));

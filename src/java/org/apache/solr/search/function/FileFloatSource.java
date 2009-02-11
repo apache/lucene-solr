@@ -24,6 +24,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.util.VersionedFile;
 
 import java.io.*;
@@ -53,26 +54,37 @@ public class FileFloatSource extends ValueSource {
   }
 
   public DocValues getValues(IndexReader reader) throws IOException {
+    int offset = 0;
+    if (reader instanceof SolrIndexReader) {
+      SolrIndexReader r = (SolrIndexReader)reader;
+      while (r.getParent() != null) {
+        offset += r.getBase();
+        r = r.getParent();
+      }
+      reader = r;
+    }
+    final int off = offset;
+
     final float[] arr = getCachedFloats(reader);
     return new DocValues() {
       public float floatVal(int doc) {
-        return arr[doc];
+        return arr[doc + off];
       }
 
       public int intVal(int doc) {
-        return (int)arr[doc];
+        return (int)arr[doc + off];
       }
 
       public long longVal(int doc) {
-        return (long)arr[doc];
+        return (long)arr[doc + off];
       }
 
       public double doubleVal(int doc) {
-        return (double)arr[doc];
+        return (double)arr[doc + off];
       }
 
       public String strVal(int doc) {
-        return Float.toString(arr[doc]);
+        return Float.toString(arr[doc + off]);
       }
 
       public String toString(int doc) {
