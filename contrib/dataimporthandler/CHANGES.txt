@@ -125,6 +125,10 @@ Bug Fixes
 16.SOLR-1009: Repeated column names result in duplicate values.
               (Fergus McMenemie, Noble Paul via shalin)
 
+17.SOLR-1017: Fix thread-safety issue with last_index_time for concurrent imports in multiple cores due to unsafe usage
+              of SimpleDateFormat by multiple threads.
+              (Ryuuichi Kumai via shalin)
+
 Documentation
 ----------------------
 

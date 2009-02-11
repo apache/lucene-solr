@@ -98,7 +98,7 @@ public class SolrWriter {
 
     try {
       if (result != null)
-        return DataImporter.DATE_TIME_FORMAT.parse(result);
+        return DataImporter.DATE_TIME_FORMAT.get().parse(result);
     } catch (ParseException e) {
       throw new DataImportHandlerException(DataImportHandlerException.WARN,
               "Unable to read last indexed time from: "
@@ -113,8 +113,8 @@ public class SolrWriter {
     Properties props = readIndexerProperties();
 
     try {
-      props.put(SolrWriter.LAST_INDEX_KEY, DataImporter.DATE_TIME_FORMAT
-              .format(date));
+      props.put(SolrWriter.LAST_INDEX_KEY,
+              DataImporter.DATE_TIME_FORMAT.get().format(date));
       String filePath = configDir;
       if (configDir != null && !configDir.endsWith(File.separator))
         filePath += File.separator;

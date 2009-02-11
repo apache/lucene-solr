@@ -111,7 +111,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
       }
     }
     try {
-      return DataImporter.DATE_TIME_FORMAT.parse(dateStr);
+      return DataImporter.DATE_TIME_FORMAT.get().parse(dateStr);
     } catch (ParseException exp) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Invalid expression for date", exp);

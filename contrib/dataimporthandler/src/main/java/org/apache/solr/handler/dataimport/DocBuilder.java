@@ -76,8 +76,8 @@ public class DocBuilder {
     VariableResolverImpl resolver = new VariableResolverImpl();
     Map<String, Object> indexerNamespace = new HashMap<String, Object>();
     if (dataImporter.getLastIndexTime() != null)
-      indexerNamespace.put(LAST_INDEX_TIME, DataImporter.DATE_TIME_FORMAT
-              .format(dataImporter.getLastIndexTime()));
+      indexerNamespace.put(LAST_INDEX_TIME,
+              DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getLastIndexTime()));
     indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
     indexerNamespace.put("request", requestParameters.requestParams);
     indexerNamespace.put("functions", EvaluatorBag.getFunctionsNamespace(resolver,
@@ -165,7 +165,7 @@ public class DocBuilder {
     if (stop.get()) {
       if (DataImporter.ABORT_CMD.equals(requestParameters.command)) {
         // Dont commit if aborted using command=abort
-        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.format(new Date()));
+        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
         rollback();
       } else if (requestParameters.commit) {
         // Debug mode, commit if commit=true was specified
@@ -277,7 +277,7 @@ public class DocBuilder {
 
   @SuppressWarnings("unchecked")
   public void addStatusMessage(String msg) {
-    statusMessages.put(msg, DataImporter.DATE_TIME_FORMAT.format(new Date()));
+    statusMessages.put(msg, DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
   }
 
   @SuppressWarnings("unchecked")

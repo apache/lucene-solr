@@ -414,8 +414,12 @@ public class DataImporter {
     }
   };
 
-  static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat(
-          "yyyy-MM-dd HH:mm:ss");
+  static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT = new ThreadLocal<SimpleDateFormat>() {
+    @Override
+    protected SimpleDateFormat initialValue() {
+      return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    }
+  };
 
   static final class MSG {
     public static final String NO_CONFIG_FOUND = "Configuration not found";

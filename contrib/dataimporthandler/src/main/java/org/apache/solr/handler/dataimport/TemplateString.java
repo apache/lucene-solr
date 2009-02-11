@@ -100,7 +100,7 @@ public class TemplateString {
   private String getObjectAsString(Object val) {
     if (val instanceof java.sql.Date) {
       java.sql.Date d = (java.sql.Date) val;
-      return DataImporter.DATE_TIME_FORMAT.format(d);
+      return DataImporter.DATE_TIME_FORMAT.get().format(d);
     }
     return val.toString();
   }

@@ -155,7 +155,7 @@ public class EvaluatorBag {
           } else {
             String s = o.toString();
             try {
-              date = DataImporter.DATE_TIME_FORMAT.parse(s);
+              date = DataImporter.DATE_TIME_FORMAT.get().parse(s);
             } catch (ParseException exp) {
               throw new DataImportHandlerException(
                       DataImportHandlerException.SEVERE,
