@@ -124,7 +124,14 @@ public class DataConfig {
         fields.add(field);
         List<Field> l = colNameVsField.get(field.column);
         if(l == null) l = new ArrayList<Field>();
-        l.add(field);
+        boolean alreadyFound = false;
+        for (Field f : l) {
+          if(f.getName().equals(field.getName())) {
+            alreadyFound = true;
+            break;
+          }
+        }
+        if(!alreadyFound) l.add(field);
         colNameVsField.put(field.column, l);
       }
       n = getChildNodes(element, "entity");

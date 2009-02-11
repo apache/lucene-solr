@@ -122,6 +122,9 @@ Bug Fixes
 15.SOLR-1000: FileListEntityProcessor should not apply fileName filter to directory names.
               (Fergus McMenemie via shalin)
 
+16.SOLR-1009: Repeated column names result in duplicate values.
+              (Fergus McMenemie, Noble Paul via shalin)
+
 Documentation
 ----------------------
 
