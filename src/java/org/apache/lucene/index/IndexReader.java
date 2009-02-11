@@ -340,14 +340,18 @@ public abstract class IndexReader implements Cloneable {
    * <pre>
    * IndexReader reader = ... 
    * ...
-   * IndexReader new = r.reopen();
-   * if (new != reader) {
-   *   ...     // reader was reopened
+   * IndexReader newReader = r.reopen();
+   * if (newReader != reader) {
+   * ...     // reader was reopened
    *   reader.close(); 
    * }
-   * reader = new;
+   * reader = newReader;
    * ...
    * </pre>
+   *
+   * Be sure to synchronize that code so that other threads,
+   * if present, can never use reader after it has been
+   * closed and before it's switched to newReader.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
