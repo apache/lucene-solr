@@ -55,12 +55,11 @@ public NamedList executeCommand(String command, SolrCore core, SolrRequestHandle
 %>
 
 <%
-
 final SolrRequestHandler rh = core.getRequestHandler("/replication");
 NamedList namedlist = executeCommand("details",core,rh);
 NamedList detailsMap = (NamedList)namedlist.get("details");
-
-if("false".equals((String)detailsMap.get("isMaster"))){
+if(detailsMap != null)
+if("true".equals((String)detailsMap.get("isSlave"))){
 %>
 	<meta http-equiv="refresh" content="2"/>
 <%}%>
@@ -70,11 +69,16 @@ if("false".equals((String)detailsMap.get("isMaster"))){
 <body>
 <a href=".."><img border="0" align="right" height="78" width="142" src="../solr_small.png" alt="Solr"></a>
 <h1>Solr replication (<%= collectionName %>) 
+
 <%
-if("true".equals((String)detailsMap.get("isMaster")))
-	out.println(" Master");
-  else
-	out.println(" Slave");
+if(detailsMap != null){
+  if( "true".equals(detailsMap.get("isMaster")) && "true".equals(detailsMap.get("isSlave")))
+    out.println(" Master & Slave");
+  else if("true".equals(detailsMap.get("isMaster")))
+    out.println(" Master");
+  else if("true".equals(detailsMap.get("isSlave")))
+    out.println(" Slave");
+}
 %></h1>
 
 <%= hostname %>:<%= port %><br/>

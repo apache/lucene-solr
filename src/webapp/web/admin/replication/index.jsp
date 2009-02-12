@@ -19,8 +19,7 @@
 
 
 <%-- do a verbatim include so we can use the local vars --%>
-<%@include file="header.jsp"
-        %>
+<%@include file="header.jsp"%>
 
 <br clear="all">
 <table>
@@ -31,30 +30,36 @@
 
 %>
 <%
-  if ("false".equals(detailsMap.get("isMaster")))
-    if (detailsMap != null) {%>
+NamedList slave = null, master = null;
+if (detailsMap != null)
+   if ("true".equals(detailsMap.get("isSlave")))
+       if(detailsMap.get("slave") != null){
+           slave = (NamedList)detailsMap.get("slave");%>
 <tr>
   <td>
     <strong>Master</strong>
   </td>
   <td>
     <%
-      out.println((String) detailsMap.get("masterUrl"));
+      out.println((String) slave.get("masterUrl"));
     %>
   </td>
 </tr>
 
 <tr>
   <%
-    NamedList nl = (NamedList) detailsMap.get("masterDetails");
+    NamedList nl = (NamedList) slave.get("masterDetails");
     if (nl != null) {
-      long masterVersion = (Long) nl.get("indexversion");
+      long masterVersion = (Long) nl.get("indexVersion");
       long masterGeneration = (Long) nl.get("generation");
       long replicatableMasterVer = 0, replicatableMasterGen = 0;
-      if (nl.get("replicatableindexversion") != null)
-        replicatableMasterVer = (Long) nl.get("replicatableindexversion");
-      if (nl.get("replicatablegeneration") != null)
-        replicatableMasterGen = (Long) nl.get("replicatablegeneration");
+      nl = (NamedList) nl.get("master");
+      if(nl != null){
+      	if (nl.get("replicatableindexversion") != null)
+        	replicatableMasterVer = (Long) nl.get("replicatableindexversion");
+      	if (nl.get("replicatablegeneration") != null)
+        	replicatableMasterGen = (Long) nl.get("replicatablegeneration");
+      }
   %>
   <td>
   </td>
@@ -75,7 +80,7 @@
   </td>
   <td>
     <%
-      out.println((String) detailsMap.get("pollInterval"));
+      out.println((String) slave.get("pollInterval"));
     %>
   </td>
 </tr>
@@ -88,7 +93,7 @@
   <td>
     <%
       if (detailsMap != null)
-        out.println("Index Version: " + detailsMap.get("indexversion") + ", Generation: " + detailsMap.get("generation"));
+        out.println("Index Version: " + detailsMap.get("indexVersion") + ", Generation: " + detailsMap.get("generation"));
     %>
   </td>
 </tr>
@@ -113,34 +118,36 @@
 </tr>
 
 <%
-  if ("true".equals(detailsMap.get("isMaster")))
-    if (detailsMap != null) {
+  if (detailsMap != null)
+    if ("true".equals(detailsMap.get("isMaster"))) 
+       if(detailsMap.get("master") != null){
+           master = (NamedList) detailsMap.get("master");
 %>
 
 <tr>
   <td></td>
   <td>
-    <%out.println("Config Files To Replicate: " + detailsMap.get("confFiles"));%>
+    <%out.println("Config Files To Replicate: " + master.get("confFiles"));%>
   </td>
 </tr>
 
 <tr>
   <td></td>
   <td>
-    <%out.println("Trigger Replication On: " + detailsMap.get("replicateAfter")); %>
+    <%out.println("Trigger Replication On: " + master.get("replicateAfter")); %>
   </td>
 </tr>
 <%}%>
 
 <%
-  if ("false".equals(detailsMap.get("isMaster")))
-    if (detailsMap != null) {%>
+  if ("true".equals(detailsMap.get("isSlave")))
+    if (slave != null) {%>
 <tr>
   <td>
   </td>
   <td>
     <%
-      out.println("Times Replicated Since Startup: " + detailsMap.get("timesIndexReplicated"));
+      out.println("Times Replicated Since Startup: " + slave.get("timesIndexReplicated"));
     %>
   </td>
 </tr>
@@ -150,7 +157,7 @@
   </td>
   <td>
     <%
-      out.println("Previous Replication Done At: " + detailsMap.get("indexReplicatedAt"));
+      out.println("Previous Replication Done At: " + slave.get("indexReplicatedAt"));
     %>
   </td>
 </tr>
@@ -160,7 +167,7 @@
   </td>
   <td>
     <%
-      out.println("Config Files Replicated At: " + detailsMap.get("confFilesReplicatedAt"));
+      out.println("Config Files Replicated At: " + slave.get("confFilesReplicatedAt"));
     %>
   </td>
 </tr>
@@ -170,7 +177,7 @@
   </td>
   <td>
     <%
-      out.println("Config Files Replicated: " + detailsMap.get("confFilesReplicated"));
+      out.println("Config Files Replicated: " + slave.get("confFilesReplicated"));
     %>
   </td>
 </tr>
@@ -180,7 +187,7 @@
   </td>
   <td>
     <%
-      out.println("Times Config Files Replicated Since Startup: " + detailsMap.get("timesConfigReplicated"));
+      out.println("Times Config Files Replicated Since Startup: " + slave.get("timesConfigReplicated"));
     %>
   </td>
 </tr>
@@ -190,27 +197,31 @@
   </td>
   <td>
     <%
-      if (detailsMap.get("nextExecutionAt") != null)
-        if (detailsMap.get("nextExecutionAt") != "")
-          out.println("Next Replication Cycle At: " + detailsMap.get("nextExecutionAt"));
-        else if ("true".equals(detailsMap.get("isPollingDisabled")))
+      if (slave.get("nextExecutionAt") != null)
+        if (slave.get("nextExecutionAt") != "")
+          out.println("Next Replication Cycle At: " + slave.get("nextExecutionAt"));
+        else if ("true".equals(slave.get("isPollingDisabled")))
           out.println("Next Replication Cycle At: Polling disabled.");
         else {
-          NamedList nl1 = (NamedList) detailsMap.get("masterDetails");
-          out.println("Next Replication Cycle At: After " + nl1.get("replicateAfter") + " on master.");
+          NamedList nl1 = (NamedList) slave.get("masterDetails");
+          if(nl1 != null){
+          	NamedList nl2 = (NamedList) nl1.get("master");
+          	if(nl2 != null)
+          		out.println("Next Replication Cycle At: After " + nl2.get("replicateAfter") + " on master.");
+          }
         }
     %>
   </td>
 </tr>
 
 <%
-  if ("true".equals(detailsMap.get("isReplicating"))) {
+  if ("true".equals(slave.get("isReplicating"))) {
 %>
 <tr>
   <td><strong>Current Replication Status</strong>
 
   <td>
-    <%out.println("Start Time: " + detailsMap.get("replicationStartTime"));%>
+    <%out.println("Start Time: " + slave.get("replicationStartTime"));%>
   </td>
 </tr>
 
@@ -218,7 +229,7 @@
   <td></td>
   <td>
     <%
-      out.println("Files Downloaded: " + detailsMap.get("numFilesDownloaded") + " / " + detailsMap.get("numFilesToDownload"));%>
+      out.println("Files Downloaded: " + slave.get("numFilesDownloaded") + " / " + slave.get("numFilesToDownload"));%>
   </td>
 </tr>
 
@@ -226,7 +237,7 @@
   <td></td>
   <td>
     <%
-      out.println("Downloaded: " + detailsMap.get("bytesDownloaded") + " / " + detailsMap.get("bytesToDownload") + " [" + detailsMap.get("totalPercent") + "%]");%>
+      out.println("Downloaded: " + slave.get("bytesDownloaded") + " / " + slave.get("bytesToDownload") + " [" + slave.get("totalPercent") + "%]");%>
   </td>
 </tr>
 
@@ -234,7 +245,7 @@
   <td></td>
   <td>
     <%
-      out.println("Downloading File: " + detailsMap.get("currentFile") + ", Downloaded: " + detailsMap.get("currentFileSizeDownloaded") + " / " + detailsMap.get("currentFileSize") + " [" + detailsMap.get("currentFileSizePercent") + "%]");%>
+      out.println("Downloading File: " + slave.get("currentFile") + ", Downloaded: " + slave.get("currentFileSizeDownloaded") + " / " + slave.get("currentFileSize") + " [" + slave.get("currentFileSizePercent") + "%]");%>
   </td>
 </tr>
 
@@ -242,7 +253,7 @@
   <td></td>
   <td>
     <%
-      out.println("Time Elapsed: " + detailsMap.get("timeElapsed") + ", Estimated Time Remaining: " + detailsMap.get("timeRemaining") + ", Speed: " + detailsMap.get("downloadSpeed") + "/s");%>
+      out.println("Time Elapsed: " + slave.get("timeElapsed") + ", Estimated Time Remaining: " + slave.get("timeRemaining") + ", Speed: " + slave.get("downloadSpeed") + "/s");%>
   </td>
 </tr>
 <%}%>
@@ -257,7 +268,8 @@
         executeCommand("disablepoll", core, rh);
       else if (pollVal.equals("enable"))
         executeCommand("enablepoll", core, rh);
-    if ("false".equals(detailsMap.get("isPollingDisabled"))) {
+    if(slave != null)
+    	if ("false".equals(slave.get("isPollingDisabled"))) {
   %>
 
     <form name=polling method="POST" action="./index.jsp" accept-charset="UTF-8">
@@ -267,7 +279,8 @@
 
     <%}%>
     <%
-      if ("true".equals(detailsMap.get("isPollingDisabled"))) {
+      if(slave != null)
+      	if ("true".equals(slave.get("isPollingDisabled"))) {
     %>
 
     <form name=polling method="POST" action="./index.jsp" accept-charset="UTF-8">
@@ -289,7 +302,8 @@
       <input name="replicateButton" class="stdbutton" type="submit" value="Replicate Now">
     </form>
     <%
-      if ("true".equals(detailsMap.get("isReplicating"))) {
+      if(slave != null)
+      	if ("true".equals(slave.get("isReplicating"))) {
     %>
     <script type="text/javascript">
       document["replicate"].replicateButton.disabled = true;
