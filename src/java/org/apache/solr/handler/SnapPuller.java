@@ -354,6 +354,7 @@ public class SnapPuller {
       LOG.info("Force open index writer to make sure older index files get deleted");
       DirectUpdateHandler2 handler = (DirectUpdateHandler2) solrCore.getUpdateHandler();
       handler.forceOpenWriter();
+      replicationHandler.refreshCommitpoint();
     } else  {
       LOG.warn("The update handler is not an instance or sub-class of DirectUpdateHandler2. " +
               "ReplicationHandler may not be able to cleanup un-used index files.");

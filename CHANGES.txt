@@ -261,6 +261,9 @@ Bug Fixes
 31. SOLR-1015: Incomplete information in replication admin page and http command response when server
     is both master and slave i.e. when server is a repeater (Akshay Ukey via shalin)
 
+32. SOLR-1018: Slave is unable to replicate when server acts as repeater (as both master and slave)
+    (Akshay Ukey, Noble Paul via shalin)
+
 
 Other Changes
 ----------------------

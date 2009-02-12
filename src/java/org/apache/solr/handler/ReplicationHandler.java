@@ -83,7 +83,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private boolean replicateOnCommit = false;
 
   private boolean replicateOnStart = false;
-  
+
   private int numTimesReplicated = 0;
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
@@ -520,7 +520,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       master.add("replicatableIndexVersion", commit.getVersion());
       master.add("replicatableGeneration", commit.getGeneration());
     }
-    
+
     SnapPuller snapPuller = tempSnapPuller;
     if (snapPuller != null) {
       try {
@@ -670,6 +670,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return details;
   }
 
+  void refreshCommitpoint(){
+    IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
+    if(replicateOnCommit && !commitPoint.isOptimized()){
+      indexCommitPoint = commitPoint;
+    }
+    if(replicateOnOptimize && commitPoint.isOptimized()){
+      indexCommitPoint = commitPoint;
+    }
+  }
+
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     this.core = core;
@@ -717,7 +727,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             LOG.warn("The update handler being used is not an instance or sub-class of DirectUpdateHandler2. " +
                     "Replicate on Startup cannot work.");
           }
-          indexCommitPoint = s.get().getReader().getIndexCommit();
+          if(s.get().getReader().getIndexCommit() != null)
+            if(s.get().getReader().getIndexCommit().getGeneration() != 1L)
+              indexCommitPoint = s.get().getReader().getIndexCommit();
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
         } finally {
