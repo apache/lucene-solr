@@ -17,155 +17,304 @@ package org.apache.lucene.search.trie;
 * limitations under the License.
 */
 
-import java.util.Date;
-import java.util.GregorianCalendar;
-
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.OpenBitSet;
+
+import java.util.Arrays;
+import java.util.Iterator;
 
 public class TestTrieUtils extends LuceneTestCase {
 
-  public void testSpecialValues() throws Exception {
-    // Variant 8bit values
-    assertEquals( TrieUtils.VARIANT_8BIT.TRIE_CODED_NUMERIC_MIN, "\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100");
-    assertEquals( TrieUtils.VARIANT_8BIT.TRIE_CODED_NUMERIC_MAX, "\u01ff\u01ff\u01ff\u01ff\u01ff\u01ff\u01ff\u01ff");
-    assertEquals( TrieUtils.VARIANT_8BIT.longToTrieCoded(-1),    "\u017f\u01ff\u01ff\u01ff\u01ff\u01ff\u01ff\u01ff");
-    assertEquals( TrieUtils.VARIANT_8BIT.longToTrieCoded(0),     "\u0180\u0100\u0100\u0100\u0100\u0100\u0100\u0100");
-    assertEquals( TrieUtils.VARIANT_8BIT.longToTrieCoded(1),     "\u0180\u0100\u0100\u0100\u0100\u0100\u0100\u0101");
-    // Variant 4bit values
-    assertEquals( TrieUtils.VARIANT_4BIT.TRIE_CODED_NUMERIC_MIN, "\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100");
-    assertEquals( TrieUtils.VARIANT_4BIT.TRIE_CODED_NUMERIC_MAX, "\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f");
-    assertEquals( TrieUtils.VARIANT_4BIT.longToTrieCoded(-1),    "\u0107\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f\u010f");
-    assertEquals( TrieUtils.VARIANT_4BIT.longToTrieCoded(0),     "\u0108\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100");
-    assertEquals( TrieUtils.VARIANT_4BIT.longToTrieCoded(1),     "\u0108\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0100\u0101");
-    // TODO: 2bit tests
-  }
-
-  private void testBinaryOrderingAndIncrement(TrieUtils variant) throws Exception {
+  public void testLongConversionAndOrdering() throws Exception {
     // generate a series of encoded longs, each numerical one bigger than the one before
     String last=null;
     for (long l=-100000L; l<100000L; l++) {
-      String act=variant.longToTrieCoded(l);
+      String act=TrieUtils.longToPrefixCoded(l);
       if (last!=null) {
         // test if smaller
-        assertTrue( last.compareTo(act) < 0 );
-        // test the increment method (the last incremented by one should be the actual)
-        assertEquals( variant.incrementTrieCoded(last), act );
-        // test the decrement method (the actual decremented by one should be the last)
-        assertEquals( last, variant.decrementTrieCoded(act) );
+        assertTrue("actual bigger than last", last.compareTo(act) < 0 );
       }
+      // test is back and forward conversion works
+      assertEquals("forward and back conversion should generate same long", l, TrieUtils.prefixCodedToLong(act));
       // next step
       last=act;
     }
   }
 
-  public void testBinaryOrderingAndIncrement_8bit() throws Exception {
-    testBinaryOrderingAndIncrement(TrieUtils.VARIANT_8BIT);
+  public void testIntConversionAndOrdering() throws Exception {
+    // generate a series of encoded ints, each numerical one bigger than the one before
+    String last=null;
+    for (int i=-100000; i<100000; i++) {
+      String act=TrieUtils.intToPrefixCoded(i);
+      if (last!=null) {
+        // test if smaller
+        assertTrue("actual bigger than last", last.compareTo(act) < 0 );
+      }
+      // test is back and forward conversion works
+      assertEquals("forward and back conversion should generate same int", i, TrieUtils.prefixCodedToInt(act));
+      // next step
+      last=act;
+    }
   }
 
-  public void testBinaryOrderingAndIncrement_4bit() throws Exception {
-    testBinaryOrderingAndIncrement(TrieUtils.VARIANT_8BIT);
-  }
-
-  public void testBinaryOrderingAndIncrement_2bit() throws Exception {
-    testBinaryOrderingAndIncrement(TrieUtils.VARIANT_8BIT);
-  }
-
-  private void testLongs(TrieUtils variant) throws Exception {
+  public void testLongSpecialValues() throws Exception {
     long[] vals=new long[]{
-      Long.MIN_VALUE, -5000L, -4000L, -3000L, -2000L, -1000L, 0L,
-      1L, 10L, 300L, 5000L, Long.MAX_VALUE-2, Long.MAX_VALUE-1, Long.MAX_VALUE
+      Long.MIN_VALUE, Long.MIN_VALUE+1, Long.MIN_VALUE+2, -5003400000000L,
+      -4000L, -3000L, -2000L, -1000L, -1L, 0L, 1L, 10L, 300L, 50006789999999999L, Long.MAX_VALUE-2, Long.MAX_VALUE-1, Long.MAX_VALUE
     };
-    String[] trieVals=new String[vals.length];
+    String[] prefixVals=new String[vals.length];
     
-    // check back and forth conversion
     for (int i=0; i<vals.length; i++) {
-      trieVals[i]=variant.longToTrieCoded(vals[i]);
-      assertEquals( "Back and forth conversion should return same value", vals[i], variant.trieCodedToLong(trieVals[i]) );
-      assertEquals( "Automatic back conversion with encoding detection should return same value", vals[i], TrieUtils.trieCodedToLongAuto(trieVals[i]) );
+      prefixVals[i]=TrieUtils.longToPrefixCoded(vals[i]);
+      
+      // check forward and back conversion
+      assertEquals( "forward and back conversion should generate same long", vals[i], TrieUtils.prefixCodedToLong(prefixVals[i]) );
+
+      // test if decoding values as int fails correctly
+      try {
+        TrieUtils.prefixCodedToInt(prefixVals[i]);
+        fail("decoding a prefix coded long value as int should fail");
+      } catch (NumberFormatException e) {
+        // worked
+      }
     }
     
-    // check sort order (trieVals should be ascending)
-    for (int i=1; i<vals.length; i++) {
-      assertTrue( trieVals[i-1].compareTo( trieVals[i] ) < 0 );
+    // check sort order (prefixVals should be ascending)
+    for (int i=1; i<prefixVals.length; i++) {
+      assertTrue( "check sort order", prefixVals[i-1].compareTo( prefixVals[i] ) < 0 );
+    }
+        
+    // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits
+    for (int i=0; i<vals.length; i++) {
+      for (int j=0; j<64; j++) {
+        long prefixVal=TrieUtils.prefixCodedToLong(TrieUtils.longToPrefixCoded(vals[i], j));
+        long mask=(1L << j) - 1L;
+        assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
+      }
     }
   }
 
-  public void testLongs_8bit() throws Exception {
-    testLongs(TrieUtils.VARIANT_8BIT);
+  public void testIntSpecialValues() throws Exception {
+    int[] vals=new int[]{
+      Integer.MIN_VALUE, Integer.MIN_VALUE+1, Integer.MIN_VALUE+2, -64765767,
+      -4000, -3000, -2000, -1000, -1, 0, 1, 10, 300, 765878989, Integer.MAX_VALUE-2, Integer.MAX_VALUE-1, Integer.MAX_VALUE
+    };
+    String[] prefixVals=new String[vals.length];
+    
+    for (int i=0; i<vals.length; i++) {
+      prefixVals[i]=TrieUtils.intToPrefixCoded(vals[i]);
+      
+      // check forward and back conversion
+      assertEquals( "forward and back conversion should generate same int", vals[i], TrieUtils.prefixCodedToInt(prefixVals[i]) );
+      
+      // test if decoding values as long fails correctly
+      try {
+        TrieUtils.prefixCodedToLong(prefixVals[i]);
+        fail("decoding a prefix coded int value as long should fail");
+      } catch (NumberFormatException e) {
+        // worked
+      }
+    }
+    
+    // check sort order (prefixVals should be ascending)
+    for (int i=1; i<prefixVals.length; i++) {
+      assertTrue( "check sort order", prefixVals[i-1].compareTo( prefixVals[i] ) < 0 );
+    }
+    
+    // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits
+    for (int i=0; i<vals.length; i++) {
+      for (int j=0; j<32; j++) {
+        int prefixVal=TrieUtils.prefixCodedToInt(TrieUtils.intToPrefixCoded(vals[i], j));
+        int mask=(1 << j) - 1;
+        assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
+      }
+    }
   }
 
-  public void testLongs_4bit() throws Exception {
-    testLongs(TrieUtils.VARIANT_4BIT);
-  }
-
-  public void testLongs_2bit() throws Exception {
-    testLongs(TrieUtils.VARIANT_2BIT);
-  }
-
-  private void testDoubles(TrieUtils variant) throws Exception {
+  public void testDoubles() throws Exception {
     double[] vals=new double[]{
       Double.NEGATIVE_INFINITY, -2.3E25, -1.0E15, -1.0, -1.0E-1, -1.0E-2, -0.0, 
       +0.0, 1.0E-2, 1.0E-1, 1.0, 1.0E15, 2.3E25, Double.POSITIVE_INFINITY
     };
-    String[] trieVals=new String[vals.length];
+    long[] longVals=new long[vals.length];
     
-    // check back and forth conversion
+    // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      trieVals[i]=variant.doubleToTrieCoded(vals[i]);
-      assertTrue( "Back and forth conversion should return same value", vals[i]==variant.trieCodedToDouble(trieVals[i]) );
-      assertTrue( "Automatic back conversion with encoding detection should return same value", vals[i]==TrieUtils.trieCodedToDoubleAuto(trieVals[i]) );
+      longVals[i]=TrieUtils.doubleToSortableLong(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Double.compare(vals[i], TrieUtils.sortableLongToDouble(longVals[i]))==0 );
     }
     
-    // check sort order (trieVals should be ascending)
-    for (int i=1; i<vals.length; i++) {
-      assertTrue( trieVals[i-1].compareTo( trieVals[i] ) < 0 );
+    // check sort order (prefixVals should be ascending)
+    for (int i=1; i<longVals.length; i++) {
+      assertTrue( "check sort order", longVals[i-1] < longVals[i] );
     }
   }
 
-  public void testDoubles_8bit() throws Exception {
-    testDoubles(TrieUtils.VARIANT_8BIT);
-  }
-
-  public void testDoubles_4bit() throws Exception {
-    testDoubles(TrieUtils.VARIANT_4BIT);
-  }
-
-  public void testDoubles_2bit() throws Exception {
-    testDoubles(TrieUtils.VARIANT_2BIT);
-  }
-
-  private void testDates(TrieUtils variant) throws Exception {
-    Date[] vals=new Date[]{
-      new GregorianCalendar(1000,1,1).getTime(),
-      new GregorianCalendar(1999,1,1).getTime(),
-      new GregorianCalendar(2000,1,1).getTime(),
-      new GregorianCalendar(2001,1,1).getTime()
+  public void testFloats() throws Exception {
+    float[] vals=new float[]{
+      Float.NEGATIVE_INFINITY, -2.3E25f, -1.0E15f, -1.0f, -1.0E-1f, -1.0E-2f, -0.0f, 
+      +0.0f, 1.0E-2f, 1.0E-1f, 1.0f, 1.0E15f, 2.3E25f, Float.POSITIVE_INFINITY
     };
-    String[] trieVals=new String[vals.length];
+    int[] intVals=new int[vals.length];
     
-    // check back and forth conversion
+    // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      trieVals[i]=variant.dateToTrieCoded(vals[i]);
-      assertEquals( "Back and forth conversion should return same value", vals[i], variant.trieCodedToDate(trieVals[i]) );
-      assertEquals( "Automatic back conversion with encoding detection should return same value", vals[i], TrieUtils.trieCodedToDateAuto(trieVals[i]) );
+      intVals[i]=TrieUtils.floatToSortableInt(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Float.compare(vals[i], TrieUtils.sortableIntToFloat(intVals[i]))==0 );
     }
     
-    // check sort order (trieVals should be ascending)
-    for (int i=1; i<vals.length; i++) {
-      assertTrue( trieVals[i-1].compareTo( trieVals[i] ) < 0 );
+    // check sort order (prefixVals should be ascending)
+    for (int i=1; i<intVals.length; i++) {
+      assertTrue( "check sort order", intVals[i-1] < intVals[i] );
     }
   }
+  
+  // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitely tested by range filter tests
+  
+  /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
+  protected void assertLongRangeSplit(final long lower, final long upper, int precisionStep,
+    final boolean useBitSet, final Iterator neededBounds
+  ) throws Exception {
+    final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
+    
+    TrieUtils.splitLongRange(new TrieUtils.LongRangeBuilder() {
+      public void addRange(int precisionStep, long min, long max, int shift) {
+        assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
+        if (useBitSet) for (long l=min; l<=max; l++) {
+          assertFalse("ranges should not overlap", bits.getAndSet(l-lower) );
+        }
+        // make unsigned longs for easier display and understanding
+        min ^= 0x8000000000000000L;
+        max ^= 0x8000000000000000L;
+        //System.out.println("new Long(0x"+Long.toHexString(min>>>shift)+"L),new Long(0x"+Long.toHexString(max>>>shift)+"L),");
+        assertEquals( "inner min bound", ((Long)neededBounds.next()).longValue(), min>>>shift);
+        assertEquals( "inner max bound", ((Long)neededBounds.next()).longValue(), max>>>shift);
+      }
+    }, precisionStep, lower, upper);
+    
+    if (useBitSet) {
+      // after flipping all bits in the range, the cardinality should be zero
+      bits.flip(0,upper-lower+1);
+      assertTrue("The sub-range concenated should match the whole range", bits.isEmpty());
+    }
+  }
+  
+  public void testSplitLongRange() throws Exception {
+    // a hard-coded "standard" range
+    assertLongRangeSplit(-5000L, 9500L, 4, true, Arrays.asList(new Long[]{
+      new Long(0x7fffffffffffec78L),new Long(0x7fffffffffffec7fL),
+      new Long(0x8000000000002510L),new Long(0x800000000000251cL),
+      new Long(0x7fffffffffffec8L), new Long(0x7fffffffffffecfL),
+      new Long(0x800000000000250L), new Long(0x800000000000250L),
+      new Long(0x7fffffffffffedL),  new Long(0x7fffffffffffefL),
+      new Long(0x80000000000020L),  new Long(0x80000000000024L),
+      new Long(0x7ffffffffffffL),   new Long(0x8000000000001L)
+    }).iterator());
+    
+    // the same with no range splitting
+    assertLongRangeSplit(-5000L, 9500L, 64, true, Arrays.asList(new Long[]{
+      new Long(0x7fffffffffffec78L),new Long(0x800000000000251cL)
+    }).iterator());
+    
+    // this tests optimized range splitting, if one of the inner bounds
+    // is also the bound of the next lower precision, it should be used completely
+    assertLongRangeSplit(0L, 1024L+63L, 4, true, Arrays.asList(new Long[]{
+      new Long(0x800000000000040L), new Long(0x800000000000043L),
+      new Long(0x80000000000000L),  new Long(0x80000000000003L)
+    }).iterator());
+    
+    // the full long range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(new Long[]{
+      new Long(0x00L),new Long(0xffL)
+    }).iterator());
 
-  public void testDates_8bit() throws Exception {
-    testDates(TrieUtils.VARIANT_8BIT);
+    // the same with precisionStep=4
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 4, false, Arrays.asList(new Long[]{
+      new Long(0x0L),new Long(0xfL)
+    }).iterator());
+
+    // the same with precisionStep=2
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 2, false, Arrays.asList(new Long[]{
+      new Long(0x0L),new Long(0x3L)
+    }).iterator());
+
+    // the same with precisionStep=1
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(new Long[]{
+      new Long(0x0L),new Long(0x1L)
+    }).iterator());
   }
 
-  public void testDates_4bit() throws Exception {
-    testDates(TrieUtils.VARIANT_4BIT);
+  /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
+  protected void assertIntRangeSplit(final int lower, final int upper, int precisionStep,
+    final boolean useBitSet, final Iterator neededBounds
+  ) throws Exception {
+    final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
+    
+    TrieUtils.splitIntRange(new TrieUtils.IntRangeBuilder() {
+      public void addRange(int precisionStep, int min, int max, int shift) {
+        assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
+        if (useBitSet) for (int i=min; i<=max; i++) {
+          assertFalse("ranges should not overlap", bits.getAndSet(i-lower) );
+        }
+        // make unsigned ints for easier display and understanding
+        min ^= 0x80000000;
+        max ^= 0x80000000;
+        //System.out.println("new Integer(0x"+Integer.toHexString(min>>>shift)+"),new Integer(0x"+Integer.toHexString(max>>>shift)+"),");
+        assertEquals( "inner min bound", ((Integer)neededBounds.next()).intValue(), min>>>shift);
+        assertEquals( "inner max bound", ((Integer)neededBounds.next()).intValue(), max>>>shift);
+      }
+    }, precisionStep, lower, upper);
+    
+    if (useBitSet) {
+      // after flipping all bits in the range, the cardinality should be zero
+      bits.flip(0,upper-lower+1);
+      assertTrue("The sub-range concenated should match the whole range", bits.isEmpty());
+    }
   }
+  
+  public void testSplitIntRange() throws Exception {
+    // a hard-coded "standard" range
+    assertIntRangeSplit(-5000, 9500, 4, true, Arrays.asList(new Integer[]{
+      new Integer(0x7fffec78),new Integer(0x7fffec7f),
+      new Integer(0x80002510),new Integer(0x8000251c),
+      new Integer(0x7fffec8), new Integer(0x7fffecf),
+      new Integer(0x8000250), new Integer(0x8000250),
+      new Integer(0x7fffed),  new Integer(0x7fffef),
+      new Integer(0x800020),  new Integer(0x800024),
+      new Integer(0x7ffff),   new Integer(0x80001)
+    }).iterator());
+    
+    // the same with no range splitting
+    assertIntRangeSplit(-5000, 9500, 32, true, Arrays.asList(new Integer[]{
+      new Integer(0x7fffec78),new Integer(0x8000251c)
+    }).iterator());
+    
+    // this tests optimized range splitting, if one of the inner bounds
+    // is also the bound of the next lower precision, it should be used completely
+    assertIntRangeSplit(0, 1024+63, 4, true, Arrays.asList(new Integer[]{
+      new Integer(0x8000040), new Integer(0x8000043),
+      new Integer(0x800000),  new Integer(0x800003)
+    }).iterator());
+    
+    // the full int range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 8, false, Arrays.asList(new Integer[]{
+      new Integer(0x00),new Integer(0xff)
+    }).iterator());
 
-  public void testDates_2bit() throws Exception {
-    testDates(TrieUtils.VARIANT_2BIT);
+    // the same with precisionStep=4
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 4, false, Arrays.asList(new Integer[]{
+      new Integer(0x0),new Integer(0xf)
+    }).iterator());
+
+    // the same with precisionStep=2
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 2, false, Arrays.asList(new Integer[]{
+      new Integer(0x0),new Integer(0x3)
+    }).iterator());
+
+    // the same with precisionStep=1
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(new Integer[]{
+      new Integer(0x0),new Integer(0x1)
+    }).iterator());
   }
 
 }

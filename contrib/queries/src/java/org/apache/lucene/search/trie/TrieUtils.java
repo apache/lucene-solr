@@ -17,385 +17,531 @@ package org.apache.lucene.search.trie;
  * limitations under the License.
  */
 
-import java.util.Date;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.ExtendedFieldCache;
 
 /**
  * This is a helper class to construct the trie-based index entries for numerical values.
- * <p>For more information on how the algorithm works, see the package description {@link org.apache.lucene.search.trie}.
- * The format of how the numerical values are stored in index is documented here:
- * <p>All numerical values are first converted to special <code>unsigned long</code>s by applying some bit-wise transformations. This means:<ul>
- * <li>{@link Date}s are casted to UNIX timestamps (milliseconds since 1970-01-01, this is how Java represents date/time
- * internally): {@link Date#getTime()}. The resulting <code>signed long</code> is transformed to the unsigned form like so:</li>
- * <li><code>signed long</code>s are shifted, so that {@link Long#MIN_VALUE} is mapped to <code>0x0000000000000000</code>,
- * {@link Long#MAX_VALUE} is mapped to <code>0xffffffffffffffff</code>.</li>
- * <li><code>double</code>s are converted by getting their IEEE 754 floating-point "double format" bit layout and then some bits
- * are swapped, to be able to compare the result as <code>unsigned long</code>s.</li>
- * </ul>
- * <p>For each variant (you can choose between {@link #VARIANT_8BIT}, {@link #VARIANT_4BIT}, and {@link #VARIANT_2BIT}),
- * the bitmap of this <code>unsigned long</code> is divided into parts of a number of bits (starting with the most-significant bits)
- * and each part converted to characters between {@link #TRIE_CODED_SYMBOL_MIN} and {@link #TRIE_CODED_SYMBOL_MAX}.
- * The resulting {@link String} is comparable like the corresponding <code>unsigned long</code>.
- * <p>To store the different precisions of the long values (from one character [only the most significant one] to the full encoded length),
- * each lower precision is prefixed by the length ({@link #TRIE_CODED_PADDING_START}<code>+precision == 0x20+precision</code>),
- * in an extra "helper" field with a suffixed field name (i.e. fieldname "numeric" =&gt; lower precision's name "numeric#trie").
- * The full long is not prefixed at all and indexed and stored according to the given flags in the original field name.
- * By this it is possible to get the correct enumeration of terms in correct precision
- * of the term list by just jumping to the correct fieldname and/or prefix. The full precision value may also be
- * stored in the document. Having the full precision value as term in a separate field with the original name,
- * sorting of query results against such fields is possible using the original field name.
+ * For more information on how the algorithm works, see the
+ * {@linkplain org.apache.lucene.search.trie package description}.
+ * <h3>The trie format using prefix encoded numerical values</h3>
+ * <p>To quickly execute range queries in Apache Lucene, a range is divided recursively
+ * into multiple intervals for searching: The center of the range is searched only with
+ * the lowest possible precision in the trie, while the boundaries are matched
+ * more exactly. This reduces the number of terms dramatically.
+ * <p>This class generates terms to achive this: First the numerical integer values need to
+ * be converted to strings. For that integer values (32 bit or 64 bit) are made unsigned
+ * and the bits are converted to ASCII chars with each 7 bit. The resulting string is
+ * sortable like the original integer value.
+ * <p>To also index floating point numbers, this class supplies two methods to convert them
+ * to integer values by changing their bit layout: {@link #doubleToSortableLong},
+ * {@link #floatToSortableInt}. You will have no precision loss by
+ * converting floating point numbers to integers and back (only that the integer form does
+ * is not usable). Other data types like dates can easily converted to longs or ints (e.g.
+ * date to long: {@link java.util.Date#getTime}).
+ * <p>To index the different precisions of the long values each encoded value is also reduced
+ * by zeroing bits from the right. Each value is also prefixed (in the first char) by the
+ * <code>shift</code> value (number of bits removed) used during encoding. This series of
+ * different precision values can be indexed into a Lucene {@link Document} using
+ * {@link #addIndexedFields(Document,String,String[])}. The default is to index the original
+ * precision in the supplied field name and the lower precisions in an additional helper field.
+ * Because of this, the full-precision field can also be sorted (using {@link #getLongSortField}
+ * or {@link #getIntSortField}).
+ * <p>The number of bits removed from the right for each trie entry is called
+ * <code>precisionStep</code> in this API. For comparing the different step values, see the
+ * {@linkplain org.apache.lucene.search.trie package description}.
  */
 public final class TrieUtils {
 
-  /** Instance of TrieUtils using a trie factor of 8 bit.
-   * This is the <b>recommended</b> one (rather fast and storage optimized) */
-  public static final TrieUtils VARIANT_8BIT=new TrieUtils(8);
+  private TrieUtils() {} // no instance!
 
-  /** Instance of TrieUtils using a trie factor of 4 bit. */
-  public static final TrieUtils VARIANT_4BIT=new TrieUtils(4);
-
-  /** Instance of TrieUtils using a trie factor of 2 bit.
-   * This may be good for some indexes, but it needs much storage space
-   * and is not much faster than 8 bit in most cases. */
-  public static final TrieUtils VARIANT_2BIT=new TrieUtils(2);
-
-  /** Marker (PADDING)  before lower-precision trie entries to signal the precision value. See class description! */
-  public static final char TRIE_CODED_PADDING_START=(char)0x20;
-  
-  /** The "helper" field containing the lower precision terms is the original fieldname with this appended. */
+  /**
+   * The default &quot;helper&quot; field containing the lower precision terms is the original
+   * fieldname with this appended. This suffix is used in
+   * {@link #addIndexedFields(Document,String,String[])} and the corresponding c'tor
+   * of <code>(Long|Int)TrieRangeFilter</code>.
+   */
   public static final String LOWER_PRECISION_FIELD_NAME_SUFFIX="#trie";
 
-  /** Character used as lower end */
-  public static final char TRIE_CODED_SYMBOL_MIN=(char)0x100;
+  /**
+   * Longs are stored at lower precision by shifting off lower bits. The shift count is
+   * stored as <code>SHIFT_START_LONG+shift</code> in the first character
+   */
+  public static final char SHIFT_START_LONG = (char)0x20;
 
   /**
-   * A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as longs,
-   * auto detecting the trie encoding variant using the String length.
+   * Integers are stored at lower precision by shifting off lower bits. The shift count is
+   * stored as <code>SHIFT_START_INT+shift</code> in the first character
    */
-  public static final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER_AUTO=new ExtendedFieldCache.LongParser(){
-    public final long parseLong(String val) {
-      return trieCodedToLongAuto(val);
+  public static final char SHIFT_START_INT  = (char)0x60;
+
+  /**
+   * A parser instance for filling a {@link ExtendedFieldCache}, that parses prefix encoded fields as longs.
+   */
+  public static final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER=new ExtendedFieldCache.LongParser(){
+    public final long parseLong(final String val) {
+      return prefixCodedToLong(val);
     }
   };
   
   /**
-   * A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as doubles,
-   * auto detecting the trie encoding variant using the String length.
+   * A parser instance for filling a {@link FieldCache}, that parses prefix encoded fields as ints.
    */
-  public static final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER_AUTO=new ExtendedFieldCache.DoubleParser(){
-    public final double parseDouble(String val) {
-      return trieCodedToDoubleAuto(val);
+  public static final FieldCache.IntParser FIELD_CACHE_INT_PARSER=new FieldCache.IntParser(){
+    public final int parseInt(final String val) {
+      return prefixCodedToInt(val);
+    }
+  };
+
+  /**
+   * A parser instance for filling a {@link ExtendedFieldCache}, that parses prefix encoded fields as doubles.
+   * This uses {@link #sortableLongToDouble} to convert the encoded long to a double.
+   */
+  public static final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER=new ExtendedFieldCache.DoubleParser(){
+    public final double parseDouble(final String val) {
+      return sortableLongToDouble(prefixCodedToLong(val));
     }
   };
   
   /**
-   * Detects and returns the variant of a trie encoded string using the length.
-   * @throws NumberFormatException if the length is not 8, 16, or 32 chars.
+   * A parser instance for filling a {@link FieldCache}, that parses prefix encoded fields as floats.
+   * This uses {@link #sortableIntToFloat} to convert the encoded int to a float.
    */
-  public static final TrieUtils autoDetectVariant(final String s) {
-    final int l=s.length();
-    if (l==VARIANT_8BIT.TRIE_CODED_LENGTH) {
-      return VARIANT_8BIT;
-    } else if (l==VARIANT_4BIT.TRIE_CODED_LENGTH) {
-      return VARIANT_4BIT;
-    } else if (l==VARIANT_2BIT.TRIE_CODED_LENGTH) {
-      return VARIANT_2BIT;
-    } else {
-      throw new NumberFormatException("Invalid trie encoded numerical value representation (incompatible length).");
+  public static final FieldCache.FloatParser FIELD_CACHE_FLOAT_PARSER=new FieldCache.FloatParser(){
+    public final float parseFloat(final String val) {
+      return sortableIntToFloat(prefixCodedToInt(val));
     }
+  };
+
+  /**
+   * This is a convenience method, that returns prefix coded bits of a long without
+   * reducing the precision. It can be used to store the full precision value as a
+   * stored field in index.
+   * <p>To decode, use {@link #prefixCodedToLong}.
+   */
+  public static String longToPrefixCoded(final long val) {
+    return longToPrefixCoded(val, 0);
   }
 
   /**
-   * Converts a encoded <code>String</code> value back to a <code>long</code>,
-   * auto detecting the trie encoding variant using the String length.
+   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link #trieCodeLong}.
    */
-  public static final long trieCodedToLongAuto(final String s) {
-    return autoDetectVariant(s).trieCodedToLong(s);
-  }
-
-  /**
-   * Converts a encoded <code>String</code> value back to a <code>double</code>,
-   * auto detecting the trie encoding variant using the String length.
-   */
-  public static final double trieCodedToDoubleAuto(final String s) {
-    return autoDetectVariant(s).trieCodedToDouble(s);
-  }
-
-  /**
-   * Converts a encoded <code>String</code> value back to a <code>Date</code>,
-   * auto detecting the trie encoding variant using the String length.
-   */
-  public static final Date trieCodedToDateAuto(final String s) {
-    return autoDetectVariant(s).trieCodedToDate(s);
-  }
-
-  /**
-   * A factory method, that generates a {@link SortField} instance for sorting trie encoded values,
-   * automatically detecting the trie encoding variant using the String length.
-   */
-  public static final SortField getSortFieldAuto(final String field) {
-    return new SortField(field, FIELD_CACHE_LONG_PARSER_AUTO);
-  }
-  
-  /**
-   * A factory method, that generates a {@link SortField} instance for sorting trie encoded values,
-   * automatically detecting the trie encoding variant using the String length.
-   */
-  public static final SortField getSortFieldAuto(final String field, boolean reverse) {
-    return new SortField(field, FIELD_CACHE_LONG_PARSER_AUTO, reverse);
-  }
-  
-  // TrieUtils instance's part
-  
-  private TrieUtils(int bits) {
-    assert 64%bits == 0;
-    
-    // helper variable for conversion
-    mask = (1L << bits) - 1L;		
-
-    // init global "constants"
-    TRIE_BITS=bits;
-    TRIE_CODED_LENGTH=64/TRIE_BITS;
-    TRIE_CODED_SYMBOL_MAX=(char)(TRIE_CODED_SYMBOL_MIN+mask);
-    TRIE_CODED_NUMERIC_MIN=longToTrieCoded(Long.MIN_VALUE);
-    TRIE_CODED_NUMERIC_MAX=longToTrieCoded(Long.MAX_VALUE);
-  }
-
-  // internal conversion to/from strings
-
-  private final String internalLongToTrieCoded(long l) {
-    final char[] buf=new char[TRIE_CODED_LENGTH];
-    for (int i=TRIE_CODED_LENGTH-1; i>=0; i--) {
-      buf[i] = (char)( TRIE_CODED_SYMBOL_MIN + (l & mask) );
-      l = l >>> TRIE_BITS;
+  public static String longToPrefixCoded(final long val, final int shift) {
+    if (shift>63 || shift<0)
+      throw new IllegalArgumentException("Illegal shift value, must be 0..63");
+    int nChars = (63-shift)/7 + 1;
+    final char[] arr = new char[nChars+1];
+    arr[0] = (char)(SHIFT_START_LONG + shift);
+    long sortableBits = val ^ 0x8000000000000000L;
+    sortableBits >>>= shift;
+    while (nChars>=1) {
+      // Store 7 bits per character for good efficiency when UTF-8 encoding.
+      // The whole number is right-justified so that lucene can prefix-encode
+      // the terms more efficiently.
+      arr[nChars--] = (char)(sortableBits & 0x7f);
+      sortableBits >>>= 7;
     }
-    return new String(buf);
+    return new String(arr);
   }
 
-  private final long internalTrieCodedToLong(final String s) {
-    if (s==null) throw new NullPointerException("Trie encoded string may not be NULL");
-    final int len=s.length();
-    if (len!=TRIE_CODED_LENGTH) throw new NumberFormatException(
-      "Invalid trie encoded numerical value representation (incompatible length, must be "+TRIE_CODED_LENGTH+")"
-    );
-    long l=0L;
-    for (int i=0; i<len; i++) {
-      char ch=s.charAt(i);
-      if (ch>=TRIE_CODED_SYMBOL_MIN && ch<=TRIE_CODED_SYMBOL_MAX) {
-        l = (l << TRIE_BITS) | (long)(ch-TRIE_CODED_SYMBOL_MIN);
-      } else {
+  /**
+   * This is a convenience method, that returns prefix coded bits of an int without
+   * reducing the precision. It can be used to store the full precision value as a
+   * stored field in index.
+   * <p>To decode, use {@link #prefixCodedToInt}.
+   */
+  public static String intToPrefixCoded(final int val) {
+    return intToPrefixCoded(val, 0);
+  }
+
+  /**
+   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link #trieCodeInt}.
+   */
+  public static String intToPrefixCoded(final int val, final int shift) {
+    if (shift>31 || shift<0)
+      throw new IllegalArgumentException("Illegal shift value, must be 0..31");
+    int nChars = (31-shift)/7 + 1;
+    final char[] arr = new char[nChars+1];
+    arr[0] = (char)(SHIFT_START_INT + shift);
+    int sortableBits = val ^ 0x80000000;
+    sortableBits >>>= shift;
+    while (nChars>=1) {
+      // Store 7 bits per character for good efficiency when UTF-8 encoding.
+      // The whole number is right-justified so that lucene can prefix-encode
+      // the terms more efficiently.
+      arr[nChars--] = (char)(sortableBits & 0x7f);
+      sortableBits >>>= 7;
+    }
+    return new String(arr);
+  }
+
+  /**
+   * Returns a long from prefixCoded characters.
+   * Rightmost bits will be zero for lower precision codes.
+   * This method can be used to decode e.g. a stored field.
+   * @see #longToPrefixCoded(long)
+   */
+  public static long prefixCodedToLong(final String prefixCoded) {
+    final int len = prefixCoded.length();
+    final int shift = prefixCoded.charAt(0)-SHIFT_START_LONG;
+    if (shift>63 || shift<0)
+      throw new NumberFormatException("Invalid shift value in prefixCoded string (is encoded value really a LONG?)");
+    long sortableBits = 0L;
+    for (int i=1; i<len; i++) {
+      sortableBits <<= 7;
+      final char ch = prefixCoded.charAt(i);
+      if (ch>0x7f) {
         throw new NumberFormatException(
-          "Invalid trie encoded numerical value representation (char "+
+          "Invalid prefixCoded numerical value representation (char "+
           Integer.toHexString((int)ch)+" at position "+i+" is invalid)"
         );
       }
+      sortableBits |= (long)(ch & 0x7f);
     }
-    return l;
+    return (sortableBits << shift) ^ 0x8000000000000000L;
   }
 
-  // Long's
-
-  /** Converts a <code>long</code> value encoded to a <code>String</code>. */
-  public String longToTrieCoded(final long l) {
-    return internalLongToTrieCoded(l ^ 0x8000000000000000L);
-  }
-
-  /** Converts a encoded <code>String</code> value back to a <code>long</code>. */
-  public long trieCodedToLong(final String s) {
-    return internalTrieCodedToLong(s) ^ 0x8000000000000000L;
-  }
-
-  // Double's
-
-  /** Converts a <code>double</code> value encoded to a <code>String</code>. */
-  public String doubleToTrieCoded(final double d) {
-    long l=Double.doubleToLongBits(d);
-    if ((l & 0x8000000000000000L) == 0L) {
-      // >0
-      l |= 0x8000000000000000L;
-    } else {
-      // <0
-      l = ~l;
-    }
-    return internalLongToTrieCoded(l);
-  }
-
-  /** Converts a encoded <code>String</code> value back to a <code>double</code>. */
-  public double trieCodedToDouble(final String s) {
-    long l=internalTrieCodedToLong(s);
-    if ((l & 0x8000000000000000L) != 0L) {
-      // >0
-      l &= 0x7fffffffffffffffL;
-    } else {
-      // <0
-      l = ~l;
-    }
-    return Double.longBitsToDouble(l);
-  }
-
-  // Date's
-
-  /** Converts a <code>Date</code> value encoded to a <code>String</code>. */
-  public String dateToTrieCoded(final Date d) {
-    return longToTrieCoded(d.getTime());
-  }
-
-  /** Converts a encoded <code>String</code> value back to a <code>Date</code>. */
-  public Date trieCodedToDate(final String s) {
-    return new Date(trieCodedToLong(s));
-  }
-
-  // increment / decrement
-
-  /** Increments an encoded String value by 1. Needed by {@link TrieRangeFilter}. */
-  public String incrementTrieCoded(final String v) {
-    final int l=v.length();
-    final char[] buf=new char[l];
-    boolean inc=true;
-    for (int i=l-1; i>=0; i--) {
-      int b=v.charAt(i)-TRIE_CODED_SYMBOL_MIN;
-      if (inc) b++;
-      if (inc=(b>(int)mask)) b=0;
-      buf[i]=(char)(TRIE_CODED_SYMBOL_MIN+b);
-    }
-    return new String(buf);
-  }
-
-  /** Decrements an encoded String value by 1. Needed by {@link TrieRangeFilter}. */
-  public String decrementTrieCoded(final String v) {
-    final int l=v.length();
-    final char[] buf=new char[l];
-    boolean dec=true;
-    for (int i=l-1; i>=0; i--) {
-      int b=v.charAt(i)-TRIE_CODED_SYMBOL_MIN;
-      if (dec) b--;
-      if (dec=(b<0)) b=(int)mask;
-      buf[i]=(char)(TRIE_CODED_SYMBOL_MIN+b);
-    }
-    return new String(buf);
-  }
-
-  private void addConvertedTrieCodedDocumentField(
-    final Document ldoc, final String fieldname, final String val,
-    final boolean index, final Field.Store store
-  ) {
-    Field f=new Field(fieldname, val, store, index?Field.Index.NOT_ANALYZED_NO_NORMS:Field.Index.NO);
-    if (index) {
-      f.setOmitTf(true);
-      ldoc.add(f);
-      // add the lower precision values in the helper field with prefix
-      final StringBuffer sb=new StringBuffer(TRIE_CODED_LENGTH);
-      synchronized(sb) {
-        for (int i=TRIE_CODED_LENGTH-1; i>0; i--) {
-          sb.setLength(0);
-          f=new Field(
-            fieldname + LOWER_PRECISION_FIELD_NAME_SUFFIX,
-            sb.append( (char)(TRIE_CODED_PADDING_START+i) ).append( val.substring(0,i) ).toString(),
-            Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS
-          );
-          f.setOmitTf(true);
-          ldoc.add(f);
-        }
+  /**
+   * Returns an int from prefixCoded characters.
+   * Rightmost bits will be zero for lower precision codes.
+   * This method can be used to decode e.g. a stored field.
+   * @see #intToPrefixCoded(int)
+   */
+  public static int prefixCodedToInt(final String prefixCoded) {
+    final int len = prefixCoded.length();
+    final int shift = prefixCoded.charAt(0)-SHIFT_START_INT;
+    if (shift>31 || shift<0)
+      throw new NumberFormatException("Invalid shift value in prefixCoded string (is encoded value really an INT?)");
+    int sortableBits = 0;
+    for (int i=1; i<len; i++) {
+      sortableBits <<= 7;
+      final char ch = prefixCoded.charAt(i);
+      if (ch>0x7f) {
+        throw new NumberFormatException(
+          "Invalid prefixCoded numerical value representation (char "+
+          Integer.toHexString((int)ch)+" at position "+i+" is invalid)"
+        );
       }
-    } else {
-      ldoc.add(f);
+      sortableBits |= (int)(ch & 0x7f);
     }
+    return (sortableBits << shift) ^ 0x80000000;
   }
 
   /**
-   * Stores a double value in trie-form in document for indexing.
-   * <p>To store the different precisions of the long values (from one byte [only the most significant one] to the full eight bytes),
-   * each lower precision is prefixed by the length ({@link #TRIE_CODED_PADDING_START}<code>+precision</code>),
-   * in an extra "helper" field with a name of <code>fieldname+{@link #LOWER_PRECISION_FIELD_NAME_SUFFIX}</code>
-   * (i.e. fieldname "numeric" => lower precision's name "numeric#trie").
-   * The full long is not prefixed at all and indexed and stored according to the given flags in the original field name.
-   * If the field should not be searchable, set <code>index</code> to <code>false</code>. It is then only stored (for convenience).
-   * Fields added to a document using this method can be queried by {@link TrieRangeQuery}. 
+   * Converts a <code>double</code> value to a sortable signed <code>long</code>.
+   * The value is converted by getting their IEEE 754 floating-point &quot;double format&quot;
+   * bit layout and then some bits are swapped, to be able to compare the result as long.
+   * By this the precision is not reduced, but the value can easily used as a long.
+   * @see #sortableLongToDouble
    */
-  public void addDoubleTrieCodedDocumentField(
-    final Document ldoc, final String fieldname, final double val,
-    final boolean index, final Field.Store store
-  ) {
-    addConvertedTrieCodedDocumentField(ldoc, fieldname, doubleToTrieCoded(val), index, store);
+  public static long doubleToSortableLong(double val) {
+    long f = Double.doubleToLongBits(val);
+    if (f<0) f ^= 0x7fffffffffffffffL;
+    return f;
   }
 
   /**
-   * Stores a Date value in trie-form in document for indexing.
-   * <p>To store the different precisions of the long values (from one byte [only the most significant one] to the full eight bytes),
-   * each lower precision is prefixed by the length ({@link #TRIE_CODED_PADDING_START}<code>+precision</code>),
-   * in an extra "helper" field with a name of <code>fieldname+{@link #LOWER_PRECISION_FIELD_NAME_SUFFIX}</code>
-   * (i.e. fieldname "numeric" => lower precision's name "numeric#trie").
-   * The full long is not prefixed at all and indexed and stored according to the given flags in the original field name.
-   * If the field should not be searchable, set <code>index</code> to <code>false</code>. It is then only stored (for convenience).
-   * Fields added to a document using this method can be queried by {@link TrieRangeQuery}. 
+   * Converts a sortable <code>long</code> back to a <code>double</code>.
+   * @see #doubleToSortableLong
    */
-  public void addDateTrieCodedDocumentField(
-    final Document ldoc, final String fieldname,
-    final Date val, final boolean index, final Field.Store store
-  ) {
-    addConvertedTrieCodedDocumentField(ldoc, fieldname, dateToTrieCoded(val), index, store);
+  public static double sortableLongToDouble(long val) {
+    if (val<0) val ^= 0x7fffffffffffffffL;
+    return Double.longBitsToDouble(val);
   }
 
   /**
-   * Stores a long value in trie-form in document for indexing.
-   * <p>To store the different precisions of the long values (from one byte [only the most significant one] to the full eight bytes),
-   * each lower precision is prefixed by the length ({@link #TRIE_CODED_PADDING_START}<code>+precision</code>),
-   * in an extra "helper" field with a name of <code>fieldname+{@link #LOWER_PRECISION_FIELD_NAME_SUFFIX}</code>
-   * (i.e. fieldname "numeric" => lower precision's name "numeric#trie").
-   * The full long is not prefixed at all and indexed and stored according to the given flags in the original field name.
-   * If the field should not be searchable, set <code>index</code> to <code>false</code>. It is then only stored (for convenience).
-   * Fields added to a document using this method can be queried by {@link TrieRangeQuery}. 
+   * Converts a <code>float</code> value to a sortable signed <code>int</code>.
+   * The value is converted by getting their IEEE 754 floating-point &quot;float format&quot;
+   * bit layout and then some bits are swapped, to be able to compare the result as int.
+   * By this the precision is not reduced, but the value can easily used as an int.
+   * @see #sortableIntToFloat
    */
-  public void addLongTrieCodedDocumentField(
-    final Document ldoc, final String fieldname,
-    final long val, final boolean index, final Field.Store store
-  ) {
-    addConvertedTrieCodedDocumentField(ldoc, fieldname, longToTrieCoded(val), index, store);
+  public static int floatToSortableInt(float val) {
+    int f = Float.floatToIntBits(val);
+    if (f<0) f ^= 0x7fffffff;
+    return f;
   }
-  
-  /** A factory method, that generates a {@link SortField} instance for sorting trie encoded values. */
-  public SortField getSortField(final String field) {
-    return new SortField(field, FIELD_CACHE_LONG_PARSER);
+
+  /**
+   * Converts a sortable <code>int</code> back to a <code>float</code>.
+   * @see #floatToSortableInt
+   */
+  public static float sortableIntToFloat(int val) {
+    if (val<0) val ^= 0x7fffffff;
+    return Float.intBitsToFloat(val);
   }
-  
-  /** A factory method, that generates a {@link SortField} instance for sorting trie encoded values. */
-  public SortField getSortField(final String field, boolean reverse) {
+
+  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded long values. */
+  public static SortField getLongSortField(final String field, boolean reverse) {
     return new SortField(field, FIELD_CACHE_LONG_PARSER, reverse);
   }
   
-  /** A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as longs. */
-  public final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER=new ExtendedFieldCache.LongParser(){
-    public final long parseLong(String val) {
-      return trieCodedToLong(val);
+  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded int values. */
+  public static SortField getIntSortField(final String field, boolean reverse) {
+    return new SortField(field, FIELD_CACHE_INT_PARSER, reverse);
+  }
+
+  /**
+   * Returns a sequence of trie coded numbers suitable for {@link LongTrieRangeFilter}.
+   * Each successive string in the list has had it's precision reduced by <code>precisionStep</code>.
+   * For sorting, index the first full-precision value into a separate field and the
+   * remaining values into another field.
+   * <p>To achieve this, use {@link #addIndexedFields(Document,String,String[])}.
+   */
+  public static String[] trieCodeLong(long val, int precisionStep) {
+    if (precisionStep<1 || precisionStep>64)
+      throw new IllegalArgumentException("precisionStep may only be 1..64");
+    String[] arr = new String[63/precisionStep+1];
+    int idx = 0;
+    for (int shift=0; shift<64; shift+=precisionStep) {
+      arr[idx++] = longToPrefixCoded(val, shift);
     }
-  };
-  
-  /** A parser instance for filling a {@link ExtendedFieldCache}, that parses trie encoded fields as doubles. */
-  public final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER=new ExtendedFieldCache.DoubleParser(){
-    public final double parseDouble(String val) {
-      return trieCodedToDouble(val);
+    return arr;
+  }
+
+  /**
+   * Returns a sequence of trie coded numbers suitable for {@link IntTrieRangeFilter}.
+   * Each successive string in the list has had it's precision reduced by <code>precisionStep</code>.
+   * For sorting, index the first full-precision value into a separate field and the
+   * remaining values into another field.
+   * <p>To achieve this, use {@link #addIndexedFields(Document,String,String[])}.
+   */
+  public static String[] trieCodeInt(int val, int precisionStep) {
+    if (precisionStep<1 || precisionStep>32)
+      throw new IllegalArgumentException("precisionStep may only be 1..32");
+    String[] arr = new String[31/precisionStep+1];
+    int idx = 0;
+    for (int shift=0; shift<32; shift+=precisionStep) {
+      arr[idx++] = intToPrefixCoded(val, shift);
     }
-  };
+    return arr;
+  }
+
+  /**
+   * Indexes the full precision value only in the main field (for sorting), and indexes all other
+   * lower precision values in <code>field+LOWER_PRECISION_FIELD_NAME_SUFFIX</code>.
+   * <p><b>This is the recommended variant to add trie fields to the index.</b>
+   * By this it is possible to sort the field using a <code>SortField</code> instance
+   * returned by {@link #getLongSortField} or {@link #getIntSortField}.
+   * <p>This method does not store the fields and saves no term frequency or norms
+   * (which are normally not needed for trie fields). If you want to additionally store
+   * the value, you can use the normal methods of {@link Document} to achive this, just specify
+   * <code>Field.Store.YES</code>, <code>Field.Index.NO</code> and the same field name.
+   * <p>Examples:
+   * <pre>
+   *  addIndexedFields(doc, "mydouble", trieCodeLong(doubleToSortableLong(1.414d), 4));
+   *  addIndexedFields(doc, "mylong", trieCodeLong(123456L, 4));
+   * </pre>
+   **/
+  public static void addIndexedFields(Document doc, String field, String[] trieCoded) {
+    addIndexedFields(doc, new String[]{field, field+LOWER_PRECISION_FIELD_NAME_SUFFIX}, trieCoded);
+  }
+
+  /**
+   * Expert: Indexes the full precision value only in the main field (for sorting), and indexes all other
+   * lower precision values in the <code>lowerPrecision</code> field.
+   * If you do not specify the same field name for the main and lower precision one,
+   * it is possible to sort the field using a <code>SortField</code> instance
+   * returned by {@link #getLongSortField} or {@link #getIntSortField}.
+   * <p>This method does not store the fields and saves no term frequency or norms
+   * (which are normally not needed for trie fields). If you want to additionally store
+   * the value, you can use the normal methods of {@link Document} to achive this, just specify
+   * <code>Field.Store.YES</code>, <code>Field.Index.NO</code> and the same main field name.
+   * <p>Examples:
+   * <pre>
+   *  addIndexedFields(doc, "mydouble", "mydoubletrie", trieCodeLong(doubleToSortableLong(1.414d), 4));
+   *  addIndexedFields(doc, "mylong", "mylongtrie", trieCodeLong(123456L, 4));
+   * </pre>
+   * @see #addIndexedFields(Document,String,String[])
+   **/
+  public static void addIndexedFields(Document doc, String field, String lowerPrecisionField, String[] trieCoded) {
+    addIndexedFields(doc, new String[]{field, lowerPrecisionField}, trieCoded);
+  }
+
+  /**
+   * Expert: Indexes a series of trie coded values into a lucene {@link Document}
+   * using the given field names.
+   * If the array of field names is shorter than the trie coded one, all trie coded
+   * values with higher index get the last field name.
+   * <p>This method does not store the fields and saves no term frequency or norms
+   * (which are normally not needed for trie fields). If you want to additionally store
+   * the value, you can use the normal methods of {@link Document} to achive this, just specify
+   * <code>Field.Store.YES</code>, <code>Field.Index.NO</code> and the same main field name.
+   **/
+  public static void addIndexedFields(Document doc, String[] fields, String[] trieCoded) {
+    for (int i=0; i<trieCoded.length; i++) {
+      final int fnum = Math.min(fields.length-1, i);
+      final Field f = new Field(fields[fnum], trieCoded[i], Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
+      f.setOmitTf(true);
+      doc.add(f);
+    }
+  }
+
+  /**
+   * Expert: Splits a long range recursively.
+   * You may implement a builder that adds clauses to a
+   * {@link org.apache.lucene.search.BooleanQuery} for each call to its
+   * {@link IntRangeBuilder#addRange(String,String,int)}
+   * method.
+   * <p>This method is used by {@link LongTrieRangeFilter}.
+   */
+  public static void splitLongRange(final LongRangeBuilder builder,
+    final int precisionStep,  final long minBound, final long maxBound
+  ) {
+    if (precisionStep<1 || precisionStep>64)
+      throw new IllegalArgumentException("precisionStep may only be 1..64");
+    splitRange(
+      builder, 64, precisionStep, minBound, maxBound,
+      0 /* start with no shift */
+    );
+  }
   
-  private final long mask;
+  /**
+   * Expert: Splits an int range recursively.
+   * You may implement a builder that adds clauses to a
+   * {@link org.apache.lucene.search.BooleanQuery} for each call to its
+   * {@link IntRangeBuilder#addRange(String,String,int)}
+   * method.
+   * <p>This method is used by {@link IntTrieRangeFilter}.
+   */
+  public static void splitIntRange(final IntRangeBuilder builder,
+    final int precisionStep,  final int minBound, final int maxBound
+  ) {
+    if (precisionStep<1 || precisionStep>32)
+      throw new IllegalArgumentException("precisionStep may only be 1..32");
+    splitRange(
+      builder, 32, precisionStep, (long)minBound, (long)maxBound,
+      0 /* start with no shift */
+    );
+  }
   
-  /** Number of bits used in this trie variant (2, 4, or 8) */
-  public final int TRIE_BITS;
+  /** This helper does the splitting for both 32 and 64 bit. */
+  private static void splitRange(
+    final Object builder, final int valSize,
+    final int precisionStep, final long minBound, final long maxBound,
+    final int shift
+  ) {
+    // calculate new bounds for inner precision
+    final long diff = 1L << (shift+precisionStep),
+      mask = ((1L<<precisionStep) - 1L) << shift;
+    final boolean
+      hasLower = (minBound & mask) != 0L,
+      hasUpper = (maxBound & mask) != mask;
+    final long
+      nextMinBound = (hasLower ? (minBound + diff) : minBound) & ~mask,
+      nextMaxBound = (hasUpper ? (maxBound - diff) : maxBound) & ~mask;
 
-  /** Length (in chars) of an encoded value (8, 16, or 32 chars) */
-  public final int TRIE_CODED_LENGTH;
+    if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound) {
+      // We are in the lowest precision or the next precision is not available.
+      addRange(builder, valSize, precisionStep, minBound, maxBound, shift);
+    } else {
+      if (hasLower)
+        addRange(builder, valSize, precisionStep, minBound, minBound | mask, shift);
+      if (hasUpper)
+        addRange(builder, valSize, precisionStep, maxBound & ~mask, maxBound, shift);
+      // recurse down to next precision
+      splitRange(
+        builder, valSize, precisionStep,
+        nextMinBound, nextMaxBound,
+        shift+precisionStep
+      );
+    }
+  }
+  
+  /** Helper that delegates to correct range builder */
+  private static void addRange(
+    final Object builder, final int valSize,
+    final int precisionStep, long minBound, long maxBound,
+    final int shift
+  ) {
+    // for the max bound set all lower bits (that were shifted away):
+    // this is important for testing or other usages of the splitted range
+    // (e.g. to reconstruct the full range). The prefixEncoding will remove
+    // the bits anyway, so they do not hurt!
+    maxBound |= (1L << shift) - 1L;
+    // delegate to correct range builder
+    switch(valSize) {
+      case 64:
+        ((LongRangeBuilder)builder).addRange(precisionStep, minBound, maxBound, shift);
+        break;
+      case 32:
+        ((IntRangeBuilder)builder).addRange(precisionStep, (int)minBound, (int)maxBound, shift);
+        break;
+      default:
+        // Should not happen!
+        throw new IllegalArgumentException("valSize must be 32 or 64.");
+    }
+  }
 
-  /** Character used as upper end (depends on trie bits, its <code>{@link #TRIE_CODED_SYMBOL_MIN}+2^{@link #TRIE_BITS}-1</code>) */
-  public final char TRIE_CODED_SYMBOL_MAX;
-
-  /** minimum encoded value of a numerical index entry: {@link Long#MIN_VALUE} */
-  public final String TRIE_CODED_NUMERIC_MIN;
-
-  /** maximum encoded value of a numerical index entry: {@link Long#MAX_VALUE} */
-  public final String TRIE_CODED_NUMERIC_MAX;
-
+  /**
+   * Expert: Callback for {@link #splitLongRange}.
+   * You need to overwrite only one of the methods.
+   */
+  public static abstract class LongRangeBuilder {
+    
+    /**
+     * Overwrite this method, if you like to receive the already prefix encoded range bounds.
+     * You can directly build classical range queries from them.
+     * The level gives the precision level (0 = highest precision) of the encoded values.
+     * This parameter could be used as an index to an array of fieldnames like the
+     * parameters to {@link #addIndexedFields(Document,String[],String[])} for specifying
+     * the field names for each precision:
+     * <pre>
+     *  String field = fields[Math.min(fields.length-1, level)];
+     * </pre>
+     */
+    public void addRange(String minPrefixCoded, String maxPrefixCoded, int level) {
+      throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * Overwrite this method, if you like to receive the raw long range bounds.
+     * You can use this for e.g. debugging purposes (print out range bounds).
+     */
+    public void addRange(final int precisionStep, final long min, final long max, final int shift) {
+      /*System.out.println(Long.toHexString((min^0x8000000000000000L) >>> shift)+".."+
+        Long.toHexString((max^0x8000000000000000L) >>> shift));*/
+      addRange(longToPrefixCoded(min, shift), longToPrefixCoded(max, shift), shift/precisionStep);
+    }
+  
+  }
+  
+  /**
+   * Expert: Callback for {@link #splitIntRange}.
+   * You need to overwrite only one of the methods.
+   */
+  public static abstract class IntRangeBuilder {
+    
+    /**
+     * Overwrite this method, if you like to receive the already prefix encoded range bounds.
+     * You can directly build classical range queries from them.
+     * The level gives the precision level (0 = highest precision) of the encoded values.
+     * This parameter could be used as an index to an array of fieldnames like the
+     * parameters to {@link #addIndexedFields(Document,String[],String[])} for specifying
+     * the field names for each precision:
+     * <pre>
+     *  String field = fields[Math.min(fields.length-1, level)];
+     * </pre>
+     */
+    public void addRange(String minPrefixCoded, String maxPrefixCoded, int level) {
+      throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * Overwrite this method, if you like to receive the raw int range bounds.
+     * You can use this for e.g. debugging purposes (print out range bounds).
+     */
+    public void addRange(final int precisionStep, final int min, final int max, final int shift) {
+      /*System.out.println(Integer.toHexString((min^0x80000000) >>> shift)+".."+
+        Integer.toHexString((max^0x80000000) >>> shift));*/
+      addRange(intToPrefixCoded(min, shift), intToPrefixCoded(max, shift), shift/precisionStep);
+    }
+  
+  }
+  
 }
