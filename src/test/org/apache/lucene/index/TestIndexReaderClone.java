@@ -403,4 +403,24 @@ public class TestIndexReaderClone extends LuceneTestCase {
   private void assertDelDocsRefCountEquals(int refCount, SegmentReader reader) {
     assertEquals(refCount, reader.deletedDocsRef.refCount());
   }
+  
+  public void testCloneSubreaders() throws Exception {
+    final Directory dir1 = new MockRAMDirectory();
+ 
+    TestIndexReaderReopen.createIndex(dir1, true);
+    IndexReader reader = IndexReader.open(dir1);
+    reader.deleteDocument(1); // acquire write lock
+    IndexReader[] subs = reader.getSequentialSubReaders();
+    assert subs.length > 1;
+    
+    IndexReader[] clones = new IndexReader[subs.length];
+    for (int x=0; x < subs.length; x++) {
+      clones[x] = (IndexReader) subs[x].clone();
+    }
+    reader.close();
+    for (int x=0; x < subs.length; x++) {
+      clones[x].close();
+    }
+    dir1.close();
+  }
 }

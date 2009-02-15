@@ -625,8 +625,15 @@ class SegmentReader extends DirectoryIndexReader {
 
   protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryIndexReader newReader;
-    
-    if (infos.size() == 1) {
+
+    if (infos == null) {
+      if (doClone) {
+        // OK: directly clone myself
+        newReader = reopenSegment(si, doClone, openReadOnly);
+      } else {
+        throw new UnsupportedOperationException("cannot reopen a standalone SegmentReader");
+      }
+    } else if (infos.size() == 1) {
       SegmentInfo si = infos.info(0);
       if (segment.equals(si.name) && si.getUseCompoundFile() == SegmentReader.this.si.getUseCompoundFile()) {
         newReader = reopenSegment(si, doClone, openReadOnly);

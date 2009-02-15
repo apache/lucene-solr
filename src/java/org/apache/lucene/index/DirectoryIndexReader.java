@@ -80,7 +80,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   boolean hasSegmentInfos() {
     return segmentInfos != null;
   }
-  
+
   protected DirectoryIndexReader() {}
   
   DirectoryIndexReader(Directory directory, SegmentInfos segmentInfos,
@@ -167,11 +167,16 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
 
-    final SegmentInfos infos = (SegmentInfos) segmentInfos.clone();
-    DirectoryIndexReader newReader = doReopen(infos, true, openReadOnly);
+    final SegmentInfos clonedInfos;
+    if (segmentInfos != null) {
+      clonedInfos = (SegmentInfos) segmentInfos.clone();
+    } else {
+      clonedInfos = null;
+    }
+    DirectoryIndexReader newReader = doReopen(clonedInfos, true, openReadOnly);
     
     if (this != newReader) {
-      newReader.init(directory, infos, closeDirectory, openReadOnly);
+      newReader.init(directory, clonedInfos, closeDirectory, openReadOnly);
       newReader.deletionPolicy = deletionPolicy;
     }
 

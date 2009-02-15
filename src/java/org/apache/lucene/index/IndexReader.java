@@ -1184,13 +1184,21 @@ public abstract class IndexReader implements Cloneable {
     return DirectoryIndexReader.listCommits(dir);
   }
 
-  /** Returns the sequential sub readers that this reader is
-   *  logically composed of.  IndexSearcher uses this API to
-   *  drive searching by one sub reader at a time.  If this
-   *  reader is not composed of sequential child readers, it
-   *  should return null.  If this method returns an empty
-   *  array, that means this reader is a null reader (for
-   *  example a MultiReader that has no sub readers).*/
+  /** Expert: returns the sequential sub readers that this
+   *  reader is logically composed of.  For example,
+   *  IndexSearcher uses this API to drive searching by one
+   *  sub reader at a time.  If this reader is not composed
+   *  of sequential child readers, it should return null.
+   *  If this method returns an empty array, that means this
+   *  reader is a null reader (for example a MultiReader
+   *  that has no sub readers).
+   *  <p>
+   *  NOTE: for a MultiSegmentReader, which is obtained by
+   *  {@link #open} when the index has more than one
+   *  segment, you should not use the sub-readers returned
+   *  by this method to make any changes (setNorm,
+   *  deleteDocument, etc.).  Doing so will likely lead to
+   *  index corruption.  Use the parent reader instead. */
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
