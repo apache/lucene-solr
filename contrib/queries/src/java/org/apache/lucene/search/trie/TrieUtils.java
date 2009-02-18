@@ -395,10 +395,7 @@ public final class TrieUtils {
   ) {
     if (precisionStep<1 || precisionStep>64)
       throw new IllegalArgumentException("precisionStep may only be 1..64");
-    splitRange(
-      builder, 64, precisionStep, minBound, maxBound,
-      0 /* start with no shift */
-    );
+    splitRange(builder, 64, precisionStep, minBound, maxBound);
   }
   
   /**
@@ -414,42 +411,40 @@ public final class TrieUtils {
   ) {
     if (precisionStep<1 || precisionStep>32)
       throw new IllegalArgumentException("precisionStep may only be 1..32");
-    splitRange(
-      builder, 32, precisionStep, (long)minBound, (long)maxBound,
-      0 /* start with no shift */
-    );
+    splitRange(builder, 32, precisionStep, (long)minBound, (long)maxBound);
   }
   
   /** This helper does the splitting for both 32 and 64 bit. */
   private static void splitRange(
     final Object builder, final int valSize,
-    final int precisionStep, final long minBound, final long maxBound,
-    final int shift
+    final int precisionStep, long minBound, long maxBound
   ) {
-    // calculate new bounds for inner precision
-    final long diff = 1L << (shift+precisionStep),
-      mask = ((1L<<precisionStep) - 1L) << shift;
-    final boolean
-      hasLower = (minBound & mask) != 0L,
-      hasUpper = (maxBound & mask) != mask;
-    final long
-      nextMinBound = (hasLower ? (minBound + diff) : minBound) & ~mask,
-      nextMaxBound = (hasUpper ? (maxBound - diff) : maxBound) & ~mask;
+    for (int shift=0;; shift+=precisionStep) {
+      // calculate new bounds for inner precision
+      final long diff = 1L << (shift+precisionStep),
+        mask = ((1L<<precisionStep) - 1L) << shift;
+      final boolean
+        hasLower = (minBound & mask) != 0L,
+        hasUpper = (maxBound & mask) != mask;
+      final long
+        nextMinBound = (hasLower ? (minBound + diff) : minBound) & ~mask,
+        nextMaxBound = (hasUpper ? (maxBound - diff) : maxBound) & ~mask;
 
-    if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound) {
-      // We are in the lowest precision or the next precision is not available.
-      addRange(builder, valSize, precisionStep, minBound, maxBound, shift);
-    } else {
+      if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound) {
+        // We are in the lowest precision or the next precision is not available.
+        addRange(builder, valSize, precisionStep, minBound, maxBound, shift);
+        // exit the split recursion loop
+        break;
+      }
+      
       if (hasLower)
         addRange(builder, valSize, precisionStep, minBound, minBound | mask, shift);
       if (hasUpper)
         addRange(builder, valSize, precisionStep, maxBound & ~mask, maxBound, shift);
-      // recurse down to next precision
-      splitRange(
-        builder, valSize, precisionStep,
-        nextMinBound, nextMaxBound,
-        shift+precisionStep
-      );
+      
+      // recurse to next precision
+      minBound = nextMinBound;
+      maxBound = nextMaxBound;
     }
   }
   
