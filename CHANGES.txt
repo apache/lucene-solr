@@ -310,6 +310,8 @@ Other Changes
 
 17. Upgraded to Lucene 2.9-dev r742220 (yonik)
 
+18. SOLR-1022: Better "ignored" field in example schema.xml (Peter Wolanin via hossman)
+
 Build
 
 ----------------------

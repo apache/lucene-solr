@@ -364,7 +364,7 @@
         field name or dynamic field, rather than reporting them as an error. 
         alternately, change the type="ignored" to some other type e.g. "text" if you want 
         unknown fields indexed and/or stored by default --> 
-   <!--dynamicField name="*" type="ignored" /-->
+   <!--dynamicField name="*" type="ignored" multiValued="true" /-->
    
  </fields>
 
