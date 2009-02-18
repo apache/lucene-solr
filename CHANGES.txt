@@ -179,6 +179,9 @@ Optimizations
  6. SOLR-971: Replace StringBuffer with StringBuilder for instances that do not require thread-safety.
     (Kay Kay via shalin)
 
+ 7. SOLR-921: SolrResourceLoader must cache short class name vs fully qualified classname 
+    (Noble Paul, hossman via shalin)
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
