@@ -262,7 +262,9 @@ public class CommonsHttpSolrServer extends SolrServer
     // The parser 'wt=' and 'version=' params are used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams();
     wparams.set( CommonParams.WT, parser.getWriterType() );
-    wparams.set( CommonParams.VERSION, parser.getVersion() );
+    if(parser.getClass() != BinaryResponseParser.class ){
+      wparams.set( CommonParams.VERSION, parser.getVersion());
+    }
     if( params == null ) {
       params = wparams;
     }

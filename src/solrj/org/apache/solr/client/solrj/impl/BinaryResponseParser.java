@@ -43,6 +43,11 @@ public class BinaryResponseParser extends ResponseParser {
     }
   }
 
+
+  public String getVersion() {
+    return "1";
+  }
+
   public NamedList<Object> processResponse(Reader reader) {
     throw new RuntimeException("Cannot handle character stream");
   }
