@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -62,7 +61,7 @@ public class DocBuilder {
   private Map<String, Object> session = new HashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
-  Map<String,Object> functionsNamespace;
+  Map<String, Object> functionsNamespace;
 
   public DocBuilder(DataImporter context, SolrWriter writer, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
@@ -97,7 +96,7 @@ public class DocBuilder {
       int currentProcess = -1;
       if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
         currentProcess = Context.DELTA_DUMP;
-      } else  {
+      } else {
         currentProcess = Context.FULL_DUMP;
       }
       listener.onEvent(new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this));
@@ -142,10 +141,10 @@ public class DocBuilder {
       String delQuery = e.allAttributes.get("preImportDeleteQuery");
       if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP
               && dataImporter.getLastIndexTime() != null) {
-        cleanByQuery(delQuery , fullCleanDone);
+        cleanByQuery(delQuery, fullCleanDone);
         doDelta();
         delQuery = e.allAttributes.get("postImportDeleteQuery");
-        if(delQuery != null)  {
+        if (delQuery != null) {
           fullCleanDone.set(false);
           cleanByQuery(delQuery, fullCleanDone);
         }
@@ -153,7 +152,7 @@ public class DocBuilder {
         cleanByQuery(delQuery, fullCleanDone);
         doFullDump();
         delQuery = e.allAttributes.get("postImportDeleteQuery");
-        if(delQuery != null)  {
+        if (delQuery != null) {
           fullCleanDone.set(false);
           cleanByQuery(delQuery, fullCleanDone);
         }
@@ -175,11 +174,11 @@ public class DocBuilder {
       }
     } else {
       // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
-      if (!requestParameters.clean)  {
-        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0)  {
+      if (!requestParameters.clean) {
+        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
           commit();
         }
-      } else  {
+      } else {
         // Finished operation normally, commit now
         commit();
       }
@@ -256,6 +255,9 @@ public class DocBuilder {
       vri.addNamespace(DataConfig.IMPORTER_NS + ".delta", map);
       buildDocument(vri, null, map, root, true, null);
       pkIter.remove();
+      // check for abort
+      if (stop.get())
+        break;
     }
 
     if (!stop.get()) {
@@ -289,7 +291,6 @@ public class DocBuilder {
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
-    vr.context = ctx;
     entityProcessor.init(ctx);
 
     if (requestParameters.start > 0) {
@@ -436,9 +437,9 @@ public class DocBuilder {
         }
         //else do nothing. if we add it it may fail
       } else {
-        if (field != null ) {
+        if (field != null) {
           for (DataConfig.Field f : field) {
-            if(f.toWrite) addFieldToDoc(entry.getValue(), f.getName(), f.boost, f.multiValued, doc);
+            if (f.toWrite) addFieldToDoc(entry.getValue(), f.getName(), f.boost, f.multiValued, doc);
           }
         }
       }
@@ -509,6 +510,9 @@ public class DocBuilder {
         //this ensures that we start from the leaf nodes
         myModifiedPks.addAll(collectDelta(entity1, entity, resolver, context,
                 deletedRows));
+        //someone called abort
+        if (stop.get())
+          return new HashSet();
       }
 
     }
@@ -530,6 +534,9 @@ public class DocBuilder {
 
       deltaSet.add(row);
       importStatistics.rowsCount.incrementAndGet();
+      // check for abort
+      if (stop.get())
+        return new HashSet();
     }
     //get the deleted rows for this entity
     Set<Map<String, Object>> deletedSet = new HashSet<Map<String, Object>>();
@@ -548,6 +555,9 @@ public class DocBuilder {
 
       deletedSet.add(row);
       importStatistics.rowsCount.incrementAndGet();
+      // check for abort
+      if (stop.get())
+        return new HashSet();
     }
 
     //asymmetric Set difference
@@ -567,11 +577,18 @@ public class DocBuilder {
       parentEntityProcessor.init(context2);
       // identifying deleted rows with deltas
 
-      for (Map<String, Object> row : myModifiedPks)
+      for (Map<String, Object> row : myModifiedPks) {
         getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
+        // check for abort
+        if (stop.get())
+          return new HashSet();
+      }
       // running the same for deletedrows
       for (Map<String, Object> row : deletedSet) {
         getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
+        // check for abort
+        if (stop.get())
+          return new HashSet();
       }
     }
     LOG.info("Completed parentDeltaQuery for Entity: " + entity.name);
@@ -594,6 +611,9 @@ public class DocBuilder {
 
         parentKeyList.add(parentRow);
         importStatistics.rowsCount.incrementAndGet();
+        // check for abort
+        if (stop.get())
+          return;
       }
 
     } finally {
@@ -662,11 +682,11 @@ public class DocBuilder {
 
     public Map<String, Object> getStatsSnapshot() {
       Map<String, Object> result = new HashMap<String, Object>();
-      result.put("docCount",docCount.get());
-      result.put("deletedDocCount",deletedDocCount.get());
-      result.put("rowCount",rowsCount.get());
-      result.put("queryCount",rowsCount.get());
-      result.put("skipDocCount",skipDocCount.get());
+      result.put("docCount", docCount.get());
+      result.put("deletedDocCount", deletedDocCount.get());
+      result.put("rowCount", rowsCount.get());
+      result.put("queryCount", rowsCount.get());
+      result.put("skipDocCount", skipDocCount.get());
       return result;
     }
 
