@@ -20,11 +20,15 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
+import java.util.Set;
 
 /** A Spans that is formed from the ordered subspans of a SpanNearQuery
  * where the subspans do not overlap and have a maximum slop between them.
@@ -234,17 +238,22 @@ class NearSpansOrdered implements PayloadSpans {
   private boolean shrinkToAfterShortestMatch() throws IOException {
     matchStart = subSpans[subSpans.length - 1].start();
     matchEnd = subSpans[subSpans.length - 1].end();
+    Set possibleMatchPayloads = new HashSet();
     if (subSpans[subSpans.length - 1].isPayloadAvailable()) {
-      matchPayload.addAll(subSpans[subSpans.length - 1].getPayload());
+      possibleMatchPayloads.addAll(subSpans[subSpans.length - 1].getPayload());
     }
+
+    Collection possiblePayload = null;
+    
     int matchSlop = 0;
     int lastStart = matchStart;
     int lastEnd = matchEnd;
     for (int i = subSpans.length - 2; i >= 0; i--) {
       PayloadSpans prevSpans = subSpans[i];
-      
-      if (subSpans[i].isPayloadAvailable()) {
-        matchPayload.addAll(0, subSpans[i].getPayload());
+      if (prevSpans.isPayloadAvailable()) {
+        Collection payload = prevSpans.getPayload();
+        possiblePayload = new ArrayList(payload.size());
+        possiblePayload.addAll(payload);
       }
       
       int prevStart = prevSpans.start();
@@ -265,9 +274,19 @@ class NearSpansOrdered implements PayloadSpans {
           } else { // prevSpans still before (lastStart, lastEnd)
             prevStart = ppStart;
             prevEnd = ppEnd;
+            if (prevSpans.isPayloadAvailable()) {
+              Collection payload = prevSpans.getPayload();
+              possiblePayload = new ArrayList(payload.size());
+              possiblePayload.addAll(payload);
+            }
           }
         }
       }
+
+      if (possiblePayload != null) {
+        possibleMatchPayloads.addAll(possiblePayload);
+      }
+      
       assert prevStart <= matchStart;
       if (matchStart > prevEnd) { // Only non overlapping spans add to slop.
         matchSlop += (matchStart - prevEnd);
@@ -280,7 +299,14 @@ class NearSpansOrdered implements PayloadSpans {
       lastStart = prevStart;
       lastEnd = prevEnd;
     }
-    return matchSlop <= allowedSlop; // ordered and allowed slop
+    
+    boolean match = matchSlop <= allowedSlop;
+    
+    if(match && possibleMatchPayloads.size() > 0) {
+      matchPayload.addAll(possibleMatchPayloads);
+    }
+
+    return match; // ordered and allowed slop
   }
 
   public String toString() {
@@ -288,4 +314,3 @@ class NearSpansOrdered implements PayloadSpans {
       (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));
   }
 }
-

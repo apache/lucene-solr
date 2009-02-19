@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Payload;
@@ -40,8 +42,10 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 
 public class TestPayloadSpans extends TestCase {
@@ -280,6 +284,115 @@ public class TestPayloadSpans extends TestCase {
     assertTrue(seen + " does not equal: " + expectedNumSpans, seen == expectedNumSpans);
   }
   
+
+  public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
+      LockObtainFailedException, IOException {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
+        IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("content", new StringReader("a b c d e f g h i j a k")));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexSearcher is = new IndexSearcher(directory);
+
+    SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
+    SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
+    SpanQuery[] sqs = { stq1, stq2 };
+    SpanNearQuery snq = new SpanNearQuery(sqs, 1, true);
+    PayloadSpans spans = snq.getPayloadSpans(is.getIndexReader());
+
+    TopDocs topDocs = is.search(snq, 1);
+    Set payloadSet = new HashSet();
+    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+      while (spans.next()) {
+        Collection payloads = spans.getPayload();
+
+        for (Iterator it = payloads.iterator(); it.hasNext();) {
+          payloadSet.add(new String((byte[]) it.next()));
+        }
+      }
+    }
+    assertEquals(2, payloadSet.size());
+    assertTrue(payloadSet.contains("a:Noise:10"));
+    assertTrue(payloadSet.contains("k:Noise:11"));
+  }
+  
+  public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
+      LockObtainFailedException, IOException {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
+        IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("content", new StringReader("a b a d k f a h i k a k")));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexSearcher is = new IndexSearcher(directory);
+
+    SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
+    SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
+    SpanQuery[] sqs = { stq1, stq2 };
+    SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
+    PayloadSpans spans = snq.getPayloadSpans(is.getIndexReader());
+
+    TopDocs topDocs = is.search(snq, 1);
+    Set payloadSet = new HashSet();
+    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+      while (spans.next()) {
+        Collection payloads = spans.getPayload();
+        int cnt = 0;
+        for (Iterator it = payloads.iterator(); it.hasNext();) {
+          payloadSet.add(new String((byte[]) it.next()));
+        }
+      }
+    }
+    assertEquals(2, payloadSet.size());
+    assertTrue(payloadSet.contains("a:Noise:10"));
+    assertTrue(payloadSet.contains("k:Noise:11"));
+  }
+  
+  public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
+      LockObtainFailedException, IOException {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
+        IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("content", new StringReader("j k a l f k k p a t a k l k t a")));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexSearcher is = new IndexSearcher(directory);
+
+    SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
+    SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
+    SpanQuery[] sqs = { stq1, stq2 };
+    SpanNearQuery snq = new SpanNearQuery(sqs, 0, true);
+    PayloadSpans spans = snq.getPayloadSpans(is.getIndexReader());
+
+    TopDocs topDocs = is.search(snq, 1);
+    Set payloadSet = new HashSet();
+    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+      while (spans.next()) {
+        Collection payloads = spans.getPayload();
+
+        for (Iterator it = payloads.iterator(); it.hasNext();) {
+          payloadSet.add(new String((byte[]) it.next()));
+        }
+      }
+    }
+    assertEquals(2, payloadSet.size());
+    if(DEBUG) {
+      Iterator pit = payloadSet.iterator();
+      while (pit.hasNext()) {
+        System.out.println("match:" + pit.next());
+      }
+    }
+    assertTrue(payloadSet.contains("a:Noise:10"));
+    assertTrue(payloadSet.contains("k:Noise:11"));
+  }
+  
   private IndexSearcher getSearcher() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
@@ -371,6 +484,15 @@ public class TestPayloadSpans extends TestCase {
         }
         pos += result.getPositionIncrement();
       }
+      return result;
+    }
+  }
+  
+  public class TestPayloadAnalyzer extends Analyzer {
+
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      TokenStream result = new LowerCaseTokenizer(reader);
+      result = new PayloadFilter(result, fieldName);
       return result;
     }
   }
