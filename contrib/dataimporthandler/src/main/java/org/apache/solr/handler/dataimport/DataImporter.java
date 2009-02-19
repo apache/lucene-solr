@@ -462,7 +462,7 @@ public class DataImporter {
 
     public int start = 0;
 
-    public int rows = Integer.MAX_VALUE;
+    public long rows = Integer.MAX_VALUE;
 
     public boolean clean = true;
 

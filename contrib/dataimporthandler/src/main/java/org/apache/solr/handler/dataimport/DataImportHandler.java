@@ -260,11 +260,6 @@ public class DataImportHandler extends RequestHandlerBase implements
               debugDocuments = new ArrayList<SolrInputDocument>();
             debugDocuments.add(document);
           }
-          if (importer.getDocBuilder().importStatistics.docCount.get() >= requestParams.rows) {
-            // Abort this operation now
-            importer.getDocBuilder().abort();
-            LOG.info("Indexing stopped at docCount = " + importer.getDocBuilder().importStatistics.docCount);
-          }
           return super.upload(document);
         } catch (RuntimeException e) {
           LOG.error( "Exception while adding: " + document, e);

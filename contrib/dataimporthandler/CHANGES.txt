@@ -138,6 +138,9 @@ Bug Fixes
               of SimpleDateFormat by multiple threads.
               (Ryuuichi Kumai via shalin)
 
+18.SOLR-1024: Calling abort on DataImportHandler import commits data instead of calling rollback.
+              (shalin)
+
 Documentation
 ----------------------
 

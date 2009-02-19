@@ -161,17 +161,9 @@ public class DocBuilder {
     }
 
     if (stop.get()) {
-      if (DataImporter.ABORT_CMD.equals(requestParameters.command)) {
-        // Dont commit if aborted using command=abort
-        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
-        rollback();
-      } else if (requestParameters.commit) {
-        // Debug mode, commit if commit=true was specified
-        commit();
-        if (document.onImportEnd != null) {
-          invokeEventListener(document.onImportEnd);
-        }
-      }
+      // Dont commit if aborted using command=abort
+      statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+      rollback();
     } else {
       // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
       if (!requestParameters.clean) {
@@ -344,6 +336,10 @@ public class DocBuilder {
           if (entity.isDocRoot) {
             if (seenDocCount <= requestParameters.start)
               continue;
+            if (seenDocCount > requestParameters.start + requestParameters.rows)  {
+              LOG.info("Indexing stopped at docCount = " + importStatistics.docCount);
+              break;
+            }
           }
 
           if (verboseDebug) {
