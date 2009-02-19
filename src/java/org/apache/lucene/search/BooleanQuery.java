@@ -325,9 +325,11 @@ public class BooleanQuery extends Query {
    * </p>
    *
    * <p>
-   * Specifics: By setting this option to true, calls to 
-   * {@link HitCollector#collect(int,float)} might be
-   * invoked first for docid N and only later for docid N-1.
+   * Specifics: By setting this option to true, docid N might be scored
+   * for a single segment before docid N-1. Across multiple segments,
+   * docs may be scored out of order regardless of this setting - it only
+   * applies to scoring a single segment.
+   * 
    * Being static, this setting is system wide.
    * </p>
    */
