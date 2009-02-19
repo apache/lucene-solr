@@ -11,6 +11,10 @@ Bug fixes
    numbers).  This bug was introduced with LUCENE-1219.  (Andrzej
    Bialecki via Mike McCandless).
 
+2. LUCENE-1429: Don't throw incorrect IllegalStateException from
+   IndexWriter.close() if you've hit an OOM when autoCommit is true.
+   (Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy

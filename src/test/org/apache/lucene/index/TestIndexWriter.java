@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.File;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -4139,5 +4141,31 @@ public class TestIndexWriter extends LuceneTestCase
       w.close();
       dir.close();
     }
+  }
+
+  // LUCENE-1429
+  public void testOutOfMemoryErrorCausesCloseToFail() throws Exception {
+
+    final List thrown = new ArrayList();
+
+    final IndexWriter writer = new IndexWriter(new MockRAMDirectory(), new StandardAnalyzer()) {
+        public void message(final String message) {
+          if (message.startsWith("now flush at close") && 0 == thrown.size()) {
+            thrown.add(null);
+            throw new OutOfMemoryError("fake OOME at " + message);
+          }
+        }
+      };
+
+    // need to set an info stream so message is called
+    writer.setInfoStream(new PrintStream(new ByteArrayOutputStream()));
+    try {
+      writer.close();
+      fail("OutOfMemoryError expected");
+    }
+    catch (final OutOfMemoryError expected) {}
+
+    // throws IllegalStateEx w/o bug fix
+    writer.close();
   }
 }

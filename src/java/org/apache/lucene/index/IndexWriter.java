@@ -1575,17 +1575,16 @@ public class IndexWriter {
    */
   public void close(boolean waitForMerges) throws CorruptIndexException, IOException {
 
-    // If any methods have hit OutOfMemoryError, then abort
-    // on close, in case the internal state of IndexWriter
-    // or DocumentsWriter is corrupt
-    if (hitOOM) {
-      rollback();
-      return;
-    }
-
     // Ensure that only one thread actually gets to do the closing:
-    if (shouldClose())
-      closeInternal(waitForMerges);
+    if (shouldClose()) {
+      // If any methods have hit OutOfMemoryError, then abort
+      // on close, in case the internal state of IndexWriter
+      // or DocumentsWriter is corrupt
+      if (hitOOM)
+        rollbackInternal();
+      else
+        closeInternal(waitForMerges);
+    }
   }
 
   // Returns true if this thread should attempt to close, or
@@ -3297,6 +3296,9 @@ public class IndexWriter {
    * @deprecated please call {@link #commit()}) instead
    */
   public final void flush() throws CorruptIndexException, IOException {  
+    if (hitOOM)
+      throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot flush");
+
     flush(true, false, true);
   }
 
