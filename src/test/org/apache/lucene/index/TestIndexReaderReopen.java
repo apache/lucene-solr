@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -43,6 +41,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
@@ -603,7 +602,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     TestIndexReader.assertIndexEquals(index1, index2);
     
     try {
-      ReaderCouple couple = refreshReader(index1, test, 0, true);
+      refreshReader(index1, test, 0, true);
       fail("Expected exception not thrown.");
     } catch (Exception e) {
       // expected exception
@@ -999,4 +998,63 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     indexDir = new File(tempDir, "IndexReaderReopen");
   }
   
+  // LUCENE-1453
+  public void testFSDirectoryReopen() throws CorruptIndexException, IOException {
+    Directory dir1 = FSDirectory.getDirectory(indexDir);
+    createIndex(dir1, false);
+    dir1.close();
+
+    IndexReader ir = IndexReader.open(indexDir);
+    modifyIndex(3, ir.directory());
+    IndexReader newIr = ir.reopen();
+    modifyIndex(3, newIr.directory());
+    IndexReader newIr2 = newIr.reopen();
+    modifyIndex(3, newIr2.directory());
+    IndexReader newIr3 = newIr2.reopen();
+    
+    ir.close();
+    newIr.close();
+    newIr2.close();
+    
+    // shouldn't throw Directory AlreadyClosedException
+    modifyIndex(3, newIr3.directory());
+    newIr3.close();
+  }
+
+  // LUCENE-1453
+  public void testFSDirectoryReopen2() throws CorruptIndexException, IOException {
+
+    String tempDir = System.getProperty("java.io.tmpdir");
+    if (tempDir == null)
+      throw new IOException("java.io.tmpdir undefined, cannot run test");
+    File indexDir2 = new File(tempDir, "IndexReaderReopen2");
+
+    Directory dir1 = FSDirectory.getDirectory(indexDir2);
+    createIndex(dir1, false);
+
+    IndexReader lastReader = IndexReader.open(indexDir2);
+    
+    Random r = new Random(42);
+    for(int i=0;i<10;i++) {
+      int mod = r.nextInt(5);
+      modifyIndex(mod, lastReader.directory());
+      IndexReader reader = lastReader.reopen();
+      if (reader != lastReader) {
+        lastReader.close();
+        lastReader = reader;
+      }
+    }
+    lastReader.close();
+
+    // Make sure we didn't pick up too many incRef's along
+    // the way -- this close should be the final close:
+    dir1.close();
+
+    try {
+      dir1.list();
+      fail("did not hit AlreadyClosedException");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
+  }
 }
