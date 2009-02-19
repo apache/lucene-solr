@@ -79,7 +79,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           final int valueLength = stringValue.length();
-          Token token = perThread.localToken.reinit(stringValue, fieldState.offset, fieldState.offset + valueLength);
+          Token token = perThread.localToken.reinit(stringValue, 0, valueLength);
           boolean success = false;
           try {
             consumer.add(token);

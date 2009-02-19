@@ -23,6 +23,9 @@ Bug fixes
    (masking an actual IOException) that takes String or File path.
    (Mike McCandless)
 
+5. LUCENE-1442: Multiple-valued NOT_ANALYZED fields can double-count
+   token offsets.  (Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy

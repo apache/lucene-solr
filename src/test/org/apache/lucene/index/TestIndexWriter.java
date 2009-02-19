@@ -4168,4 +4168,26 @@ public class TestIndexWriter extends LuceneTestCase
     // throws IllegalStateEx w/o bug fix
     writer.close();
   }
+
+  // LUCENE-1442
+  public void testDoubleOffsetCounting() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "abcd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(4, termOffsets[1].getStartOffset());
+    assertEquals(8, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
 }
