@@ -41,6 +41,9 @@ Bug fixes
 9. LUCENE-1519: Fix int overflow bug during segment merging.  (Deepak
    via Mike McCandless)
 
+10. LUCENE-1521: Fix int overflow bug when flushing segment.
+    (Shon Vella via Mike McCandless).
+
 
 ======================= Release 2.4.0 2008-10-06 =======================
 
