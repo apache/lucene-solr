@@ -291,6 +291,7 @@ public class DocBuilder {
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
+    vr.context = ctx;
     entityProcessor.init(ctx);
 
     if (requestParameters.start > 0) {
