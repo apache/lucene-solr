@@ -373,7 +373,7 @@ final class SegmentMerger {
 
       final long fdxFileLength = directory.fileLength(segment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
 
-      if (4+docCount*8 != fdxFileLength)
+      if (4+((long) docCount)*8 != fdxFileLength)
         // This is most likely a bug in Sun JRE 1.6.0_04/_05;
         // we detect that the bug has struck, here, and
         // throw an exception to prevent the corruption from
@@ -467,7 +467,7 @@ final class SegmentMerger {
 
     final long tvxSize = directory.fileLength(segment + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
 
-    if (4+mergedDocs*16 != tvxSize)
+    if (4+((long) mergedDocs)*16 != tvxSize)
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from

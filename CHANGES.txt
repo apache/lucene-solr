@@ -38,6 +38,9 @@ Bug fixes
    both bits() and getDocIdSet() methods are called. (Matt Jones via
    Mike McCandless)
 
+9. LUCENE-1519: Fix int overflow bug during segment merging.  (Deepak
+   via Mike McCandless)
+
 
 ======================= Release 2.4.0 2008-10-06 =======================
 
