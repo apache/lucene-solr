@@ -34,6 +34,10 @@ Bug fixes
 7. LUCENE-1457: Fix possible overflow bugs during binary
    searches. (Mark Miller via Mike McCandless)
 
+8. LUCENE-1459: Fix CachingWrapperFilter to not throw exception if
+   both bits() and getDocIdSet() methods are called. (Matt Jones via
+   Mike McCandless)
+
 
 ======================= Release 2.4.0 2008-10-06 =======================
 

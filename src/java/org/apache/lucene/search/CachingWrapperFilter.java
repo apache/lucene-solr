@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
 import java.util.WeakHashMap;
 import java.util.Map;
@@ -51,11 +52,17 @@ public class CachingWrapperFilter extends Filter {
       cache = new WeakHashMap();
     }
 
+    Object cached = null;
     synchronized (cache) {  // check cache
-      BitSet cached = (BitSet) cache.get(reader);
-      if (cached != null) {
-        return cached;
-      }
+      cached = cache.get(reader);
+    }
+	
+    if (cached != null) {
+      if (cached instanceof BitSet) {
+        return (BitSet) cached;
+      } else if (cached instanceof DocIdBitSet)
+        return ((DocIdBitSet) cached).getBitSet();
+      // It would be nice to handle the DocIdSet case, but that's not really possible
     }
 
     final BitSet bits = filter.bits(reader);
@@ -72,11 +79,16 @@ public class CachingWrapperFilter extends Filter {
       cache = new WeakHashMap();
     }
 
+    Object cached = null;
     synchronized (cache) {  // check cache
-      DocIdSet cached = (DocIdSet) cache.get(reader);
-      if (cached != null) {
-        return cached;
-      }
+      cached = cache.get(reader);
+    }
+
+    if (cached != null) {
+      if (cached instanceof DocIdSet)
+        return (DocIdSet) cached;
+      else
+        return new DocIdBitSet((BitSet) cached);
     }
 
     final DocIdSet docIdSet = filter.getDocIdSet(reader);
