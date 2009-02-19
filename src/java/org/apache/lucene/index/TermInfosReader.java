@@ -195,7 +195,7 @@ final class TermInfosReader {
     int hi = indexTerms.length - 1;
 
     while (hi >= lo) {
-      int mid = (lo + hi) >> 1;
+      int mid = (lo + hi) >>> 1;
       int delta = term.compareTo(indexTerms[mid]);
       if (delta < 0)
 	hi = mid - 1;

@@ -31,6 +31,9 @@ Bug fixes
    happen if you use IndexReader.open with a File or String argument.
    (Mark Miller via Mike McCandless)
 
+7. LUCENE-1457: Fix possible overflow bugs during binary
+   searches. (Mark Miller via Mike McCandless)
+
 
 ======================= Release 2.4.0 2008-10-06 =======================
 

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -295,7 +294,7 @@ class MultiSegmentReader extends DirectoryIndexReader {
     int hi = numSubReaders - 1;                  // for first element less
 
     while (hi >= lo) {
-      int mid = (lo + hi) >> 1;
+      int mid = (lo + hi) >>> 1;
       int midValue = starts[mid];
       if (n < midValue)
         hi = mid - 1;
