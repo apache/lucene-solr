@@ -15,6 +15,10 @@ Bug fixes
    IndexWriter.close() if you've hit an OOM when autoCommit is true.
    (Mike McCandless)
 
+3. LUCENE-1474: If IndexReader.flush() is called twice when there were
+   pending deletions, it could lead to later false AssertionError
+   during IndexReader.open.  (Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy
