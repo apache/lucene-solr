@@ -57,15 +57,61 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     nvPairs = new ArrayList();
   }
 
+
+  /**
+   * Creates a NamedList instance containing the "name,value" pairs contained in the
+   * Entry[].
+   * 
+   * <p>
+   * Modifying the contents of the Entry[] after calling this constructor may change
+   * the NamedList (in future versions of Solr), but this is not garunteed and should
+   * not be relied upon.  To modify the NamedList, refer to {@link #add(String, Object)}
+   * or {@link #remove(String)}.
+   * </p>
+   *
+   * @param nameValuePairs the name value pairs
+   */
+  public NamedList(Map.Entry<String, ? extends T>[] nameValuePairs) {
+    nvPairs = nameValueMapToList(nameValuePairs);
+  }
+
   /**
    * Creates an instance backed by an explicitly specified list of
    * pairwise names/values.
    *
-   * @param nameValuePairs underlying List which should be used to implement a NamedList; modifying this List will affect the NamedList.
+   * <p>
+   * When using this constructor, runtime typesafety is only garunteed if the all
+   * even numbered elements of the input list are of type "T".
+   * </p>
+   *
+   * @param nameValuePairs underlying List which should be used to implement a NamedList
+   * @deprecated Use {@link #NamedList(java.util.Map.Entry[])} for the NamedList instantiation
    */
+  @Deprecated
   public NamedList(List nameValuePairs) {
     nvPairs=nameValuePairs;
   }
+  
+  /**
+   * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even
+   * indexed elements (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of
+   * the type "T".
+   *  
+   * @param nameValuePairs
+   * @return Modified List as per the above description
+   * @deprecated This a temporary placeholder method until the guts of the class
+   * are actually replaced by List&lt;String, ?&gt;.
+   * @see https://issues.apache.org/jira/browse/SOLR-912
+   */
+  @Deprecated
+  private List  nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
+    List result = new ArrayList();
+    for (Map.Entry<String, ?> ent : nameValuePairs) { 
+      result.add(ent.getKey());
+      result.add(ent.getValue());
+    }
+    return result;
+  }  
 
   /** The total number of name/value pairs */
   public int size() {
@@ -210,6 +256,43 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     sb.append('}');
 
     return sb.toString();
+  }
+  
+  /**
+   * 
+   * Helper class implementing Map.Entry<String, T> to store the key-value
+   * relationship in NamedList (the keys of which are String-s) 
+   * 
+   * @param <T>
+   */
+  public static final class NamedListEntry<T> implements Map.Entry<String, T> {
+
+    public NamedListEntry() { 
+      
+    }
+    
+    public NamedListEntry(String _key, T _value) {
+      key = _key;
+      value = _value;
+    }
+    
+    public String getKey() {
+      return key;
+    }
+
+    public T getValue() {
+      return  value;
+    }
+
+    public T setValue(T _value) {
+      T oldValue = value;
+      value = _value;
+      return oldValue;
+    } 
+    
+    private String key;
+    
+    private T value;
   }
 
   /**

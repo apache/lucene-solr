@@ -30,6 +30,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * TODO!
@@ -115,7 +116,7 @@ public class HighlightComponent extends SearchComponent
     if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList hlResult = new SimpleOrderedMap();
 
-      Object[] arr = new Object[rb.resultIds.size() * 2];
+      Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
       // TODO: make a generic routine to do automatic merging of id keyed data
       for (ShardRequest sreq : rb.finished) {
@@ -126,14 +127,13 @@ public class HighlightComponent extends SearchComponent
             String id = hl.getName(i);
             ShardDoc sdoc = rb.resultIds.get(id);
             int idx = sdoc.positionInResponse;
-            arr[idx<<1] = id;
-            arr[(idx<<1)+1] = hl.getVal(i);
+            arr[idx] = new NamedList.NamedListEntry<Object>(id, hl.getVal(i));
           }
         }
       }
 
       // remove nulls in case not all docs were able to be retrieved
-      rb.rsp.add("highlighting", removeNulls(new SimpleOrderedMap(Arrays.asList(arr))));      
+      rb.rsp.add("highlighting", removeNulls(new SimpleOrderedMap(arr)));      
     }
   }
 

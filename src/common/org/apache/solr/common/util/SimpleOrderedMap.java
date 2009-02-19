@@ -49,7 +49,12 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
    *
    * @param nameValuePairs underlying List which should be used to implement a SimpleOrderedMap; modifying this List will affect the SimpleOrderedMap.
    */
+  @Deprecated
   public SimpleOrderedMap(List nameValuePairs) {
+    super(nameValuePairs);
+  }
+  
+  public SimpleOrderedMap(Map.Entry<String, T>[] nameValuePairs) { 
     super(nameValuePairs);
   }
 

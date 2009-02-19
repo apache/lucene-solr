@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class is scheduled for deletion.  Please update your code to the moved package.
@@ -30,7 +31,12 @@ public class NamedList<T> extends org.apache.solr.common.util.NamedList<T> {
     super();
   }
 
+  @Deprecated
   public NamedList(List nameValuePairs) {
+    super(nameValuePairs);
+  }
+  
+  public NamedList(Map.Entry<String, T>[] nameValuePairs) { 
     super(nameValuePairs);
   }
 }

@@ -108,7 +108,7 @@ public class DebugComponent extends SearchComponent
       NamedList info = null;
       NamedList explain = new SimpleOrderedMap();
 
-      Object[] arr = new Object[rb.resultIds.size() * 2];
+      Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
 
       for (ShardRequest sreq : rb.finished) {
         if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) == 0) continue;
@@ -123,13 +123,12 @@ public class DebugComponent extends SearchComponent
             // TODO: lookup won't work for non-string ids... String vs Float
             ShardDoc sdoc = rb.resultIds.get(id);
             int idx = sdoc.positionInResponse;
-            arr[idx<<1] = id;
-            arr[(idx<<1)+1] = sexplain.getVal(i);
+            arr[idx] = new NamedList.NamedListEntry<Object>( id, sexplain.getVal(i)); 
           }
         }
       }
 
-      explain = HighlightComponent.removeNulls(new SimpleOrderedMap(Arrays.asList(arr)));
+      explain = HighlightComponent.removeNulls(new SimpleOrderedMap(arr));
 
       if (info == null) {
         info = new SimpleOrderedMap();

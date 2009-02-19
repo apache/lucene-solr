@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+import org.apache.solr.common.util.NamedList.NamedListEntry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,8 +48,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -554,8 +557,14 @@ public class TestHarness {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
                                        q[0], qtype, start, limit, args);
       }
-
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(),new NamedList(Arrays.asList(q)));
+      if (q.length%2 != 0) { 
+        throw new RuntimeException("The length of the string array (query arguments) needs to be even");
+      }
+      Map.Entry<String, String> [] entries = new NamedListEntry[q.length / 2];
+      for (int i = 0; i < q.length; i += 2) {
+        entries[i/2] = new NamedListEntry<String>(q[i], q[i+1]);
+      }
+      return new LocalSolrQueryRequest(TestHarness.this.getCore(), new NamedList(entries));
     }
   }
 }
