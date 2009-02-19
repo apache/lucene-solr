@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.solr.analysis.KeywordTokenizerFactory;
 import org.apache.solr.analysis.NGramFilterFactory;
 import org.apache.solr.common.SolrException;
