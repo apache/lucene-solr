@@ -71,8 +71,8 @@ public class EvaluatorBag {
    */
   public static Evaluator getSqlEscapingEvaluator() {
     return new Evaluator() {
-      public String evaluate(VariableResolver resolver, String expression) {
-        Object o = resolver.resolve(expression);
+      public String evaluate(String expression, Context context) {
+        Object o = context.getVariableResolver().resolve(expression);
 
         if (o == null)
           return null;
@@ -94,10 +94,10 @@ public class EvaluatorBag {
    */
   public static Evaluator getUrlEvaluator() {
     return new Evaluator() {
-      public String evaluate(VariableResolver resolver, String expression) {
+      public String evaluate(String expression, Context context) {
         Object value = null;
         try {
-          value = resolver.resolve(expression);
+          value = context.getVariableResolver().resolve(expression);
           if (value == null)
             return null;
 
@@ -130,7 +130,7 @@ public class EvaluatorBag {
    */
   public static Evaluator getDateFormatEvaluator() {
     return new Evaluator() {
-      public String evaluate(VariableResolver resolver, String expression) {
+      public String evaluate(String expression, Context context) {
         CacheEntry e = getCachedData(expression);
         String expr = e.key;
         SimpleDateFormat fmt = e.format;
@@ -146,7 +146,7 @@ public class EvaluatorBag {
                     "Invalid expression for date", exp);
           }
         } else {
-          Object o = resolver.resolve(expr);
+          Object o = context.getVariableResolver().resolve(expr);
           if (o == null)
             return "";
           Date date = null;
@@ -193,8 +193,7 @@ public class EvaluatorBag {
     };
   }
 
-  static Map<String, Object> getFunctionsNamespace(
-          final VariableResolver resolver, final List<Map<String, String>> fn, DocBuilder docBuilder) {
+  static Map<String, Object> getFunctionsNamespace(final List<Map<String, String>> fn, DocBuilder docBuilder) {
     final Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
     evaluators.put(DATE_FORMAT_EVALUATOR, getDateFormatEvaluator());
     evaluators.put(SQL_ESCAPE_EVALUATOR, getSqlEscapingEvaluator());
@@ -222,8 +221,11 @@ public class EvaluatorBag {
         Evaluator evaluator = evaluators.get(fname);
         if (evaluator == null)
           return null;
-        return evaluator.evaluate(resolver, m.group(2));
+        VariableResolverImpl vri = VariableResolverImpl.CURRENT_VARIABLE_RESOLVER.get();
+        Context ctx = vri == null ? null : vri.context;
+        return evaluator.evaluate(m.group(2), ctx);
       }
+
     };
   }
 

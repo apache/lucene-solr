@@ -13,6 +13,9 @@ $Id$
 Upgrading from Solr 1.3
 -----------------------
 
+Evaluator API has been changed in a non back-compatible way. Users who have developed custom Evaluators will need
+to change their code according to the new API for it to work. See SOLR-996 for details.
+
 Detailed Change List
 ----------------------
 
@@ -67,6 +70,9 @@ New Features
               (Fergus McMenemie, Noble Paul, shalin)
 
 16.SOLR-989:  Expose running statistics from the Context API.
+              (Noble Paul, shalin)
+
+17.SOLR-996:  Expose Context to Evaluators.
               (Noble Paul, shalin)
 
 Optimizations

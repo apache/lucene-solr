@@ -62,6 +62,7 @@ public class DocBuilder {
   private Map<String, Object> session = new HashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
+  Map<String,Object> functionsNamespace;
 
   public DocBuilder(DataImporter context, SolrWriter writer, DataImporter.RequestParams reqParams) {
     INSTANCE.set(this);
@@ -70,6 +71,7 @@ public class DocBuilder {
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     requestParameters = reqParams;
     verboseDebug = requestParameters.debug && requestParameters.verbose;
+    functionsNamespace = EvaluatorBag.getFunctionsNamespace(dataImporter.getConfig().functions, this);
   }
 
   public VariableResolverImpl getVariableResolver() {
@@ -80,13 +82,10 @@ public class DocBuilder {
               DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getLastIndexTime()));
     indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
     indexerNamespace.put("request", requestParameters.requestParams);
-    indexerNamespace.put("functions", EvaluatorBag.getFunctionsNamespace(resolver,
-            dataImporter.getConfig().functions, this));
+    indexerNamespace.put("functions", functionsNamespace);
     if (dataImporter.getConfig().script != null) {
-      indexerNamespace
-              .put(DataConfig.SCRIPT, dataImporter.getConfig().script.script);
-      indexerNamespace.put(DataConfig.SCRIPT_LANG,
-              dataImporter.getConfig().script.language);
+      indexerNamespace.put(DataConfig.SCRIPT, dataImporter.getConfig().script.script);
+      indexerNamespace.put(DataConfig.SCRIPT_LANG, dataImporter.getConfig().script.language);
     }
     resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
     return resolver;
@@ -290,6 +289,7 @@ public class DocBuilder {
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
+    vr.context = ctx;
     entityProcessor.init(ctx);
 
     if (requestParameters.start > 0) {
@@ -517,7 +517,9 @@ public class DocBuilder {
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
     resolver.addNamespace(null, (Map) entity.allAttributes);
     EntityProcessor entityProcessor = getEntityProcessor(entity, context.getCore());
-    entityProcessor.init(new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this));
+    ContextImpl context1 = new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this);
+    resolver.context = context1;
+    entityProcessor.init(context1);
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     //get the modified rows in this entity
     while (true) {
@@ -560,7 +562,9 @@ public class DocBuilder {
     //so propogate up the changes in the chain
     if (parentEntity != null && parentEntity.isDocRoot) {
       EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity, context.getCore());
-      parentEntityProcessor.init(new ContextImpl(parentEntity, resolver, null, Context.FIND_DELTA, session, null, this));
+      ContextImpl context2 = new ContextImpl(parentEntity, resolver, null, Context.FIND_DELTA, session, null, this);
+      resolver.context = context2;
+      parentEntityProcessor.init(context2);
       // identifying deleted rows with deltas
 
       for (Map<String, Object> row : myModifiedPks)

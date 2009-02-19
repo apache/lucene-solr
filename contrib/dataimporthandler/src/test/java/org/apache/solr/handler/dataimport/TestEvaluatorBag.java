@@ -23,14 +23,13 @@ import org.junit.Test;
 
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * <p>
- * Test for EvaluatorBag
- * </p>
+ * <p> Test for EvaluatorBag </p>
  *
  * @version $Id$
  * @since solr 1.3
@@ -66,8 +65,7 @@ public class TestEvaluatorBag {
   }
 
   /**
-   * Test method for
-   * {@link EvaluatorBag#getSqlEscapingEvaluator()}.
+   * Test method for {@link EvaluatorBag#getSqlEscapingEvaluator()}.
    */
   @Test
   public void testGetSqlEscapingEvaluator() {
@@ -76,8 +74,7 @@ public class TestEvaluatorBag {
   }
 
   /**
-   * Test method for
-   * {@link EvaluatorBag#getUrlEvaluator()}.
+   * Test method for {@link EvaluatorBag#getUrlEvaluator()}.
    */
   @Test
   public void testGetUrlEvaluator() throws Exception {
@@ -86,32 +83,35 @@ public class TestEvaluatorBag {
   }
 
   /**
-   * Test method for
-   * {@link EvaluatorBag#getDateFormatEvaluator()}.
+   * Test method for {@link EvaluatorBag#getDateFormatEvaluator()}.
    */
   @Test
   @Ignore
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
+    resolver.context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+
     assertEquals(new SimpleDateFormat("yyyy-MM-dd").format(new Date()),
-            dateFormatEval.evaluate(resolver, "'NOW',yyyy-MM-dd HH:mm"));
+            dateFormatEval.evaluate("'NOW',yyyy-MM-dd HH:mm", resolver.context));
 
     Map<String, Object> map = new HashMap<String, Object>();
     map.put("key", new Date());
     resolver.addNamespace("A", map);
 
     assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
-            dateFormatEval.evaluate(resolver, "A.key, yyyy-MM-dd HH:mm"));
+            dateFormatEval.evaluate("A.key, yyyy-MM-dd HH:mm", resolver.context));
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
+    ContextImpl ctx = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+    resolver.context = ctx;
     for (Map.Entry<String, String> entry : tests.entrySet()) {
       Map<String, Object> values = new HashMap<String, Object>();
       values.put("key", entry.getKey());
       resolver.addNamespace("A", values);
 
       String expected = (String) entry.getValue();
-      String actual = evaluator.evaluate(resolver, "A.key");
+      String actual = evaluator.evaluate("A.key", ctx);
       assertEquals(expected, actual);
     }
   }

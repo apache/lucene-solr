@@ -68,8 +68,10 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithValue() {
     VariableResolverImpl vri = new VariableResolverImpl();
+    ContextImpl context = new ContextImpl(null,vri, null, 0,Collections.EMPTY_MAP, null,null);
+    vri.context = context;
     vri.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(vri, Collections.EMPTY_LIST, null));
+            .getFunctionsNamespace(Collections.EMPTY_LIST, null));
     Map<String, Object> ns = new HashMap<String, Object>();
     Date d = new Date();
     ns.put("dt", d);
@@ -84,8 +86,10 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithExpr() {
     VariableResolverImpl vri = new VariableResolverImpl();
+    ContextImpl context = new ContextImpl(null,vri, null, 0,Collections.EMPTY_MAP, null,null);
+    vri.context = context;
     vri.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(vri, Collections.EMPTY_LIST,null));
+            .getFunctionsNamespace(Collections.EMPTY_LIST,null));
     String s = vri
             .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -113,13 +117,15 @@ public class TestVariableResolver {
   @Test
   public void testFunctionNamespace1() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
+    ContextImpl context = new ContextImpl(null,resolver, null, 0,Collections.EMPTY_MAP, null,null);
+    resolver.context = context;
     final List<Map<String ,String >> l = new ArrayList<Map<String, String>>();
     Map<String ,String > m = new HashMap<String, String>();
     m.put("name","test");
     m.put("class",E.class.getName());
     l.add(m);
     resolver.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(resolver, l,null));
+            .getFunctionsNamespace(l,null));
     String s = resolver
             .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
@@ -129,7 +135,7 @@ public class TestVariableResolver {
   }
 
   public static class E extends Evaluator{
-      public String evaluate(VariableResolver resolver, String expression) {
+      public String evaluate(String expression, Context context) {
         return "Hello World";
       }
   }

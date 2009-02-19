@@ -34,10 +34,20 @@ import java.util.regex.Pattern;
 public class VariableResolverImpl extends VariableResolver {
   private Map<String, Object> container = new HashMap<String, Object>();
 
+  /**
+   * Used for creating Evaluators
+   */
+  ContextImpl context;
+
   private static final TemplateString TEMPLATE_STRING = new TemplateString();
 
   public VariableResolverImpl() {
   }
+
+  /**
+   * The current resolver instance
+   */
+  static final ThreadLocal<VariableResolverImpl> CURRENT_VARIABLE_RESOLVER = new ThreadLocal<VariableResolverImpl>();
 
   @SuppressWarnings("unchecked")
   public VariableResolverImpl addNamespace(String name, Map<String, Object> map) {
@@ -84,22 +94,27 @@ public class VariableResolverImpl extends VariableResolver {
     if ("".equals(name))
       return null;
     String[] parts = DOT_SPLIT.split(name, 0);
-    Map<String, Object> namespace = container;
-    for (int i = 0; i < parts.length; i++) {
-      String thePart = parts[i];
-      if (i == parts.length - 1) {
-        return namespace.get(thePart);
-      }
-      Object temp = namespace.get(thePart);
-      if (temp == null) {
-        return namespace.get(mergeAll(parts, i));
-      } else {
-        if (temp instanceof Map) {
-          namespace = (Map) temp;
+    CURRENT_VARIABLE_RESOLVER.set(this);
+    try {
+      Map<String, Object> namespace = container;
+      for (int i = 0; i < parts.length; i++) {
+        String thePart = parts[i];
+        if (i == parts.length - 1) {
+          return namespace.get(thePart);
+        }
+        Object temp = namespace.get(thePart);
+        if (temp == null) {
+          return namespace.get(mergeAll(parts, i));
         } else {
-          return null;
+          if (temp instanceof Map) {
+            namespace = (Map) temp;
+          } else {
+            return null;
+          }
         }
       }
+    } finally {
+      CURRENT_VARIABLE_RESOLVER.set(null);
     }
     return null;
   }
