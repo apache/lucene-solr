@@ -19,6 +19,10 @@ Bug fixes
    pending deletions, it could lead to later false AssertionError
    during IndexReader.open.  (Mike McCandless)
 
+4. LUCENE-1430: Fix false AlreadyClosedException from IndexReader.open
+   (masking an actual IOException) that takes String or File path.
+   (Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy

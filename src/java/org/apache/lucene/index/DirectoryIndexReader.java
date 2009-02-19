@@ -96,26 +96,46 @@ abstract class DirectoryIndexReader extends IndexReader {
         DirectoryIndexReader reader;
 
         if (infos.size() == 1) {          // index is optimized
-          reader = SegmentReader.get(readOnly, infos, infos.info(0), closeDirectory);
+          reader = SegmentReader.get(readOnly, infos, infos.info(0), false);
         } else if (readOnly) {
-          reader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory);
+          reader = new ReadOnlyMultiSegmentReader(directory, infos, false);
         } else {
-          reader = new MultiSegmentReader(directory, infos, closeDirectory, false);
+          reader = new MultiSegmentReader(directory, infos, false, false);
         }
         reader.setDeletionPolicy(deletionPolicy);
+        reader.closeDirectory = closeDirectory;
         return reader;
       }
     };
 
-    if (commit == null)
-      return (DirectoryIndexReader) finder.run();
-    else {
-      if (directory != commit.getDirectory())
-        throw new IOException("the specified commit does not match the specified Directory");
-      // This can & will directly throw IOException if the
-      // specified commit point has been deleted:
-      return (DirectoryIndexReader) finder.doBody(commit.getSegmentsFileName());
+    DirectoryIndexReader reader = null;
+    try {
+      if (commit == null)
+        reader = (DirectoryIndexReader) finder.run();
+      else {
+        if (directory != commit.getDirectory())
+          throw new IOException("the specified commit does not match the specified Directory");
+        // This can & will directly throw IOException if the
+        // specified commit point has been deleted:
+        reader = (DirectoryIndexReader) finder.doBody(commit.getSegmentsFileName());
+      }
+    } finally {
+      // We passed false above for closeDirectory so that
+      // the directory would not be closed before we were
+      // done retrying, so at this point if we truly failed
+      // to open a reader, which means an exception is being
+      // thrown, then close the directory now:
+      if (reader == null && closeDirectory) {
+        try {
+          directory.close();
+        } catch (IOException ioe) {
+          // suppress, so we keep throwing original failure
+          // from opening the reader
+        }
+      }
     }
+
+    return reader;
   }
 
   public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
