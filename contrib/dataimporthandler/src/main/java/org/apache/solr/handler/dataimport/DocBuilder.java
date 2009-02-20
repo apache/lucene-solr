@@ -638,13 +638,6 @@ public class DocBuilder {
 
   public static final String TIME_ELAPSED = "Time Elapsed";
 
-  public static void main(String[] args) throws InterruptedException {
-    long l = System.currentTimeMillis();
-    Thread.sleep(1050);
-    System.out.println(getTimeElapsedSince(l));
-
-  }
-
   static String getTimeElapsedSince(long l) {
     l = System.currentTimeMillis() - l;
     return (l / (60000 * 60)) % 60 + ":" + (l / 60000) % 60 + ":" + (l / 1000)
