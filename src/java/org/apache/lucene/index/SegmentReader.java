@@ -671,6 +671,10 @@ class SegmentReader extends DirectoryIndexReader {
       return this;
     }    
 
+    // When cloning, the incoming SegmentInfos should not
+    // have any changes in it:
+    assert !doClone || (normsUpToDate && deletionsUpToDate);
+
     // clone reader
     SegmentReader clone;
     try {

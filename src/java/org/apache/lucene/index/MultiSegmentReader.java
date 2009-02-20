@@ -106,6 +106,10 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       try {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).getUseCompoundFile() != newReaders[i].getSegmentInfo().getUseCompoundFile()) {
+
+          // We should never see a totally new segment during cloning
+          assert !doClone;
+
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i));
         } else {
