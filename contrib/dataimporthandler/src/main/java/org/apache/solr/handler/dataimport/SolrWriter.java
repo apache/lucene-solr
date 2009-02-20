@@ -31,10 +31,7 @@ import java.util.Date;
 import java.util.Properties;
 
 /**
- * <p>
- * Writes documents to SOLR as well as provides methods for loading and
- * persisting last index time.
- * </p>
+ * <p> Writes documents to SOLR as well as provides methods for loading and persisting last index time. </p>
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
  *
@@ -92,29 +89,14 @@ public class SolrWriter {
     }
   }
 
-  Date getStartTime() {
-    Properties props = readIndexerProperties();
-    String result = props.getProperty(SolrWriter.LAST_INDEX_KEY);
 
-    try {
-      if (result != null)
-        return DataImporter.DATE_TIME_FORMAT.get().parse(result);
-    } catch (ParseException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.WARN,
-              "Unable to read last indexed time from: "
-                      + SolrWriter.IMPORTER_PROPERTIES, e);
-    }
-    return null;
-  }
-
-  private void persistStartTime(Date date) {
+  void persist(Properties p) {
     OutputStream propOutput = null;
 
     Properties props = readIndexerProperties();
 
     try {
-      props.put(SolrWriter.LAST_INDEX_KEY,
-              DataImporter.DATE_TIME_FORMAT.get().format(date));
+      props.putAll(p);
       String filePath = configDir;
       if (configDir != null && !configDir.endsWith(File.separator))
         filePath += File.separator;
@@ -138,7 +120,7 @@ public class SolrWriter {
     }
   }
 
-  private Properties readIndexerProperties() {
+  Properties readIndexerProperties() {
     Properties props = new Properties();
     InputStream propInput = null;
 
@@ -183,7 +165,7 @@ public class SolrWriter {
     }
   }
 
-  public void rollback()  {
+  public void rollback() {
     try {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand();
       processor.processRollback(rollback);
@@ -236,20 +218,19 @@ public class SolrWriter {
   }
 
   public Date loadIndexStartTime() {
-    return this.getStartTime();
-  }
+    Properties props;
+    props = readIndexerProperties();
+    String result = props.getProperty(SolrWriter.LAST_INDEX_KEY);
 
-  /**
-   * <p>
-   * Stores the last indexed time into the <code>IMPORTER_PROPERTIES</code>
-   * file. If any properties are already defined in the file, then they are
-   * preserved.
-   * </p>
-   *
-   * @param date the Date instance to be persisted
-   */
-  public void persistIndexStartTime(Date date) {
-    this.persistStartTime(date);
+    try {
+      if (result != null)
+        return DataImporter.DATE_TIME_FORMAT.get().parse(result);
+    } catch (ParseException e) {
+      throw new DataImportHandlerException(DataImportHandlerException.WARN,
+              "Unable to read last indexed time from: "
+                      + SolrWriter.IMPORTER_PROPERTIES, e);
+    }
+    return null;
   }
 
   /**

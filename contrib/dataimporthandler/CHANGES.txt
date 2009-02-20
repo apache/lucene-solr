@@ -75,6 +75,9 @@ New Features
 17.SOLR-996:  Expose Context to Evaluators.
               (Noble Paul, shalin)
 
+18.SOLR-783:  Enhance delta-imports by maintaining separate last_index_time for each entity.
+              (Jon Baer, Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
