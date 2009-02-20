@@ -15,7 +15,7 @@ API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
    package-protected for now, so we don't have to officially support it.
-   Yet, it will give us the possibility to try out different consumers in
+   Yet, it will give us the possibility to try out different consumers
    in the chain. (Michael Busch)
 
 2. LUCENE-1427: DocIdSet.iterator() is now allowed to throw
