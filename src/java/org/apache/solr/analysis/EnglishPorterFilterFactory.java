@@ -31,6 +31,8 @@ import java.util.List;
 
 /**
  * @version $Id$
+ *
+ * @deprecated Use SnowballPortFilterFactory with language="English" instead
  */
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
