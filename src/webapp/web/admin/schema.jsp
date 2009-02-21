@@ -490,14 +490,10 @@
         
         var numTerms = 0;
         $.each(topTerms, function(term, count) {
-          var row = document.createElement('tr');
-          var c1 = document.createElement('td');
-          c1.innerHTML=term;
-          var c2 = document.createElement('td');
-          c2.innerHTML=count;
-          row.appendChild(c1);
-          row.appendChild(c2);
-          tbody.appendChild(row);
+          var c1 = $('<td>').text(term);
+          var c2 = $('<td>').text(count);
+          var row = $('<tr>').append(c1).append(c2);
+          tbody.appendChild(row.get(0));
           numTerms++;
         });
         tbl.appendChild(tbody);

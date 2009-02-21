@@ -267,6 +267,10 @@ Bug Fixes
 32. SOLR-1018: Slave is unable to replicate when server acts as repeater (as both master and slave)
     (Akshay Ukey, Noble Paul via shalin)
 
+33. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
+
+34. SOLR-1031: Fix XSS vulnerability in schema.jsp (Paul Lovvik via ehatcher)
+
 
 Other Changes
 ----------------------
