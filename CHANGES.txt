@@ -156,6 +156,9 @@ New Features
 26. SOLR-799: Add support for hash based exact/near duplicate document
     handling. (Mark Miller, yonik)
 
+27. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
@@ -267,9 +270,7 @@ Bug Fixes
 32. SOLR-1018: Slave is unable to replicate when server acts as repeater (as both master and slave)
     (Akshay Ukey, Noble Paul via shalin)
 
-33. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
-
-34. SOLR-1031: Fix XSS vulnerability in schema.jsp (Paul Lovvik via ehatcher)
+33. SOLR-1031: Fix XSS vulnerability in schema.jsp (Paul Lovvik via ehatcher)
 
 
 Other Changes
