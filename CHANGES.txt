@@ -73,6 +73,9 @@ Bug fixes
    happen if you use IndexReader.open with a File or String argument.
    (Mark Miller via Mike McCandless)
 
+5. LUCENE-1544: Fix deadlock in IndexWriter.addIndexes(IndexReader[]).
+   (Mike McCandless via Doug Sale)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior

@@ -367,8 +367,10 @@ public class IndexWriter {
   // TODO: use ReadWriteLock once we are on 5.0
   private int readCount;                          // count of how many threads are holding read lock
   private Thread writeThread;                     // non-null if any thread holds write lock
-    
+  private int upgradeCount;
+
   synchronized void acquireWrite() {
+    assert writeThread != Thread.currentThread();
     while(writeThread != null || readCount > 0)
       doWait();
 
@@ -392,11 +394,25 @@ public class IndexWriter {
     readCount++;
   }
 
+  // Allows one readLock to upgrade to a writeLock even if
+  // there are other readLocks as long as all other
+  // readLocks are also blocked in this method:
+  synchronized void upgradeReadToWrite() {
+    assert readCount > 0;
+    upgradeCount++;
+    while(readCount > upgradeCount || writeThread != null) {
+      doWait();
+    }
+    
+    writeThread = Thread.currentThread();
+    readCount--;
+    upgradeCount--;
+  }
+
   synchronized void releaseRead() {
     readCount--;
     assert readCount >= 0;
-    if (0 == readCount)
-      notifyAll();
+    notifyAll();
   }
 
   /**
@@ -2680,7 +2696,7 @@ public class IndexWriter {
    * within the transactions, so they must be flushed before the
    * transaction is started.
    */
-  private synchronized void startTransaction(boolean haveWriteLock) throws IOException {
+  private synchronized void startTransaction(boolean haveReadLock) throws IOException {
 
     boolean success = false;
     try {
@@ -2705,12 +2721,15 @@ public class IndexWriter {
     } finally {
       // Release the write lock if our caller held it, on
       // hitting an exception
-      if (!success && haveWriteLock)
-        releaseWrite();
+      if (!success && haveReadLock)
+        releaseRead();
     }
 
-    if (!haveWriteLock)
+    if (haveReadLock) {
+      upgradeReadToWrite();
+    } else {
       acquireWrite();
+    }
 
     success = false;
     try {
@@ -3351,34 +3370,37 @@ public class IndexWriter {
     // Do not allow add docs or deletes while we are running:
     docWriter.pauseAllThreads();
 
-    // We must pre-acquire the write lock here (and not in
-    // startTransaction below) so that no other addIndexes
-    // is allowed to start up after we have flushed &
-    // optimized but before we then start our transaction.
-    // This is because the merging below requires that only
-    // one segment is present in the index:
-    acquireWrite();
+    // We must pre-acquire a read lock here (and upgrade to
+    // write lock in startTransaction below) so that no
+    // other addIndexes is allowed to start up after we have
+    // flushed & optimized but before we then start our
+    // transaction.  This is because the merging below
+    // requires that only one segment is present in the
+    // index:
+    acquireRead();
 
     try {
 
-      boolean success = false;
       SegmentInfo info = null;
       String mergedName = null;
       SegmentMerger merger = null;
+
+      boolean success = false;
 
       try {
         flush(true, false, true);
         optimize();					  // start with zero or 1 seg
         success = true;
       } finally {
-        // Take care to release the write lock if we hit an
+        // Take care to release the read lock if we hit an
         // exception before starting the transaction
         if (!success)
-          releaseWrite();
+          releaseRead();
       }
 
-      // true means we already have write lock; if this call
-      // hits an exception it will release the write lock:
+      // true means we already have a read lock; if this
+      // call hits an exception it will release the write
+      // lock:
       startTransaction(true);
 
       try {
