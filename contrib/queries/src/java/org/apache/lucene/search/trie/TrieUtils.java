@@ -419,7 +419,7 @@ public final class TrieUtils {
     final Object builder, final int valSize,
     final int precisionStep, long minBound, long maxBound
   ) {
-    for (int shift=0;; shift+=precisionStep) {
+    for (int level=0,shift=0;; level++) {
       // calculate new bounds for inner precision
       final long diff = 1L << (shift+precisionStep),
         mask = ((1L<<precisionStep) - 1L) << shift;
@@ -432,27 +432,28 @@ public final class TrieUtils {
 
       if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound) {
         // We are in the lowest precision or the next precision is not available.
-        addRange(builder, valSize, precisionStep, minBound, maxBound, shift);
+        addRange(builder, valSize, minBound, maxBound, shift, level);
         // exit the split recursion loop
         break;
       }
       
       if (hasLower)
-        addRange(builder, valSize, precisionStep, minBound, minBound | mask, shift);
+        addRange(builder, valSize, minBound, minBound | mask, shift, level);
       if (hasUpper)
-        addRange(builder, valSize, precisionStep, maxBound & ~mask, maxBound, shift);
+        addRange(builder, valSize, maxBound & ~mask, maxBound, shift, level);
       
       // recurse to next precision
       minBound = nextMinBound;
       maxBound = nextMaxBound;
+      shift += precisionStep;
     }
   }
   
   /** Helper that delegates to correct range builder */
   private static void addRange(
     final Object builder, final int valSize,
-    final int precisionStep, long minBound, long maxBound,
-    final int shift
+    long minBound, long maxBound,
+    final int shift, final int level
   ) {
     // for the max bound set all lower bits (that were shifted away):
     // this is important for testing or other usages of the splitted range
@@ -462,10 +463,10 @@ public final class TrieUtils {
     // delegate to correct range builder
     switch(valSize) {
       case 64:
-        ((LongRangeBuilder)builder).addRange(precisionStep, minBound, maxBound, shift);
+        ((LongRangeBuilder)builder).addRange(minBound, maxBound, shift, level);
         break;
       case 32:
-        ((IntRangeBuilder)builder).addRange(precisionStep, (int)minBound, (int)maxBound, shift);
+        ((IntRangeBuilder)builder).addRange((int)minBound, (int)maxBound, shift, level);
         break;
       default:
         // Should not happen!
@@ -476,6 +477,8 @@ public final class TrieUtils {
   /**
    * Expert: Callback for {@link #splitLongRange}.
    * You need to overwrite only one of the methods.
+   * <p><font color="red">WARNING: This is a very low-level interface,
+   * the method signatures may change in later versions.</font>
    */
   public static abstract class LongRangeBuilder {
     
@@ -498,10 +501,10 @@ public final class TrieUtils {
      * Overwrite this method, if you like to receive the raw long range bounds.
      * You can use this for e.g. debugging purposes (print out range bounds).
      */
-    public void addRange(final int precisionStep, final long min, final long max, final int shift) {
+    public void addRange(final long min, final long max, final int shift, final int level) {
       /*System.out.println(Long.toHexString((min^0x8000000000000000L) >>> shift)+".."+
         Long.toHexString((max^0x8000000000000000L) >>> shift));*/
-      addRange(longToPrefixCoded(min, shift), longToPrefixCoded(max, shift), shift/precisionStep);
+      addRange(longToPrefixCoded(min, shift), longToPrefixCoded(max, shift), level);
     }
   
   }
@@ -509,6 +512,8 @@ public final class TrieUtils {
   /**
    * Expert: Callback for {@link #splitIntRange}.
    * You need to overwrite only one of the methods.
+   * <p><font color="red">WARNING: This is a very low-level interface,
+   * the method signatures may change in later versions.</font>
    */
   public static abstract class IntRangeBuilder {
     
@@ -531,10 +536,10 @@ public final class TrieUtils {
      * Overwrite this method, if you like to receive the raw int range bounds.
      * You can use this for e.g. debugging purposes (print out range bounds).
      */
-    public void addRange(final int precisionStep, final int min, final int max, final int shift) {
+    public void addRange(final int min, final int max, final int shift, final int level) {
       /*System.out.println(Integer.toHexString((min^0x80000000) >>> shift)+".."+
         Integer.toHexString((max^0x80000000) >>> shift));*/
-      addRange(intToPrefixCoded(min, shift), intToPrefixCoded(max, shift), shift/precisionStep);
+      addRange(intToPrefixCoded(min, shift), intToPrefixCoded(max, shift), level);
     }
   
   }
