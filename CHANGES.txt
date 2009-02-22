@@ -44,6 +44,8 @@ Bug fixes
 10. LUCENE-1521: Fix int overflow bug when flushing segment.
     (Shon Vella via Mike McCandless).
 
+11. LUCENE-1544: Fix deadlock in IndexWriter.addIndexes(IndexReader[]).
+   (Mike McCandless via Doug Sale)
 
 ======================= Release 2.4.0 2008-10-06 =======================
 

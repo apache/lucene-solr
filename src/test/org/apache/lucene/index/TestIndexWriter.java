@@ -4190,4 +4190,38 @@ public class TestIndexWriter extends LuceneTestCase
     r.close();
     dir.close();
   }
+
+  public void testDeadlock() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+    writer.setMaxBufferedDocs(2);
+    Document doc = new Document();
+    doc.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+                      Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.commit();
+    // index has 2 segments
+
+    MockRAMDirectory dir2 = new MockRAMDirectory();
+    IndexWriter writer2 = new IndexWriter(dir2, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer2.addDocument(doc);
+    writer2.close();
+
+    IndexReader r1 = IndexReader.open(dir2);
+    IndexReader r2 = IndexReader.open(dir2);
+    writer.addIndexes(new IndexReader[] {r1, r2});
+    writer.close();
+
+    IndexReader r3 = IndexReader.open(dir);
+    assertEquals(5, r3.numDocs());
+    r3.close();
+
+    r1.close();
+    r2.close();
+
+    dir2.close();
+    dir.close();
+  }
 }
