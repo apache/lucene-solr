@@ -38,6 +38,7 @@ import java.io.IOException;
  *
  * @version $Id$
  * @since   1.4
+ * @deprecated Please use {@link FieldComparatorSource} instead.
  */
 public abstract class SortComparator
 implements SortComparatorSource {

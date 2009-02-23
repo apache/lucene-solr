@@ -401,7 +401,7 @@ implements Serializable {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link SortComparatorSource} or {@link
+   *  {@link SortComparatorSource} (deprecated) or {@link
    *  FieldCache.Parser} was provided, it must properly
    *  implement equals (unless a singleton is always used). */
   public boolean equals(Object o) {
@@ -419,7 +419,7 @@ implements Serializable {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link SortComparatorSource} or {@link
+   *  {@link SortComparatorSource} (deprecated) or {@link
    *  FieldCache.Parser} was provided, it must properly
    *  implement hashCode (unless a singleton is always
    *  used). */

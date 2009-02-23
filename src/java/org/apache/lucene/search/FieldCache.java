@@ -265,6 +265,8 @@ public interface FieldCache {
    * @param comparator Used to convert terms into something to sort by.
    * @return Array of sort objects, one for each document.
    * @throws IOException  If any error occurs.
+   * @deprecated Please implement {@link
+   * FieldComparatorSource} directly, instead.
    */
   public Comparable[] getCustom (IndexReader reader, String field, SortComparator comparator)
   throws IOException;

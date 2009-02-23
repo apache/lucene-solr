@@ -29,6 +29,7 @@ import java.io.Serializable;
  *
  * @version $Id$
  * @since   1.4
+ * @deprecated Please use {@link FieldComparatorSource} instead.
  */
 public interface SortComparatorSource
 extends Serializable {
