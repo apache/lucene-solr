@@ -35,19 +35,21 @@ abstract class FieldProperties {
   final static int BINARY              = 0x00000008;
   final static int COMPRESSED          = 0x00000010;
   final static int OMIT_NORMS          = 0x00000020;
-  final static int STORE_TERMVECTORS   = 0x00000040;
-  final static int STORE_TERMPOSITIONS = 0x00000080;
-  final static int STORE_TERMOFFSETS   = 0x00000100;
+  final static int OMIT_TF             = 0x00000040;
+  final static int STORE_TERMVECTORS   = 0x00000080;
+  final static int STORE_TERMPOSITIONS = 0x00000100;
+  final static int STORE_TERMOFFSETS   = 0x00000200;
 
-  final static int MULTIVALUED         = 0x00000200;
-  final static int SORT_MISSING_FIRST  = 0x00000400;
-  final static int SORT_MISSING_LAST   = 0x00000800;
+
+  final static int MULTIVALUED         = 0x00000400;
+  final static int SORT_MISSING_FIRST  = 0x00000800;
+  final static int SORT_MISSING_LAST   = 0x00001000;
   
-  final static int REQUIRED            = 0x00001000;
+  final static int REQUIRED            = 0x00002000;
   
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
-          "binary", "compressed", "omitNorms",
+          "binary", "compressed", "omitNorms", "omitTf",
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
           "sortMissingFirst","sortMissingLast","required"

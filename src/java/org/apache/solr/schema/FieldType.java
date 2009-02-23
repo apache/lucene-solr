@@ -86,9 +86,10 @@ public abstract class FieldType extends FieldProperties {
 
   // Handle additional arguments...
   void setArgs(IndexSchema schema, Map<String,String> args) {
-    // default to STORED and INDEXED, and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
     if (schema.getVersion()< 1.1f) properties |= MULTIVALUED;
+    if (schema.getVersion()> 1.1f) properties |= OMIT_TF;
 
     this.args=args;
     Map<String,String> initArgs = new HashMap<String,String>(args);
@@ -199,6 +200,7 @@ public abstract class FieldType extends FieldProperties {
                         getFieldIndex(field, val),
                         getFieldTermVec(field, val));
     f.setOmitNorms(field.omitNorms());
+    f.setOmitTf(field.omitTf());
     f.setBoost(boost);
     return f;
   }

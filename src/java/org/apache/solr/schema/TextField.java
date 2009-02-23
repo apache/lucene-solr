@@ -32,6 +32,8 @@ import java.io.IOException;
 public class TextField extends CompressableField {
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
+    if (schema.getVersion()> 1.1f) properties &= ~OMIT_TF;
+    
     super.init(schema, args);    
   }
 

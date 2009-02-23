@@ -158,6 +158,7 @@ New Features
 
 27. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
 
+28. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
 
 Optimizations
 ----------------------
