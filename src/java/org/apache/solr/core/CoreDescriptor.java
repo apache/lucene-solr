@@ -85,11 +85,11 @@ public class CoreDescriptor implements Cloneable {
 
   public String getDataDir() {
     if (dataDir == null) return getDefaultDataDir();
-    String absolutePath = new File(dataDir).getAbsolutePath();
-    if (absolutePath.equals(dataDir) || (absolutePath + File.separator).equals(dataDir)) return dataDir;
-    return dataDir.endsWith(File.separator) ?
-            instanceDir + dataDir :
-            instanceDir + dataDir + File.separator;
+    if (new File(dataDir).isAbsolute()) {
+      return dataDir;
+    } else {
+      return SolrResourceLoader.normalizeDir(instanceDir + dataDir);
+    }
   }
 
   public void setDataDir(String s) {
