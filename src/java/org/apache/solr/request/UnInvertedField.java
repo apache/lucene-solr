@@ -50,7 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   previous term number.  Real term numbers start at 2 since 0 and 1 are reserved.  A
  *   term number of 0 signals the end of the termNumber list.
  *
- *   There is a singe int[maxDoc()] which either contains a pointer into a byte[] for
+ *   There is a single int[maxDoc()] which either contains a pointer into a byte[] for
  *   the termNumber lists, or directly contains the termNumber list if it fits in the 4
  *   bytes of an integer.  If the first byte in the integer is 1, the next 3 bytes
  *   are a pointer into a byte[] where the termNumber list starts.
