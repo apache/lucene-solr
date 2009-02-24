@@ -2861,8 +2861,9 @@ public class IndexWriter {
 
   /**
    * Close the <code>IndexWriter</code> without committing
-   * any of the changes that have occurred since it was
-   * opened. This removes any temporary files that had been
+   * any changes that have occurred since the last commit
+   * (or since it was opened, if commit hasn't been called).
+   * This removes any temporary files that had been
    * created, after which the state of the index will be the
    * same as it was when this writer was first opened.  This
    * can only be called when this IndexWriter was opened
