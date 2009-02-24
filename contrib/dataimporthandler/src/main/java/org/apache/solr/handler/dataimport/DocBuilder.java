@@ -700,7 +700,7 @@ public class DocBuilder {
       if (delQuery == null && !completeCleanDone.get()) {
         writer.doDeleteAll();
         completeCleanDone.set(true);
-      } else {
+      } else if (delQuery != null) {
         writer.deleteByQuery(delQuery);
       }
     }
