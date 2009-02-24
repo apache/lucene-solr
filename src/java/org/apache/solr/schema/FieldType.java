@@ -184,7 +184,7 @@ public abstract class FieldType extends FieldProperties {
     String val;
     try {
       val = toInternal(externalVal);
-    } catch (NumberFormatException e) {
+    } catch (RuntimeException e) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
     }
     if (val==null) return null;
