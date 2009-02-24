@@ -76,11 +76,8 @@ public class TestVariableResolver {
     Date d = new Date();
     ns.put("dt", d);
     vri.addNamespace("A", ns);
-    Assert
-            .assertEquals(
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(d),
-                    vri
-                            .replaceTokens("${dataimporter.functions.formatDate(A.dt,yyyy-MM-dd HH:mm:ss)}"));
+    Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(d),
+                    vri.replaceTokens("${dataimporter.functions.formatDate(A.dt,'yyyy-MM-dd HH:mm:ss')}"));
   }
 
   @Test
@@ -91,7 +88,7 @@ public class TestVariableResolver {
     vri.addNamespace("dataimporter.functions", EvaluatorBag
             .getFunctionsNamespace(Collections.EMPTY_LIST,null));
     String s = vri
-            .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
+            .replaceTokens("${dataimporter.functions.formatDate('NOW','yyyy-MM-dd HH:mm')}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
             .format(new Date()), s);
   }
@@ -127,7 +124,7 @@ public class TestVariableResolver {
     resolver.addNamespace("dataimporter.functions", EvaluatorBag
             .getFunctionsNamespace(l,null));
     String s = resolver
-            .replaceTokens("${dataimporter.functions.formatDate('NOW',yyyy-MM-dd HH:mm)}");
+            .replaceTokens("${dataimporter.functions.formatDate('NOW','yyyy-MM-dd HH:mm')}");
     Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
             .format(new Date()), s);
     Assert.assertEquals("Hello World", resolver

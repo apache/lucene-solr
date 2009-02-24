@@ -23,10 +23,9 @@ import org.junit.Test;
 
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
+import junit.framework.Assert;
 
 /**
  * <p> Test for EvaluatorBag </p>
@@ -81,6 +80,19 @@ public class TestEvaluatorBag {
     Evaluator urlEvaluator = EvaluatorBag.getUrlEvaluator();
     runTests(urlTests, urlEvaluator);
   }
+  @Test
+  public void parseParams() {
+    Map m = new HashMap();
+    m.put("b","B");
+    VariableResolverImpl vr = new VariableResolverImpl();
+    vr.addNamespace("a",m);
+    List l =  EvaluatorBag.parseParams(" 1 , a.b, 'hello!', 'ds,o,u\'za',",vr);
+    Assert.assertEquals(new Double(1),l.get(0));
+    Assert.assertEquals("B",((EvaluatorBag.VariableWrapper)l.get(1)).resolve());
+    Assert.assertEquals("hello!",l.get(2));
+    Assert.assertEquals("ds,o,u'za",l.get(3));
+
+  }
 
   /**
    * Test method for {@link EvaluatorBag#getDateFormatEvaluator()}.
@@ -92,14 +104,14 @@ public class TestEvaluatorBag {
     resolver.context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
 
     assertEquals(new SimpleDateFormat("yyyy-MM-dd").format(new Date()),
-            dateFormatEval.evaluate("'NOW',yyyy-MM-dd HH:mm", resolver.context));
+            dateFormatEval.evaluate("'NOW','yyyy-MM-dd HH:mm'", resolver.context));
 
     Map<String, Object> map = new HashMap<String, Object>();
     map.put("key", new Date());
     resolver.addNamespace("A", map);
 
     assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
-            dateFormatEval.evaluate("A.key, yyyy-MM-dd HH:mm", resolver.context));
+            dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", resolver.context));
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
