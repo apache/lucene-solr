@@ -47,6 +47,9 @@ Bug fixes
 11. LUCENE-1544: Fix deadlock in IndexWriter.addIndexes(IndexReader[]).
    (Mike McCandless via Doug Sale)
 
+12. LUCENE-1547: Fix rare thread safety issue if two threads call
+    IndexWriter commit() at the same time.  (Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy

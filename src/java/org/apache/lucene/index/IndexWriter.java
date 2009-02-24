@@ -3368,20 +3368,6 @@ public class IndexWriter {
     finishCommit();
   }
 
-  private boolean committing;
-
-  synchronized private void waitForCommit() {
-    // Only allow a single thread to do the commit, at a time:
-    while(committing)
-      doWait();
-    committing = true;
-  }
-
-  synchronized private void doneCommit() {
-    committing = false;
-    notifyAll();
-  }
-
   /**
    * <p>Commits all pending updates (added & deleted
    * documents) to the index, and syncs all referenced index
@@ -3411,22 +3397,17 @@ public class IndexWriter {
 
     ensureOpen();
 
-    // Only let one thread do the prepare/finish at a time
-    waitForCommit();
-
-    try {
+    if (infoStream != null)
       message("commit: start");
 
-      if (autoCommit || pendingCommit == null) {
+    if (autoCommit || pendingCommit == null) {
+      if (infoStream != null)
         message("commit: now prepare");
-        prepareCommit(true);
-      } else
-        message("commit: already prepared");
+      prepareCommit(true);
+    } else if (infoStream != null)
+      message("commit: already prepared");
 
-      finishCommit();
-    } finally {
-      doneCommit();
-    }
+    finishCommit();
   }
 
   private synchronized final void finishCommit() throws CorruptIndexException, IOException {
@@ -3479,8 +3460,6 @@ public class IndexWriter {
 
     flushCount++;
 
-    // Make sure no threads are actively adding a document
-
     flushDeletes |= docWriter.deletesFull();
 
     // When autoCommit=true we must always flush deletes
@@ -3489,6 +3468,7 @@ public class IndexWriter {
     // from an updateDocument call
     flushDeletes |= autoCommit;
 
+    // Make sure no threads are actively adding a document.
     // Returns true if docWriter is currently aborting, in
     // which case we skip flushing this segment
     if (docWriter.pauseAllThreads()) {
@@ -4635,44 +4615,50 @@ public class IndexWriter {
           // since I first started syncing my version, I can
           // safely skip saving myself since I've been
           // superseded:
-          if (myChangeCount > lastCommitChangeCount && (pendingCommit == null || myChangeCount > pendingCommitChangeCount)) {
 
-            // Wait now for any current pending commit to complete:
-            while(pendingCommit != null) {
-              message("wait for existing pendingCommit to finish...");
+          while(true) {
+            if (myChangeCount <= lastCommitChangeCount) {
+              if (infoStream != null) {
+                message("sync superseded by newer infos");
+              }
+              break;
+            } else if (pendingCommit == null) {
+              // My turn to commit
+
+              if (segmentInfos.getGeneration() > toSync.getGeneration())
+                toSync.updateGeneration(segmentInfos);
+
+              boolean success = false;
+              try {
+
+                // Exception here means nothing is prepared
+                // (this method unwinds everything it did on
+                // an exception)
+                try {
+                  toSync.prepareCommit(directory);
+                } finally {
+                  // Have our master segmentInfos record the
+                  // generations we just prepared.  We do this
+                  // on error or success so we don't
+                  // double-write a segments_N file.
+                  segmentInfos.updateGeneration(toSync);
+                }
+
+                assert pendingCommit == null;
+                setPending = true;
+                pendingCommit = toSync;
+                pendingCommitChangeCount = myChangeCount;
+                success = true;
+              } finally {
+                if (!success && infoStream != null)
+                  message("hit exception committing segments file");
+              }
+              break;
+            } else {
+              // Must wait for other commit to complete
               doWait();
             }
-
-            if (segmentInfos.getGeneration() > toSync.getGeneration())
-              toSync.updateGeneration(segmentInfos);
-
-            boolean success = false;
-            try {
-
-              // Exception here means nothing is prepared
-              // (this method unwinds everything it did on
-              // an exception)
-              try {
-                toSync.prepareCommit(directory);
-              } finally {
-                // Have our master segmentInfos record the
-                // generations we just prepared.  We do this
-                // on error or success so we don't
-                // double-write a segments_N file.
-                segmentInfos.updateGeneration(toSync);
-              }
-
-              assert pendingCommit == null;
-              setPending = true;
-              pendingCommit = toSync;
-              pendingCommitChangeCount = myChangeCount;
-              success = true;
-            } finally {
-              if (!success)
-                message("hit exception committing segments file");
-            }
-          } else
-            message("sync superseded by newer infos");
+          }
         }
 
         message("done all syncs");
