@@ -41,6 +41,7 @@ import org.apache.commons.httpclient.NoHttpResponseException;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.RequestEntity;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.PartBase;
@@ -350,16 +351,38 @@ public class CommonsHttpSolrServer extends SolrServer
             }
             // It is has one stream, it is the post body, put the params in the URL
             else {
-              String pstr = ClientUtils.toQueryString( params, false );
-              PostMethod post = new PostMethod( url+pstr );
+              String pstr = ClientUtils.toQueryString(params, false);
+              PostMethod post = new PostMethod(url + pstr);
 
               // Single stream as body
               // Using a loop just to get the first one
-              for( ContentStream content : streams ) {
-                post.setRequestEntity(
-                    new InputStreamRequestEntity( content.getStream(), content.getContentType())
-                );
+              final ContentStream[] contentStream = new ContentStream[1];
+              for (ContentStream content : streams) {
+                contentStream[0] = content;
                 break;
+              }
+              if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
+                post.setRequestEntity(new RequestEntity() {
+                  public long getContentLength() {
+                    return -1;
+                  }
+
+                  public String getContentType() {
+                    return contentStream[0].getContentType();
+                  }
+
+                  public boolean isRepeatable() {
+                    return false;
+                  }
+
+                  public void writeRequest(OutputStream outputStream) throws IOException {
+                    ((RequestWriter.LazyContentStream) contentStream[0]).writeTo(outputStream);
+                  }
+                }
+                );
+
+              } else {
+                post.setRequestEntity(new InputStreamRequestEntity(contentStream[0].getStream(), contentStream[0].getContentType()));
               }
               method = post;
             }

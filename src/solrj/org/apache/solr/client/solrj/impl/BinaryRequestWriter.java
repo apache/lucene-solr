@@ -43,39 +43,9 @@ public class BinaryRequestWriter extends RequestWriter {
               isNull(updateRequest.getDeleteById()) &&
               isNull(updateRequest.getDeleteQuery())) {
         return null;
-
       }
-
-      final BAOS baos = new BAOS();
-      new JavaBinUpdateRequestCodec().marshal(updateRequest, baos);
-      List<ContentStream> l = new ArrayList<ContentStream>(1);
-      l.add(new ContentStream() {
-        public String getName() {
-          return null;
-        }
-
-        public String getSourceInfo() {
-          return "javabin";
-        }
-
-        public String getContentType() {
-          return "application/octet-stream";
-        }
-
-        public Long getSize() // size if we know it, otherwise null
-        {
-          return new Long(baos.size());
-        }
-
-        public InputStream getStream() throws IOException {
-          return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
-        }
-
-        public Reader getReader() throws IOException {
-          throw new RuntimeException("No reader available . this is a binarystream");
-        }
-      });
-
+      List<ContentStream> l = new ArrayList<ContentStream>();
+      l.add(new LazyContentStream(updateRequest));
       return l;
     } else {
       return super.getContentStreams(req);
@@ -83,11 +53,50 @@ public class BinaryRequestWriter extends RequestWriter {
 
   }
 
-  private boolean isNull(List l) {
-    return l == null || l.isEmpty();
+
+  public String getUpdateContentType() {
+    return "application/octet-stream";
   }
 
-  /*
+  public ContentStream getContentStream(final UpdateRequest request) throws IOException {
+    final BAOS baos = new BAOS();
+      new JavaBinUpdateRequestCodec().marshal(request, baos);
+    return new ContentStream() {
+      public String getName() {
+        return null;
+      }
+
+      public String getSourceInfo() {
+        return "javabin";
+      }
+
+      public String getContentType() {
+        return "application/octet-stream";
+      }
+
+      public Long getSize() // size if we know it, otherwise null
+      {
+        return new Long(baos.size());
+      }
+
+      public InputStream getStream() throws IOException {
+        return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
+      }
+
+      public Reader getReader() throws IOException {
+        throw new RuntimeException("No reader available . this is a binarystream");
+      }
+    };
+  }
+
+
+  public void write(SolrRequest request, OutputStream os) throws IOException {
+    if (request instanceof UpdateRequest) {
+      UpdateRequest updateRequest = (UpdateRequest) request;
+      new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+    } 
+
+  }/*
    * A hack to get access to the protected internal buffer and avoid an additional copy 
    */
   class BAOS extends ByteArrayOutputStream {
