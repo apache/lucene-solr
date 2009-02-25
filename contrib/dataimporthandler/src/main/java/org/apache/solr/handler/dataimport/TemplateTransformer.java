@@ -53,26 +53,10 @@ public class TemplateTransformer extends Transformer {
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
 
-    String entityName = context.getEntityAttribute(DataImporter.NAME);
-
     VariableResolverImpl resolver = (VariableResolverImpl) context
             .getVariableResolver();
-    Map<String, Object> resolverMap = (Map<String, Object>) resolver
-            .resolve(entityName);
-
-    // Clone resolver map because the resolver map contains common fields or any
-    // others
-    // that the entity processor chooses to keep.
-    Map<String, Object> resolverMapCopy = new HashMap<String, Object>();
-    if (resolverMap != null) {
-      for (Map.Entry<String, Object> entry : resolverMap.entrySet())
-        resolverMapCopy.put(entry.getKey(), entry.getValue());
-    }
     // Add current row to the copy of resolver map
-    for (Map.Entry<String, Object> entry : row.entrySet())
-      resolverMapCopy.put(entry.getKey(), entry.getValue());
-    // Add this copy to the namespace of the current entity in the resolver
-    resolver.addNamespace(entityName, resolverMapCopy);
+//    for (Map.Entry<String, Object> entry : row.entrySet())
 
     for (Map<String, String> map : context.getAllEntityFields()) {
       String expr = map.get(TEMPLATE);
@@ -98,8 +82,6 @@ public class TemplateTransformer extends Transformer {
       row.put(column, resolver.replaceTokens(expr));
     }
 
-    // Restore the original resolver map
-    resolver.addNamespace(entityName, resolverMap);
 
     return row;
   }

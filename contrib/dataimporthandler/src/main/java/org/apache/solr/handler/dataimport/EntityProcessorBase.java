@@ -51,9 +51,6 @@ public class EntityProcessorBase extends EntityProcessor {
 
   protected String query;
 
-  @SuppressWarnings("unchecked")
-  private Map session;
-
   protected String onError = ABORT;
 
   public void init(Context context) {
@@ -67,7 +64,6 @@ public class EntityProcessorBase extends EntityProcessor {
     }
     resolver = (VariableResolverImpl) context.getVariableResolver();
     query = null;
-    session = null;
     isFirstInit = false;
 
   }
@@ -169,6 +165,7 @@ public class EntityProcessorBase extends EntityProcessor {
         if (rows != null) {
           List<Map<String, Object>> tmpRows = new ArrayList<Map<String, Object>>();
           for (Map<String, Object> map : rows) {
+            resolver.addNamespace(entityName, map);
             Object o = t.transformRow(map, context);
             if (o == null)
               continue;
@@ -184,6 +181,7 @@ public class EntityProcessorBase extends EntityProcessor {
           }
           rows = tmpRows;
         } else {
+          resolver.addNamespace(entityName, transformedRow);
           Object o = t.transformRow(transformedRow, context);
           if (o == null)
             return null;
@@ -253,19 +251,6 @@ public class EntityProcessorBase extends EntityProcessor {
     return null;
   }
 
-  public void setSessionAttribute(Object key, Object val) {
-    if (session == null) {
-      session = new HashMap();
-    }
-    session.put(key, val);
-  }
-
-  public Object getSessionAttribute(Object key) {
-    if (session == null)
-      return null;
-    return session.get(key);
-  }
-
   /**
    * For a simple implementation, this is the only method that the sub-class should implement. This is intended to
    * stream rows one-by-one. Return null to signal end of rows
@@ -280,14 +265,6 @@ public class EntityProcessorBase extends EntityProcessor {
 
   public void destroy() {
     /*no op*/
-  }
-
-  /**
-   * Clears the internal session maintained by this EntityProcessor
-   */
-  public void clearSession() {
-    if (session != null)
-      session.clear();
   }
 
   /**

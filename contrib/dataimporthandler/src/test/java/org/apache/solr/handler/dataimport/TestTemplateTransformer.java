@@ -43,11 +43,17 @@ public class TestTemplateTransformer {
     fields.add(AbstractDataImportHandlerTest.createMap("column", "name",
             TemplateTransformer.TEMPLATE,
             "${e.lastName}, ${e.firstName} ${e.middleName}"));
-
-    Map row = AbstractDataImportHandlerTest.createMap("firstName", "Shalin",
-            "middleName", "Shekhar", "lastName", "Mangar");
+    // test reuse of template output in another template 
+    fields.add(AbstractDataImportHandlerTest.createMap("column", "mrname",
+            TemplateTransformer.TEMPLATE,"Mr ${e.name}"));
+            
+    Map row = AbstractDataImportHandlerTest.createMap(
+            "firstName", "Shalin",
+            "middleName", "Shekhar", 
+            "lastName", "Mangar");
 
     VariableResolverImpl resolver = new VariableResolverImpl();
+    resolver.addNamespace("e", row);
     Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap(
             "name", "e");
 
@@ -55,6 +61,7 @@ public class TestTemplateTransformer {
             null, 0, fields, entityAttrs);
     new TemplateTransformer().transformRow(row, context);
     Assert.assertEquals("Mangar, Shalin Shekhar", row.get("name"));
+    Assert.assertEquals("Mr Mangar, Shalin Shekhar", row.get("mrname"));
   }
 
 }

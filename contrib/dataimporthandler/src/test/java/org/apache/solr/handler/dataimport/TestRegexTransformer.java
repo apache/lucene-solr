@@ -25,9 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p>
- * Test for RegexTransformer
- * </p>
+ * <p> Test for RegexTransformer </p>
  *
  * @version $Id$
  * @since solr 1.3
@@ -37,14 +35,14 @@ public class TestRegexTransformer {
   @Test
   public void commaSeparated() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    // <field column="col1" sourceColName="a" splitBy="," />
     fields.add(getField("col1", "string", null, "a", ","));
-    Context context = AbstractDataImportHandlerTest.getContext(null, null,
-            null, 0, fields, null);
+    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, 0, fields, null);
+
     Map<String, Object> src = new HashMap<String, Object>();
-    String s = "a,bb,cc,d";
-    src.put("a", s);
-    Map<String, Object> result = new RegexTransformer().transformRow(src,
-            context);
+    src.put("a", "a,bb,cc,d");
+
+    Map<String, Object> result = new RegexTransformer().transformRow(src, context);
     Assert.assertEquals(2, result.size());
     Assert.assertEquals(4, ((List) result.get("col1")).size());
   }
@@ -52,14 +50,17 @@ public class TestRegexTransformer {
   @Test
   public void replaceWith() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    // <field column="name" sourceColName="a" regexp="'" replaceWith="''" />
     Map<String, String> fld = getField("name", "string", "'", null, null);
     fld.put("replaceWith", "''");
     fields.add(fld);
     Context context = AbstractDataImportHandlerTest.getContext(null, null,
             null, 0, fields, null);
+
     Map<String, Object> src = new HashMap<String, Object>();
     String s = "D'souza";
     src.put("name", s);
+
     Map<String, Object> result = new RegexTransformer().transformRow(src,
             context);
     Assert.assertEquals("D''souza", result.get("name"));
@@ -67,36 +68,57 @@ public class TestRegexTransformer {
 
   @Test
   public void mileage() {
-    Context context = AbstractDataImportHandlerTest.getContext(null, null,
-            null, 0, getFields(), null);
+    List<Map<String, String>> fields = getFields();
 
-    Map<String, Object> src = new HashMap<String, Object>();
+    // add another regex which reuses result from previous regex again!
+    // <field column="hltCityMPG" sourceColName="rowdata" regexp="(${e.city_mileage})" />
+    Map<String, String> fld = getField("hltCityMPG", "string",
+            ".*(${e.city_mileage})", "rowdata", null);
+    fld.put("replaceWith", "*** $1 ***");
+    fields.add(fld);
+
+    Map<String, Object> row = new HashMap<String, Object>();
     String s = "Fuel Economy Range: 26 mpg Hwy, 19 mpg City";
-    src.put("rowdata", s);
-    Map<String, Object> result = new RegexTransformer().transformRow(src,
-            context);
-    Assert.assertEquals(3, result.size());
+    row.put("rowdata", s);
+
+    VariableResolverImpl resolver = new VariableResolverImpl();
+    resolver.addNamespace("e", row);
+    Map<String, String> eAttrs = AbstractDataImportHandlerTest.createMap("name", "e");
+    Context context = AbstractDataImportHandlerTest.getContext(null, resolver, null, 0, fields, eAttrs);
+
+    Map<String, Object> result = new RegexTransformer().transformRow(row, context);
+    Assert.assertEquals(4, result.size());
     Assert.assertEquals(s, result.get("rowdata"));
     Assert.assertEquals("26", result.get("highway_mileage"));
     Assert.assertEquals("19", result.get("city_mileage"));
-
+    Assert.assertEquals("*** 19 *** mpg City", result.get("hltCityMPG"));
   }
 
   public static List<Map<String, String>> getFields() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+
+    // <field column="city_mileage" sourceColName="rowdata" regexp=
+    //    "Fuel Economy Range:\\s*?\\d*?\\s*?mpg Hwy,\\s*?(\\d*?)\\s*?mpg City"
     fields.add(getField("city_mileage", "sint",
             "Fuel Economy Range:\\s*?\\d*?\\s*?mpg Hwy,\\s*?(\\d*?)\\s*?mpg City",
             "rowdata", null));
+
+    // <field column="highway_mileage" sourceColName="rowdata" regexp=
+    //    "Fuel Economy Range:\\s*?(\\d*?)\\s*?mpg Hwy,\\s*?\\d*?\\s*?mpg City"
     fields.add(getField("highway_mileage", "sint",
             "Fuel Economy Range:\\s*?(\\d*?)\\s*?mpg Hwy,\\s*?\\d*?\\s*?mpg City",
             "rowdata", null));
+
+    // <field column="seating_capacity" sourceColName="rowdata" regexp="Seating capacity:(.*)"
     fields.add(getField("seating_capacity", "sint", "Seating capacity:(.*)",
             "rowdata", null));
-    fields
-            .add(getField("warranty", "string", "Warranty:(.*)", "rowdata", null));
+
+    // <field column="warranty" sourceColName="rowdata" regexp="Warranty:(.*)" />
+    fields.add(getField("warranty", "string", "Warranty:(.*)", "rowdata", null));
+
+    // <field column="rowdata" sourceColName="rowdata" />
     fields.add(getField("rowdata", "string", null, "rowdata", null));
     return fields;
-
   }
 
   public static Map<String, String> getField(String col, String type,

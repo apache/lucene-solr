@@ -182,15 +182,12 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         initQuery(resolver.replaceTokens(context.getEntityAttribute(URL)));
       r = getNext();
       if (r == null) {
-        Object hasMore = getSessionAttribute(HAS_MORE);
+        Object hasMore = context.getSessionAttribute(HAS_MORE, Context.SCOPE_ENTITY);
         if ("true".equals(hasMore) || Boolean.TRUE.equals(hasMore)) {
-          String url = (String) getSessionAttribute(NEXT_URL);
+          String url = (String) context.getSessionAttribute(NEXT_URL, Context.SCOPE_ENTITY);
           if (url == null)
             url = context.getEntityAttribute(URL);
-          Map namespace = (Map) getSessionAttribute(entityName);
-          if (namespace != null)
-            resolver.addNamespace(entityName, namespace);
-          clearSession();
+          addNamespace();
           initQuery(resolver.replaceTokens(url));
           r = getNext();
           if (r == null)
@@ -199,10 +196,39 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           return null;
         }
       }
+      addCommonFields(r);
       r = applyTransformer(r);
       if (r != null)
         return readUsefulVars(r);
     }
+  }
+
+  private void addNamespace() {
+    Map<String, Object> namespace = new HashMap<String, Object>();
+    Set<String> allNames = new HashSet<String>();
+    if (commonFields != null) allNames.addAll(commonFields);
+    if (placeHolderVariables != null) allNames.addAll(placeHolderVariables);
+    if(allNames.isEmpty()) return;
+
+    for (String name : allNames) {
+      Object val = context.getSessionAttribute(name, Context.SCOPE_ENTITY);
+      if (val != null) namespace.put(name, val);
+    }
+    resolver.addNamespace(entityName, namespace);
+
+  }
+
+  private void addCommonFields(Map<String, Object> r) {
+    if(commonFields != null){
+      for (String commonField : commonFields) {
+        if(r.get(commonField) == null) {
+          Object val = context.getSessionAttribute(commonField, Context.SCOPE_ENTITY);
+          if(val != null) r.put(commonField, val);
+        }
+
+      }
+    }
+
   }
 
   private void initQuery(String s) {
@@ -251,8 +277,8 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             }
           });
         } catch (Exception e) {
-          String msg = "Parsing failed for xml, url:" + s + "rows processed :" + rows.size();
-          if (rows.size() > 0) msg += "last row : " + rows.get(rows.size() - 1);
+          String msg = "Parsing failed for xml, url:" + s + " rows processed:" + rows.size();
+          if (rows.size() > 0) msg += " last row: " + rows.get(rows.size() - 1);
           if (ABORT.equals(onError)) {
             wrapAndThrow(SEVERE, e, msg);
           } else if (SKIP.equals(onError)) {
@@ -321,28 +347,21 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   private Map<String, Object> readUsefulVars(Map<String, Object> r) {
     Object val = r.get(HAS_MORE);
     if (val != null)
-      setSessionAttribute(HAS_MORE, val);
+      context.setSessionAttribute(HAS_MORE, val,Context.SCOPE_ENTITY);
     val = r.get(NEXT_URL);
     if (val != null)
-      setSessionAttribute(NEXT_URL, val);
+      context.setSessionAttribute(NEXT_URL, val,Context.SCOPE_ENTITY);
     if (placeHolderVariables != null) {
-      Map namespace = getNameSpace();
       for (String s : placeHolderVariables) {
         val = r.get(s);
-        if (val != null)
-          namespace.put(s, val);
+        context.setSessionAttribute(s, val,Context.SCOPE_ENTITY);
       }
     }
     if (commonFields != null) {
       for (String s : commonFields) {
         Object commonVal = r.get(s);
         if (commonVal != null) {
-          setSessionAttribute(s, commonVal);
-          getNameSpace().put(s, commonVal);
-        } else {
-          commonVal = getSessionAttribute(s);
-          if (commonVal != null)
-            r.put(s, commonVal);
+          context.setSessionAttribute(s, commonVal,Context.SCOPE_ENTITY);
         }
       }
     }
@@ -395,8 +414,8 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           if (row == null || row == Collections.EMPTY_MAP) {
             isEnd.set(true);
             if (exp.get() != null) {
-              String msg = "Parsing failed for xml, url:" + s + "rows processed in this xml:" + count;
-              if (lastRow != null) msg += "last row in this xml: " + lastRow;
+              String msg = "Parsing failed for xml, url:" + s + " rows processed in this xml:" + count;
+              if (lastRow != null) msg += " last row in this xml:" + lastRow;
               if (ABORT.equals(onError)) {
                 wrapAndThrow(SEVERE, exp.get(), msg);
               } else if (SKIP.equals(onError)) {
@@ -422,15 +441,6 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Map getNameSpace() {
-    Map namespace = (Map) getSessionAttribute(entityName);
-    if (namespace == null) {
-      namespace = new HashMap();
-      setSessionAttribute(entityName, namespace);
-    }
-    return namespace;
-  }
 
   public static final String URL = "url";
 

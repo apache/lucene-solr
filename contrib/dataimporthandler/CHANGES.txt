@@ -82,6 +82,10 @@ New Features
 18.SOLR-783:  Enhance delta-imports by maintaining separate last_index_time for each entity.
               (Jon Baer, Noble Paul via shalin)
 
+19.SOLR-1033: Current entity's namespace is made available to all Transformers. This allows one to use an output field
+              of TemplateTransformer in other transformers, among other things.
+              (Fergus McMenemie, Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
