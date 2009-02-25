@@ -24,12 +24,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
-import org.apache.velocity.tools.generic.ComparisonDateTool;
-import org.apache.velocity.tools.generic.DateTool;
-import org.apache.velocity.tools.generic.EscapeTool;
-import org.apache.velocity.tools.generic.MathTool;
-import org.apache.velocity.tools.generic.NumberTool;
-import org.apache.velocity.tools.generic.SortTool;
+import org.apache.velocity.tools.generic.*;
 import org.apache.velocity.app.VelocityEngine;
 
 import java.io.File;
@@ -76,9 +71,11 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     context.put("esc", new EscapeTool());
     context.put("sort", new SortTool());
     context.put("number", new NumberTool());
+    context.put("list", new ListTool());
     context.put("date", new ComparisonDateTool());
     context.put("math", new MathTool());
-   
+    context.put("engine", engine);  // for $engine.resourceExists(...)
+
     String layout_template = request.getParams().get("v.layout");
     String json_wrapper = request.getParams().get("v.json");
     boolean wrap_response = (layout_template != null) || (json_wrapper !=null);
@@ -128,8 +125,19 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
   private Template getTemplate(VelocityEngine engine, SolrQueryRequest request) throws IOException {
     Template template;
+
+    String template_name = request.getParams().get("v.template");
+    String qt = request.getParams().get("qt");
+    String path = (String) request.getContext().get("path");
+    if (template_name == null && path != null) {
+      template_name = path;
+    }  // TODO: path is never null, so qt won't get picked up  maybe special case for '/select' to use qt, otherwise use path?
+    if (template_name == null && qt != null) {
+      template_name = qt;
+    }
+    if (template_name == null) template_name = "index";
     try {
-      template = engine.getTemplate(request.getParams().get("v.template", "browse") + ".vm");
+      template = engine.getTemplate(template_name + ".vm");
     } catch (Exception e) {
       throw new IOException(e.getMessage());
     }
