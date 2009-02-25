@@ -38,6 +38,7 @@ import java.util.Date;
  * </p>
  *
  * @version $Id$
+ * @deprecated Use {@link org.apache.lucene.index.FieldNormModifier}
  */
 public class LengthNormModifier {
   

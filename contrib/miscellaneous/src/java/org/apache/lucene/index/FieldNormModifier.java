@@ -41,7 +41,7 @@ public class FieldNormModifier {
    * Command Line Execution method.
    *
    * <pre>
-   * Usage: FieldNormModifier /path/index <package.SimilarityClassName | -n> field1 field2 ...
+   * Usage: FieldNormModifier /path/index &lt;package.SimilarityClassName | -n&gt; field1 field2 ...
    * </pre>
    */
   public static void main(String[] args) throws IOException {
