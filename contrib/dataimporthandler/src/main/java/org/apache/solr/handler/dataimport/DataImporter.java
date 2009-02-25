@@ -340,9 +340,7 @@ public class DataImporter {
     setStatus(Status.RUNNING_DELTA_DUMP);
 
     try {
-      if (requestParams.commit) {
-        setIndexStartTime(new Date());
-      }
+      setIndexStartTime(new Date());
       docBuilder = new DocBuilder(this, writer, requestParams);
       docBuilder.execute();
       if (!requestParams.debug)
