@@ -152,6 +152,9 @@ Bug Fixes
 18.SOLR-1024: Calling abort on DataImportHandler import commits data instead of calling rollback.
               (shalin)
 
+19.SOLR-1037: DIH should not add null values in a row returned by EntityProcessor to documents.
+              (shalin)
+
 Documentation
 ----------------------
 

@@ -460,19 +460,24 @@ public class DocBuilder {
       Collection collection = (Collection) value;
       if (multiValued) {
         for (Object o : collection) {
-          doc.addField(name, o, boost);
+          if (o != null)
+            doc.addField(name, o, boost);
         }
       } else {
         if (doc.getField(name) == null)
           for (Object o : collection) {
-            doc.addField(name, o, boost);
-            break;
+            if (o != null)  {
+              doc.addField(name, o, boost);
+              break;
+            }
           }
       }
     } else if (multiValued) {
-      doc.addField(name, value, boost);
+      if (value != null)  {
+        doc.addField(name, value, boost);
+      }
     } else {
-      if (doc.getField(name) == null)
+      if (doc.getField(name) == null && value != null)
         doc.addField(name, value, boost);
     }
   }
