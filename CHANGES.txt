@@ -159,6 +159,9 @@ New features
     bitset.  Instead, match() is called on demand per docID.  (John
     Wang via Mike McCandless)
 
+15. LUCENE-1398: Add ReverseStringFilter to contrib/analyzers, a filter
+    to reverse the characters in each token.  (Koji Sekiguchi via yonik)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
