@@ -447,7 +447,7 @@ implements Serializable {
   }
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
-    FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed) {
+    public FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed) {
       return new MyFieldComparator(numHits);
     }
   }
