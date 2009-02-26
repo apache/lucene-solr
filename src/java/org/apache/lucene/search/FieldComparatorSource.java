@@ -38,6 +38,6 @@ public abstract class FieldComparatorSource {
    * @throws IOException
    *           If an error occurs reading the index.
    */
-  abstract FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed)
+  public abstract FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed)
       throws IOException;
 }
