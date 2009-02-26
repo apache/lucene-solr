@@ -227,6 +227,19 @@ public class TestXPathRecordReader {
   }
 
   @Test
+  public void  attribValWithSlash() {
+    String xml = "<root><b>\n" +
+            "  <a x=\"a/b\" h=\"hello-A\"/>  \n" +
+            "</b></root>";
+    XPathRecordReader rr = new XPathRecordReader("/root/b");
+    rr.addField("x", "/root/b/a[@x='a/b']/@h", false);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Assert.assertEquals(1, l.size());
+    Map<String, Object> m = l.get(0);
+    Assert.assertEquals("hello-A", m.get("x"));    
+  }
+
+  @Test
   public void another() {
     String xml = "<root>\n"
             + "       <contenido id=\"10097\" idioma=\"cat\">\n"

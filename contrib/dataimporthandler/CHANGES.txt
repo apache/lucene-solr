@@ -155,6 +155,9 @@ Bug Fixes
 19.SOLR-1037: DIH should not add null values in a row returned by EntityProcessor to documents.
               (shalin)
 
+20.SOLR-1040: XPathEntityProcessor fails with an xpath like /feed/entry/link[@type='text/html']/@href
+              (Noble Paul via shalin)
+
 Documentation
 ----------------------
 

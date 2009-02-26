@@ -67,7 +67,7 @@ public class XPathRecordReader {
 
   private void addField0(String xpath, String name, boolean multiValued,
                          boolean isRecord, int flags) {
-    List<String> paths = new LinkedList<String>(Arrays.asList(xpath.split("/")));
+    List<String> paths = splitEscapeQuote(xpath);
     if ("".equals(paths.get(0).trim()))
       paths.remove(0);
     rootNode.build(paths, name, multiValued, isRecord, flags);
@@ -363,6 +363,30 @@ public class XPathRecordReader {
       } else{
         result.put(entry.getKey(),entry.getValue());
       }
+    }
+    return result;
+  }
+
+  /**
+   * Used for handling cases where there is a slash '/' character
+   * inside the attribute value e.g. x@html='text/html'. We need to split
+   * by '/' excluding the '/' which is a part of the attribute's value.
+   */
+  private static List<String> splitEscapeQuote(String str) {
+    List<String> result = new LinkedList<String>();
+    String[] ss = str.split("/");
+    for (int i = 0; i < ss.length; i++) {
+      if (ss[i].length() == 0 && result.size() == 0) continue;
+      StringBuilder sb = new StringBuilder();
+      int quoteCount = 0;
+      while (true) {
+        sb.append(ss[i]);
+        for (int j = 0; j < ss[i].length(); j++) if (ss[i].charAt(j) == '\'') quoteCount++;
+        if ((quoteCount % 2) == 0) break;
+        i++;
+        sb.append("/");
+      }
+      result.add(sb.toString());
     }
     return result;
   }
