@@ -100,7 +100,7 @@ public final class LevensteinDistance implements StringDistance {
 
         // our last action in the above loop was to switch d and p, so p now
         // actually has the most recent cost counts
-        return 1.0f - ((float) p[n] / Math.min(other.length(), sa.length));
+        return 1.0f - ((float) p[n] / Math.max(other.length(), sa.length));
     }
 
 }

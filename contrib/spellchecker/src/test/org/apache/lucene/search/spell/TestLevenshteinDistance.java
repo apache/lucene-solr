@@ -25,25 +25,25 @@ public class TestLevenshteinDistance extends TestCase {
   
   public void testGetDistance() {
     float d = sd.getDistance("al", "al");
-    assertTrue(d == 1.0f);
+    assertEquals(d,1.0f,0.001);
     d = sd.getDistance("martha", "marhta");
-    assertTrue(d > 0.66 && d <0.67);
+    assertEquals(d,0.6666,0.001);
     d = sd.getDistance("jones", "johnson");
-    assertTrue(d > 0.199 && d < 0.201);
+    assertEquals(d,0.4285,0.001);
     d = sd.getDistance("abcvwxyz", "cabvwxyz");
-    assertTrue(d > 0.749 && d < 0.751);
+    assertEquals(d,0.75,0.001);    
     d = sd.getDistance("dwayne", "duane");
-    assertTrue(d > 0.599 && d < 0.601);
+    assertEquals(d,0.666,0.001);
     d = sd.getDistance("dixon", "dicksonx");
-    assertTrue(d > 0.199 && d < 0.201);
+    assertEquals(d,0.5,0.001);
     d = sd.getDistance("six", "ten");
-    assertTrue(d == 0f);
+    assertEquals(d,0,0.001);
     float d1 = sd.getDistance("zac ephron", "zac efron");
     float d2 = sd.getDistance("zac ephron", "kai ephron");
-    assertTrue(d1 < d2);
+    assertEquals(d1,d2,0.001);
     d1 = sd.getDistance("brittney spears", "britney spears");
     d2 = sd.getDistance("brittney spears", "brittney startzman");
-    assertTrue(d1 > d2);    
+    assertTrue(d1 > d2);
   }
 
 }

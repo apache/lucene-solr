@@ -4,6 +4,9 @@ Lucene contrib change Log
 
 Bug fixes
 
+ 1. LUCENE-1548: Fix distance normalization in LevenshteinDistance to
+    not produce negative distances (Thomas Morton via Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in runtime behavior

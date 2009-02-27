@@ -129,19 +129,22 @@ public class TestSpellChecker extends TestCase {
     assertEquals(similar[0], "five");
 
     similar = spellChecker.suggestSimilar("ive", 2);
-    assertEquals(1, similar.length);
+    assertEquals(2, similar.length);
     assertEquals(similar[0], "five");
+    assertEquals(similar[1], "nine");
 
     similar = spellChecker.suggestSimilar("fives", 2);
     assertEquals(1, similar.length);
     assertEquals(similar[0], "five");
 
     similar = spellChecker.suggestSimilar("fie", 2);
+    assertEquals(2, similar.length);
+    assertEquals(similar[0], "five");
+    assertEquals(similar[1], "nine");
+    
+    similar = spellChecker.suggestSimilar("fi", 2);
     assertEquals(1, similar.length);
     assertEquals(similar[0], "five");
-
-    similar = spellChecker.suggestSimilar("fi", 2);
-    assertEquals(0, similar.length);
 
     // test restraint to a field
     similar = spellChecker.suggestSimilar("tousand", 10, r, "field1", false);
@@ -151,8 +154,9 @@ public class TestSpellChecker extends TestCase {
     assertEquals(1, similar.length); // there is the term thousand in the field field2
     
     similar = spellChecker.suggestSimilar("onety", 2);
-    assertEquals(1, similar.length);
+    assertEquals(2, similar.length);
     assertEquals(similar[0], "ninety");
+    assertEquals(similar[1], "one");
     try {
       similar = spellChecker.suggestSimilar("tousand", 10, r, null, false);
     } catch (NullPointerException e) {
