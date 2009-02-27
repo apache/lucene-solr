@@ -437,8 +437,12 @@ public class ParallelReader extends IndexReader {
   }
 
   protected void doCommit() throws IOException {
+    doCommit(null);
+  }
+
+  protected void doCommit(String commitUserData) throws IOException {
     for (int i = 0; i < readers.size(); i++)
-      ((IndexReader)readers.get(i)).commit();
+      ((IndexReader)readers.get(i)).commit(commitUserData);
   }
 
   protected synchronized void doClose() throws IOException {

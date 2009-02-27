@@ -327,6 +327,10 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
       directory.close();
   }
   
+  protected void doCommit() throws IOException {
+    doCommit(null);
+  }
+
   /**
    * Commit changes resulting from delete, undeleteAll, or
    * setNorm operations
@@ -336,10 +340,10 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
    */
-  protected void doCommit() throws IOException {
+  protected void doCommit(String commitUserData) throws IOException {
     if (hasChanges) {
       if (segmentInfos != null) {
-
+        segmentInfos.setUserData(commitUserData);
         // Default deleter (for backwards compatibility) is
         // KeepOnlyLastCommitDeleter:
         IndexFileDeleter deleter =  new IndexFileDeleter(directory,

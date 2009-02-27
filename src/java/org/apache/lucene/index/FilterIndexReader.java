@@ -209,7 +209,8 @@ public class FilterIndexReader extends IndexReader {
   }
 
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
-  protected void doCommit() throws IOException { in.commit(); }
+  protected void doCommit() throws IOException { doCommit(null); }
+  protected void doCommit(String commitUserData) throws IOException { in.commit(commitUserData); }
   protected void doClose() throws IOException { in.close(); }
 
 

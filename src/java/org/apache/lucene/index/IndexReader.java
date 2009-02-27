@@ -995,6 +995,17 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /**
+   * @param commitUserData Opaque String that's recorded
+   *  into the segments file in the index, and retrievable
+   *  by {@link IndexReader#getCommitUserData}.
+   * @throws IOException
+   */
+  public final synchronized void flush(String commitUserData) throws IOException {
+    ensureOpen();
+    commit(commitUserData);
+  }
+  
+  /**
    * Commit changes resulting from delete, undeleteAll, or
    * setNorm operations
    *
@@ -1004,14 +1015,37 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   protected final synchronized void commit() throws IOException {
-    if(hasChanges){
-      doCommit();
+    commit(null);
+  }
+  
+  /**
+   * Commit changes resulting from delete, undeleteAll, or
+   * setNorm operations
+   *
+   * If an exception is hit, then either no changes or all
+   * changes will have been committed to the index
+   * (transactional semantics).
+   * @throws IOException if there is a low-level IO error
+   */
+  protected final synchronized void commit(String commitUserData) throws IOException {
+    if (hasChanges) {
+      doCommit(commitUserData);
     }
     hasChanges = false;
   }
 
-  /** Implements commit. */
+  /** Implements commit.
+   *  @deprecated Please implement {@link #doCommit(String)
+   *  instead}. */
   protected abstract void doCommit() throws IOException;
+
+  /** Implements commit.  NOTE: subclasses should override
+   *  this.  In 3.0 this will become an abstract method. */
+  void doCommit(String commitUserData) throws IOException {
+    // Default impl discards commitUserData; all Lucene
+    // subclasses override this (do not discard it).
+    doCommit();
+  }
 
   /**
    * Closes files associated with this index.

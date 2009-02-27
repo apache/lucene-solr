@@ -68,7 +68,57 @@ public class TestIndexReader extends LuceneTestCase
     public TestIndexReader(String name) {
         super(name);
     }
+    
+    public void testCommitUserData() throws Exception {
+      RAMDirectory d = new MockRAMDirectory();
+      
+      String cmpCommitUserData = "foo fighters";
+      
+      // set up writer
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      for(int i=0;i<27;i++)
+        addDocumentWithFields(writer);
+      writer.close();
+      
+      IndexReader r = IndexReader.open(d);
+      r.deleteDocument(5);
+      r.flush(cmpCommitUserData);
+      r.close();
+      
+      SegmentInfos sis = new SegmentInfos();
+      sis.read(d);
+      IndexReader r2 = IndexReader.open(d);
+      IndexCommit c = r.getIndexCommit();
+      assertEquals(c.getUserData(), cmpCommitUserData);
 
+      assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
+
+      assertTrue(c.equals(r.getIndexCommit()));
+
+      // Change the index
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.setMaxBufferedDocs(2);
+      for(int i=0;i<7;i++)
+        addDocumentWithFields(writer);
+      writer.close();
+
+      IndexReader r3 = r2.reopen();
+      assertFalse(c.equals(r3.getIndexCommit()));
+      assertFalse(r2.getIndexCommit().isOptimized());
+      r3.close();
+
+      writer = new IndexWriter(d, new StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer.optimize();
+      writer.close();
+
+      r3 = r2.reopen();
+      assertTrue(r3.getIndexCommit().isOptimized());
+      r2.close();
+      r3.close();
+      d.close();
+    }
+    
     public void testIsCurrent() throws Exception
     {
       RAMDirectory d = new MockRAMDirectory();

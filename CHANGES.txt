@@ -51,6 +51,11 @@ API Changes
    that's visited.  All core collectors now use this API.  (Mark
    Miller, Mike McCandless)
 
+8. LUCENE-1546: Add IndexReader.flush(String commitUserData), allowing
+   you to record an opaque commitUserData into the commit written by
+   IndexReader.  This matches IndexWriter's commit methods.  (Jason
+   Rutherglen via Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
