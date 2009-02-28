@@ -25,6 +25,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
@@ -82,6 +83,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     
     // Using legacy ';' param
     args.remove( CommonParams.SORT );
+    args.put( QueryParsing.DEFTYPE, "lucenePlusSort" );
     args.put( CommonParams.Q, "title:test; val_s desc" );
     assertQ("with sort param [desc]", req
             ,"//*[@numFound='3']"

@@ -75,7 +75,7 @@ public class QueryComponent extends SearchComponent
     rb.setFieldFlags( fieldFlags );
 
     String defType = params.get(QueryParsing.DEFTYPE);
-    defType = defType==null ? OldLuceneQParserPlugin.NAME : defType;
+    defType = defType==null ? QParserPlugin.DEFAULT_QTYPE : defType;
 
     if (rb.getQueryString() == null) {
       rb.setQueryString( params.get( CommonParams.Q ) );

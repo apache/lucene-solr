@@ -39,6 +39,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     SolrQueryRequest req = null;
     Map<String,String> args = new HashMap<String,String>();
     lrf.args.put("version","2.0");
+    lrf.args.put("defType","lucenePlusSort");
 
     // compact the index, keep things from getting out of hand
 
@@ -222,6 +223,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "val_s:[a TO z];val_s asc",
                                     "standard", 0, 0 , args);
     assertQ(req
@@ -230,6 +232,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "val_s:[a TO z];val_s desc",
                                     "standard", 0, 0 , args);
     assertQ(req
@@ -1171,6 +1174,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     args = new HashMap<String,String>();
     args.put("version","2.0");
     args.put("fl","score ");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44;id desc;",
                                     "standard", 0, 10, args);
     assertQ(req
@@ -1179,6 +1183,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     args = new HashMap<String,String>();
     args.put("version","2.0");
     args.put("fl","score ");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44;",
                                     "standard", 0, 10, args);
     assertQ(req
@@ -1187,6 +1192,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     args = new HashMap<String,String>();
     args.put("version","2.0");
     args.put("fl","score ");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44;id desc;",
                                     "standard", 0, 10, args);
     assertQ(req
@@ -1195,6 +1201,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     args = new HashMap<String,String>();
     args.put("version","2.0");
     args.put("fl","score");
+    args.put("defType","lucenePlusSort");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44;id desc;",
                                     "standard", 0, 0 , args);
     assertQ(req

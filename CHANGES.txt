@@ -32,6 +32,14 @@ the index smaller and faster.  If you are upgrading from an earlier Solr
 release and want to enable omitTf by default, change the schema version from
 1.1 to 1.2 in schema.xml.  Remove any existing index and restart Solr to ensure that omitTf completely takes affect.
 
+The default QParserPlugin used by the QueryComponent for parsing the "q" param
+has been changed, to remove support for the deprecated use of ";" as a separator
+between the query string and the sort options when no "sort" param was used.
+Users who wish to continue using the semi-colon based method of specifying the
+sort options should explicitly set the defType param to "lucenePlusSort" on all
+requests. (The simplest way to do this is by specifying it as a default param
+for your request handlers in solrconfig.xml, see the example solrconfig.xml for
+sample syntax.) 
 
 Detailed Change List
 ----------------------
@@ -330,6 +338,9 @@ Other Changes
 
 19. SOLR-967: New type-safe constructor for NamedList (Kay Kay via hossman)
 
+20. SOLR-1036: Change default QParser from "lucenePlusSort" to "lucene" to
+    reduce confusion of semicolon splitting behavior when no sort param is
+    specified (hossman)
 
 Build
 ----------------------

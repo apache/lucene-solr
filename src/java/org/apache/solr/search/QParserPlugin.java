@@ -22,11 +22,11 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin {
   /** internal use - name of the default parser */
-  public static String DEFAULT_QTYPE="lucene";
+  public static String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
   /** internal use - name to class mappings of builtin parsers */
   public static final Object[] standardPlugins = {
-    DEFAULT_QTYPE, LuceneQParserPlugin.class,
+    LuceneQParserPlugin.NAME, LuceneQParserPlugin.class,
     OldLuceneQParserPlugin.NAME, OldLuceneQParserPlugin.class,
     FunctionQParserPlugin.NAME, FunctionQParserPlugin.class,
     PrefixQParserPlugin.NAME, PrefixQParserPlugin.class,
