@@ -50,6 +50,11 @@ Bug fixes
 12. LUCENE-1547: Fix rare thread safety issue if two threads call
     IndexWriter commit() at the same time.  (Mike McCandless)
 
+13. LUCENE-1465: NearSpansOrdered returns payloads from first possible match 
+    rather than the correct, shortest match; Payloads could be returned even
+    if the max slop was exceeded; The wrong payload could be returned in 
+    certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy
