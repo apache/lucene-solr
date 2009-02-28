@@ -396,13 +396,19 @@ public class CheckIndex {
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
+          if (reader.deletedDocs.count() != info.getDelCount()) {
+            throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs deletedDocs.count()=" + reader.deletedDocs.count());
+          }
+          if (reader.deletedDocs.count() > reader.maxDoc()) {
+            throw new RuntimeException("too many deleted docs: maxDoc()=" + reader.maxDoc() + " vs deletedDocs.count()=" + reader.deletedDocs.count());
+          }
           if (info.docCount - numDocs != info.getDelCount()){
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           }
           segInfoStat.numDeleted = info.docCount - numDocs;
           msg("OK [" + (segInfoStat.numDeleted) + " deleted docs]");
         } else {
-          if (info.getDelCount() != 0){
+          if (info.getDelCount() != 0) {
             throw new RuntimeException("delete count mismatch: info=" + info.getDelCount() + " vs reader=" + (info.docCount - numDocs));
           }
           msg("OK");
@@ -433,6 +439,8 @@ public class CheckIndex {
         long termCount = 0;
         long totFreq = 0;
         long totPos = 0;
+        final int maxDoc = reader.maxDoc();
+
         while(termEnum.next()) {
           termCount++;
           final Term term = termEnum.term();
@@ -447,6 +455,9 @@ public class CheckIndex {
             final int freq = termPositions.freq();
             if (doc <= lastDoc)
               throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
+            if (doc >= maxDoc)
+              throw new RuntimeException("term " + term + ": doc " + doc + " >= maxDoc " + maxDoc);
+
             lastDoc = doc;
             if (freq <= 0)
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
