@@ -59,9 +59,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return this
    */
   public SolrQuery addFacetField(String ... fields) {
-    for( String f : fields ) {
-      this.add(FacetParams.FACET_FIELD, f);
-    }
+    add(FacetParams.FACET_FIELD, fields);
     this.set(FacetParams.FACET, true);
     return this;
   }
