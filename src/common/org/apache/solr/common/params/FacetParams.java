@@ -89,14 +89,14 @@ public interface FacetParams {
 
   /**
    * String option: "count" causes facets to be sorted
-   * by the count, "lex" results in lexicographical order.
+   * by the count, "index" results in index order.
    */
   public static final String FACET_SORT = FACET + ".sort";
 
   public static final String FACET_SORT_COUNT = "count";
   public static final String FACET_SORT_COUNT_LEGACY = "true";
-  public static final String FACET_SORT_LEX = "lex";
-  public static final String FACET_SORT_LEX_LEGACY = "false";
+  public static final String FACET_SORT_INDEX = "index";
+  public static final String FACET_SORT_INDEX_LEGACY = "false";
 
   /**
    * Only return constraints of a facet field with the given prefix.
@@ -151,7 +151,7 @@ public interface FacetParams {
    */
   public static final String FACET_DATE_OTHER = FACET_DATE + ".other";
 
-  /**
+    /**
    * An enumeration of the legal values for FACET_DATE_OTHER...
    * <ul>
    * <li>before = the count of matches before the start date</li>

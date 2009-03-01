@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.schema.FieldType;
 import org.apache.lucene.queryParser.ParseException;
 
 /**
@@ -269,7 +270,7 @@ public class  FacetComponent extends SearchComponent
 
     for (DistribFieldFacet dff : fi.facets.values()) {
       if (dff.limit <= 0) continue; // no need to check these facets for refinement
-      if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_LEX)) continue;
+      if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
 
       dff._toRefine = new List[rb.shards.length];
       ShardFacetCount[] counts = dff.getCountSorted();
@@ -373,7 +374,7 @@ public class  FacetComponent extends SearchComponent
         if (counts == null || dff.needRefinements) {
           counts = dff.getCountSorted();
         }
-      } else if (dff.sort.equals(FacetParams.FACET_SORT_LEX)) {
+      } else if (dff.sort.equals(FacetParams.FACET_SORT_INDEX)) {
           counts = dff.getLexSorted();
       } else { // TODO: log error or throw exception?
           counts = dff.getLexSorted();
@@ -513,6 +514,7 @@ class QueryFacet extends FacetBase {
 
 class FieldFacet extends FacetBase {
   String field;     // the field to facet on... "myfield" for {!key=foo}myfield
+  FieldType ftype;
   int offset;
   int limit;
   int minCount;
@@ -523,11 +525,12 @@ class FieldFacet extends FacetBase {
 
   public FieldFacet(ResponseBuilder rb, String facetStr) {
     super(rb, FacetParams.FACET_FIELD, facetStr);
-    fillParams(rb.req.getParams(), facetOn);
+    fillParams(rb, rb.req.getParams(), facetOn);
   }
 
-  private void fillParams(SolrParams params, String field) {
+  private void fillParams(ResponseBuilder rb, SolrParams params, String field) {
     this.field = field;
+    this.ftype = rb.req.getSchema().getFieldTypeNoEx(this.field);
     this.offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     this.limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
     Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
@@ -540,11 +543,11 @@ class FieldFacet extends FacetBase {
     this.minCount = mincount;
     this.missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting by count if there is a limit.
-    this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
+    this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     if (this.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
       this.sort = FacetParams.FACET_SORT_COUNT;
-    } else if (this.sort.equals(FacetParams.FACET_SORT_LEX_LEGACY)) {
-      this.sort = FacetParams.FACET_SORT_LEX;
+    } else if (this.sort.equals(FacetParams.FACET_SORT_INDEX_LEGACY)) {
+      this.sort = FacetParams.FACET_SORT_INDEX;
     }
     this.prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
   }
@@ -592,6 +595,7 @@ class DistribFieldFacet extends FieldFacet {
         if (sfc == null) {
           sfc = new ShardFacetCount();
           sfc.name = name;
+          sfc.indexed = ftype == null ? sfc.name : ftype.toInternal(sfc.name);
           sfc.termNum = termNum++;
           counts.put(name, sfc);
         }
@@ -617,7 +621,7 @@ class DistribFieldFacet extends FieldFacet {
     ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
     Arrays.sort(arr, new Comparator<ShardFacetCount>() {
       public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-        return o1.name.compareTo(o2.name);
+        return o1.indexed.compareTo(o2.indexed);
       }
     });
     countSorted = arr;
@@ -630,8 +634,7 @@ class DistribFieldFacet extends FieldFacet {
       public int compare(ShardFacetCount o1, ShardFacetCount o2) {
         if (o2.count < o1.count) return -1;
         else if (o1.count < o2.count) return 1;
-        // TODO: handle tiebreaks for types other than strings
-        return o1.name.compareTo(o2.name);
+        return o1.indexed.compareTo(o2.indexed);
       }
     });
     countSorted = arr;
@@ -650,6 +653,7 @@ class DistribFieldFacet extends FieldFacet {
 
 class ShardFacetCount {
   String name;
+  String indexed;  // the indexed form of the name... used for comparisons.
   long count;
   int termNum;  // term number starting at 0 (used in bit arrays)
 

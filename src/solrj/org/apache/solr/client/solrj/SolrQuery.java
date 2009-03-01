@@ -217,7 +217,7 @@ public class SolrQuery extends ModifiableSolrParams
    * 
    * @return facet sort or default of true. <br />
    * true corresponds to
-   * {@link FacetParams#FACET_SORT_COUNT} and <br />false to {@link FacetParams#FACET_SORT_LEX}
+   * {@link FacetParams#FACET_SORT_COUNT} and <br />false to {@link FacetParams#FACET_SORT_INDEX}
    * 
    * @deprecated Use {@link #getFacetSortString()} instead.
    */
@@ -241,11 +241,11 @@ public class SolrQuery extends ModifiableSolrParams
    * @param sort sort facets
    * @return this
    * @deprecated Use {@link #setFacetSort(String)} instead, true corresponds to
-   * {@link FacetParams#FACET_SORT_COUNT} and false to {@link FacetParams#FACET_SORT_LEX}.
+   * {@link FacetParams#FACET_SORT_COUNT} and false to {@link FacetParams#FACET_SORT_INDEX}.
    */
   @Deprecated
   public SolrQuery setFacetSort(boolean sort) { 
-    this.set(FacetParams.FACET_SORT, sort == true ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_LEX);
+    this.set(FacetParams.FACET_SORT, sort == true ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     return this;
   }
 

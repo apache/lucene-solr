@@ -95,8 +95,8 @@ public class SolrQueryTest extends TestCase {
   public void testFacetSort() {
     SolrQuery q = new SolrQuery("dog");
     assertEquals("count", q.getFacetSortString());
-    q.setFacetSort("lex");
-    assertEquals("lex", q.getFacetSortString());
+    q.setFacetSort("index");
+    assertEquals("index", q.getFacetSortString());
   }
 
   public void testFacetSortLegacy() {
@@ -110,7 +110,7 @@ public class SolrQueryTest extends TestCase {
       SolrQuery q = new SolrQuery("foo");
       assertEquals(10, q.setFacetLimit(10).getFacetLimit());
       assertEquals(10, q.setFacetMinCount(10).getFacetMinCount());
-      assertEquals("lex", q.setFacetSort("lex").getFacetSortString());
+      assertEquals("index", q.setFacetSort("index").getFacetSortString());
       assertEquals(10, q.setHighlightSnippets(10).getHighlightSnippets());
       assertEquals(10, q.setHighlightFragsize(10).getHighlightFragsize());
       assertEquals(true, q.setHighlightRequireFieldMatch(true).getHighlightRequireFieldMatch());

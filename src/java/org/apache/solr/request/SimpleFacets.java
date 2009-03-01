@@ -222,7 +222,7 @@ public class SimpleFacets {
     }
     boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
     // default to sorting if there is a limit.
-    String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? "count" : "lex");
+    String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
 
 
