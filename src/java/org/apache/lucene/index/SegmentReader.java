@@ -71,13 +71,17 @@ class SegmentReader extends DirectoryIndexReader {
   private IndexInput singleNormStream;
   private Ref singleNormRef;
 
+  // Counts how many other reader share the core objects
+  // (freqStream, proxStream, tis, etc.) of this reader;
+  // when coreRef drops to 0, these core objects may be
+  // closed.  A given insance of SegmentReader may be
+  // closed, even those it shares core objects with other
+  // SegmentReaders:
+  private Ref coreRef = new Ref();
+
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader = null;
   CompoundFileReader storeCFSReader = null;
-  
-  // indicates the SegmentReader with which the resources are being shared,
-  // in case this is a re-opened reader
-  private SegmentReader referencedSegmentReader = null;
   
   /**
    * Sets the initial value 
@@ -329,37 +333,6 @@ class SegmentReader extends DirectoryIndexReader {
       }
       this.dirty = false;
     }
-  }
-
-  public synchronized void incRef() {
-    super.incRef();
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      ((Norm) it.next()).incRef();
-    }
-    if (deletedDocsRef != null) {
-      deletedDocsRef.incRef();
-    }
-  }
-  
-  private synchronized void incRefReaderNotNorms() {
-    super.incRef();
-  }
-  
-  public synchronized void decRef() throws IOException {
-    super.decRef();
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      ((Norm) it.next()).decRef();
-    }
-
-    if (deletedDocsRef != null) {
-      deletedDocsRef.decRef();
-    }
-  }
-  
-  private synchronized void decRefReaderNotNorms() throws IOException {
-    super.decRef();
   }
 
   Map norms = new HashMap();
@@ -688,6 +661,8 @@ class SegmentReader extends DirectoryIndexReader {
 
     boolean success = false;
     try {
+      coreRef.incRef();
+      clone.coreRef = coreRef;
       clone.readOnly = openReadOnly;
       clone.directory = directory;
       clone.si = si;
@@ -706,19 +681,19 @@ class SegmentReader extends DirectoryIndexReader {
         clone.fieldsReaderOrig = (FieldsReader) fieldsReaderOrig.clone();
       }      
       
-      if (deletedDocsRef != null) {
-        deletedDocsRef.incRef();
-      }
       if (doClone) {
-        clone.deletedDocs = deletedDocs;
-        clone.deletedDocsRef = deletedDocsRef;
+        if (deletedDocs != null) {
+          deletedDocsRef.incRef();
+          clone.deletedDocs = deletedDocs;
+          clone.deletedDocsRef = deletedDocsRef;
+        }
       } else {
         if (!deletionsUpToDate) {
           // load deleted docs
-          clone.deletedDocs = null;
-          clone.deletedDocsRef = null;
+          assert clone.deletedDocs == null;
           clone.loadDeletedDocs();
-        } else {
+        } else if (deletedDocs != null) {
+          deletedDocsRef.incRef();
           clone.deletedDocs = deletedDocs;
           clone.deletedDocsRef = deletedDocsRef;
         }
@@ -744,16 +719,6 @@ class SegmentReader extends DirectoryIndexReader {
 
       success = true;
     } finally {
-      if (this.referencedSegmentReader != null) {
-        // This reader shares resources with another SegmentReader,
-        // so we increment the other reader's refCount.
-        clone.referencedSegmentReader = this.referencedSegmentReader;
-      } else {
-        // We are the original SegmentReader
-        clone.referencedSegmentReader = this;
-      }
-      clone.referencedSegmentReader.incRefReaderNotNorms();
-      
       if (!success) {
         // An exception occured during reopen, we have to decRef the norms
         // that we incRef'ed already and close singleNormsStream and FieldsReader
@@ -801,17 +766,21 @@ class SegmentReader extends DirectoryIndexReader {
   }
   
   protected void doClose() throws IOException {
-    boolean hasReferencedReader = (referencedSegmentReader != null);
 
     termVectorsLocal.close();
     fieldsReaderLocal.close();
     
-    if (hasReferencedReader) {
-      referencedSegmentReader.decRefReaderNotNorms();
-      referencedSegmentReader = null;
+    if (deletedDocs != null) {
+      deletedDocsRef.decRef();
     }
 
-    if (!hasReferencedReader) { 
+    Iterator it = norms.values().iterator();
+    while (it.hasNext()) {
+      ((Norm) it.next()).decRef();
+    }
+
+    if (coreRef.decRef() == 0) {
+
       // close everything, nothing is shared anymore with other readers
       if (tis != null) {
         tis.close();
@@ -869,12 +838,10 @@ class SegmentReader extends DirectoryIndexReader {
     // deletedDocs BitVector so decRef the current deletedDocsRef,
     // clone the BitVector, create a new deletedDocsRef
     if (deletedDocsRef.refCount() > 1) {
-      synchronized (deletedDocsRef) {
-        Ref oldRef = deletedDocsRef;
-        deletedDocs = cloneDeletedDocs(deletedDocs);
-        deletedDocsRef = new Ref();
-        oldRef.decRef();
-      }
+      Ref oldRef = deletedDocsRef;
+      deletedDocs = cloneDeletedDocs(deletedDocs);
+      deletedDocsRef = new Ref();
+      oldRef.decRef();
     }
     deletedDocsDirty = true;
     undeleteAll = false;

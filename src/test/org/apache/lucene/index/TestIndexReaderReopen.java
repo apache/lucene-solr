@@ -364,9 +364,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       assertEquals(subReaders0.length, subReaders1.length);
       
       for (int i = 0; i < subReaders0.length; i++) {
-        assertRefCountEquals(2, subReaders0[i]);
         if (subReaders0[i] != subReaders1[i]) {
+          assertRefCountEquals(1, subReaders0[i]);
           assertRefCountEquals(1, subReaders1[i]);
+        } else {
+          assertRefCountEquals(2, subReaders0[i]);
         }
       }
 
@@ -390,10 +392,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         } else {
           assertRefCountEquals(1, subReaders2[i]);
           if (subReaders0[i] == subReaders1[i]) {
-            assertRefCountEquals(3, subReaders2[i]);
+            assertRefCountEquals(2, subReaders2[i]);
             assertRefCountEquals(2, subReaders0[i]);
           } else {
-            assertRefCountEquals(3, subReaders0[i]);
+            assertRefCountEquals(1, subReaders0[i]);
             assertRefCountEquals(1, subReaders1[i]);
           }
         }
@@ -463,7 +465,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       modifyIndex(0, dir1);
       IndexReader reader2 = reader1.reopen();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(2 + mode, reader1);
 
       if (mode == 1) {
         initReader2.close();
@@ -471,31 +473,31 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       modifyIndex(1, dir1);
       IndexReader reader3 = reader2.reopen();
-      assertRefCountEquals(4 + mode, reader1);
+      assertRefCountEquals(2 + mode, reader1);
       assertRefCountEquals(1, reader2);
       
       multiReader1.close();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(1 + mode, reader1);
       
       multiReader1.close();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(1 + mode, reader1);
 
       if (mode == 1) {
         initReader2.close();
       }
       
       reader1.close();
-      assertRefCountEquals(3, reader1);
+      assertRefCountEquals(1, reader1);
       
       multiReader2.close();
-      assertRefCountEquals(2, reader1);
+      assertRefCountEquals(0, reader1);
       
       multiReader2.close();
-      assertRefCountEquals(2, reader1);
+      assertRefCountEquals(0, reader1);
       
       reader3.close();
-      assertRefCountEquals(1, reader1);
-      assertReaderOpen(reader1);
+      assertRefCountEquals(0, reader1);
+      assertReaderClosed(reader1, true, false);
       
       reader2.close();
       assertRefCountEquals(0, reader1);
@@ -537,7 +539,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       modifyIndex(0, dir1);
       modifyIndex(0, dir2);
       IndexReader reader2 = reader1.reopen();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(2 + mode, reader1);
 
       if (mode == 1) {
         initReader2.close();
@@ -545,31 +547,31 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       modifyIndex(4, dir1);
       IndexReader reader3 = reader2.reopen();
-      assertRefCountEquals(4 + mode, reader1);
+      assertRefCountEquals(2 + mode, reader1);
       assertRefCountEquals(1, reader2);
       
       parallelReader1.close();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(1 + mode, reader1);
       
       parallelReader1.close();
-      assertRefCountEquals(3 + mode, reader1);
+      assertRefCountEquals(1 + mode, reader1);
 
       if (mode == 1) {
         initReader2.close();
       }
       
       reader1.close();
-      assertRefCountEquals(3, reader1);
+      assertRefCountEquals(1, reader1);
       
       parallelReader2.close();
-      assertRefCountEquals(2, reader1);
+      assertRefCountEquals(0, reader1);
       
       parallelReader2.close();
-      assertRefCountEquals(2, reader1);
+      assertRefCountEquals(0, reader1);
       
       reader3.close();
-      assertRefCountEquals(1, reader1);
-      assertReaderOpen(reader1);
+      assertRefCountEquals(0, reader1);
+      assertReaderClosed(reader1, true, false);
       
       reader2.close();
       assertRefCountEquals(0, reader1);
@@ -617,16 +619,16 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     // Now reader2-reader5 references reader1. reader1 and reader2
     // share the same norms. reader3, reader4, reader5 also share norms.
-    assertRefCountEquals(5, reader1);
+    assertRefCountEquals(1, reader1);
     assertFalse(reader1.normsClosed());
 
     reader1.close();
 
-    assertRefCountEquals(4, reader1);
+    assertRefCountEquals(0, reader1);
     assertFalse(reader1.normsClosed());
 
     reader2.close();
-    assertRefCountEquals(3, reader1);
+    assertRefCountEquals(0, reader1);
 
     // now the norms for field1 and field2 should be closed
     assertTrue(reader1.normsClosed("field1"));
@@ -637,10 +639,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertFalse(reader1.normsClosed("field4"));
     
     reader3.close();
-    assertRefCountEquals(2, reader1);
+    assertRefCountEquals(0, reader1);
     assertFalse(reader3.normsClosed());
     reader5.close();
-    assertRefCountEquals(1, reader1);
+    assertRefCountEquals(0, reader1);
     assertFalse(reader3.normsClosed());
     reader4.close();
     assertRefCountEquals(0, reader1);
@@ -1139,5 +1141,88 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     } catch (AlreadyClosedException ace) {
       // expected
     }
+  }
+
+  public void testCloseOrig() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    createIndex(dir, false);
+    IndexReader r1 = IndexReader.open(dir);
+    IndexReader r2 = IndexReader.open(dir);
+    r2.deleteDocument(0);
+    r2.close();
+
+    IndexReader r3 = r1.reopen();
+    assertTrue(r1 != r3);
+    r1.close();
+    try {
+      r1.document(2);
+      fail("did not hit exception");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
+    r3.close();
+    dir.close();
+  }
+
+  public void testDeletes() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    createIndex(dir, false);
+    // Get delete bitVector
+    modifyIndex(0, dir);
+    IndexReader r1 = IndexReader.open(dir);
+
+    // Add doc:
+    modifyIndex(5, dir);
+
+    IndexReader r2 = r1.reopen();
+    assertTrue(r1 != r2);
+
+    IndexReader[] rs2 = r2.getSequentialSubReaders();
+
+    SegmentReader sr1 = (SegmentReader) r1;
+    SegmentReader sr2 = (SegmentReader) rs2[0];
+
+    // At this point they share the same BitVector
+    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+
+    r2.deleteDocument(0);
+
+    // r1 should not see the delete
+    assertFalse(r1.isDeleted(0));
+
+    // Now r2 should have made a private copy of deleted docs:
+    assertTrue(sr1.deletedDocs!=sr2.deletedDocs);
+
+    r1.close();
+    r2.close();
+    dir.close();
+  }
+
+  public void testDeletes2() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    createIndex(dir, false);
+    // Get delete bitVector
+    modifyIndex(0, dir);
+    IndexReader r1 = IndexReader.open(dir);
+
+    // Add doc:
+    modifyIndex(5, dir);
+
+    IndexReader r2 = r1.reopen();
+    assertTrue(r1 != r2);
+
+    IndexReader[] rs2 = r2.getSequentialSubReaders();
+
+    SegmentReader sr1 = (SegmentReader) r1;
+    SegmentReader sr2 = (SegmentReader) rs2[0];
+
+    // At this point they share the same BitVector
+    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+    r1.close();
+
+    r2.deleteDocument(0);
+    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+    r2.close();
+    dir.close();
   }
 }

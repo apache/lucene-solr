@@ -47,16 +47,15 @@ public final class BitVector implements Cloneable {
     bits = new byte[(size >> 3) + 1];
   }
   
-  BitVector(byte[] bits, int size, int count) {
+  BitVector(byte[] bits, int size) {
     this.bits = bits;
     this.size = size;
-    this.count = count;
   }
   
   public Object clone() {
     byte[] copyBits = new byte[bits.length];
     System.arraycopy(bits, 0, copyBits, 0, bits.length);
-    return new BitVector(copyBits, size, count);
+    return new BitVector(copyBits, size);
   }
   
   /** Sets the value of <code>bit</code> to one. */

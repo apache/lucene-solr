@@ -423,4 +423,21 @@ public class TestIndexReaderClone extends LuceneTestCase {
     }
     dir1.close();
   }
+
+  public void testLucene1516Bug() throws Exception {
+    final Directory dir1 = new MockRAMDirectory();
+    TestIndexReaderReopen.createIndex(dir1, false);
+    IndexReader r1 = IndexReader.open(dir1);
+    r1.incRef();
+    IndexReader r2 = (IndexReader) r1.clone(false);
+    r1.deleteDocument(5);
+    r1.decRef();
+    
+    r1.incRef();
+    
+    r2.close();
+    r1.decRef();
+    r1.close();
+    dir1.close();
+  }
 }
