@@ -39,7 +39,7 @@ public class VariableResolverImpl extends VariableResolver {
    */
   ContextImpl context;
 
-  private static final TemplateString TEMPLATE_STRING = new TemplateString();
+  private final TemplateString templateString = new TemplateString();
 
   public VariableResolverImpl() {
   }
@@ -84,7 +84,7 @@ public class VariableResolverImpl extends VariableResolver {
   }
 
   public String replaceTokens(String template) {
-    return TEMPLATE_STRING.replaceTokens(template, this);
+    return templateString.replaceTokens(template, this);
   }
 
   @SuppressWarnings("unchecked")

@@ -158,6 +158,9 @@ Bug Fixes
 20.SOLR-1040: XPathEntityProcessor fails with an xpath like /feed/entry/link[@type='text/html']/@href
               (Noble Paul via shalin)
 
+21.SOLR-1042: Fix memory leak in DIH by making TemplateString non-static member in VariableResolverImpl
+              (Ryuuichi Kumai via shalin)
+
 Documentation
 ----------------------
 
