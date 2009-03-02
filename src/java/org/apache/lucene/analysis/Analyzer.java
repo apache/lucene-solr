@@ -20,6 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.io.IOException;
 
+import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.store.AlreadyClosedException;
+
 /** An Analyzer builds TokenStreams, which analyze text.  It thus represents a
  *  policy for extracting index terms from text.
  *  <p>
@@ -44,20 +47,36 @@ public abstract class Analyzer {
     return tokenStream(fieldName, reader);
   }
 
-  private ThreadLocal tokenStreams = new ThreadLocal();
+  private CloseableThreadLocal tokenStreams = new CloseableThreadLocal();
 
   /** Used by Analyzers that implement reusableTokenStream
    *  to retrieve previously saved TokenStreams for re-use
    *  by the same thread. */
   protected Object getPreviousTokenStream() {
-    return tokenStreams.get();
+    try {
+      return tokenStreams.get();
+    } catch (NullPointerException npe) {
+      if (tokenStreams == null) {
+        throw new AlreadyClosedException("this Analyzer is closed");
+      } else {
+        throw npe;
+      }
+    }
   }
 
   /** Used by Analyzers that implement reusableTokenStream
    *  to save a TokenStream for later re-use by the same
    *  thread. */
   protected void setPreviousTokenStream(Object obj) {
-    tokenStreams.set(obj);
+    try {
+      tokenStreams.set(obj);
+    } catch (NullPointerException npe) {
+      if (tokenStreams == null) {
+        throw new AlreadyClosedException("this Analyzer is closed");
+      } else {
+        throw npe;
+      }
+    }
   }
 
 
@@ -77,5 +96,11 @@ public abstract class Analyzer {
   public int getPositionIncrementGap(String fieldName)
   {
     return 0;
+  }
+
+  /** Frees persistent resources used by this Analyzer */
+  public void close() {
+    tokenStreams.close();
+    tokenStreams = null;
   }
 }

@@ -56,6 +56,9 @@ API Changes
    IndexReader.  This matches IndexWriter's commit methods.  (Jason
    Rutherglen via Mike McCandless)
 
+9. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
+   resources.  (Christian Kohlschütter via Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -80,6 +83,9 @@ Bug fixes
 
 5. LUCENE-1544: Fix deadlock in IndexWriter.addIndexes(IndexReader[]).
    (Mike McCandless via Doug Sale)
+
+6. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
+   resources.  (Christian Kohlschütter via Mike McCandless)
 
 New features
 
