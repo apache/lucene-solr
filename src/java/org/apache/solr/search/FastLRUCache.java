@@ -79,10 +79,9 @@ public class FastLRUCache implements SolrCache {
 
 
     description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread ="+newThread;
+            ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
     if (autowarmCount > 0) {
-      description += ", autowarmCount=" + autowarmCount
-              + ", regenerator=" + regenerator;
+      description += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
     }
     description += ')';
 
