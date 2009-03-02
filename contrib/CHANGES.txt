@@ -2,6 +2,8 @@ Lucene contrib change Log
 
 ======================= 2.4.x branch (not yet released) =======================
 
+======================= Release 2.4.1 2009-03-09 =======================
+
 Bug fixes
 
  1. LUCENE-1548: Fix distance normalization in LevenshteinDistance to
