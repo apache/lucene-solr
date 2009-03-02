@@ -3,6 +3,9 @@ $Id$
 
 ======================= 2.4.x branch (not yet released) =======================
 
+9. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
+   resources.  (Christian Kohlschütter via Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1452: Fixed silent data-loss case whereby binary fields are
@@ -54,6 +57,9 @@ Bug fixes
     rather than the correct, shortest match; Payloads could be returned even
     if the max slop was exceeded; The wrong payload could be returned in 
     certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
+
+14. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
+    resources.  (Christian Kohlschütter via Mike McCandless)
 
 ======================= Release 2.4.0 2008-10-06 =======================
 
