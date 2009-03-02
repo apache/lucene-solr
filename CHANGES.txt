@@ -1,10 +1,9 @@
 Lucene Change Log
 $Id$
 
-======================= 2.4.x branch (not yet released) =======================
+======================= Release 2.4.x branch (not yet released) =======================
 
-9. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
-   resources.  (Christian Kohlschütter via Mike McCandless)
+======================= Release 2.4.1 2009-03-09 =======================
 
 Bug fixes
 
