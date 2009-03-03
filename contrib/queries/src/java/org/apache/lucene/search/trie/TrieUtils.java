@@ -39,7 +39,7 @@ import org.apache.lucene.search.ExtendedFieldCache;
  * <p>To also index floating point numbers, this class supplies two methods to convert them
  * to integer values by changing their bit layout: {@link #doubleToSortableLong},
  * {@link #floatToSortableInt}. You will have no precision loss by
- * converting floating point numbers to integers and back (only that the integer form does
+ * converting floating point numbers to integers and back (only that the integer form
  * is not usable). Other data types like dates can easily converted to longs or ints (e.g.
  * date to long: {@link java.util.Date#getTime}).
  * <p>To index the different precisions of the long values each encoded value is also reduced
