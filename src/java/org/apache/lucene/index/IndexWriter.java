@@ -3207,6 +3207,8 @@ public class IndexWriter {
             sReader = SegmentReader.get(true, segmentInfos.info(0));
           }
         }
+        
+        success = false;
 
         try {
           if (sReader != null)
@@ -4208,8 +4210,6 @@ public class IndexWriter {
 
     merger = new SegmentMerger(this, mergedName, merge);
     
-    boolean success = false;
-
     // This is try/finally to make sure merger's readers are
     // closed:
     try {
@@ -4231,8 +4231,6 @@ public class IndexWriter {
       mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
 
       assert mergedDocCount == totDocCount;
-
-      success = true;
 
     } finally {
       // close readers before we attempt to delete
@@ -4258,7 +4256,7 @@ public class IndexWriter {
         commit(size);
       }
       
-      success = false;
+      boolean success = false;
       final String compoundFileName = mergedName + "." + IndexFileNames.COMPOUND_FILE_EXTENSION;
 
       try {
