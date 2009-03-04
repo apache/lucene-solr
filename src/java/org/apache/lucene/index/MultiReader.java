@@ -179,10 +179,8 @@ public class MultiReader extends IndexReader implements Cloneable {
       }
       MultiReader mr = new MultiReader(newSubReaders);
       mr.decrefOnClose = newDecrefOnClose;
-      success = true;
       return mr;
     } else {
-      success = true;
       return this;
     }
   }
