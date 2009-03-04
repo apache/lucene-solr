@@ -121,7 +121,7 @@ public class SpanOrQuery extends SpanQuery {
     final SpanOrQuery that = (SpanOrQuery) o;
 
     if (!clauses.equals(that.clauses)) return false;
-    if (!field.equals(that.field)) return false;
+    if (!clauses.isEmpty() && !field.equals(that.field)) return false;
 
     return getBoost() == that.getBoost();
   }
