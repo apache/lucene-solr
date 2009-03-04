@@ -181,7 +181,7 @@ implements Serializable {
   }
   
   public String getRandomNumberString(int num, int low, int high) {
-    StringBuilder sb = new StringBuilder();
+    StringBuffer sb = new StringBuffer();
     for (int i = 0; i < num; i++) {
       sb.append(getRandomNumber(low, high));
     }
@@ -193,7 +193,7 @@ implements Serializable {
   }
   
   public String getRandomCharString(int num, int start, int end) {
-    StringBuilder sb = new StringBuilder();
+    StringBuffer sb = new StringBuffer();
     for (int i = 0; i < num; i++) {
       sb.append(new Character((char) getRandomNumber(start, end)));
     }

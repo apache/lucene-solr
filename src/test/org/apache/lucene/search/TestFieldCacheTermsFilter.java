@@ -55,18 +55,18 @@ public class TestFieldCacheTermsFilter extends TestCase {
 
     List terms = new ArrayList();
     terms.add("5");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, terms), numDocs).scoreDocs;
+    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, (String[]) terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match nothing", 0, results.length);
 
     terms = new ArrayList();
     terms.add("10");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, terms), numDocs).scoreDocs;
+    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, (String[]) terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match 1", 1, results.length);
 
     terms = new ArrayList();
     terms.add("10");
     terms.add("20");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, terms), numDocs).scoreDocs;
+    results = searcher.search(q, new FieldCacheTermsFilter(fieldName, (String[]) terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match 2", 2, results.length);
 
     reader.close();

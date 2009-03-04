@@ -71,4 +71,36 @@ public class _TestUtil {
       return true;
   }
 
+  /** Use only for testing.
+   *  @deprecated -- in 3.0 we can use Arrays.toString
+   *  instead */
+  public static String arrayToString(int[] array) {
+    StringBuffer buf = new StringBuffer();
+    buf.append("[");
+    for(int i=0;i<array.length;i++) {
+      if (i > 0) {
+        buf.append(" ");
+      }
+      buf.append(array[i]);
+    }
+    buf.append("]");
+    return buf.toString();
+  }
+
+  /** Use only for testing.
+   *  @deprecated -- in 3.0 we can use Arrays.toString
+   *  instead */
+  public static String arrayToString(Object[] array) {
+    StringBuffer buf = new StringBuffer();
+    buf.append("[");
+    for(int i=0;i<array.length;i++) {
+      if (i > 0) {
+        buf.append(" ");
+      }
+      buf.append(array[i]);
+    }
+    buf.append("]");
+    return buf.toString();
+  }
+
 }

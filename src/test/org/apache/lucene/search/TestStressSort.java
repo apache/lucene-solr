@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.util._TestUtil;
 
 import java.util.Random;
 import java.util.Arrays;
@@ -338,8 +339,9 @@ public class TestStressSort extends LuceneTestCase {
         assert newDocs[i] instanceof FieldDoc;
         FieldDoc oldHit = (FieldDoc) oldDocs[i];
         FieldDoc newHit = (FieldDoc) newDocs[i];
-        assertEquals("hit " + i + " of " + oldDocs.length + " differs: oldDoc=" + oldHit.doc + " vs newDoc=" + newHit.doc + " oldFields=" + Arrays.toString(oldHit.fields) + " newFields=" + Arrays.toString(newHit.fields),
+        assertEquals("hit " + i + " of " + oldDocs.length + " differs: oldDoc=" + oldHit.doc + " vs newDoc=" + newHit.doc + " oldFields=" + _TestUtil.arrayToString(oldHit.fields) + " newFields=" + _TestUtil.arrayToString(newHit.fields),
                      oldHit.doc, newHit.doc);
+
         assertEquals(oldHit.score, newHit.score, 0.00001);
         assertTrue(Arrays.equals(oldHit.fields, newHit.fields));
       } else {

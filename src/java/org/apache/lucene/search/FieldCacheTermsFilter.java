@@ -22,7 +22,6 @@ import org.apache.lucene.index.TermDocs;          // for javadoc
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * A {@link Filter} that only accepts documents whose single
@@ -96,9 +95,9 @@ import java.util.Iterator;
 
 public class FieldCacheTermsFilter extends Filter {
   private String field;
-  private Iterable terms;
+  private String[] terms;
 
-  public FieldCacheTermsFilter(String field, Iterable terms) {
+  public FieldCacheTermsFilter(String field, String[] terms) {
     this.field = field;
     this.terms = terms;
   }
@@ -119,9 +118,8 @@ public class FieldCacheTermsFilter extends Filter {
     public FieldCacheTermsFilterDocIdSet(FieldCache.StringIndex fcsi) {
       this.fcsi = fcsi;
       openBitSet = new OpenBitSet(this.fcsi.lookup.length);
-      for (Iterator it = terms.iterator(); it.hasNext();) {
-        Object term = it.next();
-        int termNumber = this.fcsi.binarySearchLookup((String) term);
+      for (int i=0;i<terms.length;i++) {
+        int termNumber = this.fcsi.binarySearchLookup(terms[i]);
         if (termNumber > 0) {
           openBitSet.fastSet(termNumber);
         }
