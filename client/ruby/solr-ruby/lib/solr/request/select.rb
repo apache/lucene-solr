@@ -43,7 +43,7 @@ class Solr::Request::Select < Solr::Request::Base
 
     http_params = []
     raw_params.each do |key,value|
-      if value.respond_to? :each
+      if value.respond_to?(:each) && !value.is_a?(String)
         value.each { |v| http_params << "#{key}=#{ERB::Util::url_encode(v)}" unless v.nil?}
       else
         http_params << "#{key}=#{ERB::Util::url_encode(value)}" unless value.nil?
