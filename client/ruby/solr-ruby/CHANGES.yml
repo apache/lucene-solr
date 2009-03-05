@@ -1,3 +1,9 @@
+v0.0.7:
+  release_date: 2009-03-06
+  changes:
+    - Fixed string parameters with carriage returns in Solr::Request::Select (due to String.each pain)
+    - SOLR-1047 - added support for facet.method
+
 v0.0.6:
   release_date: 2008-07-14
   changes:
