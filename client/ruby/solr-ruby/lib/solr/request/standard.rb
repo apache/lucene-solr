@@ -75,6 +75,7 @@ class Solr::Request::Standard < Solr::Request::Select
       hash["facet.mincount"] = @params[:facets][:mincount]
       hash["facet.prefix"] = @params[:facets][:prefix]
       hash["facet.offset"] = @params[:facets][:offset]
+      hash["facet.method"] = @params[:facets][:method] if @params[:facets][:method]
       if @params[:facets][:fields]  # facet fields are optional (could be facet.query only)
         @params[:facets][:fields].each do |f|
           if f.kind_of? Hash
