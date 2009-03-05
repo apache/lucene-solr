@@ -353,7 +353,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /** Used for testing */
   private void addMyself() {
     synchronized(allInstances) {
-      final int size=0;
+      final int size = allInstances.size();
       int upto = 0;
       for(int i=0;i<size;i++) {
         final ConcurrentMergeScheduler other = (ConcurrentMergeScheduler) allInstances.get(i);
