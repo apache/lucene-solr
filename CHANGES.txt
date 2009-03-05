@@ -175,6 +175,11 @@ New Features
 
 28. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
 
+29. SOLR-1046: Nested query support for the function query parser
+    and lucene query parser (the latter existed as an undocumented 
+    feature in 1.3) (yonik)
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

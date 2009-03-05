@@ -100,9 +100,20 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     return sb.toString();
   }
 
-  void singleTest(String field, String funcTemplate, float... results) {
-    // lrf.args.put("version","2.0");
+  void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
+
+    List<String> nargs = new ArrayList<String>(Arrays.asList("q", parseableQuery
+            ,"fl", "*,score"
+            ,"indent","on"
+            ,"rows","100"));
+
+    if (args != null) {
+      for (String arg : args) {
+        nargs.add(arg.replace("\0",field));
+      }
+    }
+
     List<String> tests = new ArrayList<String>();
 
     // Construct xpaths like the following:
@@ -115,11 +126,13 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       tests.add(xpath);
     }
 
-    assertQ(req("q", parseableQuery
-                ,"fl", "*,score","indent","on","rows","100"
-                )
-            , tests.toArray(new String[tests.size()])
-            );
+    assertQ(req(nargs.toArray(new String[]{}))
+            , tests.toArray(new String[]{})
+    );
+  }
+
+  void singleTest(String field, String funcTemplate, float... results) {
+    singleTest(field, funcTemplate, null, results);
   }
 
   void doTest(String field) {
@@ -128,6 +141,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       100,-4,0,10,25,5
     };
     createIndex(field,vals);
+    createIndex(null, 88);  // id with no value
 
     // test identity (straight field value)
     singleTest(field, "\0", 10,10);
@@ -168,6 +182,18 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     
     // compose the ValueSourceParser plugin function with another function
     singleTest(field, "nvl(sum(0,\0),1)", 0, 1, 100, 100);
+
+    // test simple embedded query
+    singleTest(field,"query({!func v=\0})", 10, 10, 88, 0);
+    // test default value for embedded query
+    singleTest(field,"query({!lucene v='\0:[* TO *]'},8)", 88, 8);
+    singleTest(field,"sum(query({!func v=\0},7.1),query({!func v=\0}))", 10, 20, 100, 200);
+    // test with sub-queries specified by other request args
+    singleTest(field,"query({!func v=$vv})", Arrays.asList("vv","\0"), 10, 10, 88, 0);
+    singleTest(field,"query($vv)",Arrays.asList("vv","{!func}\0"), 10, 10, 88, 0);
+    singleTest(field,"sum(query($v1,5),query($v1,7))",
+            Arrays.asList("v1","\0:[* TO *]"),  88,12
+            );
   }
 
   public void testFunctions() {
