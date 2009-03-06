@@ -213,7 +213,12 @@ public class SnapPuller {
     replicationStartTime = System.currentTimeMillis();
     try {
       //get the current 'replicateable' index version in the master
-      NamedList response = getLatestVersion();
+      NamedList response = null;
+      try {
+        response = getLatestVersion();
+      } catch (Exception e) {
+        LOG.error("Master at: "+masterUrl + " is not available. Snappull failed. Exception: " + e.getMessage());
+      }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
       if (latestVersion == 0L) {
