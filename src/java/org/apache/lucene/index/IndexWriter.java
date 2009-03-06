@@ -3340,12 +3340,6 @@ public class IndexWriter {
   /** Merges the provided indexes into this index.
    * <p>After this completes, the index is optimized. </p>
    * <p>The provided IndexReaders are not closed.</p>
-
-   * <p><b>NOTE:</b> the index in each Directory must not be
-   * changed (opened by a writer) while this method is
-   * running.  This method does not acquire a write lock in
-   * each input Directory, so it is up to the caller to
-   * enforce this.
    *
    * <p><b>NOTE:</b> while this is running, any attempts to
    * add or delete documents (with another thread) will be
