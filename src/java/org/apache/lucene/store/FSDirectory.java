@@ -44,8 +44,7 @@ import org.apache.lucene.index.IndexWriter;
 
  * <p>Directories are cached, so that, for a given canonical
  * path, the same FSDirectory instance will always be
- * returned by <code>getDirectory</code>.  This permits
- * synchronization on directories.</p>
+ * returned by <code>getDirectory</code>.</p>
  *
  * @see Directory
  */
