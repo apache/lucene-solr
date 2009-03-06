@@ -4427,14 +4427,16 @@ public class IndexWriter {
     if (merge.increfDone)
       decrefMergeSegments(merge);
 
-    assert merge.registerDone;
-
-    final SegmentInfos sourceSegments = merge.segments;
-    final int end = sourceSegments.size();
-    for(int i=0;i<end;i++)
-      mergingSegments.remove(sourceSegments.info(i));
-    mergingSegments.remove(merge.info);
-    merge.registerDone = false;
+    // It's possible we are called twice, eg if there was an
+    // exception inside mergeInit
+    if (merge.registerDone) {
+      final SegmentInfos sourceSegments = merge.segments;
+      final int end = sourceSegments.size();
+      for(int i=0;i<end;i++)
+        mergingSegments.remove(sourceSegments.info(i));
+      mergingSegments.remove(merge.info);
+      merge.registerDone = false;
+    }
   }
 
   /** Does the actual (time-consuming) work of the merge,
