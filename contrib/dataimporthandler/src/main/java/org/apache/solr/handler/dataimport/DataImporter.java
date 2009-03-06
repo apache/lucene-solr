@@ -316,8 +316,7 @@ public class DataImporter {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
 
-    if (requestParams.commit)
-      setIndexStartTime(new Date());
+    setIndexStartTime(new Date());
 
     try {
       docBuilder = new DocBuilder(this, writer, requestParams);
