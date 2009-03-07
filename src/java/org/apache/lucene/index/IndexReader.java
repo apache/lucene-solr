@@ -113,9 +113,9 @@ public abstract class IndexReader implements Cloneable {
   protected boolean hasChanges;
   
   private volatile int refCount;
-  
-  // for testing
-  synchronized int getRefCount() {
+
+  /** Expert: returns the current refCount for this reader */
+  public synchronized int getRefCount() {
     return refCount;
   }
   
