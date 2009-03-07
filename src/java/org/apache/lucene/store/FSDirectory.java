@@ -41,10 +41,6 @@ import org.apache.lucene.index.IndexWriter;
  * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code> Java system
  * property, or by calling {@link #setLockFactory} after creating
  * the Directory.
-
- * <p>Directories are cached, so that, for a given canonical
- * path, the same FSDirectory instance will always be
- * returned by <code>getDirectory</code>.</p>
  *
  * @see Directory
  */
@@ -284,8 +280,6 @@ public class FSDirectory extends Directory {
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default.
    * @throws IOException
-   *
-   * Use {@link #getDirectory(String)} if singletons per path are needed.
    */
   public FSDirectory(File path, LockFactory lockFactory) throws IOException {
     path = getCanonicalPath(path);
