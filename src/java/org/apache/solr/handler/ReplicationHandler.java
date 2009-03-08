@@ -153,7 +153,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     for (IndexCommit c : commits.values()) {
       try {
         NamedList nl = new NamedList();
-        nl.add(CMD_INDEX_VERSION, c.getVersion());
+        nl.add("indexVersion", c.getVersion());
         nl.add(GENERATION, c.getGeneration());
         nl.add(CMD_GET_FILE_LIST, c.getFileNames().toString());
         l.add(nl);

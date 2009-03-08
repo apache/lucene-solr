@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8" %>
-<%-- 
+<%--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
@@ -40,48 +40,41 @@ if (detailsMap != null)
     <strong>Master</strong>
   </td>
   <td>
+    <%=slave.get("masterUrl")%>
     <%
-      out.println((String) slave.get("masterUrl"));
+    NamedList nl = (NamedList) slave.get("masterDetails");
+    if(nl == null)
+    	out.print(" - <b>Unreachable</b>");
     %>
   </td>
 </tr>
-
-<tr>
-  <%
-    NamedList nl = (NamedList) slave.get("masterDetails");
-    if (nl != null) {
-      long masterVersion = (Long) nl.get("indexVersion");
-      long masterGeneration = (Long) nl.get("generation");
-      long replicatableMasterVer = 0, replicatableMasterGen = 0;
+<%
+    if (nl != null) {         
+      Object replicatableMasterVer = null, replicatableMasterGen = null;
       nl = (NamedList) nl.get("master");
-      if(nl != null){
-      	if (nl.get("replicatableindexversion") != null)
-        	replicatableMasterVer = (Long) nl.get("replicatableindexversion");
-      	if (nl.get("replicatablegeneration") != null)
-        	replicatableMasterGen = (Long) nl.get("replicatablegeneration");
-      }
+      if(nl != null){      
   %>
+<tr>  
   <td>
   </td>
-  <td>Latest Index Version:<%=masterVersion%>, Generation: <%=masterGeneration%>
+  <td>Latest Index Version:<%=nl.get("indexVersion")%>, Generation: <%=nl.get("generation")%>
   </td>
 </tr>
-
 <tr>
   <td></td>
-  <td>Replicatable Index Version:<%=replicatableMasterVer%>, Generation: <%=replicatableMasterGen%>
+  <td>Replicatable Index Version:<%=nl.get("replicatableIndexVersion")%>, Generation: <%=nl.get("replicatableGeneration")%>
   </td>
 </tr>
-<%}%>
+<%
+}
+}%>
 
 <tr>
   <td>
     <strong>Poll Interval</strong>
   </td>
   <td>
-    <%
-      out.println((String) slave.get("pollInterval"));
-    %>
+    <%=slave.get("pollInterval")%>
   </td>
 </tr>
 <%}%>
