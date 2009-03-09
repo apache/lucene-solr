@@ -5,7 +5,9 @@
 <meta content="Apache Forrest" name="Generator">
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
-<title>Lucene Java Documentation</title>
+<title>
+	Apache Lucene - Overview
+		</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -62,13 +64,13 @@
     +-->
 <ul id="tabs">
 <li class="current">
-<a class="selected" href="http://lucene.apache.org/java/docs/">Main</a>
+<a class="selected" href="index.html">Main</a>
 </li>
 <li>
 <a class="unselected" href="http://wiki.apache.org/lucene-java">Wiki</a>
 </li>
-<li class="current">
-<a class="selected" href="index.html">Lucene 2.9-dev Documentation</a>
+<li>
+<a class="unselected" href="http://lucene.apache.org/java/2_4_1/">Lucene 2.4.1 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -103,109 +105,97 @@ document.write("Last Published: " + document.lastModified);
     |start Menu
     +-->
 <div id="menu">
-<div onclick="SwitchMenu('menu_selected_1.1', 'skin/')" id="menu_selected_1.1Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
+<div onclick="SwitchMenu('menu_selected_1.1', 'skin/')" id="menu_selected_1.1Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">About</div>
 <div id="menu_selected_1.1" class="selectedmenuitemgroup" style="display: block;">
 <div class="menupage">
 <div class="menupagetitle">Overview</div>
 </div>
-<div onclick="SwitchMenu('menu_1.1.2', 'skin/')" id="menu_1.1.2Title" class="menutitle">Javadocs</div>
-<div id="menu_1.1.2" class="menuitemgroup">
 <div class="menuitem">
-<a href="api/index.html">All</a>
+<a href="features.html">Features</a>
 </div>
 <div class="menuitem">
-<a href="api/core/index.html">Core</a>
+<a href="http://wiki.apache.org/lucene-java/PoweredBy">Powered by Lucene</a>
 </div>
 <div class="menuitem">
-<a href="api/demo/index.html">Demo</a>
+<a href="whoweare.html">Who We Are</a>
 </div>
-<div onclick="SwitchMenu('menu_1.1.2.4', 'skin/')" id="menu_1.1.2.4Title" class="menutitle">Contrib</div>
-<div id="menu_1.1.2.4" class="menuitemgroup">
-<div class="menuitem">
-<a href="api/contrib-analyzers/index.html">Analyzers</a>
 </div>
+<div onclick="SwitchMenu('menu_1.2', 'skin/')" id="menu_1.2Title" class="menutitle">Documentation</div>
+<div id="menu_1.2" class="menuitemgroup">
 <div class="menuitem">
-<a href="api/contrib-ant/index.html">Ant</a>
+<a href="http://lucene.apache.org/java/2_4_1/">Release 2.4.1</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-bdb/index.html">Bdb</a>
+<a href="http://lucene.apache.org/java/2_4_0/">Release 2.4.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-bdb-je/index.html">Bdb-je</a>
+<a href="http://lucene.apache.org/java/2_3_2/">Release 2.3.2</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-benchmark/index.html">Benchmark</a>
+<a href="http://lucene.apache.org/java/2_3_1/">Release 2.3.1</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-highlighter/index.html">Highlighter</a>
+<a href="http://lucene.apache.org/java/2_3_0/">Release 2.3.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-instantiated/index.html">Instantiated</a>
+<a href="http://lucene.apache.org/java/2_2_0/">Release 2.2.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-lucli/index.html">Lucli</a>
+<a href="http://lucene.apache.org/java/2_1_0/">Release 2.1.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-memory/index.html">Memory</a>
+<a href="http://lucene.apache.org/java/2_0_0/">Release 2.0.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-misc/index.html">Miscellaneous</a>
+<a href="http://lucene.apache.org/java/1_9_1/">Release 1.9.1</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-queries/index.html">Queries</a>
+<a href="http://lucene.apache.org/java/1_9_0/">Release 1.9.0</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-regex/index.html">Regex</a>
+<a href="http://lucene.apache.org/java/1_4_3/">Release 1.4.3</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
+<div id="menu_1.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="developer-resources.html">Developers</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-snowball/index.html">Snowball</a>
+<a href="http://issues.apache.org/jira/browse/LUCENE">Issue Tracking</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-spellchecker/index.html">Spellchecker</a>
+<a href="mailinglists.html">Mailing Lists</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-surround/index.html">Surround</a>
+<a href="releases.html">Releases</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-swing/index.html">Swing</a>
+<a href="systemrequirements.html">System Requirements</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-wikipedia/index.html">Wikipedia</a>
+<a href="http://svn.apache.org/viewcvs.cgi/lucene/java/">Version Control</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Related Projects</div>
+<div id="menu_1.4" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://lucene.apache.org">Lucene (Top-Level)</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-wordnet/index.html">Wordnet</a>
+<a href="http://lucene.apache.org/hadoop/">Hadoop</a>
 </div>
 <div class="menuitem">
-<a href="api/contrib-xml-query-parser/index.html">XML Query Parser</a>
-</div>
-</div>
+<a href="http://lucene.apache.org/lucy/">Lucy</a>
 </div>
 <div class="menuitem">
-<a href="benchmarks.html">Benchmarks</a>
+<a href="http://incubator.apache.org/projects/lucene.net.html">Lucene.Net</a>
 </div>
 <div class="menuitem">
-<a href="contributions.html">Contributions</a>
+<a href="http://lucene.apache.org/nutch/">Nutch</a>
 </div>
 <div class="menuitem">
-<a href="http://wiki.apache.org/lucene-java/LuceneFAQ">FAQ</a>
-</div>
-<div class="menuitem">
-<a href="fileformats.html">File Formats</a>
-</div>
-<div class="menuitem">
-<a href="gettingstarted.html">Getting Started</a>
-</div>
-<div class="menuitem">
-<a href="lucene-sandbox/index.html">Lucene Sandbox</a>
-</div>
-<div class="menuitem">
-<a href="queryparsersyntax.html">Query Syntax</a>
-</div>
-<div class="menuitem">
-<a href="scoring.html">Scoring</a>
-</div>
-<div class="menuitem">
-<a href="http://wiki.apache.org/lucene-java">Wiki</a>
+<a href="http://lucene.apache.org/solr/">SOLR</a>
 </div>
 </div>
 <div id="credit">
@@ -217,7 +207,9 @@ document.write("Last Published: " + document.lastModified);
 <!--+
   |alternative credits
   +-->
-<div id="credit2"></div>
+<div id="credit2">
+<a href="http://www.manning.com/hatcher3/"><img border="0" title="Lucene in Action, Second Edition" alt="Lucene in Action, Second Edition - logo" src="http://www.manning.com/hatcher3/hatcher3_cover150.jpg" style="width: 150px;height: 188px;"></a>
+</div>
 </div>
 <!--+
     |end Menu
@@ -230,17 +222,459 @@ document.write("Last Published: " + document.lastModified);
 <a class="dida" href="index.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
         PDF</a>
 </div>
-<h1>Lucene Java Documentation</h1>
+<h1>
+	Apache Lucene - Overview
+		</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li>
+<a href="#Apache Lucene">Apache Lucene</a>
+</li>
+<li>
+<a href="#Lucene News">Lucene News</a>
+<ul class="minitoc">
+<li>
+<a href="#9+March+2009+-+Lucene+Java+2.4.1+available">9 March 2009 - Lucene Java 2.4.1 available</a>
+</li>
+<li>
+<a href="#09+February+2009+-+Lucene+at+ApacheCon+Europe+2009+in+Amsterdam">09 February 2009 - Lucene at ApacheCon Europe 2009 in Amsterdam</a>
+</li>
+<li>
+<a href="#8+October+2008+-+Lucene+Java+2.4.0+available">8 October 2008 - Lucene Java 2.4.0 available</a>
+</li>
+<li>
+<a href="#06+May+2008+-+Lucene+Java+2.3.2+available">06 May 2008 - Lucene Java 2.3.2 available</a>
+</li>
+<li>
+<a href="#23+February+2008+-+Lucene+Java+2.3.1+available">23 February 2008 - Lucene Java 2.3.1 available</a>
+</li>
+<li>
+<a href="#24+January+2008+-+Lucene+Java+2.3.0+available">24 January 2008 - Lucene Java 2.3.0 available</a>
+</li>
+<li>
+<a href="#23+January+2008+-+Lucene+at+ApacheCon+Europe">23 January 2008 - Lucene at ApacheCon Europe</a>
+</li>
+<li>
+<a href="#24+December+2007+-+Nightly+Snapshots+available+in+the+Apache+Maven+Snapshot+Repository">24 December 2007 - Nightly Snapshots available in the Apache Maven Snapshot Repository</a>
+</li>
+<li>
+<a href="#26+August+2007+-+Lucene+at+ApacheCon+Atlanta">26 August 2007 - Lucene at ApacheCon Atlanta</a>
+</li>
+<li>
+<a href="#19+June+2007+-+Release+2.2+available">19 June 2007 - Release 2.2 available</a>
+</li>
+<li>
+<a href="#18+February+2007+-+Lucene+at+ApacheCon+Europe">18 February 2007 - Lucene at ApacheCon Europe</a>
+</li>
+<li>
+<a href="#17+February+2007+-+Release+2.1+available">17 February 2007 - Release 2.1 available</a>
+</li>
+<li>
+<a href="#3+January+2007+-+Nightly+Source+builds+available">3 January 2007 - Nightly Source builds available</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        
+<a name="N1000C"></a><a name="Apache Lucene"></a>
+<h2 class="boxed">Apache Lucene</h2>
+<div class="section">
+<p>
+                Apache Lucene is a high-performance, full-featured text search engine
+                library written entirely in Java.  It is a technology suitable for nearly any
+                application that requires full-text search, especially cross-platform.
+            </p>
+<p>
+                Apache Lucene is an open source project available for
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">free download</a>.
+                Please use the links on the left to access Lucene.
+            </p>
+</div>
+
+        
+<a name="N1001D"></a><a name="Lucene News"></a>
+<h2 class="boxed">Lucene News</h2>
+<div class="section">
+<a name="N10023"></a><a name="9+March+2009+-+Lucene+Java+2.4.1+available"></a>
+<h3 class="boxed">9 March 2009 - Lucene Java 2.4.1 available</h3>
+<p>
+                This release contains fixes for bugs found in 2.4.0,
+                including one data loss bug
+                (<a href="https://issues.apache.org/jira/browse/LUCENE-1452">LUCENE-1452</a>)
+                where in certain situations binary fields would be
+                truncated to 0 bytes.
+              </p>
+<p>
+                See <a href="http://lucene.apache.org/java/2_4_1/changes/Changes.html">CHANGES</a> for details.
+              </p>
+<p>
+                2.4.1 does not contain any new features, API or file format changes,
+                which makes it fully compatible with 2.4.0.
+              </p>
+<p>
+                Binary and source distributions are available
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+              </p>
+<p>
+                Maven artifacts are available 
+                <a href="http://repo1.maven.org/maven2/org/apache/lucene/">here</a>.
+              </p>
+<a name="N10049"></a><a name="09+February+2009+-+Lucene+at+ApacheCon+Europe+2009+in+Amsterdam"></a>
+<h3 class="boxed">09 February 2009 - Lucene at ApacheCon Europe 2009 in Amsterdam</h3>
+<p>
+	         
+<a href="http://www.eu.apachecon.com/c/aceu2009/" title="ApacheCon EU 2009"><img alt="ApacheCon EU 2009 Logo" class="float-right" src="http://www.eu.apachecon.com/page_attachments/0000/0115/125x125_basic.gif"></a>
+
+	         Lucene will be extremely well represented at 
+	         <a href="http://us.apachecon.com/c/acus2008/">ApacheCon EU 2009</a> 
+	         in Amsterdam, Netherlands this March 23-27, 2009:  
+	        </p>
+<ul>
+	         
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/197">Lucene Boot Camp</a> - A two day training session, March 23 &amp; 24th</li>
+	         
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/201">Solr Boot Camp</a> - A one day training session, March 24th</li>
+	         
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/136">Introducing Apache Mahout</a> - Grant Ingersoll. March 25th @ 10:30</li>
+	         
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/137">Lucene/Solr Case Studies</a> - Erik Hatcher. March 25th @ 11:30</li>
+	         
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/138">Advanced Indexing Techniques with Apache Lucene</a> - Michael Busch. March 25th @ 14:00</li>	
+		    
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/251">Apache Solr - A Case Study</a> - Uri Boness. March 26th @ 17:30</li>
+    	    
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/250">Best of breed - httpd, forrest, solr and droids</a> - Thorsten Scherler. March 27th @ 17:30</li>
+    	    
+<li>
+<a href="http://eu.apachecon.com/c/aceu2009/sessions/165">Apache Droids - an intelligent standalone robot framework</a> - Thorsten Scherler. March 26th @ 15:00</li>
+
+	        
+</ul>
+<a name="N10092"></a><a name="8+October+2008+-+Lucene+Java+2.4.0+available"></a>
+<h3 class="boxed">8 October 2008 - Lucene Java 2.4.0 available</h3>
+<p>
+	    This release has many improvements since release 2.3.2, including:
+	    <ul>
+
+	      
+<li> New InstantiatedIndex (contrib/instantiated): RAM-based index that
+		   enables much faster searching than RAMDirectory. </li>
+
+	      
+<li> New IndexWriter constructors now default autoCommit to false. </li>
+
+	      
+<li> New commit() method in IndexWriter lets you control when changes
+                   are made visible and permanent in the index. </li>
+
+	      
+<li> A machine or OS crash, or power loss, while IndexWriter is writing
+		   to an index will no longer corrupt the index. </li>
+
+	      
+<li> TimeLimitedCollector adds timeout to searches. </li>
+
+	      
+<li> Delete documents by Query in IndexWriter. </li>
+
+	      
+<li> Pure boolean indexing (no frequency, positions nor payloads are
+		   indexed) using Field.setOmitTf(). </li>
+
+	      
+<li> A new Directory implementation, NIOFSDirectory,
+		   using java.nio's APIs to allow multiple threads to
+		   read from the same open file without locking. </li>
+
+	      
+<li> IndexWriter.expungeDeletes() reclaims disk space
+                   from deleted documents by merging away segments
+                   that have deletions. </li>
+
+              
+<li> All filters now return a DocIdSet instead of
+		   java.util.BitSet, making filters more efficient and
+		   flexible. </li>
+
+              
+<li> Searching with a Filter is more efficient: now the
+                   filter is applied to a document before scoring is
+                   done. </li>
+
+              
+<li> IndexReader can be opened with new readOnly=true
+                   mode, which gives better performance in a
+                   multi-threaded environment. </li>
+            
+</ul>
+            See <a href="http://lucene.apache.org/java/2_4_0/changes/Changes.html">CHANGES</a> for details.
+          </p>
+<p>
+            Lucene 2.4.0 includes index format changes that are not
+            readable by older versions of Lucene.  Lucene 2.4.0 can
+            both read and update older Lucene indexes.  Adding to an
+            index with an older format will cause it to be converted
+            to the newer format.
+          </p>
+<p>
+            Binary and source distributions are available
+            <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+          </p>
+<p>
+            Maven artifacts are available 
+            <a href="http://repo1.maven.org/maven2/org/apache/lucene/">here</a>.
+          </p>
+<a name="N100D8"></a><a name="06+May+2008+-+Lucene+Java+2.3.2+available"></a>
+<h3 class="boxed">06 May 2008 - Lucene Java 2.3.2 available</h3>
+<p>
+                This release contains fixes for bugs found in 2.3.1. 
+              </p>
+<p>
+                See 
+   			  <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_3_2/CHANGES.txt">CHANGES.txt</a>
+                for a detailed listing of changes.
+              </p>
+<p>
+                2.3.2 does not contain any new features, API or file format changes,
+                which makes it fully compatible to 2.3.0 and 2.3.1.
+              </p>
+<p>
+                Binary and source distributions are available
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+              </p>
+<p>
+                Maven artifacts are available 
+                <a href="http://repo1.maven.org/maven2/org/apache/lucene/">here</a>.
+              </p>
+<a name="N100FA"></a><a name="23+February+2008+-+Lucene+Java+2.3.1+available"></a>
+<h3 class="boxed">23 February 2008 - Lucene Java 2.3.1 available</h3>
+<p>
+                This release contains fixes for serious bugs in 2.3.0 that could cause
+                index corruptions in <b>autoCommit=false mode</b> or in cases where multiple
+                threads are adding documents where <b>some have term-vector enabled
+                fields and some don't</b>.  The autoCommit option was added to IndexWriter
+                with release 2.2.0. If not explicitly set to false, the IndexWriter
+                runs in autoCommit=true mode.
+              </p>
+<p>
+                See 
+   			  <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_3_1/CHANGES.txt">CHANGES.txt</a>
+                for a detailed listing of changes.
+              </p>
+<p>
+                2.3.1 does not contain any new features, API or file format changes,
+                which makes it fully compatible to 2.3.0.
+              </p>
+<p>
+<b>
+                We would like to encourage everyone who is currently using Lucene Java 2.3.0
+                to upgrade to 2.3.1 to prevent possible index corruptions! 
+              </b>
+</p>
+<p>
+                Binary and source distributions are available
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+              </p>
+<p>
+                Maven artifacts are available 
+                <a href="http://repo1.maven.org/maven2/org/apache/lucene/">here</a>.
+              </p>
+<a name="N10126"></a><a name="24+January+2008+-+Lucene+Java+2.3.0+available"></a>
+<h3 class="boxed">24 January 2008 - Lucene Java 2.3.0 available</h3>
+<p>
+                This release has many improvements since release 2.2, including:
+                <ul>
+                  
+<li>Significantly improved indexing performance</li>
+                  
+<li>Segment merging in background threads</li>
+                  
+<li>Refreshable IndexReaders</li>
+                  
+<li>Faster StandardAnalyzer and improved Token API</li>
+                  
+<li>TermVectorMapper to customize how term vectors are loaded</li>
+                  
+<li>Live backups (without pausing indexing) with SnapshotDeletionPolicy</li>
+                  
+<li>CheckIndex tool to test and recover a corrupt index</li>
+                  
+<li>Pluggable MergePolicy and MergeScheduler</li>
+                  
+<li>"Partial" optimize(int maxNumSegments) method</li>
+                  
+<li>New contrib module for working with Wikipedia content</li>
+                
+</ul>
+              
+</p>
+<p>
+                In addition Lucene 2.3.0 has many performance
+                improvements, bug fixes, etc. See
+                <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_3_0/CHANGES.txt">CHANGES.txt</a>
+                for details.
+              </p>
+<p>
+                Lucene 2.3.0 includes index format changes that are not readable
+                by older versions of Lucene.  Lucene 2.3.0 can both read and update
+                older Lucene indexes.  Adding to an index with an older format
+                will cause it to be converted to the newer format.
+              </p>
+<p>
+                Binary and source distributions are available
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+              </p>
+<p>
+                Maven artifacts are available 
+                <a href="http://repo1.maven.org/maven2/org/apache/lucene/">here</a>.
+              </p>
+<a name="N10169"></a><a name="23+January+2008+-+Lucene+at+ApacheCon+Europe"></a>
+<h3 class="boxed">23 January 2008 - Lucene at ApacheCon Europe</h3>
+<p>
+<a href="http://www.eu.apachecon.com"><img alt="ApacheCon EU logo" class="float-right" src="http://www.eu.apachecon.com/eu2008/images/buttons/basic_125x125.jpg"></a>
+	              Lucene projects will be well represented at <a href="http://www.eu.apachecon.com">ApacheCon Europe</a> in Amsterdam this year. 
+	Please join us at one or more of the following sessions:
+				</p>
+<ul>
+					
+<li>April 7: <a href="http://eu.apachecon.com/eu2008/program/talk/2423">Lucene Boot Camp</a> training by Grant Ingersoll.</li>
+					
+<li>April 8: <a href="http://eu.apachecon.com/eu2008/program/talk/2450">Solr Boot Camp</a> training by Erik Hatcher.</li>
+					
+<li>April 8: <a href="http://eu.apachecon.com/eu2008/program/talk/2406">Mastering and extending Apache Nutch</a> training by Sami Siren.</li>
+					
+<li>April 10: <a href="http://eu.apachecon.com/eu2008/program/talk/2452">Lucene/Solr Case Studies</a> by Erik Hatcher</li>
+					
+<li>April 11: <a href="http://eu.apachecon.com/eu2008/program/talk/2413">Apache Lucene Performance</a> by Grant Ingersoll</li>
+				
+</ul>
+<a name="N101A7"></a><a name="24+December+2007+-+Nightly+Snapshots+available+in+the+Apache+Maven+Snapshot+Repository"></a>
+<h3 class="boxed">24 December 2007 - Nightly Snapshots available in the Apache Maven Snapshot Repository</h3>
+<p>
+			  We are now publishing nightly artifacts to the <a href="http://people.apache.org/maven-snapshot-repository/org/apache/lucene/">Maven Snapshot Repository</a>. The current version is '2.3-SNAPSHOT'.
+			</p>
+<p>
+			  The artifacts include:
+			  <ul>
+                
+<li>Binary jars</li>			  
+                
+<li>Sources</li>			  				
+                
+<li>Javadocs</li>			  				
+              
+</ul>
+              You can find separate artifacts for the core, demo, and the different contrib modules.
+			</p>
+<p>
+			  Merry Christmas!
+			</p>
+<a name="N101C7"></a><a name="26+August+2007+-+Lucene+at+ApacheCon+Atlanta"></a>
+<h3 class="boxed">26 August 2007 - Lucene at ApacheCon Atlanta</h3>
+<p>
+<a href="http://www.us.apachecon.com"><img alt="ApacheCon US logo" class="float-right" src="http://www.apache.org/ads/ApacheCon/2007-usa-125x125.png"></a>
+              Lucene will once again be well represented at ApacheCon USA in Atlanta this November 12-16, 2007.  
+            </p>
+<p>The following talks and trainings are scheduled for this year's conference:
+              <ul>
+                
+<li>November 12: <a href="http://us.apachecon.com/us2007/program/talk/1859">Lucene Boot Camp</a> by Grant Ingersoll.  An all-day training focusing on getting started with Lucene.</li>
+                
+<li>November 16, 9:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1992">Apache Solr out of the Box</a> by Chris Hostetter. Introduction to Solr.</li>
+                
+<li>November 16, 10:00 am: <a href="http://us.apachecon.com/us2007/program/talk/1943">Building a Vertical Search Site using Apache Software</a> by Ken Krugler. Will cover many Lucene-based projects.</li>
+                
+<li>November 16, 3:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/1953">Apache Lucene Performance</a> by Grant Ingersoll. Tips and techniques for improving Lucene performance.</li>
+                
+<li>November 16, 4:00 pm: <a href="http://us.apachecon.com/us2007/program/talk/2017"> Advanced Indexing Techniques with Apache Lucene</a> by Michael Busch. Information on payloads and advanced indexing techniques.</li>
+              
+</ul>
+            
+</p>
+<a name="N10200"></a><a name="19+June+2007+-+Release+2.2+available"></a>
+<h3 class="boxed">19 June 2007 - Release 2.2 available</h3>
+<p>This release has many improvements since release 2.1. New major features:
+			<ul>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/index/IndexWriter.html">"Point-in-time" searching over NFS</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/search/payloads/package-summary.html">Payloads</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/search/function/package-summary.html">Function queries</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/org/apache/lucene/document/Field.html">New API for pre-analyzed fields</a>
+</li>
+			
+</ul>
+			In addition Lucene 2.2 has many performance
+              improvements, bug fixes, etc. See
+              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_2_0/CHANGES.txt">CHANGES.txt</a>
+              for details.
+            </p>
+<p>Lucene 2.2 includes index format changes that are not readable
+              by older versions of Lucene.  Lucene 2.2 can both read and update
+              older Lucene indexes.  Adding to an index with an older format
+              will cause it to be converted to the newer format.
+            </p>
+<p>Binary and source distributions are
+              available
+              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+            </p>
+<a name="N10233"></a><a name="18+February+2007+-+Lucene+at+ApacheCon+Europe"></a>
+<h3 class="boxed">18 February 2007 - Lucene at ApacheCon Europe</h3>
+<p>
+              
+<a href="http://www.eu.apachecon.com"><img alt="ApacheCon Europe logo" class="float-right" src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png"></a>
+              Lucene Java and related <a href="http://lucene.apache.org/">Lucene</a> projects will have extensive representation at <a href="http://www.eu.apachecon.com">ApacheCon Europe</a> in Amsterdam this year. For the 2007 session,
+              Yonik Seeley will be giving the <a href="http://www.eu.apachecon.com/program/talk/11">Full-Text Search with Lucene</a> talk at 10:30 am on May 2nd.  Immediately following, Grant Ingersoll
+              will be presenting <a href="http://www.eu.apachecon.com/program/talk/12">Advanced Lucene</a> at 11:30.  Grant will also be leading a full day tutorial session on May 1st titled
+              <a href="http://www.eu.apachecon.com/program/talk/127">Lucene Boot Camp</a>.
+            </p>
+<p>Lucene related talks include Solr committer Bertrand Delacr&eacute;taz's talk titled <a href="http://www.eu.apachecon.com/program/talk/34">Beyond full-text searches with Solr and Lucene</a> and
+              Hadoop committer Owen O'Malley's <a href="http://www.eu.apachecon.com/program/talk/36">Introduction to Hadoop</a>.
+            </p>
+<p>Registration is now open on the ApacheCon website.</p>
+<a name="N10266"></a><a name="17+February+2007+-+Release+2.1+available"></a>
+<h3 class="boxed">17 February 2007 - Release 2.1 available</h3>
+<p>This release has many improvements since release
+              2.0, including new features, performance
+              improvements, bug fixes, etc. See
+              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_1_0/CHANGES.txt">CHANGES.txt</a>
+              for details.
+            </p>
+<p>Lucene 2.1 includes index format changes that are not readable
+              by older versions of Lucene.  Lucene 2.1 can both read and update
+              older Lucene indexes.  Adding to an index with an older format
+              will cause it to be converted to the newer format.
+            </p>
+<p>Binary and source distributions are
+              available
+              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+            </p>
+<a name="N1027E"></a><a name="3+January+2007+-+Nightly+Source+builds+available"></a>
+<h3 class="boxed">3 January 2007 - Nightly Source builds available</h3>
+<p>Nightly source builds of the current development version of Lucene
+                    are now available at
+                    <a href="http://people.apache.org/builds/lucene/java/nightly/">http://people.apache.org/builds/lucene/java/nightly/</a>.  Files are named lucene-DATE-src.tar.gz where DATE is the date of the build.
+                </p>
+</div>
+
     
-<p>
-    This is the official documentation for Lucene Java 2.9-dev <BR>
-	Please use the menu on the left to access the Javadocs and different documents.
-    </p>
-	
-<p>
-	Additional documentation is available in the <a href="http://wiki.apache.org/lucene-java">Wiki</a>.
-	</p>
-  
 </div>
 <!--+
     |end content
