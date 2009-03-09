@@ -161,6 +161,10 @@ Bug Fixes
 21.SOLR-1042: Fix memory leak in DIH by making TemplateString non-static member in VariableResolverImpl
               (Ryuuichi Kumai via shalin)
 
+22.SOLR-1053: IndexOutOfBoundsException in SolrWriter.getResourceAsString when size of data-config.xml is a
+              multiple of 1024 bytes.
+              (Herb Jiang via shalin)
+
 Documentation
 ----------------------
 

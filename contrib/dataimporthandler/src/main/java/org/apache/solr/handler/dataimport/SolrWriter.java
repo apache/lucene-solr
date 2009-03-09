@@ -192,11 +192,8 @@ public class SolrWriter {
     byte[] buf = new byte[1024];
     int sz = 0;
     try {
-      while (true) {
-        sz = in.read(buf);
+      while ((sz = in.read(buf)) != -1) {
         baos.write(buf, 0, sz);
-        if (sz < buf.length)
-          break;
       }
     } finally {
       try {
