@@ -352,6 +352,8 @@ Build
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
 
  2. SOLR-854: Added run-example target (Mark Miller vie ehatcher)
+
+ 3. SOLR-1054:Fix dist-src target for DataImportHandler (Ryuuichi Kumai via shalin)
  
 
 Documentation
