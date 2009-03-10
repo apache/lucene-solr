@@ -71,7 +71,7 @@ public class ClobTransformer extends Transformer {
     char[] buf = new char[1024];
     int len;
     try {
-      while ((len = reader.read(buf)) != 0) {
+      while ((len = reader.read(buf)) != -1) {
         sb.append(buf, 0, len);
       }
     } catch (IOException e) {
