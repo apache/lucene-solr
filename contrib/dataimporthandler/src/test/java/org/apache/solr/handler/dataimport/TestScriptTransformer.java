@@ -64,14 +64,11 @@ public class TestScriptTransformer {
     Map<String, String> entity = new HashMap<String, String>();
     entity.put("name", "hello");
     entity.put("transformer", "script:" + funcName);
-    Map<String, Object> dataImporterNs = new HashMap<String, Object>();
-    dataImporterNs.put(DataConfig.SCRIPT_LANG, "JavaScript");
-    dataImporterNs.put(DataConfig.SCRIPT, script);
-    VariableResolverImpl vr = new VariableResolverImpl();
-    vr.addNamespace(DataConfig.IMPORTER_NS, dataImporterNs);
 
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, null,
+    AbstractDataImportHandlerTest.TestContext context = AbstractDataImportHandlerTest.getContext(null, null, null,
             0, fields, entity);
+    context.script = script;
+    context.scriptlang = "JavaScript";
     return context;
   }
 
@@ -101,7 +98,7 @@ public class TestScriptTransformer {
     DataConfig config = new DataConfig();
     config.readFromXml((Element) document.getElementsByTagName("dataConfig")
             .item(0));
-    Assert.assertTrue(config.script.script.indexOf("checkNextToken") > -1);
+    Assert.assertTrue(config.script.text.indexOf("checkNextToken") > -1);
   }
 
   @Test
@@ -114,7 +111,7 @@ public class TestScriptTransformer {
     config.readFromXml((Element) document.getElementsByTagName("dataConfig")
             .item(0));
 
-    Context c = getContext("checkNextToken", config.script.script);
+    Context c = getContext("checkNextToken", config.script.text);
 
     Map map = new HashMap();
     map.put("nextToken", "hello");

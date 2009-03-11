@@ -179,4 +179,20 @@ public class ContextImpl extends Context {
   public Map<String, Object> getStats() {
     return docBuilder != null ? docBuilder.importStatistics.getStatsSnapshot() : Collections.<String, Object>emptyMap();
   }
+
+  public String getScript() {
+    if(dataImporter != null) {
+      DataConfig.Script script = dataImporter.getConfig().script;
+      return script == null ? null : script.text;
+    }
+    return null;
+  }
+
+  public String getScriptLanguage() {
+    if (dataImporter != null) {
+      DataConfig.Script script = dataImporter.getConfig().script;
+      return script == null ? null : script.language;
+    }
+    return null;
+  }
 }

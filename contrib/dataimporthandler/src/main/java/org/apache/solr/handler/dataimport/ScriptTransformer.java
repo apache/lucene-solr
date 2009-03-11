@@ -71,10 +71,8 @@ public class ScriptTransformer extends Transformer {
 
   private void initEngine(Context context) {
     try {
-      String scriptText = (String) context.getVariableResolver().resolve(
-              DataConfig.IMPORTER_NS + "." + DataConfig.SCRIPT);
-      String scriptLang = (String) context.getVariableResolver().resolve(
-              DataConfig.IMPORTER_NS + "." + DataConfig.SCRIPT_LANG);
+      String scriptText = context.getScript();
+      String scriptLang = context.getScriptLanguage();
       Object scriptEngineMgr = Class
               .forName("javax.script.ScriptEngineManager").newInstance();
       // create a Script engine

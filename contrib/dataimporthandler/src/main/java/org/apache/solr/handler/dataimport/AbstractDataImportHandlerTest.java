@@ -77,7 +77,7 @@ public abstract class AbstractDataImportHandlerTest extends
    * Helper for creating a Context instance. Useful for testing Transformers
    */
   @SuppressWarnings("unchecked")
-  public static Context getContext(DataConfig.Entity parentEntity,
+  public static TestContext getContext(DataConfig.Entity parentEntity,
                                    VariableResolverImpl resolver, DataSource parentDataSource,
                                    int currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
@@ -85,65 +85,7 @@ public abstract class AbstractDataImportHandlerTest extends
     final Context delegate = new ContextImpl(parentEntity, resolver,
             parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);
-    return new Context() {
-      public String getEntityAttribute(String name) {
-        return entityAttrs == null ? delegate.getEntityAttribute(name)
-                : entityAttrs.get(name);
-      }
-
-      public List<Map<String, String>> getAllEntityFields() {
-        return entityFields == null ? delegate.getAllEntityFields()
-                : entityFields;
-      }
-
-      public VariableResolver getVariableResolver() {
-        return delegate.getVariableResolver();
-      }
-
-      public DataSource getDataSource() {
-        return delegate.getDataSource();
-      }
-
-      public boolean isRootEntity() {
-        return false;
-      }
-
-      public int currentProcess() {
-        return delegate.currentProcess();
-      }
-
-      public Map<String, Object> getRequestParameters() {
-        return delegate.getRequestParameters();
-      }
-
-      public EntityProcessor getEntityProcessor() {
-        return null;
-      }
-
-      public void setSessionAttribute(String name, Object val, String scope) {
-        delegate.setSessionAttribute(name, val, scope);
-      }
-
-      public Object getSessionAttribute(String name, String scope) {
-        return delegate.getSessionAttribute(name, scope);
-      }
-
-      public Context getParentContext() {
-        return delegate.getParentContext();
-      }
-
-      public DataSource getDataSource(String name) {
-        return delegate.getDataSource(name);
-      }
-
-      public SolrCore getSolrCore() {
-        return delegate.getSolrCore();
-      }
-
-      public Map<String, Object> getStats() {
-        return delegate.getStats();
-      }
-    };
+    return new TestContext(entityAttrs, delegate, entityFields);
   }
 
   /**
@@ -161,5 +103,85 @@ public abstract class AbstractDataImportHandlerTest extends
       result.put(args[i], args[i + 1]);
 
     return result;
+  }
+
+  static class TestContext extends Context {
+    private final Map<String, String> entityAttrs;
+    private final Context delegate;
+    private final List<Map<String, String>> entityFields;
+    String script,scriptlang;
+
+    public TestContext(Map<String, String> entityAttrs, Context delegate, List<Map<String, String>> entityFields) {
+      this.entityAttrs = entityAttrs;
+      this.delegate = delegate;
+      this.entityFields = entityFields;
+    }
+
+    public String getEntityAttribute(String name) {
+      return entityAttrs == null ? delegate.getEntityAttribute(name)
+              : entityAttrs.get(name);
+    }
+
+    public List<Map<String, String>> getAllEntityFields() {
+      return entityFields == null ? delegate.getAllEntityFields()
+              : entityFields;
+    }
+
+    public VariableResolver getVariableResolver() {
+      return delegate.getVariableResolver();
+    }
+
+    public DataSource getDataSource() {
+      return delegate.getDataSource();
+    }
+
+    public boolean isRootEntity() {
+      return false;
+    }
+
+    public int currentProcess() {
+      return delegate.currentProcess();
+    }
+
+    public Map<String, Object> getRequestParameters() {
+      return delegate.getRequestParameters();
+    }
+
+    public EntityProcessor getEntityProcessor() {
+      return null;
+    }
+
+    public void setSessionAttribute(String name, Object val, String scope) {
+      delegate.setSessionAttribute(name, val, scope);
+    }
+
+    public Object getSessionAttribute(String name, String scope) {
+      return delegate.getSessionAttribute(name, scope);
+    }
+
+    public Context getParentContext() {
+      return delegate.getParentContext();
+    }
+
+    public DataSource getDataSource(String name) {
+      return delegate.getDataSource(name);
+    }
+
+    public SolrCore getSolrCore() {
+      return delegate.getSolrCore();
+    }
+
+    public Map<String, Object> getStats() {
+      return delegate.getStats();
+    }
+
+
+    public String getScript() {
+      return script == null ? delegate.getScript() : script;
+    }
+
+    public String getScriptLanguage() {
+      return scriptlang == null ? delegate.getScriptLanguage() : scriptlang;
+    }
   }
 }

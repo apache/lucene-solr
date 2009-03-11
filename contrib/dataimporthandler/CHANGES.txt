@@ -86,6 +86,10 @@ New Features
               of TemplateTransformer in other transformers, among other things.
               (Fergus McMenemie, Noble Paul via shalin)
 
+20.SOLR-1066: New methods in Context to expose Script details. ScriptTransformer changed to read scripts
+              through the new API methods.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

@@ -92,10 +92,6 @@ public class DocBuilder {
         indexerNamespace.put(key, lastIndex);
       }
     }
-    if (dataImporter.getConfig().script != null) {
-      indexerNamespace.put(DataConfig.SCRIPT, dataImporter.getConfig().script.script);
-      indexerNamespace.put(DataConfig.SCRIPT_LANG, dataImporter.getConfig().script.language);
-    }
     resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
     return resolver;
   }
@@ -290,7 +286,7 @@ public class DocBuilder {
                              Map<String, Object> pk, DataConfig.Entity entity, boolean isRoot,
                              ContextImpl parentCtx) {
 
-    EntityProcessor entityProcessor = getEntityProcessor(entity, dataImporter.getCore());
+    EntityProcessor entityProcessor = getEntityProcessor(entity);
 
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
@@ -482,7 +478,7 @@ public class DocBuilder {
     }
   }
 
-  public static EntityProcessor getEntityProcessor(DataConfig.Entity entity, SolrCore core) {
+  private EntityProcessor getEntityProcessor(DataConfig.Entity entity) {
     if (entity.processor != null)
       return entity.processor;
     EntityProcessor entityProcessor;
@@ -490,7 +486,7 @@ public class DocBuilder {
       entityProcessor = new SqlEntityProcessor();
     } else {
       try {
-        entityProcessor = (EntityProcessor) loadClass(entity.proc, core)
+        entityProcessor = (EntityProcessor) loadClass(entity.proc, dataImporter.getCore())
                 .newInstance();
       } catch (Exception e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
@@ -511,7 +507,7 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity,
                                                DataConfig.Entity parentEntity, VariableResolverImpl resolver,
-                                               DataImporter context, Set<Map<String, Object>> deletedRows) {
+                                               DataImporter dataImporter, Set<Map<String, Object>> deletedRows) {
     //someone called abort
     if (stop.get())
       return new HashSet();
@@ -522,7 +518,7 @@ public class DocBuilder {
 
       for (DataConfig.Entity entity1 : entity.entities) {
         //this ensures that we start from the leaf nodes
-        myModifiedPks.addAll(collectDelta(entity1, entity, resolver, context,
+        myModifiedPks.addAll(collectDelta(entity1, entity, resolver, dataImporter,
                 deletedRows));
         //someone called abort
         if (stop.get())
@@ -534,7 +530,7 @@ public class DocBuilder {
 
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
     resolver.addNamespace(null, (Map) entity.allAttributes);
-    EntityProcessor entityProcessor = getEntityProcessor(entity, context.getCore());
+    EntityProcessor entityProcessor = getEntityProcessor(entity);
     ContextImpl context1 = new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this);
     resolver.context = context1;
     entityProcessor.init(context1);
@@ -585,7 +581,7 @@ public class DocBuilder {
     //all that we have captured is useless (in a sub-entity) if no rows in the parent is modified because of these
     //so propogate up the changes in the chain
     if (parentEntity != null && parentEntity.isDocRoot) {
-      EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity, context.getCore());
+      EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity);
       ContextImpl context2 = new ContextImpl(parentEntity, resolver, null, Context.FIND_DELTA, session, null, this);
       resolver.context = context2;
       parentEntityProcessor.init(context2);

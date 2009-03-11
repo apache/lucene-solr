@@ -163,7 +163,7 @@ public class DataConfig {
   public static class Script {
     public String language;
 
-    public String script;
+    public String text;
 
     public Script() {
     }
@@ -173,7 +173,7 @@ public class DataConfig {
       StringBuilder buffer = new StringBuilder();
       String script = getTxt(e, buffer);
       if (script != null)
-        this.script = script.trim();
+        this.text = script.trim();
     }
   }
 

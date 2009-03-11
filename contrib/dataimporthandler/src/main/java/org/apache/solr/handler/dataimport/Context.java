@@ -180,4 +180,14 @@ public abstract class Context {
    * @return a Map containing running statistics of the current import
    */
   public abstract Map<String, Object> getStats();
+
+  /**
+   * Returns the text specified in the script tag in the data-config.xml 
+   */
+  public abstract String getScript();
+
+  /**
+   * Returns the language of the script as specified in the script tag in data-config.xml
+   */
+  public abstract String getScriptLanguage();
 }
