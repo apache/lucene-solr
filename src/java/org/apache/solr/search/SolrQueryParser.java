@@ -20,14 +20,12 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.TrieField;
 
 // TODO: implement the analysis of simple fields with
 // FieldType.toInternal() instead of going through the
@@ -121,11 +119,18 @@ public class SolrQueryParser extends QueryParser {
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
     FieldType ft = schema.getFieldType(field);
-    return new ConstantScoreRangeQuery(
-      field,
-      "*".equals(part1) ? null : ft.toInternal(part1),
-      "*".equals(part2) ? null : ft.toInternal(part2),
-      inclusive, inclusive);
+    if (ft instanceof TrieField) {
+      TrieField f = (TrieField) ft;
+      return new ConstantScoreQuery(f.getTrieRangeFilter(field, part1, part2, inclusive, inclusive));
+    } else {
+      RangeQuery rangeQuery = new RangeQuery(
+              field,
+              "*".equals(part1) ? null : ft.toInternal(part1),
+              "*".equals(part2) ? null : ft.toInternal(part2),
+              inclusive, inclusive);
+      rangeQuery.setConstantScoreRewrite(true);
+      return rangeQuery;
+    }
   }
 
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {

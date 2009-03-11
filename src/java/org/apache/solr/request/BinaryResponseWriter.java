@@ -209,6 +209,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     KNOWN_TYPES.add(SortableDoubleField.class);
     KNOWN_TYPES.add(StrField.class);
     KNOWN_TYPES.add(TextField.class);
+    KNOWN_TYPES.add(TrieField.class);
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
   }
