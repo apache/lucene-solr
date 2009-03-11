@@ -119,18 +119,7 @@ public class SolrQueryParser extends QueryParser {
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
     FieldType ft = schema.getFieldType(field);
-    if (ft instanceof TrieField) {
-      TrieField f = (TrieField) ft;
-      return new ConstantScoreQuery(f.getTrieRangeFilter(field, part1, part2, inclusive, inclusive));
-    } else {
-      RangeQuery rangeQuery = new RangeQuery(
-              field,
-              "*".equals(part1) ? null : ft.toInternal(part1),
-              "*".equals(part2) ? null : ft.toInternal(part2),
-              inclusive, inclusive);
-      rangeQuery.setConstantScoreRewrite(true);
-      return rangeQuery;
-    }
+    return ft.getRangeQuery(field, part1, part2, inclusive);
   }
 
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {

@@ -19,6 +19,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.trie.IntTrieRangeFilter;
 import org.apache.lucene.search.trie.LongTrieRangeFilter;
 import org.apache.lucene.search.trie.TrieUtils;
@@ -145,36 +147,45 @@ public class TrieField extends FieldType {
     return type;
   }
 
-  public Filter getTrieRangeFilter(String field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  @Override
+  public Query getRangeQuery(String field, String min, String max, boolean inclusive) {
+    Filter filter = null;
     switch (type) {
       case INTEGER:
-        return new IntTrieRangeFilter(field, field, precisionStep,
+        filter = new IntTrieRangeFilter(field, field, precisionStep,
                 "*".equals(min) ? null : Integer.parseInt(min),
                 "*".equals(max) ? null : Integer.parseInt(max),
-                minInclusive, maxInclusive);
+                inclusive, inclusive);
+        break;
       case FLOAT:
-        return new IntTrieRangeFilter(field, field, precisionStep,
+        filter = new IntTrieRangeFilter(field, field, precisionStep,
                 "*".equals(min) ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
                 "*".equals(max) ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
-                minInclusive, maxInclusive);
+                inclusive, inclusive);
+        break;
       case LONG:
-        return new LongTrieRangeFilter(field, field, precisionStep,
+        filter = new LongTrieRangeFilter(field, field, precisionStep,
                 "*".equals(min) ? null : Long.parseLong(min),
                 "*".equals(max) ? null : Long.parseLong(max),
-                minInclusive, maxInclusive);
+                inclusive, inclusive);
+        break;
       case DOUBLE:
-        return new LongTrieRangeFilter(field, field, precisionStep,
+        filter = new LongTrieRangeFilter(field, field, precisionStep,
                 "*".equals(min) ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
                 "*".equals(max) ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
-                minInclusive, maxInclusive);
+                inclusive, inclusive);
+        break;
       case DATE:
-        return new LongTrieRangeFilter(field, field, precisionStep,
+        filter = new LongTrieRangeFilter(field, field, precisionStep,
                 "*".equals(min) ? null : dateField.parseMath(null, min).getTime(),
                 "*".equals(max) ? null : dateField.parseMath(null, max).getTime(),
-                minInclusive, maxInclusive);
+                inclusive, inclusive);
+        break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
+    
+    return new ConstantScoreQuery(filter);
   }
 
   public enum TrieTypes {

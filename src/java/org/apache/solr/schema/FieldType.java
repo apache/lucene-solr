@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
@@ -422,6 +424,25 @@ public abstract class FieldType extends FieldProperties {
   @Deprecated
   public ValueSource getValueSource(SchemaField field) {
     return new OrdFieldSource(field.name);
+  }
+
+  /**
+   * Returns a Query instance for doing range searches on this field type
+   *
+   * @param field the name of the field
+   * @param part1 the lower boundary of the range
+   * @param part2 the upper boundary of the range
+   * @param inclusive whether the range is inclusive or not
+   * @return a Query instance to perform range search according to given parameters
+   */
+  public Query getRangeQuery(String field, String part1, String part2, boolean inclusive) {
+    RangeQuery rangeQuery = new RangeQuery(
+            field,
+            "*".equals(part1) ? null : toInternal(part1),
+            "*".equals(part2) ? null : toInternal(part2),
+            inclusive, inclusive);
+    rangeQuery.setConstantScoreRewrite(true);
+    return rangeQuery;
   }
 
 }
