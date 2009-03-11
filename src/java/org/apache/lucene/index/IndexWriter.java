@@ -1711,8 +1711,15 @@ public class IndexWriter {
    * threads.
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
+   * you should immediately close the writer, again.  See <a
    * href="#OOME">above</a> for details.</p>
+   *
+   * <p><b>NOTE</b>: it is dangerous to always call
+   * close(false), especially when IndexWriter is not open
+   * for very long, because this can result in "merge
+   * starvation" whereby long merges will never have a
+   * chance to finish.  This will cause too many segments in
+   * your index over time.</p>
    *
    * @param waitForMerges if true, this call will block
    * until all merges complete; else, it will ask all
