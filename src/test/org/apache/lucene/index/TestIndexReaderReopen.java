@@ -1052,6 +1052,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
   }
 
+  /*
   private void assertReaderOpen(IndexReader reader) {
     reader.ensureOpen();
     
@@ -1062,6 +1063,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
     }
   }
+  */
 
   private void assertRefCountEquals(int refCount, IndexReader reader) {
     assertEquals("Reader has wrong refCount value.", refCount, reader.getRefCount());
@@ -1223,6 +1225,66 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     r2.deleteDocument(0);
     assertTrue(sr1.deletedDocs==sr2.deletedDocs);
     r2.close();
+    dir.close();
+  }
+
+  private static class KeepAllCommits implements IndexDeletionPolicy {
+    public void onInit(List commits) {
+    }
+    public void onCommit(List commits) {
+    }
+  }
+
+  public void testReopenOnCommit() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), new KeepAllCommits(), IndexWriter.MaxFieldLength.UNLIMITED);
+    for(int i=0;i<4;i++) {
+      Document doc = new Document();
+      doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      writer.addDocument(doc);
+      writer.commit(""+i);
+    }
+    for(int i=0;i<4;i++) {
+      writer.deleteDocuments(new Term("id", ""+i));
+      writer.commit(""+(4+i));
+    }
+    writer.close();
+
+    IndexReader r = IndexReader.open(dir);
+    assertEquals(0, r.numDocs());
+    assertEquals(4, r.maxDoc());
+
+    Iterator it = IndexReader.listCommits(dir).iterator();
+    while(it.hasNext()) {
+      IndexCommit commit = (IndexCommit) it.next();
+      IndexReader r2 = r.reopen(commit);
+      assertTrue(r2 != r);
+
+      // Reader should be readOnly
+      try {
+        r2.deleteDocument(0);
+        fail("no exception hit");
+      } catch (UnsupportedOperationException uoe) {
+        // expected
+      }
+
+      final String s = commit.getUserData();
+      final int v;
+      if (s == null) {
+        // First commit created by IW
+        v = -1;
+      } else {
+        v = Integer.parseInt(s);
+      }
+      if (v < 4) {
+        assertEquals(1+v, r2.numDocs());
+      } else {
+        assertEquals(7-v, r2.numDocs());
+      }
+      r.close();
+      r = r2;
+    }
+    r.close();
     dir.close();
   }
 }

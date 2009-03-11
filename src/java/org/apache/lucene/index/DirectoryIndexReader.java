@@ -149,11 +149,15 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   
   public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
     // Preserve current readOnly
-    return doReopen(readOnly);
+    return doReopen(readOnly, null);
   }
 
   public final synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
-    return doReopen(openReadOnly);
+    return doReopen(openReadOnly, null);
+  }
+
+  public final synchronized IndexReader reopen(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return doReopen(true, commit);
   }
 
   public final synchronized Object clone() {
@@ -194,29 +198,44 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   // If there are no changes to the index, simply return
   // ourself.  If there are changes, load the latest
   // SegmentInfos and reopen based on that
-  protected final synchronized IndexReader doReopen(final boolean openReadOnly) throws CorruptIndexException, IOException {
+  protected final synchronized IndexReader doReopen(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
     ensureOpen();
 
-    if (hasChanges) {
-      // We have changes, which means we are not readOnly:
-      assert readOnly == false;
-      // and we hold the write lock:
-      assert writeLock != null;
-      // so no other writer holds the write lock, which
-      // means no changes could have been done to the index:
-      assert isCurrent();
+    assert commit == null || openReadOnly;
 
-      if (openReadOnly) {
-        return (IndexReader) clone(openReadOnly);
-      } else {
-        return this;
+    if (commit == null) {
+      if (hasChanges) {
+        // We have changes, which means we are not readOnly:
+        assert readOnly == false;
+        // and we hold the write lock:
+        assert writeLock != null;
+        // so no other writer holds the write lock, which
+        // means no changes could have been done to the index:
+        assert isCurrent();
+
+        if (openReadOnly) {
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
+      } else if (isCurrent()) {
+        if (openReadOnly != readOnly) {
+          // Just fallback to clone
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
       }
-    } else if (isCurrent()) {
-      if (openReadOnly != readOnly) {
-        // Just fallback to clone
-        return (IndexReader) clone(openReadOnly);
-      } else {
-        return this;
+    } else {
+      if (directory != commit.getDirectory())
+        throw new IOException("the specified commit does not match the specified Directory");
+      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
+        if (readOnly != openReadOnly) {
+          // Just fallback to clone
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
       }
     }
 
@@ -247,7 +266,11 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
     closeDirectory = false;
 
     try {
-      reader = (DirectoryIndexReader) finder.run();
+      if (commit == null) {
+        reader = (DirectoryIndexReader) finder.run();
+      } else {
+        reader = (DirectoryIndexReader) finder.doBody(commit.getSegmentsFileName());
+      }
     } finally {
       if (myCloseDirectory) {
         assert directory instanceof FSDirectory;

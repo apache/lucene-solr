@@ -173,6 +173,11 @@ New features
 15. LUCENE-1398: Add ReverseStringFilter to contrib/analyzers, a filter
     to reverse the characters in each token.  (Koji Sekiguchi via yonik)
 
+16. LUCENE-1551: Add expert IndexReader.reopen(IndexCommit) to allow
+    efficiently opening a new reader on a specific commit, sharing
+    resources with the original reader.  (Torin Danil via Mike
+    McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

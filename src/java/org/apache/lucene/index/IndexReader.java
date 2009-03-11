@@ -369,6 +369,16 @@ public abstract class IndexReader implements Cloneable {
     throw new UnsupportedOperationException("This reader does not support reopen().");
   }
   
+  /** Expert: reopen this reader on a specific commit point.
+   *  This always returns a readOnly reader.  If the
+   *  specified commit point matches what this reader is
+   *  already on, and this reader is already readOnly, then
+   *  this same instance is returned; if it is not already
+   *  readOnly, a readOnly clone is returned. */
+  public synchronized IndexReader reopen(final IndexCommit commit) throws CorruptIndexException, IOException {
+    throw new UnsupportedOperationException("This reader does not support reopen(IndexCommit).");
+  }
+
   /**
    * Efficiently clones the IndexReader (sharing most
    * internal state).
