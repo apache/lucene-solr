@@ -296,6 +296,8 @@ Bug Fixes
 
 33. SOLR-1031: Fix XSS vulnerability in schema.jsp (Paul Lovvik via ehatcher)
 
+34. SOLR-1064: registry.jsp incorrectly displaying info for last core initialized
+    regardless of what the current core is. (hossman)
 
 Other Changes
 ----------------------
