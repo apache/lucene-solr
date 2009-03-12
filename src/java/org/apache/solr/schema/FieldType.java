@@ -435,17 +435,17 @@ public abstract class FieldType extends FieldProperties {
    * Sub-classes should override this method to provide their own range query implementation. They should strive to
    * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
-   * @param field        the name of the field
+   * @param parser
+   *@param field        the name of the field
    * @param part1        the lower boundary of the range, nulls are allowed.
    * @param part2        the upper boundary of the range, nulls are allowed
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
-   *
-   * @return a Query instance to perform range search according to given parameters
+*      @return a Query instance to perform range search according to given parameters
    *
    * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
-  public Query getRangeQuery(String field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  public Query getRangeQuery(QParser parser, String field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     RangeQuery rangeQuery = new RangeQuery(
             field,
             part1 == null ? null : toInternal(part1),

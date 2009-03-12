@@ -28,6 +28,7 @@ import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.search.QParser;
 
 import java.io.IOException;
 import java.util.Map;
@@ -148,7 +149,7 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public Query getRangeQuery(String field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  public Query getRangeQuery(QParser parser, String field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Filter filter = null;
     switch (type) {
       case INTEGER:
