@@ -17,10 +17,12 @@
 package org.apache.solr;
 
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.DateMathParser;
 
-import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  * Tests for TrieField functionality
@@ -126,15 +128,14 @@ public class TestTrie extends AbstractSolrTestCase {
     // Test date math syntax
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     assertU(delQ("*:*"));
-    long curTime = System.currentTimeMillis();
+    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
-      long date = curTime + i * 86400 * 1000;
-      assertU(adoc("id", String.valueOf(i), "tdate", format.format(new Date(date))));
+      assertU(adoc("id", String.valueOf(i), "tdate", format.format(i == 0 ? dmp.parseMath("/DAY") : dmp.parseMath("/DAY+" + i + "DAYS"))));
     }
     assertU(commit());
     assertQ("Range filter must match only 10 documents", req("q", "*:*", "fq", "tdate:[* TO *]"), "//*[@numFound='10']");
-    req = req("q", "*:*", "fq", "tdate:[NOW/DAY TO NOW+5DAYS]");
+    req = req("q", "*:*", "fq", "tdate:[NOW/DAY TO NOW/DAY+5DAYS]");
     assertQ("Range filter must match only 5 documents", req, "//*[@numFound='5']");
 
     // Test Term Queries
