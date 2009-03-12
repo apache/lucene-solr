@@ -148,38 +148,38 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public Query getRangeQuery(String field, String min, String max, boolean inclusive) {
+  public Query getRangeQuery(String field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Filter filter = null;
     switch (type) {
       case INTEGER:
         filter = new IntTrieRangeFilter(field, field, precisionStep,
-                "*".equals(min) ? null : Integer.parseInt(min),
-                "*".equals(max) ? null : Integer.parseInt(max),
-                inclusive, inclusive);
+                min == null ? null : Integer.parseInt(min),
+                max == null ? null : Integer.parseInt(max),
+                minInclusive, maxInclusive);
         break;
       case FLOAT:
         filter = new IntTrieRangeFilter(field, field, precisionStep,
-                "*".equals(min) ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
-                "*".equals(max) ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
-                inclusive, inclusive);
+                min == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
+                max == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
+                minInclusive, maxInclusive);
         break;
       case LONG:
         filter = new LongTrieRangeFilter(field, field, precisionStep,
-                "*".equals(min) ? null : Long.parseLong(min),
-                "*".equals(max) ? null : Long.parseLong(max),
-                inclusive, inclusive);
+                min == null ? null : Long.parseLong(min),
+                max == null ? null : Long.parseLong(max),
+                minInclusive, maxInclusive);
         break;
       case DOUBLE:
         filter = new LongTrieRangeFilter(field, field, precisionStep,
-                "*".equals(min) ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
-                "*".equals(max) ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
-                inclusive, inclusive);
+                min == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
+                max == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
+                minInclusive, maxInclusive);
         break;
       case DATE:
         filter = new LongTrieRangeFilter(field, field, precisionStep,
-                "*".equals(min) ? null : dateField.parseMath(null, min).getTime(),
-                "*".equals(max) ? null : dateField.parseMath(null, max).getTime(),
-                inclusive, inclusive);
+                min == null ? null : dateField.parseMath(null, min).getTime(),
+                max == null ? null : dateField.parseMath(null, max).getTime(),
+                minInclusive, maxInclusive);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");

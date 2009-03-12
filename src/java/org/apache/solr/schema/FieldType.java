@@ -427,20 +427,30 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * Returns a Query instance for doing range searches on this field type
+   * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
+   * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
+   * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
+   * different semantics.
+   * <p/>
+   * Sub-classes should override this method to provide their own range query implementation. They should strive to
+   * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
-   * @param field the name of the field
-   * @param part1 the lower boundary of the range
-   * @param part2 the upper boundary of the range
-   * @param inclusive whether the range is inclusive or not
+   * @param field        the name of the field
+   * @param part1        the lower boundary of the range, nulls are allowed.
+   * @param part2        the upper boundary of the range, nulls are allowed
+   * @param minInclusive whether the minimum of the range is inclusive or not
+   * @param maxInclusive whether the maximum of the range is inclusive or not
+   *
    * @return a Query instance to perform range search according to given parameters
+   *
+   * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
-  public Query getRangeQuery(String field, String part1, String part2, boolean inclusive) {
+  public Query getRangeQuery(String field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     RangeQuery rangeQuery = new RangeQuery(
             field,
-            "*".equals(part1) ? null : toInternal(part1),
-            "*".equals(part2) ? null : toInternal(part2),
-            inclusive, inclusive);
+            part1 == null ? null : toInternal(part1),
+            part2 == null ? null : toInternal(part2),
+            minInclusive, maxInclusive);
     rangeQuery.setConstantScoreRewrite(true);
     return rangeQuery;
   }
