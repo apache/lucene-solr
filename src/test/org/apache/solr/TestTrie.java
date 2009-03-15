@@ -140,7 +140,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertU(commit());
     assertQ("Range filter must match only 10 documents", req("q", "*:*", "fq", "tdate:[* TO *]"), "//*[@numFound='10']");
     req = req("q", "*:*", "fq", "tdate:[NOW/DAY TO NOW/DAY+5DAYS]");
-    assertQ("Range filter must match only 5 documents", req, "//*[@numFound='6']");
+    assertQ("Range filter must match only 6 documents", req, "//*[@numFound='6']");
 
     // Test Term Queries
     assertU(adoc("id", "11", "tdate", "1995-12-31T23:59:59.999Z"));
