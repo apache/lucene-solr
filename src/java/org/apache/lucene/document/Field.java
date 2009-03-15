@@ -207,16 +207,28 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    *  href="http://wiki.apache.org/lucene-java/ImproveIndexingSpeed">ImproveIndexingSpeed</a>
    *  for details.</p> */
   public void setValue(String value) {
+    if (isBinary) {
+      throw new IllegalArgumentException("cannot set a String value on a binary field");
+    }
     fieldsData = value;
   }
 
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(Reader value) {
+    if (isBinary) {
+      throw new IllegalArgumentException("cannot set a Reader value on a binary field");
+    }
+    if (isStored) {
+      throw new IllegalArgumentException("cannot set a Reader value on a stored field");
+    }
     fieldsData = value;
   }
 
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(byte[] value) {
+    if (!isBinary) {
+      throw new IllegalArgumentException("cannot set a byte[] value on a non-binary field");
+    }
     fieldsData = value;
     binaryLength = value.length;
     binaryOffset = 0;
@@ -224,6 +236,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(byte[] value, int offset, int length) {
+    if (!isBinary) {
+      throw new IllegalArgumentException("cannot set a byte[] value on a non-binary field");
+    }
     fieldsData = value;
     binaryLength = length;
     binaryOffset = offset;
@@ -232,6 +247,12 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   
   /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
   public void setValue(TokenStream value) {
+    if (isBinary) {
+      throw new IllegalArgumentException("cannot set a TokenStream value on a binary field");
+    }
+    if (isStored) {
+      throw new IllegalArgumentException("cannot set a TokenStream value on a stored field");
+    }
     fieldsData = value;
   }
 

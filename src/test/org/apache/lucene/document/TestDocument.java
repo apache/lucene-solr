@@ -260,4 +260,23 @@ public class TestDocument extends LuceneTestCase
       dir.close();
       assertEquals("did not see all IDs", 7, result);
     }
+
+  public void testFieldSetValueChangeBinary() {
+    Field field1 = new Field("field1", new byte[0],
+                             Field.Store.YES);
+    Field field2 = new Field("field2", "",
+                             Field.Store.YES, Field.Index.ANALYZED);
+    try {
+      field1.setValue("abc");
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    try {
+      field2.setValue(new byte[0]);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
 }
