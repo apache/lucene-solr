@@ -304,6 +304,10 @@ Bug Fixes
 34. SOLR-1064: registry.jsp incorrectly displaying info for last core initialized
     regardless of what the current core is. (hossman)
 
+35. SOLR-1072: absolute paths used in sharedLib attribute were
+    incorrectly treated as relative paths. (hossman)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

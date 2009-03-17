@@ -39,6 +39,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Node;
@@ -176,9 +177,7 @@ public class CoreContainer
       managementPath  = cfg.get("solr/cores/@managementPath", null );
 
       if (libDir != null) {
-        // relative dir to conf
-        File f = new File(dir, libDir);
-        libDir = f.getPath();
+        File f = FileUtils.resolvePath(new File(dir), libDir);
         log.info( "loading shared library: "+f.getAbsolutePath() );
         libLoader = SolrResourceLoader.createClassLoader(f, null);
       }
