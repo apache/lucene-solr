@@ -21,6 +21,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.common.util.ContentStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -468,6 +469,8 @@ public class DataImporter {
     public Map<String, Object> requestParams;
 
     public String dataConfig;
+
+    public ContentStream contentStream;
 
     public RequestParams() {
     }

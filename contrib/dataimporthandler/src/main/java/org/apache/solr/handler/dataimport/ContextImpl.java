@@ -50,7 +50,7 @@ public class ContextImpl extends Context {
 
   private Map<String, Object> entitySession, globalSession, docSession;
 
-  private DocBuilder docBuilder;
+  DocBuilder docBuilder;
 
   public ContextImpl(DataConfig.Entity entity, VariableResolverImpl resolver,
                      DataSource ds, int currProcess,

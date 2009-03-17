@@ -26,7 +26,12 @@
   <description>
     Data Import Handler
   </description>
-
+  <path id="classpath.jetty">
+    <!-- jetty -->
+    <fileset dir="${solr-path}/example/lib">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
   <path id="common.classpath">
   	<pathelement location="${solr-path}/build/solr" />
   	<pathelement location="${solr-path}/build/solrj" />
@@ -35,6 +40,7 @@
 	
   <path id="test.classpath">
   	<path refid="common.classpath" />
+  	<path refid="classpath.jetty" />
 	  <pathelement path="target/classes" />
   	<pathelement path="target/test-classes" />
     <pathelement path="${java.class.path}"/>

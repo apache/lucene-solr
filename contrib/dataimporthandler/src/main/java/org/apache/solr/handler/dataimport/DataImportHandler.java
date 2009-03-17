@@ -24,6 +24,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -113,7 +114,13 @@ public class DataImportHandler extends RequestHandlerBase implements
     SolrParams params = req.getParams();
     DataImporter.RequestParams requestParams = new DataImporter.RequestParams(getParamsMap(params));
     String command = requestParams.command;
-
+    Iterable<ContentStream> streams = req.getContentStreams();
+    if(streams != null){
+      for (ContentStream stream : streams) {
+          requestParams.contentStream = stream;
+          break;
+      }
+    }
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {
       // Modify incoming request params to add wt=raw
       ModifiableSolrParams rawParams = new ModifiableSolrParams(req.getParams());
@@ -186,7 +193,11 @@ public class DataImportHandler extends RequestHandlerBase implements
           }
         } else {
           // Asynchronous request for normal mode
-          importer.runAsync(requestParams, sw);
+          if(requestParams.contentStream == null){
+            importer.runAsync(requestParams, sw);
+          } else {
+              importer.runCmd(requestParams, sw);
+          }
         }
       } else if (DataImporter.RELOAD_CONF_CMD.equals(command)) {
         importer = null;

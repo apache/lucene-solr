@@ -93,6 +93,10 @@ New Features
 21.SOLR-1062: A LogTransformer which can log data in a given template format.
               (Jon Baer, Noble Paul via shalin)
 
+22.SOLR-1065: A ContentStreamDataSource which can accept HTTP POST data in a content stream. This can be used to
+              push data to Solr instead of just pulling it from DB/Files/URLs.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

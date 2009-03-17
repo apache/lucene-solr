@@ -37,6 +37,7 @@ import org.apache.solr.common.util.ContentStream;
 public class DirectXmlRequest extends SolrRequest
 {
   final String xml;
+  private SolrParams params;
   
   public DirectXmlRequest( String path, String body )
   {
@@ -51,7 +52,12 @@ public class DirectXmlRequest extends SolrRequest
 
   @Override
   public SolrParams getParams() {
-    return null;
+    return params;
+  }
+
+
+  public void setParams(SolrParams params) {
+    this.params = params;
   }
 
   @Override
