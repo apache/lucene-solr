@@ -97,6 +97,9 @@ New Features
               push data to Solr instead of just pulling it from DB/Files/URLs.
               (Noble Paul via shalin)
 
+23.SOLR-1061: Improve RegexTransformer to create multiple columns from regex groups.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import static org.apache.solr.handler.dataimport.RegexTransformer.REGEX;
+import static org.apache.solr.handler.dataimport.RegexTransformer.GROUP_NAMES;
+import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,6 +48,37 @@ public class TestRegexTransformer {
     Map<String, Object> result = new RegexTransformer().transformRow(src, context);
     Assert.assertEquals(2, result.size());
     Assert.assertEquals(4, ((List) result.get("col1")).size());
+  }
+ 
+
+  @Test
+  public void groupNames() {
+    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    // <field column="col1" regex="(\w*)(\w*) (\w*)" groupNames=",firstName,lastName"/>
+    Map<String ,String > m = new HashMap<String, String>();
+    m.put(COLUMN,"fullName");
+    m.put(GROUP_NAMES,",firstName,lastName");
+    m.put(REGEX,"(\\w*) (\\w*) (\\w*)");
+    fields.add(m);
+    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, 0, fields, null);
+    Map<String, Object> src = new HashMap<String, Object>();
+    src.put("fullName", "Mr Noble Paul");
+
+    Map<String, Object> result = new RegexTransformer().transformRow(src, context);
+    Assert.assertEquals("Noble", result.get("firstName"));
+    Assert.assertEquals("Paul", result.get("lastName"));
+    src= new HashMap<String, Object>();
+    List<String> l= new ArrayList();
+    l.add("Mr Noble Paul") ;
+    l.add("Mr Shalin Mangar") ;
+    src.put("fullName", l);
+    result = new RegexTransformer().transformRow(src, context);    
+    List l1 = (List) result.get("firstName");
+    List l2 = (List) result.get("lastName");
+    Assert.assertEquals("Noble", l1.get(0));
+    Assert.assertEquals("Shalin", l1.get(1));
+    Assert.assertEquals("Paul", l2.get(0));
+    Assert.assertEquals("Mangar", l2.get(1));
   }
 
   @Test
