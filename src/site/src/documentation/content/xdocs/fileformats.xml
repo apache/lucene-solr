@@ -1640,7 +1640,7 @@
             <section id="Term Vectors"><title>Term Vectors</title>
                 <p>
 		  Term Vector support is an optional on a field by
-                  field basis. It consists of 4 files.
+                  field basis. It consists of 3 files.
                 </p>
                 <ol>
                     <li>
