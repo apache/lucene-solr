@@ -62,8 +62,6 @@ public abstract class ReadTask extends PerfTask {
     super(runData);
   }
 
-  static boolean first = true;
-
   public int doLogic() throws Exception {
     int res = 0;
     boolean closeReader = false;
@@ -103,17 +101,6 @@ public abstract class ReadTask extends PerfTask {
           hits = searcher.search(q, numHits);
         }
         //System.out.println("q=" + q + ":" + hits.totalHits + " total hits"); 
-        if (first) {
-          System.out.println("NUMHITS=" + hits.totalHits);
-
-          for(int i=0;i<10;i++) {
-            if (i >= hits.totalHits) {
-              break;
-            }
-            System.out.println("  " + i + ": score=" + hits.scoreDocs[i].score + " doc=" + hits.scoreDocs[i].doc);
-          }
-          first = false;
-        }
 
         if (withTraverse()) {
           final ScoreDoc[] scoreDocs = hits.scoreDocs;
