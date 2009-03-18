@@ -674,6 +674,12 @@ public class CoreContainer
       XML.escapeAttributeValue(opt, writer);
       writer.write('\'');
     }
+    opt = dcore.dataDir;
+    if (opt != null) {
+      writer.write(" dataDir='");
+      XML.escapeAttributeValue(opt, writer);
+      writer.write('\'');
+    }
     if (dcore.getCoreProperties() == null || dcore.getCoreProperties().isEmpty())
       writer.write("/>\n"); // core
     else  {
