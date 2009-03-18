@@ -28,6 +28,10 @@ Bug fixes
  5. LUCENE-1548: Fix distance normalization in LevenshteinDistance to
     not produce negative distances (Thomas Morton via Mike McCandless)
 
+ 6. LUCENE-1490: Fix latin1 conversion of HALFWIDTH_AND_FULLWIDTH_FORMS
+    characters to only apply to the correct subset (Daniel Cheng via
+    Mike McCandless)
+
 New features
 
  1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of
