@@ -2870,11 +2870,12 @@ public class IndexWriter {
    * Close the <code>IndexWriter</code> without committing
    * any changes that have occurred since the last commit
    * (or since it was opened, if commit hasn't been called).
-   * This removes any temporary files that had been
-   * created, after which the state of the index will be the
-   * same as it was when this writer was first opened.  This
-   * can only be called when this IndexWriter was opened
-   * with <code>autoCommit=false</code>.  This also clears a
+   * This removes any temporary files that had been created,
+   * after which the state of the index will be the same as
+   * it was when commit() was last called or when this
+   * writer was first opened.  This can only be called when
+   * this IndexWriter was opened with
+   * <code>autoCommit=false</code>.  This also clears a
    * previous call to {@link #prepareCommit}.
    * @throws IllegalStateException if this is called when
    *  the writer was opened with <code>autoCommit=true</code>.
