@@ -148,10 +148,12 @@ public final class CJKTokenizer extends Tokenizer {
                     || (ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS)
                ) {
                 if (ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS) {
-                    /** convert  HALFWIDTH_AND_FULLWIDTH_FORMS to BASIC_LATIN */
-                    int i = (int) c;
+                  int i = (int) c;
+                  if (i >= 65281 && i <= 65374) {
+                    /** convert certain HALFWIDTH_AND_FULLWIDTH_FORMS to BASIC_LATIN */
                     i = i - 65248;
                     c = (char) i;
+                  }
                 }
 
                 // if the current character is a letter or "_" "+" "#"
