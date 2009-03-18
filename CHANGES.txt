@@ -178,6 +178,11 @@ New features
     resources with the original reader.  (Torin Danil via Mike
     McCandless)
 
+17. LUCENE-1434: Added org.apache.lucene.util.IndexableBinaryStringTools,
+    to encode byte[] as String values that are valid terms, and
+    maintain sort order of the original byte[] when the bytes are
+    interpreted as unsigned.  (Steven Rowe via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
