@@ -118,7 +118,7 @@ public class CoreContainer
         // perform compatibility init
         cores = new CoreContainer(new SolrResourceLoader(instanceDir));
         SolrConfig cfg = solrConfigFilename == null ? new SolrConfig() : new SolrConfig(solrConfigFilename);
-        CoreDescriptor dcore = new CoreDescriptor(cores, "", instanceDir);
+        CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
         SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
         abortOnConfigurationError = cfg.getBool(
                 "abortOnConfigurationError", abortOnConfigurationError);

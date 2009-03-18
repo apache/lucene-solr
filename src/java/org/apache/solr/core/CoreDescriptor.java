@@ -22,7 +22,7 @@ import java.io.File;
 
 /**
  * A Solr core descriptor
- * 
+ *
  * @since solr 1.3
  */
 public class CoreDescriptor implements Cloneable {
@@ -67,20 +67,20 @@ public class CoreDescriptor implements Cloneable {
     implicitProperties.setProperty("solr.core.schemaName", schemaName);
     return implicitProperties;
   }
-  
+
   /**@return the default config name. */
   public String getDefaultConfigName() {
     return "solrconfig.xml";
   }
-  
+
   /**@return the default schema name. */
   public String getDefaultSchemaName() {
     return "schema.xml";
   }
-  
+
   /**@return the default data directory. */
   public String getDefaultDataDir() {
-    return this.instanceDir + "data"+File.separator;
+    return coreContainer.loader.getInstanceDir() + SolrResourceLoader.normalizeDir(instanceDir) + "data"+File.separator;
   }
 
   public String getDataDir() {
@@ -88,7 +88,12 @@ public class CoreDescriptor implements Cloneable {
     if (new File(dataDir).isAbsolute()) {
       return dataDir;
     } else {
-      return SolrResourceLoader.normalizeDir(instanceDir + dataDir);
+      if (new File(instanceDir).isAbsolute()) {
+        return SolrResourceLoader.normalizeDir(SolrResourceLoader.normalizeDir(instanceDir) + dataDir);
+      } else  {
+        return SolrResourceLoader.normalizeDir(coreContainer.loader.getInstanceDir() +
+                SolrResourceLoader.normalizeDir(instanceDir) + dataDir);
+      }
     }
   }
 
@@ -100,14 +105,14 @@ public class CoreDescriptor implements Cloneable {
   public String getInstanceDir() {
     return instanceDir;
   }
-  
+
   /**Sets the core configuration resource name. */
   public void setConfigName(String name) {
     if (name == null || name.length() == 0)
       throw new IllegalArgumentException("name can not be null or empty");
     this.configName = name;
   }
-  
+
   /**@return the core configuration resource name. */
   public String getConfigName() {
     return this.configName;
@@ -119,7 +124,7 @@ public class CoreDescriptor implements Cloneable {
       throw new IllegalArgumentException("name can not be null or empty");
     this.schemaName = name;
   }
-  
+
   /**@return the core schema resource name. */
   public String getSchemaName() {
     return this.schemaName;
