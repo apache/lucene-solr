@@ -178,7 +178,7 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer countingDisjunctionSumScorer(final List scorers,
-                                              int minNrShouldMatch)
+                                              int minNrShouldMatch) throws IOException
   // each scorer from the list counted as a single matcher
   {
     return new DisjunctionSumScorer(scorers, minNrShouldMatch) {
@@ -286,7 +286,7 @@ class BooleanScorer2 extends Scorer {
    * Uses the given required scorer and the prohibitedScorers.
    * @param requiredCountingSumScorer A required scorer already built.
    */
-  private Scorer addProhibitedScorers(Scorer requiredCountingSumScorer)
+  private Scorer addProhibitedScorers(Scorer requiredCountingSumScorer) throws IOException
   {
     return (prohibitedScorers.size() == 0)
           ? requiredCountingSumScorer // no prohibited

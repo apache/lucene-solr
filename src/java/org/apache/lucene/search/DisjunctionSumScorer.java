@@ -49,8 +49,7 @@ class DisjunctionSumScorer extends Scorer {
    * <code>nrMatchers</code> is the number of matching scorers,
    * and all scorers are after the matching doc, or are exhausted.
    */
-  private ScorerDocQueue scorerDocQueue = null;
-  private int queueSize = -1; // used to avoid size() method calls on scorerDocQueue
+  private ScorerDocQueue scorerDocQueue;
   
   /** The document number of the current match. */
   private int currentDoc = -1;
@@ -70,7 +69,7 @@ class DisjunctionSumScorer extends Scorer {
    * <br>When minimumNrMatchers equals the number of subScorers,
    * it more efficient to use <code>ConjunctionScorer</code>.
    */
-  public DisjunctionSumScorer( List subScorers, int minimumNrMatchers) {
+  public DisjunctionSumScorer( List subScorers, int minimumNrMatchers) throws IOException {
     super(null);
     
     nrScorers = subScorers.size();
@@ -84,12 +83,14 @@ class DisjunctionSumScorer extends Scorer {
 
     this.minimumNrMatchers = minimumNrMatchers;
     this.subScorers = subScorers;
+
+    initScorerDocQueue();
   }
   
   /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
    * of matching subscorers.
    */
-  public DisjunctionSumScorer(List subScorers) {
+  public DisjunctionSumScorer(List subScorers) throws IOException {
     this(subScorers, 1);
   }
 
@@ -99,13 +100,10 @@ class DisjunctionSumScorer extends Scorer {
   private void initScorerDocQueue() throws IOException {
     Iterator si = subScorers.iterator();
     scorerDocQueue = new ScorerDocQueue(nrScorers);
-    queueSize = 0;
     while (si.hasNext()) {
       Scorer se = (Scorer) si.next();
       if (se.next()) { // doc() method will be used in scorerDocQueue.
-        if (scorerDocQueue.insert(se)) {
-          queueSize++;
-        }
+        scorerDocQueue.insert(se);
       }
     }
   }
@@ -140,9 +138,6 @@ class DisjunctionSumScorer extends Scorer {
   }
 
   public boolean next() throws IOException {
-    if (scorerDocQueue == null) {
-      initScorerDocQueue();
-    }
     return (scorerDocQueue.size() >= minimumNrMatchers)
           && advanceAfterCurrent();
   }
@@ -173,7 +168,7 @@ class DisjunctionSumScorer extends Scorer {
       nrMatchers = 1;
       do { // Until all subscorers are after currentDoc
         if (! scorerDocQueue.topNextAndAdjustElsePop()) {
-          if (--queueSize == 0) {
+          if (scorerDocQueue.size() == 0) {
             break; // nothing more to advance, check for last match.
           }
         }
@@ -186,7 +181,7 @@ class DisjunctionSumScorer extends Scorer {
       
       if (nrMatchers >= minimumNrMatchers) {
         return true;
-      } else if (queueSize < minimumNrMatchers) {
+      } else if (scorerDocQueue.size() < minimumNrMatchers) {
         return false;
       }
     } while (true);
@@ -214,10 +209,7 @@ class DisjunctionSumScorer extends Scorer {
    * @return true iff there is such a match.
    */
   public boolean skipTo(int target) throws IOException {
-    if (scorerDocQueue == null) {
-      initScorerDocQueue();
-    }
-    if (queueSize < minimumNrMatchers) {
+    if (scorerDocQueue.size() < minimumNrMatchers) {
       return false;
     }
     if (target <= currentDoc) {
@@ -227,7 +219,7 @@ class DisjunctionSumScorer extends Scorer {
       if (scorerDocQueue.topDoc() >= target) {
         return advanceAfterCurrent();
       } else if (! scorerDocQueue.topSkipToAndAdjustElsePop(target)) {
-        if (--queueSize < minimumNrMatchers) {
+        if (scorerDocQueue.size() < minimumNrMatchers) {
           return false;
         }
       }
