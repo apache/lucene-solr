@@ -29,8 +29,8 @@ public class FileUtils {
    * Resolves a path relative a base directory.
    *
    * <p>
-   * This method does what "new File(base,path)" <b>Should</b> do, it it wasn't 
-   * completley lame: If path is absolute, then a File for that path is returned; 
+   * This method does what "new File(base,path)" <b>Should</b> do, it wasn't 
+   * completely lame: If path is absolute, then a File for that path is returned;
    * if it's not absoluve, then a File is returnd using "path" as a child 
    * of "base") 
    * </p>
