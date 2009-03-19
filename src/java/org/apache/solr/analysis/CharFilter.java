@@ -37,18 +37,18 @@ public abstract class CharFilter extends CharStream {
 
   /**
    *
-   * Subclass may want to override to correct the current position.
+   * Subclass may want to override to correct the current offset.
    *
-   * @param pos current position
-   * @return corrected position
+   * @param currentOff current offset
+   * @return corrected offset
    */
-  protected int correctPosition( int pos ){
-    return pos;
+  protected int correct( int currentOff ){
+    return currentOff;
   }
 
   @Override
   public final int correctOffset(int currentOff) {
-    return input.correctOffset( correctPosition( currentOff ) );
+    return input.correctOffset( correct( currentOff ) );
   }
 
   @Override

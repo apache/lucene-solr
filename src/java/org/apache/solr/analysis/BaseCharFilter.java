@@ -28,44 +28,44 @@ import java.util.List;
  */
 public abstract class BaseCharFilter extends CharFilter {
 
-  private List<PosCorrectMap> pcmList;
+  private List<OffCorrectMap> pcmList;
   
   public BaseCharFilter( CharStream in ){
     super(in);
   }
 
-  protected int correctPosition( int currentPos ){
-    if( pcmList == null || pcmList.isEmpty() ) return currentPos;
+  protected int correct( int currentOff ){
+    if( pcmList == null || pcmList.isEmpty() ) return currentOff;
     for( int i = pcmList.size() - 1; i >= 0; i-- ){
-      if( currentPos >= pcmList.get( i ).pos )
-        return currentPos + pcmList.get( i ).cumulativeDiff;
+      if( currentOff >= pcmList.get( i ).off )
+        return currentOff + pcmList.get( i ).cumulativeDiff;
     }
-    return currentPos;
+    return currentOff;
   }
   
   protected int getLastCumulativeDiff(){
     return pcmList == null || pcmList.isEmpty() ? 0 : pcmList.get( pcmList.size() - 1 ).cumulativeDiff;
   }
   
-  protected void addPosCorrectMap( int pos, int cumulativeDiff ){
-    if( pcmList == null ) pcmList = new ArrayList<PosCorrectMap>();
-    pcmList.add( new PosCorrectMap( pos, cumulativeDiff ) );
+  protected void addOffCorrectMap( int off, int cumulativeDiff ){
+    if( pcmList == null ) pcmList = new ArrayList<OffCorrectMap>();
+    pcmList.add( new OffCorrectMap( off, cumulativeDiff ) );
   }
 
-  static class PosCorrectMap {
+  static class OffCorrectMap {
 
-    int pos;
+    int off;
     int cumulativeDiff;
 
-    PosCorrectMap( int pos, int cumulativeDiff ){
-      this.pos = pos;
+    OffCorrectMap( int off, int cumulativeDiff ){
+      this.off = off;
       this.cumulativeDiff = cumulativeDiff;
     }
 
     public String toString(){
       StringBuilder sb = new StringBuilder();
       sb.append('(');
-      sb.append(pos);
+      sb.append(off);
       sb.append(',');
       sb.append(cumulativeDiff);
       sb.append(')');

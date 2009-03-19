@@ -57,10 +57,10 @@ public class MappingCharFilter extends BaseCharFilter {
         int prevCumulativeDiff = getLastCumulativeDiff();
         if( result.diff < 0 ){
           for( int i = 0; i < -result.diff ; i++ )
-            addPosCorrectMap( nextCharCounter + i - prevCumulativeDiff, prevCumulativeDiff - 1 - i );
+            addOffCorrectMap( nextCharCounter + i - prevCumulativeDiff, prevCumulativeDiff - 1 - i );
         }
         else{
-          addPosCorrectMap( nextCharCounter - result.diff - prevCumulativeDiff, prevCumulativeDiff + result.diff ) ;
+          addOffCorrectMap( nextCharCounter - result.diff - prevCumulativeDiff, prevCumulativeDiff + result.diff ) ;
         }
       }
     }
