@@ -184,6 +184,35 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     assertQ(req("name_s:xyz"), "//*[@numFound='1']");
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testDeleteDocs() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    rows.add(createMap("id", "2", "desc", "two"));
+    rows.add(createMap("id", "3", "desc", "two", "$deleteDocById", "2"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigForSkipTransform);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+    assertQ(req("id:2"), "//*[@numFound='0']");
+    assertQ(req("id:3"), "//*[@numFound='1']");
+
+    MockDataSource.clearCache();
+    rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    rows.add(createMap("id", "2", "desc", "one"));
+    rows.add(createMap("id", "3", "desc", "two", "$deleteDocByQuery", "desc:one"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigForSkipTransform);
+
+    assertQ(req("id:1"), "//*[@numFound='0']");
+    assertQ(req("id:2"), "//*[@numFound='0']");
+    assertQ(req("id:3"), "//*[@numFound='1']");
+  }
+
   public static class MockTransformer extends Transformer {
     public Object transformRow(Map<String, Object> row, Context context) {
       Assert.assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
