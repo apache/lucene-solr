@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -34,18 +35,47 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestMatchAllDocsQuery extends LuceneTestCase {
 
   public void testQuery() throws IOException {
+
     RAMDirectory dir = new RAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     iw.setMaxBufferedDocs(2);  // force multi-segment
-    addDoc("one", iw);
-    addDoc("two", iw);
-    addDoc("three four", iw);
+    addDoc("one", iw, 1f);
+    addDoc("two", iw, 20f);
+    addDoc("three four", iw, 300f);
     iw.close();
-    
-    IndexSearcher is = new IndexSearcher(dir);
-    ScoreDoc[] hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
+
+    IndexReader ir = IndexReader.open(dir);
+    IndexSearcher is = new IndexSearcher(ir);
+    ScoreDoc[] hits;
+
+    // assert with norms scoring turned off
+
+    hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
+    assertEquals(3, hits.length);
+    assertEquals("one", ir.document(hits[0].doc).get("key"));
+    assertEquals("two", ir.document(hits[1].doc).get("key"));
+    assertEquals("three four", ir.document(hits[2].doc).get("key"));
+
+    // assert with norms scoring turned on
+
+    MatchAllDocsQuery normsQuery = new MatchAllDocsQuery("key");
+    hits = is.search(normsQuery, null, 1000).scoreDocs;
     assertEquals(3, hits.length);
 
+    assertEquals("three four", ir.document(hits[0].doc).get("key"));    
+    assertEquals("two", ir.document(hits[1].doc).get("key"));
+    assertEquals("one", ir.document(hits[2].doc).get("key"));
+
+    // change norm & retest
+    ir.setNorm(0, "key", 400f);
+    normsQuery = new MatchAllDocsQuery("key");
+    hits = is.search(normsQuery, null, 1000).scoreDocs;
+    assertEquals(3, hits.length);
+
+    assertEquals("one", ir.document(hits[0].doc).get("key"));
+    assertEquals("three four", ir.document(hits[1].doc).get("key"));    
+    assertEquals("two", ir.document(hits[2].doc).get("key"));
+    
     // some artificial queries to trigger the use of skipTo():
     
     BooleanQuery bq = new BooleanQuery();
@@ -66,6 +96,8 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(2, hits.length);
     
     is.close();
+    ir.close();
+    dir.close();
   }
 
   public void testEquals() {
@@ -76,9 +108,11 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertFalse(q1.equals(q2));
   }
   
-  private void addDoc(String text, IndexWriter iw) throws IOException {
+  private void addDoc(String text, IndexWriter iw, float boost) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("key", text, Field.Store.YES, Field.Index.ANALYZED));
+    Field f = new Field("key", text, Field.Store.YES, Field.Index.ANALYZED);
+    f.setBoost(boost);
+    doc.add(f);
     iw.addDocument(doc);
   }
 

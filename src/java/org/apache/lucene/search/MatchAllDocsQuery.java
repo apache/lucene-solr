@@ -31,17 +31,29 @@ import java.io.IOException;
 public class MatchAllDocsQuery extends Query {
 
   public MatchAllDocsQuery() {
+    this(null);
+  }
+
+  private final String normsField;
+
+  /**
+   * @param normsField Field used for normalization factor (document boost). Null if nothing.
+   */
+  public MatchAllDocsQuery(String normsField) {
+    this.normsField = normsField;
   }
 
   private class MatchAllScorer extends Scorer {
     final TermDocs termDocs;
     final float score;
+    final byte[] norms;
 
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w) throws IOException
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w, byte[] norms) throws IOException
     {
       super(similarity);
       this.termDocs = reader.termDocs(null);
       score = w.getValue();
+      this.norms = norms;
     }
 
     public Explanation explain(int doc) {
@@ -57,7 +69,11 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public float score() {
-      return score;
+      if (norms == null) {
+        return score;
+      } else {
+        return score * Similarity.decodeNorm(norms[doc()]); // normalize for field
+      }
     }
 
     public boolean skipTo(int target) throws IOException {
@@ -98,7 +114,8 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
-      return new MatchAllScorer(reader, similarity, this);
+      return new MatchAllScorer(reader, similarity, this,
+          normsField != null ? reader.norms(normsField) : null);
     }
 
     public Explanation explain(IndexReader reader, int doc) {

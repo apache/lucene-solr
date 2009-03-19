@@ -183,6 +183,10 @@ New features
     maintain sort order of the original byte[] when the bytes are
     interpreted as unsigned.  (Steven Rowe via Mike McCandless)
 
+18. LUCENE-1543: Allow MatchAllDocsQuery to optionally use norms from
+    a specific fields to set the score for a document.  (Karl Wettin
+    via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
