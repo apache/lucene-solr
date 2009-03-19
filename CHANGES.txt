@@ -184,6 +184,8 @@ New Features
     range filter in Lucene contrib-queries and can be dramatically faster than normal range queries.
     (Uwe Schindler, shalin)
 
+31. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
+
 
 Optimizations
 ----------------------

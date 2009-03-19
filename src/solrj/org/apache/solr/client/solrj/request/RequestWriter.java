@@ -51,7 +51,8 @@ public class RequestWriter {
   private boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments()) &&
             isNull(updateRequest.getDeleteById()) &&
-            isNull(updateRequest.getDeleteQuery());
+            isNull(updateRequest.getDeleteQuery()) &&
+            updateRequest.getDocIterator() == null;
   }
 
   public String getPath(SolrRequest req) {

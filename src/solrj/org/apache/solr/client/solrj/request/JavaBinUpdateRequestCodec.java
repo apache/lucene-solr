@@ -27,10 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
@@ -51,25 +48,33 @@ public class JavaBinUpdateRequestCodec {
    * @throws IOException in case of an exception during marshalling or writing to the stream
    */
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
-    JavaBinCodec codec = new JavaBinCodec();
     NamedList nl = new NamedList();
     NamedList params = solrParamsToNamedList(updateRequest.getParams());
     if (updateRequest.getCommitWithin() != -1) {
       params.add("commitWithin", updateRequest.getCommitWithin());
     }
-    List<List<NamedList>> doclist = new ArrayList<List<NamedList>>();
-    if (updateRequest.getDocuments() != null) {
-      for (SolrInputDocument doc : updateRequest.getDocuments()) {
-        doclist.add(solrInputDocumentToList(doc));
-      }
+    Iterator<SolrInputDocument> docIter = null;
 
+    if (updateRequest.getDocuments() != null) {
+      docIter = updateRequest.getDocuments().iterator();
+    }
+    if(updateRequest.getDocIterator() != null){
+      docIter = updateRequest.getDocIterator();
     }
 
     nl.add("params", params);// 0: params
     nl.add("delById", updateRequest.getDeleteById());
     nl.add("delByQ", updateRequest.getDeleteQuery());
-    nl.add("docs", doclist.iterator());
-    codec.marshal(nl, os);
+    nl.add("docs", docIter);
+    new JavaBinCodec(){
+      public void writeMap(Map val) throws IOException {
+        if (val instanceof SolrInputDocument) {
+          writeVal(solrInputDocumentToList((SolrInputDocument) val));
+        } else {
+          super.writeMap(val);
+        }
+      }
+    }.marshal(nl, os);
   }
 
   /**

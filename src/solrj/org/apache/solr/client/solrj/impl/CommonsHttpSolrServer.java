@@ -22,10 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -51,13 +48,13 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.DefaultSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -600,5 +597,27 @@ public class CommonsHttpSolrServer extends SolrServer
 
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
+  }
+
+  /**
+   * Adds the documents supplied by the given iterator. A commit is called after all the documents are added.
+   * If an exception is thrown, commit is not called.
+   *
+   * @param docIterator  the iterator which returns SolrInputDocument instances
+   * @param commitParams additional parameters such as optimize, waitFlush, waitSearcher
+   *
+   * @return the response from the SolrServer
+   */
+  public UpdateResponse addAndCommit(Iterator<SolrInputDocument> docIterator, SolrParams commitParams)
+          throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.setDocIterator(docIterator);
+    if (commitParams instanceof ModifiableSolrParams) {
+      req.setParams((ModifiableSolrParams) commitParams);
+    } else if (commitParams != null) {
+      req.setParams(new ModifiableSolrParams(commitParams));
+    }
+    req.setParam(UpdateParams.COMMIT, "true");
+    return req.process(this);
   }
 }

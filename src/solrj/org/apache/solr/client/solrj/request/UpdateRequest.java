@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Iterator;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,6 +49,7 @@ public class UpdateRequest extends SolrRequest
   };
   
   private List<SolrInputDocument> documents = null;
+  private Iterator<SolrInputDocument> docIterator = null;
   private List<String> deleteById = null;
   private List<String> deleteQuery = null;
 
@@ -165,6 +167,10 @@ public class UpdateRequest extends SolrRequest
     this.params = params;
   }
 
+  public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
+    this.docIterator = docIterator;
+  }
+
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
@@ -188,16 +194,26 @@ public class UpdateRequest extends SolrRequest
    * @since solr 1.4
    */
   public void writeXML( Writer writer ) throws IOException {
-    if( documents != null && documents.size() > 0 ) {
+    if( (documents != null && documents.size() > 0) || docIterator != null) {
       if( commitWithin > 0 ) {
         writer.write("<add commitWithin=\""+commitWithin+"\">");
       }
       else {
         writer.write("<add>");
       }
-      for (SolrInputDocument doc : documents ) {
-        if( doc != null ) {
-          ClientUtils.writeXML( doc, writer );
+      if(documents != null) {
+        for (SolrInputDocument doc : documents) {
+          if (doc != null) {
+            ClientUtils.writeXML(doc, writer);
+          }
+        }
+      }
+      if (docIterator != null) {
+        while (docIterator.hasNext()) {
+          SolrInputDocument doc = docIterator.next();
+          if (doc != null) {
+            ClientUtils.writeXML(doc, writer);
+          }
         }
       }
       writer.write("</add>");
@@ -253,6 +269,9 @@ public class UpdateRequest extends SolrRequest
     return documents;
   }
 
+  public Iterator<SolrInputDocument> getDocIterator() {
+    return docIterator;
+  }
 
   public List<String> getDeleteById() {
     return deleteById;

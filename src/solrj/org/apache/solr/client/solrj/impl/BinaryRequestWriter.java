@@ -41,7 +41,8 @@ public class BinaryRequestWriter extends RequestWriter {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isNull(updateRequest.getDocuments()) &&
               isNull(updateRequest.getDeleteById()) &&
-              isNull(updateRequest.getDeleteQuery())) {
+              isNull(updateRequest.getDeleteQuery())
+              && (updateRequest.getDocIterator() == null) ) {
         return null;
       }
       List<ContentStream> l = new ArrayList<ContentStream>();
