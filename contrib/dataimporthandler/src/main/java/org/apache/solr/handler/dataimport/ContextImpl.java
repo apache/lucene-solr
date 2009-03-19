@@ -195,4 +195,16 @@ public class ContextImpl extends Context {
     }
     return null;
   }
+
+  public void deleteDoc(String id) {
+    if(docBuilder != null){
+      docBuilder.writer.deleteDoc(id);
+    }
+  }
+
+  public void deleteDocByQuery(String query) {
+    if(docBuilder != null){
+      docBuilder.writer.deleteByQuery(query);
+    } 
+  }
 }

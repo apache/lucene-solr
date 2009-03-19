@@ -100,6 +100,12 @@ New Features
 23.SOLR-1061: Improve RegexTransformer to create multiple columns from regex groups.
               (Noble Paul via shalin)
 
+24.SOLR-1059: Special flags introduced for deleting documents by query or id, skipping rows and stopping further
+              transforms. Use $deleteDocById, $deleteDocByQuery for deleting by id and query respectively.
+              Use $skipRow to skip the current row but continue with the document. Use $stopTransform to stop
+              further transformers. New methods are introduced in Context for deleting by id and query.
+              (Noble Paul, Fergus McMenemie, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

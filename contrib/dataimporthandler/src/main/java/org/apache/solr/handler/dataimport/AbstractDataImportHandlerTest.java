@@ -183,5 +183,13 @@ public abstract class AbstractDataImportHandlerTest extends
     public String getScriptLanguage() {
       return scriptlang == null ? delegate.getScriptLanguage() : scriptlang;
     }
+
+    public void deleteDoc(String id) {
+
+    }
+
+    public void deleteDocByQuery(String query) {
+
+    }
   }
 }

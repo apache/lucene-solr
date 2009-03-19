@@ -370,10 +370,12 @@ public class DocBuilder {
           if (entity.isDocRoot) {
             if (stop.get())
               return;
-            boolean result = writer.upload(doc);
-            doc = null;
-            if (result)
-              importStatistics.docCount.incrementAndGet();
+            if (!doc.isEmpty()) {
+              boolean result = writer.upload(doc);
+              doc = null;
+              if (result)
+                importStatistics.docCount.incrementAndGet();
+            }
           }
 
         } catch (DataImportHandlerException e) {
@@ -424,9 +426,32 @@ public class DocBuilder {
 
   @SuppressWarnings("unchecked")
   private void addFields(DataConfig.Entity entity, SolrInputDocument doc, Map<String, Object> arow) {
+    Object s = arow.get("$skipRow");
+    if (s != null && Boolean.parseBoolean(s.toString()))  {
+        return;
+    }
     for (Map.Entry<String, Object> entry : arow.entrySet()) {
       String key = entry.getKey();
+      Object value = entry.getValue();
+      if (value == null)  continue;
       if (key.startsWith("$")) {
+        if ("$deleteDocById".equals(key)) {
+          if (value instanceof Collection) {
+            Collection collection = (Collection) value;
+            for (Object o : collection) {
+              writer.deleteDoc(o.toString());
+            }
+          } else  {
+            writer.deleteDoc(value);
+          }
+        }
+        if ("$deleteDocByQuery".equals(key)) {
+          writer.deleteByQuery(entry.getValue().toString());
+        }
+        if ("$skipDoc".equals(key) && Boolean.parseBoolean(value.toString())) {
+          throw new DataImportHandlerException(DataImportHandlerException.SKIP,
+                  "Document skipped :" + arow);
+        }
         // All fields starting with $ are special values and don't need to be added
         continue;
       }

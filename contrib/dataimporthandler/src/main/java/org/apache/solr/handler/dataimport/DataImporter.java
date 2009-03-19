@@ -104,16 +104,11 @@ public class DataImporter {
     for (DataConfig.Entity e : config.document.entities) {
       Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
       initEntity(e, fields, false);
-      String errs = verifyWithSchema(fields);
-      if (errs != null) {
-        throw new DataImportHandlerException(
-                DataImportHandlerException.SEVERE, errs);
-      }
+      verifyWithSchema(fields);
     }
   }
 
-  private String verifyWithSchema(Map<String, DataConfig.Field> fields) {
-    List<String> errors = new ArrayList<String>();
+  private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
     Map<String, SchemaField> schemaFields = schema.getFields();
     for (Map.Entry<String, SchemaField> entry : schemaFields.entrySet()) {
       SchemaField sf = entry.getValue();
@@ -131,20 +126,10 @@ public class DataImporter {
       if (field == null) {
         field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase());
         if (field == null) {
-          errors.add("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
+          LOG.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
         }
       }
     }
-
-    if (!errors.isEmpty()) {
-      StringBuilder sb = new StringBuilder("There are errors in the Schema\n");
-      for (String error : errors) {
-        sb.append(error).append("\n");
-      }
-      return sb.toString();
-
-    }
-    return null;
 
   }
 

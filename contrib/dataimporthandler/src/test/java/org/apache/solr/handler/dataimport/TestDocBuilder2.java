@@ -120,6 +120,70 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     super.runFullImport(loadDataConfig("data-config-with-transformer.xml"));
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testSkipDoc() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    rows.add(createMap("id", "2", "desc", "two", "$skipDoc", "true"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigWithDynamicTransformer);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+    assertQ(req("id:2"), "//*[@numFound='0']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testSkipRow() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    rows.add(createMap("id", "2", "desc", "two", "$skipRow", "true"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigWithDynamicTransformer);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+    assertQ(req("id:2"), "//*[@numFound='0']");
+
+    MockDataSource.clearCache();
+
+    rows = new ArrayList();
+    rows.add(createMap("id", "3", "desc", "one"));
+    rows.add(createMap("id", "4", "desc", "two"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    rows = new ArrayList();
+    rows.add(createMap("name_s", "abcd"));
+    MockDataSource.setIterator("3", rows.iterator());
+
+    rows = new ArrayList();
+    rows.add(createMap("name_s", "xyz", "$skipRow", "true"));
+    MockDataSource.setIterator("4", rows.iterator());
+
+    super.runFullImport(dataConfigWithTwoEntities);
+    assertQ(req("id:3"), "//*[@numFound='1']");
+    assertQ(req("id:4"), "//*[@numFound='1']");
+    assertQ(req("name_s:abcd"), "//*[@numFound='1']");
+    assertQ(req("name_s:xyz"), "//*[@numFound='0']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testStopTransform() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("id", "1", "desc", "one"));
+    rows.add(createMap("id", "2", "desc", "two", "$stopTransform", "true"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    super.runFullImport(dataConfigForSkipTransform);
+
+    assertQ(req("id:1"), "//*[@numFound='1']");
+    assertQ(req("id:2"), "//*[@numFound='1']");
+    assertQ(req("name_s:xyz"), "//*[@numFound='1']");
+  }
+
   public static class MockTransformer extends Transformer {
     public Object transformRow(Map<String, Object> row, Context context) {
       Assert.assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
@@ -171,6 +235,29 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
            "                transformer=\"TestDocBuilder2$AddDynamicFieldTransformer\">\n" +
           "            <field column=\"id\" />\n" +
           "            <field column=\"desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigForSkipTransform = "<dataConfig>\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from x\"" +
+           "                transformer=\"TemplateTransformer\">\n" +
+          "            <field column=\"id\" />\n" +
+          "            <field column=\"desc\" />\n" +
+          "            <field column=\"name_s\" template=\"xyz\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigWithTwoEntities = "<dataConfig>\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from x\">" +
+          "            <field column=\"id\" />\n" +
+          "            <field column=\"desc\" />\n" +
+          "            <entity name=\"authors\" query=\"${books.id}\">" +
+          "               <field column=\"name_s\" />" +
+          "            </entity>" +
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";

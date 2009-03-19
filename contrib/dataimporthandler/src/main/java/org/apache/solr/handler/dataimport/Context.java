@@ -190,4 +190,16 @@ public abstract class Context {
    * Returns the language of the script as specified in the script tag in data-config.xml
    */
   public abstract String getScriptLanguage();
+
+  /**delete a document by id
+   * @param id
+   */
+  public abstract void deleteDoc(String id);
+
+  /**delete documents by query
+   * @param query
+   */
+  public abstract void deleteDocByQuery(String query);
+
+
 }

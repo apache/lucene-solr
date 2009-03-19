@@ -160,7 +160,9 @@ public class EntityProcessorBase extends EntityProcessor {
       return row;
     Map<String, Object> transformedRow = row;
     List<Map<String, Object>> rows = null;
+    boolean stopTransform = checkStopTransform(row);
     for (Transformer t : transformers) {
+      if(stopTransform) break;
       try {
         if (rows != null) {
           List<Map<String, Object>> tmpRows = new ArrayList<Map<String, Object>>();
@@ -171,7 +173,7 @@ public class EntityProcessorBase extends EntityProcessor {
               continue;
             if (o instanceof Map) {
               Map oMap = (Map) o;
-              checkSkipDoc(oMap, t);
+              stopTransform = checkStopTransform(oMap);
               tmpRows.add((Map) o);
             } else if (o instanceof List) {
               tmpRows.addAll((List) o);
@@ -187,7 +189,7 @@ public class EntityProcessorBase extends EntityProcessor {
             return null;
           if (o instanceof Map) {
             Map oMap = (Map) o;
-            checkSkipDoc(oMap, t);
+            stopTransform = checkStopTransform(oMap);
             transformedRow = (Map) o;
           } else if (o instanceof List) {
             rows = (List) o;
@@ -214,11 +216,9 @@ public class EntityProcessorBase extends EntityProcessor {
 
   }
 
-  private void checkSkipDoc(Map oMap, Transformer t) {
-    if (oMap.get(SKIP_DOC) != null
-            && Boolean.parseBoolean(oMap.get(SKIP_DOC).toString()))
-      throw new DataImportHandlerException(DataImportHandlerException.SKIP,
-              "Document skipped by: " + DebugLogger.getTransformerName(t));
+  private boolean checkStopTransform(Map oMap) {
+    return oMap.get("$stopTransform") != null
+            && Boolean.parseBoolean(oMap.get("$stopTransform").toString());
   }
 
   protected Map<String, Object> getNext() {
