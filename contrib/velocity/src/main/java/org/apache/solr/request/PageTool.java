@@ -21,7 +21,7 @@ import org.apache.solr.search.DocSlice;
 
 public class PageTool {
   private long start;
-  private int results_per_page;
+  private int results_per_page = 10;
   private long results_found;
   private int page_count;
   private int current_page_number;
@@ -29,8 +29,9 @@ public class PageTool {
   public PageTool(SolrQueryRequest request, SolrQueryResponse response) {
     String rows = request.getParams().get("rows");
 
-    if (rows != null)
+    if (rows != null) {
       results_per_page = new Integer(rows);
+    }
 
     DocSlice doc_slice = (DocSlice) response.getValues().get("response");
 
