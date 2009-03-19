@@ -40,6 +40,12 @@ New features
 
  2. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
 
+ 3. LUCENE-1435: Added contrib/collation, a CollationKeyFilter
+    allowing you to convert tokens into CollationKeys encoded usign
+    IndexableBinaryStringTools.  This allows for faster RangQuery when
+    a field needs to use a custom Collator.  (Steven Rowe via Mike
+    McCandless)
+
 
 Documentation
 

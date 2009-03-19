@@ -44,5 +44,6 @@
     <commons-collections-version>3.1</commons-collections-version>
     <commons-beanutils-version>1.7.0</commons-beanutils-version>
     <jakarta-regexp-version>1.4</jakarta-regexp-version>
+    <icu-version>4.0</icu-version>
   </properties>
 </project>

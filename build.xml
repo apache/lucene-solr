@@ -288,6 +288,7 @@
           <packageset dir="contrib/analyzers/src/java"/>
           <packageset dir="contrib/ant/src/java"/>
           <packageset dir="contrib/benchmark/src/java"/>
+          <packageset dir="contrib/collation/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
@@ -318,6 +319,7 @@
           <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
           <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
           <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
+          <group title="contrib: Collation" packages="org.apache.lucene.collation*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
