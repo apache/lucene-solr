@@ -59,6 +59,10 @@ API Changes
 9. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
    resources.  (Christian Kohlschütter via Mike McCandless)
 
+10. LUCENE-652: Added org.apache.lucene.document.CompressionTools, to
+    enable compressing & decompressing binary content, external to
+    Lucene's indexing.  Deprecated Field.Store.COMPRESS.
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

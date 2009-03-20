@@ -25,11 +25,9 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.CloseableThreadLocal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
 
 /**
  * Class responsible for access to stored document fields.
@@ -596,40 +594,19 @@ final class FieldsReader implements Cloneable {
         return null;     
     }
   }
-  
-  private final byte[] uncompress(final byte[] input)
-          throws CorruptIndexException, IOException {
 
-    // Create an expandable byte array to hold the decompressed data
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);
-
-    Inflater decompressor = new Inflater();
-
+  private byte[] uncompress(byte[] b)
+          throws CorruptIndexException {
     try {
-      decompressor.setInput(input);
-
-      // Decompress the data
-      byte[] buf = new byte[1024];
-      while (!decompressor.finished()) {
-        try {
-          int count = decompressor.inflate(buf);
-          bos.write(buf, 0, count);
-        }
-        catch (DataFormatException e) {
-          // this will happen if the field is not compressed
-          CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
-          newException.initCause(e);
-          throw newException;
-        }
-      }
-    } finally {  
-      decompressor.end();
+      return CompressionTools.decompress(b);
+    } catch (DataFormatException e) {
+      // this will happen if the field is not compressed
+      CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
+      newException.initCause(e);
+      throw newException;
     }
-    
-    // Get the decompressed data
-    return bos.toByteArray();
   }
-  
+
   // Instances of this class hold field properties and data
   // for merge
   final static class FieldForMerge extends AbstractField {

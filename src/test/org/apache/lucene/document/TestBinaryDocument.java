@@ -5,7 +5,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,7 +43,7 @@ public class TestBinaryDocument extends LuceneTestCase
     Fieldable binaryFldCompressed = new Field("binaryCompressed", binaryValCompressed.getBytes(), Field.Store.COMPRESS);
     Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
     Fieldable stringFldCompressed = new Field("stringCompressed", binaryValCompressed, Field.Store.COMPRESS, Field.Index.NO, Field.TermVector.NO);
-    
+
     try {
       // binary fields with store off are not allowed
       new Field("fail", binaryValCompressed.getBytes(), Field.Store.NO);
@@ -60,12 +60,12 @@ public class TestBinaryDocument extends LuceneTestCase
     
     doc.add(stringFldStored);
     doc.add(stringFldCompressed);
-    
+
     /** test for field count */
     assertEquals(4, doc.fields.size());
     
     /** add the doc to a ram index */
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
@@ -90,13 +90,40 @@ public class TestBinaryDocument extends LuceneTestCase
     /** fetch the compressed string field and compare it's content with the original one */
     String stringFldCompressedTest = docFromReader.get("stringCompressed");
     assertTrue(stringFldCompressedTest.equals(binaryValCompressed));
-    
+
     /** delete the document from index */
     reader.deleteDocument(0);
     assertEquals(0, reader.numDocs());
     
     reader.close();
-    
+    dir.close();
   }
   
+  public void testCompressionTools()
+    throws Exception
+  {
+    Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()), Field.Store.YES);
+    
+    Document doc = new Document();
+    
+    doc.add(binaryFldCompressed);
+    
+    /** add the doc to a ram index */
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.addDocument(doc);
+    writer.close();
+    
+    /** open a reader and fetch the document */ 
+    IndexReader reader = IndexReader.open(dir);
+    Document docFromReader = reader.document(0);
+    assertTrue(docFromReader != null);
+    
+    /** fetch the binary compressed field and compare it's content with the original one */
+    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")));
+    assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
+    
+    reader.close();
+    dir.close();
+  }
 }

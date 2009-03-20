@@ -43,6 +43,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
     /** Store the original field value in the index in a compressed form. This is
      * useful for long documents and for binary valued fields.
+     * @deprecated Please use {@link CompressionTools} instead
      */
     public static final Store COMPRESS = new Store("COMPRESS");
 

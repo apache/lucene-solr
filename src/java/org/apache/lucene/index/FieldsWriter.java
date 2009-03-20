@@ -16,13 +16,12 @@ package org.apache.lucene.index;
  * the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.zip.Deflater;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.IndexOutput;
@@ -203,10 +202,10 @@ final class FieldsWriter
         } else {
           // check if it is a binary field
           if (field.isBinary()) {
-            data = compress(field.getBinaryValue(), field.getBinaryOffset(), field.getBinaryLength());
+            data = CompressionTools.compress(field.getBinaryValue(), field.getBinaryOffset(), field.getBinaryLength());
           } else {
             byte x[] = field.stringValue().getBytes("UTF-8");
-            data = compress(x, 0, x.length);
+            data = CompressionTools.compress(x, 0, x.length);
           }
           len = data.length;
           offset = 0;
@@ -268,44 +267,5 @@ final class FieldsWriter
             if (field.isStored())
               writeField(fieldInfos.fieldInfo(field.name()), field);
         }
-    }
-
-    private final byte[] compress (byte[] input, int offset, int length) {
-      // Create the compressor with highest level of compression
-      Deflater compressor = new Deflater();
-      compressor.setLevel(Deflater.BEST_COMPRESSION);
-
-      // Give the compressor the data to compress
-      compressor.setInput(input, offset, length);
-      compressor.finish();
-
-      /*
-       * Create an expandable byte array to hold the compressed data.
-       * You cannot use an array that's the same size as the orginal because
-       * there is no guarantee that the compressed data will be smaller than
-       * the uncompressed data.
-       */
-      ByteArrayOutputStream bos = new ByteArrayOutputStream(length);
-
-      try {
-        compressor.setLevel(Deflater.BEST_COMPRESSION);
-
-        // Give the compressor the data to compress
-        compressor.setInput(input);
-        compressor.finish();
-
-        // Compress the data
-        byte[] buf = new byte[1024];
-        while (!compressor.finished()) {
-          int count = compressor.deflate(buf);
-          bos.write(buf, 0, count);
-        }
-
-      } finally {      
-        compressor.end();
-      }
-
-      // Get the compressed data
-      return bos.toByteArray();
     }
 }
