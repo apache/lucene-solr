@@ -377,7 +377,7 @@ public final class TrieUtils {
     for (int i=0; i<trieCoded.length; i++) {
       final int fnum = Math.min(fields.length-1, i);
       final Field f = new Field(fields[fnum], trieCoded[i], Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
-      f.setOmitTf(true);
+      f.setOmitTermFreqAndPositions(true);
       doc.add(f);
     }
   }

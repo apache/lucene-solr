@@ -166,8 +166,8 @@ public class CheckIndex {
       int numFields;
 
       /** True if at least one of the fields in this segment
-       *  does not omitTf.
-       *  @see Fieldable#setOmitTf */
+       *  does not omitTermFreqAndPositions.
+       *  @see Fieldable#setOmitTermFreqAndPositions */
       public boolean hasProx;
     }
   }

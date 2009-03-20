@@ -208,11 +208,11 @@ final class SegmentMerger {
   }
 
   private void addIndexed(IndexReader reader, FieldInfos fieldInfos, Collection names, boolean storeTermVectors, boolean storePositionWithTermVector,
-                         boolean storeOffsetWithTermVector, boolean storePayloads, boolean omitTf) throws IOException {
+                         boolean storeOffsetWithTermVector, boolean storePayloads, boolean omitTermFreqAndPositions) throws IOException {
     Iterator i = names.iterator();
     while (i.hasNext()) {
       String field = (String)i.next();
-      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field), storePayloads, omitTf);
+      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field), storePayloads, omitTermFreqAndPositions);
     }
   }
 
@@ -275,7 +275,7 @@ final class SegmentMerger {
         SegmentReader segmentReader = (SegmentReader) reader;
         for (int j = 0; j < segmentReader.getFieldInfos().size(); j++) {
           FieldInfo fi = segmentReader.getFieldInfos().fieldInfo(j);
-          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name), fi.storePayloads, fi.omitTf);
+          fieldInfos.add(fi.name, fi.isIndexed, fi.storeTermVector, fi.storePositionWithTermVector, fi.storeOffsetWithTermVector, !reader.hasNorms(fi.name), fi.storePayloads, fi.omitTermFreqAndPositions);
         }
       } else {
         addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false, false);
@@ -496,7 +496,7 @@ final class SegmentMerger {
     }
   }
 
-  boolean omitTF;
+  boolean omitTermFreqAndPositions;
 
   private final void mergeTermInfos(final FormatPostingsFieldsConsumer consumer) throws CorruptIndexException, IOException {
     int base = 0;
@@ -544,7 +544,7 @@ final class SegmentMerger {
           termsConsumer.finish();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(currentField);
         termsConsumer = consumer.addField(fieldInfo);
-        omitTF = fieldInfo.omitTf;
+        omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
       }
 
       int df = appendPostings(termsConsumer, match, matchSize);		  // add new TermInfo
@@ -605,7 +605,7 @@ final class SegmentMerger {
         final int freq = postings.freq();
         final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
 
-        if (!omitTF) {
+        if (!omitTermFreqAndPositions) {
           for (int j = 0; j < freq; j++) {
             final int position = postings.nextPosition();
             final int payloadLength = postings.getPayloadLength();

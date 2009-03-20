@@ -27,13 +27,13 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   final FormatPostingsDocsWriter parent;
   final IndexOutput out;
 
-  boolean omitTF;
+  boolean omitTermFreqAndPositions;
   boolean storePayloads;
   int lastPayloadLength = -1;
 
   FormatPostingsPositionsWriter(SegmentWriteState state, FormatPostingsDocsWriter parent) throws IOException {
     this.parent = parent;
-    omitTF = parent.omitTF;
+    omitTermFreqAndPositions = parent.omitTermFreqAndPositions;
     if (parent.parent.parent.fieldInfos.hasProx()) {
       // At least one field does not omit TF, so create the
       // prox file
@@ -50,7 +50,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
 
   /** Add a new position & payload */
   void addPosition(int position, byte[] payload, int payloadOffset, int payloadLength) throws IOException {
-    assert !omitTF: "omitTF is true";
+    assert !omitTermFreqAndPositions: "omitTermFreqAndPositions is true";
     assert out != null;
 
     final int delta = position - lastPosition;
@@ -70,8 +70,8 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   }
 
   void setField(FieldInfo fieldInfo) {
-    omitTF = fieldInfo.omitTf;
-    storePayloads = omitTF ? false : fieldInfo.storePayloads;
+    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    storePayloads = omitTermFreqAndPositions ? false : fieldInfo.storePayloads;
   }
 
   /** Called when we are done adding positions & payloads */

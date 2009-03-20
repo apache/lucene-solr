@@ -70,7 +70,7 @@ final class SegmentInfos extends Vector {
 
   /** This format adds the boolean hasProx to record if any
    *  fields in the segment store prox information (ie, have
-   *  omitTf==false) */
+   *  omitTermFreqAndPositions==false) */
   public static final int FORMAT_HAS_PROX = -7;
 
   /** This format adds optional commit userData (String) storage. */

@@ -41,7 +41,7 @@ class SegmentTermDocs implements TermDocs {
   private boolean haveSkipped;
   
   protected boolean currentFieldStoresPayloads;
-  protected boolean currentFieldOmitTf;
+  protected boolean currentFieldOmitTermFreqAndPositions;
   
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
@@ -78,7 +78,7 @@ class SegmentTermDocs implements TermDocs {
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
     FieldInfo fi = parent.fieldInfos.fieldInfo(term.field);
-    currentFieldOmitTf = (fi != null) ? fi.omitTf : false;
+    currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.omitTermFreqAndPositions : false;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
@@ -111,7 +111,7 @@ class SegmentTermDocs implements TermDocs {
         return false;
       final int docCode = freqStream.readVInt();
       
-      if (currentFieldOmitTf) {
+      if (currentFieldOmitTermFreqAndPositions) {
         doc += docCode;
         freq = 1;
       } else {
@@ -135,7 +135,7 @@ class SegmentTermDocs implements TermDocs {
   public int read(final int[] docs, final int[] freqs)
           throws IOException {
     final int length = docs.length;
-    if (currentFieldOmitTf) {
+    if (currentFieldOmitTermFreqAndPositions) {
       return readNoTf(docs, freqs, length);
     } else {
       int i = 0;

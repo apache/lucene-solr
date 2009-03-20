@@ -34,7 +34,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
   final int skipInterval;
   final int totalNumDocs;
 
-  boolean omitTF;
+  boolean omitTermFreqAndPositions;
   boolean storePayloads;
   long freqStart;
   FieldInfo fieldInfo;
@@ -57,7 +57,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
 
   void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    omitTF = fieldInfo.omitTf;
+    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
     storePayloads = fieldInfo.storePayloads;
     posWriter.setField(fieldInfo);
   }
@@ -83,7 +83,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
     assert docID < totalNumDocs: "docID=" + docID + " totalNumDocs=" + totalNumDocs;
 
     lastDocID = docID;
-    if (omitTF)
+    if (omitTermFreqAndPositions)
       out.writeVInt(delta);
     else if (1 == termDocFreq)
       out.writeVInt((delta<<1) | 1);

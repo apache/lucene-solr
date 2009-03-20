@@ -31,7 +31,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
-  boolean omitTf;
+  boolean omitTermFreqAndPositions;
   PayloadAttribute payloadAttribute;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {
@@ -40,11 +40,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
-    omitTf = fieldInfo.omitTf;
+    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
   }
 
   int getStreamCount() {
-    if (fieldInfo.omitTf)
+    if (fieldInfo.omitTermFreqAndPositions)
       return 1;
     else
       return 2;
@@ -64,7 +64,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   void reset() {
     // Record, up front, whether our in-RAM format will be
     // with or without term freqs:
-    omitTf = fieldInfo.omitTf;
+    omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
     payloadAttribute = null;
   }
 
@@ -107,7 +107,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
     FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
     p.lastDocID = docState.docID;
-    if (omitTf) {
+    if (omitTermFreqAndPositions) {
       p.lastDocCode = docState.docID;
     } else {
       p.lastDocCode = docState.docID << 1;
@@ -122,9 +122,9 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
 
-    assert omitTf || p.docFreq > 0;
+    assert omitTermFreqAndPositions || p.docFreq > 0;
 
-    if (omitTf) {
+    if (omitTermFreqAndPositions) {
       if (docState.docID != p.lastDocID) {
         assert docState.docID > p.lastDocID;
         termsHashPerField.writeVInt(0, p.lastDocCode);

@@ -92,7 +92,9 @@ public abstract class IndexReader implements Cloneable {
     /** All fields that store payloads */
     public static final FieldOption STORES_PAYLOADS = new FieldOption ("STORES_PAYLOADS");
     /** All fields that omit tf */
-    public static final FieldOption OMIT_TF = new FieldOption ("OMIT_TF");
+    public static final FieldOption OMIT_TERM_FREQ_AND_POSITIONS = new FieldOption ("OMIT_TERM_FREQ_AND_POSITIONS");
+    /** @deprecated Renamed to {@link #OMIT_TERM_FREQ_AND_POSITIONS} */
+    public static final FieldOption OMIT_TF = OMIT_TERM_FREQ_AND_POSITIONS;
     /** All fields which are not indexed */
     public static final FieldOption UNINDEXED = new FieldOption ("UNINDEXED");
     /** All fields which are indexed with termvectors enabled */

@@ -77,7 +77,7 @@ final class SegmentInfo {
   private int delCount;                           // How many deleted docs in this segment, or -1 if not yet known
                                                   // (if it's an older index)
 
-  private boolean hasProx;                        // True if this segment has any fields with omitTf==false
+  private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;

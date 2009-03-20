@@ -176,7 +176,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     FreqProxFieldMergeState[] termStates = new FreqProxFieldMergeState[numFields];
 
-    final boolean currentFieldOmitTf = fields[0].fieldInfo.omitTf;
+    final boolean currentFieldOmitTermFreqAndPositions = fields[0].fieldInfo.omitTermFreqAndPositions;
 
     while(numFields > 0) {
 
@@ -217,8 +217,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
         // Carefully copy over the prox + payload info,
         // changing the format to match Lucene's segment
         // format.
-        if (!currentFieldOmitTf) {
-          // omitTf == false so we do write positions &
+        if (!currentFieldOmitTermFreqAndPositions) {
+          // omitTermFreqAndPositions == false so we do write positions &
           // payload          
           int position = 0;
           for(int j=0;j<termDocFreq;j++) {

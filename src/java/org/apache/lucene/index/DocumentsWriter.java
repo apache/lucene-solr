@@ -272,7 +272,7 @@ final class DocumentsWriter {
   }
 
   /** Returns true if any of the fields in the current
-   *  buffered docs have omitTf==false */
+   *  buffered docs have omitTermFreqAndPositions==false */
   boolean hasProx() {
     return (docFieldProcessor != null) ? docFieldProcessor.fieldInfos.hasProx()
                                        : true;

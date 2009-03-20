@@ -52,8 +52,8 @@ public class TestOmitTf extends LuceneTestCase {
 
 
   // Tests whether the DocumentWriter correctly enable the
-  // omitTf bit in the FieldInfo
-  public void testOmitTf() throws Exception {
+  // omitTermFreqAndPositions bit in the FieldInfo
+  public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new StandardAnalyzer();
     IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
@@ -65,7 +65,7 @@ public class TestOmitTf extends LuceneTestCase {
        
     // this field will NOT have Tf
     Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTf(true);
+    f2.setOmitTermFreqAndPositions(true);
     d.add(f2);
         
     writer.addDocument(d);
@@ -75,10 +75,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-    f1.setOmitTf(true);
+    f1.setOmitTermFreqAndPositions(true);
     d.add(f1);
         
-    f2.setOmitTf(false);        
+    f2.setOmitTermFreqAndPositions(false);        
     d.add(f2);
         
     writer.addDocument(d);
@@ -91,15 +91,15 @@ public class TestOmitTf extends LuceneTestCase {
     // only one segment in the index, so we can cast to SegmentReader
     SegmentReader reader = (SegmentReader) IndexReader.open(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTf field bit should be set.", fi.fieldInfo("f1").omitTf);
-    assertTrue("OmitTf field bit should be set.", fi.fieldInfo("f2").omitTf);
+    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
+    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
         
     reader.close();
     ram.close();
   }
  
   // Tests whether merging of docs that have different
-  // omitTf for the same field works
+  // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new StandardAnalyzer();
@@ -114,7 +114,7 @@ public class TestOmitTf extends LuceneTestCase {
        
     // this field will NOT have Tf
     Field f2 = new Field("f2", "This field has NO Tf in all docs", Field.Store.NO, Field.Index.ANALYZED);
-    f2.setOmitTf(true);
+    f2.setOmitTermFreqAndPositions(true);
     d.add(f2);
 
     for(int i=0;i<30;i++)
@@ -125,10 +125,10 @@ public class TestOmitTf extends LuceneTestCase {
     d = new Document();
         
     // Reverese
-    f1.setOmitTf(true);
+    f1.setOmitTermFreqAndPositions(true);
     d.add(f1);
         
-    f2.setOmitTf(false);        
+    f2.setOmitTermFreqAndPositions(false);        
     d.add(f2);
         
     for(int i=0;i<30;i++)
@@ -144,15 +144,15 @@ public class TestOmitTf extends LuceneTestCase {
     // only one segment in the index, so we can cast to SegmentReader
     SegmentReader reader = (SegmentReader) IndexReader.open(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTf field bit should be set.", fi.fieldInfo("f1").omitTf);
-    assertTrue("OmitTf field bit should be set.", fi.fieldInfo("f2").omitTf);
+    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
+    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
         
     reader.close();
     ram.close();
   }
 
-  // Make sure first adding docs that do not omitTf for
-  // field X, then adding docs that do omitTf for that same
+  // Make sure first adding docs that do not omitTermFreqAndPositions for
+  // field X, then adding docs that do omitTermFreqAndPositions for that same
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = new MockRAMDirectory();
@@ -173,7 +173,7 @@ public class TestOmitTf extends LuceneTestCase {
     for(int i=0;i<5;i++)
       writer.addDocument(d);
 
-    f2.setOmitTf(true);
+    f2.setOmitTermFreqAndPositions(true);
         
     for(int i=0;i<20;i++)
       writer.addDocument(d);
@@ -189,8 +189,8 @@ public class TestOmitTf extends LuceneTestCase {
     // only one segment in the index, so we can cast to SegmentReader
     SegmentReader reader = (SegmentReader) IndexReader.open(ram);
     FieldInfos fi = reader.fieldInfos();
-    assertTrue("OmitTf field bit should not be set.", !fi.fieldInfo("f1").omitTf);
-    assertTrue("OmitTf field bit should be set.", fi.fieldInfo("f2").omitTf);
+    assertTrue("OmitTermFreqAndPositions field bit should not be set.", !fi.fieldInfo("f1").omitTermFreqAndPositions);
+    assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
         
     reader.close();
     ram.close();
@@ -213,7 +213,7 @@ public class TestOmitTf extends LuceneTestCase {
     Document d = new Document();
         
     Field f1 = new Field("f1", "This field has term freqs", Field.Store.NO, Field.Index.ANALYZED);
-    f1.setOmitTf(true);
+    f1.setOmitTermFreqAndPositions(true);
     d.add(f1);
 
     for(int i=0;i<30;i++)
@@ -250,7 +250,7 @@ public class TestOmitTf extends LuceneTestCase {
       sb.append(term).append(" ");
       String content  = sb.toString();
       Field noTf = new Field("noTf", content + (i%2==0 ? "" : " notf"), Field.Store.NO, Field.Index.ANALYZED);
-      noTf.setOmitTf(true);
+      noTf.setOmitTermFreqAndPositions(true);
       d.add(noTf);
           
       Field tf = new Field("tf", content + (i%2==0 ? " tf" : ""), Field.Store.NO, Field.Index.ANALYZED);

@@ -28,13 +28,13 @@ final class FieldInfo {
   boolean storePositionWithTermVector;
 
   boolean omitNorms; // omit norms associated with indexed fields  
-  boolean omitTf; // omit tf
+  boolean omitTermFreqAndPositions;
   
   boolean storePayloads; // whether this field stores payloads together with term positions
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
-            boolean omitNorms, boolean storePayloads, boolean omitTf) {
+            boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     name = na;
     isIndexed = tk;
     number = nu;
@@ -43,16 +43,16 @@ final class FieldInfo {
     this.storePositionWithTermVector = storePositionWithTermVector;
     this.omitNorms = omitNorms;
     this.storePayloads = storePayloads;
-    this.omitTf = omitTf;
+    this.omitTermFreqAndPositions = omitTermFreqAndPositions;
   }
 
   public Object clone() {
     return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
-                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
+                         storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
   }
 
   void update(boolean isIndexed, boolean storeTermVector, boolean storePositionWithTermVector, 
-              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTf) {
+              boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
     }
@@ -68,8 +68,8 @@ final class FieldInfo {
     if (this.omitNorms != omitNorms) {
       this.omitNorms = false;                // once norms are stored, always store
     }
-    if (this.omitTf != omitTf) {
-      this.omitTf = true;                // if one require omitTf at least once, it remains off for life
+    if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
+      this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
     }
     if (this.storePayloads != storePayloads) {
       this.storePayloads = true;

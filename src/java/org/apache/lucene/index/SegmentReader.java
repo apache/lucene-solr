@@ -505,7 +505,7 @@ class SegmentReader extends DirectoryIndexReader {
       boolean anyProx = false;
       final int numFields = fieldInfos.size();
       for(int i=0;!anyProx && i<numFields;i++)
-        if (!fieldInfos.fieldInfo(i).omitTf)
+        if (!fieldInfos.fieldInfo(i).omitTermFreqAndPositions)
           anyProx = true;
 
       final String fieldsSegment;
@@ -959,7 +959,7 @@ class SegmentReader extends DirectoryIndexReader {
       else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
         fieldSet.add(fi.name);
       }
-      else if (fi.omitTf && fieldOption == IndexReader.FieldOption.OMIT_TF) {
+      else if (fi.omitTermFreqAndPositions && fieldOption == IndexReader.FieldOption.OMIT_TERM_FREQ_AND_POSITIONS) {
         fieldSet.add(fi.name);
       }
       else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {

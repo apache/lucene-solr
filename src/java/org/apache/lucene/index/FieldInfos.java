@@ -40,7 +40,7 @@ final class FieldInfos {
   static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
   static final byte OMIT_NORMS = 0x10;
   static final byte STORE_PAYLOADS = 0x20;
-  static final byte OMIT_TF = 0x40;
+  static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
   
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
@@ -88,11 +88,11 @@ final class FieldInfos {
     }
   }
 
-  /** Returns true if any fields do not omitTf */
+  /** Returns true if any fields do not omitTermFreqAndPositions */
   boolean hasProx() {
     final int numFields = byNumber.size();
     for(int i=0;i<numFields;i++)
-      if (!fieldInfo(i).omitTf)
+      if (!fieldInfo(i).omitTermFreqAndPositions)
         return true;
     return false;
   }
@@ -197,26 +197,26 @@ final class FieldInfos {
    * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
-   * @param omitTf true if term freqs should be omitted for this field
+   * @param omitTermFreqAndPositions true if term freqs should be omitted for this field
    */
   synchronized public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
                        boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                       boolean omitNorms, boolean storePayloads, boolean omitTf) {
+                       boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     } else {
-      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
+      fi.update(isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }
     return fi;
   }
 
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
-                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTf) {
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
     FieldInfo fi =
       new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-              storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
+              storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;
@@ -288,7 +288,7 @@ final class FieldInfos {
       if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
-      if (fi.omitTf) bits |= OMIT_TF;
+      if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
       
       output.writeString(fi.name);
       output.writeByte(bits);
@@ -306,9 +306,9 @@ final class FieldInfos {
       boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
       boolean omitNorms = (bits & OMIT_NORMS) != 0;
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-      boolean omitTf = (bits & OMIT_TF) != 0;
+      boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
       
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTf);
+      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     }    
   }
 

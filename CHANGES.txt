@@ -63,6 +63,9 @@ API Changes
     enable compressing & decompressing binary content, external to
     Lucene's indexing.  Deprecated Field.Store.COMPRESS.
 
+11. LUCENE-1561: Renamed Field.omitTf to Field.omitTermFreqAndPositions
+   (Otis Gospodnetic via Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
