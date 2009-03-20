@@ -21,7 +21,7 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
