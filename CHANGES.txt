@@ -94,6 +94,9 @@ Bug fixes
 6. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
    resources.  (Christian Kohlschütter via Mike McCandless)
 
+7. LUCENE-1327: Fix TermSpans#skipTo() to behave as specified in javadocs
+   of Terms#skipTo(). (Michael Busch)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior

@@ -17,19 +17,24 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 
-import org.apache.lucene.util.English;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.search.*;
+import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests basic search capabilities.
@@ -339,7 +344,46 @@ public class TestBasics extends LuceneTestCase {
        706, 707, 726, 727, 736, 737, 746, 747, 
        756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
   }
+  
+  public void testSpansSkipTo() throws Exception {
+	  SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
+	  SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
+	  Spans s1 = t1.getSpans(searcher.getIndexReader());
+	  Spans s2 = t2.getSpans(searcher.getIndexReader());
+	  
+	  assertTrue(s1.next());
+	  assertTrue(s2.next());
+	  
+	  boolean hasMore = true;
+	  
+	  do {
+		  hasMore = skipToAccoringToJavaDocs(s1, s1.doc());
+		  assertEquals(hasMore, s2.skipTo(s2.doc()));
+		  assertEquals(s1.doc(), s2.doc());
+	  } while (hasMore);
+  }
 
+  /** Skips to the first match beyond the current, whose document number is
+   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
+   * a match.  <p>Behaves as if written: <pre>
+   *   boolean skipTo(int target) {
+   *     do {
+   *       if (!next())
+   *       return false;
+   *     } while (target > doc());
+   *     return true;
+   *   }
+   * </pre>
+   */
+  private boolean skipToAccoringToJavaDocs(Spans s, int target)
+      throws Exception {
+    do {
+      if (!s.next())
+        return false;
+    } while (target > s.doc());
+    return true;
+
+  }
 
   private void checkHits(Query query, int[] results) throws IOException {
     CheckHits.checkHits(query, "field", searcher, results);

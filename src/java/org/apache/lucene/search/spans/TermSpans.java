@@ -59,11 +59,6 @@ public class TermSpans implements PayloadSpans {
   }
 
   public boolean skipTo(int target) throws IOException {
-    // are we already at the correct position?
-    if (doc >= target) {
-      return true;
-    }
-
     if (!positions.skipTo(target)) {
       doc = Integer.MAX_VALUE;
       return false;
