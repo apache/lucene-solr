@@ -312,7 +312,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       List<String> names = (List<String>) record.get("name");
       List<String> values = (List<String>) record.get("value");
       Map<String, Object> row = new HashMap<String, Object>();
-      for (int i = 0; i < names.size(); i++) {
+      for (int i = 0; i < names.size() && i < values.size(); i++) {
         if (row.containsKey(names.get(i))) {
           Object existing = row.get(names.get(i));
           if (existing instanceof List) {

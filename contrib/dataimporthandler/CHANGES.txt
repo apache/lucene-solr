@@ -192,6 +192,9 @@ Bug Fixes
               multiple of 1024 bytes.
               (Herb Jiang via shalin)
 
+23.SOLR-1077: IndexOutOfBoundsException with useSolrAddSchema in XPathEntityProcessor.
+              (Sam Keen, Noble Paul via shalin)
+
 Documentation
 ----------------------
 
