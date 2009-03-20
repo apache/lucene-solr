@@ -66,7 +66,7 @@ public class RequestWriter {
   public void write(SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      OutputStreamWriter writer = new OutputStreamWriter(os);
+      OutputStreamWriter writer = new OutputStreamWriter(os, "UTF-8");
       updateRequest.writeXML(writer);
       writer.flush();
     }
