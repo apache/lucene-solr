@@ -106,6 +106,9 @@ New Features
               further transformers. New methods are introduced in Context for deleting by id and query.
               (Noble Paul, Fergus McMenemie, shalin)
 
+25.SOLR-1076: JdbcDataSource should resolve variables in all its configuration parameters.
+              (shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

@@ -61,6 +61,7 @@ public class JdbcDataSource extends
 
     String bsz = initProps.getProperty("batchSize");
     if (bsz != null) {
+      bsz = (String) context.getVariableResolver().resolve(bsz);
       try {
         batchSize = Integer.parseInt(bsz);
         if (batchSize == -1)
@@ -93,6 +94,9 @@ public class JdbcDataSource extends
   private void createConnectionFactory(final Context context,
                                        final Properties initProps) {
 
+    final VariableResolver resolver = context.getVariableResolver();
+    resolveVariables(resolver, initProps);
+
     final String url = initProps.getProperty(URL);
     final String driver = initProps.getProperty(DRIVER);
 
@@ -117,11 +121,13 @@ public class JdbcDataSource extends
 
     factory = new Callable<Connection>() {
       public Connection call() throws Exception {
+        // Resolve variables again because the variables may have changed
+        resolveVariables(resolver, initProps);
         LOG.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);
         long start = System.currentTimeMillis();
-        Connection c = null;
+        Connection c;
         try {
           c = DriverManager.getConnection(url, initProps);
           if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
@@ -165,6 +171,14 @@ public class JdbcDataSource extends
         return c;
       }
     };
+  }
+
+  private void resolveVariables(VariableResolver resolver, Properties initProps) {
+    for (Map.Entry<Object, Object> entry : initProps.entrySet()) {
+      if (entry.getValue() != null) {
+        entry.setValue(resolver.replaceTokens((String) entry.getValue()));
+      }
+    }
   }
 
   public Iterator<Map<String, Object>> getData(String query) {
