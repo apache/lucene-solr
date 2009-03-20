@@ -186,6 +186,9 @@ New Features
 
 31. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
 
+32. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
+    support (Noble Paul, Mark Miller, hossman via shalin)
+
 
 Optimizations
 ----------------------
