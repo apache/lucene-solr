@@ -103,10 +103,12 @@ public class TestBinaryDocument extends LuceneTestCase
     throws Exception
   {
     Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()), Field.Store.YES);
+    Fieldable stringFldCompressed = new Field("stringCompressed", CompressionTools.compressString(binaryValCompressed), Field.Store.YES);
     
     Document doc = new Document();
     
     doc.add(binaryFldCompressed);
+    doc.add(stringFldCompressed);
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
@@ -122,7 +124,8 @@ public class TestBinaryDocument extends LuceneTestCase
     /** fetch the binary compressed field and compare it's content with the original one */
     String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")));
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
-    
+    assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
+
     reader.close();
     dir.close();
   }
