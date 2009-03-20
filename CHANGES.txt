@@ -229,6 +229,9 @@ Build
  2. LUCENE-1446: Add compatibility tag to common-build.xml and run 
     backwards-compatibility tests in the nightly build. (Michael Busch)
 
+ 3. LUCENE-1529: Properly test "drop-in" replacement of jar with 
+    backwards-compatibility tests. (Mike McCandless, Michael Busch)
+
 Test Cases
 
 ======================= Release 2.4.0 2008-10-06 =======================

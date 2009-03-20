@@ -36,6 +36,10 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
+  <path id="tag.classpath">
+    <pathelement location="${build.dir}/${tag}/classes/java"/>
+  </path>
+
   <path id="demo.classpath">
     <path refid="classpath"/>
     <pathelement location="${build.dir}/classes/demo"/>
@@ -95,12 +99,13 @@
     <path refid="demo.classpath"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/${tag}/classes/test"/>
+  	<pathelement location="${build.dir}/${tag}/${tag}.jar"/>
   </path>
 	
   <path id="tag.junit.classpath">
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/${tag}/classes/test"/>
-    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement location="${build.dir}/classes/demo"/>
     <pathelement path="${java.class.path}"/>
   </path>
@@ -111,28 +116,48 @@
 	  <mkdir dir="${tags.dir}/${tag}"/>
       <exec dir="${tags.dir}/${tag}" executable="${svn.exe}"
             failifexecutionfails="false">
-        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/test/"/>
+        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/"/>
       </exec>
 	</sequential>
   </target>
 	
-  <target name="test-tag" depends="download-tag, compile-core, compile-demo"
+  <target name="test-tag" depends="download-tag, compile-core, compile-demo, jar-core"
   	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
 	<sequential>
-      <available property="tag.available" file="${tags.dir}/${tag}/test" />
+      <available property="tag.available" file="${tags.dir}/${tag}/src/test" />
 
 	  <fail unless="tag.available">
 	  	Specified tag '${tag}' could not be found in directory '${tags.dir}/${tag}'.
 	  </fail>
-	  <mkdir dir="${build.dir}/${tag}/test"/>
-	  <compile-test-macro srcdir="${tags.dir}/${tag}/test" destdir="${build.dir}/${tag}/classes/test"
-		  				  test.classpath="tag.test.classpath"/>
-      <test-macro dataDir="${tags.dir}/${tag}/test" 
+	  <mkdir dir="${build.dir}/${tag}"/>	  
+		
+	  <!-- first compile tag classes -->
+	  <compile
+	    srcdir="${tags.dir}/${tag}/src/java"
+	    destdir="${build.dir}/${tag}/classes/java">
+	  <classpath refid="tag.classpath"/>
+	  </compile>
+	  <rmic classname="org.apache.lucene.search.RemoteSearchable"
+	    base="${build.dir}/${tag}/classes/java" stubversion="1.2">
+        <classpath refid="tag.classpath"/>
+      </rmic>
+			
+	  <!-- compile jar for tag -->
+      <jarify basedir="${build.dir}/${tag}/classes/java"
+			  destfile="${build.dir}/${tag}/${tag}.jar" />
+		  	
+	  <!-- compile tag tests against tag jar -->	
+	  <compile-test-macro srcdir="${tags.dir}/${tag}/src/test" destdir="${build.dir}/${tag}/classes/test"
+			  			  test.classpath="tag.test.classpath"/>
+		
+	  <!-- run tag tests against trunk jar -->
+      <test-macro dataDir="${tags.dir}/${tag}/src/test" 
       			  tempDir="${build.dir}/${tag}"
       			  junit.classpath="tag.junit.classpath"/>
   	</sequential>
   </target>	
 
+	
   <target name="clean-tags"
     description="Removes contents of the tags directory">
     <delete dir="${tags.dir}"/>
