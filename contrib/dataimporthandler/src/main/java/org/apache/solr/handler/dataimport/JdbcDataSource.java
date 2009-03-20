@@ -38,7 +38,7 @@ public class JdbcDataSource extends
         DataSource<Iterator<Map<String, Object>>> {
   private static final Logger LOG = LoggerFactory.getLogger(JdbcDataSource.class);
 
-  private Callable<Connection> factory;
+  protected Callable<Connection> factory;
 
   private long connLastUsed = 0;
 
@@ -91,7 +91,7 @@ public class JdbcDataSource extends
     }
   }
 
-  private void createConnectionFactory(final Context context,
+  protected Callable<Connection> createConnectionFactory(final Context context,
                                        final Properties initProps) {
 
     final VariableResolver resolver = context.getVariableResolver();
@@ -119,7 +119,7 @@ public class JdbcDataSource extends
       maxRows = Integer.parseInt(s);
     }
 
-    factory = new Callable<Connection>() {
+    return factory = new Callable<Connection>() {
       public Connection call() throws Exception {
         // Resolve variables again because the variables may have changed
         resolveVariables(resolver, initProps);

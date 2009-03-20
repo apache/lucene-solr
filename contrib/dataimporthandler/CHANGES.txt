@@ -109,6 +109,10 @@ New Features
 25.SOLR-1076: JdbcDataSource should resolve variables in all its configuration parameters.
               (shalin)
 
+26.SOLR-1055: Make DIH JdbcDataSource easily extensible by making the createConnectionFactory method protected and
+              return a Callable<Connection> object.
+              (Noble Paul, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
