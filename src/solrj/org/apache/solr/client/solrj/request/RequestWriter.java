@@ -26,6 +26,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.nio.charset.Charset;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -36,6 +37,7 @@ import java.util.List;
  * @since solr 1.4
  */
 public class RequestWriter {
+  public static final Charset UTF_8 = Charset.forName("UTF-8");
 
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
@@ -66,7 +68,7 @@ public class RequestWriter {
   public void write(SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      OutputStreamWriter writer = new OutputStreamWriter(os, "UTF-8");
+      OutputStreamWriter writer = new OutputStreamWriter(os, UTF_8);
       updateRequest.writeXML(writer);
       writer.flush();
     }
