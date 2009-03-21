@@ -62,6 +62,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.Author", "extractedAuthor",
             "ext.literal.id", "three",
             "ext.def.fl", "extractedContent",
+            "ext.map.language", "extractedLanguage",
             "ext.map.Last-Modified", "extractedDate"
     );
     assertQ(req("stream_name:version_control.xml"), "//*[@numFound='0']");
@@ -81,6 +82,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.Author", "extractedAuthor",
             "ext.def.fl", "extractedContent",
             "ext.literal.id", "one",
+            "ext.map.language", "extractedLanguage",
             "ext.literal.extractionLiteralMV", "one",
             "ext.literal.extractionLiteralMV", "two",
             "ext.map.Last-Modified", "extractedDate"
@@ -99,6 +101,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
               "ext.map.Author", "extractedAuthor",
               "ext.def.fl", "extractedContent",
               "ext.literal.id", "two",
+              "ext.map.language", "extractedLanguage",
               "ext.literal.extractionLiteral", "one",
               "ext.literal.extractionLiteral", "two",
               "ext.map.Last-Modified", "extractedDate"
@@ -113,6 +116,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             "ext.map.Author", "extractedAuthor",
             "ext.def.fl", "extractedContent",
             "ext.literal.id", "three",
+            "ext.map.language", "extractedLanguage",
             "ext.literal.extractionLiteral", "one",
             "ext.map.Last-Modified", "extractedDate"
     );
