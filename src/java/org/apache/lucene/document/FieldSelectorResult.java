@@ -58,7 +58,11 @@ public final class FieldSelectorResult implements Serializable {
      * Behaves much like {@link #LOAD} but does not uncompress any compressed data.  This is used for internal purposes.
      * {@link Document#getField(String)} and {@link Document#getFieldable(String)} should not return null.
      * <p/>
-     * {@link Document#add(Fieldable)} should be called by the Reader.
+     * {@link Document#add(Fieldable)} should be called by
+     * the Reader.
+     * @deprecated This is an internal option only, and is
+     *    no longer needed now that {@link CompressionTools}
+     *    is used for field compression.
      */
   public transient static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
 
