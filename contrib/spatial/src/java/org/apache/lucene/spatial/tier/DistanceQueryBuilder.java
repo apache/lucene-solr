@@ -37,7 +37,7 @@ public class DistanceQueryBuilder {
   private final double lng;
   private final double miles;
   private Filter cartesianFilter;
-  
+  private boolean needPrecision = true;
   /**
    * Create a distance query using
    * a boundary box wrapper around a more precise
@@ -54,6 +54,7 @@ public class DistanceQueryBuilder {
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
+    this.needPrecision = needPrecise;
     
     
     CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
@@ -81,7 +82,7 @@ public class DistanceQueryBuilder {
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
-    
+    this.needPrecision = needPrecise;
     
     CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
     cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
@@ -104,20 +105,37 @@ public class DistanceQueryBuilder {
   * @param miles
   */
   public Filter getFilter() {
-    return new SerialChainFilter(new Filter[] {cartesianFilter, distanceFilter},
-                    new int[] {SerialChainFilter.AND,
-                           SerialChainFilter.SERIALAND});
+	Filter [] f;
+	int [] chain;
+	
+	if (needPrecision){
+		f = new Filter[]{cartesianFilter, distanceFilter};
+		chain = new int[] {SerialChainFilter.AND, 
+				SerialChainFilter.SERIALAND};
+	}else{
+		f= new Filter[]{cartesianFilter};
+		chain = new int[] {SerialChainFilter.AND};
+	}
+    return new SerialChainFilter( f, chain );
   }
   
   public Filter getFilter(Query query) {
     QueryWrapperFilter qf = new QueryWrapperFilter(query);
     
+    Filter [] f;
+    int [] chain;
     
-    return new SerialChainFilter(new Filter[] {cartesianFilter, qf, distanceFilter},
-          new int[] {SerialChainFilter.AND, 
-              SerialChainFilter.AND,
-              SerialChainFilter.SERIALAND});
-  
+	if (needPrecision){
+		f = new Filter[]{cartesianFilter, qf, distanceFilter};
+		chain = new int[] {SerialChainFilter.AND, 
+	              SerialChainFilter.AND,
+	              SerialChainFilter.SERIALAND};
+	}else{
+		f= new Filter[]{cartesianFilter, qf};
+		chain = new int[] {SerialChainFilter.AND, 
+	              SerialChainFilter.AND};
+	}
+    return new SerialChainFilter(f,chain); 
   }
     
   public Query getQuery() {
