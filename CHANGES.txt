@@ -365,6 +365,8 @@ Other Changes
 
 21. Upgraded to Lucene 2.9-dev r752164 (shalin)
 
+22. SOLR-1068: Use fsync on replicated index and configuration files (yonik, shalin)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

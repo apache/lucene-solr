@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.ReplicationHandler.*;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -475,7 +476,7 @@ public class SnapPuller {
   /**
    * Copy all index files from the temp index dir to the actual index. The segments_N file is copied last.
    */
-  private boolean copyIndexFiles(File snapDir, File indexDir) {
+  private boolean copyIndexFiles(File snapDir, File indexDir) throws IOException {
     String segmentsFile = null;
     List<String> copiedfiles = new ArrayList<String>();
     for (Map<String, Object> f : filesDownloaded) {
@@ -490,11 +491,13 @@ public class SnapPuller {
         continue;
       }
       if (!copyAFile(snapDir, indexDir, fname, copiedfiles)) return false;
+      FileUtils.sync(new File(indexDir, fname));
       copiedfiles.add(fname);
     }
     //copy the segments file last
     if (segmentsFile != null) {
       if (!copyAFile(snapDir, indexDir, segmentsFile, copiedfiles)) return false;
+      FileUtils.sync(new File(indexDir, segmentsFile));
     }
     return true;
   }
@@ -516,7 +519,9 @@ public class SnapPuller {
           }
         }
         boolean status = file.renameTo(oldFile);
-        if (!status) {
+        if (status) {
+          FileUtils.sync(oldFile);
+        } else {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                   "Unable to rename: " + file + " to: " + oldFile);
         }

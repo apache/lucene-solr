@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 /**
  * @version $Id$
@@ -29,15 +30,55 @@ public class FileUtils {
    * Resolves a path relative a base directory.
    *
    * <p>
-   * This method does what "new File(base,path)" <b>Should</b> do, it wasn't 
+   * This method does what "new File(base,path)" <b>Should</b> do, it wasn't
    * completely lame: If path is absolute, then a File for that path is returned;
    * if it's not absoluve, then a File is returnd using "path" as a child 
-   * of "base") 
+   * of "base")
    * </p>
    */
   public static File resolvePath(File base, String path) throws IOException {
     File r = new File(path);
     return r.isAbsolute() ? r : new File(base, path);
+  }
+
+  /**
+   * Copied from Lucene's {@link org.apache.lucene.store.FSDirectory#sync(String)}
+   *
+   * @see org.apache.lucene.store.FSDirectory#sync(String)
+   *
+   * @param fullFile the File to be synced to disk
+   * @throws IOException if the file could not be synced
+   */
+  public static void sync(File fullFile) throws IOException  {
+    boolean success = false;
+    int retryCount = 0;
+    IOException exc = null;
+    while(!success && retryCount < 5) {
+      retryCount++;
+      RandomAccessFile file = null;
+      try {
+        try {
+          file = new RandomAccessFile(fullFile, "rw");
+          file.getFD().sync();
+          success = true;
+        } finally {
+          if (file != null)
+            file.close();
+        }
+      } catch (IOException ioe) {
+        if (exc == null)
+          exc = ioe;
+        try {
+          // Pause 5 msec
+          Thread.sleep(5);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+    if (!success)
+      // Throw original exception
+      throw exc;
   }
 
 }
