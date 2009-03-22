@@ -676,10 +676,7 @@ class SegmentReader extends DirectoryIndexReader {
       clone.freqStream = freqStream;
       clone.proxStream = proxStream;
       clone.termVectorsReaderOrig = termVectorsReaderOrig;
-  
-      if (fieldsReaderOrig != null) {
-        clone.fieldsReaderOrig = (FieldsReader) fieldsReaderOrig.clone();
-      }      
+      clone.fieldsReaderOrig = fieldsReaderOrig;
       
       if (doClone) {
         if (deletedDocs != null) {

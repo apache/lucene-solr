@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -439,5 +441,20 @@ public class TestIndexReaderClone extends LuceneTestCase {
     r1.decRef();
     r1.close();
     dir1.close();
+  }
+
+  public void testCloseStoredFields() throws Exception {
+    final Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    w.setUseCompoundFile(false);
+    Document doc = new Document();
+    doc.add(new Field("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    w.close();
+    IndexReader r1 = IndexReader.open(dir);
+    IndexReader r2 = (IndexReader) r1.clone(false);
+    r1.close();
+    r2.close();
+    dir.close();
   }
 }
