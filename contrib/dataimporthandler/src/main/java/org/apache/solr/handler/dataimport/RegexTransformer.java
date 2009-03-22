@@ -124,7 +124,8 @@ public class RegexTransformer extends Transformer {
       return readBySplit(splitBy, value);
     } else if (replaceWith != null) {
       Pattern p = getPattern(reStr);
-      return p.matcher(value).replaceAll(replaceWith);
+      Matcher m = p.matcher(value);
+      return m.find()? m.replaceAll(replaceWith): null;
     } else {
       return readfromRegExp(reStr, value, col, groupNames);
     }
