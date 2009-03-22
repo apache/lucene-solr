@@ -113,6 +113,10 @@ New Features
               return a Callable<Connection> object.
               (Noble Paul, shalin)
 
+27.SOLR-1058: JdbcDataSource can lookup javax.sql.DataSource using JNDI. Use a jndiName attribute to specify the
+              location of the data source.
+              (Jason Shepherd, Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

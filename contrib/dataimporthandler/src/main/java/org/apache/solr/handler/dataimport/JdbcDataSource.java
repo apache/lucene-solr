@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.naming.InitialContext;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -57,7 +58,7 @@ public class JdbcDataSource extends
     if (o != null)
       convertType = Boolean.parseBoolean(o.toString());
 
-    createConnectionFactory(context, initProps);
+    factory = createConnectionFactory(context, initProps);
 
     String bsz = initProps.getProperty("batchSize");
     if (bsz != null) {
@@ -93,6 +94,7 @@ public class JdbcDataSource extends
 
   protected Callable<Connection> createConnectionFactory(final Context context,
                                        final Properties initProps) {
+    final String jndiName = initProps.getProperty(JNDI_NAME);
 
     final VariableResolver resolver = context.getVariableResolver();
     resolveVariables(resolver, initProps);
@@ -100,9 +102,9 @@ public class JdbcDataSource extends
     final String url = initProps.getProperty(URL);
     final String driver = initProps.getProperty(DRIVER);
 
-    if (url == null)
+    if (url == null && jndiName == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "JDBC URL cannot be null");
+              "JDBC URL or JNDI name has to be specified");
 
     if (driver != null) {
       try {
@@ -111,7 +113,9 @@ public class JdbcDataSource extends
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not load driver: " + driver, e);
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
+      if(jndiName != null){
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
+      }
     }
 
     String s = initProps.getProperty("maxRows");
@@ -127,9 +131,27 @@ public class JdbcDataSource extends
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);
         long start = System.currentTimeMillis();
-        Connection c;
+        Connection c = null;
         try {
-          c = DriverManager.getConnection(url, initProps);
+          if(url != null){
+            c = DriverManager.getConnection(url, initProps);
+          } else if(jndiName != null){
+            InitialContext ctx =  new InitialContext();
+            Object jndival =  ctx.lookup(jndiName);
+            if (jndival instanceof javax.sql.DataSource) {
+              javax.sql.DataSource dataSource = (javax.sql.DataSource) jndival;
+              String user = (String) initProps.get("user");
+              String pass = (String) initProps.get("password");
+              if(user != null){
+                c = dataSource.getConnection();
+              } else {
+                c = dataSource.getConnection(user, pass);
+              }
+            } else {
+              throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+                      "the jndi name : '"+jndiName +"' is not a valid javax.sql.DataSource");
+            }
+          }
           if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
             c.setReadOnly(true);
             // Add other sane defaults
@@ -369,6 +391,8 @@ public class JdbcDataSource extends
   private static final int FETCH_SIZE = 500;
 
   public static final String URL = "url";
+
+  public static final String JNDI_NAME = "jndiName";
 
   public static final String DRIVER = "driver";
 
