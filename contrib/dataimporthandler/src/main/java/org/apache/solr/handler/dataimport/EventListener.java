@@ -24,7 +24,7 @@ package org.apache.solr.handler.dataimport;
  * @version $Id$
  * @since solr 1.4
  */
-public abstract class EventListener {
+public interface EventListener {
 
   /**
    * Event callback

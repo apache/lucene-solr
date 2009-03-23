@@ -219,6 +219,10 @@ Other
               parameters in a standard way.
               (Noble Paul, shalin)
 
+4. SOLR-1081: Change EventListener to be an interface so that components such as an EntityProcessor or a Transformer
+              can act as an event listener.
+              (Noble Paul, shalin)
+
 ================== Release 1.3.0 20080915 ==================
 
 Status

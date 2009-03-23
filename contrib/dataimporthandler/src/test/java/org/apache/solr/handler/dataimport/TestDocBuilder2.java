@@ -232,7 +232,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   }
 
-  public static class StartEventListener extends EventListener {
+  public static class StartEventListener implements EventListener {
     public static boolean executed = false;
 
     public void onEvent(Context ctx) {
@@ -240,7 +240,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     }
   }
 
-  public static class EndEventListener extends EventListener {
+  public static class EndEventListener implements EventListener {
     public static boolean executed = false;
 
     public void onEvent(Context ctx) {
