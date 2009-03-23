@@ -35,6 +35,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     FieldQParserPlugin.NAME, FieldQParserPlugin.class,
     RawQParserPlugin.NAME, RawQParserPlugin.class,
     NestedQParserPlugin.NAME, NestedQParserPlugin.class,
+    FunctionRangeQParserPlugin.NAME, FunctionRangeQParserPlugin.class,
   };
 
   /** return a {@link QParser} */

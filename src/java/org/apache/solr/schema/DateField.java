@@ -22,8 +22,9 @@ import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.OrdFieldSource;
+import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.function.*;
+import org.apache.solr.search.QParser;
 import org.apache.solr.util.DateMathParser;
   
 import java.util.Map;
@@ -330,5 +331,70 @@ public class DateField extends FieldType {
       return (DateFormat) proto.clone();
     }
   }
-  
+
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return new DateFieldSource(field.getName(), field.getType());
+  }
+}
+
+
+
+class DateFieldSource extends FieldCacheSource {
+  // NOTE: this is bad for serialization... but we currently need the fieldType for toInternal()
+  FieldType ft;
+
+  public DateFieldSource(String name, FieldType ft) {
+    super(name);
+    this.ft = ft;
+  }
+
+  public String description() {
+    return "date(" + field + ')';
+  }
+
+  public DocValues getValues(IndexReader reader) throws IOException {
+    return new StringIndexDocValues(this, reader, field) {
+      protected String toTerm(String readableValue) {
+        // needed for frange queries to work properly
+        return ft.toInternal(readableValue);
+      }
+
+      public float floatVal(int doc) {
+        return (float)intVal(doc);
+      }
+
+      public int intVal(int doc) {
+        int ord=order[doc];
+        return ord;
+      }
+
+      public long longVal(int doc) {
+        return (long)intVal(doc);
+      }
+
+      public double doubleVal(int doc) {
+        return (double)intVal(doc);
+      }
+
+      public String strVal(int doc) {
+        int ord=order[doc];
+        return ft.indexedToReadable(lookup[ord]);
+      }
+
+      public String toString(int doc) {
+        return description() + '=' + intVal(doc);
+      }
+    };
+  }
+
+  public boolean equals(Object o) {
+    return o instanceof DateFieldSource
+            && super.equals(o);
+  }
+
+  private static int hcode = DateFieldSource.class.hashCode();
+  public int hashCode() {
+    return hcode + super.hashCode();
+  };
 }

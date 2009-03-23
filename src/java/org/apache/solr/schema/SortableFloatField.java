@@ -22,6 +22,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.NumberUtils;
@@ -93,12 +94,13 @@ class SortableFloatFieldSource extends FieldCacheSource {
   }
 
   public DocValues getValues(IndexReader reader) throws IOException {
-    final FieldCache.StringIndex index = cache.getStringIndex(reader, field);
-    final int[] order = index.order;
-    final String[] lookup = index.lookup;
     final float def = defVal;
 
-    return new DocValues() {
+    return new StringIndexDocValues(this, reader, field) {
+      protected String toTerm(String readableValue) {
+        return NumberUtils.float2sortableStr(readableValue);
+      }
+
       public float floatVal(int doc) {
         int ord=order[doc];
         return ord==0 ? def  : NumberUtils.SortableStr2float(lookup[ord]);

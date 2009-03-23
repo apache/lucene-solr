@@ -21,6 +21,8 @@ package org.apache.solr.util;
 
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.*;
 import org.apache.solr.util.TestHarness;
@@ -30,6 +32,8 @@ import junit.framework.TestCase;
 import javax.xml.xpath.XPathExpressionException;
 
 import java.io.*;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * An Abstract base class that makes writing Solr JUnit tests "easier"
@@ -222,6 +226,21 @@ public abstract class AbstractSolrTestCase extends TestCase {
     Doc d = doc(fieldsAndValues);
     return add(d);
   }
+
+  /**
+   * Generates a simple &lt;add&gt;&lt;doc&gt;... XML String with no options
+   */
+  public String adoc(SolrInputDocument sdoc) {
+    List<String> fields = new ArrayList<String>();
+    for (SolrInputField sf : sdoc) {
+      for (Object o : sf.getValues()) {
+        fields.add(sf.getName());
+        fields.add(o.toString());
+      }
+    }
+    return adoc(fields.toArray(new String[fields.size()]));
+  }
+
     
   /**
    * Generates an &lt;add&gt;&lt;doc&gt;... XML String with options

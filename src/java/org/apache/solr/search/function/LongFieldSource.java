@@ -75,6 +75,43 @@ public class LongFieldSource extends FieldCacheSource {
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }
+
+
+      @Override
+      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+        long lower,upper;
+
+        // instead of using separate comparison functions, adjust the endpoints.
+
+        if (lowerVal==null) {
+          lower = Long.MIN_VALUE;
+        } else {
+          lower = Long.parseLong(lowerVal);
+          if (!includeLower && lower < Long.MAX_VALUE) lower++;
+        }
+
+         if (upperVal==null) {
+          upper = Long.MAX_VALUE;
+        } else {
+          upper = Long.parseLong(upperVal);
+          if (!includeUpper && upper > Long.MIN_VALUE) upper--;
+        }
+
+        final long ll = lower;
+        final long uu = upper;
+
+        return new ValueSourceScorer(reader, this) {
+          @Override
+          public boolean matchesValue(int doc) {
+            long val = arr[doc];
+            // only check for deleted if it's the default value
+            // if (val==0 && reader.isDeleted(doc)) return false;
+            return val >= ll && val <= uu;
+          }
+        };
+      }
+
+
     };
   }
 
@@ -87,11 +124,9 @@ public class LongFieldSource extends FieldCacheSource {
   }
 
   public int hashCode() {
-    int h = parser == null ? Float.class.hashCode() : parser.getClass().hashCode();
+    int h = parser == null ? Long.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
   }
-
-  ;
 
 }

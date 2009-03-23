@@ -17,7 +17,11 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.solr.util.NumberUtils;
+
+import java.io.IOException;
 
 /**
  * Represents field values as different types.
@@ -33,6 +37,7 @@ import org.apache.lucene.search.Explanation;
 // - For caching, Query objects are often used as keys... you don't
 //   want the Query carrying around big objects
 public abstract class DocValues {
+
   public byte byteVal(int doc) { throw new UnsupportedOperationException(); }
   public short shortVal(int doc) { throw new UnsupportedOperationException(); }
 
@@ -42,7 +47,76 @@ public abstract class DocValues {
   public double doubleVal(int doc) { throw new UnsupportedOperationException(); }
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
   public abstract String toString(int doc);
+
+
   public Explanation explain(int doc) {
     return new Explanation(floatVal(doc), toString(doc));
   }
+
+  public ValueSourceScorer getScorer(IndexReader reader) {
+    return new ValueSourceScorer(reader, this);
+  }
+
+  // A RangeValueSource can't easily be a ValueSource that takes another ValueSource
+  // because it needs different behavior depending on the type of fields.  There is also
+  // a setup cost - parsing and normalizing params, and doing a binary search on the StringIndex.
+  
+  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+    float lower;
+    float upper;
+
+    if (lowerVal == null) {
+      lower = Float.NEGATIVE_INFINITY;
+    } else {
+      lower = Float.parseFloat(lowerVal);
+    }
+    if (upperVal == null) {
+      upper = Float.POSITIVE_INFINITY;
+    } else {
+      upper = Float.parseFloat(upperVal);
+    }
+
+    final float l = lower;
+    final float u = upper;
+
+    if (includeLower && includeUpper) {
+      return new ValueSourceScorer(reader, this) {
+        @Override
+        public boolean matchesValue(int doc) {
+          float docVal = floatVal(doc);
+          return docVal >= l && docVal <= u;
+        }
+      };
+    }
+    else if (includeLower && !includeUpper) {
+       return new ValueSourceScorer(reader, this) {
+        @Override
+        public boolean matchesValue(int doc) {
+          float docVal = floatVal(doc);
+          return docVal >= l && docVal < u;
+        }
+      };
+    }
+    else if (!includeLower && includeUpper) {
+       return new ValueSourceScorer(reader, this) {
+        @Override
+        public boolean matchesValue(int doc) {
+          float docVal = floatVal(doc);
+          return docVal > l && docVal <= u;
+        }
+      };
+    }
+    else {
+       return new ValueSourceScorer(reader, this) {
+        @Override
+        public boolean matchesValue(int doc) {
+          float docVal = floatVal(doc);
+          return docVal > l && docVal < u;
+        }
+      };
+    }
+  }
 }
+
+
+

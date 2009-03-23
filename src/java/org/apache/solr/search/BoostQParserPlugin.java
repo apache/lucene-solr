@@ -65,7 +65,7 @@ public class BoostQParserPlugin extends QParserPlugin {
       public String[] getDefaultHighlightFields() {
         return baseParser.getDefaultHighlightFields();
       }
-
+                                           
       public Query getHighlightQuery() throws ParseException {
         return baseParser.getHighlightQuery();
       }

@@ -18,6 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.*;
 import org.apache.solr.search.function.DocValues;
 
 import java.io.IOException;
@@ -46,3 +47,62 @@ public abstract class ValueSource implements Serializable {
   }
 
 }
+
+
+class ValueSourceScorer extends Scorer {
+  protected IndexReader reader;
+  private int doc = -1;
+  protected final int maxDoc;
+  protected final DocValues values;
+  protected boolean checkDeletes;
+
+  protected ValueSourceScorer(IndexReader reader, DocValues values) {
+    super(null);
+    this.reader = reader;
+    this.maxDoc = reader.maxDoc();
+    this.values = values;
+    setCheckDeletes(true);
+  }
+
+  public IndexReader getReader() { return reader; }
+
+  public void setCheckDeletes(boolean checkDeletes) {
+    this.checkDeletes = checkDeletes && reader.hasDeletions();
+  }
+
+  public boolean matches(int doc) {
+    return (!checkDeletes || !reader.isDeleted(maxDoc)) && matchesValue(doc);
+  }
+
+  public boolean matchesValue(int doc) {
+    return true;
+  }
+
+  public int doc() {
+    return doc;
+  }
+
+  public boolean next() {
+    for(;;) {
+      doc++;
+      if (doc >= maxDoc) return false;
+      if (matches(doc)) return true;
+    }
+  }
+
+  public boolean skipTo(int target) {
+    doc = target-1;
+    return next();
+  }
+
+
+  public float score() throws IOException {
+    return values.floatVal(doc);
+  }
+
+  public Explanation explain(int doc) throws IOException {
+    return values.explain(doc);
+  }
+}
+
+

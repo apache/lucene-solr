@@ -74,7 +74,68 @@ public class DoubleFieldSource extends FieldCacheSource {
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }
-    };
+
+      @Override
+      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+        double lower,upper;
+
+        if (lowerVal==null) {
+          lower = Double.NEGATIVE_INFINITY;
+        } else {
+          lower = Double.parseDouble(lowerVal);
+        }
+
+         if (upperVal==null) {
+          upper = Double.POSITIVE_INFINITY;
+        } else {
+          upper = Double.parseDouble(upperVal);
+        }
+
+        final double l = lower;
+        final double u = upper;
+
+
+        if (includeLower && includeUpper) {
+          return new ValueSourceScorer(reader, this) {
+            @Override
+            public boolean matchesValue(int doc) {
+              double docVal = doubleVal(doc);
+              return docVal >= l && docVal <= u;
+            }
+          };
+        }
+        else if (includeLower && !includeUpper) {
+          return new ValueSourceScorer(reader, this) {
+            @Override
+            public boolean matchesValue(int doc) {
+              double docVal = doubleVal(doc);
+              return docVal >= l && docVal < u;
+            }
+          };
+        }
+        else if (!includeLower && includeUpper) {
+          return new ValueSourceScorer(reader, this) {
+            @Override
+            public boolean matchesValue(int doc) {
+              double docVal = doubleVal(doc);
+              return docVal > l && docVal <= u;
+            }
+          };
+        }
+        else {
+          return new ValueSourceScorer(reader, this) {
+            @Override
+            public boolean matchesValue(int doc) {
+              double docVal = doubleVal(doc);
+              return docVal > l && docVal < u;
+            }
+          };
+        }
+      }
+
+
+      };
+
   }
 
   public boolean equals(Object o) {
@@ -86,11 +147,9 @@ public class DoubleFieldSource extends FieldCacheSource {
   }
 
   public int hashCode() {
-    int h = parser == null ? Float.class.hashCode() : parser.getClass().hashCode();
+    int h = parser == null ? Double.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
   }
-
-  ;
 
 }

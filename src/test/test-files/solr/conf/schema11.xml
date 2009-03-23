@@ -237,6 +237,16 @@
     <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
 
 
+    <fieldType name="tint" class="solr.TrieField" type="integer" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tfloat" class="solr.TrieField" type="float" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tlong" class="solr.TrieField" type="long" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tdouble" class="solr.TrieField" type="double" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+
+    <fieldType name="tdouble4" class="solr.TrieField" type="double" precisionStep="4" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+
+    <fieldType name="tdate" class="solr.TrieField" type="date" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+
+
  </types>
 
 
@@ -281,6 +291,12 @@
    <dynamicField name="*_pl"  type="long"   indexed="true"  stored="true"/>
    <dynamicField name="*_pf"  type="float"  indexed="true"  stored="true"/>
    <dynamicField name="*_pd"  type="double" indexed="true"  stored="true"/>
+
+   <dynamicField name="*_ti"  type="tint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_tl"  type="tlong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tf"  type="tfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_td"  type="tdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_tdt" type="tdate"   indexed="true"  stored="true"/>
 
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>

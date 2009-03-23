@@ -189,6 +189,8 @@ New Features
 32. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
     support (Noble Paul, Mark Miller, hossman via shalin)
 
+33. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
+
 
 Optimizations
 ----------------------
