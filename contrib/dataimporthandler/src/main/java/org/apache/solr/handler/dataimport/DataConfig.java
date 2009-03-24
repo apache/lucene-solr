@@ -111,6 +111,10 @@ public class DataConfig {
 
     public Entity(Element element) {
       name = getStringAttribute(element, NAME, null);
+      if (RESERVED_WORDS.contains(name)) {
+        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Entity name : '" + name
+                + "' is a reserved keyword. Reserved words are: " + RESERVED_WORDS);
+      }
       pk = getStringAttribute(element, "pk", null);
       docRoot = getStringAttribute(element, ROOT_ENTITY, null);
       proc = getStringAttribute(element, PROCESSOR, null);
@@ -334,5 +338,15 @@ public class DataConfig {
   public static final String CLASS = "class";
 
   public static final String DATA_SRC = "dataSource";
+
+  private static final Set<String> RESERVED_WORDS = new HashSet<String>();
+  static{
+    RESERVED_WORDS.add(IMPORTER_NS);
+    RESERVED_WORDS.add(IMPORTER_NS_SHORT);
+    RESERVED_WORDS.add("request");
+    RESERVED_WORDS.add("delta");
+    RESERVED_WORDS.add("functions");
+    RESERVED_WORDS.add("session");
+  }
 
 }

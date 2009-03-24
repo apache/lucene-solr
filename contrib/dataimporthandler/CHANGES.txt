@@ -229,6 +229,10 @@ Other
 5. SOLR-1027: Alias the 'dataimporter' namespace to a shorter name 'dih'.
               (Noble Paul via shalin)
 
+6. SOLR-1084: Better error reporting when entity name is a reserved word and data-config.xml root node
+              is not <dataConfig>.
+              (Noble Paul via shalin)
+
 ================== Release 1.3.0 20080915 ==================
 
 Status

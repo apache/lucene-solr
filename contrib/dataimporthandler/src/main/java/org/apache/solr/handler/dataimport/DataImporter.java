@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -153,9 +154,11 @@ public class DataImporter {
               configFile)));
 
       config = new DataConfig();
-      config.readFromXml((Element) document.getElementsByTagName("dataConfig")
-              .item(0));
-
+      NodeList elems = document.getElementsByTagName("dataConfig");
+      if(elems == null || elems.getLength() == 0) {
+        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "the root node '<dataConfig>' is missing");
+      }
+      config.readFromXml((Element) elems.item(0));
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       SolrConfig.severeErrors.add(e);
