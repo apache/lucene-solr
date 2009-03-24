@@ -80,6 +80,7 @@ public class TestEvaluatorBag {
     Evaluator urlEvaluator = EvaluatorBag.getUrlEvaluator();
     runTests(urlTests, urlEvaluator);
   }
+
   @Test
   public void parseParams() {
     Map m = new HashMap();
@@ -91,19 +92,32 @@ public class TestEvaluatorBag {
     Assert.assertEquals("B",((EvaluatorBag.VariableWrapper)l.get(1)).resolve());
     Assert.assertEquals("hello!",l.get(2));
     Assert.assertEquals("ds,o,u'za",l.get(3));
+  }
 
+  @Test
+  public void testEscapeSolrQueryFunction() {
+    final VariableResolverImpl resolver = new VariableResolverImpl();
+    ContextImpl context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+    resolver.context = context;
+    Map m= new HashMap();
+    m.put("query","c:t");
+    resolver.addNamespace("dataimporter.functions", EvaluatorBag
+            .getFunctionsNamespace(Collections.EMPTY_LIST, null));
+    resolver.addNamespace("e",m);
+    String s = resolver
+            .replaceTokens("${dataimporter.functions.escapeQueryChars(e.query)}");
+    org.junit.Assert.assertEquals("c\\:t", s);
   }
 
   /**
    * Test method for {@link EvaluatorBag#getDateFormatEvaluator()}.
    */
   @Test
-  @Ignore
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
     resolver.context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
 
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd").format(new Date()),
+    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
             dateFormatEval.evaluate("'NOW','yyyy-MM-dd HH:mm'", resolver.context));
 
     Map<String, Object> map = new HashMap<String, Object>();

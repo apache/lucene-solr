@@ -23,6 +23,7 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,8 @@ public class EvaluatorBag {
 
   public static final String URL_ENCODE_EVALUATOR = "encodeUrl";
 
+  public static final String ESCAPE_SOLR_QUERY_CHARS = "escapeQueryChars";
+
   public static final String SQL_ESCAPE_EVALUATOR = "escapeSql";
   static final Pattern FORMAT_METHOD = Pattern
           .compile("^(\\w*?)\\((.*?)\\)$");
@@ -70,6 +73,27 @@ public class EvaluatorBag {
         }
         String s = l.get(0).toString();
         return s.replaceAll("'", "''").replaceAll("\"", "\"\"");
+      }
+    };
+  }
+
+  /**
+   * <p/>Returns an <code>Evaluator</code> instance meant to be used for escaping reserved characters in Solr
+   * queries</p>
+   *
+   * @return an <code>Evaluator</code> instance capable of escaping reserved characters in solr queries.
+   *
+   * @see org.apache.solr.client.solrj.util.ClientUtils#escapeQueryChars(String)
+   */
+  public static Evaluator getSolrQueryEscapingEvaluator() {
+    return new Evaluator() {
+      public String evaluate(String expression, Context context) {
+        List l = parseParams(expression, context.getVariableResolver());
+        if (l.size() != 1) {
+          throw new DataImportHandlerException(SEVERE, "'escapeQueryChars' must have at least one parameter ");
+        }
+        String s = l.get(0).toString();
+        return ClientUtils.escapeQueryChars(s);
       }
     };
   }
@@ -165,6 +189,7 @@ public class EvaluatorBag {
     evaluators.put(DATE_FORMAT_EVALUATOR, getDateFormatEvaluator());
     evaluators.put(SQL_ESCAPE_EVALUATOR, getSqlEscapingEvaluator());
     evaluators.put(URL_ENCODE_EVALUATOR, getUrlEvaluator());
+    evaluators.put(ESCAPE_SOLR_QUERY_CHARS, getSolrQueryEscapingEvaluator());
     SolrCore core = docBuilder == null ? null : docBuilder.dataImporter.getCore();
     for (Map<String, String> map : fn) {
       try {
