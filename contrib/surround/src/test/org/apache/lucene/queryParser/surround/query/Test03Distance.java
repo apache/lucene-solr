@@ -59,26 +59,15 @@ public class Test03Distance extends TestCase {
 
   SingleFieldTestDb db1 = new SingleFieldTestDb(docs1, fieldName);
 
-  String[] docs2 = {
-    "w1 w2 w3 w4 w5",
-    "w1 w3 w2 w3",
-    ""
-  };
-
-  SingleFieldTestDb db2 = new SingleFieldTestDb(docs2, fieldName);
-
-  public void distanceTest1(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db1, fieldName, this,
+  private void distanceTst(String query, int[] expdnrs, SingleFieldTestDb db) throws Exception {
+    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db, fieldName, this,
                                                 new BasicQueryFactory(maxBasicQueries));
     bqt.setVerbose(verbose);
     bqt.doTest();
   }
 
-  public void distanceTest2(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db2, fieldName, this,
-                                                new BasicQueryFactory(maxBasicQueries));
-    bqt.setVerbose(verbose);
-    bqt.doTest();
+  public void distanceTest1(String query, int[] expdnrs) throws Exception {
+    distanceTst(query, expdnrs, db1);
   }
   
   public void test0W01() throws Exception {
@@ -182,6 +171,18 @@ public class Test03Distance extends TestCase {
   public void test1Ntrunc09() throws Exception {
     int[] expdnrs = {3}; distanceTest1( "(orda2 OR orda3) 2N (word2 OR worda3)", expdnrs);
   }
+
+  String[] docs2 = {
+    "w1 w2 w3 w4 w5",
+    "w1 w3 w2 w3",
+    ""
+  };
+
+  SingleFieldTestDb db2 = new SingleFieldTestDb(docs2, fieldName);
+  
+  public void distanceTest2(String query, int[] expdnrs) throws Exception {
+    distanceTst(query, expdnrs, db2);
+  }
   
   public void test2Wprefix01() throws Exception {
     int[] expdnrs = {0}; distanceTest2( "W (w1, w2, w3)", expdnrs);
@@ -216,5 +217,26 @@ public class Test03Distance extends TestCase {
   }
   public void test2Nnested02() throws Exception {
     int[] expdnrs = {0,1}; distanceTest2( "w1 2N w2 2N w3", expdnrs);
+  }
+  
+  String[] docs3 = {
+    "low pressure temperature inversion and rain",
+    "when the temperature has a negative height above a depression no precipitation gradient is expected",
+    "when the temperature has a negative height gradient above a depression no precipitation is expected",
+    ""
+  };
+
+  SingleFieldTestDb db3 = new SingleFieldTestDb(docs3, fieldName);
+
+  public void distanceTest3(String query, int[] expdnrs) throws Exception {
+    distanceTst(query, expdnrs, db3);
+  }
+
+  public void test3Example01() throws Exception {
+    int[] expdnrs = {0,2}; // query does not match doc 1 because "gradient" is in wrong place there.
+    distanceTest3("50n((low w pressure*) or depression*,"
+                   + "5n(temperat*, (invers* or (negativ* 3n gradient*))),"
+                   + "rain* or precipitat*)",
+                   expdnrs);
   }
 }

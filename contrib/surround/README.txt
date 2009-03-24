@@ -39,7 +39,7 @@ and(aa,bb,cc)          aa and bb and cc
 99n(aa,bb,cc)          unordered span query with slop 98
 
 20n(aa*,bb*)
-3w(a?a or bb?, cc+)
+3w(a?a or bb?, cc*)
 
 title: text: aa
 title : text : aa or bb
@@ -64,12 +64,11 @@ not compared to Lucene's MultipleFieldQuery.
 * suffix truncation is implemented very similar to Lucene's PrefixQuery.
 
 Wildcards (? and internal *) are implemented with regular expressions
-allow further variations. A reimplementation using
+to allow further variations. A reimplementation using
 WildCardTermEnum (correct name?) should be no problem.
 
 Warnings about missing terms are sent to System.out, this might
-be replaced by another stream.
+be replaced by another stream, and tested for in the tests.
 
-BooleanQueryTest.TestCollector uses a results checking method that should
+BooleanQueryTst.TestCollector uses a results checking method that should
 be replaced by the checking method from Lucene's TestBasics.java.
-
