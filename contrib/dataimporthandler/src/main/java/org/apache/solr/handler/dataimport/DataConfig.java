@@ -319,7 +319,13 @@ public class DataConfig {
 
   public static final String PROCESSOR = "processor";
 
+  /**
+   * @deprecated use IMPORTER_NS_SHORT instead
+   */
+  @Deprecated
   public static final String IMPORTER_NS = "dataimporter";
+
+  public static final String IMPORTER_NS_SHORT = "dih";
 
   public static final String ROOT_ENTITY = "rootEntity";
 

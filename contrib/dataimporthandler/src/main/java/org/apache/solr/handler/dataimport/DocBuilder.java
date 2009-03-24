@@ -92,6 +92,7 @@ public class DocBuilder {
         indexerNamespace.put(key, lastIndex);
       }
     }
+    resolver.addNamespace(DataConfig.IMPORTER_NS_SHORT, indexerNamespace);
     resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
     return resolver;
   }

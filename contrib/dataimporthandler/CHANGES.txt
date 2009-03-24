@@ -226,6 +226,9 @@ Other
               can act as an event listener.
               (Noble Paul, shalin)
 
+5. SOLR-1027: Alias the 'dataimporter' namespace to a shorter name 'dih'.
+              (Noble Paul via shalin)
+
 ================== Release 1.3.0 20080915 ==================
 
 Status
