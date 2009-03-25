@@ -65,6 +65,10 @@ API Changes
 
 11. LUCENE-1561: Renamed Field.omitTf to Field.omitTermFreqAndPositions
    (Otis Gospodnetic via Mike McCandless)
+  
+12. LUCENE-1500: Added new InvalidTokenOffsetsException to Highlighter methods
+    to denote issues when offsets in TokenStream tokens exceed the length of the
+    provided text.  (Mark Harwood)
 
 Bug fixes
 

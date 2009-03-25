@@ -136,9 +136,10 @@ public class HighlighterTest extends TestCase implements Formatter {
 
   /**
    * This method intended for use with <tt>testHighlightingWithDefaultField()</tt>
+ * @throws InvalidTokenOffsetsException 
    */
   private static String highlightField(Query query, String fieldName, String text)
-      throws IOException {
+      throws IOException, InvalidTokenOffsetsException {
     CachingTokenFilter tokenStream = new CachingTokenFilter(new StandardAnalyzer().tokenStream(
         fieldName, new StringReader(text)));
     // Assuming "<B>", "</B>" used to highlight
@@ -1291,7 +1292,7 @@ public class HighlighterTest extends TestCase implements Formatter {
   private Directory dir = new RAMDirectory();
   private Analyzer a = new WhitespaceAnalyzer();
   
-  public void testWeightedTermsWithDeletes() throws IOException, ParseException {
+  public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
     makeIndex();
     deleteDocument();
     searchIndex();
@@ -1321,7 +1322,7 @@ public class HighlighterTest extends TestCase implements Formatter {
     writer.close();
   }
   
-  private void searchIndex() throws IOException, ParseException {
+  private void searchIndex() throws IOException, ParseException, InvalidTokenOffsetsException {
     String q = "t_text1:random";
     QueryParser parser = new QueryParser( "t_text1", a );
     Query query = parser.parse( q );

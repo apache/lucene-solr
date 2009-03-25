@@ -74,9 +74,10 @@ public class Highlighter
 	 * @param fieldName Name of field used to influence analyzer's tokenization policy
 	 *
 	 * @return highlighted text fragment or null if no terms found
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String getBestFragment(Analyzer analyzer, String fieldName,String text)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragment(tokenStream, text);
@@ -96,9 +97,10 @@ public class Highlighter
 	 * @param text text to highlight terms in
 	 *
 	 * @return highlighted text fragment or null if no terms found
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String getBestFragment(TokenStream tokenStream, String text)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		String[] results = getBestFragments(tokenStream,text, 1);
 		if (results.length > 0)
@@ -120,12 +122,13 @@ public class Highlighter
 	 * @deprecated This method incorrectly hardcodes the choice of fieldname. Use the
 	 * method of the same name that takes a fieldname.
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
+	 * @throws InvalidTokenOffsetsException  thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String[] getBestFragments(
 		Analyzer analyzer,
 		String text,
 		int maxNumFragments)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
 		return getBestFragments(tokenStream, text, maxNumFragments);
@@ -142,13 +145,14 @@ public class Highlighter
 	 * @param maxNumFragments  the maximum number of fragments.
 	 *
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String[] getBestFragments(
 		Analyzer analyzer,
 		String fieldName,
 		String text,
 		int maxNumFragments)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragments(tokenStream, text, maxNumFragments);
@@ -165,12 +169,13 @@ public class Highlighter
 	 * @param maxNumFragments  the maximum number of fragments.
 	 *
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String[] getBestFragments(
 		TokenStream tokenStream,
 		String text,
 		int maxNumFragments)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		maxNumFragments = Math.max(1, maxNumFragments); //sanity check
 
@@ -198,13 +203,14 @@ public class Highlighter
 	 * @param maxNumFragments
 	 * @param mergeContiguousFragments
 	 * @throws IOException
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final TextFragment[] getBestTextFragments(
 		TokenStream tokenStream,
 		String text,
 		boolean mergeContiguousFragments,
 		int maxNumFragments)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		ArrayList docFrags = new ArrayList();
 		StringBuffer newText=new StringBuffer();
@@ -230,6 +236,14 @@ public class Highlighter
 			     (nextToken!= null)&&(nextToken.startOffset()< maxDocCharsToAnalyze);
 			     nextToken = tokenStream.next(reusableToken))
 			{
+				if(	(nextToken.endOffset()>text.length())
+					||
+					(nextToken.startOffset()>text.length())
+					)						
+				{
+					throw new InvalidTokenOffsetsException("Token "+nextToken.toString()
+							+" exceeds length of provided text sized "+text.length());
+				}
 				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(nextToken)))
 				{
 					//the current token is distinct from previous tokens -
@@ -452,13 +466,14 @@ public class Highlighter
 	 * @param separator  the separator used to intersperse the document fragments (typically "...")
 	 *
 	 * @return highlighted text
+	 * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
 	 */
 	public final String getBestFragments(
 		TokenStream tokenStream,	
 		String text,
 		int maxNumFragments,
 		String separator)
-		throws IOException
+		throws IOException, InvalidTokenOffsetsException
 	{
 		String sections[] =	getBestFragments(tokenStream,text, maxNumFragments);
 		StringBuffer result = new StringBuffer();
