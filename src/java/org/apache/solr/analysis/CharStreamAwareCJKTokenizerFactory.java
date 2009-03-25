@@ -19,8 +19,6 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.TokenStream;
-
 /**
  *
  * @version $Id$
@@ -30,10 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
 public class CharStreamAwareCJKTokenizerFactory extends BaseTokenizerFactory {
 
   public CharStreamAwareCJKTokenizer create(Reader input) {
-    return new CharStreamAwareCJKTokenizer(
-      input instanceof CharStream ?
-        (CharStream)input :
-        new CharReader(input)
-    );
+    return new CharStreamAwareCJKTokenizer( CharReader.get(input) );
   }
 }

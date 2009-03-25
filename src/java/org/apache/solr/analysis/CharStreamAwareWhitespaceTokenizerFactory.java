@@ -19,8 +19,6 @@ package org.apache.solr.analysis;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.TokenStream;
-
 /**
  *
  * @version $Id$
@@ -30,10 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
 public class CharStreamAwareWhitespaceTokenizerFactory extends BaseTokenizerFactory {
 
   public CharStreamAwareWhitespaceTokenizer create(Reader input) {
-    return new CharStreamAwareWhitespaceTokenizer(
-      input instanceof CharStream ?
-        (CharStream)input :
-        new CharReader(input)
-      );
+    return new CharStreamAwareWhitespaceTokenizer( CharReader.get(input) );
   }
 }

@@ -24,22 +24,22 @@ import junit.framework.TestCase;
 public class TestCharFilter extends TestCase {
 
   public void testCharFilter1() throws Exception {
-    CharStream cs = new CharFilter1( new CharReader( new StringReader("") ) );
+    CharStream cs = new CharFilter1( CharReader.get( new StringReader("") ) );
     assertEquals( "corrected offset is invalid", 1, cs.correctOffset( 0 ) );
   }
 
   public void testCharFilter2() throws Exception {
-    CharStream cs = new CharFilter2( new CharReader( new StringReader("") ) );
+    CharStream cs = new CharFilter2( CharReader.get( new StringReader("") ) );
     assertEquals( "corrected offset is invalid", 2, cs.correctOffset( 0 ) );
   }
 
   public void testCharFilter12() throws Exception {
-    CharStream cs = new CharFilter2( new CharFilter1( new CharReader( new StringReader("") ) ) );
+    CharStream cs = new CharFilter2( new CharFilter1( CharReader.get( new StringReader("") ) ) );
     assertEquals( "corrected offset is invalid", 3, cs.correctOffset( 0 ) );
   }
 
   public void testCharFilter11() throws Exception {
-    CharStream cs = new CharFilter1( new CharFilter1( new CharReader( new StringReader("") ) ) );
+    CharStream cs = new CharFilter1( new CharFilter1( CharReader.get( new StringReader("") ) ) );
     assertEquals( "corrected offset is invalid", 2, cs.correctOffset( 0 ) );
   }
 

@@ -43,7 +43,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void testNothingChange() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "x" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "x" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "x" );
@@ -51,7 +51,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test1to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "h" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "h" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "i" );
@@ -59,7 +59,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test1to2() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "j" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "j" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "jj,1,0,1" );
@@ -67,7 +67,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test1to3() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "k" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "k" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "kkk,1,0,1" );
@@ -75,7 +75,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test2to4() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "ll" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "ll" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "llll,1,0,2" );
@@ -83,7 +83,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test2to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "aa" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "aa" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "a,1,0,2" );
@@ -91,7 +91,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test3to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "bbb" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "bbb" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "b,1,0,3" );
@@ -99,7 +99,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test4to2() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "cccc" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "cccc" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "cc,1,0,4" );
@@ -107,7 +107,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   }
 
   public void test5to0() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "empty" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "empty" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     assertEquals( 0, real.size() );
@@ -132,7 +132,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   //   aa,20,22 =>    a,20,22
   //
   public void testTokenStream() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, new CharReader( new StringReader( "h i j k ll cccc bbb aa" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "h i j k ll cccc bbb aa" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "i,1,0,1 i,1,2,3 jj,1,4,5 kkk,1,6,7 llll,1,8,10 cc,1,11,15 b,1,16,19 a,1,20,22" );
@@ -151,7 +151,7 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
   //    h,8,9 => i,8,9
   public void testChained() throws Exception {
     CharStream cs = new MappingCharFilter( normMap,
-        new MappingCharFilter( normMap, new CharReader( new StringReader( "aaaa ll h" ) ) ) );
+        new MappingCharFilter( normMap, CharReader.get( new StringReader( "aaaa ll h" ) ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );
     List<Token> real = getTokens( ts );
     List<Token> expect = tokens( "a,1,0,4 llllllll,1,5,7 i,1,8,9" );

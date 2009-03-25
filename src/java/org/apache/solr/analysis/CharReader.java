@@ -30,8 +30,13 @@ import java.io.Reader;
 public final class CharReader extends CharStream {
 
   protected Reader input;
+  
+  public static CharStream get( Reader input ){
+    return input instanceof CharStream ?
+      (CharStream)input : new CharReader(input);
+  }
 
-  public CharReader( Reader in ){
+  private CharReader( Reader in ){
     input = in;
   }
 

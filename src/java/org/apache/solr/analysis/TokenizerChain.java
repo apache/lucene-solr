@@ -51,7 +51,7 @@ public class TokenizerChain extends SolrAnalyzer {
 
   public Reader charStream(Reader reader){
     if( charFilters != null && charFilters.length > 0 ){
-      CharStream cs = new CharReader( reader );
+      CharStream cs = CharReader.get( reader );
       for (int i=0; i<charFilters.length; i++) {
         cs = charFilters[i].create(cs);
       }
