@@ -30,6 +30,10 @@ import org.apache.lucene.analysis.TokenStream;
 public class CharStreamAwareCJKTokenizerFactory extends BaseTokenizerFactory {
 
   public CharStreamAwareCJKTokenizer create(Reader input) {
-    return new CharStreamAwareCJKTokenizer( (CharStream)input );
+    return new CharStreamAwareCJKTokenizer(
+      input instanceof CharStream ?
+        (CharStream)input :
+        new CharReader(input)
+    );
   }
 }
