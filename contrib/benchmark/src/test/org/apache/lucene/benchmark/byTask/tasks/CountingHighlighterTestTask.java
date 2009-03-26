@@ -21,6 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
@@ -46,11 +47,9 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     return document;
   }
 
-  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException {
+  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
     TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
     numHighlightedResults += frag != null ? frag.length : 0;
     return frag != null ? frag.length : 0;
   }
-
-
 }

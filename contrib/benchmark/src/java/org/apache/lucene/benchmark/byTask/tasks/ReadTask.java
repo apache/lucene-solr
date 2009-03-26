@@ -41,6 +41,7 @@ import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 
 
@@ -238,7 +239,7 @@ public abstract class ReadTask extends PerfTask {
     return false;
   }
 
-  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException {
+  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
     TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
     return frag != null ? frag.length : 0;
   }
