@@ -369,6 +369,8 @@ Other Changes
 
 22. SOLR-1068: Use fsync on replicated index and configuration files (yonik, shalin)
 
+23. SOLR-952: Cleanup duplicated code in deprecated HighlightingUtils (hossman)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
