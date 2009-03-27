@@ -32,6 +32,10 @@ Bug fixes
     characters to only apply to the correct subset (Daniel Cheng via
     Mike McCandless)
 
+ 7. LUCENE-1576: Fix BrazilianAnalyzer to downcase tokens after
+    StandardTokenizer so that stop words with mixed case are filtered
+    out.  (Rafael Cunha de Almeida, Douglas Campos via Mike McCandless)
+
 New features
 
  1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of

@@ -130,11 +130,10 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 */
 	public final TokenStream tokenStream(String fieldName, Reader reader) {
 		TokenStream result = new StandardTokenizer( reader );
+		result = new LowerCaseFilter( result );
 		result = new StandardFilter( result );
 		result = new StopFilter( result, stoptable );
 		result = new BrazilianStemFilter( result, excltable );
-		// Convert to lowercase after stemming!
-		result = new LowerCaseFilter( result );
 		return result;
 	}
 }
