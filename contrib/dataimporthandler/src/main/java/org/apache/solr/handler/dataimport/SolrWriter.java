@@ -202,7 +202,7 @@ public class SolrWriter {
 
       }
     }
-    return new String(baos.toByteArray());
+    return new String(baos.toByteArray(), "UTF-8");
   }
 
   static String getDocCount() {
