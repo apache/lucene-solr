@@ -46,7 +46,9 @@ public class TestCompoundWordTokenFilter extends TestCase {
       "http://dfn.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
       "http://surfnet.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
       "http://superb-west.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
-      "http://superb-east.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
+      "http://voxel.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
+      // too slow:
+      //"http://superb-east.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
 
   private byte[] patternsFileContent;
 
@@ -166,23 +168,25 @@ public class TestCompoundWordTokenFilter extends TestCase {
   }
 
   private void getHyphenationPatternFileContents() {
-    try {
-      List urls = new LinkedList(Arrays.asList(locations));
-      Collections.shuffle(urls);
-      URL url = new URL((String)urls.get(0));
-      InputStream in = url.openStream();
-      byte[] buffer = new byte[1024];
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      int count;
+    if (patternsFileContent == null) {
+      try {
+        List urls = new LinkedList(Arrays.asList(locations));
+        Collections.shuffle(urls);
+        URL url = new URL((String)urls.get(0));
+        InputStream in = url.openStream();
+        byte[] buffer = new byte[1024];
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int count;
 
-      while ((count = in.read(buffer)) != -1) {
-        out.write(buffer, 0, count);
+        while ((count = in.read(buffer)) != -1) {
+          out.write(buffer, 0, count);
+        }
+        in.close();
+        out.close();
+        patternsFileContent = out.toByteArray();
+      } catch (IOException e) {
+        // we swallow all exceptions - the user might have no internet connection
       }
-      in.close();
-      out.close();
-      patternsFileContent = out.toByteArray();
-    } catch (IOException e) {
-      // we swallow all exceptions - the user might have no internet connection
     }
   }
 
