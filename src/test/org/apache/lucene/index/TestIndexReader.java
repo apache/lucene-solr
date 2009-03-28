@@ -750,7 +750,7 @@ public class TestIndexReader extends LuceneTestCase
         _TestUtil.rmDir(dirFile);
     }
 
-    public void testLastModified() throws IOException {
+    public void testLastModified() throws Exception {
       assertFalse(IndexReader.indexExists("there_is_no_such_index"));
       final File fileDir = new File(System.getProperty("tempDir"), "testIndex");
       for(int i=0;i<2;i++) {
@@ -776,14 +776,7 @@ public class TestIndexReader extends LuceneTestCase
           reader.close();
           // modify index and check version has been
           // incremented:
-          while(true) {
-            try {
-              Thread.sleep(1000);
-              break;
-            } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-            }
-          }
+          Thread.sleep(1000);
 
           writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
           addDocumentWithFields(writer);

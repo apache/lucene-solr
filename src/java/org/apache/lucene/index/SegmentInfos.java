@@ -613,8 +613,11 @@ final class SegmentInfos extends Vector {
               }
               try {
                 Thread.sleep(defaultGenFileRetryPauseMsec);
-              } catch (InterruptedException e) {
-                // will retry
+              } catch (InterruptedException ie) {
+                // In 3.0 we will change this to throw
+                // InterruptedException instead
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ie);
               }
             }
           }

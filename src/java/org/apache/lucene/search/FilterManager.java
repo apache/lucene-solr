@@ -195,8 +195,9 @@ public class FilterManager {
         // take a nap
         try {
           Thread.sleep(cleanSleepTime);
-        } catch (InterruptedException e) {
-          // just keep going
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
         }
       }
     }

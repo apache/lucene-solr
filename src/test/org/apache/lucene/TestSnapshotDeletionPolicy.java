@@ -49,7 +49,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
 {
   public static final String INDEX_PATH = "test.snapshots";
 
-  public void testSnapshotDeletionPolicy() throws IOException {
+  public void testSnapshotDeletionPolicy() throws Exception {
     File dir = new File(System.getProperty("tempDir"), INDEX_PATH);
     try {
       Directory fsDir = FSDirectory.getDirectory(dir);
@@ -63,7 +63,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     runTest(dir2);
   }
 
-  public void testReuseAcrossWriters() throws IOException {
+  public void testReuseAcrossWriters() throws Exception {
     Directory dir = new MockRAMDirectory();
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
@@ -98,7 +98,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     dir.close();
   }
 
-  private void runTest(Directory dir) throws IOException {
+  private void runTest(Directory dir) throws Exception {
     // Run for ~7 seconds
     final long stopTime = System.currentTimeMillis() + 7000;
 
@@ -125,6 +125,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
               Thread.sleep(1);
             } catch (InterruptedException ie) {
               Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
             }
           }
         }
@@ -136,20 +137,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     // backups:
     while(System.currentTimeMillis() < stopTime) {
       backupIndex(dir, dp);
-      try {
-        Thread.sleep(20);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
+      Thread.sleep(20);
       if (!t.isAlive())
         break;
     }
 
-    try {
-      t.join();
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
+    t.join();
 
     // Add one more document to force writer to commit a
     // final segment, so deletion policy has a chance to
@@ -169,7 +162,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
    *  backup; instead, it reads every byte of every file
    *  just to test that the files indeed exist and are
    *  readable even while the index is changing. */
-  public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws IOException {
+  public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws Exception {
     // To backup an index we first take a snapshot:
     try {
       copyFiles(dir, (IndexCommit) dp.snapshot());
@@ -181,7 +174,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     }
   }
 
-  private void copyFiles(Directory dir, IndexCommit cp) throws IOException {
+  private void copyFiles(Directory dir, IndexCommit cp) throws Exception {
 
     // While we hold the snapshot, and nomatter how long
     // we take to do the backup, the IndexWriter will
@@ -202,7 +195,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
 
   byte[] buffer = new byte[4096];
 
-  private void readFile(Directory dir, String name) throws IOException {
+  private void readFile(Directory dir, String name) throws Exception {
     IndexInput input = dir.openInput(name);
     try {
       long size = dir.fileLength(name);
@@ -221,11 +214,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
       // make sure we are exercising the fact that the
       // IndexWriter should not delete this file even when I
       // take my time reading it.
-      try {
-        Thread.sleep(1);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
+      Thread.sleep(1);
     } finally {
       input.close();
     }

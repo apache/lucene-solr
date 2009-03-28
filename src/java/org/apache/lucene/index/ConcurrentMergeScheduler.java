@@ -129,10 +129,15 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       
       try {
         wait();
-      } catch (InterruptedException e) {
+      } catch (InterruptedException ie) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
     }
   }
+
   private synchronized int mergeThreadCount() {
     int count = 0;
     final int numThreads = mergeThreads.size();
@@ -185,29 +190,42 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // deterministic assignment of segment names
       writer.mergeInit(merge);
 
-      synchronized(this) {
-        while (mergeThreadCount() >= maxThreadCount) {
-          if (verbose())
-            message("    too many merge threads running; stalling...");
-          try {
-            wait();
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
+      boolean success = false;
+      try {
+        synchronized(this) {
+          final MergeThread merger;
+          while (mergeThreadCount() >= maxThreadCount) {
+            if (verbose())
+              message("    too many merge threads running; stalling...");
+            try {
+              wait();
+            } catch (InterruptedException ie) {
+              // In 3.0 we will change this to throw
+              // InterruptedException instead
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
+            }
           }
-        }
 
-        if (verbose())
-          message("  consider merge " + merge.segString(dir));
+          if (verbose())
+            message("  consider merge " + merge.segString(dir));
       
-        assert mergeThreadCount() < maxThreadCount;
+          assert mergeThreadCount() < maxThreadCount;
 
-        // OK to spawn a new merge thread to handle this
-        // merge:
-        final MergeThread merger = getMergeThread(writer, merge);
-        mergeThreads.add(merger);
-        if (verbose())
-          message("    launch new thread [" + merger.getName() + "]");
-        merger.start();
+          // OK to spawn a new merge thread to handle this
+          // merge:
+          merger = getMergeThread(writer, merge);
+          mergeThreads.add(merger);
+          if (verbose())
+            message("    launch new thread [" + merger.getName() + "]");
+
+          merger.start();
+          success = true;
+        }
+      } finally {
+        if (!success) {
+          writer.mergeFinish(merge);
+        }
       }
     }
   }

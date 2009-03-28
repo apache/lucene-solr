@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -132,13 +130,13 @@ public class TestIndexModifier extends LuceneTestCase {
     return doc;
   }
   
-  public void testIndexWithThreads() throws IOException {
+  public void testIndexWithThreads() throws Exception {
     testIndexInternal(0);
     testIndexInternal(10);
     testIndexInternal(50);
   }
   
-  private void testIndexInternal(int maxWait) throws IOException {
+  private void testIndexInternal(int maxWait) throws Exception {
     final boolean create = true;
     //Directory rd = new RAMDirectory();
     // work on disk to make sure potential lock problems are tested:
@@ -155,11 +153,7 @@ public class TestIndexModifier extends LuceneTestCase {
     IndexThread thread2 = new IndexThread(index, maxWait, 2);
     thread2.start();
     while(thread1.isAlive() || thread2.isAlive()) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+      Thread.sleep(100);
     }
     index.optimize();
     int added = thread1.added + thread2.added;
@@ -253,12 +247,13 @@ class IndexThread extends Thread {
           deleted++;
         }
         if (maxWait > 0) {
+          rand = random.nextInt(maxWait);
+          //System.out.println("waiting " + rand + "ms");
           try {
-            rand = random.nextInt(maxWait);
-            //System.out.println("waiting " + rand + "ms");
             Thread.sleep(rand);
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(ie);
           }
         }
       }

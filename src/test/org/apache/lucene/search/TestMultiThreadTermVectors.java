@@ -57,7 +57,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     
   }
   
-  public void test() {
+  public void test() throws Exception {
     
     IndexReader reader = null;
     
@@ -83,7 +83,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     }
   }
   
-  public void testTermPositionVectors(final IndexReader reader, int threadCount) {
+  public void testTermPositionVectors(final IndexReader reader, int threadCount) throws Exception {
     MultiThreadTermVectorsReader[] mtr = new MultiThreadTermVectorsReader[threadCount];
     for (int i = 0; i < threadCount; i++) {
       mtr[i] = new MultiThreadTermVectorsReader();
@@ -94,7 +94,6 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     /** run until all threads finished */ 
     int threadsAlive = mtr.length;
     while (threadsAlive > 0) {
-      try {
         //System.out.println("Threads alive");
         Thread.sleep(10);
         threadsAlive = mtr.length;
@@ -104,10 +103,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
           }
           
           threadsAlive--; 
-          
-      }
-        
-      } catch (InterruptedException ie) {} 
+        }
     }
     
     long totalTime = 0L;

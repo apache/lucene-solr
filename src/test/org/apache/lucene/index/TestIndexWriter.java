@@ -2010,7 +2010,7 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
-  public void testDocumentsWriterExceptionThreads() throws IOException {
+  public void testDocumentsWriterExceptionThreads() throws Exception {
     Analyzer analyzer = new Analyzer() {
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
@@ -2070,13 +2070,7 @@ public class TestIndexWriter extends LuceneTestCase
         }
 
         for(int t=0;t<NUM_THREAD;t++)
-          while (true)
-            try {
-              threads[t].join();
-              break;
-            } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-            }            
+          threads[t].join();
             
         writer.close();
       }
@@ -2128,7 +2122,7 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
-  public void testVariableSchema() throws IOException {
+  public void testVariableSchema() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
     int delID = 0;
     for(int i=0;i<20;i++) {
@@ -2249,14 +2243,7 @@ public class TestIndexWriter extends LuceneTestCase
         t1.start();
 
         writer.close(false);
-        while(true) {
-          try {
-            t1.join();
-            break;
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-          }
-        }
+        t1.join();
 
         // Make sure reader can read
         IndexReader reader = IndexReader.open(directory);
@@ -2309,6 +2296,7 @@ public class TestIndexWriter extends LuceneTestCase
               Thread.sleep(1);
             } catch (InterruptedException ie) {
               Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
             }
             if (fullCount++ >= 5)
               break;
@@ -2337,7 +2325,7 @@ public class TestIndexWriter extends LuceneTestCase
   // threads are trying to add documents.  Strictly
   // speaking, this isn't valid us of Lucene's APIs, but we
   // still want to be robust to this case:
-  public void testCloseWithThreads() throws IOException {
+  public void testCloseWithThreads() throws Exception {
     int NUM_THREADS = 3;
 
     for(int iter=0;iter<20;iter++) {
@@ -2362,11 +2350,7 @@ public class TestIndexWriter extends LuceneTestCase
 
       boolean done = false;
       while(!done) {
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
+        Thread.sleep(100);
         for(int i=0;i<NUM_THREADS;i++)
           // only stop when at least one thread has added a doc
           if (threads[i].addCount > 0) {
@@ -2379,16 +2363,9 @@ public class TestIndexWriter extends LuceneTestCase
 
       // Make sure threads that are adding docs are not hung:
       for(int i=0;i<NUM_THREADS;i++) {
-        while(true) {
-          try {
-            // Without fix for LUCENE-1130: one of the
-            // threads will hang
-            threads[i].join();
-            break;
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-          }
-        }
+        // Without fix for LUCENE-1130: one of the
+        // threads will hang
+        threads[i].join();
         if (threads[i].isAlive())
           fail("thread seems to be hung");
       }
@@ -2438,7 +2415,7 @@ public class TestIndexWriter extends LuceneTestCase
   // LUCENE-1130: make sure immediate disk full on creating
   // an IndexWriter (hit during DW.ThreadState.init()), with
   // multiple threads, is OK:
-  public void testImmediateDiskFullWithThreads() throws IOException {
+  public void testImmediateDiskFullWithThreads() throws Exception {
 
     int NUM_THREADS = 3;
 
@@ -2462,20 +2439,10 @@ public class TestIndexWriter extends LuceneTestCase
         threads[i].start();
 
       for(int i=0;i<NUM_THREADS;i++) {
-        while(true) {
-          try {
-            // Without fix for LUCENE-1130: one of the
-            // threads will hang
-            threads[i].join();
-            break;
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-          }
-        }
-        if (threads[i].isAlive())
-          fail("thread seems to be hung");
-        else
-          assertTrue("hit unexpected Throwable", threads[i].error == null);
+        // Without fix for LUCENE-1130: one of the
+        // threads will hang
+        threads[i].join();
+        assertTrue("hit unexpected Throwable", threads[i].error == null);
       }
 
       try {
@@ -2538,7 +2505,7 @@ public class TestIndexWriter extends LuceneTestCase
 
   // Runs test, with multiple threads, using the specific
   // failure to trigger an IOException
-  public void _testMultipleThreadsFailure(MockRAMDirectory.Failure failure) throws IOException {
+  public void _testMultipleThreadsFailure(MockRAMDirectory.Failure failure) throws Exception {
 
     int NUM_THREADS = 3;
 
@@ -2560,28 +2527,14 @@ public class TestIndexWriter extends LuceneTestCase
       for(int i=0;i<NUM_THREADS;i++)
         threads[i].start();
 
-      try {
-        Thread.sleep(10);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
+      Thread.sleep(10);
 
       dir.failOn(failure);
       failure.setDoFail();
 
       for(int i=0;i<NUM_THREADS;i++) {
-        while(true) {
-          try {
-            threads[i].join();
-            break;
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-          }
-        }
-        if (threads[i].isAlive())
-          fail("thread seems to be hung");
-        else
-          assertTrue("hit unexpected Throwable", threads[i].error == null);
+        threads[i].join();
+        assertTrue("hit unexpected Throwable", threads[i].error == null);
       }
 
       boolean success = false;
@@ -2622,13 +2575,13 @@ public class TestIndexWriter extends LuceneTestCase
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
   // IOException during abort(), with multiple threads, is OK:
-  public void testIOExceptionDuringAbortWithThreads() throws IOException {
+  public void testIOExceptionDuringAbortWithThreads() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(false));
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
   // IOException during abort(), with multiple threads, is OK:
-  public void testIOExceptionDuringAbortWithThreadsOnlyOnce() throws IOException {
+  public void testIOExceptionDuringAbortWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(true));
   }
 
@@ -2663,12 +2616,12 @@ public class TestIndexWriter extends LuceneTestCase
   }
 
   // LUCENE-1130: test IOException in closeDocStore, with threads
-  public void testIOExceptionDuringCloseDocStoreWithThreads() throws IOException {
+  public void testIOExceptionDuringCloseDocStoreWithThreads() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(false));
   }
 
   // LUCENE-1130: test IOException in closeDocStore, with threads
-  public void testIOExceptionDuringCloseDocStoreWithThreadsOnlyOnce() throws IOException {
+  public void testIOExceptionDuringCloseDocStoreWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyInCloseDocStore(true));
   }
 
@@ -2703,12 +2656,12 @@ public class TestIndexWriter extends LuceneTestCase
   }
 
   // LUCENE-1130: test IOException in writeSegment, with threads
-  public void testIOExceptionDuringWriteSegmentWithThreads() throws IOException {
+  public void testIOExceptionDuringWriteSegmentWithThreads() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyInWriteSegment(false));
   }
 
   // LUCENE-1130: test IOException in writeSegment, with threads
-  public void testIOExceptionDuringWriteSegmentWithThreadsOnlyOnce() throws IOException {
+  public void testIOExceptionDuringWriteSegmentWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyInWriteSegment(true));
   }
 
@@ -3828,13 +3781,9 @@ public class TestIndexWriter extends LuceneTestCase
         threads[i].start();
     }
 
-    void joinThreads() {
+    void joinThreads() throws Exception {
       for(int i=0;i<NUM_THREADS;i++)
-        try {
-          threads[i].join();
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
+        threads[i].join();
     }
 
     void close(boolean doWait) throws Throwable {
@@ -3995,11 +3944,7 @@ public class TestIndexWriter extends LuceneTestCase
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    try {
-      Thread.sleep(500);
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
+    Thread.sleep(500);
 
     // Close w/o first stopping/joining the threads
     c.close(false);
@@ -4020,11 +3965,7 @@ public class TestIndexWriter extends LuceneTestCase
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    try {
-      Thread.sleep(500);
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
+    Thread.sleep(500);
 
     // Close w/o first stopping/joining the threads
     c.didClose = true;
@@ -4316,5 +4257,101 @@ public class TestIndexWriter extends LuceneTestCase
 
     dir2.close();
     dir.close();
+  }
+
+  private class IndexerThreadInterrupt extends Thread {
+    volatile boolean failed;
+    volatile boolean finish;
+    public void run() {
+      RAMDirectory dir = new RAMDirectory();
+      IndexWriter w = null;
+      while(!finish) {
+        try {
+          //IndexWriter.unlock(dir);
+          w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+          ((ConcurrentMergeScheduler) w.getMergeScheduler()).setSuppressExceptions();
+          //w.setInfoStream(System.out);
+          w.setMaxBufferedDocs(2);
+          w.setMergeFactor(2);
+          Document doc = new Document();
+          doc.add(new Field("field", "some text contents", Field.Store.YES, Field.Index.ANALYZED));
+          for(int i=0;i<100;i++) {
+            w.addDocument(doc);
+            w.commit();
+          }
+        } catch (RuntimeException re) {
+          Throwable e = re.getCause();
+          if (e instanceof InterruptedException) {
+            // Make sure IW restored interrupted bit
+            if (!interrupted()) {
+              System.out.println("FAILED; InterruptedException hit but thread.interrupted() was false");
+              e.printStackTrace(System.out);
+              failed = true;
+              break;
+            }
+          } else {
+            System.out.println("FAILED; unexpected exception");
+            e.printStackTrace(System.out);
+            failed = true;
+            break;
+          }
+        } catch (Throwable t) {
+          System.out.println("FAILED; unexpected exception");
+          t.printStackTrace(System.out);
+          failed = true;
+          break;
+        } finally {
+          try {
+            // Clear interrupt if pending
+            synchronized(this) {
+              interrupted();
+              if (w != null) {
+                w.close();
+              }
+            }
+          } catch (Throwable t) {
+            System.out.println("FAILED; unexpected exception during close");
+            t.printStackTrace(System.out);
+            failed = true;
+            break;
+          }
+        }
+      }
+
+      if (!failed) {
+        try {
+          _TestUtil.checkIndex(dir);
+        } catch (Exception e) {
+          failed = true;
+          System.out.println("CheckIndex FAILED: unexpected exception");
+          e.printStackTrace(System.out);
+        }
+        try {
+          IndexReader r = IndexReader.open(dir);
+          //System.out.println("doc count=" + r.numDocs());
+          r.close();
+        } catch (Exception e) {
+          failed = true;
+          System.out.println("IndexReader.open FAILED: unexpected exception");
+          e.printStackTrace(System.out);
+        }
+      }
+    }
+  }
+
+  public void testThreadInterruptDeadlock() throws Exception {
+    IndexerThreadInterrupt t = new IndexerThreadInterrupt();
+    t.setDaemon(true);
+    t.start();
+    for(int i=0;i<100;i++) {
+      Thread.sleep(1);
+      synchronized(t) {
+        t.interrupt();
+      }
+    }
+    t.finish = true;
+    t.interrupt();
+    t.join();
+    assertFalse(t.failed);
   }
 }

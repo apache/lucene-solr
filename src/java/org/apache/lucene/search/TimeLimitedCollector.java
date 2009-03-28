@@ -72,21 +72,14 @@ public class TimeLimitedCollector extends MultiReaderHitCollector {
     }
 
     public void run() {
-      boolean interrupted = false;
-      try {
-        while( true ) {
-          // TODO: Use System.nanoTime() when Lucene moves to Java SE 5.
-          time += resolution;
-          try {
-            Thread.sleep( resolution );
-          } catch( final InterruptedException e ) {
-            interrupted = true;
-          }
-        }
-      }
-      finally {
-        if( interrupted ) {
+      while( true ) {
+        // TODO: Use System.nanoTime() when Lucene moves to Java SE 5.
+        time += resolution;
+        try {
+          Thread.sleep( resolution );
+        } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
         }
       }
     }

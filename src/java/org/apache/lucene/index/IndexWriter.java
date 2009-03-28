@@ -4147,25 +4147,20 @@ public class IndexWriter {
         }
       } finally {
         synchronized(this) {
-          try {
+          mergeFinish(merge);
 
-            mergeFinish(merge);
-
-            if (!success) {
-              if (infoStream != null)
-                message("hit exception during merge");
-              if (merge.info != null && !segmentInfos.contains(merge.info))
-                deleter.refresh(merge.info.name);
-            }
-
-            // This merge (and, generally, any change to the
-            // segments) may now enable new merges, so we call
-            // merge policy & update pending merges.
-            if (success && !merge.isAborted() && !closed && !closing)
-              updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
-          } finally {
-            runningMerges.remove(merge);
+          if (!success) {
+            if (infoStream != null)
+              message("hit exception during merge");
+            if (merge.info != null && !segmentInfos.contains(merge.info))
+              deleter.refresh(merge.info.name);
           }
+
+          // This merge (and, generally, any change to the
+          // segments) may now enable new merges, so we call
+          // merge policy & update pending merges.
+          if (success && !merge.isAborted() && !closed && !closing)
+            updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
         }
       }
     } catch (OutOfMemoryError oom) {
@@ -4234,7 +4229,6 @@ public class IndexWriter {
     } finally {
       if (!success) {
         mergeFinish(merge);
-        runningMerges.remove(merge);
       }
     }
   }
@@ -4439,6 +4433,8 @@ public class IndexWriter {
       mergingSegments.remove(merge.info);
       merge.registerDone = false;
     }
+
+    runningMerges.remove(merge);
   }
 
   /** Does the actual (time-consuming) work of the merge,
@@ -4700,7 +4696,10 @@ public class IndexWriter {
             try {
               synced.wait();
             } catch (InterruptedException ie) {
-              continue;
+              // In 3.0 we will change this to throw
+              // InterruptedException instead
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
             }
         }
       }
@@ -4731,23 +4730,29 @@ public class IndexWriter {
         try {
           Thread.sleep(100);
         } catch (InterruptedException ie) {
+          // In 3.0 we will change this to throw
+          // InterruptedException instead
           Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
         }
       }
     }
   }
 
   private synchronized void doWait() {
+    // NOTE: the callers of this method should in theory
+    // be able to do simply wait(), but, as a defense
+    // against thread timing hazards where notifyAll()
+    // falls to be called, we wait for at most 1 second
+    // and then return so caller can check if wait
+    // conditions are satisified:
     try {
-      // NOTE: the callers of this method should in theory
-      // be able to do simply wait(), but, as a defense
-      // against thread timing hazards where notifyAll()
-      // falls to be called, we wait for at most 1 second
-      // and then return so caller can check if wait
-      // conditions are satisified:
       wait(1000);
     } catch (InterruptedException ie) {
+      // In 3.0 we will change this to throw
+      // InterruptedException instead
       Thread.currentThread().interrupt();
+      throw new RuntimeException(ie);
     }
   }
 
@@ -4819,6 +4824,13 @@ public class IndexWriter {
 
           deleter.incRef(toSync, false);
           myChangeCount = changeCount;
+
+          Iterator it = toSync.files(directory, false).iterator();
+          while(it.hasNext()) {
+            String fileName = (String) it.next();
+            assert directory.fileExists(fileName): "file " + fileName + " does not exist";
+          }
+
         } finally {
           resumeAddIndexes();
         }

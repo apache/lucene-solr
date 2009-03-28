@@ -248,18 +248,18 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
   /** 
    * Test correctness with multiple searching threads.
    */
-  public void testSearchMultiThreaded() {
+  public void testSearchMultiThreaded() throws Exception {
     doTestMultiThreads(false);
   }
 
   /** 
    * Test correctness with multiple searching threads.
    */
-  public void testTimeoutMultiThreaded() {
+  public void testTimeoutMultiThreaded() throws Exception {
     doTestMultiThreads(true);
   }
   
-  private void doTestMultiThreads(final boolean withTimeout) {
+  private void doTestMultiThreads(final boolean withTimeout) throws Exception {
     Thread [] threadArray = new Thread[N_THREADS];
     final BitSet success = new BitSet(N_THREADS);
     for( int i = 0; i < threadArray.length; ++i ) {
@@ -280,16 +280,8 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
     for( int i = 0; i < threadArray.length; ++i ) {
       threadArray[i].start();
     }
-    boolean interrupted = false;
     for( int i = 0; i < threadArray.length; ++i ) {
-      try {
-        threadArray[i].join();
-      } catch (InterruptedException e) {
-        interrupted = true;
-      }
-    }
-    if (interrupted) {
-      Thread.currentThread().interrupt();
+      threadArray[i].join();
     }
     assertEquals("some threads failed!", N_THREADS,success.cardinality());
   }
@@ -314,9 +306,9 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
       if( slowdown > 0 ) {
         try {
           Thread.sleep(slowdown);
-        }
-        catch(InterruptedException x) {
-          System.out.println("caught " + x);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
         }
       }
       assert docId >= 0: " base=" + docBase + " doc=" + doc;

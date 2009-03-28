@@ -475,7 +475,7 @@ public class TestPayloads extends LuceneTestCase {
         }
     }
     
-    public void testThreadSafety() throws IOException {
+    public void testThreadSafety() throws Exception {
         rnd = newRandom();
         final int numThreads = 5;
         final int numDocs = 50;
@@ -505,9 +505,7 @@ public class TestPayloads extends LuceneTestCase {
         }
         
         for (int i = 0; i < numThreads; i++) {
-            try {
-                ingesters[i].join();
-            } catch (InterruptedException e) {}
+          ingesters[i].join();
         }
         writer.close();
         IndexReader reader = IndexReader.open(dir);

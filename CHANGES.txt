@@ -101,6 +101,12 @@ Bug fixes
 7. LUCENE-1327: Fix TermSpans#skipTo() to behave as specified in javadocs
    of Terms#skipTo(). (Michael Busch)
 
+8. LUCENE-1573: Do not ignore InterruptedException (caused by
+   Thread.interrupt()) nor enter deadlock/spin loop. Now, an interrupt
+   will cause a RuntimeException to be thrown.  In 3.0 we will change
+   public APIs to throw InterruptedException.  (Jeremy Volkman vai
+   Mike McCandless)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior

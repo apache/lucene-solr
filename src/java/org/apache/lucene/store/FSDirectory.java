@@ -538,7 +538,10 @@ public class FSDirectory extends Directory {
           // Pause 5 msec
           Thread.sleep(5);
         } catch (InterruptedException ie) {
+          // In 3.0 we will change this to throw
+          // InterruptedException instead
           Thread.currentThread().interrupt();
+          throw new RuntimeException(ie);
         }
       }
     }

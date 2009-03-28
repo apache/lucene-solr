@@ -611,7 +611,7 @@ public class CheckIndex {
                        This tool exits with exit code 1 if the index cannot be opened or has any
                        corruption, else 0.
    */
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws IOException, InterruptedException {
 
     boolean doFix = false;
     List onlySegments = new ArrayList();
@@ -695,13 +695,7 @@ public class CheckIndex {
         System.out.println("WARNING: " + result.totLoseDocCount + " documents will be lost\n");
         System.out.println("NOTE: will write new segments file in 5 seconds; this will remove " + result.totLoseDocCount + " docs from the index. THIS IS YOUR LAST CHANCE TO CTRL+C!");
         for(int s=0;s<5;s++) {
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            s--;
-            continue;
-          }
+          Thread.sleep(1000);
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");

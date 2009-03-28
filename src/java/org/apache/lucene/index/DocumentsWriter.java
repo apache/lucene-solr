@@ -509,8 +509,11 @@ final class DocumentsWriter {
     while(!allThreadsIdle()) {
       try {
         wait();
-      } catch (InterruptedException e) {
+      } catch (InterruptedException ie) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
         Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
     }
 
@@ -837,8 +840,11 @@ final class DocumentsWriter {
     while (!closed && ((state != null && !state.isIdle) || pauseThreads != 0 || flushPending || aborting)) {
       try {
         wait();
-      } catch (InterruptedException e) {
+      } catch (InterruptedException ie) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
         Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
     }
 
@@ -1083,8 +1089,11 @@ final class DocumentsWriter {
     do {
       try {
         wait();
-      } catch (InterruptedException e) {
+      } catch (InterruptedException ie) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
         Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
     } while (!waitQueue.doResume());
   }

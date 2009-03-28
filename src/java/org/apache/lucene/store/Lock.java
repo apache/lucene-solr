@@ -91,6 +91,8 @@ public abstract class Lock {
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);
       } catch (InterruptedException e) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
         throw new IOException(e.toString());
       }
       locked = obtain();

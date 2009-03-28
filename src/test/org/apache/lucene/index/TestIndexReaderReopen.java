@@ -770,11 +770,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 }
                 readersToClose.add(refreshed);
               }
-              try {
-                synchronized(this) {
-                  wait(1000);
-                }
-              } catch (InterruptedException e) {}
+              synchronized(this) {
+                wait(1000);
+              }
             }
           }
           
@@ -789,11 +787,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
                 TestIndexReader.assertIndexEquals(c.newReader, c.refreshedReader);
               }
               
-              try {
-                synchronized(this) {
-                  wait(100);
-                }
-              } catch (InterruptedException e) {}
+              synchronized(this) {
+                wait(100);
+              }
             }
                         
           }
@@ -806,9 +802,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     synchronized(this) {
-      try {
-        wait(15000);
-      } catch(InterruptedException e) {}
+      wait(15000);
     }
     
     for (int i = 0; i < n; i++) {
@@ -819,13 +813,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     for (int i = 0; i < n; i++) {
       if (threads[i] != null) {
-        try {
-          threads[i].join();
-          if (threads[i].error != null) {
-            String msg = "Error occurred in thread " + threads[i].getName() + ":\n" + threads[i].error.getMessage();
-            fail(msg);
-          }
-        } catch (InterruptedException e) {}
+        threads[i].join();
+        if (threads[i].error != null) {
+          String msg = "Error occurred in thread " + threads[i].getName() + ":\n" + threads[i].error.getMessage();
+          fail(msg);
+        }
       }
       
     }

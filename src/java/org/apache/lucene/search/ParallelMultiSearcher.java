@@ -77,7 +77,10 @@ public class ParallelMultiSearcher extends MultiSearcher {
       try {
         msta[i].join();
       } catch (InterruptedException ie) {
-        ; // TODO: what should we do with this???
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
       IOException ioe = msta[i].getIOException();
       if (ioe == null) {
@@ -130,7 +133,10 @@ public class ParallelMultiSearcher extends MultiSearcher {
       try {
         msta[i].join();
       } catch (InterruptedException ie) {
-        ; // TODO: what should we do with this???
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
       }
       IOException ioe = msta[i].getIOException();
       if (ioe == null) {

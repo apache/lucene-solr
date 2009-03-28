@@ -326,7 +326,7 @@ public class TestLockFactory extends LuceneTestCase {
     // Verify: do stress test, by opening IndexReaders and
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised:
-    public void testStressLocks() throws IOException {
+    public void testStressLocks() throws Exception {
       _testStressLocks(null, "index.TestLockFactory6");
     }
 
@@ -334,11 +334,11 @@ public class TestLockFactory extends LuceneTestCase {
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised, but use
     // NativeFSLockFactory:
-    public void testStressLocksNativeFSLockFactory() throws IOException {
+    public void testStressLocksNativeFSLockFactory() throws Exception {
       _testStressLocks(new NativeFSLockFactory("index.TestLockFactory7"), "index.TestLockFactory7");
     }
 
-    public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
+    public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws Exception {
         FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory);
 
         // First create a 1 doc index:
@@ -353,10 +353,7 @@ public class TestLockFactory extends LuceneTestCase {
         searcher.start();
 
         while(writer.isAlive() || searcher.isAlive()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
+          Thread.sleep(1000);
         }
 
         assertTrue("IndexWriter hit unexpected exceptions", !writer.hitException);

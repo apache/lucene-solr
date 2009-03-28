@@ -150,7 +150,12 @@ public class RAMDirectory extends Directory implements Serializable {
     do {
       try {
         Thread.sleep(0, 1);
-      } catch (InterruptedException e) {}
+      } catch (InterruptedException ie) {
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ie);
+      }
       ts2 = System.currentTimeMillis();
     } while(ts1 == ts2);
     
