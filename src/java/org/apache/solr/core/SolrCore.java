@@ -1060,7 +1060,7 @@ public final class SolrCore implements SolrInfoMBean {
       String newIndexDir = getNewIndexDir();
       if (newestSearcher != null) {
         IndexReader currentReader = newestSearcher.get().getReader();
-        if(new File(getIndexDir()).equals(new File(newIndexDir)))  {
+        if(new File(getIndexDir()).getCanonicalFile().equals(new File(newIndexDir).getCanonicalFile()))  {
           IndexReader newReader = currentReader.reopen();
 
           if(newReader == currentReader) {
