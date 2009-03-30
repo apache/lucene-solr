@@ -2305,40 +2305,17 @@ public class IndexWriter {
    * </p>
    * <p>See http://www.gossamer-threads.com/lists/lucene/java-dev/47895 for more discussion. </p>
    *
-   * <p>Note that this can require substantial temporary free
-   * space in the Directory (see <a target="_top"
-   * href="http://issues.apache.org/jira/browse/LUCENE-764">LUCENE-764</a>
-   * for details):</p>
+   * <p>Note that optimize requires 2X the index size free
+   * space in your Directory.  For example, if your index
+   * size is 10 MB then you need 20 MB free for optimize to
+   * complete.</p>
    *
-   * <ul>
-   * <li>
-   * 
-   * <p>If no readers/searchers are open against the index,
-   * then free space required is up to 1X the total size of
-   * the starting index.  For example, if the starting
-   * index is 10 GB, then you must have up to 10 GB of free
-   * space before calling optimize.</p>
-   *
-   * <li>
-   * 
-   * <p>If readers/searchers are using the index, then free
-   * space required is up to 2X the size of the starting
-   * index.  This is because in addition to the 1X used by
-   * optimize, the original 1X of the starting index is
-   * still consuming space in the Directory as the readers
-   * are holding the segments files open.  Even on Unix,
-   * where it will appear as if the files are gone ("ls"
-   * won't list them), they still consume storage due to
-   * "delete on last close" semantics.</p>
-   * 
-   * <p>Furthermore, if some but not all readers re-open
-   * while the optimize is underway, this will cause > 2X
-   * temporary space to be consumed as those new readers
-   * will then hold open the partially optimized segments at
-   * that time.  It is best not to re-open readers while
-   * optimize is running.</p>
-   *
-   * </ul>
+   * <p>If some but not all readers re-open while an
+   * optimize is underway, this will cause > 2X temporary
+   * space to be consumed as those new readers will then
+   * hold open the partially optimized segments at that
+   * time.  It is best not to re-open readers while optimize
+   * is running.</p>
    *
    * <p>The actual temporary usage could be much less than
    * these figures (it depends on many factors).</p>
