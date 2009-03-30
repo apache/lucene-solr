@@ -20,6 +20,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.List;
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -110,16 +111,40 @@ public final class StopFilter extends TokenFilter {
   public static final Set makeStopSet(String[] stopWords) {
     return makeStopSet(stopWords, false);
   }
+
+  /**
+   * Builds a Set from an array of stop words,
+   * appropriate for passing into the StopFilter constructor.
+   * This permits this stopWords construction to be cached once when
+   * an Analyzer is constructed.
+   *
+   * @see #makeStopSet(java.lang.String[], boolean) passing false to ignoreCase
+   */
+  public static final Set makeStopSet(List/*<String>*/ stopWords) {
+    return makeStopSet(stopWords, false);
+  }
     
   /**
    * 
-   * @param stopWords
+   * @param stopWords An array of stopwords
    * @param ignoreCase If true, all words are lower cased first.  
    * @return a Set containing the words
    */    
   public static final Set makeStopSet(String[] stopWords, boolean ignoreCase) {
     CharArraySet stopSet = new CharArraySet(stopWords.length, ignoreCase);
     stopSet.addAll(Arrays.asList(stopWords));
+    return stopSet;
+  }
+
+  /**
+   *
+   * @param stopWords A List of Strings representing the stopwords
+   * @param ignoreCase if true, all words are lower cased first
+   * @return A Set containing the words
+   */
+  public static final Set makeStopSet(List/*<String>*/ stopWords, boolean ignoreCase){
+    CharArraySet stopSet = new CharArraySet(stopWords.size(), ignoreCase);
+    stopSet.addAll(stopWords);
     return stopSet;
   }
   
