@@ -58,7 +58,7 @@ public class TestBatchUpdate extends SolrExampleTestBase {
   private void doIt(CommonsHttpSolrServer commonsHttpSolrServer) throws SolrServerException, IOException {
     final int[] counter = new int[1];
     counter[0] = 0;
-    commonsHttpSolrServer.addAndCommit(new Iterator<SolrInputDocument>() {
+    commonsHttpSolrServer.add(new Iterator<SolrInputDocument>() {
 
       public boolean hasNext() {
         return counter[0] < numdocs;
@@ -75,15 +75,13 @@ public class TestBatchUpdate extends SolrExampleTestBase {
         //do nothing
 
       }
-    }, null);
+    });
+    commonsHttpSolrServer.commit();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = commonsHttpSolrServer.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(numdocs, response.getResults().getNumFound());
   }
-
-
-
 
   @Override public void setUp() throws Exception
   {
@@ -101,7 +99,6 @@ public class TestBatchUpdate extends SolrExampleTestBase {
     super.tearDown();
     jetty.stop();  // stop the server
   }
-
 
   @Override
   protected SolrServer getSolrServer()

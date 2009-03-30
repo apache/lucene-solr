@@ -600,24 +600,16 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   * Adds the documents supplied by the given iterator. A commit is called after all the documents are added.
-   * If an exception is thrown, commit is not called.
+   * Adds the documents supplied by the given iterator.
    *
    * @param docIterator  the iterator which returns SolrInputDocument instances
-   * @param commitParams additional parameters such as optimize, waitFlush, waitSearcher
    *
    * @return the response from the SolrServer
    */
-  public UpdateResponse addAndCommit(Iterator<SolrInputDocument> docIterator, SolrParams commitParams)
+  public UpdateResponse add(Iterator<SolrInputDocument> docIterator)
           throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
-    req.setDocIterator(docIterator);
-    if (commitParams instanceof ModifiableSolrParams) {
-      req.setParams((ModifiableSolrParams) commitParams);
-    } else if (commitParams != null) {
-      req.setParams(new ModifiableSolrParams(commitParams));
-    }
-    req.setParam(UpdateParams.COMMIT, "true");
+    req.setDocIterator(docIterator);    
     return req.process(this);
   }
 }
