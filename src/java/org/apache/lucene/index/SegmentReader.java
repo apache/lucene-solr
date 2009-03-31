@@ -1250,4 +1250,11 @@ class SegmentReader extends DirectoryIndexReader {
       norm.dirty = norm.rollbackDirty;
     }
   }
+
+  // This is necessary so that cloned SegmentReaders (which
+  // share the underlying postings data) will map to the
+  // same entry in the FieldCache.  See LUCENE-1579.
+  public final Object getFieldCacheKey() {
+    return freqStream;
+  }
 }

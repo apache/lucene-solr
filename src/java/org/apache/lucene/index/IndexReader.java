@@ -1248,4 +1248,10 @@ public abstract class IndexReader implements Cloneable {
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }
+
+  /** Expert    
+   *  @deprecated */
+  public Object getFieldCacheKey() {
+    return this;
+  }
 }

@@ -50,11 +50,13 @@ implements FieldCache {
     public Object get(IndexReader reader, Object key) throws IOException {
       Map innerCache;
       Object value;
+      final Object readerKey = reader.getFieldCacheKey();
+
       synchronized (readerCache) {
-        innerCache = (Map) readerCache.get(reader);
+        innerCache = (Map) readerCache.get(readerKey);
         if (innerCache == null) {
           innerCache = new HashMap();
-          readerCache.put(reader, innerCache);
+          readerCache.put(readerKey, innerCache);
           value = null;
         } else {
           value = innerCache.get(key);

@@ -44,6 +44,7 @@ import org.apache.lucene.search.MultiReaderHitCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -1684,5 +1685,113 @@ public class TestIndexReader extends LuceneTestCase
       });
     s.close();
     r.close();
+  }
+
+  // LUCENE-1579: Ensure that on a cloned reader, segments
+  // reuse the doc values arrays in FieldCache
+  public void testFieldCacheReuseAfterClone() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    // Open reader
+    IndexReader r = IndexReader.open(dir);
+    assertTrue(r instanceof SegmentReader);
+    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    assertEquals(1, ints.length);
+    assertEquals(17, ints[0]);
+
+    // Clone reader
+    IndexReader r2 = (IndexReader) r.clone();
+    r.close();
+    assertTrue(r2 != r);
+    assertTrue(r2 instanceof SegmentReader);
+    final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number");
+    r2.close();
+
+    assertEquals(1, ints2.length);
+    assertEquals(17, ints2[0]);
+    assertTrue(ints == ints2);
+
+    dir.close();
+  }
+
+  // LUCENE-1579: Ensure that on a reopened reader, that any
+  // shared segments reuse the doc values arrays in
+  // FieldCache
+  public void testFieldCacheReuseAfterReopen() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Open reader1
+    IndexReader r = IndexReader.open(dir);
+    assertTrue(r instanceof SegmentReader);
+    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    assertEquals(1, ints.length);
+    assertEquals(17, ints[0]);
+
+    // Add new segment
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Reopen reader1 --> reader2
+    IndexReader r2 = (IndexReader) r.reopen();
+    r.close();
+    assertTrue(r2 instanceof MultiSegmentReader);
+    IndexReader sub0 = r2.getSequentialSubReaders()[0];
+    assertTrue(sub0 instanceof SegmentReader);
+    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number");
+    r2.close();
+    assertTrue(ints == ints2);
+
+    dir.close();
+  }
+
+  // LUCENE-1579: Make sure all SegmentReaders are new when
+  // reopen switches readOnly
+  public void testReopenChangeReadonly() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Open reader1
+    IndexReader r = IndexReader.open(dir);
+    assertTrue(r instanceof SegmentReader);
+    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    assertEquals(1, ints.length);
+    assertEquals(17, ints[0]);
+
+    // Reopen to readonly w/ no chnages
+    IndexReader r3 = (IndexReader) r.reopen(true);
+    assertTrue(r3 instanceof ReadOnlySegmentReader);
+    r3.close();
+
+    // Add new segment
+    writer.addDocument(doc);
+    writer.commit();
+
+    // Reopen reader1 --> reader2
+    IndexReader r2 = (IndexReader) r.reopen(true);
+    r.close();
+    assertTrue(r2 instanceof MultiSegmentReader);
+    IndexReader[] subs = r2.getSequentialSubReaders();
+    final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
+    r2.close();
+
+    assertTrue(subs[0] instanceof ReadOnlySegmentReader);
+    assertTrue(subs[1] instanceof ReadOnlySegmentReader);
+    assertTrue(ints == ints2);
+
+    dir.close();
   }
 }
