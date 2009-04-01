@@ -952,25 +952,24 @@ final class DocumentsWriter {
 
     // Delete by term
     Iterator iter = deletesFlushed.terms.entrySet().iterator();
-    while (iter.hasNext()) {
-      Entry entry = (Entry) iter.next();
-      Term term = (Term) entry.getKey();
+    TermDocs docs = reader.termDocs();
+    try {
+      while (iter.hasNext()) {
+        Entry entry = (Entry) iter.next();
+        Term term = (Term) entry.getKey();
 
-      TermDocs docs = reader.termDocs(term);
-      if (docs != null) {
+        docs.seek(term);
         int limit = ((BufferedDeletes.Num) entry.getValue()).getNum();
-        try {
-          while (docs.next()) {
-            int docID = docs.doc();
-            if (docIDStart+docID >= limit)
-              break;
-            reader.deleteDocument(docID);
-            any = true;
-          }
-        } finally {
-          docs.close();
+        while (docs.next()) {
+          int docID = docs.doc();
+          if (docIDStart+docID >= limit)
+            break;
+          reader.deleteDocument(docID);
+          any = true;
         }
       }
+    } finally {
+      docs.close();
     }
 
     // Delete by docID
