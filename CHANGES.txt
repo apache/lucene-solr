@@ -254,6 +254,67 @@ Build
 
 Test Cases
 
+======================= Release 2.4.1 2009-03-09 =======================
+
+Bug fixes
+
+1. LUCENE-1452: Fixed silent data-loss case whereby binary fields are
+   truncated to 0 bytes during merging if the segments being merged
+   are non-congruent (same field name maps to different field
+   numbers).  This bug was introduced with LUCENE-1219.  (Andrzej
+   Bialecki via Mike McCandless).
+
+2. LUCENE-1429: Don't throw incorrect IllegalStateException from
+   IndexWriter.close() if you've hit an OOM when autoCommit is true.
+   (Mike McCandless)
+
+3. LUCENE-1474: If IndexReader.flush() is called twice when there were
+   pending deletions, it could lead to later false AssertionError
+   during IndexReader.open.  (Mike McCandless)
+
+4. LUCENE-1430: Fix false AlreadyClosedException from IndexReader.open
+   (masking an actual IOException) that takes String or File path.
+   (Mike McCandless)
+
+5. LUCENE-1442: Multiple-valued NOT_ANALYZED fields can double-count
+   token offsets.  (Mike McCandless)
+
+6. LUCENE-1453: Ensure IndexReader.reopen() does not result in
+   incorrectly closing the shared FSDirectory.  This bug would only
+   happen if you use IndexReader.open with a File or String argument.
+   (Mark Miller via Mike McCandless)
+
+7. LUCENE-1457: Fix possible overflow bugs during binary
+   searches. (Mark Miller via Mike McCandless)
+
+8. LUCENE-1459: Fix CachingWrapperFilter to not throw exception if
+   both bits() and getDocIdSet() methods are called. (Matt Jones via
+   Mike McCandless)
+
+9. LUCENE-1519: Fix int overflow bug during segment merging.  (Deepak
+   via Mike McCandless)
+
+10. LUCENE-1521: Fix int overflow bug when flushing segment.
+    (Shon Vella via Mike McCandless).
+
+11. LUCENE-1544: Fix deadlock in IndexWriter.addIndexes(IndexReader[]).
+   (Mike McCandless via Doug Sale)
+
+12. LUCENE-1547: Fix rare thread safety issue if two threads call
+    IndexWriter commit() at the same time.  (Mike McCandless)
+
+13. LUCENE-1465: NearSpansOrdered returns payloads from first possible match 
+    rather than the correct, shortest match; Payloads could be returned even
+    if the max slop was exceeded; The wrong payload could be returned in 
+    certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
+
+14. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
+    resources.  (Christian Kohlschütter via Mike McCandless)
+
+15. LUCENE-1552: Fix IndexWriter.addIndexes(IndexReader[]) to properly
+    rollback IndexWriter's internal state on hitting an
+    exception. (Scott Garland via Mike McCandless)
+
 ======================= Release 2.4.0 2008-10-06 =======================
 
 Changes in backwards compatibility policy
