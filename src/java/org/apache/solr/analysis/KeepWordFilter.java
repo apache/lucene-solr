@@ -43,7 +43,7 @@ public final class KeepWordFilter extends TokenFilter {
 
   @Override
   public final Token next(Token in) throws IOException {
-    for (Token token=input.next(in); token!=null; token=input.next()) {
+    for (Token token=input.next(in); token!=null; token=input.next(token)) {
       if( words.contains( token.termBuffer(), 0, token.termLength() ) ) {
         return token;
       }

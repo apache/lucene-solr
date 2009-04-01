@@ -23,6 +23,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.CharArraySet;
 
 import java.util.HashSet;
 import java.util.List;
@@ -42,29 +43,26 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
     enablePositionIncrements = getBoolean("enablePositionIncrements",false);
 
     if (stopWordFiles != null) {
-      if (stopWords == null)
-        stopWords = new HashSet<String>();
       try {
-        java.io.File keepWordsFile = new File(stopWordFiles);
-        if (keepWordsFile.exists()) {
-          List<String> wlist = loader.getLines(stopWordFiles);
-          stopWords = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase);
-        } else  {
-          List<String> files = StrUtils.splitFileNames(stopWordFiles);
+        List<String> files = StrUtils.splitFileNames(stopWordFiles);
+          if (stopWords == null && files.size() > 0){
+            //default stopwords list has 35 or so words, but maybe don't make it that big to start
+            stopWords = new CharArraySet(files.size() * 10, ignoreCase);
+          }
           for (String file : files) {
             List<String> wlist = loader.getLines(file.trim());
+            //TODO: once StopFilter.makeStopSet(List) method is available, switch to using that so we can avoid a toArray() call
             stopWords.addAll(StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase));
           }
-        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     } else {
-      stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS, ignoreCase);
+      stopWords = (CharArraySet) StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS, ignoreCase);
     }
   }
-
-  private Set stopWords;
+  //Force the use of a char array set, as it is the most performant, although this may break things if Lucene ever goes away from it.  See SOLR-1095
+  private CharArraySet stopWords;
   private boolean ignoreCase;
   private boolean enablePositionIncrements;
 

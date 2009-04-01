@@ -191,6 +191,8 @@ New Features
 
 33. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
 
+34. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
+
 
 Optimizations
 ----------------------
