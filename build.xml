@@ -89,8 +89,8 @@
   <target name="test-core" depends="common.test"
           description="Runs unit tests for the core Lucene code"
   />
-  <target name="test" depends="test-core, test-contrib"
-          description="Runs all unit tests (including contribs)"
+  <target name="test" depends="test-core, test-contrib, test-tag"
+          description="Runs all unit tests (core, contrib and back-compat)"
   />
 
   <property name="tag" value="${compatibility.tag}"/>
@@ -385,7 +385,7 @@
      </copy>
   </target>
 
-  <target name="nightly" depends="test, test-tag, package-tgz, changes-to-html">
+  <target name="nightly" depends="test, package-tgz, changes-to-html">
   </target>
 
   <!-- ================================================================== -->
