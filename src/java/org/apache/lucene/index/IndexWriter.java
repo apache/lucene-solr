@@ -3592,12 +3592,13 @@ public class IndexWriter {
   }
 
   /**
-   * <p>Commits all pending updates (added & deleted
-   * documents) to the index, and syncs all referenced index
-   * files, such that a reader will see the changes and the
-   * index updates will survive an OS or machine crash or
-   * power loss.  Note that this does not wait for any
-   * running background merges to finish.  This may be a
+   * <p>Commits all pending changes (added & deleted
+   * documents, optimizations, segment merges, added
+   * indexes, etc.) to the index, and syncs all referenced
+   * index files, such that a reader will see the changes
+   * and the index updates will survive an OS or machine
+   * crash or power loss.  Note that this does not wait for
+   * any running background merges to finish.  This may be a
    * costly operation, so you should test the cost in your
    * application and do it only when really necessary.</p>
    *
