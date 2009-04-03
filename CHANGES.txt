@@ -369,7 +369,7 @@ Other Changes
 
 21. Upgraded to Lucene 2.9-dev r752164 (shalin)
 
-22. SOLR-1068: Use fsync on replicated index and configuration files (yonik, shalin)
+22. SOLR-1068: Use fsync on replicated index and configuration files (yonik, Noble Paul, shalin)
 
 23. SOLR-952: Cleanup duplicated code in deprecated HighlightingUtils (hossman)
 

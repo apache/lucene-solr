@@ -20,6 +20,7 @@ package org.apache.solr.common.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.FileNotFoundException;
 
 /**
  * @version $Id$
@@ -50,6 +51,9 @@ public class FileUtils {
    * @throws IOException if the file could not be synced
    */
   public static void sync(File fullFile) throws IOException  {
+    if (fullFile == null || !fullFile.exists())
+      throw new FileNotFoundException("File does not exist " + fullFile);
+
     boolean success = false;
     int retryCount = 0;
     IOException exc = null;

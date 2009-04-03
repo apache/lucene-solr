@@ -38,9 +38,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,6 +84,8 @@ public class SnapPuller {
   private volatile Map<String, Object> currentFile;
 
   private volatile FileFetcher fileFetcher;
+
+  private volatile ExecutorService fsyncService;
 
   private volatile boolean stop = false;
 
@@ -247,6 +247,8 @@ public class SnapPuller {
       fetchFileList(latestVersion);
       LOG.info("Number of files in latest snapshot in master: " + filesToDownload.size());
 
+      // Create the sync service
+      fsyncService = Executors.newSingleThreadExecutor();
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
@@ -261,7 +263,7 @@ public class SnapPuller {
         downloadIndexFiles(isSnapNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
-        if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
+        if (!modifiedConfFiles.isEmpty()) {
           downloadConfFiles(confFilesToDownload, latestVersion);
           if (isSnapNeeded) {
             modifyIndexProps(tmpIndexDir.getName());
@@ -274,6 +276,7 @@ public class SnapPuller {
             reloadCore();
           }
         } else {
+          terminateAndWaitFsyncService();
           LOG.info("Conf files are not downloaded or are in sync");
           if (isSnapNeeded) {
             modifyIndexProps(tmpIndexDir.getName());
@@ -302,8 +305,27 @@ public class SnapPuller {
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       replicationStartTime = 0;
       fileFetcher = null;
+      fsyncService = null;
       stop = false;
+      fsyncException = null;
     }
+  }
+
+  private volatile Exception fsyncException;
+
+  /**
+   * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
+   *
+   * @throws Exception
+   */
+  private void terminateAndWaitFsyncService() throws Exception {
+    if (fsyncService.isTerminated()) return;
+    fsyncService.shutdown();
+     // give a long wait say 1 hr
+    fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
+    // if any fsync failed, throw that exception back
+    Exception fsyncExceptionCopy = fsyncException;
+    if (fsyncExceptionCopy != null) throw fsyncExceptionCopy;
   }
 
   /**
@@ -394,19 +416,26 @@ public class SnapPuller {
     LOG.info("Starting download of configuration files from master: " + confFilesToDownload);
     confFilesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
     File tmpconfDir = new File(solrCore.getResourceLoader().getConfigDir(), "conf." + getDateAsStr(new Date()));
-    boolean status = tmpconfDir.mkdirs();
-    if (!status) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed to create temporary config folder: " + tmpconfDir.getName());
+    try {
+      boolean status = tmpconfDir.mkdirs();
+      if (!status) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to create temporary config folder: " + tmpconfDir.getName());
+      }
+      for (Map<String, Object> file : confFilesToDownload) {
+        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+        fileFetcher = new FileFetcher(tmpconfDir, file, saveAs, true, latestVersion);
+        currentFile = file;
+        fileFetcher.fetchFile();
+        confFilesDownloaded.add(new HashMap<String, Object>(file));
+      }
+      // this is called before copying the files to the original conf dir
+      // so that if there is an exception avoid corrupting the original files.
+      terminateAndWaitFsyncService();
+      copyTmpConfFiles2Conf(tmpconfDir);
+    } finally {
+      delTree(tmpconfDir);
     }
-    for (Map<String, Object> file : confFilesToDownload) {
-      String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-      fileFetcher = new FileFetcher(tmpconfDir, file, saveAs, true, latestVersion);
-      currentFile = file;
-      fileFetcher.fetchFile();
-      confFilesDownloaded.add(new HashMap<String, Object>(file));
-    }
-    copyTmpConfFiles2Conf(tmpconfDir);
   }
 
   /**
@@ -491,13 +520,11 @@ public class SnapPuller {
         continue;
       }
       if (!copyAFile(snapDir, indexDir, fname, copiedfiles)) return false;
-      FileUtils.sync(new File(indexDir, fname));
       copiedfiles.add(fname);
     }
     //copy the segments file last
     if (segmentsFile != null) {
       if (!copyAFile(snapDir, indexDir, segmentsFile, copiedfiles)) return false;
-      FileUtils.sync(new File(indexDir, segmentsFile));
     }
     return true;
   }
@@ -507,27 +534,22 @@ public class SnapPuller {
    */
   private void copyTmpConfFiles2Conf(File tmpconfDir) throws IOException {
     File confDir = new File(solrCore.getResourceLoader().getConfigDir());
-    try {
-      for (File file : tmpconfDir.listFiles()) {
-        File oldFile = new File(confDir, file.getName());
-        if (oldFile.exists()) {
-          File backupFile = new File(confDir, oldFile.getName() + "." + getDateAsStr(new Date(oldFile.lastModified())));
-          boolean status = oldFile.renameTo(backupFile);
-          if (!status) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                    "Unable to rename: " + oldFile + " to: " + backupFile);
-          }
-        }
-        boolean status = file.renameTo(oldFile);
-        if (status) {
-          FileUtils.sync(oldFile);
-        } else {
+    for (File file : tmpconfDir.listFiles()) {
+      File oldFile = new File(confDir, file.getName());
+      if (oldFile.exists()) {
+        File backupFile = new File(confDir, oldFile.getName() + "." + getDateAsStr(new Date(oldFile.lastModified())));
+        boolean status = oldFile.renameTo(backupFile);
+        if (!status) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Unable to rename: " + file + " to: " + oldFile);
+                  "Unable to rename: " + oldFile + " to: " + backupFile);
         }
       }
-    } finally {
-      delTree(tmpconfDir);
+      boolean status = file.renameTo(oldFile);
+      if (status) {
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Unable to rename: " + file + " to: " + oldFile);
+      }
     }
   }
 
@@ -786,6 +808,16 @@ public class SnapPuller {
         }
       } finally {
         cleanup();
+        //if cleanup suceeds . The file is downloaded fully. do an fsync
+        fsyncService.submit(new Runnable(){
+          public void run() {
+            try {
+              FileUtils.sync(file);
+            } catch (IOException e) {
+              fsyncException = e;
+            }
+          }
+        });
       }
     }
 
