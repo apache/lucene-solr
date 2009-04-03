@@ -305,6 +305,7 @@ public class SnapPuller {
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       replicationStartTime = 0;
       fileFetcher = null;
+      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdownNow();
       fsyncService = null;
       stop = false;
       fsyncException = null;
