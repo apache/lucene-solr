@@ -2430,12 +2430,23 @@ document.write("Last Published: " + document.lastModified);
 <a name="N10873"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
-<p>There
-                are a few places where these file formats limit the maximum number of
-                terms and documents to a 32-bit quantity, or to approximately 4
-                billion. This is not today a problem, but, in the long term,
-                probably will be. These should therefore be replaced with either
-                UInt64 values, or better yet, with VInt values which have no limit.
+<p>
+	      When referring to term numbers, Lucene's current
+	      implementation uses a Java <span class="codefrag">int</span>, which means
+	      the maximum number of unique terms in any single index
+	      segment is 2,147,483,648.  This is technically not a
+	      limitation of the index file format, just of Lucene's
+	      current implementation.
+	    </p>
+<p>
+	      Similarly, Lucene uses a Java <span class="codefrag">int</span> to refer
+	      to document numbers, and the index file format uses an
+	      <span class="codefrag">Int32</span> on-disk to store document numbers.
+	      This is a limitation of both the index file format and
+	      the current implementation.  Eventually these should be
+	      replaced with either <span class="codefrag">UInt64</span> values, or
+	      better yet, <span class="codefrag">VInt</span> values which have no
+	      limit.
             </p>
 </div>
 
