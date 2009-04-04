@@ -171,7 +171,7 @@ SimplePostTool: COMMITting Solr index changes..
 </source>
 
 <p>
-  ...and now you can search for all sorts of things using the default <a href="http://lucene.apache.org/java/docs/queryparsersyntax.html">Lucene QueryParser syntax</a>...
+  ...and now you can search for all sorts of things using the default <a href="http://wiki.apache.org/solr/SolrQuerySyntax">Solr Query Syntax</a> (an extension of the Lucene QueryParser)...
 </p>
 <ul>
   <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video">video</a></li>
