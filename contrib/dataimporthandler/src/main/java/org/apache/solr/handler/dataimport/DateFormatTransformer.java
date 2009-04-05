@@ -19,10 +19,8 @@ package org.apache.solr.handler.dataimport;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 public class DateFormatTransformer extends Transformer {
+  private Map<String, SimpleDateFormat> fmtCache = new HashMap<String, SimpleDateFormat>();
   private static final Logger LOG = LoggerFactory
           .getLogger(DateFormatTransformer.class);
 
@@ -59,29 +58,35 @@ public class DateFormatTransformer extends Transformer {
       try {
         Object o = aRow.get(srcCol);
         if (o instanceof List) {
-          List<String> inputs = (List<String>) o;
+          List inputs = (List) o;
           List<Date> results = new ArrayList<Date>();
-          for (String input : inputs) {
+          for (Object input : inputs) {
             results.add(process(input, fmt));
           }
           aRow.put(column, results);
         } else {
-          if (o != null)  {
-            aRow.put(column, process(o.toString(), fmt));
+          if (o != null) {
+            aRow.put(column, process(o, fmt));
           }
         }
       } catch (ParseException e) {
-        LOG.warn( "Could not parse a Date field ", e);
+        LOG.warn("Could not parse a Date field ", e);
       }
     }
     return aRow;
   }
 
-  private Date process(String value, String format) throws ParseException {
-    if (value == null || value.trim().length() == 0)
+  private Date process(Object value, String format) throws ParseException {
+    if (value == null) return null;
+    String strVal = value.toString().trim();
+    if (strVal.length() == 0)
       return null;
-
-    return new SimpleDateFormat(format).parse(value);
+    SimpleDateFormat fmt = fmtCache.get(format);
+    if (fmt == null) {
+      fmt = new SimpleDateFormat(format);
+      fmtCache.put(format, fmt);
+    }
+    return fmt.parse(strVal);
   }
 
   public static final String DATE_TIME_FMT = "dateTimeFormat";
