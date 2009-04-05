@@ -296,12 +296,25 @@ public class EntityProcessorBase extends EntityProcessor {
     if (simpleCache != null || cacheWithWhereClause != null)
       return;
     String where = context.getEntityAttribute("where");
-    if (where == null) {
+
+    String cacheKey = context.getEntityAttribute(CACHE_KEY);
+    String lookupKey = context.getEntityAttribute(CACHE_LOOKUP);
+    if(cacheKey != null && lookupKey == null){
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+              "'cacheKey' is specified for the entity "+ entityName+" but 'cacheLookup' is missing" );
+
+    }
+    if (where == null && cacheKey == null) {
       simpleCache = new HashMap<String, List<Map<String, Object>>>();
     } else {
-      String[] splits = where.split("=");
-      cachePk = splits[0];
-      cacheVariableName = splits[1].trim();
+      if (where != null) {
+        String[] splits = where.split("=");
+        cachePk = splits[0];
+        cacheVariableName = splits[1].trim();
+      } else {
+        cachePk = cacheKey;
+        cacheVariableName = lookupKey;
+      }
       cacheWithWhereClause = new HashMap<String, Map<Object, List<Map<String, Object>>>>();
     }
   }
@@ -420,4 +433,9 @@ public class EntityProcessorBase extends EntityProcessor {
   public static final String SKIP = "skip";
 
   public static final String SKIP_DOC = "$skipDoc";
+
+  public static final String CACHE_KEY = "cacheKey";
+  
+  public static final String CACHE_LOOKUP = "cacheLookup";
+
 }

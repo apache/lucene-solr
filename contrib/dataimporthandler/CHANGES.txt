@@ -239,6 +239,9 @@ Other
               is not <dataConfig>.
               (Noble Paul via shalin)
 
+7. SOLR-1087: Deprecate 'where' attribute in CachedSqlEntityProcessor in favor of cacheKey and cacheLookup.
+              (Noble Paul via shalin)
+
 ================== Release 1.3.0 20080915 ==================
 
 Status

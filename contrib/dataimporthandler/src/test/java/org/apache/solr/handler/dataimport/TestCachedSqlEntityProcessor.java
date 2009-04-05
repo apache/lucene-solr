@@ -195,13 +195,38 @@ public class TestCachedSqlEntityProcessor {
     fields.add(AbstractDataImportHandlerTest.createMap("column", "desc"));
     String q = "select * from x";
     Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap(
-            "query", q, "where", "id=x.id");
+            "query", q, EntityProcessorBase.CACHE_KEY,"id", EntityProcessorBase.CACHE_LOOKUP ,"x.id");
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
     Map xNamespace = AbstractDataImportHandlerTest.createMap("id", 0);
     vr.addNamespace("x", xNamespace);
     Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
             fields, entityAttrs);
+
+
+    doWhereTest(q, context, ds, xNamespace);
+  }
+
+  @Test
+  public void withKeyAndLookup() {
+    List fields = new ArrayList();
+    fields.add(AbstractDataImportHandlerTest.createMap("column", "id"));
+    fields.add(AbstractDataImportHandlerTest.createMap("column", "desc"));
+    String q = "select * from x";
+    Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap(
+            "query", q, "where", "id=x.id");    
+    MockDataSource ds = new MockDataSource();
+    VariableResolverImpl vr = new VariableResolverImpl();
+    Map xNamespace = AbstractDataImportHandlerTest.createMap("id", 0);
+    vr.addNamespace("x", xNamespace);
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
+            fields, entityAttrs);
+
+
+    doWhereTest(q, context, ds, xNamespace);
+  }
+
+  private void doWhereTest(String q, Context context, MockDataSource ds, Map xNamespace) {
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc", "one"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 2, "desc", "two"));
