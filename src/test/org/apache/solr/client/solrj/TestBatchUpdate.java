@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.common.SolrInputDocument;
 
 import java.util.Iterator;
@@ -53,6 +54,43 @@ public class TestBatchUpdate extends SolrExampleTestBase {
     commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
     commonsHttpSolrServer.deleteByQuery( "*:*" ); // delete everything!
     doIt(commonsHttpSolrServer);
+  }
+
+  public void testWithBinaryBean()throws Exception{
+    CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
+    commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
+    commonsHttpSolrServer.deleteByQuery( "*:*" ); // delete everything!
+    final int[] counter = new int[1];
+    counter[0] = 0;
+    commonsHttpSolrServer.addBeans(new Iterator<Bean>() {
+
+      public boolean hasNext() {
+        return counter[0] < numdocs;
+      }
+
+      public Bean next() {
+        Bean bean = new Bean();
+        bean.id = "" + (++counter[0]);
+        bean.cat = "foocat";
+        return bean;
+      }
+
+      public void remove() {
+        //do nothing
+      }
+    });
+    commonsHttpSolrServer.commit();
+    SolrQuery query = new SolrQuery("*:*");
+    QueryResponse response = commonsHttpSolrServer.query(query);
+    assertEquals(0, response.getStatus());
+    assertEquals(numdocs, response.getResults().getNumFound());
+  }
+
+  public static class Bean{
+    @Field
+    String id;
+    @Field
+    String cat;
   }
        
   private void doIt(CommonsHttpSolrServer commonsHttpSolrServer) throws SolrServerException, IOException {

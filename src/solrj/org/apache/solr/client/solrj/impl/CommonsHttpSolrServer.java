@@ -612,4 +612,33 @@ public class CommonsHttpSolrServer extends SolrServer
     req.setDocIterator(docIterator);    
     return req.process(this);
   }
+
+  /**
+   * Adds the beans supplied by the given iterator.
+   *
+   * @param beanIterator  the iterator which returns Beans
+   *
+   * @return the response from the SolrServer
+   */
+  public UpdateResponse addBeans(final Iterator<?> beanIterator)
+          throws SolrServerException, IOException {
+    UpdateRequest req = new UpdateRequest();
+    req.setDocIterator(new Iterator<SolrInputDocument>() {
+
+      public boolean hasNext() {
+        return beanIterator.hasNext();
+      }
+
+      public SolrInputDocument next() {
+        Object o = beanIterator.next();
+        if (o == null) return null;
+        return getBinder().toSolrInputDocument(o);
+      }
+
+      public void remove() {
+        beanIterator.remove();
+      }
+    });
+    return req.process(this);
+  }
 }
