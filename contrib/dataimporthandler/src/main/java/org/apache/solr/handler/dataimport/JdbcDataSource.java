@@ -113,7 +113,7 @@ public class JdbcDataSource extends
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not load driver: " + driver, e);
       }
     } else {
-      if(jndiName != null){
+      if(jndiName == null){
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
       }
     }
@@ -373,8 +373,8 @@ public class JdbcDataSource extends
   protected void finalize() throws Throwable {
     try {
       conn.close();
-    } finally { 
-      super.finalize(); 
+    } finally {
+      super.finalize();
     }
   }
 
