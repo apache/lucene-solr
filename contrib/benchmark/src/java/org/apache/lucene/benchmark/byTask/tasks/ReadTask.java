@@ -89,7 +89,12 @@ public abstract class ReadTask extends PerfTask {
 
     if (withSearch()) {
       res++;
-      IndexSearcher searcher = new IndexSearcher(ir);
+      final IndexSearcher searcher;
+      if (closeReader) {
+        searcher = new IndexSearcher(ir);
+      } else {
+        searcher = getRunData().getIndexSearcher();
+      }
       QueryMaker queryMaker = getQueryMaker();
       Query q = queryMaker.makeQuery();
       Sort sort = getSort();

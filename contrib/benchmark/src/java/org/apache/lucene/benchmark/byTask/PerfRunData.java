@@ -28,6 +28,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.FileUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -68,6 +69,7 @@ public class PerfRunData {
   private Class qmkrClass;
 
   private IndexReader indexReader;
+  private IndexSearcher indexSearcher;
   private IndexWriter indexWriter;
   private Config config;
   private long startTimeMillis;
@@ -183,10 +185,22 @@ public class PerfRunData {
   }
 
   /**
+   * @return Returns the indexSearcher.
+   */
+  public IndexSearcher getIndexSearcher() {
+    return indexSearcher;
+  }
+
+  /**
    * @param indexReader The indexReader to set.
    */
   public void setIndexReader(IndexReader indexReader) {
     this.indexReader = indexReader;
+    if (indexReader != null) {
+      indexSearcher = new IndexSearcher(indexReader);
+    } else {
+      indexSearcher = null;
+    }
   }
 
   /**
