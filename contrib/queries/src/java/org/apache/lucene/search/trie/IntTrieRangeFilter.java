@@ -30,7 +30,7 @@ import org.apache.lucene.util.OpenBitSet;
 /**
  * Implementation of a Lucene {@link Filter} that implements trie-based range filtering for ints/floats.
  * This filter depends on a specific structure of terms in the index that can only be created
- * by {@link TrieUtils} methods.
+ * by indexing via {@link IntTrieTokenStream} methods.
  * For more information, how the algorithm works, see the {@linkplain org.apache.lucene.search.trie package description}.
  */
 public class IntTrieRangeFilter extends AbstractTrieRangeFilter {
@@ -43,49 +43,11 @@ public class IntTrieRangeFilter extends AbstractTrieRangeFilter {
    * You can leave the bounds open, by supplying <code>null</code> for <code>min</code> and/or
    * <code>max</code>. Inclusive/exclusive bounds can also be supplied.
    * To query float values use the converter {@link TrieUtils#floatToSortableInt}.
-   * <p>This is the counterpart to {@link TrieUtils#addIndexedFields(Document,String,String[])}.
-   * <p><b>This is the recommended usage of TrieUtils/IntTrieRangeFilter.</b>
    */
   public IntTrieRangeFilter(final String field, final int precisionStep,
     final Integer min, final Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    this(
-      new String[]{field, field+TrieUtils.LOWER_PRECISION_FIELD_NAME_SUFFIX},
-      precisionStep,min,max,minInclusive,maxInclusive
-    );
-  }
-  
-  /**
-   * Expert: A trie filter for matching trie coded values using the given field names.
-   * You can specify the main and helper field name, that was used to idex the values.
-   * <code>precisionStep</code> must me equal or a multiple of the <code>precisionStep</code>
-   * used for indexing the values.
-   * You can leave the bounds open, by supplying <code>null</code> for <code>min</code> and/or
-   * <code>max</code>. Inclusive/exclusive bounds can also be supplied.
-   * To query float values use the converter {@link TrieUtils#floatToSortableInt}.
-   * <p>This is the counterpart to {@link TrieUtils#addIndexedFields(Document,String,String,String[])}.
-   */
-  public IntTrieRangeFilter(final String field, final String lowerPrecisionField, final int precisionStep,
-    final Integer min, final Integer max, final boolean minInclusive, final boolean maxInclusive
-  ) {
-    this(new String[]{field, lowerPrecisionField},precisionStep,min,max,minInclusive,maxInclusive);
-  }
-
-  /**
-   * Expert: A trie filter for matching trie coded values
-   * using the given field names. If the array of field names is shorter than the
-   * trieCoded one, all trieCoded values with higher index get the last field name.
-   * <code>precisionStep</code> must me equal or a multiple of the <code>precisionStep</code>
-   * used for indexing the values.
-   * You can leave the bounds open, by supplying <code>null</code> for <code>min</code> and/or
-   * <code>max</code>. Inclusive/exclusive bounds can also be supplied.
-   * To query float values use the converter {@link TrieUtils#floatToSortableInt}.
-   * <p>This is the counterpart to {@link TrieUtils#addIndexedFields(Document,String[],String[])}.
-   */
-  public IntTrieRangeFilter(final String[] fields, final int precisionStep,
-    Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
-  ) {
-    super(fields, precisionStep, min, max, minInclusive, maxInclusive);
+    super(field,precisionStep,min,max,minInclusive,maxInclusive);
   }
 
   /**
@@ -112,11 +74,10 @@ public class IntTrieRangeFilter extends AbstractTrieRangeFilter {
         TrieUtils.splitIntRange(new TrieUtils.IntRangeBuilder() {
         
           //@Override
-          public final void addRange(String minPrefixCoded, String maxPrefixCoded, int level) {
+          public final void addRange(String minPrefixCoded, String maxPrefixCoded) {
             try {
               fillBits(
                 reader, bits, termDocs,
-                fields[Math.min(fields.length-1, level)],
                 minPrefixCoded, maxPrefixCoded
               );
             } catch (IOException ioe) {

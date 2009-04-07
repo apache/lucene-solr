@@ -179,7 +179,7 @@ public class TestTrieUtils extends LuceneTestCase {
     
     TrieUtils.splitLongRange(new TrieUtils.LongRangeBuilder() {
       //@Override
-      public void addRange(long min, long max, int shift, int level) {
+      public void addRange(long min, long max, int shift) {
         assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
         if (useBitSet) for (long l=min; l<=max; l++) {
           assertFalse("ranges should not overlap", bits.getAndSet(l-lower) );
@@ -253,7 +253,7 @@ public class TestTrieUtils extends LuceneTestCase {
     
     TrieUtils.splitIntRange(new TrieUtils.IntRangeBuilder() {
       //@Override
-      public void addRange(int min, int max, int shift, int level) {
+      public void addRange(int min, int max, int shift) {
         assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
         if (useBitSet) for (int i=min; i<=max; i++) {
           assertFalse("ranges should not overlap", bits.getAndSet(i-lower) );

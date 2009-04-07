@@ -33,14 +33,22 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestIntTrieRangeFilter extends LuceneTestCase
-{
+public class TestIntTrieRangeFilter extends LuceneTestCase {
   // distance of entries
   private static final int distance = 6666;
   // shift the starting of the values to the left, to also have negative values:
   private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
   private static final int noDocs = 10000;
+  
+  private static Field newField(String name, int precisionStep) {
+    IntTrieTokenStream stream = new IntTrieTokenStream(precisionStep);
+    stream.setUseNewAPI(true);
+    Field f=new Field(name, stream);
+    f.setOmitTermFreqAndPositions(true);
+    f.setOmitNorms(true);
+    return f;
+  }
   
   private static final RAMDirectory directory;
   private static final IndexSearcher searcher;
@@ -50,21 +58,34 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
       true, MaxFieldLength.UNLIMITED);
       
+      Field
+        field8 = newField("field8", 8),
+        field4 = newField("field4", 4),
+        field2 = newField("field2", 2),
+        ascfield8 = newField("ascfield8", 8),
+        ascfield4 = newField("ascfield4", 4),
+        ascfield2 = newField("ascfield2", 2);
+      
       // Add a series of noDocs docs with increasing int values
       for (int l=0; l<noDocs; l++) {
         Document doc=new Document();
         // add fields, that have a distance to test general functionality
-        final int val=distance*l+startOffset;
-        TrieUtils.addIndexedFields(doc,"field8", TrieUtils.trieCodeInt(val, 8));
-        doc.add(new Field("field8", TrieUtils.intToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
-        TrieUtils.addIndexedFields(doc,"field4", TrieUtils.trieCodeInt(val, 4));
-        doc.add(new Field("field4", TrieUtils.intToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
-        TrieUtils.addIndexedFields(doc,"field2", TrieUtils.trieCodeInt(val, 2));
-        doc.add(new Field("field2", TrieUtils.intToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
+        int val=distance*l+startOffset;
+        doc.add(new Field("value", TrieUtils.intToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
+        ((IntTrieTokenStream)field8.tokenStreamValue()).setValue(val);
+        doc.add(field8);
+        ((IntTrieTokenStream)field4.tokenStreamValue()).setValue(val);
+        doc.add(field4);
+        ((IntTrieTokenStream)field2.tokenStreamValue()).setValue(val);
+        doc.add(field2);
         // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
-        TrieUtils.addIndexedFields(doc,"ascfield8", TrieUtils.trieCodeInt(l-(noDocs/2), 8));
-        TrieUtils.addIndexedFields(doc,"ascfield4", TrieUtils.trieCodeInt(l-(noDocs/2), 4));
-        TrieUtils.addIndexedFields(doc,"ascfield2", TrieUtils.trieCodeInt(l-(noDocs/2), 2));
+        val=l-(noDocs/2);
+        ((IntTrieTokenStream)ascfield8.tokenStreamValue()).setValue(val);
+        doc.add(ascfield8);
+        ((IntTrieTokenStream)ascfield4.tokenStreamValue()).setValue(val);
+        doc.add(ascfield4);
+        ((IntTrieTokenStream)ascfield2.tokenStreamValue()).setValue(val);
+        doc.add(ascfield2);
         writer.addDocument(doc);
       }
     
@@ -87,9 +108,9 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", 2*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("First doc", 2*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (1+count)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("Last doc", (1+count)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
   }
 
   public void testRange_8bit() throws Exception {
@@ -115,9 +136,9 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("First doc", startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
   }
   
   public void testLeftOpenRange_8bit() throws Exception {
@@ -143,9 +164,9 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, TrieUtils.prefixCodedToInt(doc.get("value")) );
   }
   
   public void testRightOpenRange_8bit() throws Exception {
@@ -163,39 +184,47 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
-    // 50 random tests, the tests may also return 0 results, if min>max, but this is ok
+    int termCount=0;
     for (int i=0; i<50; i++) {
       int lower=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      if (lower>upper) {
+        int a=lower; lower=upper; upper=a;
+      }
       // test inclusive range
-      Query tq=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), true, true).asQuery();
+      IntTrieRangeFilter tf=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
       RangeQuery cq=new RangeQuery(field, TrieUtils.intToPrefixCoded(lower), TrieUtils.intToPrefixCoded(upper), true, true);
       cq.setConstantScoreRewrite(true);
-      TopDocs tTopDocs = searcher.search(tq, 1);
+      TopDocs tTopDocs = searcher.search(tf.asQuery(), 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for IntTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test exclusive range
-      tq=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), false, false).asQuery();
+      tf=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), false, false);
       cq=new RangeQuery(field, TrieUtils.intToPrefixCoded(lower), TrieUtils.intToPrefixCoded(upper), false, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for IntTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test left exclusive range
-      tq=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), false, true).asQuery();
+      tf=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), false, true);
       cq=new RangeQuery(field, TrieUtils.intToPrefixCoded(lower), TrieUtils.intToPrefixCoded(upper), false, true);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for IntTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test right exclusive range
-      tq=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), true, false).asQuery();
+      tf=new IntTrieRangeFilter(field, precisionStep, new Integer(lower), new Integer(upper), true, false);
       cq=new RangeQuery(field, TrieUtils.intToPrefixCoded(lower), TrieUtils.intToPrefixCoded(upper), true, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for IntTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
     }
+    System.out.println("Average number of terms during random search: " + (((double)termCount)/(50*4)));
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
@@ -267,9 +296,9 @@ public class TestIntTrieRangeFilter extends LuceneTestCase
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      int last=TrieUtils.prefixCodedToInt(searcher.doc(sd[0].doc).get(field));
+      int last=TrieUtils.prefixCodedToInt(searcher.doc(sd[0].doc).get("value"));
       for (int j=1; j<sd.length; j++) {
-        int act=TrieUtils.prefixCodedToInt(searcher.doc(sd[j].doc).get(field));
+        int act=TrieUtils.prefixCodedToInt(searcher.doc(sd[j].doc).get("value"));
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

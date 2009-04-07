@@ -18,7 +18,6 @@ package org.apache.lucene.search.trie;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
@@ -33,10 +32,10 @@ import org.apache.lucene.util.ToStringUtils;
 
 abstract class AbstractTrieRangeFilter extends Filter {
 
-  AbstractTrieRangeFilter(final String[] fields, final int precisionStep,
+  AbstractTrieRangeFilter(final String field, final int precisionStep,
     Number min, Number max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    this.fields=(String[])fields.clone();
+    this.field=field.intern();
     this.precisionStep=precisionStep;
     this.min=min;
     this.max=max;
@@ -51,7 +50,7 @@ abstract class AbstractTrieRangeFilter extends Filter {
 
   public String toString(final String field) {
     final StringBuffer sb=new StringBuffer();
-    if (!this.fields[0].equals(field)) sb.append(this.fields[0]).append(':');
+    if (!this.field.equals(field)) sb.append(this.field).append(':');
     return sb.append(minInclusive ? '[' : '{')
       .append((min==null) ? "*" : min.toString())
       .append(" TO ")
@@ -66,7 +65,7 @@ abstract class AbstractTrieRangeFilter extends Filter {
     if (this.getClass().equals(o.getClass())) {
       AbstractTrieRangeFilter q=(AbstractTrieRangeFilter)o;
       return (
-        Arrays.equals(fields,q.fields) &&
+        field==q.field &&
         (q.min == null ? min == null : q.min.equals(min)) &&
         (q.max == null ? max == null : q.max.equals(max)) &&
         minInclusive==q.minInclusive &&
@@ -79,7 +78,7 @@ abstract class AbstractTrieRangeFilter extends Filter {
 
   //@Override
   public final int hashCode() {
-    int hash=Arrays.asList(fields).hashCode()+(precisionStep^0x64365465);
+    int hash = field.hashCode() + (precisionStep^0x64365465);
     if (min!=null) hash += min.hashCode()^0x14fa55fb;
     if (max!=null) hash += max.hashCode()^0x733fa5fe;
     return hash+
@@ -123,12 +122,10 @@ abstract class AbstractTrieRangeFilter extends Filter {
   void fillBits(
     final IndexReader reader,
     final OpenBitSet bits, final TermDocs termDocs,
-    String field,
     final String lowerTerm, final String upperTerm
   ) throws IOException {
     final int len=lowerTerm.length();
     assert upperTerm.length()==len;
-    field=field.intern();
     
     // find the docs
     final TermEnum enumerator = reader.terms(new Term(field, lowerTerm));
@@ -151,7 +148,7 @@ abstract class AbstractTrieRangeFilter extends Filter {
   }
   
   // members
-  final String[] fields;
+  final String field;
   final int precisionStep;
   final Number min,max;
   final boolean minInclusive,maxInclusive;

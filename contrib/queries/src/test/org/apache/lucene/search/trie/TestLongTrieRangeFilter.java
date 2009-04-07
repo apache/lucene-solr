@@ -33,14 +33,22 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLongTrieRangeFilter extends LuceneTestCase
-{
+public class TestLongTrieRangeFilter extends LuceneTestCase {
   // distance of entries
   private static final long distance = 66666L;
   // shift the starting of the values to the left, to also have negative values:
   private static final long startOffset = - 1L << 31;
   // number of docs to generate for testing
   private static final int noDocs = 10000;
+  
+  private static Field newField(String name, int precisionStep) {
+    LongTrieTokenStream stream = new LongTrieTokenStream(precisionStep);
+    stream.setUseNewAPI(true);
+    Field f=new Field(name, stream);
+    f.setOmitTermFreqAndPositions(true);
+    f.setOmitNorms(true);
+    return f;
+  }
   
   private static final RAMDirectory directory;
   private static final IndexSearcher searcher;
@@ -50,21 +58,34 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
       true, MaxFieldLength.UNLIMITED);
       
+      Field
+        field8 = newField("field8", 8),
+        field4 = newField("field4", 4),
+        field2 = newField("field2", 2),
+        ascfield8 = newField("ascfield8", 8),
+        ascfield4 = newField("ascfield4", 4),
+        ascfield2 = newField("ascfield2", 2);
+      
       // Add a series of noDocs docs with increasing long values
       for (int l=0; l<noDocs; l++) {
         Document doc=new Document();
         // add fields, that have a distance to test general functionality
-        final long val=distance*l+startOffset;
-        TrieUtils.addIndexedFields(doc,"field8", TrieUtils.trieCodeLong(val, 8));
-        doc.add(new Field("field8", TrieUtils.longToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
-        TrieUtils.addIndexedFields(doc,"field4", TrieUtils.trieCodeLong(val, 4));
-        doc.add(new Field("field4", TrieUtils.longToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
-        TrieUtils.addIndexedFields(doc,"field2", TrieUtils.trieCodeLong(val, 2));
-        doc.add(new Field("field2", TrieUtils.longToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
+        long val=distance*l+startOffset;
+        doc.add(new Field("value", TrieUtils.longToPrefixCoded(val), Field.Store.YES, Field.Index.NO));
+        ((LongTrieTokenStream)field8.tokenStreamValue()).setValue(val);
+        doc.add(field8);
+        ((LongTrieTokenStream)field4.tokenStreamValue()).setValue(val);
+        doc.add(field4);
+        ((LongTrieTokenStream)field2.tokenStreamValue()).setValue(val);
+        doc.add(field2);
         // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
-        TrieUtils.addIndexedFields(doc,"ascfield8", TrieUtils.trieCodeLong(l-(noDocs/2), 8));
-        TrieUtils.addIndexedFields(doc,"ascfield4", TrieUtils.trieCodeLong(l-(noDocs/2), 4));
-        TrieUtils.addIndexedFields(doc,"ascfield2", TrieUtils.trieCodeLong(l-(noDocs/2), 2));
+        val=l-(noDocs/2);
+        ((LongTrieTokenStream)ascfield8.tokenStreamValue()).setValue(val);
+        doc.add(ascfield8);
+        ((LongTrieTokenStream)ascfield4.tokenStreamValue()).setValue(val);
+        doc.add(ascfield4);
+        ((LongTrieTokenStream)ascfield2.tokenStreamValue()).setValue(val);
+        doc.add(ascfield2);
         writer.addDocument(doc);
       }
     
@@ -87,9 +108,9 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", 2*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("First doc", 2*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (1+count)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("Last doc", (1+count)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
   }
 
   public void testRange_8bit() throws Exception {
@@ -115,9 +136,9 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("First doc", startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
   }
   
   public void testLeftOpenRange_8bit() throws Exception {
@@ -143,9 +164,9 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("First doc", count*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get(field)) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
   }
   
   public void testRightOpenRange_8bit() throws Exception {
@@ -163,39 +184,47 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
-    // 50 random tests, the tests may also return 0 results, if min>max, but this is ok
+    int termCount=0;
     for (int i=0; i<50; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      if (lower>upper) {
+        long a=lower; lower=upper; upper=a;
+      }
       // test inclusive range
-      Query tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true).asQuery();
+      LongTrieRangeFilter tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true);
       RangeQuery cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), true, true);
       cq.setConstantScoreRewrite(true);
-      TopDocs tTopDocs = searcher.search(tq, 1);
+      TopDocs tTopDocs = searcher.search(tf.asQuery(), 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, false).asQuery();
+      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, false);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), false, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test left exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, true).asQuery();
+      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, true);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), false, true);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
       // test right exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, false).asQuery();
+      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, false);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), true, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tq, 1);
+      tTopDocs = searcher.search(tf.asQuery(), 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCount += tf.getLastNumberOfTerms();
     }
+    System.out.println("Average number of terms during random search: " + (((double)termCount)/(50*4)));
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
@@ -267,9 +296,9 @@ public class TestLongTrieRangeFilter extends LuceneTestCase
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=TrieUtils.prefixCodedToLong(searcher.doc(sd[0].doc).get(field));
+      long last=TrieUtils.prefixCodedToLong(searcher.doc(sd[0].doc).get("value"));
       for (int j=1; j<sd.length; j++) {
-        long act=TrieUtils.prefixCodedToLong(searcher.doc(sd[j].doc).get(field));
+        long act=TrieUtils.prefixCodedToLong(searcher.doc(sd[j].doc).get("value"));
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

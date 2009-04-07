@@ -50,10 +50,14 @@ using a multiple of the original step value.</p>
 are no longer dependent on the index size and the number of distinct values because there is
 an upper limit unrelated to either of these properties.</p>
 
-<h3>Usage</h3>
+<h3>Indexing Usage</h3>
 <p>To use the new query types the numerical values, which may be<code>long</code>, <code>double</code>, <code>int</code>,
 <code>float</code>, or <code>Date</code>, the values must be indexed in a special prefix encoded format
-(using {@link org.apache.lucene.search.trie.TrieUtils}). This can be done like this:</p>
+using {@link org.apache.lucene.search.trie.LongTrieTokenStream} or
+{@link org.apache.lucene.search.trie.IntTrieTokenStream}, which generate the necessary tokens.
+Use {@link org.apache.lucene.search.trie.TrieUtils} to convert floating point values to integers.
+Example code for indexing (it is recommened to disable norms and term frequencies during indexing
+trie encoded fields):</p>
 
 <pre>
   <em>// chose a step value, 8 is a general good value for large indexes:</em>
@@ -67,15 +71,25 @@ an upper limit unrelated to either of these properties.</p>
   
   <em>// add some numerical fields:</em>
   long lvalue = 121345L;
-  TrieUtils.addIndexedFields(doc, "exampleLong", TrieUtils.trieCodeLong(lvalue, precisionStep));
+  Field f = new Field("exampleLong", new LongTrieTokenStream(lvalue, precisionStep));
+  f.setOmitNorms(true); f.setOmitTermFreqAndPositions(true);
+  doc.add(f);
   double dvalue = 1.057E17;
-  TrieUtils.addIndexedFields(doc, "exampleDouble", TrieUtils.trieCodeLong(TrieUtils.doubleToSortableLong(dvalue), precisionStep));
+  f = new Field("exampleDouble", new LongTrieTokenStream(TrieUtils.doubleToSortableLong(dvalue), precisionStep));
+  f.setOmitNorms(true); f.setOmitTermFreqAndPositions(true);
+  doc.add(f);
   int ivalue = 121345;
-  TrieUtils.addIndexedFields(doc, "exampleInt", TrieUtils.trieCodeInt(ivalue, precisionStep));
+  f = new Field("exampleInt", new IntTrieTokenStream(ivalue, precisionStep));
+  f.setOmitNorms(true); f.setOmitTermFreqAndPositions(true);
+  doc.add(f);
   float fvalue = 1.057E17f;
-  TrieUtils.addIndexedFields(doc, "exampleFloat", TrieUtils.trieCodeInt(TrieUtils.floatToSortableInt(fvalue), precisionStep));
+  f = new Field("exampleFloat", new IntTrieTokenStream(TrieUtils.floatToSortableInt(fvalue), precisionStep));
+  f.setOmitNorms(true); f.setOmitTermFreqAndPositions(true);
+  doc.add(f);
   Date datevalue = new Date(); <em>// actual time</em>
-  TrieUtils.addIndexedFields(doc, "exampleDate", TrieUtils.trieCodeLong(datevalue.getTime(), precisionStep));
+  f = new Field("exampleDate", new LongTrieTokenStream(datevalue.getTime(), precisionStep));
+  f.setOmitNorms(true); f.setOmitTermFreqAndPositions(true);
+  doc.add(f);
   
   <em>// if you want to also store one of the values:</em>
   doc.add(new Field("exampleLong", Long.toString(lvalue), Field.Store.YES, Field.Index.NO));
@@ -85,6 +99,11 @@ an upper limit unrelated to either of these properties.</p>
   
   <em>// now add document to IndexWriter, as usual</em>
 </pre>
+
+<p><em>(for higher indexing performance, you can reuse the TokenStreams &ndash;
+more info about this in the stream documentation)</em></p>
+
+<h3>Searching</h3>
 
 <p>The numeric index fields you prepared in this way can be searched by
 {@link org.apache.lucene.search.trie.LongTrieRangeFilter} or {@link org.apache.lucene.search.trie.IntTrieRangeFilter}:</p>
