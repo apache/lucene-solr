@@ -1794,4 +1794,36 @@ public class TestIndexReader extends LuceneTestCase
 
     dir.close();
   }
+
+  // LUCENE-1586: getUniqueTermCount
+  public void testUniqueTermCount() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.commit();
+
+    IndexReader r = IndexReader.open(dir);
+    assertEquals(36, r.getUniqueTermCount());
+    writer.addDocument(doc);
+    writer.commit();
+    IndexReader r2 = r.reopen();
+    r.close();
+    try {
+      r2.getUniqueTermCount();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // expected
+    }
+    IndexReader[] subs = r2.getSequentialSubReaders();
+    for(int i=0;i<subs.length;i++) {
+      assertEquals(36, subs[i].getUniqueTermCount());
+    }
+    r2.close();
+    writer.close();
+    dir.close();
+  }
 }

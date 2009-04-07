@@ -1257,4 +1257,8 @@ class SegmentReader extends DirectoryIndexReader {
   public final Object getFieldCacheKey() {
     return freqStream;
   }
+
+  public long getUniqueTermCount() {
+    return tis.size();
+  }
 }

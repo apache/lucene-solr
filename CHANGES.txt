@@ -207,6 +207,9 @@ New features
     a specific fields to set the score for a document.  (Karl Wettin
     via Mike McCandless)
 
+19. LUCENE-1586: Add IndexReader.getUniqueTermCount().  (Mike
+    McCandless via Derek)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

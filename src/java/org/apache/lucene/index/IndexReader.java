@@ -1254,4 +1254,20 @@ public abstract class IndexReader implements Cloneable {
   public Object getFieldCacheKey() {
     return this;
   }
+
+  /** Returns the number of unique terms (across all fields)
+   *  in this reader.
+   *
+   *  This method returns long, even though internally
+   *  Lucene cannot handle more than 2^31 unique terms, for
+   *  a possible future when this limitation is removed.
+   *
+   *  @throws UnsupportedOperationException if this count
+   *  cannot be easily determined (eg Multi*Readers).
+   *  Instead, you should call {@link
+   *  #getSequentialSubReaders} and ask each sub reader for
+   *  its unique term count. */
+  public long getUniqueTermCount() throws IOException {
+    throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
+  }
 }
