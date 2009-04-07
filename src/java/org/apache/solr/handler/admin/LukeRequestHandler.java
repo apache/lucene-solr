@@ -506,7 +506,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   ///////////////////////////////////////////////////////////////////////////////////////
   
-  private static class TermHistogram 
+  static class TermHistogram 
   {
     int maxBucket = -1;
     public Map<Integer,Integer> hist = new HashMap<Integer, Integer>();
@@ -514,8 +514,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     private static final double LOG2 = Math.log( 2 );
     public static int getPowerOfTwoBucket( int num )
     {
-      int exp = (int)Math.ceil( (Math.log( num ) / LOG2 ) );
-      return (int) Math.pow( 2, exp );
+      return Math.max(1, Integer.highestOneBit(num-1) << 1);
     }
     
     public void add( int df )

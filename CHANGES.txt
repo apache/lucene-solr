@@ -316,7 +316,8 @@ Bug Fixes
 35. SOLR-1072: absolute paths used in sharedLib attribute were
     incorrectly treated as relative paths. (hossman)
 
-
+36. SOLR-1104: Fix some rounding errors in LukeRequestHandler's histogram (hossman)
+    
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
