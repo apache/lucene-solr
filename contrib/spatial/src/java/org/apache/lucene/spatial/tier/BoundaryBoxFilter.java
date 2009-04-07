@@ -33,7 +33,8 @@ import org.apache.lucene.spatial.NumberUtils;
 /**
  * An implementation of org.apache.lucene.search.RangeFilter that
  * caches values extracted from the index.
- * 
+ * @deprecated
+ * @see CartesianShapeFilter
  */
 public class BoundaryBoxFilter extends Filter {
 

@@ -142,6 +142,11 @@ public class DistanceQueryBuilder {
       return new ConstantScoreQuery(getFilter());
   }
 
+  
+  public Query getQuery(Query query){
+  	return new ConstantScoreQuery(getFilter(query));
+  }
+  
   public double getLat() {
     return lat;
   }

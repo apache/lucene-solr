@@ -1,0 +1,130 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.lucene.spatial.tier;
+
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.SortField;
+
+public class DistanceFieldComparatorSource extends FieldComparatorSource {
+
+	private static final long serialVersionUID = 1L;
+
+	private DistanceFilter distanceFilter;
+	private DistanceScoreDocLookupComparator dsdlc;
+
+	public DistanceFieldComparatorSource(Filter distanceFilter) {
+
+		this.distanceFilter = (DistanceFilter) distanceFilter;
+
+	}
+
+	public void cleanUp() {
+		distanceFilter = null;
+
+		if (dsdlc != null)
+			dsdlc.cleanUp();
+
+		dsdlc = null;
+	}
+
+	@Override
+	public FieldComparator newComparator(String fieldname,
+			IndexReader[] subReaders, int numHits, int sortPos, boolean reversed)
+			throws IOException {
+		dsdlc = new DistanceScoreDocLookupComparator(distanceFilter, numHits);
+		return dsdlc;
+	}
+
+	private class DistanceScoreDocLookupComparator extends FieldComparator {
+
+		private DistanceFilter distanceFilter;
+		private double[] values;
+		private double bottom;
+
+		public DistanceScoreDocLookupComparator(DistanceFilter distanceFilter, int numHits) {
+			this.distanceFilter = distanceFilter;
+			values = new double[numHits];
+			return;
+		}
+
+		@Override
+		public int compare(int slot1, int slot2) {
+			double a = values[slot1];
+			double b = values[slot2];
+			if (a > b)
+				return 1;
+			if (a < b)
+				return -1;
+
+			return 0;
+		}
+
+	
+
+		public void cleanUp() {
+			distanceFilter = null;
+		}
+
+		@Override
+		public int compareBottom(int doc, float score) {
+			final double v2 = distanceFilter.getDistance(doc);
+      if (bottom > v2) {
+        return 1;
+      } else if (bottom < v2) {
+        return -1;
+      } 
+			return 0;
+		}
+
+		@Override
+		public void copy(int slot, int doc, float score) {
+			values[slot] = distanceFilter.getDistance(doc);
+		}
+
+		@Override
+		public void setBottom(int slot) {
+			this.bottom = values[slot];
+
+		}
+
+		@Override
+		public void setNextReader(IndexReader reader, int docBase, int numSlotsFull)
+				throws IOException {
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public Comparable<Double> value(int slot) {
+			return values[slot];
+		}
+
+		@Override
+		public int sortType() {
+			
+			return SortField.DOUBLE;
+		}
+	}
+
+}

@@ -138,9 +138,9 @@ public class TestCartesian extends TestCase{
     addPoint(writer,"Iota Club and Cafe",38.8890000,-77.0923000);
     addPoint(writer,"Hilton Washington Embassy Row",38.9103000,-77.0451000);
     addPoint(writer,"HorseFeathers, Bar & Grill", 39.01220000000001, -77.3942);
-    writer.flush();
+   
     writer.commit();
-    //writer.close();
+    writer.close();
   }
   
   public void testRange() throws IOException, InvalidGeoException {
@@ -179,12 +179,12 @@ public class TestCartesian extends TestCase{
     // As the radius filter has performed the distance calculations
     // already, pass in the filter to reuse the results.
     // 
-    DistanceSortSource dsort = new DistanceSortSource(dq.distanceFilter);
-    Sort sort = new Sort(new SortField("foo", dsort));
+    DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
+    Sort sort = new Sort(new SortField("foo", dsort,false));
     
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    Hits hits = searcher.search(customScore, dq.getFilter()); //,sort);
+    Hits hits = searcher.search(customScore, dq.getFilter(),sort);
 
     int results = hits.length();
     
@@ -206,7 +206,7 @@ public class TestCartesian extends TestCase{
 
     assertEquals(14, distances.size());
     assertEquals(7, results);
-    
+    double lastDistance = 0;
     for(int i =0 ; i < results; i++){
       Document d = hits.doc(i);
       
@@ -217,9 +217,11 @@ public class TestCartesian extends TestCase{
       
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
       double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-      System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+      System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
       assertTrue(Math.abs((distance - llm)) < 1);
       assertTrue((distance < miles ));
+      assertTrue(geo_distance > lastDistance);
+      lastDistance = geo_distance;
     }
   }
   
@@ -302,6 +304,7 @@ public class TestCartesian extends TestCase{
 	      System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
 	      assertTrue(Math.abs((distance - llm)) < 1);
 	      assertTrue((distance < miles ));
+	      
 	    }
 	  }
   

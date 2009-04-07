@@ -26,6 +26,11 @@ import org.apache.lucene.search.ScoreDocComparator;
 import org.apache.lucene.search.SortComparatorSource;
 import org.apache.lucene.search.SortField;
 
+/**
+ * 
+ * @deprecated
+ * @see DistanceFieldComparatorSource
+ */
 public class DistanceSortSource implements SortComparatorSource {
 
   private static final long serialVersionUID = 1L;
