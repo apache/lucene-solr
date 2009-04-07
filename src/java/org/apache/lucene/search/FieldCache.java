@@ -82,6 +82,18 @@ public interface FieldCache {
   public interface Parser {
   }
 
+  /**
+   * Expert: when thrown from a custom Parser, this stops
+   * processing terms and returns the current FieldCache
+   * array.
+   * 
+   * <p><b>NOTE</b>: This API is experimental and likely to
+   * change in incompatible ways, or be removed entirely, in
+   * the next release.
+   */
+  public static class StopFillCacheException extends RuntimeException {
+  }
+
   /** Interface to parse bytes from document fields.
    * @see FieldCache#getBytes(IndexReader, String, FieldCache.ByteParser)
    */

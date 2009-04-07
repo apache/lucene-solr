@@ -73,6 +73,7 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
@@ -113,6 +114,7 @@ class ExtendedFieldCacheImpl extends FieldCacheImpl implements ExtendedFieldCach
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();

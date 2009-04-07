@@ -196,6 +196,7 @@ implements FieldCache {
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
@@ -235,6 +236,7 @@ implements FieldCache {
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
@@ -274,6 +276,7 @@ implements FieldCache {
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
@@ -315,6 +318,7 @@ implements FieldCache {
             retArray[termDocs.doc()] = termval;
           }
         } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
       } finally {
         termDocs.close();
         termEnum.close();
