@@ -36,7 +36,10 @@ public final class ShiftAttribute extends Attribute implements Cloneable, Serial
     return shift;
   }
 
-  void setShift(final int shift) {
+  /**
+   * Sets the shift value.
+   */
+  public void setShift(final int shift) {
     this.shift = shift;
   }
   
