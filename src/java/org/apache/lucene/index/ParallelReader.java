@@ -436,6 +436,7 @@ public class ParallelReader extends IndexReader {
     return (IndexReader[]) readers.toArray(new IndexReader[readers.size()]);
   }
 
+  /** @deprecated */
   protected void doCommit() throws IOException {
     doCommit(null);
   }

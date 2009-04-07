@@ -346,6 +346,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return new MultiTermPositions(subReaders, starts);
   }
 
+  /** @deprecated */
   protected void doCommit() throws IOException {
     doCommit(null);
   }

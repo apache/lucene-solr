@@ -350,6 +350,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
       directory.close();
   }
   
+  /** @deprecated */
   protected void doCommit() throws IOException {
     doCommit(null);
   }
