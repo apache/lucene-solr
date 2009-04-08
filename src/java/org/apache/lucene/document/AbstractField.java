@@ -15,6 +15,9 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.PhraseQuery; // for javadocs
+import org.apache.lucene.search.spans.SpanQuery; // for javadocs
+
 
 /**
  *
@@ -263,8 +266,10 @@ public abstract class AbstractField implements Fieldable {
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }
 
+  /** @deprecated Renamed to {@link #getOmitTermFreqAndPositions} */
   public boolean getOmitTf() { return omitTermFreqAndPositions; }
 
+  /** @see #setOmitTermFreqAndPositions */
   public boolean getOmitTermFreqAndPositions() { return omitTermFreqAndPositions; }
   
   /** Expert:
@@ -274,8 +279,20 @@ public abstract class AbstractField implements Fieldable {
    */
   public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
 
+  /** @deprecated Renamed to {@link #setOmitTermFreqAndPositions} */
   public void setOmitTf(boolean omitTermFreqAndPositions) { this.omitTermFreqAndPositions=omitTermFreqAndPositions; }
 
+  /** Expert:
+   *
+   * If set, omit term freq, positions and payloads from
+   * postings for this field.
+   *
+   * <p><b>NOTE</b>: While this option reduces storage space
+   * required in the index, it also means any query
+   * requiring positional information, such as {@link
+   * PhraseQuery} or {@link SpanQuery} subclasses will
+   * silently fail to find results.
+   */
   public void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions) { this.omitTermFreqAndPositions=omitTermFreqAndPositions; }
  
   public boolean isLazy() {

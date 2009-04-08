@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 
 import java.text.NumberFormat;
@@ -29,7 +30,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
-import org.apache.lucene.document.Fieldable;          // for javadoc
 
 /**
  * Basic tool and API to check the health of an index and
@@ -167,7 +167,7 @@ public class CheckIndex {
 
       /** True if at least one of the fields in this segment
        *  does not omitTermFreqAndPositions.
-       *  @see Fieldable#setOmitTermFreqAndPositions */
+       *  @see AbstractField#setOmitTermFreqAndPositions */
       public boolean hasProx;
     }
   }

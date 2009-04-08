@@ -17,9 +17,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.PhraseQuery;      // for javadocs
-import org.apache.lucene.search.spans.SpanQuery;  // for javadocs
+import org.apache.lucene.index.FieldInvertState; // for javadocs
 
 import java.io.Reader;
 import java.io.Serializable;
@@ -147,26 +145,11 @@ public interface Fieldable extends Serializable {
    */
   void setOmitNorms(boolean omitNorms);
 
-  /** @deprecated Renamed to {@link #setOmitTermFreqAndPositions} */
+  /** @deprecated Renamed to {@link AbstractField#setOmitTermFreqAndPositions} */
   void setOmitTf(boolean omitTf);
 
-  /** @deprecated Renamed to {@link #getOmitTermFreqAndPositions} */
+  /** @deprecated Renamed to {@link AbstractField#getOmitTermFreqAndPositions} */
   boolean getOmitTf();
-
-  /** Expert:
-   *
-   * If set, omit term freq, positions and payloads from postings for this field.
-   * <p><b>NOTE</b>: this is a dangerous option to enable.
-   * While it reduces storage space required in the index,
-   * it also means any query requiring positional
-   * infromation, such as {@link PhraseQuery} or {@link
-   * SpanQuery} subclasses will silently fail to find
-   * results.
-   */
-  void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
-
-  /** True if tf is omitted for this indexed field */
-  boolean getOmitTermFreqAndPositions();
 
   /**
    * Indicates whether a Field is Lazy or not.  The semantics of Lazy loading are such that if a Field is lazily loaded, retrieving
