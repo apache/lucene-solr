@@ -224,7 +224,7 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
       assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
       termCount += tf.getLastNumberOfTerms();
     }
-    System.out.println("Average number of terms during random search: " + (((double)termCount)/(50*4)));
+    System.out.println("Average number of terms during random search on '" + field + "': " + (((double)termCount)/(50*4)));
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
