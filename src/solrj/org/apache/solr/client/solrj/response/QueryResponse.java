@@ -131,8 +131,11 @@ public class QueryResponse extends SolrResponseBase
       NamedList<NamedList<Object>> ff = (NamedList<NamedList<Object>>) info.get( "stats_fields" );
       if( ff != null ) {
         for( Map.Entry<String,NamedList<Object>> entry : ff ) {
-          _fieldStatsInfo.put( entry.getKey(), 
-              new FieldStatsInfo( entry.getValue(), entry.getKey() ) );
+          NamedList<Object> v = entry.getValue();
+          if( v != null ) {
+            _fieldStatsInfo.put( entry.getKey(), 
+                new FieldStatsInfo( v, entry.getKey() ) );
+          }
         }
       }
     }
