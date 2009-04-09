@@ -51,7 +51,21 @@ public class TestStressIndexing2 extends LuceneTestCase {
       return true;
     }
   }
-
+  
+  public void testRandomIWReader() throws Throwable {
+    r = newRandom();
+    Directory dir = new MockRAMDirectory();
+    
+    // TODO: verify equals using IW.getReader
+    DocsAndWriter dw = indexRandomIWReader(10, 100, 100, dir);
+    IndexReader r = dw.writer.getReader();
+    dw.writer.commit();
+    verifyEquals(r, dir, "id");
+    r.close();
+    dw.writer.close();
+    dir.close();
+  }
+  
   public void testRandom() throws Throwable {
     r = newRandom();
     Directory dir1 = new MockRAMDirectory();
@@ -101,19 +115,68 @@ public class TestStressIndexing2 extends LuceneTestCase {
   // This test avoids using any extra synchronization in the multiple
   // indexing threads to test that IndexWriter does correctly synchronize
   // everything.
+  
+  public static class DocsAndWriter {
+    Map docs;
+    IndexWriter writer;
+  }
+  
+  public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
+    Map docs = new HashMap();
+    IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+    w.setUseCompoundFile(false);
 
+    /***
+        w.setMaxMergeDocs(Integer.MAX_VALUE);
+        w.setMaxFieldLength(10000);
+        w.setRAMBufferSizeMB(1);
+        w.setMergeFactor(10);
+    ***/
+
+    // force many merges
+    w.setMergeFactor(mergeFactor);
+    w.setRAMBufferSizeMB(.1);
+    w.setMaxBufferedDocs(maxBufferedDocs);
+
+    threads = new IndexingThread[nThreads];
+    for (int i=0; i<threads.length; i++) {
+      IndexingThread th = new IndexingThread();
+      th.w = w;
+      th.base = 1000000*i;
+      th.range = range;
+      th.iterations = iterations;
+      threads[i] = th;
+    }
+
+    for (int i=0; i<threads.length; i++) {
+      threads[i].start();
+    }
+    for (int i=0; i<threads.length; i++) {
+      threads[i].join();
+    }
+
+    // w.optimize();
+    //w.close();    
+
+    for (int i=0; i<threads.length; i++) {
+      IndexingThread th = threads[i];
+      synchronized(th) {
+        docs.putAll(th.docs);
+      }
+    }
+
+    _TestUtil.checkIndex(dir);
+    DocsAndWriter dw = new DocsAndWriter();
+    dw.docs = docs;
+    dw.writer = w;
+    return dw;
+  }
+  
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map docs = new HashMap();
     for(int iter=0;iter<3;iter++) {
       IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
       w.setUseCompoundFile(false);
-
-      /***
-          w.setMaxMergeDocs(Integer.MAX_VALUE);
-          w.setMaxFieldLength(10000);
-          w.setRAMBufferSizeMB(1);
-          w.setMergeFactor(10);
-      ***/
 
       // force many merges
       w.setMergeFactor(mergeFactor);
@@ -177,6 +240,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
     
     w.close();
   }
+  
+  public static void verifyEquals(IndexReader r1, Directory dir2, String idField) throws Throwable {
+    IndexReader r2 = IndexReader.open(dir2);
+    verifyEquals(r1, r2, idField);
+    r2.close();
+  }
 
   public static void verifyEquals(Directory dir1, Directory dir2, String idField) throws Throwable {
     IndexReader r1 = IndexReader.open(dir1);
@@ -222,7 +291,14 @@ public class TestStressIndexing2 extends LuceneTestCase {
       r2r1[id2] = id1;
 
       // verify stored fields are equivalent
-      verifyEquals(r1.document(id1), r2.document(id2));
+      try {
+        verifyEquals(r1.document(id1), r2.document(id2));
+      } catch (Throwable t) {
+        System.out.println("FAILED id=" + term + " id1=" + id1 + " id2=" + id2 + " term="+ term);
+        System.out.println("  d1=" + r1.document(id1));
+        System.out.println("  d2=" + r2.document(id2));
+        throw t;
+      }
 
       try {
         // verify term vectors are equivalent        

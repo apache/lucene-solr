@@ -212,7 +212,7 @@ public class MockRAMDirectory extends RAMDirectory {
       if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
         throw new IOException("file \"" + name + "\" was already written to");
       if (noDeleteOpenFile && openFiles.containsKey(name))
-       throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
+        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
     }
     RAMFile file = new RAMFile(this);
     synchronized (this) {
@@ -234,7 +234,7 @@ public class MockRAMDirectory extends RAMDirectory {
       }
     }
 
-    return new MockRAMOutputStream(this, file);
+    return new MockRAMOutputStream(this, file, name);
   }
 
   public IndexInput openInput(String name) throws IOException {

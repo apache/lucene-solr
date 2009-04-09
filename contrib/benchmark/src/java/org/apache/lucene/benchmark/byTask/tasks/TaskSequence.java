@@ -57,6 +57,13 @@ public class TaskSequence extends PerfTask {
     tasks = new ArrayList();
   }
 
+  public void close() throws Exception {
+    initTasksArray();
+    for(int i=0;i<tasksArray.length;i++) {
+      tasksArray[i].close();
+    }
+  }
+
   private void initTasksArray() {
     if (tasksArray == null) {
       final int numTasks = tasks.size();

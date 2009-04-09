@@ -30,7 +30,11 @@ class ReadOnlyMultiSegmentReader extends MultiSegmentReader {
   ReadOnlyMultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone) throws IOException {
     super(directory, infos, closeDirectory, oldReaders, oldStarts, oldNormsCache, true, doClone);
   }
-
+  
+  ReadOnlyMultiSegmentReader(IndexWriter writer, SegmentInfos infos) throws IOException {
+    super(writer, infos);
+  }
+  
   protected void acquireWriteLock() {
     ReadOnlySegmentReader.noWrite();
   }

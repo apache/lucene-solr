@@ -51,19 +51,68 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
 
     SegmentReader[] readers = new SegmentReader[sis.size()];
     for (int i = sis.size()-1; i >= 0; i--) {
+      boolean success = false;
       try {
         readers[i] = SegmentReader.get(readOnly, sis.info(i));
-      } catch (IOException e) {
-        // Close all readers we had opened:
-        for(i++;i<sis.size();i++) {
-          try {
-            readers[i].close();
-          } catch (IOException ignore) {
-            // keep going - we want to clean up as much as possible
+        success = true;
+      } finally {
+        if (!success) {
+          // Close all readers we had opened:
+          for(i++;i<sis.size();i++) {
+            try {
+              readers[i].close();
+            } catch (Throwable ignore) {
+              // keep going - we want to clean up as much as possible
+            }
           }
         }
-        throw e;
       }
+    }
+
+    initialize(readers);
+  }
+
+  // Used by near real-time search
+  MultiSegmentReader(IndexWriter writer, SegmentInfos infos) throws IOException {
+    super(writer.getDirectory(), infos, false, true);
+
+    // IndexWriter synchronizes externally before calling
+    // us, which ensures infos will not change; so there's
+    // no need to process segments in reverse order
+    final int numSegments = infos.size();
+    SegmentReader[] readers = new SegmentReader[numSegments];
+    final Directory dir = writer.getDirectory();
+    int upto = 0;
+
+    for (int i=0;i<numSegments;i++) {
+      boolean success = false;
+      try {
+        final SegmentInfo info = infos.info(upto);
+        if (info.dir == dir) {
+          readers[upto++] = writer.readerPool.getReadOnlyClone(info, true);
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          // Close all readers we had opened:
+          for(upto--;upto>=0;upto--) {
+            try {
+              readers[upto].close();
+            } catch (Throwable ignore) {
+              // keep going - we want to clean up as much as possible
+            }
+          }
+        }
+      }
+    }
+
+    this.writer = writer;
+
+    if (upto < readers.length) {
+      // This means some segments were in a foreign Directory
+      SegmentReader[] newReaders = new SegmentReader[upto];
+      System.arraycopy(readers, 0, newReaders, 0, upto);
+      readers = newReaders;
     }
 
     initialize(readers);

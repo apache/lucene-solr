@@ -27,6 +27,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.Random;
+
 
 /**
  * A DocMaker reading one line at a time as a Document from
@@ -38,6 +40,11 @@ import java.io.InputStreamReader;
  * Config properties:
  * docs.file=&lt;path to the file%gt;
  * doc.reuse.fields=true|false (default true)
+ * doc.random.id.limit=N (default -1) -- create random
+ *   docid in the range 0..N; this is useful
+ *   with UpdateDoc to test updating random documents; if
+ *   this is unspecified or -1, then docid is sequentially
+ *   assigned
  */
 public class LineDocMaker extends BasicDocMaker {
 
@@ -50,6 +57,8 @@ public class LineDocMaker extends BasicDocMaker {
   private final DocState localDocState = new DocState();
 
   private boolean doReuseFields = true;
+  private Random r;
+  private int numDocs;
   
   class DocState {
     Document doc;
@@ -86,6 +95,11 @@ public class LineDocMaker extends BasicDocMaker {
 
     final static String SEP = WriteLineDocTask.SEP;
 
+    private int numDocsCreated;
+    private synchronized int incrNumDocsCreated() {
+      return numDocsCreated++;
+    }
+
     public Document setFields(String line) {
       // title <TAB> date <TAB> body <NEWLINE>
       final String title, date, body;
@@ -102,12 +116,22 @@ public class LineDocMaker extends BasicDocMaker {
       } else
         title = date = body = "";
 
+      final String docID;
+      if (r != null) {
+        docID = "doc" + r.nextInt(numDocs);
+      } else {
+        docID = "doc" + incrNumDocsCreated();
+      }
+
       if (doReuseFields) {
+        idField.setValue(docID);
         titleField.setValue(title);
         dateField.setValue(date);
         bodyField.setValue(body);
         return doc;
       } else {
+        Field localIDField = new Field(BasicDocMaker.ID_FIELD, docID, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+
         Field localTitleField = new Field(BasicDocMaker.TITLE_FIELD,
                                           title,
                                           storeVal,
@@ -124,6 +148,7 @@ public class LineDocMaker extends BasicDocMaker {
                                          Field.Index.ANALYZED,
                                          termVecVal);
         Document localDoc = new Document();
+        localDoc.add(localIDField);
         localDoc.add(localBodyField);
         localDoc.add(localTitleField);
         localDoc.add(localDateField);
@@ -183,6 +208,10 @@ public class LineDocMaker extends BasicDocMaker {
   public void setConfig(Config config) {
     super.setConfig(config);
     doReuseFields = config.get("doc.reuse.fields", true);
+    numDocs = config.get("doc.random.id.limit", -1);
+    if (numDocs != -1) {
+      r = new Random(179);
+    }
   }
 
   synchronized void openFile() {

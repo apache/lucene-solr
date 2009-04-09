@@ -24,6 +24,7 @@ final class SegmentMergeInfo {
   int base;
   TermEnum termEnum;
   IndexReader reader;
+  int delCount;
   private TermPositions postings;  // use getPositions()
   private int[] docMap;  // use getDocMap()
 
@@ -38,19 +39,21 @@ final class SegmentMergeInfo {
   // maps around deleted docs
   int[] getDocMap() {
     if (docMap == null) {
-    // build array which maps document numbers around deletions 
-    if (reader.hasDeletions()) {
-      int maxDoc = reader.maxDoc();
-      docMap = new int[maxDoc];
-      int j = 0;
-      for (int i = 0; i < maxDoc; i++) {
-        if (reader.isDeleted(i))
-          docMap[i] = -1;
-        else
-          docMap[i] = j++;
+      delCount = 0;
+      // build array which maps document numbers around deletions 
+      if (reader.hasDeletions()) {
+        int maxDoc = reader.maxDoc();
+        docMap = new int[maxDoc];
+        int j = 0;
+        for (int i = 0; i < maxDoc; i++) {
+          if (reader.isDeleted(i)) {
+            delCount++;
+            docMap[i] = -1;
+          } else
+            docMap[i] = j++;
+        }
       }
     }
-  }
     return docMap;
   }
 

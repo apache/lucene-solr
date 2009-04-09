@@ -216,6 +216,13 @@ New features
 19. LUCENE-1586: Add IndexReader.getUniqueTermCount().  (Mike
     McCandless via Derek)
 
+20. LUCENE-1516: Added "near real-time search" to IndexWriter, via a
+    new expert getReader() method.  This method returns a reader that
+    searches the full index, including any uncommitted changes in the
+    current IndexWriter session.  This should result in a faster
+    turnaround than the normal approach of commiting the changes and
+    then reopening a reader.  (Jason Rutherglen via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

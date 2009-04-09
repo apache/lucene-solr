@@ -29,6 +29,7 @@ import java.util.Collections;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.FSDirectory;
 
 /**
@@ -51,6 +52,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
    * rollback is necessary */
   private boolean rollbackHasChanges;
   private SegmentInfos rollbackSegmentInfos;
+  IndexWriter writer;
 
   protected boolean readOnly;
 
@@ -183,10 +185,12 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
       newReader.init(directory, clonedInfos, closeDirectory, openReadOnly);
       newReader.deletionPolicy = deletionPolicy;
     }
-
+    newReader.writer = writer;
     // If we're cloning a non-readOnly reader, move the
     // writeLock (if there is one) to the new reader:
     if (!openReadOnly && writeLock != null) {
+      // In near real-time search, reader is always readonly
+      assert writer == null;
       newReader.writeLock = writeLock;
       writeLock = null;
       hasChanges = false;
@@ -202,6 +206,29 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
     ensureOpen();
 
     assert commit == null || openReadOnly;
+
+    // If we were obtained by writer.getReader(), re-ask the
+    // writer to get a new reader.
+    if (writer != null) {
+      assert readOnly;
+
+      if (!openReadOnly) {
+        throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() can only be reopened with openReadOnly=true (got false)");
+      }
+
+      if (commit != null) {
+        throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
+      }
+
+      if (!writer.isOpen(true)) {
+        throw new AlreadyClosedException("cannot reopen: the IndexWriter this reader was obtained from is now closed");
+      }
+
+      // TODO: right now we *always* make a new reader; in
+      // the future we could have write make some effort to
+      // detect that no changes have occurred
+      return writer.getReader();
+    }
 
     if (commit == null) {
       if (hasChanges) {

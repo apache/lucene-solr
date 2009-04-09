@@ -61,6 +61,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
 
     MockRAMDirectory dir2 = new MockRAMDirectory();
     runTest(dir2);
+    dir2.close();
   }
 
   public void testReuseAcrossWriters() throws Exception {

@@ -354,6 +354,11 @@ public abstract class IndexReader implements Cloneable {
    * Be sure to synchronize that code so that other threads,
    * if present, can never use reader after it has been
    * closed and before it's switched to newReader.
+   *
+   * <p><b>NOTE</b>: If this reader is a near real-time
+   * reader (obtained from {@link IndexWriter#getReader()},
+   * reopen() will simply call writer.getReader() again for
+   * you, though this may change in the future.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error

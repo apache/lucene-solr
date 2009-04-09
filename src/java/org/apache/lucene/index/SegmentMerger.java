@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -514,8 +513,11 @@ final class SegmentMerger {
         docMaps[i] = docMap;
         delCounts[i] = smi.reader.maxDoc() - smi.reader.numDocs();
       }
-
+      
       base += reader.numDocs();
+
+      assert reader.numDocs() == reader.maxDoc() - smi.delCount;
+
       if (smi.next())
         queue.put(smi);				  // initialize queue
       else

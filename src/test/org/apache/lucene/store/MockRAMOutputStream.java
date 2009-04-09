@@ -29,13 +29,15 @@ import java.io.IOException;
 public class MockRAMOutputStream extends RAMOutputStream {
   private MockRAMDirectory dir;
   private boolean first=true;
+  private final String name;
   
   byte[] singleByte = new byte[1];
 
   /** Construct an empty output buffer. */
-  public MockRAMOutputStream(MockRAMDirectory dir, RAMFile f) {
+  public MockRAMOutputStream(MockRAMDirectory dir, RAMFile f, String name) {
     super(f);
     this.dir = dir;
+    this.name = name;
   }
 
   public void close() throws IOException {
@@ -66,7 +68,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
     // If MockRAMDir crashed since we were opened, then
     // don't write anything:
     if (dir.crashed)
-      throw new IOException("MockRAMDirectory was crashed");
+      throw new IOException("MockRAMDirectory was crashed; cannot write to " + name);
 
     // Enforce disk full:
     if (dir.maxSize != 0 && freeSpace <= len) {
@@ -84,7 +86,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes");
+      throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name);
     } else {
       super.writeBytes(b, offset, len);
     }

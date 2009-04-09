@@ -1131,7 +1131,7 @@ public class TestIndexReader extends LuceneTestCase
       // IllegalStateException because above out-of-bounds
       // deleteDocument corrupted the index:
       writer.optimize();
-
+      writer.close();
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
       }

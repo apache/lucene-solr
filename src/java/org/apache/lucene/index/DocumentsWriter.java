@@ -915,25 +915,17 @@ final class DocumentsWriter {
     int docStart = 0;
     boolean any = false;
     for (int i = 0; i < infosEnd; i++) {
-      IndexReader reader = SegmentReader.get(infos.info(i), false);
-      boolean success = false;
+
+      // Make sure we never attempt to apply deletes to
+      // segment in external dir
+      assert infos.info(i).dir == directory;
+
+      SegmentReader reader = writer.readerPool.get(infos.info(i), false);
       try {
         any |= applyDeletes(reader, docStart);
         docStart += reader.maxDoc();
-        success = true;
       } finally {
-        if (reader != null) {
-          try {
-            if (success)
-              reader.commit();
-          } finally {
-            // Force reader to not have changes; if we hit
-            // an exception during commit, we don't want
-            // close to retry the commit:
-            reader.hasChanges = false;
-            reader.close();
-          }
-        }
+        writer.readerPool.release(reader);
       }
     }
 

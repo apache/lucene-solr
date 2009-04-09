@@ -71,6 +71,9 @@ public abstract class PerfTask implements Cloneable {
     return super.clone();
   }
 
+  public void close() throws Exception {
+  }
+
   /**
    * Run the task, record statistics.
    * @return number of work items done by this task.

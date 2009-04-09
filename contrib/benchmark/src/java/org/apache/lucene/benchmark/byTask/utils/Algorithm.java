@@ -243,7 +243,11 @@ public class Algorithm {
    * @throws Exception 
    */
   public void execute() throws Exception {
-    sequence.runAndMaybeStats(true);
+    try {
+      sequence.runAndMaybeStats(true);
+    } finally {
+      sequence.close();
+    }
   }
 
   /**

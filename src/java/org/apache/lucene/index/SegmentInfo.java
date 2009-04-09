@@ -79,6 +79,10 @@ final class SegmentInfo {
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
+  public String toString() {
+    return "si: "+dir.toString()+" "+name+" docCount: "+docCount+" delCount: "+delCount+" delFileName: "+getDelFileName();
+  }
+  
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -489,6 +493,12 @@ final class SegmentInfo {
   void setDocStoreOffset(int offset) {
     docStoreOffset = offset;
     clearFiles();
+  }
+
+  void setDocStore(int offset, String segment, boolean isCompoundFile) {        
+    docStoreOffset = offset;
+    docStoreSegment = segment;
+    docStoreIsCompoundFile = isCompoundFile;
   }
   
   /**

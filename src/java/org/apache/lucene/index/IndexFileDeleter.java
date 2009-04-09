@@ -485,7 +485,7 @@ final class IndexFileDeleter {
   private RefCount getRefCount(String fileName) {
     RefCount rc;
     if (!refCounts.containsKey(fileName)) {
-      rc = new RefCount();
+      rc = new RefCount(fileName);
       refCounts.put(fileName, rc);
     } else {
       rc = (RefCount) refCounts.get(fileName);
@@ -543,14 +543,26 @@ final class IndexFileDeleter {
    */
   final private static class RefCount {
 
+    // fileName used only for better assert error messages
+    final String fileName;
+    boolean initDone;
+    RefCount(String fileName) {
+      this.fileName = fileName;
+    }
+
     int count;
 
     public int IncRef() {
+      if (!initDone) {
+        initDone = true;
+      } else {
+        assert count > 0: "RefCount is 0 pre-increment for file \"" + fileName + "\"";
+      }
       return ++count;
     }
 
     public int DecRef() {
-      assert count > 0;
+      assert count > 0: "RefCount is 0 pre-decrement for file \"" + fileName + "\"";
       return --count;
     }
   }

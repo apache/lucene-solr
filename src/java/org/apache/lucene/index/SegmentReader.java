@@ -469,6 +469,55 @@ class SegmentReader extends DirectoryIndexReader {
     return instance;
   }
 
+  synchronized void openDocStores() throws IOException {
+    if (fieldsReaderOrig == null) {
+      final Directory storeDir;
+      if (si.getDocStoreOffset() != -1) {
+        if (si.getDocStoreIsCompoundFile()) {
+          storeCFSReader = new CompoundFileReader(directory(),
+                                                  si.getDocStoreSegment() + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION,
+                                                  readBufferSize);
+          storeDir = storeCFSReader;
+          assert storeDir != null;
+        } else {
+          storeDir = directory();
+          assert storeDir != null;
+        }
+      } else if (si.getUseCompoundFile()) {
+        // In some cases, we were originally opened when CFS
+        // was not used, but then we are asked to open doc
+        // stores after the segment has switched to CFS
+        if (cfsReader == null) {
+          cfsReader = new CompoundFileReader(directory(), segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
+        }
+        storeDir = cfsReader;
+        assert storeDir != null;
+      } else {
+        storeDir = directory();
+        assert storeDir != null;
+      }
+
+      final String storesSegment;
+      if (si.getDocStoreOffset() != -1) {
+        storesSegment = si.getDocStoreSegment();
+      } else {
+        storesSegment = segment;
+      }
+
+      fieldsReaderOrig = new FieldsReader(storeDir, storesSegment, fieldInfos, readBufferSize,
+                                          si.getDocStoreOffset(), si.docCount);
+
+      // Verify two sources of "maxDoc" agree:
+      if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
+        throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
+      }
+
+      if (fieldInfos.hasVectors()) { // open term vector files only as needed
+        termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
+      }
+    }
+  }
+
   private void initialize(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
     segment = si.name;
     this.si = si;
@@ -484,46 +533,17 @@ class SegmentReader extends DirectoryIndexReader {
         cfsDir = cfsReader;
       }
 
-      final Directory storeDir;
+      fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
 
       if (doOpenStores) {
-        if (si.getDocStoreOffset() != -1) {
-          if (si.getDocStoreIsCompoundFile()) {
-            storeCFSReader = new CompoundFileReader(directory(), si.getDocStoreSegment() + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION, readBufferSize);
-            storeDir = storeCFSReader;
-          } else {
-            storeDir = directory();
-          }
-        } else {
-          storeDir = cfsDir;
-        }
-      } else
-        storeDir = null;
-
-      fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
+        openDocStores();
+      }
 
       boolean anyProx = false;
       final int numFields = fieldInfos.size();
       for(int i=0;!anyProx && i<numFields;i++)
         if (!fieldInfos.fieldInfo(i).omitTermFreqAndPositions)
           anyProx = true;
-
-      final String fieldsSegment;
-
-      if (si.getDocStoreOffset() != -1)
-        fieldsSegment = si.getDocStoreSegment();
-      else
-        fieldsSegment = segment;
-
-      if (doOpenStores) {
-        fieldsReaderOrig = new FieldsReader(storeDir, fieldsSegment, fieldInfos, readBufferSize,
-                                            si.getDocStoreOffset(), si.docCount);
-
-        // Verify two sources of "maxDoc" agree:
-        if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
-          throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
-        }
-      }
 
       tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
       
@@ -536,14 +556,6 @@ class SegmentReader extends DirectoryIndexReader {
         proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
       openNorms(cfsDir, readBufferSize);
 
-      if (doOpenStores && fieldInfos.hasVectors()) { // open term vector files only as needed
-        final String vectorsSegment;
-        if (si.getDocStoreOffset() != -1)
-          vectorsSegment = si.getDocStoreSegment();
-        else
-          vectorsSegment = segment;
-        termVectorsReaderOrig = new TermVectorsReader(storeDir, vectorsSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
-      }
       success = true;
     } finally {
 
@@ -1210,7 +1222,7 @@ class SegmentReader extends DirectoryIndexReader {
   /**
    * Return the name of the segment this reader is reading.
    */
-  String getSegmentName() {
+  public String getSegmentName() {
     return segment;
   }
   
