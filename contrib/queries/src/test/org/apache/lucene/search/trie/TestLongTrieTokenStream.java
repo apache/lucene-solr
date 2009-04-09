@@ -29,8 +29,10 @@ public class TestLongTrieTokenStream extends LuceneTestCase {
   public void testStreamNewAPI() throws Exception {
     final LongTrieTokenStream stream=new LongTrieTokenStream(value, precisionStep);
     stream.setUseNewAPI(true);
-    final ShiftAttribute shiftAtt = (ShiftAttribute) stream.addAttribute(ShiftAttribute.class);
-    final TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+    final ShiftAttribute shiftAtt = (ShiftAttribute) stream.getAttribute(ShiftAttribute.class);
+    assertNotNull("Has shift attribute", shiftAtt);
+    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    assertNotNull("Has term attribute", termAtt);
     for (int shift=0; shift<64; shift+=precisionStep) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value", shift, shiftAtt.getShift());
