@@ -64,6 +64,14 @@ class DocHelper {
   public static Field noNormsField = new Field(NO_NORMS_KEY, NO_NORMS_TEXT,
       Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
 
+  public static final String NO_TF_TEXT = "analyzed with no tf and positions";
+  public static final String NO_TF_KEY = "omitTermFreqAndPositions";
+  public static Field noTFField = new Field(NO_TF_KEY, NO_TF_TEXT,
+      Field.Store.YES, Field.Index.ANALYZED);
+  static {
+    noTFField.setOmitTermFreqAndPositions(true);
+  }
+
   public static final String UNINDEXED_FIELD_TEXT = "unindexed field text";
   public static final String UNINDEXED_FIELD_KEY = "unIndField";
   public static Field unIndField = new Field(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT,
@@ -119,6 +127,7 @@ class DocHelper {
     compressedTextField2,
     keyField,
     noNormsField,
+    noTFField,
     unIndField,
     unStoredField1,
     unStoredField2,
@@ -139,6 +148,7 @@ class DocHelper {
   public static Map notermvector=new HashMap();
   public static Map lazy= new HashMap();
   public static Map noNorms=new HashMap();
+  public static Map noTf=new HashMap();
 
   static {
     //Initialize the large Lazy Field
@@ -167,6 +177,7 @@ class DocHelper {
       if (f.isStored()) add(stored,f);
       else add(unstored,f);
       if (f.getOmitNorms()) add(noNorms,f);
+      if (f.getOmitTf()) add(noTf,f);
       if (f.isLazy()) add(lazy, f);
     }
   }
@@ -186,6 +197,7 @@ class DocHelper {
     nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);
     nameValues.put(KEYWORD_FIELD_KEY, KEYWORD_TEXT);
     nameValues.put(NO_NORMS_KEY, NO_NORMS_TEXT);
+    nameValues.put(NO_TF_KEY, NO_TF_TEXT);
     nameValues.put(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT);

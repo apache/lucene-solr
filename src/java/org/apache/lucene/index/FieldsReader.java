@@ -322,6 +322,7 @@ final class FieldsReader implements Cloneable {
         //skip over the part that we aren't loading
         fieldsStream.seek(pointer + toRead);
         f.setOmitNorms(fi.omitNorms);
+        f.setOmitTf(fi.omitTermFreqAndPositions);
       } else {
         int length = fieldsStream.readVInt();
         long pointer = fieldsStream.getFilePointer();
@@ -332,6 +333,7 @@ final class FieldsReader implements Cloneable {
           fieldsStream.skipChars(length);
         f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
         f.setOmitNorms(fi.omitNorms);
+        f.setOmitTf(fi.omitTermFreqAndPositions);
       }
       doc.add(f);
     }
@@ -365,7 +367,6 @@ final class FieldsReader implements Cloneable {
         doc.add(new Field(fi.name, uncompress(b), Field.Store.COMPRESS));
       else
         doc.add(new Field(fi.name, b, Field.Store.YES));
-
     } else {
       Field.Store store = Field.Store.YES;
       Field.Index index = getIndexType(fi, tokenize);
@@ -383,6 +384,7 @@ final class FieldsReader implements Cloneable {
                 store,
                 index,
                 termVector);
+        f.setOmitTf(fi.omitTermFreqAndPositions);
         f.setOmitNorms(fi.omitNorms);
       } else {
         f = new Field(fi.name,     // name
@@ -390,6 +392,7 @@ final class FieldsReader implements Cloneable {
                 store,
                 index,
                 termVector);
+        f.setOmitTf(fi.omitTermFreqAndPositions);
         f.setOmitNorms(fi.omitNorms);
       }
       doc.add(f);
@@ -641,6 +644,7 @@ final class FieldsReader implements Cloneable {
       this.name = fi.name.intern();
       this.isIndexed = fi.isIndexed;
       this.omitNorms = fi.omitNorms;          
+      this.omitTermFreqAndPositions = fi.omitTermFreqAndPositions;
       this.storeOffsetWithTermVector = fi.storeOffsetWithTermVector;
       this.storePositionWithTermVector = fi.storePositionWithTermVector;
       this.storeTermVector = fi.storeTermVector;            

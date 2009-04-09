@@ -72,6 +72,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == true);
     assertTrue(field.isStorePositionWithTermVector() == true);
     assertTrue(field.getOmitNorms() == false);
+    assertTrue(field.getOmitTf() == false);
 
     field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
@@ -79,8 +80,15 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
     assertTrue(field.getOmitNorms() == true);
+    assertTrue(field.getOmitTf() == false);
 
-
+    field = doc.getField(DocHelper.NO_TF_KEY);
+    assertTrue(field != null);
+    assertTrue(field.isTermVectorStored() == false);
+    assertTrue(field.isStoreOffsetWithTermVector() == false);
+    assertTrue(field.isStorePositionWithTermVector() == false);
+    assertTrue(field.getOmitNorms() == false);
+    assertTrue(field.getOmitTf() == true);
     reader.close();
   }
 

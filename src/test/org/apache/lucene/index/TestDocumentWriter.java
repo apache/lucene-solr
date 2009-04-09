@@ -259,14 +259,13 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(new Field("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
-    RAMDirectory ram = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ram, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
 
-    _TestUtil.checkIndex(ram);
+    _TestUtil.checkIndex(dir);
 
-    IndexReader reader = IndexReader.open(ram);
+    IndexReader reader = IndexReader.open(dir);
     // f1
     TermFreqVector tfv1 = reader.getTermFreqVector(0, "f1");
     assertNotNull(tfv1);
@@ -275,5 +274,38 @@ public class TestDocumentWriter extends LuceneTestCase {
     TermFreqVector tfv2 = reader.getTermFreqVector(0, "f2");
     assertNotNull(tfv2);
     assertEquals("the 'with_tv' setting should rule!",2,tfv2.getTerms().length);
+  }
+
+  /**
+   * Test adding two fields with the same name, one indexed
+   * the other stored only. The omitNorms and omitTermFreqAndPositions setting
+   * of the stored field should not affect the indexed one (LUCENE-1590)
+   */
+  public void testLUCENE_1590() throws Exception {
+    Document doc = new Document();
+    // f1 has no norms
+    doc.add(new Field("f1", "v1", Store.NO, Index.ANALYZED_NO_NORMS));
+    doc.add(new Field("f1", "v2", Store.YES, Index.NO));
+    // f2 has no TF
+    Field f = new Field("f2", "v1", Store.NO, Index.ANALYZED);
+    f.setOmitTermFreqAndPositions(true);
+    doc.add(f);
+    doc.add(new Field("f2", "v2", Store.YES, Index.NO));
+
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.addDocument(doc);
+    writer.optimize(); // be sure to have a single segment
+    writer.close();
+
+    _TestUtil.checkIndex(dir);
+
+    SegmentReader reader = (SegmentReader) IndexReader.open(dir);
+    FieldInfos fi = reader.fieldInfos();
+    // f1
+    assertFalse("f1 should have no norms", reader.hasNorms("f1"));
+    assertFalse("omitTermFreqAndPositions field bit should not be set for f1", fi.fieldInfo("f1").omitTermFreqAndPositions);
+    // f2
+    assertTrue("f2 should have norms", reader.hasNorms("f2"));
+    assertTrue("omitTermFreqAndPositions field bit should be set for f2", fi.fieldInfo("f2").omitTermFreqAndPositions);
   }
 }

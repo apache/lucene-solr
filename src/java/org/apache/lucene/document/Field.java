@@ -329,6 +329,8 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (index == Index.NO) {
       this.isIndexed = false;
       this.isTokenized = false;
+      this.omitTermFreqAndPositions = false;
+      this.omitNorms = true;
     } else if (index == Index.ANALYZED) {
       this.isIndexed = true;
       this.isTokenized = true;
@@ -492,6 +494,8 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     
     isIndexed   = false;
     isTokenized = false;
+    omitTermFreqAndPositions = false;
+    omitNorms = true;
     
     isBinary    = true;
     binaryLength = length;

@@ -38,12 +38,21 @@ final class FieldInfo {
     name = na;
     isIndexed = tk;
     number = nu;
-    this.storeTermVector = storeTermVector;
-    this.storeOffsetWithTermVector = storeOffsetWithTermVector;
-    this.storePositionWithTermVector = storePositionWithTermVector;
-    this.omitNorms = omitNorms;
-    this.storePayloads = storePayloads;
-    this.omitTermFreqAndPositions = omitTermFreqAndPositions;
+    if (isIndexed) {
+      this.storeTermVector = storeTermVector;
+      this.storeOffsetWithTermVector = storeOffsetWithTermVector;
+      this.storePositionWithTermVector = storePositionWithTermVector;
+      this.storePayloads = storePayloads;
+      this.omitNorms = omitNorms;
+      this.omitTermFreqAndPositions = omitTermFreqAndPositions;
+    } else { // for non-indexed fields, leave defaults
+      this.storeTermVector = false;
+      this.storeOffsetWithTermVector = false;
+      this.storePositionWithTermVector = false;
+      this.storePayloads = false;
+      this.omitNorms = true;
+      this.omitTermFreqAndPositions = false;
+    }
   }
 
   public Object clone() {
@@ -56,23 +65,25 @@ final class FieldInfo {
     if (this.isIndexed != isIndexed) {
       this.isIndexed = true;                      // once indexed, always index
     }
-    if (this.storeTermVector != storeTermVector) {
-      this.storeTermVector = true;                // once vector, always vector
-    }
-    if (this.storePositionWithTermVector != storePositionWithTermVector) {
-      this.storePositionWithTermVector = true;                // once vector, always vector
-    }
-    if (this.storeOffsetWithTermVector != storeOffsetWithTermVector) {
-      this.storeOffsetWithTermVector = true;                // once vector, always vector
-    }
-    if (this.omitNorms != omitNorms) {
-      this.omitNorms = false;                // once norms are stored, always store
-    }
-    if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
-      this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
-    }
-    if (this.storePayloads != storePayloads) {
-      this.storePayloads = true;
+    if (isIndexed) { // if updated field data is not for indexing, leave the updates out
+      if (this.storeTermVector != storeTermVector) {
+        this.storeTermVector = true;                // once vector, always vector
+      }
+      if (this.storePositionWithTermVector != storePositionWithTermVector) {
+        this.storePositionWithTermVector = true;                // once vector, always vector
+      }
+      if (this.storeOffsetWithTermVector != storeOffsetWithTermVector) {
+        this.storeOffsetWithTermVector = true;                // once vector, always vector
+      }
+      if (this.storePayloads != storePayloads) {
+        this.storePayloads = true;
+      }
+      if (this.omitNorms != omitNorms) {
+        this.omitNorms = false;                // once norms are stored, always store
+      }
+      if (this.omitTermFreqAndPositions != omitTermFreqAndPositions) {
+        this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
+      }
     }
   }
 }
