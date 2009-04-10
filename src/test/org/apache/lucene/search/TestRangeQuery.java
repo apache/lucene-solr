@@ -145,6 +145,10 @@ public class TestRangeQuery extends LuceneTestCase {
     query = new RangeQuery("content", "A", "C", false, false);
     other = new RangeQuery("content", "A", "C", true, true);
     assertFalse("queries with different inclusive are not equal", query.equals(other));
+    
+    query = new RangeQuery("content", "A", "C", false, false);
+    other = new RangeQuery("content", "A", "C", false, false, Collator.getInstance());
+    assertFalse("a query with a collator is not equal to one without", query.equals(other));
   }
 
   public void testExclusiveCollating() throws Exception {

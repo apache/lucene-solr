@@ -204,7 +204,7 @@ public class RangeQuery extends MultiTermQuery {
     if (this.field != other.field  // interned comparison
         || this.includeLower != other.includeLower
         || this.includeUpper != other.includeUpper
-        || (this.collator != null && ! this.collator.equals(other.collator))
+        || (this.collator != null && ! this.collator.equals(other.collator) || (this.collator == null && other.collator != null))
        ) { return false; }
     String lowerVal = this.lowerTerm == null ? null : lowerTerm.text();
     String upperVal = this.upperTerm == null ? null : upperTerm.text();
