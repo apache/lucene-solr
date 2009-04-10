@@ -83,6 +83,38 @@ public class BoostingQuery extends Query {
       return result;
     }
 
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + Float.floatToIntBits(boost);
+      result = prime * result + ((context == null) ? 0 : context.hashCode());
+      result = prime * result + ((match == null) ? 0 : match.hashCode());
+      return result;
+    }
+
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      BoostingQuery other = (BoostingQuery) obj;
+      if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost))
+        return false;
+      if (context == null) {
+        if (other.context != null)
+          return false;
+      } else if (!context.equals(other.context))
+        return false;
+      if (match == null) {
+        if (other.match != null)
+          return false;
+      } else if (!match.equals(other.match))
+        return false;
+      return true;
+    }
+
     public String toString(String field) {
       return match.toString(field) + "/" + context.toString(field);
     }

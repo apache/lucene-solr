@@ -111,4 +111,14 @@ public class FuzzyLikeThisQueryTest extends TestCase
 		Document doc=searcher.doc(sd[0].doc);
 		assertEquals("Should match most similar when using 2 words", "2",doc.get("id"));
 	}
+	
+	public void testFuzzyLikeThisQueryEquals() {
+	  Analyzer analyzer = new WhitespaceAnalyzer();
+    FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
+    fltq1.addTerms("javi", "subject", 0.5f, 2);
+    FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);
+    fltq2.addTerms("javi", "subject", 0.5f, 2);
+    assertEquals("FuzzyLikeThisQuery with same attributes is not equal", fltq1,
+        fltq2);
+  } 
 }

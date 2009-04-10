@@ -57,8 +57,45 @@ public class FuzzyLikeThisQuery extends Query
     ScoreTermQueue q;
     int MAX_VARIANTS_PER_TERM=50;
     boolean ignoreTF=false;
+    private int maxNumTerms;
 
-    
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((analyzer == null) ? 0 : analyzer.hashCode());
+      result = prime * result
+          + ((fieldVals == null) ? 0 : fieldVals.hashCode());
+      result = prime * result + (ignoreTF ? 1231 : 1237);
+      result = prime * result + maxNumTerms;
+      return result;
+    }
+
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      FuzzyLikeThisQuery other = (FuzzyLikeThisQuery) obj;
+      if (analyzer == null) {
+        if (other.analyzer != null)
+          return false;
+      } else if (!analyzer.equals(other.analyzer))
+        return false;
+      if (fieldVals == null) {
+        if (other.fieldVals != null)
+          return false;
+      } else if (!fieldVals.equals(other.fieldVals))
+        return false;
+      if (ignoreTF != other.ignoreTF)
+        return false;
+      if (maxNumTerms != other.maxNumTerms)
+        return false;
+      return true;
+    }
+
+
     /**
      * 
      * @param maxNumTerms The total number of terms clauses that will appear once rewritten as a BooleanQuery
@@ -68,6 +105,7 @@ public class FuzzyLikeThisQuery extends Query
     {
         q=new ScoreTermQueue(maxNumTerms);
         this.analyzer=analyzer;
+        this.maxNumTerms = maxNumTerms;
     }
 
     class FieldVals
@@ -83,6 +121,46 @@ public class FuzzyLikeThisQuery extends Query
 			prefixLength = length;
 			this.queryString = queryString;
 		}
+
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result
+          + ((fieldName == null) ? 0 : fieldName.hashCode());
+      result = prime * result + Float.floatToIntBits(minSimilarity);
+      result = prime * result + prefixLength;
+      result = prime * result
+          + ((queryString == null) ? 0 : queryString.hashCode());
+      return result;
+    }
+
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      FieldVals other = (FieldVals) obj;
+      if (fieldName == null) {
+        if (other.fieldName != null)
+          return false;
+      } else if (!fieldName.equals(other.fieldName))
+        return false;
+      if (Float.floatToIntBits(minSimilarity) != Float
+          .floatToIntBits(other.minSimilarity))
+        return false;
+      if (prefixLength != other.prefixLength)
+        return false;
+      if (queryString == null) {
+        if (other.queryString != null)
+          return false;
+      } else if (!queryString.equals(other.queryString))
+        return false;
+      return true;
+    }
+    
+
     	
     }
     
