@@ -9,6 +9,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Query;
 
 
@@ -38,7 +39,25 @@ public class SpanScorer implements Scorer {
    */
   public SpanScorer(Query query, String field,
     CachingTokenFilter cachingTokenFilter) throws IOException {
-    init(query, field, cachingTokenFilter, null);
+    init(query, field, cachingTokenFilter, null, false);
+  }
+  
+
+  /**
+   * @param query
+   *          Query to use for highlighting
+   * @param field
+   *          Field to highlight - pass null to ignore fields
+   * @param tokenStream
+   *          of source text to be highlighted
+   * @param expandMultiTermQuery
+   *          rewrite multi-term queries against a single doc memory index to
+   *          create boolean queries
+   * @throws IOException
+   */
+  public SpanScorer(Query query, String field,
+    CachingTokenFilter cachingTokenFilter, boolean expandMultiTermQuery) throws IOException {
+    init(query, field, cachingTokenFilter, null, expandMultiTermQuery);
   }
 
   /**
@@ -54,7 +73,26 @@ public class SpanScorer implements Scorer {
   public SpanScorer(Query query, String field,
     CachingTokenFilter cachingTokenFilter, IndexReader reader)
     throws IOException {
-    init(query, field, cachingTokenFilter, reader);
+    init(query, field, cachingTokenFilter, reader, false);
+  }
+  
+  /**
+   * @param query
+   *            Query to use for highlighting
+   * @param field
+   *            Field to highlight - pass null to ignore fields
+   * @param tokenStream
+   *            of source text to be highlighted
+   * @param reader
+   * @param expandMultiTermQuery
+   *          rewrite multi-term queries against a single doc memory index to
+   *          create boolean queries
+   * @throws IOException
+   */
+  public SpanScorer(Query query, String field,
+    CachingTokenFilter cachingTokenFilter, IndexReader reader, boolean expandMultiTermQuery)
+    throws IOException {
+    init(query, field, cachingTokenFilter, reader, expandMultiTermQuery);
   }
 
   /**
@@ -64,7 +102,17 @@ public class SpanScorer implements Scorer {
     CachingTokenFilter cachingTokenFilter, IndexReader reader, String defaultField)
     throws IOException {
     this.defaultField = defaultField.intern();
-    init(query, field, cachingTokenFilter, reader);
+    init(query, field, cachingTokenFilter, reader, false);
+  }
+  
+  /**
+   * As above, but with ability to pass in an <tt>IndexReader</tt>
+   */
+  public SpanScorer(Query query, String field,
+    CachingTokenFilter cachingTokenFilter, IndexReader reader, String defaultField, boolean expandMultiTermQuery)
+    throws IOException {
+    this.defaultField = defaultField.intern();
+    init(query, field, cachingTokenFilter, reader, expandMultiTermQuery);
   }
 
   /**
@@ -73,7 +121,16 @@ public class SpanScorer implements Scorer {
   public SpanScorer(Query query, String field,
     CachingTokenFilter cachingTokenFilter, String defaultField) throws IOException {
     this.defaultField = defaultField.intern();
-    init(query, field, cachingTokenFilter, null);
+    init(query, field, cachingTokenFilter, null, false);
+  }
+  
+  /**
+   * @param defaultField - The default field for queries with the field name unspecified
+   */
+  public SpanScorer(Query query, String field,
+    CachingTokenFilter cachingTokenFilter, String defaultField, boolean expandMultiTermQuery) throws IOException {
+    this.defaultField = defaultField.intern();
+    init(query, field, cachingTokenFilter, null, expandMultiTermQuery);
   }
 
   /**
@@ -165,13 +222,13 @@ public class SpanScorer implements Scorer {
    * @throws IOException
    */
   private void init(Query query, String field,
-    CachingTokenFilter cachingTokenFilter, IndexReader reader)
+    CachingTokenFilter cachingTokenFilter, IndexReader reader, boolean expandMultiTermQuery)
     throws IOException {
     WeightedSpanTermExtractor qse = defaultField == null ? new WeightedSpanTermExtractor()
       : new WeightedSpanTermExtractor(defaultField);
     
     qse.setHighlightCnstScrRngQuery(highlightCnstScrRngQuery);
-
+    qse.setExpandMultiTermQuery(expandMultiTermQuery);
     if (reader == null) {
       this.fieldWeightedSpanTerms = qse.getWeightedSpanTerms(query,
           cachingTokenFilter, field);
@@ -183,6 +240,8 @@ public class SpanScorer implements Scorer {
 
   /**
    * @return whether ConstantScoreRangeQuerys are set to be highlighted
+   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use the
+   *             constructor option to expand MultiTerm queries.
    */
   public static boolean isHighlightCnstScrRngQuery() {
     return highlightCnstScrRngQuery;
@@ -197,10 +256,13 @@ public class SpanScorer implements Scorer {
   }
 
   /**
-   * Turns highlighting of ConstantScoreRangeQuery on/off. ConstantScoreRangeQuerys cannot be
-   * highlighted if you rewrite the query first. Must be called before SpanScorer construction.
+   * Turns highlighting of ConstantScoreRangeQuery on/off.
+   * ConstantScoreRangeQuerys cannot be highlighted if you rewrite the query
+   * first. Must be called before SpanScorer construction.
    * 
    * @param highlightCnstScrRngQuery
+   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use the
+   *             constructor option to expand MultiTerm queries.
    */
   public static void setHighlightCnstScrRngQuery(boolean highlight) {
     highlightCnstScrRngQuery = highlight;

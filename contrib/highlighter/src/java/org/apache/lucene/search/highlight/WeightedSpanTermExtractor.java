@@ -38,11 +38,16 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -59,6 +64,7 @@ public class WeightedSpanTermExtractor {
   private Map readers = new HashMap(10); // Map<String, IndexReader>
   private String defaultField;
   private boolean highlightCnstScrRngQuery;
+  private boolean expandMultiTermQuery;
 
   public WeightedSpanTermExtractor() {
   }
@@ -131,6 +137,14 @@ public class WeightedSpanTermExtractor {
         extract((Query) iterator.next(), disjunctTerms);
       }
       terms.putAll(disjunctTerms);
+    } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
+      MultiTermQuery mtq = ((MultiTermQuery)query);
+      if(mtq.getConstantScoreRewrite()) {
+        query = copyMultiTermQuery(mtq);
+        mtq.setConstantScoreRewrite(false);
+      }
+      IndexReader ir = getReaderForField(fieldName);
+      extract(query.rewrite(ir), terms);
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final List termArrays = mpq.getTermArrays();
@@ -179,27 +193,7 @@ public class WeightedSpanTermExtractor {
         sp.setBoost(query.getBoost());
         extractWeightedSpanTerms(terms, sp);
       }
-    } else if (highlightCnstScrRngQuery && query instanceof ConstantScoreRangeQuery) {
-      ConstantScoreRangeQuery q = (ConstantScoreRangeQuery) query;
-      Term lower = new Term(fieldName, q.getLowerVal());
-      Term upper = new Term(fieldName, q.getUpperVal());
-      FilterIndexReader fir = new FilterIndexReader(getReaderForField(fieldName));
-      try {
-        TermEnum te = fir.terms(lower);
-        BooleanQuery bq = new BooleanQuery();
-        do {
-          Term term = te.term();
-          if (term != null && upper.compareTo(term) >= 0) {
-            bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
-          } else {
-            break;
-          }
-        } while (te.next());
-        extract(bq, terms);
-      } finally {
-        fir.close();
-      }
-    } 
+    }
   }
 
   /**
@@ -425,10 +419,19 @@ public class WeightedSpanTermExtractor {
     return terms;
   }
 
+  /**
+   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use
+   *             getExpandMultiTermQuery instead.
+   */
   public boolean isHighlightCnstScrRngQuery() {
     return highlightCnstScrRngQuery;
   }
-
+  
+  /**
+   * @param highlightCnstScrRngQuery
+   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use the
+   *             setExpandMultiTermQuery option.
+   */
   public void setHighlightCnstScrRngQuery(boolean highlightCnstScrRngQuery) {
     this.highlightCnstScrRngQuery = highlightCnstScrRngQuery;
   }
@@ -459,5 +462,36 @@ public class WeightedSpanTermExtractor {
       return prev;
     }
     
+  }
+  
+  private Query copyMultiTermQuery(MultiTermQuery query) {
+    if(query instanceof RangeQuery) {
+      RangeQuery q = (RangeQuery)query;
+      q.setBoost(query.getBoost());
+      return new RangeQuery(q.getField(), q.getLowerTermText(), q.getUpperTermText(), q.includesLower(), q.includesUpper());
+    } else if(query instanceof WildcardQuery) {
+      Query q = new WildcardQuery(query.getTerm());
+      q.setBoost(query.getBoost());
+      return q;
+    } else if(query instanceof PrefixQuery) {
+      Query q = new PrefixQuery(query.getTerm());
+      q.setBoost(q.getBoost());
+      return q;
+    } else if(query instanceof FuzzyQuery) {
+      FuzzyQuery q = (FuzzyQuery)query;
+      q.setBoost(q.getBoost());
+      return new FuzzyQuery(q.getTerm(), q.getMinSimilarity(), q.getPrefixLength());
+    }
+    
+    return query;
+  }
+  
+  
+  public boolean getExpandMultiTermQuery() {
+    return expandMultiTermQuery;
+  }
+
+  public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
+    this.expandMultiTermQuery = expandMultiTermQuery;
   }
 }

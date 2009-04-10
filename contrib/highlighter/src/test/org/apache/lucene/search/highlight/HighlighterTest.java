@@ -63,6 +63,7 @@ import org.apache.lucene.search.RangeFilter;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -437,7 +438,7 @@ public class HighlighterTest extends TestCase implements Formatter {
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("Kinnedy~");
-        doStandardHighlights(analyzer, hits, query, HighlighterTest.this);
+        doStandardHighlights(analyzer, hits, query, HighlighterTest.this, true);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 5);
       }
@@ -526,6 +527,45 @@ public class HighlighterTest extends TestCase implements Formatter {
       SpanScorer.setHighlightCnstScrRngQuery(true);
       scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME, (CachingTokenFilter) tokenStream);
       
+      Highlighter highlighter = new Highlighter(this, scorer);
+
+      ((CachingTokenFilter) tokenStream).reset();
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(20));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          fragmentSeparator);
+      System.out.println("\t" + result);
+    }
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 5);
+  }
+  
+  public void testConstantScoreMultiTermQuery() throws Exception {
+
+    numHighlights = 0;
+
+    query = new WildcardQuery(new Term(FIELD_NAME, "ken*"));
+    ((WildcardQuery)query).setConstantScoreRewrite(true);
+    searcher = new IndexSearcher(ramDir);
+    // can't rewrite ConstantScore if you want to highlight it -
+    // it rewrites to ConstantScoreQuery which cannot be highlighted
+    // query = unReWrittenQuery.rewrite(reader);
+    System.out.println("Searching for: " + query.toString(FIELD_NAME));
+    hits = searcher.search(query);
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
+      int maxNumFragmentsRequired = 2;
+      String fragmentSeparator = "...";
+      SpanScorer scorer = null;
+      TokenStream tokenStream = null;
+
+      tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
+          new StringReader(text)));
+      
+      scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME, (CachingTokenFilter) tokenStream, true);
+
       Highlighter highlighter = new Highlighter(this, scorer);
 
       ((CachingTokenFilter) tokenStream).reset();
@@ -1565,6 +1605,11 @@ class SynonymTokenizer extends TokenStream {
     }
 
     void doStandardHighlights(Analyzer analyzer, Hits hits, Query query, Formatter formatter)
+    throws Exception {
+      doStandardHighlights(analyzer, hits, query, formatter, false);
+    }
+    
+    void doStandardHighlights(Analyzer analyzer, Hits hits, Query query, Formatter formatter, boolean expandMT)
         throws Exception {
 
       for (int i = 0; i < hits.length(); i++) {
@@ -1577,7 +1622,7 @@ class SynonymTokenizer extends TokenStream {
           tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
               new StringReader(text)));
           scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME,
-              (CachingTokenFilter) tokenStream);
+              (CachingTokenFilter) tokenStream, expandMT);
         } else if (mode == STANDARD) {
           scorer = new QueryScorer(query);
           tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));

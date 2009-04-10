@@ -16,12 +16,19 @@ be highlighted if the sub-query is position sensitive. The start and end positio
 matching Spans are recorded with the respective WeightedSpanTerms and these positions are 
 then used to filter possible Token matches during scoring.
 </p>
+<p>
+Unlike the QueryScorer, you do not want to rewrite the query first with the SpanScorer for
+multi term query handling ie wildcard, fuzzy, range.
+The SpanScorer constructors provide an option to enable the highlighting of multi-term queries.
+If this option is enabled, the SpanScorer will rewrite the query against a single doc index
+containing the doc to be highlighted, rather than against the full index. If you do rewrite the 
+query first, certain multi-term queries may not highlight correctly.
+</p>
 <h2>Example Usage</h2>
 
 <pre>
 	IndexSearcher searcher = new IndexSearcher(ramDir);
 	Query query = QueryParser.parse("Kenne*", FIELD_NAME, analyzer);
-	query = query.rewrite(reader); //required to expand search terms
 	Hits hits = searcher.search(query);
 
 	for (int i = 0; i &lt; hits.length(); i++)
@@ -29,7 +36,7 @@ then used to filter possible Token matches during scoring.
 		String text = hits.doc(i).get(FIELD_NAME);
 		CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(
                         FIELD_NAME, new StringReader(text)));
-        Highlighter highlighter = new Highlighter(new SpanScorer(query, FIELD_NAME, tokenStream));
+        Highlighter highlighter = new Highlighter(new SpanScorer(query, FIELD_NAME, tokenStream, true));
         tokenStream.reset();
         
         // Get 3 best fragments and seperate with a "..."
