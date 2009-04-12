@@ -82,12 +82,12 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
       // Try to set the maxCodeLength
       String v = args.get( "maxCodeLength" );
       if( v != null ) {
-        Method setter = encoder.getClass().getMethod( "setMaxCodeLength", Integer.class );
+        Method setter = encoder.getClass().getMethod( "setMaxCodeLen", int.class );
         setter.invoke( encoder, Integer.parseInt( v ) );
       }
     } 
     catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e );
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e , false);
     }
   }
   
