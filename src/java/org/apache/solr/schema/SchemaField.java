@@ -79,7 +79,7 @@ public final class SchemaField extends FieldProperties {
   public boolean storeTermPositions() { return (properties & STORE_TERMPOSITIONS)!=0; }
   public boolean storeTermOffsets() { return (properties & STORE_TERMOFFSETS)!=0; }
   public boolean omitNorms() { return (properties & OMIT_NORMS)!=0; }
-  public boolean omitTf() { return (properties & OMIT_TF)!=0; }
+  public boolean omitTf() { return (properties & OMIT_TF_POSITIONS)!=0; }
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
@@ -137,7 +137,7 @@ public final class SchemaField extends FieldProperties {
     }
 
     if (on(falseProps,INDEXED)) {
-      int pp = (INDEXED | OMIT_NORMS | OMIT_TF 
+      int pp = (INDEXED | OMIT_NORMS | OMIT_TF_POSITIONS
               | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS
               | SORT_MISSING_FIRST | SORT_MISSING_LAST);
       if (on(pp,trueProps)) {

@@ -39,7 +39,7 @@
        not normally be changed by applications.
        1.0: multiValued attribute did not exist, all fields are multiValued by nature
        1.1: multiValued attribute introduced, false by default 
-       1.2: omitTf attribute introduced, true by default -->
+       1.2: omitTermFreqAndPositions attribute introduced, true by default -->
 
   <types>
     <!-- field type definitions. The "name" attribute is
@@ -120,10 +120,7 @@
           human readable in the internal form. Range searches on such fields use the fast Trie Range Queries
           which are much faster than range searches on the SortableNumberField types.
 
-          For the fast range search to work, trie fields must be indexed. Trie fields are <b>not</b> sortable
-          in numerical order. Also, they cannot be used in function queries. If one needs sorting as well as
-          fast range search, one should create a copy field specifically for sorting. Same workaround is
-          suggested for using trie fields in function queries as well.
+          For the fast range search to work, trie fields must be indexed.
 
           For each number being added to this field, multiple terms are generated as per the algorithm described in
           org.apache.lucene.search.trie package description. The possible number of terms depend on the precisionStep
@@ -131,8 +128,7 @@
           value of precisionStep is 8.
           
           Note that if you use a precisionStep of 32 for int/float and 64 for long/double, then multiple terms
-          will not be generated, range search will be no faster than any other number field,
-          but sorting will be possible.
+          will not be generated, and range search will be no faster than any other number field.
      -->
     <fieldType name="tint" class="solr.TrieField" type="integer" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
     <fieldType name="tfloat" class="solr.TrieField" type="float" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
@@ -143,8 +139,7 @@
 
     <!--
           This date field manipulates the value into a trie encoded strings for fast range searches. They follow the
-          same format and semantics as the normal DateField and support the date math syntax except that they are
-          not sortable and cannot be used in function queries.
+          same format and semantics as the normal DateField and support the date math syntax.
     -->
     <fieldType name="tdate" class="solr.TrieField" type="date" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
 

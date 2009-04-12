@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
@@ -180,7 +180,7 @@ public class QueryComponent extends SearchComponent
       SortField[] sortFields = sort==null ? new SortField[]{SortField.FIELD_SCORE} : sort.getSort();
       ScoreDoc sd = new ScoreDoc(0,1.0f); // won't work for comparators that look at the score
       NamedList sortVals = new NamedList(); // order is important for the sort fields
-      StringFieldable field = new StringFieldable();
+      Field field = new Field("dummy", "", Field.Store.YES, Field.Index.NO); // a dummy Field
 
       for (SortField sortField: sortFields) {
         int type = sortField.getType();
@@ -229,7 +229,7 @@ public class QueryComponent extends SearchComponent
           // indexedToReadable() should be a no-op and should
           // thus be harmless anyway (for all current ways anyway)
           if (val instanceof String) {
-            field.val = (String)val;
+            field.setValue((String)val);
             val = ft.toObject(field);
           }
           vals.add(val);
@@ -727,104 +727,6 @@ public class QueryComponent extends SearchComponent
       }
     };
   }
-
-  static class StringFieldable implements Fieldable {
-    public String val;
-
-    public void setBoost(float boost) {
-    }
-
-    public float getBoost() {
-      return 0;
-    }
-
-    public String name() {
-      return null;
-    }
-
-    public String stringValue() {
-      return val;
-    }
-
-    public Reader readerValue() {
-      return null;
-    }
-
-    public byte[] binaryValue() {
-      return new byte[0];
-    }
-
-    public TokenStream tokenStreamValue() {
-      return null;
-    }
-
-    public boolean isStored() {
-      return true;
-    }
-
-    public boolean isIndexed() {
-      return true;
-    }
-
-    public boolean isTokenized() {
-      return true;
-    }
-
-    public boolean isCompressed() {
-      return false;
-    }
-
-    public boolean isTermVectorStored() {
-      return false;
-    }
-
-    public boolean isStoreOffsetWithTermVector() {
-      return false;
-    }
-
-    public boolean isStorePositionWithTermVector() {
-      return false;
-    }
-
-    public boolean isBinary() {
-      return false;
-    }
-
-    public boolean getOmitNorms() {
-      return false;
-    }
-
-    public void setOmitNorms(boolean omitNorms) {
-    }
-
-    public void setOmitTf(boolean omitTf) {
-    }
-
-    public boolean getOmitTf() {
-      return false;
-    }
-
-    public boolean isLazy() {
-      return false;
-    }
-
-    public int getBinaryOffset() {
-      return 0;
-    }
-
-    public int getBinaryLength() {
-      return 0;
-    }
-
-    public byte[] getBinaryValue() {
-      return new byte[0];
-    }
-
-    public byte[] getBinaryValue(byte[] result) {
-      return new byte[0];
-    }
-  }
-
 
   /////////////////////////////////////////////
   ///  SolrInfoMBean

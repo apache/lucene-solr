@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.*;
 
 import java.io.IOException;
 import java.util.Map;
@@ -121,6 +122,23 @@ public class TrieField extends FieldType {
     }
   }
 
+  public ValueSource getValueSource(SchemaField field) {
+    switch (type) {
+      case INTEGER:
+        return new IntFieldSource(field.getName(), TrieUtils.FIELD_CACHE_INT_PARSER);
+      case FLOAT:
+        return new FloatFieldSource(field.getName(), TrieUtils.FIELD_CACHE_FLOAT_PARSER);
+      case LONG:
+        return new LongFieldSource(field.getName(), TrieUtils.FIELD_CACHE_LONG_PARSER);
+      case DOUBLE:
+        return new DoubleFieldSource(field.getName(), TrieUtils.FIELD_CACHE_DOUBLE_PARSER);
+      case DATE:
+        return new LongFieldSource(field.getName(), TrieUtils.FIELD_CACHE_LONG_PARSER);
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
+    }
+  }
+
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeVal(name, toObject(f));
   }
@@ -153,31 +171,31 @@ public class TrieField extends FieldType {
     Query query = null;
     switch (type) {
       case INTEGER:
-        query = new IntTrieRangeFilter(field, field, precisionStep,
+        query = new IntTrieRangeFilter(field, precisionStep,
                 min == null ? null : Integer.parseInt(min),
                 max == null ? null : Integer.parseInt(max),
                 minInclusive, maxInclusive).asQuery();
         break;
       case FLOAT:
-        query = new IntTrieRangeFilter(field, field, precisionStep,
+        query = new IntTrieRangeFilter(field, precisionStep,
                 min == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
                 max == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
                 minInclusive, maxInclusive).asQuery();
         break;
       case LONG:
-        query = new LongTrieRangeFilter(field, field, precisionStep,
+        query = new LongTrieRangeFilter(field, precisionStep,
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
                 minInclusive, maxInclusive).asQuery();
         break;
       case DOUBLE:
-        query = new LongTrieRangeFilter(field, field, precisionStep,
+        query = new LongTrieRangeFilter(field, precisionStep,
                 min == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
                 max == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
                 minInclusive, maxInclusive).asQuery();
         break;
       case DATE:
-        query = new LongTrieRangeFilter(field, field, precisionStep,
+        query = new LongTrieRangeFilter(field, precisionStep,
                 min == null ? null : dateField.parseMath(null, min).getTime(),
                 max == null ? null : dateField.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive).asQuery();

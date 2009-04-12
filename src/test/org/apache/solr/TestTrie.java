@@ -56,6 +56,13 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Range filter tint:[-9 to *] must match 20 documents", req("q", "*:*", "fq", "tint:[-10 TO *]"), "//*[@numFound='20']");
     assertQ("Range filter tint:[* to 9] must match 20 documents", req("q", "*:*", "fq", "tint:[* TO 10]"), "//*[@numFound='20']");
     assertQ("Range filter tint:[* to *] must match 20 documents", req("q", "*:*", "fq", "tint:[* TO *]"), "//*[@numFound='20']");
+
+    // Sorting
+    assertQ("Sort descending does not work correctly on tint fields", req("q", "*:*", "sort", "tint desc"), "//*[@numFound='20']", "//int[@name='tint'][.='9']");
+    assertQ("Sort ascending does not work correctly on tint fields", req("q", "*:*", "sort", "tint asc"), "//*[@numFound='20']", "//int[@name='tint'][.='-10']");
+
+    // Function queries
+    assertQ("Function queries does not work correctly on tint fields", req("q", "_val_:\"sum(tint,1)\""), "//*[@numFound='20']", "//int[@name='tint'][.='9']");
   }
 
   public void testTrieTermQuery() throws Exception {
@@ -90,6 +97,13 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Range filter must match only 5 documents", req, "//*[@numFound='9']");
     req = req("q", "*:*", "fq", "tfloat:[0 TO *]");
     assertQ("Range filter must match 10 documents", req, "//*[@numFound='10']");
+
+    // Sorting
+    assertQ("Sort descending does not work correctly on tfloat fields", req("q", "*:*", "sort", "tfloat desc"), "//*[@numFound='10']", "//float[@name='tfloat'][.='2519.9102']");
+    assertQ("Sort ascending does not work correctly on tfloat fields", req("q", "*:*", "sort", "tfloat asc"), "//*[@numFound='10']", "//float[@name='tfloat'][.='0.0']");
+
+    // Function queries
+    assertQ("Function queries does not work correctly on tfloat fields", req("q", "_val_:\"sum(tfloat,1.0)\""), "//*[@numFound='10']", "//float[@name='tfloat'][.='2519.9102']");
   }
 
   public void testTrieLongRangeSearch() throws Exception {
@@ -101,6 +115,13 @@ public class TestTrie extends AbstractSolrTestCase {
     SolrQueryRequest req = req("q", "*:*", "fq", fq);
     assertQ("Range filter must match only 5 documents", req, "//*[@numFound='6']");
     assertQ("Range filter tlong:[* to *] must match 10 documents", req("q", "*:*", "fq", "tlong:[* TO *]"), "//*[@numFound='10']");
+
+    // Sorting
+    assertQ("Sort descending does not work correctly on tlong fields", req("q", "*:*", "sort", "tlong desc"), "//*[@numFound='10']", "//long[@name='tlong'][.='2147483656']");
+    assertQ("Sort ascending does not work correctly on tlong fields", req("q", "*:*", "sort", "tlong asc"), "//*[@numFound='10']", "//long[@name='tlong'][.='2147483647']");
+
+    // Function queries
+    assertQ("Function queries does not work correctly on tlong fields", req("q", "_val_:\"sum(tlong,1.0)\""), "//*[@numFound='10']", "//long[@name='tlong'][.='2147483656']");
   }
 
   public void testTrieDoubleRangeSearch() throws Exception {
@@ -111,6 +132,13 @@ public class TestTrie extends AbstractSolrTestCase {
     String fq = "tdouble:[" + Integer.MAX_VALUE * 2.33d + " TO " + (5l + Integer.MAX_VALUE) * 2.33d + "]";
     assertQ("Range filter must match only 5 documents", req("q", "*:*", "fq", fq), "//*[@numFound='6']");
     assertQ("Range filter tdouble:[* to *] must match 10 documents", req("q", "*:*", "fq", "tdouble:[* TO *]"), "//*[@numFound='10']");
+
+    // Sorting
+    assertQ("Sort descending does not work correctly on tdouble fields", req("q", "*:*", "sort", "tdouble desc"), "//*[@numFound='10']", "//double[@name='tdouble'][.='5.0036369184800005E9']");
+    assertQ("Sort ascending does not work correctly on tdouble fields", req("q", "*:*", "sort", "tdouble asc"), "//*[@numFound='10']", "//double[@name='tdouble'][.='5.00363689751E9']");
+
+    // Function queries
+    assertQ("Function queries does not work correctly on tdouble fields", req("q", "_val_:\"sum(tdouble,1.0)\""), "//*[@numFound='10']", "//double[@name='tdouble'][.='5.0036369184800005E9']");
   }
 
   public void testTrieDateRangeSearch() throws Exception {
@@ -147,6 +175,13 @@ public class TestTrie extends AbstractSolrTestCase {
     assertU(commit());
     assertQ("Term query must match only 1 document", req("q", "tdate:1995-12-31T23\\:59\\:59.999Z"), "//*[@numFound='1']");
     assertQ("Term query must match only 1 document", req("q", "*:*", "fq", "tdate:1995-12-31T23\\:59\\:59.999Z"), "//*[@numFound='1']");
+
+    // Sorting
+    assertQ("Sort descending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate desc"), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-21T00:00:00Z']");
+    assertQ("Sort ascending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate asc"), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-12T00:00:00Z']");
+
+    // Function queries
+    assertQ("Function queries does not work correctly on tdate fields", req("q", "_val_:\"sum(tdate,1.0)\""), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-21T00:00:00Z']");
   }
 
   public void testTrieDoubleRangeSearch_CustomPrecisionStep() throws Exception {

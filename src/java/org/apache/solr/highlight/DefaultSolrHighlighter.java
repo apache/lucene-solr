@@ -38,13 +38,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.highlight.Formatter;
-import org.apache.lucene.search.highlight.Fragmenter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SpanScorer;
-import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -309,12 +303,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter
             } else {
               highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
             }
-            
-            TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
-            for (int k = 0; k < bestTextFragments.length; k++) {
-              if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
-                frags.add(bestTextFragments[k]);
+
+            try {
+              TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
+              for (int k = 0; k < bestTextFragments.length; k++) {
+                if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
+                  frags.add(bestTextFragments[k]);
+                }
               }
+            } catch (InvalidTokenOffsetsException e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             }
           }
           // sort such that the fragments with the highest score come first

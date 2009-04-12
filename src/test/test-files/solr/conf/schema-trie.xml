@@ -272,10 +272,10 @@
    <field name="id" type="sfloat" indexed="true" stored="true" required="true" />
    <field name="text" type="text" indexed="true" stored="false" />
 
-   <field name="tint" type="tint" indexed="true" stored="false" />
-   <field name="tfloat" type="tfloat" indexed="true" stored="false" />
-   <field name="tlong" type="tlong" indexed="true" stored="false" />
-   <field name="tdouble" type="tdouble" indexed="true" stored="false" />
+   <field name="tint" type="tint" indexed="true" stored="true" />
+   <field name="tfloat" type="tfloat" indexed="true" stored="true" />
+   <field name="tlong" type="tlong" indexed="true" stored="true" />
+   <field name="tdouble" type="tdouble" indexed="true" stored="true" />
 
    <field name="tdouble4" type="tdouble4" indexed="true" stored="false" />
 

@@ -20,6 +20,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.search.trie.TrieUtils;
+import org.apache.lucene.search.trie.IntTrieTokenStream;
+import org.apache.lucene.search.trie.LongTrieTokenStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.DateField;
 import static org.apache.solr.schema.TrieField.TrieTypes;
@@ -39,8 +41,9 @@ import java.io.Reader;
  * @since solr 1.4
  */
 public class TrieIndexTokenizerFactory extends BaseTokenizerFactory {
-  private final int precisionStep;
-  private final TrieTypes type;
+  protected static final DateField dateField = new DateField();
+  protected final int precisionStep;
+  protected final TrieTypes type;
 
   public TrieIndexTokenizerFactory(TrieTypes type, int precisionStep) {
     this.type = type;
@@ -49,55 +52,27 @@ public class TrieIndexTokenizerFactory extends BaseTokenizerFactory {
 
   public TokenStream create(Reader input) {
     try {
-      return new TrieIndexTokenizer(input, type, precisionStep);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
-    }
-  }
-
-  /**
-   * @version $Id$
-   * @since solr 1.4
-   */
-  public static class TrieIndexTokenizer extends Tokenizer {
-    private final String[] trieVals;
-    private int pos = 0;
-
-    protected static final DateField dateField = new DateField();
-
-    public TrieIndexTokenizer(Reader reader, TrieTypes type, int precisionStep) throws IOException {
-      super(reader);
       StringBuilder builder = new StringBuilder();
       char[] buf = new char[8];
       int len;
-      while ((len = reader.read(buf)) != -1)
+      while ((len = input.read(buf)) != -1)
         builder.append(buf, 0, len);
       switch (type) {
         case INTEGER:
-          this.trieVals = TrieUtils.trieCodeInt(Integer.parseInt(builder.toString()), precisionStep);
-          break;
+          return new IntTrieTokenStream(Integer.parseInt(builder.toString()), precisionStep);
         case FLOAT:
-          this.trieVals = TrieUtils.trieCodeInt(TrieUtils.floatToSortableInt(Float.parseFloat(builder.toString())), precisionStep);
-          break;
+          return new IntTrieTokenStream(TrieUtils.floatToSortableInt(Float.parseFloat(builder.toString())), precisionStep);
         case LONG:
-          this.trieVals = TrieUtils.trieCodeLong(Long.parseLong(builder.toString()), precisionStep);
-          break;
+          return new LongTrieTokenStream(Long.parseLong(builder.toString()), precisionStep);
         case DOUBLE:
-          this.trieVals = TrieUtils.trieCodeLong(TrieUtils.doubleToSortableLong(Double.parseDouble(builder.toString())), precisionStep);
-          break;
+          return new LongTrieTokenStream(TrieUtils.doubleToSortableLong(Double.parseDouble(builder.toString())), precisionStep);
         case DATE:
-          this.trieVals = TrieUtils.trieCodeLong(dateField.parseMath(null, builder.toString()).getTime(), precisionStep);
-          break;
+          return new LongTrieTokenStream(dateField.parseMath(null, builder.toString()).getTime(), precisionStep);
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
       }
-    }
-
-    public Token next(Token token) {
-      if (pos >= trieVals.length) return null;
-      token.reinit(trieVals[pos++], 0, 0);
-      token.setPositionIncrement(0);
-      return token;
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
     }
   }
 }

@@ -16,9 +16,8 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.search.trie.TrieUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.DateField;
@@ -26,6 +25,7 @@ import org.apache.solr.schema.TrieField;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 
 /**
  * Query time tokenizer for trie fields. It uses methods in TrieUtils to create a prefix coded representation of the
@@ -39,7 +39,8 @@ import java.io.Reader;
  * @since solr 1.4
  */
 public class TrieQueryTokenizerFactory extends BaseTokenizerFactory {
-  private final TrieField.TrieTypes type;
+  protected static final DateField dateField = new DateField();
+  protected final TrieField.TrieTypes type;
 
   public TrieQueryTokenizerFactory(TrieField.TrieTypes type) {
     this.type = type;
@@ -47,34 +48,12 @@ public class TrieQueryTokenizerFactory extends BaseTokenizerFactory {
 
   public TokenStream create(Reader reader) {
     try {
-      return new TrieQueryTokenizer(reader, type);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieQueryTokenizer", e);
-    }
-  }
-
-  public static class TrieQueryTokenizer extends Tokenizer {
-    private static final DateField dateField = new DateField();
-
-    private final String number;
-    private boolean used = false;
-    private TrieField.TrieTypes type;
-
-    public TrieQueryTokenizer(Reader reader, TrieField.TrieTypes type) throws IOException {
-      super(reader);
-      this.type = type;
       StringBuilder builder = new StringBuilder();
       char[] buf = new char[8];
       int len;
       while ((len = reader.read(buf)) != -1)
         builder.append(buf, 0, len);
-      number = builder.toString();
-    }
-
-    @Override
-    public Token next(Token token) throws IOException {
-      if (used) return null;
-      String value = number;
+      String value, number = builder.toString();
       switch (type) {
         case INTEGER:
           value = TrieUtils.intToPrefixCoded(Integer.parseInt(number));
@@ -94,10 +73,9 @@ public class TrieQueryTokenizerFactory extends BaseTokenizerFactory {
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
       }
-      token.reinit(value, 0, 0);
-      token.setPositionIncrement(0);
-      used = true;
-      return token;
+      return new KeywordTokenizer(new StringReader(value));
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create trie query tokenizer", e);
     }
   }
 }
