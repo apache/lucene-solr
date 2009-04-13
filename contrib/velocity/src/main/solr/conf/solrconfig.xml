@@ -401,6 +401,7 @@
   <requestHandler name="/itas" class="solr.SearchHandler">
      <lst name="defaults">
        <str name="v.template">browse</str>
+       <str name="v.properties">velocity.properties</str>
        <str name="title">Solritas</str>
 
        <str name="wt">velocity</str>

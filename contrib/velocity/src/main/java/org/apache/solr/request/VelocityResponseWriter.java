@@ -26,13 +26,20 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.*;
 import org.apache.velocity.app.VelocityEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Properties;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
+  
+  private static final Logger log = LoggerFactory.getLogger(VelocityResponseWriter.class);
+
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     VelocityEngine engine = getEngine(request);  // TODO: have HTTP headers available for configuring engine
 
@@ -116,9 +123,25 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     }
     engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
     engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
-    engine.setProperty("solr.resource.loader.instance",
-        new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader()));
+    SolrVelocityResourceLoader resourceLoader =
+      new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
+    engine.setProperty("solr.resource.loader.instance", resourceLoader);
     engine.setProperty(VelocityEngine.RESOURCE_LOADER, "params,file,solr");
+    String propFile = request.getParams().get("v.properties");
+    try{
+      if( propFile == null )
+        engine.init();
+      else{
+        InputStream is = resourceLoader.getResourceStream( propFile );
+        Properties props = new Properties();
+        props.load( is );
+        is.close();
+        engine.init( props );
+      }
+    }
+    catch( Exception e ){
+      throw new RuntimeException( e );
+    }
 
     return engine;
   }
@@ -158,8 +181,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     // wrap it in a JSON object
     return "{\"result\":\"" + replaced + "\"}";
   }
-
+  
   public void init(NamedList args) {
-    
   }
 }
