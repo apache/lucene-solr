@@ -98,15 +98,23 @@ public class SnapPuller {
    */
   private AtomicBoolean pollDisabled = new AtomicBoolean(false);
 
-  private static final HttpClient client;
+  // HttpClient shared by all cores (used if timeout is not specified for a core)
+  private static HttpClient client;
+  // HttpClient for this instance if connectionTimeout or readTimeout has been specified
+  private final HttpClient myHttpClient;
 
-  static {
+  private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout) {
+    if (connTimeout == null && readTimeout == null && client != null)  return client;
     MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
     // Keeping a very high number so that if you have a large number of cores
     // no requests are kept waiting for an idle connection.
     mgr.getParams().setDefaultMaxConnectionsPerHost(10000);
     mgr.getParams().setMaxTotalConnections(10000);
-    client = new HttpClient(mgr);
+    mgr.getParams().setSoTimeout(connTimeout == null ? 5000 : Integer.parseInt(connTimeout)); //5 secs
+    mgr.getParams().setConnectionTimeout(readTimeout == null ? 10000 : Integer.parseInt(readTimeout)); //10 secs
+    HttpClient httpClient = new HttpClient(mgr);
+    if (client == null && connTimeout == null && readTimeout == null) client = httpClient;
+    return httpClient;
   }
 
   public SnapPuller(NamedList initArgs, ReplicationHandler handler, SolrCore sc) {
@@ -121,6 +129,9 @@ public class SnapPuller {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternal = INTERNAL.equals(compress);
     useExternal = EXTERNAL.equals(compress);
+    String connTimeout = (String) initArgs.get(HTTP_CONN_TIMEOUT);
+    String readTimeout = (String) initArgs.get(HTTP_READ_TIMEOUT);
+    myHttpClient = createHttpClient(connTimeout, readTimeout);
     if (pollInterval != null && pollInterval > 0) {
       startExecutorService();
     } else {
@@ -168,7 +179,7 @@ public class SnapPuller {
 
   private NamedList getNamedListResponse(PostMethod method) throws IOException {
     try {
-      int status = client.executeMethod(method);
+      int status = myHttpClient.executeMethod(method);
       if (status != HttpStatus.SC_OK) {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
                 "Request failed for the url " + method);
@@ -965,7 +976,7 @@ public class SnapPuller {
       if (bytesDownloaded > 0) {
         post.addParameter(OFFSET, "" + bytesDownloaded);
       }
-      client.executeMethod(post);
+      myHttpClient.executeMethod(post);
       InputStream is = post.getResponseBodyAsStream();
       //wrap it using FastInputStream
       if (useInternal) {
@@ -1062,4 +1073,8 @@ public class SnapPuller {
   public static final String INTERVAL_ERR_MSG = "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
 
   private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
+
+  private static final String HTTP_CONN_TIMEOUT = "httpConnTimeout";
+  
+  private static final String HTTP_READ_TIMEOUT = "httpReadTimeout";
 }

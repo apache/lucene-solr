@@ -193,6 +193,8 @@ New Features
 
 34. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
 
+35. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
+    replication. (Jeff Newburn, Noble Paul, shalin)
 
 Optimizations
 ----------------------
