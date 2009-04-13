@@ -87,7 +87,7 @@ public class DataConfig {
 
     public boolean isDocRoot = false;
 
-    public List<Field> fields;
+    public List<Field> fields = new ArrayList<Field>();
 
     public List<Map<String, String>> allFieldsList = new ArrayList<Map<String, String>>();
 
@@ -104,7 +104,7 @@ public class DataConfig {
 
     public Script script;
 
-    public Map<String, List<Field>> colNameVsField;
+    public Map<String, List<Field>> colNameVsField = new HashMap<String, List<Field>>();
 
     public Entity() {
     }
@@ -121,8 +121,6 @@ public class DataConfig {
       dataSource = getStringAttribute(element, DataImporter.DATA_SRC, null);
       allAttributes = getAllAttributes(element);
       List<Element> n = getChildNodes(element, "field");
-      fields = new ArrayList<Field>();
-      colNameVsField = new HashMap<String, List<Field>>();
       for (Element elem : n)  {
         Field field = new Field(elem);
         fields.add(field);

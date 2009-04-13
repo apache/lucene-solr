@@ -31,7 +31,7 @@ public class DataImportHandlerException extends RuntimeException {
 
   public boolean debugged = false;
 
-  public static final int SEVERE = 500, WARN = 400, SKIP = 300;
+  public static final int SEVERE = 500, WARN = 400, SKIP = 300, SKIP_ROW =301;
 
   public DataImportHandlerException(int err) {
     super();

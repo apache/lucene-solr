@@ -354,7 +354,8 @@ public class DocBuilder {
             writer.log(SolrWriter.ENTITY_OUT, entity.name, arow);
           }
           importStatistics.rowsCount.incrementAndGet();
-          if (entity.fields != null && doc != null) {
+          if (doc != null) {
+            handleSpecialCommands(arow);
             addFields(entity, doc, arow);
           }
           if (isRoot)
@@ -381,6 +382,9 @@ public class DocBuilder {
         } catch (DataImportHandlerException e) {
           if (verboseDebug) {
             writer.log(SolrWriter.ENTITY_EXCEPTION, entity.name, e);
+          }
+          if(e.getErrCode() == DataImportHandlerException.SKIP_ROW){
+            continue;
           }
           if (isRoot) {
             if (e.getErrCode() == DataImportHandlerException.SKIP) {
@@ -424,37 +428,53 @@ public class DocBuilder {
     doc.setDocumentBoost(value);
   }
 
+  private void handleSpecialCommands(Map<String, Object> arow) {
+    Object value = arow.get("$deleteDocById");
+    if (value != null) {
+      if (value instanceof Collection) {
+        Collection collection = (Collection) value;
+        for (Object o : collection) {
+          writer.deleteDoc(o.toString());
+        }
+      } else {
+        writer.deleteDoc(value);
+      }
+    }
+    value = arow.get("$deleteDocByQuery");
+    if (value != null) {
+      if (value instanceof Collection) {
+        Collection collection = (Collection) value;
+        for (Object o : collection) {
+          writer.deleteByQuery(o.toString());
+        }
+
+      } else {
+        writer.deleteByQuery(value.toString());
+      }
+    }
+    value = arow.get("$skipDoc");
+    if (value != null) {
+      if (Boolean.parseBoolean(value.toString())) {
+        throw new DataImportHandlerException(DataImportHandlerException.SKIP,
+                "Document skipped :" + arow);
+      }
+    }
+
+    value = arow.get("$skipRow");
+    if (value != null) {
+      if (Boolean.parseBoolean(value.toString())) {
+        throw new DataImportHandlerException(DataImportHandlerException.SKIP_ROW);
+      }
+    }
+  }
+
   @SuppressWarnings("unchecked")
   private void addFields(DataConfig.Entity entity, SolrInputDocument doc, Map<String, Object> arow) {
-    Object s = arow.get("$skipRow");
-    if (s != null && Boolean.parseBoolean(s.toString()))  {
-        return;
-    }
     for (Map.Entry<String, Object> entry : arow.entrySet()) {
       String key = entry.getKey();
       Object value = entry.getValue();
       if (value == null)  continue;
-      if (key.startsWith("$")) {
-        if ("$deleteDocById".equals(key)) {
-          if (value instanceof Collection) {
-            Collection collection = (Collection) value;
-            for (Object o : collection) {
-              writer.deleteDoc(o.toString());
-            }
-          } else  {
-            writer.deleteDoc(value);
-          }
-        }
-        if ("$deleteDocByQuery".equals(key)) {
-          writer.deleteByQuery(entry.getValue().toString());
-        }
-        if ("$skipDoc".equals(key) && Boolean.parseBoolean(value.toString())) {
-          throw new DataImportHandlerException(DataImportHandlerException.SKIP,
-                  "Document skipped :" + arow);
-        }
-        // All fields starting with $ are special values and don't need to be added
-        continue;
-      }
+      if (key.startsWith("$")) continue;
       List<DataConfig.Field> field = entity.colNameVsField.get(key);
       if (field == null && dataImporter.getSchema() != null) {
         // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
