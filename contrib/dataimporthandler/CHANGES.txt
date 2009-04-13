@@ -120,6 +120,9 @@ New Features
 28.SOLR-1083: An Evaluator for escaping query characters.
               (Noble Paul, shalin)
 
+29.SOLR-934:  A MailEntityProcessor to enable indexing mails from POP/IMAP sources into a solr index.
+              (Preetam Rao, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

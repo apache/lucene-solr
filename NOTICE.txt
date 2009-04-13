@@ -28,6 +28,13 @@ License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
 This product includes a JUnit jar: http://junit.sourceforge.net/
 License: Common Public License - v 1.0 (http://junit.sourceforge.net/cpl-v10.html)
 
+This product includes the JavaMail API 1.4.1 jar: https://glassfish.dev.java.net/javaee5/mail/
+License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
+
+This product includes the JavaBeans Activation Framework (JAF) 1.1 jar: http://java.sun.com/products/javabeans/jaf/index.jsp
+License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
+
+
 =========================================================================
 ==  Apache Lucene Notice                                               ==
 =========================================================================

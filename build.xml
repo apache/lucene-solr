@@ -488,6 +488,8 @@
   	
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src/main/java" />
+    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar"
+              basedir="contrib/dataimporthandler/src/extras/main/java" />
 
     <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
@@ -683,6 +685,7 @@
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv"/>
     <sign-maven-artifacts artifact.id="solr-core"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler"/>
+    <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras"/>
     <sign-maven-artifacts artifact.id="solr-cell"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-core"/>
@@ -763,6 +766,15 @@
 
         <artifact-attachments>
           <attach file="${dist}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+      <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-extras-pom.xml.template"
+                 jar.file="${dist}/apache-solr-dataimporthandler-extras-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>

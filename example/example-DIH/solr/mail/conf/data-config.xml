@@ -1,0 +1,7 @@
+<dataConfig>
+  <document>
+    <entity processor="MailEntityProcessor" user="email@gmail.com"
+            password="password" host="imap.gmail.com" protocol="imaps"
+            fetchMailsSince="2009-04-01 00:00:00" batchSize="20" folders="inbox"/>
+  </document>
+</dataConfig>

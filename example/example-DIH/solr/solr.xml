@@ -3,5 +3,6 @@
 	<cores adminPath="/admin/cores">
 		<core default="true" instanceDir="db" name="db"></core>
 		<core default="false" instanceDir="rss" name="rss"></core>
+		<core default="false" instanceDir="mail" name="mail"></core>
 	</cores>
 </solr>
