@@ -295,6 +295,28 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    * </ul> 
    */ 
   public Field(String name, String value, Store store, Index index, TermVector termVector) {
+	  this(name, true, value, store, index, termVector);
+  }
+  
+  /**
+   * Create a field by specifying its name, value and how it will
+   * be saved in the index.
+   * 
+   * @param name The name of the field
+   * @param internName Whether to .intern() name or not
+   * @param value The string to process
+   * @param store Whether <code>value</code> should be stored in the index
+   * @param index Whether the field should be indexed, and if so, if it should
+   *  be tokenized before indexing 
+   * @param termVector Whether term vector should be stored
+   * @throws NullPointerException if name or value is <code>null</code>
+   * @throws IllegalArgumentException in any of the following situations:
+   * <ul> 
+   *  <li>the field is neither stored nor indexed</li> 
+   *  <li>the field is not indexed but termVector is <code>TermVector.YES</code></li>
+   * </ul> 
+   */ 
+  public Field(String name, boolean internName, String value, Store store, Index index, TermVector termVector) {
     if (name == null)
       throw new NullPointerException("name cannot be null");
     if (value == null)
@@ -308,7 +330,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
       throw new IllegalArgumentException("cannot store term vector information "
          + "for a field that is not indexed");
           
-    this.name = name.intern();        // field names are interned
+    if (internName) // field names are optionally interned
+      name = name.intern();        
+    
+    this.name = name; 
+    
     this.fieldsData = value;
 
     if (store == Store.YES){

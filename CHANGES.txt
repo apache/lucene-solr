@@ -164,6 +164,9 @@ Bug fixes
     without a collator equal to one with a collator.
     (Mark Platvoet via Mark Miller) 
 
+11. LUCENE-1600: Don't call String.intern unnecessarily in some cases
+    when loading documents from the index.  (P Eger via Mike
+    McCandless)
 
 New features
 

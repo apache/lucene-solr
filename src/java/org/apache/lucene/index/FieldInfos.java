@@ -214,9 +214,9 @@ final class FieldInfos {
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
-    FieldInfo fi =
-      new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-              storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    name = name.intern();
+    FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
+                                 storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     byNumber.add(fi);
     byName.put(name, fi);
     return fi;

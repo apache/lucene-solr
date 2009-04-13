@@ -380,6 +380,7 @@ final class FieldsReader implements Cloneable {
         final byte[] b = new byte[toRead];
         fieldsStream.readBytes(b, 0, b.length);
         f = new Field(fi.name,      // field name
+                false,
                 new String(uncompress(b), "UTF-8"), // uncompress the value and add as string
                 store,
                 index,
@@ -388,6 +389,7 @@ final class FieldsReader implements Cloneable {
         f.setOmitNorms(fi.omitNorms);
       } else {
         f = new Field(fi.name,     // name
+      		false,
                 fieldsStream.readString(), // read value
                 store,
                 index,
