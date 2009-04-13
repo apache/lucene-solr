@@ -3,6 +3,32 @@ $Id$
 
 ======================= Trunk (not yet released) =======================
 
+Changes in backwards compatibility policy
+
+ 1. LUCENE-1575: Searchable.search(Weight, Filter, int, Sort)
+    currently tracks document scores (including maxScore), and sets
+    the score in each returned FieldDoc.  However, in 3.0 it will stop
+    tracking document scores. If document scores tracking is still
+    needed, you can use Searchable.search(Weight, Filter, Collector)
+    and pass in a TopFieldCollector instance, using the following code
+    sample:
+ 
+    <code>
+      TopFieldCollector tfc = TopFieldCollector.create(sort, numHits, fillFields, 
+                                                       true /* trackDocScores */,
+                                                       true /* trackMaxScore */);
+      searcher.search(weight, filter, tfc);
+      TopDocs results = tfc.topDocs();
+    </code>
+
+    Also, the method search(Weight, Filter, Collector) was added to
+    the Searchable interface and the Searcher abstract class, to
+    replace the deprecated HitCollector versions.  If you either
+    implement Searchable or extend Searcher, you should change you
+    code to implement this method.  If you already extend
+    IndexSearcher, no further changes are needed to use Collector.
+    (Shai Erera via Mike McCandless)
+
 Changes in runtime behavior
 
  1. LUCENE-1424: QueryParser now by default uses constant score query
@@ -10,6 +36,19 @@ Changes in runtime behavior
     already does so for RangeQuery, as well).  Call
     setConstantScoreRewrite(false) to revert to BooleanQuery rewriting
     method.  (Mark Miller via Mike McCandless)
+    
+ 2. LUCENE-1575: As of 2.9, the core collectors as well as
+    IndexSearcher's search methods that return top N results, no
+    longer filter out zero scoring documents. If you rely on this
+    functionaliy you can use PositiveScoresOnlyCollector like this:
+
+    <code>
+      TopDocsCollector tdc = new TopScoreDocCollector(10);
+      Collector c = new PositiveScoresOnlyCollector(tdc);
+      searcher.search(query, c);
+      TopDocs hits = tdc.topDocs();
+      ...
+    </code>
 
 API Changes
 
@@ -69,6 +108,14 @@ API Changes
 12. LUCENE-1500: Added new InvalidTokenOffsetsException to Highlighter methods
     to denote issues when offsets in TokenStream tokens exceed the length of the
     provided text.  (Mark Harwood)
+    
+13. LUCENE-1575: HitCollector is now deprecated in favor of a new
+    Collector abstract class. For easy migration, people can use
+    HitCollectorWrapper which translates (wraps) HitCollector into
+    Collector. Note that this class is also deprecated and will be
+    removed when HitCollector is removed.  Also TimeLimitedCollector
+    is deprecated in favor of the new TimeLimitingCollector which
+    extends Collector.  (Shai Erera via Mike McCandless)
 
 Bug fixes
 
@@ -258,6 +305,12 @@ Optimizations
     those segments that did not change, and also speeds up searches
     that sort by relevance or by field values.  (Mark Miller, Mike
     McCandless)
+    
+ 7. LUCENE-1575: The new Collector class decouples collect() from
+    score computation.  Collector.setScorer is called to establish the
+    current Scorer in-use per segment.  Collectors that require the
+    score should then call Scorer.score() per hit inside
+    collect(). (Shai Erera via Mike McCandless)
 
 Documentation
 

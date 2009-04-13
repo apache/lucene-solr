@@ -170,43 +170,50 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * @param results to receive hits
    * 
    * @todo parallelize this one too
+   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
    */
   public void search(Weight weight, Filter filter, final HitCollector results)
     throws IOException {
-    for (int i = 0; i < searchables.length; i++) {
-
-      final int start = starts[i];
-
-      final MultiReaderHitCollector hc;
-      if (results instanceof MultiReaderHitCollector) {
-        // results can shift
-        final MultiReaderHitCollector resultsMulti = (MultiReaderHitCollector) results;
-        hc = new MultiReaderHitCollector() {
-            public void collect(int doc, float score) {
-              resultsMulti.collect(doc, score);
-            }
-
-            public void setNextReader(IndexReader reader, int docBase) throws IOException {
-              resultsMulti.setNextReader(reader, start+docBase);
-            }
-          };
-      } else {
-        // We must shift the docIDs
-        hc = new MultiReaderHitCollector() {
-            private int docBase;
-            public void collect(int doc, float score) {
-              results.collect(doc + docBase + start, score);
-            }
-
-            public void setNextReader(IndexReader reader, int docBase) {
-              this.docBase = docBase;
-            }
-          };
-      }
-      
-      searchables[i].search(weight, filter, hc);
-    }
+    search(weight, filter, new HitCollectorWrapper(results));
   }
+
+  /** Lower-level search API.
+  *
+  * <p>{@link Collector#collect(int)} is called for every matching document.
+  *
+  * <p>Applications should only use this if they need <i>all</i> of the
+  * matching documents.  The high-level search API ({@link
+  * Searcher#search(Query)}) is usually more efficient, as it skips
+  * non-high-scoring hits.
+  *
+  * @param weight to match documents
+  * @param filter if non-null, a bitset used to eliminate some documents
+  * @param collector to receive hits
+  * 
+  * @todo parallelize this one too
+  */
+  public void search(Weight weight, Filter filter, final Collector collector)
+   throws IOException {
+   for (int i = 0; i < searchables.length; i++) {
+
+     final int start = starts[i];
+
+     final Collector hc = new Collector() {
+       public void setScorer(Scorer scorer) throws IOException {
+         collector.setScorer(scorer);
+       }
+       public void collect(int doc) throws IOException {
+         collector.collect(doc);
+       }
+       
+       public void setNextReader(IndexReader reader, int docBase) throws IOException {
+         collector.setNextReader(reader, start + docBase);
+       }
+     };
+     
+     searchables[i].search(weight, filter, hc);
+   }
+ }
 
   /*
    * TODO: this one could be parallelized too

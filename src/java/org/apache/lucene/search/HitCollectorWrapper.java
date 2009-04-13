@@ -19,24 +19,32 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-/**
- * Provides a {@link FieldComparator} for custom field sorting.
- *
- * <b>NOTE:</b> This API is experimental and might change in
- * incompatible ways in the next release.
- *
- */
-public abstract class FieldComparatorSource {
+import org.apache.lucene.index.IndexReader;
 
-  /**
-   * Creates a comparator for the field in the given index.
-   * 
-   * @param fieldname
-   *          Name of the field to create comparator for.
-   * @return FieldComparator.
-   * @throws IOException
-   *           If an error occurs reading the index.
-   */
-  public abstract FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
-      throws IOException;
+/**
+ * Wrapper for ({@link HitCollector}) implementations, which
+ * simply re-bases the incoming docID before calling {@link
+ * HitCollector#collect}.
+ * @deprecated this class will be removed when {@link HitCollector} is removed.
+ */
+class HitCollectorWrapper extends Collector {
+  private HitCollector collector;
+  private int base = 0;
+  private Scorer scorer = null;
+  
+  public HitCollectorWrapper(HitCollector collector) {
+    this.collector = collector;
+  }
+  
+  public void setNextReader(IndexReader reader, int docBase) {
+    base = docBase;
+  }
+
+  public void collect(int doc) throws IOException {
+    collector.collect(doc + base, scorer.score());
+  }
+
+  public void setScorer(Scorer scorer) throws IOException {
+    this.scorer = scorer;      
+  }
 }

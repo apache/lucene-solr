@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -27,7 +28,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiReaderHitCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
@@ -283,10 +285,15 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q1,
                     new CountingHitCollector() {
-                      public final void collect(int doc, float score) {
+                      private Scorer scorer;
+                      public final void setScorer(Scorer scorer) {
+                        this.scorer = scorer;
+                      }
+                      public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
+                        float score = scorer.score();
                         assertTrue(score==1.0f);
-                        super.collect(doc, score);
+                        super.collect(doc);
                       }
                     });
     //System.out.println(CountingHitCollector.getCount());
@@ -294,10 +301,15 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q2,
                     new CountingHitCollector() {
-                      public final void collect(int doc, float score) {
-                        //System.out.println("Q2: Doc=" + doc + " score=" + score);  
+                      private Scorer scorer;
+                      public final void setScorer(Scorer scorer) {
+                        this.scorer = scorer;
+                      }
+                      public final void collect(int doc) throws IOException {
+                        //System.out.println("Q2: Doc=" + doc + " score=" + score);
+                        float score = scorer.score();
                         assertTrue(score==1.0f+doc);
-                        super.collect(doc, score);
+                        super.collect(doc);
                       }
                     });
     //System.out.println(CountingHitCollector.getCount());
@@ -308,11 +320,16 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q3,
                     new CountingHitCollector() {
-                      public final void collect(int doc, float score) {
+                      private Scorer scorer;
+                      public final void setScorer(Scorer scorer) {
+                        this.scorer = scorer;
+                      }
+                      public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
+                        float score = scorer.score();
                         assertTrue(score==1.0f);
                         assertFalse(doc%2==0);
-                        super.collect(doc, score);
+                        super.collect(doc);
                       }
                     });
     //System.out.println(CountingHitCollector.getCount());
@@ -320,11 +337,16 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(q4,
                     new CountingHitCollector() {
-                      public final void collect(int doc, float score) {
+                      private Scorer scorer;
+                      public final void setScorer(Scorer scorer) {
+                        this.scorer = scorer;
+                      }
+                      public final void collect(int doc) throws IOException {
+                        float score = scorer.score();
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
                         assertTrue(score==1.0f);
                         assertTrue(doc%2==0);
-                        super.collect(doc, score);
+                        super.collect(doc);
                       }
                     });
     //System.out.println(CountingHitCollector.getCount());
@@ -337,9 +359,9 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(bq,
                     new CountingHitCollector() {
-                      public final void collect(int doc, float score) {
+                      public final void collect(int doc) throws IOException {
                         //System.out.println("BQ: Doc=" + doc + " score=" + score);
-                        super.collect(doc, score);
+                        super.collect(doc);
                       }
                     });
     assertTrue(15 == CountingHitCollector.getCount());
@@ -348,12 +370,13 @@ public class TestOmitTf extends LuceneTestCase {
     dir.close();
   }
      
-  public static class CountingHitCollector extends MultiReaderHitCollector {
+  public static class CountingHitCollector extends Collector {
     static int count=0;
     static int sum=0;
     private int docBase = -1;
     CountingHitCollector(){count=0;sum=0;}
-    public void collect(int doc, float score) {
+    public void setScorer(Scorer scorer) throws IOException {}
+    public void collect(int doc) throws IOException {
       count++;
       sum += doc + docBase;  // use it to avoid any possibility of being optimized away
     }

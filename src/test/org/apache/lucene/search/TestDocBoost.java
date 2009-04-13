@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
@@ -66,10 +68,14 @@ public class TestDocBoost extends LuceneTestCase {
 
     new IndexSearcher(store).search
       (new TermQuery(new Term("field", "word")),
-       new MultiReaderHitCollector() {
-         private int base = -1;
-         public final void collect(int doc, float score) {
-           scores[doc + base] = score;
+       new Collector() {
+         private int base = 0;
+         private Scorer scorer;
+         public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+         }
+         public final void collect(int doc) throws IOException {
+           scores[doc + base] = scorer.score();
          }
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;

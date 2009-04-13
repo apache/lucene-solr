@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.SortField;
@@ -49,8 +48,7 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 	}
 
 	@Override
-	public FieldComparator newComparator(String fieldname,
-			IndexReader[] subReaders, int numHits, int sortPos, boolean reversed)
+	public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
 			throws IOException {
 		dsdlc = new DistanceScoreDocLookupComparator(distanceFilter, numHits);
 		return dsdlc;
@@ -87,7 +85,7 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		}
 
 		@Override
-		public int compareBottom(int doc, float score) {
+		public int compareBottom(int doc) {
 			final double v2 = distanceFilter.getDistance(doc);
       if (bottom > v2) {
         return 1;
@@ -98,7 +96,7 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		}
 
 		@Override
-		public void copy(int slot, int doc, float score) {
+		public void copy(int slot, int doc) {
 			values[slot] = distanceFilter.getDistance(doc);
 		}
 

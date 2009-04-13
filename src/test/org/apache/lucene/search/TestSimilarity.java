@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
@@ -75,9 +76,13 @@ public class TestSimilarity extends LuceneTestCase {
 
     searcher.search
       (new TermQuery(b),
-       new MultiReaderHitCollector() {
-         public final void collect(int doc, float score) {
-           assertTrue(score == 1.0f);
+       new Collector() {
+         private Scorer scorer;
+         public void setScorer(Scorer scorer) throws IOException {
+           this.scorer = scorer; 
+         }
+         public final void collect(int doc) throws IOException {
+           assertTrue(scorer.score() == 1.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
        });
@@ -88,11 +93,15 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(bq.toString("field"));
     searcher.search
       (bq,
-       new MultiReaderHitCollector() {
-         private int base = -1;
-         public final void collect(int doc, float score) {
+       new Collector() {
+         private int base = 0;
+         private Scorer scorer;
+         public void setScorer(Scorer scorer) throws IOException {
+           this.scorer = scorer; 
+         }
+         public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(score == (float)doc+base+1);
+           assertTrue(scorer.score() == (float)doc+base+1);
          }
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
@@ -105,10 +114,14 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(pq.toString("field"));
     searcher.search
       (pq,
-       new MultiReaderHitCollector() {
-         public final void collect(int doc, float score) {
+       new Collector() {
+        private Scorer scorer;
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer; 
+        }
+         public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(score == 1.0f);
+           assertTrue(scorer.score() == 1.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
        });
@@ -117,10 +130,14 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(pq.toString("field"));
     searcher.search
       (pq,
-       new MultiReaderHitCollector() {
-         public final void collect(int doc, float score) {
+       new Collector() {
+        private Scorer scorer;
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer; 
+        }
+         public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(score == 2.0f);
+           assertTrue(scorer.score() == 2.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
        });

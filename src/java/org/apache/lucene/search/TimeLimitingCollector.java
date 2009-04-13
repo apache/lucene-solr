@@ -15,21 +15,20 @@ package org.apache.lucene.search;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
+
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
 
 /**
- * <p>
- * The TimeLimitedCollector is used to timeout search requests that take longer
- * than the maximum allowed search time limit. After this time is exceeded, the
- * search thread is stopped by throwing a TimeExceeded Exception.
- * </p>
- * 
- * @deprecated this class will be removed in 3.0. Use
- *             {@link TimeLimitingCollector} instead, which extends the new
- *             {@link Collector}.
+ * The {@link TimeLimitingCollector} is used to timeout search requests that
+ * take longer than the maximum allowed search time limit. After this time is
+ * exceeded, the search thread is stopped by throwing a
+ * {@link TimeExceededException}.
  */
-public class TimeLimitedCollector extends HitCollector {
-  
+public class TimeLimitingCollector extends Collector {
+
   /** 
    * Default timer resolution.
    * @see #setResolution(long) 
@@ -46,7 +45,7 @@ public class TimeLimitedCollector extends HitCollector {
   
   private boolean greedy = DEFAULT_GREEDY ;
 
-  private static class TimerThread extends Thread  {
+  private static final class TimerThread extends Thread  {
 
     // NOTE: we can avoid explicit synchronization here for several reasons:
     // * updates to volatile long variables are atomic
@@ -72,7 +71,7 @@ public class TimeLimitedCollector extends HitCollector {
     }
 
     public void run() {
-      while( true ) {
+      while (true) {
         // TODO: Use System.nanoTime() when Lucene moves to Java SE 5.
         time += resolution;
         try {
@@ -92,9 +91,7 @@ public class TimeLimitedCollector extends HitCollector {
     }
   }
 
-  /**
-   * Thrown when elapsed search time exceeds allowed search time. 
-   */
+  /** Thrown when elapsed search time exceeds allowed search time. */
   public static class TimeExceededException extends RuntimeException {
     private long timeAllowed;
     private long timeElapsed;
@@ -105,21 +102,15 @@ public class TimeLimitedCollector extends HitCollector {
       this.timeElapsed = timeElapsed;
       this.lastDocCollected = lastDocCollected;
     }
-    /**
-     * Returns allowed time (milliseconds).
-     */
+    /** Returns allowed time (milliseconds). */
     public long getTimeAllowed() {
       return timeAllowed;
     }
-    /**
-     * Returns elapsed time (milliseconds).
-     */
+    /** Returns elapsed time (milliseconds). */
     public long getTimeElapsed() {
       return timeElapsed;
     }
-    /**
-     * Returns last doc that was collected when the search time exceeded.  
-     */
+    /** Returns last doc that was collected when the search time exceeded. */
     public int getLastDocCollected() {
       return lastDocCollected;
     }
@@ -136,36 +127,17 @@ public class TimeLimitedCollector extends HitCollector {
 
   private final long t0;
   private final long timeout;
-  private final HitCollector hc;
+  private final Collector collector;
 
   /**
-   * Create a TimeLimitedCollector wrapper over another HitCollector with a specified timeout.
-   * @param hc the wrapped HitCollector
+   * Create a TimeLimitedCollector wrapper over another {@link Collector} with a specified timeout.
+   * @param collector the wrapped {@link Collector}
    * @param timeAllowed max time allowed for collecting hits after which {@link TimeExceededException} is thrown
    */
-  public TimeLimitedCollector(final HitCollector hc, final long timeAllowed) {
-    this.hc = hc;
+  public TimeLimitingCollector(final Collector collector, final long timeAllowed ) {
+    this.collector = collector;
     t0 = TIMER_THREAD.getMilliseconds();
     this.timeout = t0 + timeAllowed;
-  }
-
-  /**
-   * Calls collect() on the decorated HitCollector.
-   * 
-   * @throws TimeExceededException if the time allowed has been exceeded.
-   */
-  public void collect( final int doc, final float score ) {
-    long time = TIMER_THREAD.getMilliseconds();
-    if( timeout < time) {
-      if (greedy) {
-        //System.out.println(this+"  greedy: before failing, collecting doc: "+doc+"  "+(time-t0));
-        hc.collect( doc, score );
-      }
-      //System.out.println(this+"  failing on:  "+doc+"  "+(time-t0));
-      throw new TimeExceededException( timeout-t0, time-t0, doc );
-    }
-    //System.out.println(this+"  collecting: "+doc+"  "+(time-t0));
-    hc.collect( doc, score );
   }
 
   /** 
@@ -215,4 +187,33 @@ public class TimeLimitedCollector extends HitCollector {
     this.greedy = greedy;
   }
   
+  /**
+   * Calls {@link Collector#collect(int)} on the decorated {@link Collector}
+   * unless the allowed time has passed, in which case it throws an exception.
+   * 
+   * @throws TimeExceededException
+   *           if the time allowed has exceeded.
+   */
+  public void collect(final int doc) throws IOException {
+    long time = TIMER_THREAD.getMilliseconds();
+    if (timeout < time) {
+      if (greedy) {
+        //System.out.println(this+"  greedy: before failing, collecting doc: "+doc+"  "+(time-t0));
+        collector.collect(doc);
+      }
+      //System.out.println(this+"  failing on:  "+doc+"  "+(time-t0));
+      throw new TimeExceededException( timeout-t0, time-t0, doc );
+    }
+    //System.out.println(this+"  collecting: "+doc+"  "+(time-t0));
+    collector.collect(doc);
+  }
+  
+  public void setNextReader(IndexReader reader, int base) throws IOException {
+    collector.setNextReader(reader, base);
+  }
+  
+  public void setScorer(Scorer scorer) throws IOException {
+    collector.setScorer(scorer);
+  }
+
 }

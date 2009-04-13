@@ -30,8 +30,8 @@ import org.apache.lucene.index.IndexReader;
  * documents are collected.
  *
  * @deprecated Please use {@link TopFieldCollector} instead.
- **/
-public class TopFieldDocCollector extends TopScoreDocCollector {
+ */
+public class TopFieldDocCollector extends TopDocCollector {
 
   private FieldDoc reusableFD;
 
@@ -50,7 +50,7 @@ public class TopFieldDocCollector extends TopScoreDocCollector {
     if (score > 0.0f) {
       totalHits++;
       if (reusableFD == null)
-        reusableFD = new FieldDoc(doc + docBase, score);
+        reusableFD = new FieldDoc(doc, score);
       else {
         // Whereas TopScoreDocCollector can skip this if the
         // score is not competitive, we cannot because the
@@ -58,7 +58,7 @@ public class TopFieldDocCollector extends TopScoreDocCollector {
         // aren't in general congruent with "higher score
         // wins"
         reusableFD.score = score;
-        reusableFD.doc = doc + docBase;
+        reusableFD.doc = doc;
       }
       reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
     }

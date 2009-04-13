@@ -80,11 +80,11 @@ final class BooleanScorer extends Scorer {
     public boolean done;
     public boolean required = false;
     public boolean prohibited = false;
-    public MultiReaderHitCollector collector;
+    public Collector collector;
     public SubScorer next;
 
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
-        MultiReaderHitCollector collector, SubScorer next)
+        Collector collector, SubScorer next)
       throws IOException {
       this.scorer = scorer;
       this.done = !scorer.next();
@@ -128,18 +128,32 @@ final class BooleanScorer extends Scorer {
   private int end;
   private Bucket current;
 
+  /** @deprecated use {@link #score(Collector)} instead. */
   public void score(HitCollector hc) throws IOException {
     next();
     score(hc, Integer.MAX_VALUE);
   }
+  
+  public void score(Collector collector) throws IOException {
+    next();
+    score(collector, Integer.MAX_VALUE);
+  }
 
+  /** @deprecated use {@link #score(Collector, int)} instead. */
   protected boolean score(HitCollector hc, int max) throws IOException {
+    return score(new HitCollectorWrapper(hc), max);
+  }
+
+  protected boolean score(Collector collector, int max) throws IOException {
     if (coordFactors == null)
       computeCoordFactors();
 
     boolean more;
     Bucket tmp;
     
+    BucketScorer bs = new BucketScorer();
+    // The internal loop will set the score and doc before calling collect.
+    collector.setScorer(bs);
     do {
       bucketTable.first = null;
       
@@ -158,7 +172,9 @@ final class BooleanScorer extends Scorer {
           }
           
           if (current.coord >= minNrShouldMatch) {
-            hc.collect(current.doc, current.score * coordFactors[current.coord]);
+            bs.score = current.score * coordFactors[current.coord];
+            bs.doc = current.doc;
+            collector.collect(current.doc);
           }
         }
         
@@ -210,8 +226,9 @@ final class BooleanScorer extends Scorer {
       end += BucketTable.SIZE;
       for (SubScorer sub = scorers; sub != null; sub = sub.next) {
         Scorer scorer = sub.scorer;
+        sub.collector.setScorer(scorer);
         while (!sub.done && scorer.doc() < end) {
-          sub.collector.collect(scorer.doc(), scorer.score());
+          sub.collector.collect(scorer.doc());
           sub.done = !scorer.next();
         }
         if (!sub.done) {
@@ -237,6 +254,42 @@ final class BooleanScorer extends Scorer {
     Bucket      next;                             // next valid bucket
   }
 
+  // An internal class which is used in score(Collector, int) for setting the
+  // current score. This is required since Collector exposes a setScorer method
+  // and implementations that need the score will call scorer.score().
+  // Therefore the only methods that are implemented are score() and doc().
+  private static final class BucketScorer extends Scorer {
+
+    float score;
+    int doc;
+    
+    public BucketScorer() {
+      super(null);
+    }
+    
+    
+    public Explanation explain(int doc) throws IOException {
+      return null;
+    }
+
+    public float score() throws IOException {
+      return score;
+    }
+
+    public int doc() {
+      return doc;
+    }
+
+    public boolean next() throws IOException {
+      return false;
+    }
+
+    public boolean skipTo(int target) throws IOException {
+      return false;
+    }
+    
+  }
+  
   /** A simple hash table of document scores within a range. */
   static final class BucketTable {
     public static final int SIZE = 1 << 11;
@@ -249,19 +302,25 @@ final class BooleanScorer extends Scorer {
 
     public final int size() { return SIZE; }
 
-    public MultiReaderHitCollector newCollector(int mask) {
-      return new Collector(mask, this);
+    public Collector newCollector(int mask) {
+      return new BolleanScorerCollector(mask, this);
     }
   }
 
-  static final class Collector extends MultiReaderHitCollector {
+  private static final class BolleanScorerCollector extends Collector {
     private BucketTable bucketTable;
     private int mask;
-    public Collector(int mask, BucketTable bucketTable) {
+    private Scorer scorer;
+    
+    public BolleanScorerCollector(int mask, BucketTable bucketTable) {
       this.mask = mask;
       this.bucketTable = bucketTable;
     }
-    public final void collect(final int doc, final float score) {
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+    }
+    
+    public final void collect(final int doc) throws IOException {
       final BucketTable table = bucketTable;
       final int i = doc & BucketTable.MASK;
       Bucket bucket = table.buckets[i];
@@ -270,14 +329,14 @@ final class BooleanScorer extends Scorer {
       
       if (bucket.doc != doc) {                    // invalid bucket
         bucket.doc = doc;                         // set doc
-        bucket.score = score;                     // initialize score
+        bucket.score = scorer.score();            // initialize score
         bucket.bits = mask;                       // initialize mask
         bucket.coord = 1;                         // initialize coord
 
         bucket.next = table.first;                // push onto valid list
         table.first = bucket;
       } else {                                    // valid bucket
-        bucket.score += score;                    // increment score
+        bucket.score += scorer.score();           // increment score
         bucket.bits |= mask;                      // add bits in mask
         bucket.coord++;                           // increment coord
       }

@@ -97,7 +97,12 @@ public class MultiSearcher extends Searcher {
       throw new UnsupportedOperationException();
     }
 
+    /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
     public void search(Weight weight, Filter filter, HitCollector results) {
+      throw new UnsupportedOperationException();
+    }
+    
+    public void search(Weight weight, Filter filter, Collector collector) {
       throw new UnsupportedOperationException();
     }
 
@@ -251,40 +256,31 @@ public class MultiSearcher extends Searcher {
     return new TopFieldDocs (totalHits, scoreDocs, hq.getFields(), maxScore);
   }
 
-
   // inherit javadoc
+  /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
   public void search(Weight weight, Filter filter, final HitCollector results)
     throws IOException {
+    search(weight, filter, new HitCollectorWrapper(results));
+  }
+  
+  // inherit javadoc
+  public void search(Weight weight, Filter filter, final Collector collector)
+  throws IOException {
     for (int i = 0; i < searchables.length; i++) {
-
+      
       final int start = starts[i];
-
-      final MultiReaderHitCollector hc;
-      if (results instanceof MultiReaderHitCollector) {
-        // results can shift
-        final MultiReaderHitCollector resultsMulti = (MultiReaderHitCollector) results;
-        hc = new MultiReaderHitCollector() {
-            public void collect(int doc, float score) {
-              resultsMulti.collect(doc, score);
-            }
-
-            public void setNextReader(IndexReader reader, int docBase) throws IOException {
-              resultsMulti.setNextReader(reader, start+docBase);
-            }
-          };
-      } else {
-        // We must shift the docIDs
-        hc = new MultiReaderHitCollector() {
-            private int docBase;
-            public void collect(int doc, float score) {
-              results.collect(doc + docBase + start, score);
-            }
-
-            public void setNextReader(IndexReader reader, int docBase) {
-              this.docBase = docBase;
-            }
-          };
-      }
+      
+      final Collector hc = new Collector() {
+        public void setScorer(Scorer scorer) throws IOException {
+          collector.setScorer(scorer);
+        }
+        public void collect(int doc) throws IOException {
+          collector.collect(doc);
+        }
+        public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          collector.setNextReader(reader, start + docBase);
+        }
+      };
       
       searchables[i].search(weight, filter, hc);
     }

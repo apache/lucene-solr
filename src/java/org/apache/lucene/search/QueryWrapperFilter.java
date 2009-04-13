@@ -50,9 +50,12 @@ public class QueryWrapperFilter extends Filter {
   public BitSet bits(IndexReader reader) throws IOException {
     final BitSet bits = new BitSet(reader.maxDoc());
 
-    new IndexSearcher(reader).search(query, new MultiReaderHitCollector() {
-      private int base = -1;
-      public final void collect(int doc, float score) {
+    new IndexSearcher(reader).search(query, new Collector() {
+      private int base = 0;
+      public void setScorer(Scorer scorer) throws IOException {
+        // score is not needed by this collector 
+      }
+      public final void collect(int doc) {
         bits.set(doc + base);  // set bit for hit
       }
       public void setNextReader(IndexReader reader, int docBase) {

@@ -300,8 +300,17 @@ class BooleanScorer2 extends Scorer {
    * @param hc The collector to which all matching documents are passed through
    * {@link HitCollector#collect(int, float)}.
    * <br>When this method is used the {@link #explain(int)} method should not be used.
+   * @deprecated use {@link #score(Collector)} instead.
    */
   public void score(HitCollector hc) throws IOException {
+    score(new HitCollectorWrapper(hc));
+  }
+
+  /** Scores and collects all matching documents.
+   * @param collector The collector to which all matching documents are passed through.
+   * <br>When this method is used the {@link #explain(int)} method should not be used.
+   */
+  public void score(Collector collector) throws IOException {
     if (allowDocsOutOfOrder && requiredScorers.size() == 0
             && prohibitedScorers.size() < 32) {
       // fall back to BooleanScorer, scores documents somewhat out of order
@@ -314,13 +323,14 @@ class BooleanScorer2 extends Scorer {
       while (si.hasNext()) {
         bs.add((Scorer) si.next(), false /* required */, true /* prohibited */);
       }
-      bs.score(hc);
+      bs.score(collector);
     } else {
       if (countingSumScorer == null) {
         initCountingSumScorer();
       }
+      collector.setScorer(this);
       while (countingSumScorer.next()) {
-        hc.collect(countingSumScorer.doc(), score());
+        collector.collect(countingSumScorer.doc());
       }
     }
   }
@@ -332,12 +342,25 @@ class BooleanScorer2 extends Scorer {
    * {@link HitCollector#collect(int, float)}.
    * @param max Do not score documents past this.
    * @return true if more matching documents may remain.
+   * @deprecated use {@link #score(Collector, int)} instead.
    */
   protected boolean score(HitCollector hc, int max) throws IOException {
+    return score(new HitCollectorWrapper(hc), max);
+  }
+  
+  /** Expert: Collects matching documents in a range.
+   * <br>Note that {@link #next()} must be called once before this method is
+   * called for the first time.
+   * @param collector The collector to which all matching documents are passed through.
+   * @param max Do not score documents past this.
+   * @return true if more matching documents may remain.
+   */
+  protected boolean score(Collector collector, int max) throws IOException {
     // null pointer exception when next() was not called before:
     int docNr = countingSumScorer.doc();
+    collector.setScorer(this);
     while (docNr < max) {
-      hc.collect(docNr, score());
+      collector.collect(docNr);
       if (! countingSumScorer.next()) {
         return false;
       }

@@ -24,6 +24,9 @@ import org.apache.lucene.index.TermDocs;
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
+  
+  private static final float[] SIM_NORM_DECODER = Similarity.getNormDecoder();
+  
   private Weight weight;
   private TermDocs termDocs;
   private byte[] norms;
@@ -56,25 +59,26 @@ final class TermScorer extends Scorer {
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
+  /** @deprecated use {@link #score(Collector)} instead. */
   public void score(HitCollector hc) throws IOException {
-    next();
-    score(hc, Integer.MAX_VALUE);
+    score(new HitCollectorWrapper(hc));
   }
 
+  public void score(Collector c) throws IOException {
+    next();
+    score(c, Integer.MAX_VALUE);
+  }
+
+  /** @deprecated use {@link #score(Collector, int)} instead. */
   protected boolean score(HitCollector c, int end) throws IOException {
-    Similarity similarity = getSimilarity();      // cache sim in local
-    float[] normDecoder = Similarity.getNormDecoder();
+    return score(new HitCollectorWrapper(c), end);
+  }
+  
+  protected boolean score(Collector c, int end) throws IOException {
+    c.setScorer(this);
     while (doc < end) {                           // for docs in window
-      int f = freqs[pointer];
-      float score =                               // compute tf(f)*weight
-        f < SCORE_CACHE_SIZE                      // check cache
-         ? scoreCache[f]                          // cache hit
-         : similarity.tf(f)*weightValue;          // cache miss
-
-      score *= normDecoder[norms[doc] & 0xFF];    // normalize for field
-
-      c.collect(doc, score);                      // collect score
-
+      c.collect(doc);                      // collect score
+        
       if (++pointer >= pointerMax) {
         pointerMax = termDocs.read(docs, freqs);  // refill buffers
         if (pointerMax != 0) {
@@ -123,7 +127,7 @@ final class TermScorer extends Scorer {
       ? scoreCache[f]                             // cache hit
       : getSimilarity().tf(f)*weightValue;        // cache miss
 
-    return raw * Similarity.decodeNorm(norms[doc]); // normalize for field
+    return raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
   }
 
   /** Skips to the first match beyond the current whose document number is

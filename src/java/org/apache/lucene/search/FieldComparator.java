@@ -62,11 +62,11 @@ public abstract class FieldComparator {
       return values[slot1] - values[slot2];
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       return bottom - currentReaderValues[doc];
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -87,7 +87,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Byte(values[slot]);
     }
-  };
+  }
 
   /** Sorts by ascending docID */
   public static final class DocComparator extends FieldComparator {
@@ -104,12 +104,12 @@ public abstract class FieldComparator {
       return docIDs[slot1] - docIDs[slot2];
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       // No overflow risk because docIDs are non-negative
       return bottom - (docBase + doc);
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       docIDs[slot] = docBase + doc;
     }
 
@@ -131,7 +131,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Integer(docIDs[slot]);
     }
-  };
+  }
 
   /** Parses field's values as double (using {@link
    *  ExtendedFieldCache#getDoubles} and sorts by ascending value */
@@ -160,7 +160,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       final double v2 = currentReaderValues[doc];
       if (bottom > v2) {
         return 1;
@@ -171,7 +171,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -192,7 +192,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Double(values[slot]);
     }
-  };
+  }
 
   /** Parses field's values as float (using {@link
    *  FieldCache#getFloats} and sorts by ascending value */
@@ -223,7 +223,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       // TODO: are there sneaky non-branch ways to compute
       // sign of float?
       final float v2 = currentReaderValues[doc];
@@ -236,7 +236,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -256,7 +256,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Float(values[slot]);
     }
-  };
+  }
 
   /** Parses field's values as int (using {@link
    *  FieldCache#getInts} and sorts by ascending value */
@@ -289,7 +289,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
       // Cannot return bottom - values[slot2] because that
@@ -304,7 +304,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -324,7 +324,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Integer(values[slot]);
     }
-  };
+  }
 
   /** Parses field's values as long (using {@link
    *  ExtendedFieldCache#getLongs} and sorts by ascending value */
@@ -355,7 +355,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
       final long v2 = currentReaderValues[doc];
@@ -368,7 +368,7 @@ public abstract class FieldComparator {
       }
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -389,7 +389,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Long(values[slot]);
     }
-  };
+  }
 
   /** Sorts by descending relevance.  NOTE: if you are
    *  sorting only by descending relevance and then
@@ -400,7 +400,8 @@ public abstract class FieldComparator {
   public static final class RelevanceComparator extends FieldComparator {
     private final float[] scores;
     private float bottom;
-
+    private Scorer scorer;
+    
     RelevanceComparator(int numHits) {
       scores = new float[numHits];
     }
@@ -408,27 +409,16 @@ public abstract class FieldComparator {
     public int compare(int slot1, int slot2) {
       final float score1 = scores[slot1];
       final float score2 = scores[slot2];
-      if (score1 > score2) {
-        return -1;
-      } else if (score1 < score2) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return score1 > score2 ? -1 : (score1 < score2 ? 1 : 0);
     }
 
-    public int compareBottom(int doc, float score) {
-      if (bottom > score) {
-        return -1;
-      } else if (bottom < score) {
-        return 1;
-      } else {
-        return 0;
-      }
+    public int compareBottom(int doc) throws IOException {
+      float score = scorer.score();
+      return bottom > score ? -1 : (bottom < score ? 1 : 0);
     }
 
-    public void copy(int slot, int doc, float score) {
-      scores[slot] = score;
+    public void copy(int slot, int doc) throws IOException {
+      scores[slot] = scorer.score();
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) {
@@ -438,6 +428,12 @@ public abstract class FieldComparator {
       this.bottom = scores[bottom];
     }
 
+    public void setScorer(Scorer scorer) {
+      // wrap with a ScoreCachingWrappingScorer so that successive calls to
+      // score() will not incur score computation over and over again.
+      this.scorer = new ScoreCachingWrappingScorer(scorer);
+    }
+    
     public int sortType() {
       return SortField.SCORE;
     }
@@ -445,7 +441,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Float(scores[slot]);
     }
-  };
+  }
 
   /** Parses field's values as short (using {@link
    *  FieldCache#getShorts} and sorts by ascending value */
@@ -466,11 +462,11 @@ public abstract class FieldComparator {
       return values[slot1] - values[slot2];
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       return bottom - currentReaderValues[doc];
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -491,7 +487,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return new Short(values[slot]);
     }
-  };
+  }
 
   /** Sorts by a field's value using the Collator for a
    *  given Locale.*/
@@ -523,7 +519,7 @@ public abstract class FieldComparator {
       return collator.compare(val1, val2);
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       final String val2 = currentReaderValues[doc];
       if (bottom == null) {
         if (val2 == null) {
@@ -536,7 +532,7 @@ public abstract class FieldComparator {
       return collator.compare(bottom, val2);
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -556,7 +552,7 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return values[slot];
     }
-  };
+  }
 
   // NOTE: there were a number of other interesting String
   // comparators explored, but this one seemed to perform
@@ -608,7 +604,7 @@ public abstract class FieldComparator {
       return val1.compareTo(val2);
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       assert bottomSlot != -1;
       int order = this.order[doc];
       final int cmp = bottomOrd - order;
@@ -659,7 +655,7 @@ public abstract class FieldComparator {
       ords[slot] = index;
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       final int ord = order[doc];
       ords[slot] = ord;
       assert ord >= 0;
@@ -709,7 +705,7 @@ public abstract class FieldComparator {
     public String getField() {
       return field;
     }
-  };
+  }
 
   /** Sorts by field's natural String sort order.  All
    *  comparisons are done using String.compareTo, which is
@@ -742,7 +738,7 @@ public abstract class FieldComparator {
       return val1.compareTo(val2);
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       final String val2 = currentReaderValues[doc];
       if (bottom == null) {
         if (val2 == null) {
@@ -755,7 +751,7 @@ public abstract class FieldComparator {
       return bottom.compareTo(val2);
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
@@ -775,11 +771,11 @@ public abstract class FieldComparator {
     public Comparable value(int slot) {
       return values[slot];
     }
-  };
+  }
 
   final protected static int binarySearch(String[] a, String key) {
     return binarySearch(a, key, 0, a.length-1);
-  };
+  }
 
   final protected static int binarySearch(String[] a, String key, int low, int high) {
 
@@ -801,7 +797,7 @@ public abstract class FieldComparator {
         return mid;
     }
     return -(low + 1);
-  };
+  }
 
   /**
    * Compare hit at slot1 with hit at slot2.  Return 
@@ -827,22 +823,20 @@ public abstract class FieldComparator {
    * only invoked after setBottom has been called.  
    * 
    * @param doc that was hit
-   * @param score of the hit
    * @return any N < 0 if the doc's value is sorted after
    * the bottom entry (not competitive), any N > 0 if the
    * doc's value is sorted before the bottom entry and 0 if
    * they are equal.
    */
-  public abstract int compareBottom(int doc, float score);
+  public abstract int compareBottom(int doc) throws IOException;
 
   /**
    * Copy hit (doc,score) to hit slot.
    * 
    * @param slot which slot to copy the hit to
    * @param doc docID relative to current reader
-   * @param score hit score
    */
-  public abstract void copy(int slot, int doc, float score);
+  public abstract void copy(int slot, int doc) throws IOException;
 
   /**
    * Set a new Reader. All doc correspond to the current Reader.
@@ -854,6 +848,12 @@ public abstract class FieldComparator {
    */
   public abstract void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException;
 
+  /** Sets the Scorer to use in case a document's score is needed. */
+  public void setScorer(Scorer scorer) {
+    // Empty implementation since most comparators don't need the score. This
+    // can be overridden by those that need it.
+  }
+  
   /**
    * @return SortField.TYPE
    */

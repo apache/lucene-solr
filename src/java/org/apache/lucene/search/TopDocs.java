@@ -29,7 +29,10 @@ public class TopDocs implements java.io.Serializable {
   /** Expert: Stores the maximum score value encountered, needed for normalizing. */
   private float maxScore;
   
-  /** Expert: Returns the maximum score value encountered. */
+  /**
+   * Expert: Returns the maximum score value encountered. Note that in case
+   * scores are not tracked, this returns {@link Float#NaN}.
+   */
   public float getMaxScore() {
       return maxScore;
   }
@@ -38,7 +41,12 @@ public class TopDocs implements java.io.Serializable {
   public void setMaxScore(float maxScore) {
       this.maxScore=maxScore;
   }
-  
+
+  /** Expert: Constructs a TopDocs with a default maxScore=Float.NaN. */
+  TopDocs(int totalHits, ScoreDoc[] scoreDocs) {
+    this(totalHits, scoreDocs, Float.NaN);
+  }
+
   /** Expert: Constructs a TopDocs.*/
   public TopDocs(int totalHits, ScoreDoc[] scoreDocs, float maxScore) {
     this.totalHits = totalHits;

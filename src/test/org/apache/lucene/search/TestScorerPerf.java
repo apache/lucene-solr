@@ -96,14 +96,16 @@ public class TestScorerPerf extends LuceneTestCase {
     return sets;
   }
 
-  public static class CountingHitCollector extends MultiReaderHitCollector {
+  public static class CountingHitCollector extends Collector {
     int count=0;
     int sum=0;
-    protected int docBase = -1;
+    protected int docBase = 0;
 
-    public void collect(int doc, float score) {
+    public void setScorer(Scorer scorer) throws IOException {}
+    
+    public void collect(int doc) {
       count++;
-      sum += docBase+doc;  // use it to avoid any possibility of being optimized away
+      sum += docBase + doc;  // use it to avoid any possibility of being optimized away
     }
 
     public int getCount() { return count; }
@@ -123,11 +125,12 @@ public class TestScorerPerf extends LuceneTestCase {
     }
 
     public void collect(int doc, float score) {
+      
       pos = answer.nextSetBit(pos+1);
       if (pos != doc + docBase) {
         throw new RuntimeException("Expected doc " + pos + " but got " + doc + docBase);
       }
-      super.collect(doc,score);
+      super.collect(doc);
     }
   }
 

@@ -188,12 +188,16 @@ public class IndexSearcher extends Searcher {
       throws IOException {
     return search(weight, filter, nDocs, sort, true);
   }
-  
-  /** 
-   * Just like {@link #search(Weight, Filter, int, Sort)},
-   * but you choose whether or not the fields in the
-   * returned {@link FieldDoc} instances should be set by
-   * specifying fillFields.
+
+  /**
+   * Just like {@link #search(Weight, Filter, int, Sort)}, but you choose
+   * whether or not the fields in the returned {@link FieldDoc} instances should
+   * be set by specifying fillFields.<br>
+   * <b>NOTE:</b> currently, this method tracks document scores and sets them in
+   * the returned {@link FieldDoc}, however in 3.0 it will move to not track
+   * document scores. If document scores tracking is still needed, you can use
+   * {@link #search(Weight, Filter, Collector)} and pass in a
+   * {@link TopFieldCollector} instance.
    */
   public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort, boolean fillFields)
@@ -222,29 +226,32 @@ public class IndexSearcher extends Searcher {
     
     if (legacy) {
       // Search the single top-level reader
-      TopScoreDocCollector collector = new TopFieldDocCollector(reader, sort, nDocs);
-      collector.setNextReader(reader, 0);
-      doSearch(reader, weight, filter, collector);
-      return (TopFieldDocs) collector.topDocs();
-    } else {
-      // Search each sub-reader
-      TopFieldCollector collector = new TopFieldCollector(sort, nDocs, sortedSubReaders, fillFields);
-      search(weight, filter, collector);
+      TopDocCollector collector = new TopFieldDocCollector(reader, sort, nDocs);
+      HitCollectorWrapper hcw = new HitCollectorWrapper(collector);
+      hcw.setNextReader(reader, 0);
+      doSearch(reader, weight, filter, hcw);
       return (TopFieldDocs) collector.topDocs();
     }
+    // Search each sub-reader
+    // TODO: by default we should create a TopFieldCollector which does not
+    // track document scores and maxScore. Currently the default is set to true,
+    // however it will change in 3.0.
+    TopFieldCollector collector = TopFieldCollector.create(sort, nDocs, fillFields, true, true);
+    search(weight, filter, collector);
+    return (TopFieldDocs) collector.topDocs();
   }
 
   // inherit javadoc
+  /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
   public void search(Weight weight, Filter filter, HitCollector results)
       throws IOException {
-
-    final MultiReaderHitCollector collector;
-    if (results instanceof MultiReaderHitCollector) {
-      collector = (MultiReaderHitCollector) results;
-    } else {
-      collector = new MultiReaderCollectorWrapper(results);
-    }
-
+    search(weight, filter, new HitCollectorWrapper(results));
+  }
+  
+  // inherit javadoc
+  public void search(Weight weight, Filter filter, Collector collector)
+      throws IOException {
+    
     for (int i = 0; i < sortedSubReaders.length; i++) { // search each subreader
       collector.setNextReader(sortedSubReaders[i], sortedStarts[i]);
       doSearch(sortedSubReaders[i], weight, filter, collector);
@@ -252,14 +259,14 @@ public class IndexSearcher extends Searcher {
   }
   
   private void doSearch(IndexReader reader, Weight weight, Filter filter,
-      final HitCollector results) throws IOException {
+      final Collector collector) throws IOException {
 
     Scorer scorer = weight.scorer(reader);
     if (scorer == null)
       return;
 
     if (filter == null) {
-      scorer.score(results);
+      scorer.score(collector);
       return;
     }
 
@@ -267,6 +274,7 @@ public class IndexSearcher extends Searcher {
     
     boolean more = filterDocIdIterator.next() && scorer.skipTo(filterDocIdIterator.doc());
 
+    collector.setScorer(scorer);
     while (more) {
       int filterDocId = filterDocIdIterator.doc();
       if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
@@ -274,7 +282,7 @@ public class IndexSearcher extends Searcher {
       } else {
         int scorerDocId = scorer.doc();
         if (scorerDocId == filterDocId) { // permitted by filter
-          results.collect(scorerDocId, scorer.score());
+          collector.collect(scorerDocId);
           more = filterDocIdIterator.next();
         } else {
           more = filterDocIdIterator.skipTo(scorerDocId);
@@ -294,27 +302,5 @@ public class IndexSearcher extends Searcher {
 
   public Explanation explain(Weight weight, int doc) throws IOException {
     return weight.explain(reader, doc);
-  }
-  
-  /**
-   * Wrapper for non expert ({@link HitCollector})
-   * implementations, which simply re-bases the incoming
-   * docID before calling {@link HitCollector#collect}.
-   */
-  static class MultiReaderCollectorWrapper extends MultiReaderHitCollector {
-    private HitCollector collector;
-    private int base = -1;
-
-    public MultiReaderCollectorWrapper(HitCollector collector) {
-      this.collector = collector;
-    }
-    
-    public void collect(int doc, float score) {
-      collector.collect(doc + base, score);
-    }
-
-    public void setNextReader(IndexReader reader, int docBase) {
-      base = docBase;
-    }
   }
 }

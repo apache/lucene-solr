@@ -89,9 +89,10 @@ public class CheckHits {
     }
     
     final Set actual = new TreeSet();
-    searcher.search(query, new MultiReaderHitCollector() {
-        private int base = -1;
-        public void collect(int doc, float score) {
+    searcher.search(query, new Collector() {
+        private int base = 0;
+        public void setScorer(Scorer scorer) throws IOException {}
+        public void collect(int doc) {
           actual.add(new Integer(doc + base));
         }
 
@@ -390,14 +391,22 @@ public class CheckHits {
       checkExplanations(query);
       return super.search(query,filter,n,sort);
     }
+    /** @deprecated use {@link #search(Query, Collector)} instead. */
     public void search(Query query, HitCollector results) throws IOException {
-      checkExplanations(query);
-      super.search(query,results);
+      search(query, new HitCollectorWrapper(results));
     }
+    public void search(Query query, Collector results) throws IOException {
+      checkExplanations(query);
+      super.search(query, results);
+    }
+    /** @deprecated use {@link #search(Query, Filter, Collector)} instead. */
     public void search(Query query, Filter filter,
         HitCollector results) throws IOException {
+      search(query, filter, new HitCollectorWrapper(results));
+    }
+    public void search(Query query, Filter filter, Collector results) throws IOException {
       checkExplanations(query);
-      super.search(query,filter, results);
+      super.search(query, filter, results);
     }
     public TopDocs search(Query query, Filter filter,
                           int n) throws IOException {
@@ -416,7 +425,7 @@ public class CheckHits {
    *
    * @see CheckHits#verifyExplanation
    */
-  public static class ExplanationAsserter extends MultiReaderHitCollector {
+  public static class ExplanationAsserter extends Collector {
 
     /**
      * @deprecated
@@ -428,8 +437,9 @@ public class CheckHits {
     Searcher s;
     String d;
     boolean deep;
-
-    private int base = -1;
+    
+    Scorer scorer;
+    private int base = 0;
 
     /** Constructs an instance which does shallow tests on the Explanation */
     public ExplanationAsserter(Query q, String defaultFieldName, Searcher s) {
@@ -441,8 +451,12 @@ public class CheckHits {
       this.d = q.toString(defaultFieldName);
       this.deep=deep;
     }      
-
-    public void collect(int doc, float score) {
+    
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;     
+    }
+    
+    public void collect(int doc) throws IOException {
       Explanation exp = null;
       doc = doc + base;
       try {
@@ -454,7 +468,7 @@ public class CheckHits {
       
       TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
-      verifyExplanation(d,doc,score,deep,exp);
+      verifyExplanation(d,doc,scorer.score(),deep,exp);
     }
     public void setNextReader(IndexReader reader, int docBase) {
       base = docBase;

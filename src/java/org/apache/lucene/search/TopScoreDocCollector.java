@@ -17,85 +17,74 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.PriorityQueue;
+import java.io.IOException;
 
-/** A {@link MultiReaderHitCollector} implementation that
- *  collects the top-scoring documents, returning them as a
- *  {@link TopDocs}.  This is used by {@link IndexSearcher}
- *  to implement {@link TopDocs}-based search.
- *
- *  <p>This may be extended, overriding the {@link
- *  MultiReaderHitCollector#collect} method to, e.g.,
- *  conditionally invoke <code>super()</code> in order to
- *  filter which documents are collected, but sure you
- *  either take docBase into account, or also override
- *  {@link MultiReaderHitCollector#setNextReader} method. */
-public class TopScoreDocCollector extends MultiReaderHitCollector {
+import org.apache.lucene.index.IndexReader;
+
+/**
+ * A {@link Collector} implementation that collects the
+ * top-scoring hits, returning them as a {@link
+ * TopDocs}. This is used by {@link IndexSearcher} to
+ * implement {@link TopDocs}-based search.  Hits are sorted
+ * by score descending and then (when the scores are tied)
+ * docID ascending.
+ */
+public final class TopScoreDocCollector extends TopDocsCollector {
 
   private ScoreDoc reusableSD;
-  
-  /** The total number of hits the collector encountered. */
-  protected int totalHits;
-  
-  /** The priority queue which holds the top-scoring documents. */
-  protected PriorityQueue hq;
-
-  protected int docBase = 0;
+  private int docBase = 0;
+  private Scorer scorer;
     
   /** Construct to collect a given number of hits.
    * @param numHits the maximum number of hits to collect
    */
   public TopScoreDocCollector(int numHits) {
-    this(new HitQueue(numHits));
+    super(new HitQueue(numHits));
   }
 
-  /** Constructor to collect the top-scoring documents by using the given PQ.
-   * @param hq the PQ to use by this instance.
-   */
-  protected TopScoreDocCollector(PriorityQueue hq) {
-    this.hq = hq;
-  }
-
-  // javadoc inherited
-  public void collect(int doc, float score) {
-    if (score > 0.0f) {
-      totalHits++;
-      if (reusableSD == null) {
-        reusableSD = new ScoreDoc(doc + docBase, score);
-      } else if (score >= reusableSD.score) {
-        // reusableSD holds the last "rejected" entry, so, if
-        // this new score is not better than that, there's no
-        // need to try inserting it
-        reusableSD.doc = doc + docBase;
-        reusableSD.score = score;
-      } else {
-        return;
-      }
-      reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
+  protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
+    if (results == null) {
+      return EMPTY_TOPDOCS;
     }
-  }
-
-  /** The total number of documents that matched this query. */
-  public int getTotalHits() {
-    return totalHits;
-  }
-
-  /** The top-scoring hits. */
-  public TopDocs topDocs() {
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--) {     // put docs in array
-      scoreDocs[i] = (ScoreDoc) hq.pop();
-    }
-      
-    float maxScore = (totalHits==0)
-      ? Float.NEGATIVE_INFINITY
-      : scoreDocs[0].score;
     
-    return new TopDocs(totalHits, scoreDocs, maxScore);
+    // We need to compute maxScore in order to set it in TopDocs. If start == 0,
+    // it means the largest element is already in results, use its score as
+    // maxScore. Otherwise pop everything else, until the largest element is
+    // extracted and use its score as maxScore.
+    float maxScore = Float.NaN;
+    if (start == 0) {
+      maxScore = results[0].score;
+    } else {
+      for (int i = pq.size(); i > 1; i--) { pq.pop(); }
+      maxScore = ((ScoreDoc) pq.pop()).score;
+    }
+    
+    return new TopDocs(totalHits, results, maxScore);
   }
   
+  // javadoc inherited
+  public void collect(int doc) throws IOException {
+    float score = scorer.score();
+    totalHits++;
+    if (reusableSD == null) {
+      reusableSD = new ScoreDoc(doc + docBase, score);
+    } else if (score >= reusableSD.score) {
+      // reusableSD holds the last "rejected" entry, so, if
+      // this new score is not better than that, there's no
+      // need to try inserting it
+      reusableSD.doc = doc + docBase;
+      reusableSD.score = score;
+    } else {
+      return;
+    }
+    reusableSD = (ScoreDoc) pq.insertWithOverflow(reusableSD);
+  }
+
   public void setNextReader(IndexReader reader, int base) {
     docBase = base;
+  }
+  
+  public void setScorer(Scorer scorer) throws IOException {
+    this.scorer = scorer;
   }
 }

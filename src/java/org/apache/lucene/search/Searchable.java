@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReader; // for javadoc
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
 
@@ -51,10 +51,32 @@ public interface Searchable extends java.rmi.Remote {
    * @param filter if non-null, used to permit documents to be collected.
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
    */
   void search(Weight weight, Filter filter, HitCollector results)
   throws IOException;
 
+  /**
+   * Lower-level search API.
+   * 
+   * <p>
+   * {@link Collector#collect(int)} is called for every document. <br>
+   * Collector-based access to remote indexes is discouraged.
+   * 
+   * <p>
+   * Applications should only use this if they need <i>all</i> of the matching
+   * documents. The high-level search API ({@link Searcher#search(Query)}) is
+   * usually more efficient, as it skips non-high-scoring hits.
+   * 
+   * @param weight
+   *          to match documents
+   * @param filter
+   *          if non-null, used to permit documents to be collected.
+   * @param collector
+   *          to receive hits
+   * @throws BooleanQuery.TooManyClauses
+   */
+  void search(Weight weight, Filter filter, Collector collector) throws IOException;
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
@@ -140,6 +162,7 @@ public interface Searchable extends java.rmi.Remote {
    */
   Explanation explain(Weight weight, int doc) throws IOException;
 
+  // TODO: change the javadoc in 3.0 to remove the last NOTE section.
   /** Expert: Low-level search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in
@@ -147,6 +170,13 @@ public interface Searchable extends java.rmi.Remote {
    *
    * <p>Applications should usually call {@link
    * Searcher#search(Query,Filter,Sort)} instead.
+   * 
+   * <b>NOTE:</b> currently, this method tracks document scores and sets them in
+   * the returned {@link FieldDoc}, however in 3.0 it will move to not track
+   * document scores. If document scores tracking is still needed, you can use
+   * {@link #search(Weight, Filter, Collector)} and pass in a
+   * {@link TopFieldCollector} instance.
+   * 
    * @throws BooleanQuery.TooManyClauses
    */
   TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)

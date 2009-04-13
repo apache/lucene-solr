@@ -27,6 +27,8 @@ import org.apache.lucene.search.SortField;
  */
 public class SearchWithSortTask extends ReadTask {
 
+  private boolean doScore = true;
+  private boolean doMaxScore = true;
   private Sort sort;
 
   public SearchWithSortTask(PerfRunData runData) {
@@ -34,7 +36,12 @@ public class SearchWithSortTask extends ReadTask {
   }
 
   /**
-   * SortFields: field:type,field:type
+   * SortFields: field:type,field:type[,noscore][,nomaxscore]
+   *
+   * If noscore is present, then we turn off score tracking
+   * in {@link org.apache.lucene.search.TopFieldCollector}.
+   * If nomaxscore is present, then we turn off maxScore tracking
+   * in {@link org.apache.lucene.search.TopFieldCollector}.
    * 
    * name,byline:int,subject:auto
    * 
@@ -43,11 +50,18 @@ public class SearchWithSortTask extends ReadTask {
     super.setParams(sortField);
     String[] fields = sortField.split(",");
     SortField[] sortFields = new SortField[fields.length];
+    int upto = 0;
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
       SortField sortField0;
       if (field.equals("doc")) {
         sortField0 = SortField.FIELD_DOC;
+      } else if (field.equals("noscore")) {
+        doScore = false;
+        continue;
+      } else if (field.equals("nomaxscore")) {
+        doMaxScore = false;
+        continue;
       } else {
         int index = field.lastIndexOf(":");
         String fieldName;
@@ -62,7 +76,13 @@ public class SearchWithSortTask extends ReadTask {
         int type = getType(typeString);
         sortField0 = new SortField(fieldName, type);
       }
-      sortFields[i] = sortField0;
+      sortFields[upto++] = sortField0;
+    }
+
+    if (upto < sortFields.length) {
+      SortField[] newSortFields = new SortField[upto];
+      System.arraycopy(sortFields, 0, newSortFields, 0, upto);
+      sortFields = newSortFields;
     }
     this.sort = new Sort(sortFields);
   }
@@ -107,6 +127,14 @@ public class SearchWithSortTask extends ReadTask {
     return false;
   }
 
+  public boolean withScore() {
+    return doScore;
+  }
+
+  public boolean withMaxScore() {
+    return doMaxScore;
+  }
+  
   public Sort getSort() {
     if (sort == null) {
       throw new IllegalStateException("No sort field was set");

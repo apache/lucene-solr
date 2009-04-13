@@ -153,10 +153,15 @@ public class QueryUtils {
 
       final int[] sdoc = new int[] {-1};
       final float maxDiff = 1e-5f;
-      s.search(q,new MultiReaderHitCollector() {
-        private int base = -1;
-        public void collect(int doc, float score) {
+      s.search(q,new Collector() {
+        private int base = 0;
+        private Scorer sc;
+        public void setScorer(Scorer scorer) throws IOException {
+          this.sc = scorer;
+        }
+        public void collect(int doc) throws IOException {
           doc = doc + base;
+          float score = sc.score();
           try {
             int op = order[(opidx[0]++)%order.length];
             //System.out.println(op==skip_op ? "skip("+(sdoc[0]+1)+")":"next()");
@@ -205,11 +210,16 @@ public class QueryUtils {
     //System.out.println("checkFirstSkipTo: "+q);
     final float maxDiff = 1e-5f;
     final int lastDoc[] = {-1};
-    s.search(q,new MultiReaderHitCollector() {
-      private int base = -1;
-      public void collect(int doc, float score) {
+    s.search(q,new Collector() {
+      private int base = 0;
+      private Scorer scorer;
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+      }
+      public void collect(int doc) throws IOException {
         //System.out.println("doc="+doc);
         doc = doc + base;
+        float score = scorer.score();
         try {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);

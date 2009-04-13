@@ -413,7 +413,7 @@ implements Serializable {
       slotValues = new int[numHits];
     }
 
-    public void copy(int slot, int doc, float score) {
+    public void copy(int slot, int doc) {
       slotValues[slot] = docValues[doc];
     }
 
@@ -421,7 +421,7 @@ implements Serializable {
       return slotValues[slot1] - slotValues[slot2];
     }
 
-    public int compareBottom(int doc, float score) {
+    public int compareBottom(int doc) {
       return bottomValue - docValues[doc];
     }
 
@@ -447,7 +447,7 @@ implements Serializable {
   }
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
-    public FieldComparator newComparator(String fieldname, IndexReader[] subReaders, int numHits, int sortPos, boolean reversed) {
+    public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
       return new MyFieldComparator(numHits);
     }
   }
@@ -803,7 +803,94 @@ implements Serializable {
     
     assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
   }
+  
+  public void testSortWithoutFillFields() throws Exception {
+    
+    // There was previously a bug in TopFieldCollector when fillFields was set
+    // to false - the same doc and score was set in ScoreDoc[] array. This test
+    // asserts that if fillFields is false, the documents are set properly. It
+    // does not use Searcher's default search methods (with Sort) since all set
+    // fillFields to true.
+    Sort[] sort = new Sort[] { new Sort(SortField.FIELD_DOC), new Sort() };
+    for (int i = 0; i < sort.length; i++) {
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, false, false, false);
+      
+      full.search(new MatchAllDocsQuery(), tdc);
+      
+      ScoreDoc[] sd = tdc.topDocs().scoreDocs;
+      for (int j = 1; j < sd.length; j++) {
+        assertTrue(sd[j].doc != sd[j - 1].doc);
+      }
+      
+    }
+  }
 
+  public void testSortWithoutScoreTracking() throws Exception {
+
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    for (int i = 0; i < sort.length; i++) {
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, false, false);
+      
+      full.search(new MatchAllDocsQuery(), tdc);
+      
+      TopDocs td = tdc.topDocs();
+      ScoreDoc[] sd = td.scoreDocs;
+      for (int j = 0; j < sd.length; j++) {
+        assertTrue(Float.isNaN(sd[j].score));
+      }
+      assertTrue(Float.isNaN(td.getMaxScore()));
+    }
+  }
+  
+  public void testSortWithScoreNoMaxScoreTracking() throws Exception {
+    
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    for (int i = 0; i < sort.length; i++) {
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, false);
+      
+      full.search(new MatchAllDocsQuery(), tdc);
+      
+      TopDocs td = tdc.topDocs();
+      ScoreDoc[] sd = td.scoreDocs;
+      for (int j = 0; j < sd.length; j++) {
+        assertTrue(!Float.isNaN(sd[j].score));
+      }
+      assertTrue(Float.isNaN(td.getMaxScore()));
+    }
+  }
+  
+  public void testSortWithScoreAndMaxScoreTracking() throws Exception {
+    
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    for (int i = 0; i < sort.length; i++) {
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      
+      full.search(new MatchAllDocsQuery(), tdc);
+      
+      TopDocs td = tdc.topDocs();
+      ScoreDoc[] sd = td.scoreDocs;
+      for (int j = 0; j < sd.length; j++) {
+        assertTrue(!Float.isNaN(sd[j].score));
+      }
+      assertTrue(!Float.isNaN(td.getMaxScore()));
+    }
+  }
+  
+  public void testSortWithScoreAndMaxScoreTrackingNoResults() throws Exception {
+    
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    for (int i = 0; i < sort.length; i++) {
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      TopDocs td = tdc.topDocs();
+      assertEquals(0, td.totalHits);
+      assertTrue(Float.isNaN(td.getMaxScore()));
+    }
+  }
+  
   // runs a variety of sorts useful for multisearchers
   private void runMultiSorts (Searcher multi) throws Exception {
     sort.setSort (SortField.FIELD_DOC);

@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 
-import org.apache.lucene.index.IndexReader;
-
 /**
  * Stores information about how to sort documents by terms in an individual
  * field.  Fields must be indexed in order to sort by them.
@@ -434,8 +432,6 @@ implements Serializable {
 
 
   /** Returns the {@link FieldComparator} to use for sorting.
-   * @param subReaders array of {@link IndexReader} search
-   *   will step through
    * @param numHits number of top hits the queue will store
    * @param sortPos position of this SortField within {@link
    *   Sort}.  The comparator is primary if sortPos==0,
@@ -444,7 +440,7 @@ implements Serializable {
    * @param reversed True if the SortField is reversed
    * @return {@link FieldComparator} to use when sorting
    */
-  protected FieldComparator getComparator(final IndexReader[] subReaders, final int numHits, final int sortPos, final boolean reversed) throws IOException {
+  protected FieldComparator getComparator(final int numHits, final int sortPos, final boolean reversed) throws IOException {
 
     if (locale != null) {
       // TODO: it'd be nice to allow FieldCache.getStringIndex
@@ -480,7 +476,7 @@ implements Serializable {
 
     case SortField.CUSTOM:
       assert factory == null && comparatorSource != null;
-      return comparatorSource.newComparator(field, subReaders, numHits, sortPos, reversed);
+      return comparatorSource.newComparator(field, numHits, sortPos, reversed);
 
     case SortField.STRING:
       return new FieldComparator.StringOrdValComparator(numHits, field, sortPos, reversed);

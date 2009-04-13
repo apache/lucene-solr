@@ -17,21 +17,26 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import junit.framework.TestCase;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiReaderHitCollector;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.FieldNormModifier;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Tests changing the norms after changing the simularity
@@ -52,13 +57,12 @@ public class TestLengthNormModifier extends TestCase {
     /** inverts the normal notion of lengthNorm */
     public static Similarity s = new DefaultSimilarity() {
 	    public float lengthNorm(String fieldName, int numTokens) {
-		return (float)numTokens;
+		return numTokens;
 	    }
 	};
     
     public void setUp() throws Exception {
-	IndexWriter writer = new
-	    IndexWriter(store, new SimpleAnalyzer(), true);
+	IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, MaxFieldLength.UNLIMITED);
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();
@@ -79,9 +83,9 @@ public class TestLengthNormModifier extends TestCase {
     }
     
     public void testMissingField() {
-	LengthNormModifier lnm = new LengthNormModifier(store, s);
+	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	try {
-	    lnm.reSetNorms("nobodyherebutuschickens");
+	    fnm.reSetNorms("nobodyherebutuschickens");
 	} catch (Exception e) {
 	    assertNull("caught something", e);
 	}
@@ -100,9 +104,9 @@ public class TestLengthNormModifier extends TestCase {
 
 	r.close();
 	
-	LengthNormModifier lnm = new LengthNormModifier(store, s);
+	FieldNormModifier fnm = new FieldNormModifier(store, s);
 	try {
-	    lnm.reSetNorms("nonorm");
+	    fnm.reSetNorms("nonorm");
 	} catch (Exception e) {
 	    assertNull("caught something", e);
 	}
@@ -129,13 +133,17 @@ public class TestLengthNormModifier extends TestCase {
 	
 	// default similarity should put docs with shorter length first
   searcher = new IndexSearcher(store);
-  searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
-    private int docBase = -1;
-    public final void collect(int doc, float score) {
-      scores[doc + docBase] = score;
+  searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
+    private int docBase = 0;
+    private Scorer scorer;
+    public final void collect(int doc) throws IOException {
+      scores[doc + docBase] = scorer.score();
     }
     public void setNextReader(IndexReader reader, int docBase) {
       this.docBase = docBase;
+    }
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
     }
   });
   searcher.close();
@@ -151,21 +159,25 @@ public class TestLengthNormModifier extends TestCase {
 	// override the norms to be inverted
 	Similarity s = new DefaultSimilarity() {
 		public float lengthNorm(String fieldName, int numTokens) {
-		    return (float)numTokens;
+		    return numTokens;
 		}
 	    };
-	LengthNormModifier lnm = new LengthNormModifier(store, s);
-	lnm.reSetNorms("field");
+	FieldNormModifier fnm = new FieldNormModifier(store, s);
+	fnm.reSetNorms("field");
 
 	// new norm (with default similarity) should put longer docs first
 	searcher = new IndexSearcher(store);
-	searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
-      private int docBase = -1;
-      public final void collect(int doc, float score) {
-        scores[doc + docBase] = score;
+	searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
+      private int docBase = 0;
+      private Scorer scorer;
+      public final void collect(int doc) throws IOException {
+        scores[doc + docBase] = scorer.score();
       }
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
+      }
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
       }
     });
     searcher.close();

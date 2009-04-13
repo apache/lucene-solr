@@ -22,16 +22,18 @@ import java.util.Arrays;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiReaderHitCollector;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Tests changing of field norms with a custom similarity and with fake norms.
@@ -52,12 +54,12 @@ public class TestFieldNormModifier extends TestCase {
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
     public float lengthNorm(String fieldName, int numTokens) {
-      return (float)numTokens;
+      return numTokens;
     }
   };
   
   public void setUp() throws Exception {
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, MaxFieldLength.UNLIMITED);
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();
@@ -123,13 +125,18 @@ public class TestFieldNormModifier extends TestCase {
     float lastScore = 0.0f;
     
     // default similarity should put docs with shorter length first
-    searcher.search(new TermQuery(new Term("field", "word")), new MultiReaderHitCollector() {
-      private int docBase = -1;
-      public final void collect(int doc, float score) {
-        scores[doc + docBase] = score;
+    searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
+      private int docBase = 0;
+      private Scorer scorer;
+      
+      public final void collect(int doc) throws IOException {
+        scores[doc + docBase] = scorer.score();
       }
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
+      }
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
       }
     });
     searcher.close();
@@ -147,13 +154,17 @@ public class TestFieldNormModifier extends TestCase {
     
     // new norm (with default similarity) should put longer docs first
     searcher = new IndexSearcher(store);
-    searcher.search(new TermQuery(new Term("field", "word")),  new MultiReaderHitCollector() {
-      private int docBase = -1;
-      public final void collect(int doc, float score) {
-        scores[doc + docBase] = score;
+    searcher.search(new TermQuery(new Term("field", "word")),  new Collector() {
+      private int docBase = 0;
+      private Scorer scorer;
+      public final void collect(int doc) throws IOException {
+        scores[doc + docBase] = scorer.score();
       }
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
+      }
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
       }
     });
     searcher.close();
@@ -188,14 +199,17 @@ public class TestFieldNormModifier extends TestCase {
     float lastScore = 0.0f;
     
     // default similarity should return the same score for all documents for this query
-    searcher.search(new TermQuery(new Term("untokfield", "20061212")), new MultiReaderHitCollector() {
-      private int docBase = -1;
-      private int lastMax; 
-      public final void collect(int doc, float score) {
-        scores[doc + docBase] = score;
+    searcher.search(new TermQuery(new Term("untokfield", "20061212")), new Collector() {
+      private int docBase = 0;
+      private Scorer scorer;
+      public final void collect(int doc) throws IOException {
+        scores[doc + docBase] = scorer.score();
       }
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
+      }
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
       }
     });
     searcher.close();

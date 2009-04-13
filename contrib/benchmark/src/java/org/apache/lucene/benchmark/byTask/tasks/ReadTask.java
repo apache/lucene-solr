@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -62,7 +63,6 @@ public abstract class ReadTask extends PerfTask {
   public ReadTask(PerfRunData runData) {
     super(runData);
   }
-
   public int doLogic() throws Exception {
     int res = 0;
     boolean closeReader = false;
@@ -102,7 +102,10 @@ public abstract class ReadTask extends PerfTask {
       final int numHits = numHits();
       if (numHits > 0) {
         if (sort != null) {
-          hits = searcher.search(q, null, numHits, sort);
+          TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
+              true, withScore(), withMaxScore());
+          searcher.search(q, collector);
+          hits = collector.topDocs();
         } else {
           hits = searcher.search(q, numHits);
         }
@@ -179,6 +182,18 @@ public abstract class ReadTask extends PerfTask {
    * Return true if, with search, results should be traversed.
    */
   public abstract boolean withTraverse();
+
+  /** Whether scores should be computed (only useful with
+   *  field sort) */
+  public boolean withScore() {
+    return true;
+  }
+
+  /** Whether maxScores should be computed (only useful with
+   *  field sort) */
+  public boolean withMaxScore() {
+    return true;
+  }
 
   /**
    * Specify the number of hits to traverse.  Tasks should override this if they want to restrict the number

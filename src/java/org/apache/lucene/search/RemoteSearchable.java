@@ -45,9 +45,14 @@ public class RemoteSearchable
     this.local = local;
   }
 
-
+  /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
   public void search(Weight weight, Filter filter, HitCollector results)
     throws IOException {
+    local.search(weight, filter, results);
+  }
+
+  public void search(Weight weight, Filter filter, Collector results)
+      throws IOException {
     local.search(weight, filter, results);
   }
 

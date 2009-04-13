@@ -65,8 +65,7 @@ public class TestTermScorer extends LuceneTestCase
 
     }
 
-    public void test() throws IOException
-    {
+    public void test() throws IOException {
 
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
@@ -76,21 +75,25 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("ts is null and it shouldn't be", ts != null);
         //we have 2 documents with the term all in them, one document for all the other values
         final List docs = new ArrayList();
         //must call next first
 
 
-        ts.score(new MultiReaderHitCollector()
-        {
-            private int base = -1;
-            public void collect(int doc, float score)
-            {
-                docs.add(new TestHit(doc + base, score));
-                assertTrue("score " + score + " is not greater than 0", score > 0);
-                assertTrue("Doc: " + doc + " does not equal: " + 0 +
-                        " or doc does not equaal: " + 5, doc == 0 || doc == 5);
+        ts.score(new Collector() {
+            private int base = 0;
+            private Scorer scorer;
+            public void setScorer(Scorer scorer) throws IOException {
+              this.scorer = scorer; 
+            }
+
+            public void collect(int doc) throws IOException {
+              float score = scorer.score();
+              doc = doc + base;
+              docs.add(new TestHit(doc, score));
+              assertTrue("score " + score + " is not greater than 0", score > 0);
+              assertTrue("Doc: " + doc + " does not equal 0 or doc does not equal 5",
+                            doc == 0 || doc == 5);
             }
             public void setNextReader(IndexReader reader, int docBase) {
               base = docBase;
@@ -121,8 +124,7 @@ public class TestTermScorer extends LuceneTestCase
         assertTrue(doc0.score + " does not equal: " + 1.6931472f, doc0.score == 1.6931472f);
     }
 
-    public void testNext() throws Exception
-    {
+    public void testNext() throws Exception {
 
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
@@ -132,7 +134,6 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("ts is null and it shouldn't be", ts != null);
         assertTrue("next did not return a doc", ts.next() == true);
         assertTrue("score is not correct", ts.score() == 1.6931472f);
         assertTrue("next did not return a doc", ts.next() == true);
@@ -140,8 +141,7 @@ public class TestTermScorer extends LuceneTestCase
         assertTrue("next returned a doc and it should not have", ts.next() == false);
     }
 
-    public void testSkipTo() throws Exception
-    {
+    public void testSkipTo() throws Exception {
 
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
@@ -151,7 +151,6 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("ts is null and it shouldn't be", ts != null);
         assertTrue("Didn't skip", ts.skipTo(3) == true);
         //The next doc should be doc 5
         assertTrue("doc should be number 5", ts.doc() == 5);
@@ -167,7 +166,6 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("ts is null and it shouldn't be", ts != null);
         Explanation explanation = ts.explain(0);
         assertTrue("explanation is null and it shouldn't be", explanation != null);
         //System.out.println("Explanation: " + explanation.toString());
@@ -185,7 +183,6 @@ public class TestTermScorer extends LuceneTestCase
 
         ts = new TermScorer(weight, indexReader.termDocs(dogsTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("ts is null and it shouldn't be", ts != null);
         explanation = ts.explain(1);
         assertTrue("explanation is null and it shouldn't be", explanation != null);
         //System.out.println("Explanation: " + explanation.toString());
@@ -202,23 +199,17 @@ public class TestTermScorer extends LuceneTestCase
 
     }
 
-    private class TestHit
-    {
+    private class TestHit {
         public int doc;
         public float score;
 
-        public TestHit(int doc, float score)
-        {
+        public TestHit(int doc, float score) {
             this.doc = doc;
             this.score = score;
         }
 
-        public String toString()
-        {
-            return "TestHit{" +
-                    "doc=" + doc +
-                    ", score=" + score +
-                    "}";
+        public String toString() {
+            return "TestHit{" + "doc=" + doc + ", score=" + score + "}";
         }
     }
 

@@ -23,10 +23,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -35,15 +35,16 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiReaderHitCollector;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -1651,7 +1652,7 @@ public class TestIndexReader extends LuceneTestCase
     Query q = new TermQuery(new Term("id", "a"));
 
     IndexSearcher s = new IndexSearcher(dir);
-    s.search(q, new MultiReaderHitCollector() {
+    s.search(q, new Collector() {
         int lastDocBase = -1;
         public void setNextReader(IndexReader reader, int docBase) {
           if (lastDocBase == -1) {
@@ -1663,13 +1664,14 @@ public class TestIndexReader extends LuceneTestCase
           }
           lastDocBase = docBase;
         }
-        public void collect(int doc, float score) {}
+        public void collect(int doc) {}
+        public void setScorer(Scorer scorer) {}
       });
     s.close();
 
     IndexReader r = IndexReader.open(dir);
     s = new IndexSearcher(r, true);
-    s.search(q, new MultiReaderHitCollector() {
+    s.search(q, new Collector() {
         int lastDocBase = -1;
         public void setNextReader(IndexReader reader, int docBase) {
           if (lastDocBase == -1) {
@@ -1681,7 +1683,8 @@ public class TestIndexReader extends LuceneTestCase
           }
           lastDocBase = docBase;
         }
-        public void collect(int doc, float score) {}
+        public void collect(int doc) {}
+        public void setScorer(Scorer scorer) {}
       });
     s.close();
     r.close();
