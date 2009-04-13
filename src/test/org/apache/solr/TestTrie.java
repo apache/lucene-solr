@@ -160,10 +160,12 @@ public class TestTrie extends AbstractSolrTestCase {
 
     assertU(delQ("*:*"));
     DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+    String largestDate = "";
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
       String d = format.format(i == 0 ? dmp.parseMath("/DAY") : dmp.parseMath("/DAY+" + i + "DAYS"));
       assertU(adoc("id", String.valueOf(i), "tdate", d));
+      if (i == 9) largestDate = d;
     }
     assertU(commit());
     assertQ("Range filter must match only 10 documents", req("q", "*:*", "fq", "tdate:[* TO *]"), "//*[@numFound='10']");
@@ -177,11 +179,11 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Term query must match only 1 document", req("q", "*:*", "fq", "tdate:1995-12-31T23\\:59\\:59.999Z"), "//*[@numFound='1']");
 
     // Sorting
-    assertQ("Sort descending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate desc"), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-21T00:00:00Z']");
-    assertQ("Sort ascending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate asc"), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-12T00:00:00Z']");
+    assertQ("Sort descending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate desc"), "//*[@numFound='11']", "//date[@name='tdate'][.='" + largestDate + "']");
+    assertQ("Sort ascending does not work correctly on tdate fields", req("q", "*:*", "sort", "tdate asc"), "//*[@numFound='11']", "//date[@name='tdate'][.='1995-12-31T23:59:59.999Z']");
 
     // Function queries
-    assertQ("Function queries does not work correctly on tdate fields", req("q", "_val_:\"sum(tdate,1.0)\""), "//*[@numFound='11']", "//date[@name='tdate'][.='2009-04-21T00:00:00Z']");
+    assertQ("Function queries does not work correctly on tdate fields", req("q", "_val_:\"sum(tdate,1.0)\""), "//*[@numFound='11']", "//date[@name='tdate'][.='" + largestDate + "']");
   }
 
   public void testTrieDoubleRangeSearch_CustomPrecisionStep() throws Exception {
