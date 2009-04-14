@@ -26,8 +26,11 @@ import org.apache.lucene.index.TermEnum;
   <p>Term enumerations are always ordered by Term.compareTo().  Each term in
   the enumeration is greater than all that precede it.  */
 public abstract class FilteredTermEnum extends TermEnum {
-    private Term currentTerm = null;
-    private TermEnum actualEnum = null;
+    /** the current term */
+    protected Term currentTerm = null;
+    
+    /** the delegate enum - to set this member use {@link #setEnum} */
+    protected TermEnum actualEnum = null;
     
     public FilteredTermEnum() {}
 
@@ -40,6 +43,10 @@ public abstract class FilteredTermEnum extends TermEnum {
     /** Indicates the end of the enumeration has been reached */
     protected abstract boolean endEnum();
     
+    /**
+     * use this method to set the actual TermEnum (e.g. in ctor),
+     * it will be automatically positioned on the first matching term.
+     */
     protected void setEnum(TermEnum actualEnum) throws IOException {
         this.actualEnum = actualEnum;
         // Find the first term that matches
@@ -54,7 +61,8 @@ public abstract class FilteredTermEnum extends TermEnum {
      * Returns -1 if no Term matches or all terms have been enumerated.
      */
     public int docFreq() {
-        if (actualEnum == null) return -1;
+        if (currentTerm == null) return -1;
+        assert actualEnum != null;
         return actualEnum.docFreq();
     }
     
@@ -85,7 +93,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     
     /** Closes the enumeration to further activity, freeing resources.  */
     public void close() throws IOException {
-        actualEnum.close();
+        if (actualEnum != null) actualEnum.close();
         currentTerm = null;
         actualEnum = null;
     }

@@ -278,6 +278,12 @@ New features
     turnaround than the normal approach of commiting the changes and
     then reopening a reader.  (Jason Rutherglen via Mike McCandless)
 
+21. LUCENE-1603: Some improvements to MultiTermQuery: return
+    DocIdSet.EMPTY_DOCIDSET if there are no terms in the enum; track
+    the total number of terms it visited during rewrite
+    (getTotalNumberOfTerms). Also, FilteredTermEnum is now more
+    friendly to subclasses.   (Uwe Schindler via Mike McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

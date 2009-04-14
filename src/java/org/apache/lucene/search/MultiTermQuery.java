@@ -45,6 +45,7 @@ import org.apache.lucene.util.ToStringUtils;
 public abstract class MultiTermQuery extends Query {
   protected Term term;
   protected boolean constantScoreRewrite = false;
+  transient int numberOfTerms = 0;
 
   /** Constructs a query for terms matching <code>term</code>. */
   public MultiTermQuery(Term term) {
@@ -67,6 +68,34 @@ public abstract class MultiTermQuery extends Query {
   protected abstract FilteredTermEnum getEnum(IndexReader reader)
       throws IOException;
 
+  /**
+   * Expert: Return the number of unique terms visited during execution of the query.
+   * If there are many of them, you may consider using another query type
+   * or optimize your total term count in index.
+   * <p>This method is not thread safe, be sure to only call it when no query is running!
+   * If you re-use the same query instance for another
+   * search, be sure to first reset the term counter
+   * with {@link #clearTotalNumberOfTerms}.
+   * <p>On optimized indexes / no MultiReaders, you get the correct number of
+   * unique terms for the whole index. Use this number to compare different queries.
+   * For non-optimized indexes this number can also be achived in
+   * non-constant-score mode. In constant-score mode you get the total number of
+   * terms seeked for all segments / sub-readers.
+   * @see #clearTotalNumberOfTerms
+   */
+  public int getTotalNumberOfTerms() {
+    return numberOfTerms;
+  }
+  
+  /**
+   * Expert: Resets the counting of unique terms.
+   * Do this before executing the query/filter.
+   * @see #getTotalNumberOfTerms
+   */
+  public void clearTotalNumberOfTerms() {
+    numberOfTerms = 0;
+  }
+  
   protected Filter getFilter() {
     return new MultiTermFilter(this);
   }
@@ -79,6 +108,7 @@ public abstract class MultiTermQuery extends Query {
         do {
           Term t = enumerator.term();
           if (t != null) {
+            numberOfTerms++;
             TermQuery tq = new TermQuery(t); // found a match
             tq.setBoost(getBoost() * enumerator.difference()); // set the boost
             query.add(tq, BooleanClause.Occur.SHOULD); // add to query
@@ -150,14 +180,14 @@ public abstract class MultiTermQuery extends Query {
     MultiTermQuery mtq;
 
     abstract class TermGenerator {
-      public void generate(IndexReader reader) throws IOException {
-        TermEnum enumerator = mtq.getEnum(reader);
+      public void generate(IndexReader reader, TermEnum enumerator) throws IOException {
         TermDocs termDocs = reader.termDocs();
         try {
           do {
             Term term = enumerator.term();
             if (term == null)
               break;
+            mtq.numberOfTerms++;
             termDocs.seek(term);
             while (termDocs.next()) {
               handleDoc(termDocs.doc());
@@ -165,7 +195,6 @@ public abstract class MultiTermQuery extends Query {
           } while (enumerator.next());
         } finally {
           termDocs.close();
-          enumerator.close();
         }
       }
       abstract public void handleDoc(int doc);
@@ -176,28 +205,40 @@ public abstract class MultiTermQuery extends Query {
     }
 
     public BitSet bits(IndexReader reader) throws IOException {
-      final BitSet bitSet = new BitSet(reader.maxDoc());
-      new TermGenerator() {
-        public void handleDoc(int doc) {
-          bitSet.set(doc);
-        }
-      }.generate(reader);
-      return bitSet;
+      final TermEnum enumerator = mtq.getEnum(reader);
+      try {
+        final BitSet bitSet = new BitSet(reader.maxDoc());
+        new TermGenerator() {
+          public void handleDoc(int doc) {
+            bitSet.set(doc);
+          }
+        }.generate(reader, enumerator);
+        return bitSet;
+      } finally {
+        enumerator.close();
+      }
     }
 
     public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
-      new TermGenerator() {
-        public void handleDoc(int doc) {
-          bitSet.set(doc);
-        }
-      }.generate(reader);
-
-      return bitSet;
+      final TermEnum enumerator = mtq.getEnum(reader);
+      try {
+        // if current term in enum is null, the enum is empty -> shortcut
+        if (enumerator.term() == null)
+          return DocIdSet.EMPTY_DOCIDSET;
+        // else fill into a OpenBitSet
+        final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+        new TermGenerator() {
+          public void handleDoc(int doc) {
+            bitSet.set(doc);
+          }
+        }.generate(reader, enumerator);
+        return bitSet;
+      } finally {
+        enumerator.close();
+      }
     }
       
     public boolean equals(Object o) {
-
       if (this == o)
         return true;
       if (!(o instanceof MultiTermFilter))
