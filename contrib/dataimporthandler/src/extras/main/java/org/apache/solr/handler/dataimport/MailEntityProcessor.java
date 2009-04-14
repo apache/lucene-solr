@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class MailEntityProcessor extends EntityProcessorBase {
 
-  public interface CustomFilter {
+  public static interface CustomFilter {
     public SearchTerm getCustomSearch(Folder folder);
   }
 
@@ -107,7 +107,6 @@ public class MailEntityProcessor extends EntityProcessorBase {
     while (row == null && mail != null);
     if (row != null) {
       row = super.applyTransformer(row);
-      logRow(row);
     }
     return row;
   }
@@ -287,6 +286,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   }
 
   private void logConfig() {
+    if (!LOG.isInfoEnabled()) return;
     StringBuffer config = new StringBuffer();
     config.append("user : ").append(user).append(System.getProperty("line.separator"));
     config.append("pwd : ").append(password).append(System.getProperty("line.separator"));
@@ -303,15 +303,6 @@ public class MailEntityProcessor extends EntityProcessorBase {
     config.append("custom filter : ").append(customFilter).append(System.getProperty("line.separator"));
     config.append("fetch mail since : ").append(fetchMailsSince).append(System.getProperty("line.separator"));
     LOG.info(config.toString());
-  }
-
-  private void logRow(Map<String, Object> row) {
-    StringBuffer config = new StringBuffer();
-    String from = row.get(FROM) == null ? "" : row.get(FROM).toString();
-    String to = row.get(TO_CC_BCC) == null ? "" : row.get(TO_CC_BCC).toString();
-    String subject = row.get(SUBJECT) == null ? "" : row.get(SUBJECT).toString();
-    config.append("From: ").append(from).append("To: ").append(to).append(" " + "Subject: ").append(subject);
-    LOG.debug("ROW " + (rowCount++) + ": " + config.toString());
   }
 
   class FolderIterator implements Iterator<Folder> {
