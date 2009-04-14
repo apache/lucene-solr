@@ -206,7 +206,7 @@
       </fileset>
     </copy>
     <copy todir="${example}/example-DIH/solr/mail/lib">
-      <fileset dir="${example}/solr/lib">
+      <fileset dir="${common.dir}/contrib/extraction/lib">
         <include name="**/*.jar"/>
       </fileset>
     </copy>
