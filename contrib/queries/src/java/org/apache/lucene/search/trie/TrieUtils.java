@@ -336,6 +336,7 @@ public final class TrieUtils {
     final Object builder, final int valSize,
     final int precisionStep, long minBound, long maxBound
   ) {
+    if (minBound > maxBound) return;
     for (int shift=0; ; shift += precisionStep) {
       // calculate new bounds for inner precision
       final long diff = 1L << (shift+precisionStep),

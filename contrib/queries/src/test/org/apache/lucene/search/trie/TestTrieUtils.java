@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 
 public class TestTrieUtils extends LuceneTestCase {
@@ -243,6 +244,14 @@ public class TestTrieUtils extends LuceneTestCase {
     assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(new Long[]{
       new Long(0x0L),new Long(0x1L)
     }).iterator());
+
+    // a inverse range should produce no sub-ranges
+    assertLongRangeSplit(9500L, -5000L, 4, false, Collections.EMPTY_LIST.iterator());    
+
+    // a 0-length range should reproduce the range itsself
+    assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(new Long[]{
+      new Long(0x800000000000251cL),new Long(0x800000000000251cL)
+    }).iterator());
   }
 
   /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
@@ -316,6 +325,14 @@ public class TestTrieUtils extends LuceneTestCase {
     // the same with precisionStep=1
     assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(new Integer[]{
       new Integer(0x0),new Integer(0x1)
+    }).iterator());
+
+    // a inverse range should produce no sub-ranges
+    assertIntRangeSplit(9500, -5000, 4, false, Collections.EMPTY_LIST.iterator());    
+
+    // a 0-length range should reproduce the range itsself
+    assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(new Integer[]{
+      new Integer(0x8000251c),new Integer(0x8000251c)
     }).iterator());
   }
 
