@@ -433,6 +433,8 @@ public class TestLockFactory extends LuceneTestCase {
                 } catch (IOException e) {
                     if (e.toString().indexOf(" timed out:") == -1) {
                         hitException = true;
+                        System.out.println("Stress Test Index Writer: creation hit unexpected IOException: " + e.toString());
+                        e.printStackTrace(System.out);
                     } else {
                         // lock obtain timed out
                         // NOTE: we should at some point
