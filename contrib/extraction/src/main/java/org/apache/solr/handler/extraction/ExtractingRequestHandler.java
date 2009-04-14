@@ -1,5 +1,3 @@
-package org.apache.solr.handler.extraction;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.solr.handler.extraction;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.extraction;
+
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -42,7 +42,6 @@ import java.util.HashSet;
  * first from the document.
  * <p/>
  */
-
 public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware {
 
   private transient static Logger log = LoggerFactory.getLogger(ExtractingRequestHandler.class);
