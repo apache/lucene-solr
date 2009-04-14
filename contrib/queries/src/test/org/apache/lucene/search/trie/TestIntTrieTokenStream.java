@@ -29,10 +29,9 @@ public class TestIntTrieTokenStream extends LuceneTestCase {
   public void testStreamNewAPI() throws Exception {
     final IntTrieTokenStream stream=new IntTrieTokenStream(value, precisionStep);
     stream.setUseNewAPI(true);
+    // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final ShiftAttribute shiftAtt = (ShiftAttribute) stream.getAttribute(ShiftAttribute.class);
-    assertNotNull("Has shift attribute", shiftAtt);
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    assertNotNull("Has term attribute", termAtt);
     for (int shift=0; shift<32; shift+=precisionStep) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value", shift, shiftAtt.getShift());
