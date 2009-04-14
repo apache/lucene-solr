@@ -96,10 +96,9 @@
   <property name="tag" value="${compatibility.tag}"/>
 	
   <path id="tag.test.classpath">
-    <path refid="demo.classpath"/>
     <path refid="junit-path"/>
-    <pathelement location="${build.dir}/${tag}/classes/test"/>
-  	<pathelement location="${build.dir}/${tag}/${tag}.jar"/>
+    <pathelement location="${build.dir}/classes/demo"/>
+    <pathelement location="${build.dir}/${tag}/${tag}.jar"/>
   </path>
 	
   <path id="tag.junit.classpath">
