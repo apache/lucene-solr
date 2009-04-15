@@ -137,7 +137,7 @@ public class DOMUtil {
     } else if ("double".equals(type)) {
       val = Double.valueOf(getText(nd));
     } else if ("bool".equals(type)) {
-      val = Boolean.valueOf(getText(nd));
+      val = StrUtils.parseBool(getText(nd));
     } else if ("lst".equals(type)) {
       val = childNodesToNamedList(nd);
     } else if ("arr".equals(type)) {

@@ -196,6 +196,8 @@ New Features
 35. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
     replication. (Jeff Newburn, Noble Paul, shalin)
 
+36. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

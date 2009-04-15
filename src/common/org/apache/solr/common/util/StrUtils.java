@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.io.IOException;
 
+import org.apache.solr.common.SolrException;
+
 /**
  * @version $Id$
  */
@@ -218,6 +220,21 @@ public class StrUtils {
   public static boolean parseBoolean(String s) {
     char ch = s.length()>0 ? s.charAt(0) : 0;
     return (ch=='1' || ch=='t' || ch=='T');
+  }
+  
+  /** how to transform a String into a boolean... more flexible than
+   * Boolean.parseBoolean() to enable easier integration with html forms.
+   */
+  public static boolean parseBool(String s) {
+    if( s != null ) {
+      if( s.startsWith("true") || s.startsWith("on") || s.startsWith("yes") ) {
+        return true;
+      }
+      if( s.startsWith("false") || s.startsWith("off") || s.equals("no") ) {
+        return false;
+      }
+    }
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "invalid boolean value: "+s );
   }
 
   /**

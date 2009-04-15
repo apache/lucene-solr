@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 
 /**  SolrParams hold request parameters.
  *
@@ -85,27 +86,27 @@ public abstract class SolrParams implements Serializable {
   /** Returns the Boolean value of the param, or null if not set */
   public Boolean getBool(String param) {
     String val = get(param);
-    return val==null ? null : parseBool(val);
+    return val==null ? null : StrUtils.parseBool(val);
   }
 
   /** Returns the boolean value of the param, or def if not set */
   public boolean getBool(String param, boolean def) {
     String val = get(param);
-    return val==null ? def : parseBool(val);
+    return val==null ? def : StrUtils.parseBool(val);
   }
   
   /** Returns the Boolean value of the field param, 
       or the value for param, or null if neither is set. */
   public Boolean getFieldBool(String field, String param) {
     String val = getFieldParam(field, param);
-    return val==null ? null : parseBool(val);
+    return val==null ? null : StrUtils.parseBool(val);
   }
   
   /** Returns the boolean value of the field param, 
   or the value for param, or def if neither is set. */
   public boolean getFieldBool(String field, String param, boolean def) {
     String val = getFieldParam(field, param);
-    return val==null ? def : parseBool(val);
+    return val==null ? def : StrUtils.parseBool(val);
   }
 
   /** Returns the Integer value of the param, or null if not set */
@@ -204,17 +205,11 @@ public abstract class SolrParams implements Serializable {
   
   /** how to transform a String into a boolean... more flexible than
    * Boolean.parseBoolean() to enable easier integration with html forms.
+   * @deprecated Use org.apache.solr.common.util.StrUtils.parseBool
    */
+  @Deprecated
   protected boolean parseBool(String s) {
-    if( s != null ) {
-      if( s.startsWith("true") || s.startsWith("on") || s.startsWith("yes") ) {
-        return true;
-      }
-      if( s.startsWith("false") || s.startsWith("off") || s.equals("no") ) {
-        return false;
-      }
-    }
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "invalid boolean value: "+s );
+    return StrUtils.parseBool(s);
   }
 
   /** Create a Map<String,String> from a NamedList given no keys are repeated */
