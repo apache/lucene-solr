@@ -132,11 +132,16 @@ public class VelocityResponseWriter implements QueryResponseWriter {
       if( propFile == null )
         engine.init();
       else{
-        InputStream is = resourceLoader.getResourceStream( propFile );
-        Properties props = new Properties();
-        props.load( is );
-        is.close();
-        engine.init( props );
+        InputStream is = null;
+        try{
+          is = resourceLoader.getResourceStream( propFile );
+          Properties props = new Properties();
+          props.load( is );
+          engine.init( props );
+        }
+        finally{
+          if( is != null ) is.close();
+        }
       }
     }
     catch( Exception e ){
