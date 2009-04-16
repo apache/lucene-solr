@@ -285,6 +285,9 @@ New features
     during rewrite (getTotalNumberOfTerms).  FilteredTermEnum is also
     more friendly to subclassing.  (Uwe Schindler via Mike McCandless)
 
+22. LUCENE-1605: Added BitVector.subset().  (Jeremy Volkman via Mike
+    McCandless)
+
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

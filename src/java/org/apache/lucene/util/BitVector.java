@@ -238,5 +238,30 @@ public final class BitVector implements Cloneable {
       n -= BYTE_COUNTS[bits[last] & 0xFF];
     }          
   }
-  
+
+  /**
+   * Retrieve a subset of this BitVector.
+   * 
+   * @param start
+   *            starting index, inclusive
+   * @param end
+   *            ending index, exclusive
+   * @return subset
+   */
+  public BitVector subset(int start, int end) {
+    if (start < 0 || end > size() || end < start)
+      throw new IndexOutOfBoundsException();
+    // Special case -- return empty vector is start == end
+    if (end == start) return new BitVector(0);
+    byte[] bits = new byte[((end - start - 1) >>> 3) + 1];
+    int s = start >>> 3;
+    for (int i = 0; i < bits.length; i++) {
+      int cur = 0xFF & this.bits[i + s];
+      int next = i + s + 1 >= this.bits.length ? 0 : 0xFF & this.bits[i + s + 1];
+      bits[i] = (byte) ((cur >>> (start & 7)) | ((next << (8 - (start & 7)))));
+    }
+    int bitsToClear = (bits.length * 8 - (end - start)) % 8;
+    bits[bits.length - 1] &= ~(0xFF << (8 - bitsToClear));
+    return new BitVector(bits, end - start);
+  }
 }
