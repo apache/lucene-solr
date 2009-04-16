@@ -106,14 +106,14 @@ more info about this in the stream documentation)</em></p>
 <h3>Searching</h3>
 
 <p>The numeric index fields you prepared in this way can be searched by
-{@link org.apache.lucene.search.trie.LongTrieRangeFilter} or {@link org.apache.lucene.search.trie.IntTrieRangeFilter}:</p>
+{@link org.apache.lucene.search.trie.LongTrieRangeQuery} or {@link org.apache.lucene.search.trie.IntTrieRangeQuery}:</p>
 
 <pre>
   <em>// Java 1.4, because Long.valueOf(long) is not available:</em>
-  Query q = new LongTrieRangeFilter("exampleLong", precisionStep, new Long(123L), new Long(999999L), true, true).asQuery();
+  Query q = new LongTrieRangeQuery("exampleLong", precisionStep, new Long(123L), new Long(999999L), true, true);
   
   <em>// OR, Java 1.5, using autoboxing:</em>
-  Query q = new LongTrieRangeFilter("exampleLong", precisionStep, 123L, 999999L, true, true).asQuery();
+  Query q = new LongTrieRangeQuery("exampleLong", precisionStep, 123L, 999999L, true, true);
   
   <em>// execute the search, as usual:</em>
   TopDocs docs = searcher.search(q, 10);
@@ -132,7 +132,7 @@ more info about this in the stream documentation)</em></p>
 that the old {@link org.apache.lucene.search.RangeQuery} (with raised 
 {@link org.apache.lucene.search.BooleanQuery} clause count) took about 30-40 secs to complete,
 {@link org.apache.lucene.search.ConstantScoreRangeQuery} took 5 secs and executing
-{@link org.apache.lucene.search.trie.LongTrieRangeFilter}<code>.asQuery()</code> took &lt;100ms to
+{@link org.apache.lucene.search.trie.LongTrieRangeQuery} took &lt;100ms to
 complete (on an Opteron64 machine, Java 1.5, 8 bit precision step).
 This query type was developed for a geographic portal, where the performance for
 e.g. bounding boxes or exact date/time stamps is important.</p>

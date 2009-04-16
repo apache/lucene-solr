@@ -17,15 +17,8 @@ package org.apache.lucene.search.trie;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.util.OpenBitSet;
-
+import org.apache.lucene.search.Filter; // for javadocs
+import org.apache.lucene.search.MultiTermQueryWrapperFilter;
 
 /**
  * Implementation of a Lucene {@link Filter} that implements trie-based range filtering for longs/doubles.
@@ -33,7 +26,7 @@ import org.apache.lucene.util.OpenBitSet;
  * by indexing via {@link LongTrieTokenStream} methods.
  * For more information, how the algorithm works, see the {@linkplain org.apache.lucene.search.trie package description}.
  */
-public class LongTrieRangeFilter extends AbstractTrieRangeFilter {
+public class LongTrieRangeFilter extends MultiTermQueryWrapperFilter {
 
   /**
    * A trie filter for matching trie coded values using the given field name and
@@ -42,60 +35,27 @@ public class LongTrieRangeFilter extends AbstractTrieRangeFilter {
    * used for indexing the values.
    * You can leave the bounds open, by supplying <code>null</code> for <code>min</code> and/or
    * <code>max</code>. Inclusive/exclusive bounds can also be supplied.
-   * To query double values use the converter {@link TrieUtils#doubleToSortableLong}.
+   * To filter double values use the converter {@link TrieUtils#doubleToSortableLong}.
    */
   public LongTrieRangeFilter(final String field, final int precisionStep,
     final Long min, final Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    super(field,precisionStep,min,max,minInclusive,maxInclusive);
+    super(new LongTrieRangeQuery(field,precisionStep,min,max,minInclusive,maxInclusive));
   }
 
-  /**
-   * Returns a DocIdSet that provides the documents which should be permitted or prohibited in search results.
-   */
-  //@Override
-  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    // calculate the upper and lower bounds respecting the inclusive and null values.
-    long minBound=(this.min==null) ? Long.MIN_VALUE : (
-      minInclusive ? this.min.longValue() : (this.min.longValue()+1L)
-    );
-    long maxBound=(this.max==null) ? Long.MAX_VALUE : (
-      maxInclusive ? this.max.longValue() : (this.max.longValue()-1L)
-    );
-    
-    resetLastNumberOfTerms();
-    if (minBound > maxBound) {
-      // shortcut, no docs will match this
-      return DocIdSet.EMPTY_DOCIDSET;
-    } else {
-      final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-      final TermDocs termDocs = reader.termDocs();
-      try {
-        TrieUtils.splitLongRange(new TrieUtils.LongRangeBuilder() {
-        
-          //@Override
-          public final void addRange(String minPrefixCoded, String maxPrefixCoded) {
-            try {
-              fillBits(
-                reader, bits, termDocs,
-                minPrefixCoded, maxPrefixCoded
-              );
-            } catch (IOException ioe) {
-              // LongRangeBuilder is not allowed to throw checked exceptions:
-              // wrap as RuntimeException
-              throw new RuntimeException(ioe);
-            }
-          }
-        
-        }, precisionStep, minBound, maxBound);
-      } catch (RuntimeException e) {
-        if (e.getCause() instanceof IOException) throw (IOException)e.getCause();
-        throw e;
-      } finally {
-        termDocs.close();
-      }
-      return bits;
-    }
-  }
+  /** Returns the field name for this filter */
+  public String getField() { return ((LongTrieRangeQuery)query).getField(); }
 
+  /** Returns <code>true</code> if the lower endpoint is inclusive */
+  public boolean includesMin() { return ((LongTrieRangeQuery)query).includesMin(); }
+  
+  /** Returns <code>true</code> if the upper endpoint is inclusive */
+  public boolean includesMax() { return ((LongTrieRangeQuery)query).includesMax(); }
+
+  /** Returns the lower value of this range filter */
+  public Long getMin() { return ((LongTrieRangeQuery)query).getMin(); }
+
+  /** Returns the upper value of this range filter */
+  public Long getMax() { return ((LongTrieRangeQuery)query).getMax(); }
+  
 }

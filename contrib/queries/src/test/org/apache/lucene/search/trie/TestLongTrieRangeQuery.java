@@ -30,10 +30,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLongTrieRangeFilter extends LuceneTestCase {
+public class TestLongTrieRangeQuery extends LuceneTestCase {
   // distance of entries
   private static final long distance = 66666L;
   // shift the starting of the values to the left, to also have negative values:
@@ -53,7 +56,10 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
   private static final RAMDirectory directory;
   private static final IndexSearcher searcher;
   static {
-    try {    
+    try {
+      // set the theoretical maximum term count for 8bit (see docs for the number)
+      BooleanQuery.setMaxClauseCount(7*255*2 + 255);
+      
       directory = new RAMDirectory();
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
       true, MaxFieldLength.UNLIMITED);
@@ -97,20 +103,54 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
     }
   }
   
+  /** test for constant score + boolean query + filter, the other tests only use the constant score mode */
   private void testRange(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int count=3000;
     long lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
-    LongTrieRangeFilter f=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true);
-    TopDocs topDocs = searcher.search(f.asQuery(), null, noDocs, Sort.INDEXORDER);
-    System.out.println("Found "+f.getLastNumberOfTerms()+" distinct terms in range for field '"+field+"'.");
-    ScoreDoc[] sd = topDocs.scoreDocs;
-    assertNotNull(sd);
-    assertEquals("Score doc count", count, sd.length );
-    Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", 2*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
-    doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (1+count)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
+    LongTrieRangeQuery q = new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, true);
+    LongTrieRangeFilter f = new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true);
+    int lastTerms = 0;
+    for (byte i=0; i<3; i++) {
+      TopDocs topDocs;
+      int terms;
+      String type;
+      q.clearTotalNumberOfTerms();
+      f.clearTotalNumberOfTerms();
+      switch (i) {
+        case 0:
+          type = " (constant score)";
+          q.setConstantScoreRewrite(true);
+          topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+          terms = q.getTotalNumberOfTerms();
+          break;
+        case 1:
+          type = " (boolean query)";
+          q.setConstantScoreRewrite(false);
+          topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+          terms = q.getTotalNumberOfTerms();
+          break;
+        case 2:
+          type = " (filter)";
+          topDocs = searcher.search(new MatchAllDocsQuery(), f, noDocs, Sort.INDEXORDER);
+          terms = f.getTotalNumberOfTerms();
+          break;
+        default:
+          return;
+      }
+      System.out.println("Found "+terms+" distinct terms in range for field '"+field+"'"+type+".");
+      ScoreDoc[] sd = topDocs.scoreDocs;
+      assertNotNull(sd);
+      assertEquals("Score doc count"+type, count, sd.length );
+      Document doc=searcher.doc(sd[0].doc);
+      assertEquals("First doc"+type, 2*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
+      doc=searcher.doc(sd[sd.length-1].doc);
+      assertEquals("Last doc"+type, (1+count)*distance+startOffset, TrieUtils.prefixCodedToLong(doc.get("value")) );
+      if (i>0) {
+        assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
+      }
+      lastTerms = terms;
+    }
   }
 
   public void testRange_8bit() throws Exception {
@@ -125,13 +165,18 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
     testRange(2);
   }
   
+  public void testInverseRange() throws Exception {
+    LongTrieRangeFilter f = new LongTrieRangeFilter("field8", 8, new Long(1000L), new Long(-1000L), true, true);
+    assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
+  }
+  
   private void testLeftOpenRange(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int count=3000;
     long upper=(count-1)*distance + (distance/3) + startOffset;
-    LongTrieRangeFilter f=new LongTrieRangeFilter(field, precisionStep, null, new Long(upper), true, true);
-    TopDocs topDocs = searcher.search(f.asQuery(), null, noDocs, Sort.INDEXORDER);
-    System.out.println("Found "+f.getLastNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
+    LongTrieRangeQuery q=new LongTrieRangeQuery(field, precisionStep, null, new Long(upper), true, true);
+    TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
@@ -157,9 +202,9 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
     String field="field"+precisionStep;
     int count=3000;
     long lower=(count-1)*distance + (distance/3) +startOffset;
-    LongTrieRangeFilter f=new LongTrieRangeFilter(field, precisionStep, new Long(lower), null, true, true);
-    TopDocs topDocs = searcher.search(f.asQuery(), null, noDocs, Sort.INDEXORDER);
-    System.out.println("Found "+f.getLastNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
+    LongTrieRangeQuery q=new LongTrieRangeQuery(field, precisionStep, new Long(lower), null, true, true);
+    TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
@@ -184,7 +229,7 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
-    int termCount=0;
+    int termCountT=0,termCountC=0;
     for (int i=0; i<50; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
@@ -192,39 +237,45 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       // test inclusive range
-      LongTrieRangeFilter tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true);
+      LongTrieRangeQuery tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, true);
       RangeQuery cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), true, true);
       cq.setConstantScoreRewrite(true);
-      TopDocs tTopDocs = searcher.search(tf.asQuery(), 1);
+      TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCount += tf.getLastNumberOfTerms();
+      assertEquals("Returned count for LongTrieRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCountT += tq.getTotalNumberOfTerms();
+      termCountC += cq.getTotalNumberOfTerms();
       // test exclusive range
-      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, false);
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), false, false);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), false, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tf.asQuery(), 1);
+      tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCount += tf.getLastNumberOfTerms();
+      assertEquals("Returned count for LongTrieRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCountT += tq.getTotalNumberOfTerms();
+      termCountC += cq.getTotalNumberOfTerms();
       // test left exclusive range
-      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, true);
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), false, true);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), false, true);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tf.asQuery(), 1);
+      tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCount += tf.getLastNumberOfTerms();
+      assertEquals("Returned count for LongTrieRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCountT += tq.getTotalNumberOfTerms();
+      termCountC += cq.getTotalNumberOfTerms();
       // test right exclusive range
-      tf=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, false);
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, false);
       cq=new RangeQuery(field, TrieUtils.longToPrefixCoded(lower), TrieUtils.longToPrefixCoded(upper), true, false);
       cq.setConstantScoreRewrite(true);
-      tTopDocs = searcher.search(tf.asQuery(), 1);
+      tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for LongTrieRangeFilter and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
-      termCount += tf.getLastNumberOfTerms();
+      assertEquals("Returned count for LongTrieRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      termCountT += tq.getTotalNumberOfTerms();
+      termCountC += cq.getTotalNumberOfTerms();
     }
-    System.out.println("Average number of terms during random search on '" + field + "': " + (((double)termCount)/(50*4)));
+    System.out.println("Average number of terms during random search on '" + field + "':");
+    System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
+    System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
@@ -250,19 +301,19 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       // test inclusive range
-      Query tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true).asQuery();
+      Query tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
       // test exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, false).asQuery();
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), false, false);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to exclusive range length", Math.max(upper-lower-1, 0), tTopDocs.totalHits );
       // test left exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), false, true).asQuery();
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), false, true);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
       // test right exclusive range
-      tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, false).asQuery();
+      tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, false);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
     }
@@ -291,7 +342,7 @@ public class TestLongTrieRangeFilter extends LuceneTestCase {
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
-      Query tq=new LongTrieRangeFilter(field, precisionStep, new Long(lower), new Long(upper), true, true).asQuery();
+      Query tq=new LongTrieRangeQuery(field, precisionStep, new Long(lower), new Long(upper), true, true);
       TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(TrieUtils.getLongSortField(field, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;

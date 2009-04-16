@@ -17,15 +17,8 @@ package org.apache.lucene.search.trie;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.util.OpenBitSet;
-
+import org.apache.lucene.search.Filter; // for javadocs
+import org.apache.lucene.search.MultiTermQueryWrapperFilter;
 
 /**
  * Implementation of a Lucene {@link Filter} that implements trie-based range filtering for ints/floats.
@@ -33,7 +26,7 @@ import org.apache.lucene.util.OpenBitSet;
  * by indexing via {@link IntTrieTokenStream} methods.
  * For more information, how the algorithm works, see the {@linkplain org.apache.lucene.search.trie package description}.
  */
-public class IntTrieRangeFilter extends AbstractTrieRangeFilter {
+public class IntTrieRangeFilter extends MultiTermQueryWrapperFilter {
 
   /**
    * A trie filter for matching trie coded values using the given field name and
@@ -42,60 +35,27 @@ public class IntTrieRangeFilter extends AbstractTrieRangeFilter {
    * used for indexing the values.
    * You can leave the bounds open, by supplying <code>null</code> for <code>min</code> and/or
    * <code>max</code>. Inclusive/exclusive bounds can also be supplied.
-   * To query float values use the converter {@link TrieUtils#floatToSortableInt}.
+   * To filter float values use the converter {@link TrieUtils#floatToSortableInt}.
    */
   public IntTrieRangeFilter(final String field, final int precisionStep,
     final Integer min, final Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    super(field,precisionStep,min,max,minInclusive,maxInclusive);
+    super(new IntTrieRangeQuery(field,precisionStep,min,max,minInclusive,maxInclusive));
   }
 
-  /**
-   * Returns a DocIdSet that provides the documents which should be permitted or prohibited in search results.
-   */
-  //@Override
-  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    // calculate the upper and lower bounds respecting the inclusive and null values.
-    int minBound=(this.min==null) ? Integer.MIN_VALUE : (
-      minInclusive ? this.min.intValue() : (this.min.intValue()+1)
-    );
-    int maxBound=(this.max==null) ? Integer.MAX_VALUE : (
-      maxInclusive ? this.max.intValue() : (this.max.intValue()-1)
-    );
-    
-    resetLastNumberOfTerms();
-    if (minBound > maxBound) {
-      // shortcut, no docs will match this
-      return DocIdSet.EMPTY_DOCIDSET;
-    } else {
-      final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-      final TermDocs termDocs = reader.termDocs();
-      try {
-        TrieUtils.splitIntRange(new TrieUtils.IntRangeBuilder() {
-        
-          //@Override
-          public final void addRange(String minPrefixCoded, String maxPrefixCoded) {
-            try {
-              fillBits(
-                reader, bits, termDocs,
-                minPrefixCoded, maxPrefixCoded
-              );
-            } catch (IOException ioe) {
-              // IntRangeBuilder is not allowed to throw checked exceptions:
-              // wrap as RuntimeException
-              throw new RuntimeException(ioe);
-            }
-          }
-        
-        }, precisionStep, minBound, maxBound);
-      } catch (RuntimeException e) {
-        if (e.getCause() instanceof IOException) throw (IOException)e.getCause();
-        throw e;
-      } finally {
-        termDocs.close();
-      }
-      return bits;
-    }
-  }
+  /** Returns the field name for this filter */
+  public String getField() { return ((IntTrieRangeQuery)query).getField(); }
+
+  /** Returns <code>true</code> if the lower endpoint is inclusive */
+  public boolean includesMin() { return ((IntTrieRangeQuery)query).includesMin(); }
+  
+  /** Returns <code>true</code> if the upper endpoint is inclusive */
+  public boolean includesMax() { return ((IntTrieRangeQuery)query).includesMax(); }
+
+  /** Returns the lower value of this range filter */
+  public Integer getMin() { return ((IntTrieRangeQuery)query).getMin(); }
+
+  /** Returns the upper value of this range filter */
+  public Integer getMax() { return ((IntTrieRangeQuery)query).getMax(); }
 
 }
