@@ -62,7 +62,7 @@ public class JdbcDataSource extends
 
     String bsz = initProps.getProperty("batchSize");
     if (bsz != null) {
-      bsz = (String) context.getVariableResolver().resolve(bsz);
+      bsz = (String) context.getVariableResolver().replaceTokens(bsz);
       try {
         batchSize = Integer.parseInt(bsz);
         if (batchSize == -1)
