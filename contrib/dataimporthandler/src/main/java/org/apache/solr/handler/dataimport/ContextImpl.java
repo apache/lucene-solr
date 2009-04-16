@@ -42,7 +42,7 @@ public class ContextImpl extends Context {
 
   private DataSource ds;
 
-  private int currProcess;
+  private String currProcess;
 
   private Map<String, Object> requestParams;
 
@@ -53,7 +53,7 @@ public class ContextImpl extends Context {
   DocBuilder docBuilder;
 
   public ContextImpl(DataConfig.Entity entity, VariableResolverImpl resolver,
-                     DataSource ds, int currProcess,
+                     DataSource ds, String currProcess,
                      Map<String, Object> global, ContextImpl parentContext, DocBuilder docBuilder) {
     this.entity = entity;
     this.resolver = resolver;
@@ -101,7 +101,7 @@ public class ContextImpl extends Context {
     return entity.isDocRoot;
   }
 
-  public int currentProcess() {
+  public String currentProcess() {
     return currProcess;
   }
 

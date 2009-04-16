@@ -39,7 +39,7 @@ import java.util.Map;
  * @since solr 1.3
  */
 public abstract class Context {
-  public static final int FULL_DUMP = 1, DELTA_DUMP = 2, FIND_DELTA = 3;
+  public static final String FULL_DUMP = "FULL_DUMP", DELTA_DUMP = "DELTA_DUMP", FIND_DELTA = "FIND_DELTA";
 
   /**
    * An object stored in entity scope is valid only for the current entity for the current document only.
@@ -160,11 +160,11 @@ public abstract class Context {
   public abstract boolean isRootEntity();
 
   /**
-   * Returns the current process FULL_DUMP =1, DELTA_DUMP=2, FIND_DELTA=3
+   * Returns the current process FULL_DUMP, DELTA_DUMP, FIND_DELTA
    *
-   * @return the code of the current running process
+   * @return the type of the current running process
    */
-  public abstract int currentProcess();
+  public abstract String currentProcess();
 
   /**
    * Exposing the actual SolrCore to the components

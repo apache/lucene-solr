@@ -79,7 +79,7 @@ public abstract class AbstractDataImportHandlerTest extends
   @SuppressWarnings("unchecked")
   public static TestContext getContext(DataConfig.Entity parentEntity,
                                    VariableResolverImpl resolver, DataSource parentDataSource,
-                                   int currProcess, final List<Map<String, String>> entityFields,
+                                   String currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
     if (resolver == null) resolver = new VariableResolverImpl();
     final Context delegate = new ContextImpl(parentEntity, resolver,
@@ -139,7 +139,7 @@ public abstract class AbstractDataImportHandlerTest extends
       return false;
     }
 
-    public int currentProcess() {
+    public String currentProcess() {
       return delegate.currentProcess();
     }
 

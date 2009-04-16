@@ -68,7 +68,7 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithValue() {
     VariableResolverImpl vri = new VariableResolverImpl();
-    ContextImpl context = new ContextImpl(null,vri, null, 0,Collections.EMPTY_MAP, null,null);
+    ContextImpl context = new ContextImpl(null,vri, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null,null);
     vri.context = context;
     vri.addNamespace("dataimporter.functions", EvaluatorBag
             .getFunctionsNamespace(Collections.EMPTY_LIST, null));
@@ -83,7 +83,7 @@ public class TestVariableResolver {
   @Test
   public void dateNamespaceWithExpr() {
     VariableResolverImpl vri = new VariableResolverImpl();
-    ContextImpl context = new ContextImpl(null,vri, null, 0,Collections.EMPTY_MAP, null,null);
+    ContextImpl context = new ContextImpl(null,vri, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null,null);
     vri.context = context;
     vri.addNamespace("dataimporter.functions", EvaluatorBag
             .getFunctionsNamespace(Collections.EMPTY_LIST,null));
@@ -114,7 +114,7 @@ public class TestVariableResolver {
   @Test
   public void testFunctionNamespace1() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
-    ContextImpl context = new ContextImpl(null,resolver, null, 0,Collections.EMPTY_MAP, null,null);
+    ContextImpl context = new ContextImpl(null,resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null,null);
     resolver.context = context;
     final List<Map<String ,String >> l = new ArrayList<Map<String, String>>();
     Map<String ,String > m = new HashMap<String, String>();

@@ -51,7 +51,7 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
     Context c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, 0, Collections.EMPTY_LIST, attrs);
+            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
     List<String> fList = new ArrayList<String>();
@@ -78,7 +78,7 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.OLDER_THAN, "'NOW'");
     Context c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, 0, Collections.EMPTY_LIST, attrs);
+            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
     List<String> fList = new ArrayList<String>();
@@ -95,7 +95,7 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
     c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, 0, Collections.EMPTY_LIST, attrs);
+            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     fileListEntityProcessor.init(c);
     fList.clear();
     while (true) {
@@ -125,7 +125,7 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
             FileListEntityProcessor.RECURSIVE, "true");
     Context c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, 0, Collections.EMPTY_LIST, attrs);
+            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
     List<String> fList = new ArrayList<String>();

@@ -97,7 +97,7 @@ public class TestEvaluatorBag {
   @Test
   public void testEscapeSolrQueryFunction() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
-    ContextImpl context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+    ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
     resolver.context = context;
     Map m= new HashMap();
     m.put("query","c:t");
@@ -115,7 +115,7 @@ public class TestEvaluatorBag {
   @Test
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
-    resolver.context = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+    resolver.context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
 
     assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
             dateFormatEval.evaluate("'NOW','yyyy-MM-dd HH:mm'", resolver.context));
@@ -129,7 +129,7 @@ public class TestEvaluatorBag {
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
-    ContextImpl ctx = new ContextImpl(null, resolver, null, 0, Collections.EMPTY_MAP, null, null);
+    ContextImpl ctx = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
     resolver.context = ctx;
     for (Map.Entry<String, String> entry : tests.entrySet()) {
       Map<String, Object> values = new HashMap<String, Object>();

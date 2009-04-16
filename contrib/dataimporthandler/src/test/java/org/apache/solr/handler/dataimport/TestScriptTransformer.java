@@ -66,7 +66,7 @@ public class TestScriptTransformer {
     entity.put("transformer", "script:" + funcName);
 
     AbstractDataImportHandlerTest.TestContext context = AbstractDataImportHandlerTest.getContext(null, null, null,
-            0, fields, entity);
+            Context.FULL_DUMP, fields, entity);
     context.script = script;
     context.scriptlang = "JavaScript";
     return context;

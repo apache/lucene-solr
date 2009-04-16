@@ -45,8 +45,7 @@ public class TestCachedSqlEntityProcessor {
     VariableResolverImpl vr = new VariableResolverImpl();
 
     vr.addNamespace("x", AbstractDataImportHandlerTest.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
-            fields, entityAttrs);
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc", "one"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
@@ -88,8 +87,7 @@ public class TestCachedSqlEntityProcessor {
     VariableResolverImpl vr = new VariableResolverImpl();
 
     vr.addNamespace("x", AbstractDataImportHandlerTest.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
-            fields, entityAttrs);
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc", "one"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
@@ -132,8 +130,7 @@ public class TestCachedSqlEntityProcessor {
     VariableResolverImpl vr = new VariableResolverImpl();
 
     vr.addNamespace("x", AbstractDataImportHandlerTest.createMap("id", 1));
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
-            fields, entityAttrs);
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc", "one"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
@@ -200,10 +197,7 @@ public class TestCachedSqlEntityProcessor {
     VariableResolverImpl vr = new VariableResolverImpl();
     Map xNamespace = AbstractDataImportHandlerTest.createMap("id", 0);
     vr.addNamespace("x", xNamespace);
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
-            fields, entityAttrs);
-
-
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     doWhereTest(q, context, ds, xNamespace);
   }
 
@@ -213,16 +207,12 @@ public class TestCachedSqlEntityProcessor {
     fields.add(AbstractDataImportHandlerTest.createMap("column", "id"));
     fields.add(AbstractDataImportHandlerTest.createMap("column", "desc"));
     String q = "select * from x";
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap(
-            "query", q, "where", "id=x.id");    
+    Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap("query", q, "where", "id=x.id");
     MockDataSource ds = new MockDataSource();
     VariableResolverImpl vr = new VariableResolverImpl();
     Map xNamespace = AbstractDataImportHandlerTest.createMap("id", 0);
     vr.addNamespace("x", xNamespace);
-    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, 0,
-            fields, entityAttrs);
-
-
+    Context context = AbstractDataImportHandlerTest.getContext(null, vr, ds, Context.FULL_DUMP, fields, entityAttrs);
     doWhereTest(q, context, ds, xNamespace);
   }
 
@@ -233,10 +223,8 @@ public class TestCachedSqlEntityProcessor {
     rows.add(AbstractDataImportHandlerTest.createMap("id", 2, "desc",
             "another two"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc", "three"));
-    rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc",
-            "another three"));
-    rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc",
-            "another another three"));
+    rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc", "another three"));
+    rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc", "another another three"));
     MockDataSource.setIterator(q, rows.iterator());
     CachedSqlEntityProcessor csep = new CachedSqlEntityProcessor();
     csep.init(context);

@@ -52,7 +52,7 @@ public class TestDateFormatTransformer {
     resolver.addNamespace("e", row);
 
     Context context = AbstractDataImportHandlerTest.getContext(null, resolver,
-            null, 0, fields, null);
+            null, Context.FULL_DUMP, fields, null);
     new DateFormatTransformer().transformRow(row, context);
     Assert.assertEquals(now, row.get("dateAdded"));
   }
@@ -81,7 +81,7 @@ public class TestDateFormatTransformer {
     resolver.addNamespace("e", row);
 
     Context context = AbstractDataImportHandlerTest.getContext(null, resolver,
-            null, 0, fields, null);
+            null, Context.FULL_DUMP, fields, null);
     new DateFormatTransformer().transformRow(row, context);
     List output = new ArrayList();
     output.add(now1);

@@ -58,7 +58,7 @@ public class TestTemplateTransformer {
             "name", "e");
 
     Context context = AbstractDataImportHandlerTest.getContext(null, resolver,
-            null, 0, fields, entityAttrs);
+            null, Context.FULL_DUMP, fields, entityAttrs);
     new TemplateTransformer().transformRow(row, context);
     Assert.assertEquals("Mangar, Shalin Shekhar", row.get("name"));
     Assert.assertEquals("Mr Mangar, Shalin Shekhar", row.get("mrname"));

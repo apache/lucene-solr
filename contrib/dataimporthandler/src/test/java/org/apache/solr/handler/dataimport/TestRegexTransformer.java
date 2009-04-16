@@ -40,7 +40,7 @@ public class TestRegexTransformer {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     // <field column="col1" sourceColName="a" splitBy="," />
     fields.add(getField("col1", "string", null, "a", ","));
-    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, 0, fields, null);
+    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("a", "a,bb,cc,d");
@@ -60,7 +60,7 @@ public class TestRegexTransformer {
     m.put(GROUP_NAMES,",firstName,lastName");
     m.put(REGEX,"(\\w*) (\\w*) (\\w*)");
     fields.add(m);
-    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, 0, fields, null);
+    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, Context.FULL_DUMP, fields, null);
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("fullName", "Mr Noble Paul");
 
@@ -89,7 +89,7 @@ public class TestRegexTransformer {
     fld.put("replaceWith", "''");
     fields.add(fld);
     Context context = AbstractDataImportHandlerTest.getContext(null, null,
-            null, 0, fields, null);
+            null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
     String s = "D'souza";
@@ -118,7 +118,7 @@ public class TestRegexTransformer {
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
     Map<String, String> eAttrs = AbstractDataImportHandlerTest.createMap("name", "e");
-    Context context = AbstractDataImportHandlerTest.getContext(null, resolver, null, 0, fields, eAttrs);
+    Context context = AbstractDataImportHandlerTest.getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
     Map<String, Object> result = new RegexTransformer().transformRow(row, context);
     Assert.assertEquals(4, result.size());

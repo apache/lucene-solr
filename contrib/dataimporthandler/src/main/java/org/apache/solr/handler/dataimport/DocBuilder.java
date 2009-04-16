@@ -100,7 +100,7 @@ public class DocBuilder {
   private void invokeEventListener(String className) {
     try {
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
-      int currentProcess = -1;
+      String currentProcess;
       if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
         currentProcess = Context.DELTA_DUMP;
       } else {

@@ -57,7 +57,7 @@ public class TestJdbcDataSource {
     flds.add(f);
 
     Context c = AbstractDataImportHandlerTest.getContext(null, null,
-            dataSource, 0, flds, null);
+            dataSource, Context.FULL_DUMP, flds, null);
     dataSource.init(c, p);
     Iterator<Map<String, Object>> i = dataSource
             .getData("select make,model,year,msrp,trim_id from atrimlisting where make='Acura'");
