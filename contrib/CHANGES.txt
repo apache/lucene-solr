@@ -50,6 +50,11 @@ New features
     a field needs to use a custom Collator.  (Steven Rowe via Mike
     McCandless)
 
+ 4. LUCENE-1591: EnWikiDocMaker, LineDocMaker, WriteLineDoc can now
+    read/write bz2 using Apache commons compress library.  This means
+    you can download the .bz2 export from http://wikipedia.org and
+    immediately index it.  (Shai Erera via Mike McCandless)
+
 
 Documentation
 

@@ -17,38 +17,44 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Random;
 
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
 /**
- * A DocMaker reading one line at a time as a Document from
- * a single file.  This saves IO cost (over DirDocMaker) of
- * recursing through a directory and opening a new file for
- * every document.  It also re-uses its Document and Field
- * instance to improve indexing speed.
- *
+ * A DocMaker reading one line at a time as a Document from a single file. This
+ * saves IO cost (over DirDocMaker) of recursing through a directory and opening
+ * a new file for every document. It also re-uses its Document and Field
+ * instance to improve indexing speed.<br>
+ * The expected format of each line is (arguments are separated by &lt;TAB&gt;):
+ * <i>title, date, body</i>. If a line is read in a different format, a
+ * {@link RuntimeException} will be thrown. In general, you should use this doc
+ * maker with files that were created with {@link WriteLineDocTask}.<br><br>
+ * 
  * Config properties:
- * docs.file=&lt;path to the file%gt;
- * doc.reuse.fields=true|false (default true)
- * doc.random.id.limit=N (default -1) -- create random
- *   docid in the range 0..N; this is useful
- *   with UpdateDoc to test updating random documents; if
- *   this is unspecified or -1, then docid is sequentially
- *   assigned
+ * <ul>
+ * <li>docs.file=&lt;path to the file&gt;
+ * <li>doc.reuse.fields=true|false (default true)
+ * <li>bzip.compression=true|false (default false)
+ * <li>doc.random.id.limit=N (default -1) -- create random docid in the range
+ * 0..N; this is useful with UpdateDoc to test updating random documents; if
+ * this is unspecified or -1, then docid is sequentially assigned
+ * </ul>
  */
 public class LineDocMaker extends BasicDocMaker {
 
-  FileInputStream fileIS;
+  InputStream fileIS;
   BufferedReader fileIn;
   ThreadLocal docState = new ThreadLocal();
   private String fileName;
@@ -57,8 +63,11 @@ public class LineDocMaker extends BasicDocMaker {
   private final DocState localDocState = new DocState();
 
   private boolean doReuseFields = true;
+  private boolean bzipCompressionEnabled = false;
   private Random r;
   private int numDocs;
+  
+  private CompressorStreamFactory csFactory = new CompressorStreamFactory();
   
   class DocState {
     Document doc;
@@ -93,7 +102,7 @@ public class LineDocMaker extends BasicDocMaker {
       doc.add(idField);
     }
 
-    final static String SEP = WriteLineDocTask.SEP;
+    final static char SEP = WriteLineDocTask.SEP;
 
     private int numDocsCreated;
     private synchronized int incrNumDocsCreated() {
@@ -101,27 +110,20 @@ public class LineDocMaker extends BasicDocMaker {
     }
 
     public Document setFields(String line) {
+      // A line must be in the following format. If it's not, fail !
       // title <TAB> date <TAB> body <NEWLINE>
-      final String title, date, body;
-
       int spot = line.indexOf(SEP);
-      if (spot != -1) {
-        title = line.substring(0, spot);
-        int spot2 = line.indexOf(SEP, 1+spot);
-        if (spot2 != -1) {
-          date = line.substring(1+spot, spot2);
-          body = line.substring(1+spot2, line.length());
-        } else 
-          date = body = "";
-      } else
-        title = date = body = "";
-
-      final String docID;
-      if (r != null) {
-        docID = "doc" + r.nextInt(numDocs);
-      } else {
-        docID = "doc" + incrNumDocsCreated();
+      if (spot == -1) {
+        throw new RuntimeException("line: [" + line + "] is in an invalid format !");
       }
+      int spot2 = line.indexOf(SEP, 1 + spot);
+      if (spot2 == -1) {
+        throw new RuntimeException("line: [" + line + "] is in an invalid format !");
+      }
+      final String title = line.substring(0, spot);
+      final String date = line.substring(1+spot, spot2);
+      final String body = line.substring(1+spot2, line.length());
+      final String docID = "doc" + (r != null ? r.nextInt(numDocs) : incrNumDocsCreated());
 
       if (doReuseFields) {
         idField.setValue(docID);
@@ -130,7 +132,10 @@ public class LineDocMaker extends BasicDocMaker {
         bodyField.setValue(body);
         return doc;
       } else {
-        Field localIDField = new Field(BasicDocMaker.ID_FIELD, docID, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+        Field localIDField = new Field(BasicDocMaker.ID_FIELD,
+                                       docID,
+                                       Field.Store.YES,
+                                       Field.Index.NOT_ANALYZED_NO_NORMS);
 
         Field localTitleField = new Field(BasicDocMaker.TITLE_FIELD,
                                           title,
@@ -174,16 +179,14 @@ public class LineDocMaker extends BasicDocMaker {
 
     String line;
     synchronized(this) {
-      while(true) {
-        line = fileIn.readLine();
-        if (line == null) {
-          // Reset the file
-          openFile();
-          if (!forever)
-            throw new NoMoreDataException();
-        } else {
-          break;
+      line = fileIn.readLine();
+      if (line == null) {
+        if (!forever) {
+          throw new NoMoreDataException();
         }
+        // Reset the file
+        openFile();
+        return makeDocument();
       }
     }
 
@@ -199,15 +202,24 @@ public class LineDocMaker extends BasicDocMaker {
   
   public synchronized void resetInputs() {
     super.resetInputs();
-    fileName = config.get("docs.file", null);
-    if (fileName == null)
-      throw new RuntimeException("docs.file must be set");
     openFile();
   }
 
   public void setConfig(Config config) {
     super.setConfig(config);
+    fileName = config.get("docs.file", null);
+    if (fileName == null) {
+      throw new IllegalArgumentException("docs.file must be set");
+    }
     doReuseFields = config.get("doc.reuse.fields", true);
+    String doBZCompress = config.get("bzip.compression", null);
+    if (doBZCompress != null) {
+      // Property was set, use the value.
+      bzipCompressionEnabled = Boolean.valueOf(doBZCompress).booleanValue();
+    } else {
+      // Property was not set, attempt to detect based on file's extension
+      bzipCompressionEnabled = fileName.endsWith("bz2");
+    }
     numDocs = config.get("doc.random.id.limit", -1);
     if (numDocs != -1) {
       r = new Random(179);
@@ -216,11 +228,29 @@ public class LineDocMaker extends BasicDocMaker {
 
   synchronized void openFile() {
     try {
-      if (fileIn != null)
+      if (fileIn != null) {
         fileIn.close();
+      }
       fileIS = new FileInputStream(fileName);
-      fileIn = new BufferedReader(new InputStreamReader(fileIS,"UTF-8"), READER_BUFFER_BYTES);
+      if (bzipCompressionEnabled) {
+        // According to BZip2CompressorInputStream's code, it reads the first 
+        // two file header chars ('B' and 'Z'). We only need to wrap the
+        // underlying stream with a BufferedInputStream, since the code uses
+        // the read() method exclusively.
+        fileIS = new BufferedInputStream(fileIS, READER_BUFFER_BYTES);
+        fileIS = csFactory.createCompressorInputStream("bzip2", fileIS);
+      }
+      // Wrap the stream with a BufferedReader for several reasons:
+      // 1. We need the readLine() method.
+      // 2. Even if bzip.compression is enabled, and is wrapped with
+      // BufferedInputStream, wrapping with a buffer can still improve
+      // performance, since the BIS buffer will be used to read from the
+      // compressed stream, while the BR buffer will be used to read from the
+      // uncompressed stream.
+      fileIn = new BufferedReader(new InputStreamReader(fileIS, "UTF-8"), READER_BUFFER_BYTES);
     } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (CompressorException e) {
       throw new RuntimeException(e);
     }
   }
@@ -228,4 +258,5 @@ public class LineDocMaker extends BasicDocMaker {
   public int numUniqueTexts() {
     return -1;
   }
+
 }

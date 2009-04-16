@@ -17,41 +17,68 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import org.xml.sax.XMLReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.Document;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import java.io.IOException;
-import java.io.FileInputStream;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-
 /**
- * A LineDocMaker which reads the uncompressed english wikipedia dump.
- *
+ * A {@link LineDocMaker} which reads the english wikipedia
+ * dump.  You can read the .bz2 file directly (it will be
+ * decompressed on the fly).
  * Config properties:
- * keep.image.only.docs=false|true
- * <br/>
- * Plus those available in LineDocMaker
- *
- *
+ * <ul>
+ * <li>keep.image.only.docs=false|true
+ * <li>[those available in {@link LineDocMaker}]
+ * </ul>
+ * 
  * @see org.apache.lucene.benchmark.byTask.feeds.LineDocMaker
  */
 public class EnwikiDocMaker extends LineDocMaker {
-  protected boolean keepImages = true;
+  
+  private static final Map ELEMENTS = new HashMap();
+  
   static final int TITLE = 0;
-  static final int DATE = TITLE+1;
-  static final int BODY = DATE+1;
+  static final int DATE = TITLE + 1;
+  static final int BODY = DATE + 1;
   static final int ID = BODY + 1;
-  static final int LENGTH = ID+1;
-
+  static final int LENGTH = ID + 1;
+  // LENGTH is used as the size of the tuple, so whatever constants we need that
+  // should not be part of the tuple, we should define them after LENGTH.
+  static final int PAGE = LENGTH + 1;
+  
   static final String[] months = {"JAN", "FEB", "MAR", "APR",
                                   "MAY", "JUN", "JUL", "AUG",
                                   "SEP", "OCT", "NOV", "DEC"};
+
+  static {
+    ELEMENTS.put("page", new Integer(PAGE));
+    ELEMENTS.put("text", new Integer(BODY));
+    ELEMENTS.put("timestamp", new Integer(DATE));
+    ELEMENTS.put("title", new Integer(TITLE));
+    ELEMENTS.put("id", new Integer(ID));
+  }
+  
+  /**
+   * Returns the type of the element if defined, otherwise returns -1. This
+   * method is useful in startElement and endElement, by not needing to compare
+   * the element qualified name over and over.
+   */
+  private final static int getElementType(String elem) {
+    Integer val = (Integer) ELEMENTS.get(elem);
+    return val == null ? -1 : val.intValue();
+  }
+  
+  protected boolean keepImages = true;
 
   public void setConfig(Config config) {
     super.setConfig(config);
@@ -59,7 +86,6 @@ public class EnwikiDocMaker extends LineDocMaker {
   }
 
   class Parser extends DefaultHandler implements Runnable {
-
     Thread t;
     boolean threadDone;
 
@@ -71,7 +97,7 @@ public class EnwikiDocMaker extends LineDocMaker {
         reader.setContentHandler(this);
         reader.setErrorHandler(this);
         while(true){
-          final FileInputStream localFileIS = fileIS;
+          final InputStream localFileIS = fileIS;
           try {
             InputSource is = new InputSource(localFileIS);
             reader.parse(is);
@@ -133,12 +159,13 @@ public class EnwikiDocMaker extends LineDocMaker {
           t = null;
           throw nmde;
         }
-        if (t != null && threadDone)
+        if (t != null && threadDone) {
           // The thread has exited yet did not hit end of
           // data, so this means it hit an exception.  We
           // throw NoMorDataException here to force
           // benchmark to stop the current alg:
           throw new NoMoreDataException();
+        }
         result = tuple;
         tuple = null;
         notify();
@@ -157,25 +184,27 @@ public class EnwikiDocMaker extends LineDocMaker {
     String time;
     String id;
 
-
-    
     public void startElement(String namespace,
                              String simple,
                              String qualified,
                              Attributes attributes) {
-      if (qualified.equals("page")) {
-        title = null;
-        body = null;
-        time = null;
-        id = null;
-      } else if (qualified.equals("text")) {
-        contents.setLength(0);
-      } else if (qualified.equals("timestamp")) {
-        contents.setLength(0);
-      } else if (qualified.equals("title")) {
-        contents.setLength(0);
-      } else if (qualified.equals("id")) {
-        contents.setLength(0);
+      int elemType = getElementType(qualified);
+      switch (elemType) {
+        case PAGE:
+          title = null;
+          body = null;
+          time = null;
+          id = null;
+          break;
+        // intentional fall-through.
+        case BODY:
+        case DATE:
+        case TITLE:
+        case ID:
+          contents.setLength(0);
+          break;
+        default:
+          // this element should be discarded.
       }
     }
 
@@ -214,25 +243,34 @@ public class EnwikiDocMaker extends LineDocMaker {
 
     public void endElement(String namespace, String simple, String qualified)
       throws SAXException {
-      if (qualified.equals("title")) {
-        title = contents.toString();
-      } else if (qualified.equals("text")) {
-        body = contents.toString();
-        //workaround that startswith doesn't have an ignore case option, get at least 20 chars.
-        String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase();
-        if (startsWith.startsWith("#redirect")) {
-          body = null;
-        }
-      } else if (qualified.equals("timestamp")) {
-        time = time(contents.toString());
-      } else if (qualified.equals("id") && id == null) {//just get the first id
-        id = contents.toString();
-      }
-      else if (qualified.equals("page")) {
-        //the body must be null and we either are keeping image docs or the title does not start with Image:
-        if (body != null && (keepImages == true || title.startsWith("Image:") == false)) {
-          create(title, time, body, id);
-        }
+      int elemType = getElementType(qualified);
+      switch (elemType) {
+        case PAGE:
+          // the body must be null and we either are keeping image docs or the
+          // title does not start with Image:
+          if (body != null && (keepImages || !title.startsWith("Image:"))) {
+            create(title, time, body, id);
+          }
+          break;
+        case BODY:
+          body = contents.toString();
+          //workaround that startswith doesn't have an ignore case option, get at least 20 chars.
+          String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase();
+          if (startsWith.startsWith("#redirect")) {
+            body = null;
+          }
+          break;
+        case DATE:
+          time = time(contents.toString());
+          break;
+        case TITLE:
+          title = contents.toString();
+          break;
+        case ID:
+          id = contents.toString();
+          break;
+        default:
+          // this element should be discarded.
       }
     }
   }

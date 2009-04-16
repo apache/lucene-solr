@@ -100,23 +100,14 @@
         <antcall target="expand-reuters"/>
         <antcall target="extract-reuters"/>
     </target>
-    <property name="digester.jar" value="commons-digester-1.7.jar"/>
-    <property name="collections.jar" value="commons-collections-3.1.jar"/>
-    <property name="logging.jar" value="commons-logging-1.0.4.jar"/>
-    <property name="bean-utils.jar" value="commons-beanutils-1.7.0.jar"/>
-    <property name="xercesImpl.jar" value="xerces-2.9.1-patched-XERCESJ-1257.jar"/>
-    <property name="xml-apis.jar" value="xml-apis-2.9.0.jar"/>
 
     <path id="classpath">
         <pathelement path="${common.dir}/build/classes/java"/>
         <pathelement path="${common.dir}/build/classes/demo"/>
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
-        <pathelement path="lib/${digester.jar}"/>
-        <pathelement path="lib/${collections.jar}"/>
-        <pathelement path="lib/${logging.jar}"/>
-        <pathelement path="lib/${bean-utils.jar}"/>
-        <pathelement path="lib/${xercesImpl.jar}"/>
-        <pathelement path="lib/${xml-apis.jar}"/>
+    	<fileset dir="lib">
+    		<include name="**/*.jar"/>
+    	</fileset>
     </path>
     <path id="run.classpath">
         <path refid="classpath"/>
