@@ -4328,6 +4328,11 @@ public class IndexWriter {
   }
 
   final private void handleMergeException(Throwable t, MergePolicy.OneMerge merge) throws IOException {
+
+    if (infoStream != null) {
+      message("handleMergeException: merge=" + merge.segString(directory) + " exc=" + t);
+    }
+
     // Set the exception on the merge, so if
     // optimize() is waiting on us it sees the root
     // cause exception:
