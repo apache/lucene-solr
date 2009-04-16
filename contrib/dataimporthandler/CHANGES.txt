@@ -213,7 +213,7 @@ Bug Fixes
               (Sam Keen, Noble Paul via shalin)
 
 24.SOLR-1080: RegexTransformer should not replace if regex is not matched.
-              (Noble Paul via shalin)
+              (Noble Paul, Fergus McMenemie via shalin)
 
 25.SOLR-1090: DataImportHandler should load the data-config.xml using UTF-8 encoding.
               (Rui Pereira, shalin)

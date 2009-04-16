@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import static org.apache.solr.handler.dataimport.RegexTransformer.REGEX;
 import static org.apache.solr.handler.dataimport.RegexTransformer.GROUP_NAMES;
+import static org.apache.solr.handler.dataimport.RegexTransformer.REPLACE_WITH;
 import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class TestRegexTransformer {
     Assert.assertEquals(2, result.size());
     Assert.assertEquals(4, ((List) result.get("col1")).size());
   }
- 
+
 
   @Test
   public void groupNames() {
@@ -72,7 +73,7 @@ public class TestRegexTransformer {
     l.add("Mr Noble Paul") ;
     l.add("Mr Shalin Mangar") ;
     src.put("fullName", l);
-    result = new RegexTransformer().transformRow(src, context);    
+    result = new RegexTransformer().transformRow(src, context);
     List l1 = (List) result.get("firstName");
     List l2 = (List) result.get("lastName");
     Assert.assertEquals("Noble", l1.get(0));
@@ -84,9 +85,9 @@ public class TestRegexTransformer {
   @Test
   public void replaceWith() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
-    // <field column="name" sourceColName="a" regexp="'" replaceWith="''" />
+    // <field column="name" regexp="'" replaceWith="''" />
     Map<String, String> fld = getField("name", "string", "'", null, null);
-    fld.put("replaceWith", "''");
+    fld.put(REPLACE_WITH, "''");
     fields.add(fld);
     Context context = AbstractDataImportHandlerTest.getContext(null, null,
             null, Context.FULL_DUMP, fields, null);
@@ -102,13 +103,32 @@ public class TestRegexTransformer {
 
   @Test
   public void mileage() {
+    // init a whole pile of fields
     List<Map<String, String>> fields = getFields();
 
     // add another regex which reuses result from previous regex again!
     // <field column="hltCityMPG" sourceColName="rowdata" regexp="(${e.city_mileage})" />
     Map<String, String> fld = getField("hltCityMPG", "string",
             ".*(${e.city_mileage})", "rowdata", null);
-    fld.put("replaceWith", "*** $1 ***");
+    fld.put(REPLACE_WITH, "*** $1 ***");
+    fields.add(fld);
+
+    //  **ATTEMPTS** a match WITHOUT a replaceWith
+    // <field column="t1" sourceColName="rowdata" regexp="duff" />
+    fld = getField("t1", "string","duff", "rowdata", null);
+    fields.add(fld);
+
+    //  **ATTEMPTS** a match WITH a replaceWith
+    // <field column="t2" sourceColName="rowdata" regexp="duff" replaceWith="60"/>
+    fld = getField("t2", "string","duff", "rowdata", null);
+    fld.put(REPLACE_WITH, "60");
+    fields.add(fld);
+
+    //  regex WITH both replaceWith and groupName (groupName ignored!)
+    // <field column="t3" sourceColName="rowdata" regexp="(Range)" />
+    fld = getField("t3", "string","(Range)", "rowdata", null);
+    fld.put(REPLACE_WITH, "range");
+    fld.put(GROUP_NAMES,"t4,t5");
     fields.add(fld);
 
     Map<String, Object> row = new HashMap<String, Object>();
@@ -121,11 +141,12 @@ public class TestRegexTransformer {
     Context context = AbstractDataImportHandlerTest.getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
     Map<String, Object> result = new RegexTransformer().transformRow(row, context);
-    Assert.assertEquals(4, result.size());
+    Assert.assertEquals(5, result.size());
     Assert.assertEquals(s, result.get("rowdata"));
     Assert.assertEquals("26", result.get("highway_mileage"));
     Assert.assertEquals("19", result.get("city_mileage"));
     Assert.assertEquals("*** 19 *** mpg City", result.get("hltCityMPG"));
+    Assert.assertEquals("Fuel Economy range: 26 mpg Hwy, 19 mpg City", result.get("t3"));
   }
 
   public static List<Map<String, String>> getFields() {
