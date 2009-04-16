@@ -17,34 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-
-import java.io.IOException;
-import java.util.BitSet;
 import java.text.Collator;
 
 /**
  * A Filter that restricts search results to a range of values in a given
  * field.
  * 
- * <p>
- * This code borrows heavily from {@link RangeQuery}, but is implemented as a Filter
- * 
- * </p>
- * 
  * If you construct a large number of range filters with different ranges but on the 
  * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
  */
-public class RangeFilter extends Filter {
+public class RangeFilter extends MultiTermQueryWrapperFilter {
     
-    private String fieldName;
-    private String lowerTerm;
-    private String upperTerm;
-    private boolean includeLower;
-    private boolean includeUpper;
-    private Collator collator;
-    private RangeQuery rangeQuery;
-
   /**
      * @param fieldName The field this range applies to
      * @param lowerTerm The lower bound on this range
@@ -57,25 +40,7 @@ public class RangeFilter extends Filter {
      */
     public RangeFilter(String fieldName, String lowerTerm, String upperTerm,
                        boolean includeLower, boolean includeUpper) {
-        this.fieldName = fieldName;
-        this.lowerTerm = lowerTerm;
-        this.upperTerm = upperTerm;
-        this.includeLower = includeLower;
-        this.includeUpper = includeUpper;
-        
-        if (null == lowerTerm && null == upperTerm) {
-            throw new IllegalArgumentException
-                ("At least one value must be non-null");
-        }
-        if (includeLower && null == lowerTerm) {
-            throw new IllegalArgumentException
-                ("The lower bound must be non-null to be inclusive");
-        }
-        if (includeUpper && null == upperTerm) {
-            throw new IllegalArgumentException
-                ("The upper bound must be non-null to be inclusive");
-        }
-        initRangeQuery();
+        super(new RangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper));
     }
 
     /**
@@ -98,13 +63,7 @@ public class RangeFilter extends Filter {
     public RangeFilter(String fieldName, String lowerTerm, String upperTerm,
                        boolean includeLower, boolean includeUpper,
                        Collator collator) {
-        this(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
-        this.collator = collator;
-        initRangeQuery();
-    }
-
-    private void initRangeQuery() {
-      rangeQuery = new RangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper, collator);
+        super(new RangeQuery(fieldName, lowerTerm, upperTerm, includeLower, includeUpper, collator));
     }
 
     /**
@@ -121,67 +80,5 @@ public class RangeFilter extends Filter {
      */
     public static RangeFilter More(String fieldName, String lowerTerm) {
         return new RangeFilter(fieldName, lowerTerm, null, true, false);
-    }
-    
-    /**
-     * Returns a BitSet with true for documents which should be
-     * permitted in search results, and false for those that should
-     * not.
-     * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-     */
-    public BitSet bits(IndexReader reader) throws IOException {
-      return rangeQuery.getFilter().bits(reader);
-    }
-    
-    /**
-     * Returns a DocIdSet with documents that should be
-     * permitted in search results.
-     */
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-      return rangeQuery.getFilter().getDocIdSet(reader);
-    }
-    
-    public String toString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(fieldName);
-        buffer.append(":");
-        buffer.append(includeLower ? "[" : "{");
-        if (null != lowerTerm) {
-            buffer.append(lowerTerm);
-        }
-        buffer.append("-");
-        if (null != upperTerm) {
-            buffer.append(upperTerm);
-        }
-        buffer.append(includeUpper ? "]" : "}");
-        return buffer.toString();
-    }
-
-    /** Returns true if <code>o</code> is equal to this. */
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RangeFilter)) return false;
-        RangeFilter other = (RangeFilter) o;
-
-        if (!this.fieldName.equals(other.fieldName)
-            || this.includeLower != other.includeLower
-            || this.includeUpper != other.includeUpper
-            || (this.collator != null && ! this.collator.equals(other.collator))
-           ) { return false; }
-        if (this.lowerTerm != null ? !this.lowerTerm.equals(other.lowerTerm) : other.lowerTerm != null) return false;
-        if (this.upperTerm != null ? !this.upperTerm.equals(other.upperTerm) : other.upperTerm != null) return false;
-        return true;
-    }
-
-    /** Returns a hash code value for this object.*/
-    public int hashCode() {
-      int h = fieldName.hashCode();
-      h ^= lowerTerm != null ? lowerTerm.hashCode() : 0xB6ECE882;
-      h = (h << 1) | (h >>> 31);  // rotate to distinguish lower from upper
-      h ^= (upperTerm != null ? (upperTerm.hashCode()) : 0x91BEC2C2);
-      h ^= (includeLower ? 0xD484B933 : 0)
-         ^ (includeUpper ? 0x6AE423AC : 0);
-      h ^= collator != null ? collator.hashCode() : 0;
-      return h;
     }
 }

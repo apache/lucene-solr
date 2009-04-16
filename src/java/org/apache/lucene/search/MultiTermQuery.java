@@ -18,13 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -97,7 +93,7 @@ public abstract class MultiTermQuery extends Query {
   }
   
   protected Filter getFilter() {
-    return new MultiTermFilter(this);
+    return new MultiTermQueryWrapperFilter(this);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
@@ -176,80 +172,4 @@ public abstract class MultiTermQuery extends Query {
     return term.hashCode() + Float.floatToRawIntBits(getBoost());
   }
 
-  static class MultiTermFilter extends Filter {
-    MultiTermQuery mtq;
-
-    abstract class TermGenerator {
-      public void generate(IndexReader reader, TermEnum enumerator) throws IOException {
-        TermDocs termDocs = reader.termDocs();
-        try {
-          do {
-            Term term = enumerator.term();
-            if (term == null)
-              break;
-            mtq.numberOfTerms++;
-            termDocs.seek(term);
-            while (termDocs.next()) {
-              handleDoc(termDocs.doc());
-            }
-          } while (enumerator.next());
-        } finally {
-          termDocs.close();
-        }
-      }
-      abstract public void handleDoc(int doc);
-    }
-    
-    public MultiTermFilter(MultiTermQuery mtq) {
-      this.mtq = mtq;
-    }
-
-    public BitSet bits(IndexReader reader) throws IOException {
-      final TermEnum enumerator = mtq.getEnum(reader);
-      try {
-        final BitSet bitSet = new BitSet(reader.maxDoc());
-        new TermGenerator() {
-          public void handleDoc(int doc) {
-            bitSet.set(doc);
-          }
-        }.generate(reader, enumerator);
-        return bitSet;
-      } finally {
-        enumerator.close();
-      }
-    }
-
-    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-      final TermEnum enumerator = mtq.getEnum(reader);
-      try {
-        // if current term in enum is null, the enum is empty -> shortcut
-        if (enumerator.term() == null)
-          return DocIdSet.EMPTY_DOCIDSET;
-        // else fill into a OpenBitSet
-        final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
-        new TermGenerator() {
-          public void handleDoc(int doc) {
-            bitSet.set(doc);
-          }
-        }.generate(reader, enumerator);
-        return bitSet;
-      } finally {
-        enumerator.close();
-      }
-    }
-      
-    public boolean equals(Object o) {
-      if (this == o)
-        return true;
-      if (!(o instanceof MultiTermFilter))
-        return false;
-
-      final MultiTermFilter filter = (MultiTermFilter) o;
-      return mtq.equals(filter.mtq);
-    }
-      
-    public int hashCode() {
-      return mtq.hashCode();
-    }
-  }
 }

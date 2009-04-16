@@ -17,48 +17,25 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.BitSet;
-
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
 /**
  * A Filter that restricts search results to values that have a matching prefix in a given
  * field.
- * 
- * <p>
- * This code borrows heavily from {@link PrefixQuery}, but is implemented as a Filter
- * 
- * </p>
  */
-public class PrefixFilter extends Filter {
-  protected final Term prefix;
-  private PrefixQuery prefixQuery;
+public class PrefixFilter extends MultiTermQueryWrapperFilter {
 
   public PrefixFilter(Term prefix) {
-    this.prefix = prefix;
-    this.prefixQuery = new PrefixQuery(prefix);
+    super(new PrefixQuery(prefix));
   }
 
-  public Term getPrefix() { return prefix; }
-
-  /**
-   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-   */  
-  public BitSet bits(IndexReader reader) throws IOException {
-    return prefixQuery.getFilter().bits(reader);
-  }
-  
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    return prefixQuery.getFilter().getDocIdSet(reader);
-  }
+  public Term getPrefix() { return ((PrefixQuery)query).getPrefix(); }
 
   /** Prints a user-readable version of this query. */
   public String toString () {
     StringBuffer buffer = new StringBuffer();
     buffer.append("PrefixFilter(");
-    buffer.append(prefix.toString());
+    buffer.append(getPrefix().toString());
     buffer.append(")");
     return buffer.toString();
   }
