@@ -187,7 +187,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           // preload the first data
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
-            searchHolder = core.getNewestSearcher(true);
+            searchHolder = core.getNewestSearcher(false);
             IndexReader reader = searchHolder.get().getReader();
             getElevationMap( reader, core );
           } finally {
