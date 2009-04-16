@@ -984,7 +984,7 @@ implements Serializable {
       }
     }
     // System.out.println ("matching \""+buff+"\" against pattern \""+pattern+"\"");
-    assertTrue (Pattern.compile(pattern).matcher(buff.toString()).matches());
+    assertTrue ("found:" + buff + " expected:" + pattern, Pattern.compile(pattern).matcher(buff.toString()).matches());
   }
 
   private HashMap getScores (ScoreDoc[] hits, Searcher searcher)
