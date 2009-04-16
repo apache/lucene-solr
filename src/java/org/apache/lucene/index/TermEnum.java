@@ -50,7 +50,8 @@ public abstract class TermEnum {
    *     return true;
    *   }
    * </pre>
-   * Some implementations are considerably more efficient than that.
+   * Some implementations *could* be considerably more efficient than a linear scan.
+   * Check the implementation to be sure.
    */
   public boolean skipTo(Term target) throws IOException {
      do {
