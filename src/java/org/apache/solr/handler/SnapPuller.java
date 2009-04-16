@@ -110,8 +110,8 @@ public class SnapPuller {
     // no requests are kept waiting for an idle connection.
     mgr.getParams().setDefaultMaxConnectionsPerHost(10000);
     mgr.getParams().setMaxTotalConnections(10000);
-    mgr.getParams().setSoTimeout(connTimeout == null ? 5000 : Integer.parseInt(connTimeout)); //5 secs
-    mgr.getParams().setConnectionTimeout(readTimeout == null ? 10000 : Integer.parseInt(readTimeout)); //10 secs
+    mgr.getParams().setSoTimeout(connTimeout == null ? 20000 : Integer.parseInt(connTimeout)); //20 secs
+    mgr.getParams().setConnectionTimeout(readTimeout == null ? 5000 : Integer.parseInt(readTimeout)); //5 secs
     HttpClient httpClient = new HttpClient(mgr);
     if (client == null && connTimeout == null && readTimeout == null) client = httpClient;
     return httpClient;
