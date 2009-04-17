@@ -190,6 +190,7 @@ public class LBHttpSolrServer extends SolrServer {
     int count = counter.incrementAndGet();
     int attempts = 0;
     Exception ex;
+    int startSize = aliveServers.size();
     while (true) {
       int size = aliveServers.size();
       if (size < 1) throw new SolrServerException("No live SolrServers available to handle this request");
@@ -216,7 +217,7 @@ public class LBHttpSolrServer extends SolrServer {
         throw new SolrServerException(e);
       }
       attempts++;
-      if (attempts >= aliveServers.size())
+      if (attempts >= startSize)
         throw new SolrServerException("No live SolrServers available to handle this request", ex);
     }
   }

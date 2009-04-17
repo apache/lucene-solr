@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj;
 
 import junit.framework.TestCase;
+import junit.framework.Assert;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -118,6 +119,28 @@ public class TestLBHttpSolrServer extends TestCase {
     assertEquals(3, names.size());
   }
 
+  public void testTwoServers() throws Exception {
+    LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(httpClient, solr[0].getUrl(), solr[1].getUrl());
+    lbHttpSolrServer.setAliveCheckInterval(1);
+    SolrQuery solrQuery = new SolrQuery("*:*");
+    Set<String> names = new HashSet<String>();
+    QueryResponse resp = null;
+    solr[0].jetty.stop();
+    solr[0].jetty = null;
+    resp = lbHttpSolrServer.query(solrQuery);
+    String name = resp.getResults().get(0).getFieldValue("name").toString();
+    Assert.assertEquals("solr1", name);
+    resp = lbHttpSolrServer.query(solrQuery);
+    name = resp.getResults().get(0).getFieldValue("name").toString();
+    Assert.assertEquals("solr1", name);
+    solr[1].jetty.stop();
+    solr[1].jetty = null;
+    solr[0].startJetty();
+    Thread.sleep(1200);
+    resp = lbHttpSolrServer.query(solrQuery);
+    name = resp.getResults().get(0).getFieldValue("name").toString();
+    Assert.assertEquals("solr0", name);
+  }
 
   private class SolrInstance extends AbstractSolrTestCase {
 
