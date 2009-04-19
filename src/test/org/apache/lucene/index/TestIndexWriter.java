@@ -4350,7 +4350,9 @@ public class TestIndexWriter extends LuceneTestCase
       }
     }
     t.finish = true;
-    t.interrupt();
+    synchronized(t) {
+      t.interrupt();
+    }
     t.join();
     assertFalse(t.failed);
   }
