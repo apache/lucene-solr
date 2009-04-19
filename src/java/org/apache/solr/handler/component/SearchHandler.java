@@ -73,7 +73,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
 
   protected List<String> getDefaultComponents()
   {
-    ArrayList<String> names = new ArrayList<String>(5);
+    ArrayList<String> names = new ArrayList<String>(6);
     names.add( QueryComponent.COMPONENT_NAME );
     names.add( FacetComponent.COMPONENT_NAME );
     names.add( MoreLikeThisComponent.COMPONENT_NAME );
