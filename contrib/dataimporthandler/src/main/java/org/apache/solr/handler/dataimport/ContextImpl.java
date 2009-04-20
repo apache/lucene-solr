@@ -72,6 +72,10 @@ public class ContextImpl extends Context {
     return entity == null ? null : entity.allAttributes.get(name);
   }
 
+  public String getResolvedEntityAttribute(String name) {
+    return entity == null ? null : resolver.replaceTokens(entity.allAttributes.get(name));
+  }
+
   public List<Map<String, String>> getAllEntityFields() {
     return entity == null ? Collections.EMPTY_LIST : entity.allFieldsList;
   }
@@ -88,7 +92,8 @@ public class ContextImpl extends Context {
     if (entity.dataSrc != null && docBuilder != null && docBuilder.verboseDebug &&
             currProcess == Context.FULL_DUMP) {
       //debug is not yet implemented properly for deltas
-      return DebugLogger.wrapDs(entity.dataSrc);
+
+      entity.dataSrc = docBuilder.writer.getDebugLogger().wrapDs(entity.dataSrc);
     }
     return entity.dataSrc;
   }

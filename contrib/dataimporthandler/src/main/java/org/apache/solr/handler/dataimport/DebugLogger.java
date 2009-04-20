@@ -46,6 +46,7 @@ public class DebugLogger {
   private Stack<DebugInfo> debugStack;
 
   NamedList output;
+  SolrWriter writer;
 
   private static final String LINE = "---------------------------------------------";
 
@@ -69,7 +70,11 @@ public class DebugLogger {
     output = debugStack.peek().lst;
   }
 
-  private DebugInfo peekStack() {
+    public DebugLogger(SolrWriter solrWriter) {
+      writer = solrWriter;
+    }
+
+    private DebugInfo peekStack() {
     return debugStack.isEmpty() ? null : debugStack.peek();
   }
 
@@ -165,8 +170,7 @@ public class DebugLogger {
     }
   }
 
-  static DataSource wrapDs(final DataSource ds) {
-    final SolrWriter writer = DocBuilder.INSTANCE.get().writer;
+  DataSource wrapDs(final DataSource ds) {
     return new DataSource() {
       public void init(Context context, Properties initProps) {
         ds.init(context, initProps);
@@ -182,11 +186,11 @@ public class DebugLogger {
         try {
           return ds.getData(query);
         } catch (DataImportHandlerException de) {
-          DocBuilder.INSTANCE.get().writer.log(SolrWriter.ENTITY_EXCEPTION,
+          writer.log(SolrWriter.ENTITY_EXCEPTION,
                   null, de);
           throw de;
         } catch (Exception e) {
-          DocBuilder.INSTANCE.get().writer.log(SolrWriter.ENTITY_EXCEPTION,
+          writer.log(SolrWriter.ENTITY_EXCEPTION,
                   null, e);
           DataImportHandlerException de = new DataImportHandlerException(
                   DataImportHandlerException.SEVERE, "", e);
@@ -200,38 +204,28 @@ public class DebugLogger {
     };
   }
 
-  static Transformer wrapTransformer(final Transformer t) {
-    if (DocBuilder.INSTANCE.get() != null
-            && DocBuilder.INSTANCE.get().verboseDebug) {
-      return new Transformer() {
-        public Object transformRow(Map<String, Object> row, Context context) {
-          DocBuilder.INSTANCE.get().writer.log(SolrWriter.PRE_TRANSFORMER_ROW,
-                  null, row);
-          String tName = getTransformerName(t);
-          Object result = null;
-          try {
-            result = t.transformRow(row, context);
-            DocBuilder.INSTANCE.get().writer.log(SolrWriter.TRANSFORMED_ROW,
-                    tName, result);
-          } catch (DataImportHandlerException de) {
-            DocBuilder.INSTANCE.get().writer.log(
-                    SolrWriter.TRANSFORMER_EXCEPTION, tName, de);
-            de.debugged = true;
-            throw de;
-          } catch (Exception e) {
-            DocBuilder.INSTANCE.get().writer.log(
-                    SolrWriter.TRANSFORMER_EXCEPTION, tName, e);
-            DataImportHandlerException de = new DataImportHandlerException(
-                    DataImportHandlerException.SEVERE, "", e);
-            de.debugged = true;
-            throw de;
-          }
-          return result;
+  Transformer wrapTransformer(final Transformer t) {
+    return new Transformer() {
+      public Object transformRow(Map<String, Object> row, Context context) {
+        writer.log(SolrWriter.PRE_TRANSFORMER_ROW, null, row);
+        String tName = getTransformerName(t);
+        Object result = null;
+        try {
+          result = t.transformRow(row, context);
+          writer.log(SolrWriter.TRANSFORMED_ROW, tName, result);
+        } catch (DataImportHandlerException de) {
+          writer.log(SolrWriter.TRANSFORMER_EXCEPTION, tName, de);
+          de.debugged = true;
+          throw de;
+        } catch (Exception e) {
+          writer.log(SolrWriter.TRANSFORMER_EXCEPTION, tName, e);
+          DataImportHandlerException de = new DataImportHandlerException(DataImportHandlerException.SEVERE, "", e);
+          de.debugged = true;
+          throw de;
         }
-      };
-    } else {
-      return t;
-    }
+        return result;
+      }
+    };
   }
 
   public static String getStacktraceString(Exception e) {
@@ -242,8 +236,8 @@ public class DebugLogger {
 
   static String getTransformerName(Transformer t) {
     Class transClass = t.getClass();
-    if (t instanceof EntityProcessorBase.ReflectionTransformer) {
-      return ((EntityProcessorBase.ReflectionTransformer) t).trans;
+    if (t instanceof EntityProcessorWrapper.ReflectionTransformer) {
+      return ((EntityProcessorWrapper.ReflectionTransformer) t).trans;
     }
     if (t instanceof ScriptTransformer) {
       ScriptTransformer scriptTransformer = (ScriptTransformer) t;

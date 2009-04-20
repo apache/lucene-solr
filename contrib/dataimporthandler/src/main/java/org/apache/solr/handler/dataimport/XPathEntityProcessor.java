@@ -176,8 +176,6 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   private Map<String, Object> fetchNextRow() {
     Map<String, Object> r = null;
     while (true) {
-      if (rowcache != null)
-        return getFromRowCache();
       if (rowIterator == null)
         initQuery(resolver.replaceTokens(context.getEntityAttribute(URL)));
       r = getNext();
@@ -197,9 +195,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         }
       }
       addCommonFields(r);
-      r = applyTransformer(r);
-      if (r != null)
-        return readUsefulVars(r);
+      return r;
     }
   }
 

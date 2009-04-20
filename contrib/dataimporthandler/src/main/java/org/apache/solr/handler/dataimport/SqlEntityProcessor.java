@@ -65,20 +65,14 @@ public class SqlEntityProcessor extends EntityProcessorBase {
     }
   }
 
-  public Map<String, Object> nextRow() {
-    if (rowcache != null)
-      return getFromRowCache();
+  public Map<String, Object> nextRow() {    
     if (rowIterator == null) {
       String q = getQuery();
       initQuery(resolver.replaceTokens(q));
     }
     while (true) {
       Map<String, Object> r = getNext();
-      if (r == null)
-        return null;
-      r = applyTransformer(r);
-      if (r != null)
-        return r;
+      return r;
     }
 
   }

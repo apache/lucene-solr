@@ -103,11 +103,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       mail = getNextMail();
       if (mail != null)
         row = getDocumentFromMail(mail);
-    }
-    while (row == null && mail != null);
-    if (row != null) {
-      row = super.applyTransformer(row);
-    }
+    } while (row == null && mail != null);    
     return row;
   }
 

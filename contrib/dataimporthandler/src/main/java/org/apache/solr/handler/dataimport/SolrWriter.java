@@ -230,6 +230,13 @@ public class SolrWriter {
     return null;
   }
 
+  public DebugLogger getDebugLogger() {
+    if (debugLogger == null) {
+      debugLogger = new DebugLogger(this);
+    }
+    return debugLogger;
+  }
+
   /**
    * This method is used for verbose debugging
    *
@@ -238,10 +245,7 @@ public class SolrWriter {
    * @param row   The actual data . Can be a Map<String,object> or a List<Map<String,object>>
    */
   public void log(int event, String name, Object row) {
-    if (debugLogger == null) {
-      debugLogger = new DebugLogger();
-    }
-    debugLogger.log(event, name, row);
+    getDebugLogger().log(event, name, row);
   }
 
   public static final int START_ENTITY = 1, END_ENTITY = 2,

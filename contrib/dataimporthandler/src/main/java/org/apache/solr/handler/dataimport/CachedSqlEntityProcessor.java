@@ -46,7 +46,6 @@ public class CachedSqlEntityProcessor extends SqlEntityProcessor {
   }
 
   public Map<String, Object> nextRow() {
-    if (rowcache != null) return getFromRowCache();
     if (dataSourceRowCache != null)
       return getFromRowCacheTransformed();
     if (!isFirst)

@@ -24,6 +24,11 @@ The Context API has been changed in a non back-compatible way. In particular, th
 now returns a String describing the type of the current import process instead of an int. Similarily, the public
 constants in Context viz. FULL_DUMP, DELTA_DUMP and FIND_DELTA are changed to a String type. See SOLR-969 for details.
 
+The EntityProcessor API has been simplified by moving logic for applying transformers and handling multi-row outputs
+from Transformers into an EntityProcessorWrapper class. The EntityProcessor#destroy is now called once per
+parent-row at the end of row (end of data). A new method EntityProcessor#close is added which is called at the end
+of import.
+
 Detailed Change List
 ----------------------
 
@@ -252,6 +257,13 @@ Other
 8. SOLR-969:  Change the FULL_DUMP, DELTA_DUMP, FIND_DELTA constants in Context to String.
               Change Context.currentProcess() to return a string instead of an integer.
               (Kay Kay, Noble Paul, shalin)
+
+9. SOLR-1120: Simplified EntityProcessor API by moving logic for applying transformers and handling multi-row outputs
+              from Transformers into an EntityProcessorWrapper class. The behavior of the method
+              EntityProcessor#destroy has been modified to be called once per parent-row at the end of row. A new
+              method EntityProcessor#close is added which is called at the end of import. A new method
+              Context#getResolvedEntityAttribute is added which returns the resolved value of an entity's attribute.
+              (Noble Paul, shalin)
 
 ================== Release 1.3.0 20080915 ==================
 

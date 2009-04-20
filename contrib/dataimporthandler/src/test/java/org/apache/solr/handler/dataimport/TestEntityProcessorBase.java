@@ -48,7 +48,7 @@ public class TestEntityProcessorBase {
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("A", "NA");
     src.put("B", "NA");
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(context);
     Map<String, Object> res = sep.applyTransformer(src);
     Assert.assertNotNull(res.get("T1"));

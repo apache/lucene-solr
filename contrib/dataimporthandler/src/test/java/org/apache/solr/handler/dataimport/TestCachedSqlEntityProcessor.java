@@ -51,7 +51,7 @@ public class TestCachedSqlEntityProcessor {
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
             "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    CachedSqlEntityProcessor csep = new CachedSqlEntityProcessor();
+    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -93,7 +93,7 @@ public class TestCachedSqlEntityProcessor {
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
             "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    CachedSqlEntityProcessor csep = new CachedSqlEntityProcessor();
+    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -136,7 +136,7 @@ public class TestCachedSqlEntityProcessor {
     rows.add(AbstractDataImportHandlerTest.createMap("id", 1, "desc",
             "another one"));
     MockDataSource.setIterator(vr.replaceTokens(q), rows.iterator());
-    CachedSqlEntityProcessor csep = new CachedSqlEntityProcessor();
+    EntityProcessor csep = new EntityProcessorWrapper( new CachedSqlEntityProcessor(), null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {
@@ -226,7 +226,7 @@ public class TestCachedSqlEntityProcessor {
     rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc", "another three"));
     rows.add(AbstractDataImportHandlerTest.createMap("id", 3, "desc", "another another three"));
     MockDataSource.setIterator(q, rows.iterator());
-    CachedSqlEntityProcessor csep = new CachedSqlEntityProcessor();
+    EntityProcessor csep = new EntityProcessorWrapper(new CachedSqlEntityProcessor(), null);
     csep.init(context);
     rows = new ArrayList<Map<String, Object>>();
     while (true) {

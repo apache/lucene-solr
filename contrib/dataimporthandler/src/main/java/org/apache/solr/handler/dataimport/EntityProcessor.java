@@ -90,7 +90,16 @@ public abstract class EntityProcessor {
   public abstract Map<String, Object> nextModifiedParentRowKey();
 
   /**
-   * Invoked when the Entity processor is detroyed. towards the end of injestion. Called only once
+   * Invoked for each parent-row after the last row for this entity is processed. If this is the root-most
+   * entity, it will be called only once in the import, at the very end.
+   * 
    */
   public abstract void destroy();
+
+  /**
+   * Invoked when the Entity processor is detroyed. towards the end of import.
+   */
+  public void close() {
+    //no-op
+  }
 }

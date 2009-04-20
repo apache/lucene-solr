@@ -52,7 +52,7 @@ public class TestScriptTransformer {
     Context context = getContext("f1", script);
     Map<String, Object> map = new HashMap<String, Object>();
     map.put("name", "Scott");
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(context);
     sep.applyTransformer(map);
     Assert.assertEquals(map.get("name"), "Hello Scott");
@@ -82,7 +82,7 @@ public class TestScriptTransformer {
     Context context = getContext("f1", script);
     Map<String, Object> map = new HashMap<String, Object>();
     map.put("name", "Scott");
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(context);
     sep.applyTransformer(map);
     Assert.assertEquals(map.get("name"), "Hello Scott");
@@ -115,7 +115,7 @@ public class TestScriptTransformer {
 
     Map map = new HashMap();
     map.put("nextToken", "hello");
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(c);
     sep.applyTransformer(map);
     Assert.assertEquals("true", map.get("$hasMore"));

@@ -149,9 +149,8 @@ public class DataConfig {
         for (Entity entity : entities)
           entity.clearCache();
       }
-
       try {
-        processor.destroy();
+        processor.close();
       } catch (Exception e) {
         /*no op*/
       }

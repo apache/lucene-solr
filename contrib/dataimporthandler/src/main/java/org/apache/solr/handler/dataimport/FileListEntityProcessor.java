@@ -134,16 +134,10 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     return getAndApplyTrans();
   }
 
-  private Map<String, Object> getAndApplyTrans() {
-    if (rowcache != null)
-      return getFromRowCache();
+  private Map<String, Object> getAndApplyTrans() {    
     while (true) {
       Map<String, Object> r = getNext();
-      if (r == null)
-        return null;
-      r = applyTransformer(r);
-      if (r != null)
-        return r;
+      return r;
     }
   }
 

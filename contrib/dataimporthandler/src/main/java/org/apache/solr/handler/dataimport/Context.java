@@ -71,6 +71,13 @@ public abstract class Context {
   public abstract String getEntityAttribute(String name);
 
   /**
+   * Get the value of any attribute put into this entity after resolving all variables found in the attribute value
+   * @param name name of the attribute
+   * @return value of the named attribute after resolving all variables
+   */
+  public abstract String getResolvedEntityAttribute(String name);
+
+  /**
    * Returns all the fields put into an entity. each item (which is a map ) in
    * the list corresponds to one field. each if the map contains the attribute
    * names and values in a field

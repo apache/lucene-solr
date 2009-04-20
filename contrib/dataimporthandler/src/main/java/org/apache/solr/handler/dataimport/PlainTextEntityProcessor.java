@@ -77,7 +77,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
     Map<String, Object> row = new HashMap<String, Object>();
     row.put(PLAIN_TEXT, sw.toString());
     ended = true;
-    return super.applyTransformer(row);
+    return row;
   }
 
   public static final String PLAIN_TEXT = "plainText";

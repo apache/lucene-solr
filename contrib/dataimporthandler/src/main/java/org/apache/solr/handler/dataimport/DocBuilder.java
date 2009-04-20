@@ -100,16 +100,20 @@ public class DocBuilder {
   private void invokeEventListener(String className) {
     try {
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
-      String currentProcess;
-      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
-        currentProcess = Context.DELTA_DUMP;
-      } else {
-        currentProcess = Context.FULL_DUMP;
-      }
-      listener.onEvent(new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this));
+      notifyListener(listener);
     } catch (Exception e) {
       DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e, "Unable to load class : " + className);
     }
+  }
+
+  private void notifyListener(EventListener listener) {
+    String currentProcess;
+    if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
+      currentProcess = Context.DELTA_DUMP;
+    } else {
+      currentProcess = Context.FULL_DUMP;
+    }
+    listener.onEvent(new ContextImpl(null, getVariableResolver(), null, currentProcess, session, null, this));
   }
 
   @SuppressWarnings("unchecked")
@@ -333,8 +337,10 @@ public class DocBuilder {
           }
 
           Map<String, Object> arow = entityProcessor.nextRow();
-          if (arow == null)
-            break;
+          if (arow == null) {
+            entityProcessor.destroy();
+            break;            
+          }
 
           if (arow.containsKey(DOC_BOOST)) {
             setDocumentBoost(doc, arow);
@@ -539,7 +545,7 @@ public class DocBuilder {
                         + entity.name, e);
       }
     }
-    return entity.processor = entityProcessor;
+    return entity.processor = new EntityProcessorWrapper(entityProcessor, this);
   }
 
   /**

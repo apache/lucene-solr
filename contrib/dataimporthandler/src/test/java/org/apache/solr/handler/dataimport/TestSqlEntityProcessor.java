@@ -55,7 +55,7 @@ public class TestSqlEntityProcessor {
 
   @Test
   public void tranformer() {
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessor sep = new EntityProcessorWrapper( new SqlEntityProcessor(), null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
@@ -79,7 +79,7 @@ public class TestSqlEntityProcessor {
 
   @Test
   public void tranformerWithReflection() {
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
@@ -103,7 +103,7 @@ public class TestSqlEntityProcessor {
 
   @Test
   public void tranformerList() {
-    SqlEntityProcessor sep = new SqlEntityProcessor();
+    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(),null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
 

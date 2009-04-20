@@ -118,8 +118,12 @@ public abstract class AbstractDataImportHandlerTest extends
     }
 
     public String getEntityAttribute(String name) {
-      return entityAttrs == null ? delegate.getEntityAttribute(name)
-              : entityAttrs.get(name);
+      return entityAttrs == null ? delegate.getEntityAttribute(name) : entityAttrs.get(name);
+    }
+
+    public String getResolvedEntityAttribute(String name) {
+      return entityAttrs == null ? delegate.getResolvedEntityAttribute(name) :
+              delegate.getResolvedEntityAttribute(entityAttrs.get(name));
     }
 
     public List<Map<String, String>> getAllEntityFields() {
