@@ -123,7 +123,7 @@ public abstract class AbstractDataImportHandlerTest extends
 
     public String getResolvedEntityAttribute(String name) {
       return entityAttrs == null ? delegate.getResolvedEntityAttribute(name) :
-              delegate.getResolvedEntityAttribute(entityAttrs.get(name));
+              delegate.getVariableResolver().replaceTokens(entityAttrs.get(name));
     }
 
     public List<Map<String, String>> getAllEntityFields() {

@@ -132,6 +132,10 @@ New Features
 29.SOLR-934:  A MailEntityProcessor to enable indexing mails from POP/IMAP sources into a solr index.
               (Preetam Rao, shalin)
 
+30.SOLR-1060: A LineEntityProcessor which can stream lines of text from a given file to be indexed directly or
+              for processing with transformers and child entities.
+              (Fergus McMenemie, Noble Paul, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

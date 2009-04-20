@@ -18,6 +18,8 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.*;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -46,10 +48,12 @@ public class FileDataSource extends DataSource<Reader> {
 
   private String encoding = null;
 
+  private static final Logger LOG = LoggerFactory.getLogger(FileDataSource.class);
+
   public void init(Context context, Properties initProps) {
     basePath = initProps.getProperty(BASE_PATH);
-    if (initProps.get(HttpDataSource.ENCODING) != null)
-      encoding = initProps.getProperty(HttpDataSource.ENCODING);
+    if (initProps.get(URLDataSource.ENCODING) != null)
+      encoding = initProps.getProperty(URLDataSource.ENCODING);
   }
 
   /**
@@ -75,10 +79,13 @@ public class FileDataSource extends DataSource<Reader> {
         file = new File(basePath + query);
 
       if (file.isFile() && file.canRead()) {
+        LOG.debug("Accessing File: " + file.toString());
         return openStream(file);
       } else if (file != file0)
-        if (file0.isFile() && file0.canRead())
+        if (file0.isFile() && file0.canRead()) {
+          LOG.debug("Accessing File0: " + file0.toString());
           return openStream(file0);
+        }
 
       throw new FileNotFoundException("Could not find file: " + query);
     } catch (UnsupportedEncodingException e) {
