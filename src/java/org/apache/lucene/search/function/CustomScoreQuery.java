@@ -74,9 +74,9 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Create a CustomScoreQuery over input subQuery and a {@link ValueSourceQuery}.
-   * @param subQuery the sub query whose score is being customed. Must not be null.
+   * @param subQuery the sub query whose score is being customized. Must not be null.
    * @param valSrcQueries value source queries whose scores are used in the custom score
-   * computation. For most simple/convineient use case these would be 
+   * computation. For most simple/convenient use case these would be 
    * {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQueries}.
    * This parameter is optional - it can be null or even an empty array.
    */

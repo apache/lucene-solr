@@ -28,7 +28,9 @@ import java.util.Set;
 /**
  * Expert: A Query that sets the scores of document to the
  * values obtained from a {@link org.apache.lucene.search.function.ValueSource ValueSource}.
- * <p>   
+ * <p>
+ * This query provides a score for <em>each and every</em> undeleted document in the index.    
+ * <p>
  * The value source can be based on a (cached) value of an indexed field, but it
  * can also be based on an external source, e.g. values read from an external database. 
  * <p>
