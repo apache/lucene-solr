@@ -199,6 +199,12 @@ New Features
 
 36. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
 
+37. SOLR-1099:  A FieldAnalysisRequestHandler which provides the analysis functionality of the web admin page as
+    a service. The AnalysisRequestHandler is renamed to DocumentAnalysisRequestHandler which is enhanced with
+    query analysis and showMatch support. AnalysisRequestHandler is now deprecated. Support for both
+    FieldAnalysisRequestHandler and DocumentAnalysisRequestHandler is also provided in the Solrj client.
+    (Uri Boness, shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
