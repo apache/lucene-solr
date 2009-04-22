@@ -354,12 +354,14 @@ public final class SolrCore implements SolrInfoMBean {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
 
-  // currently only called with SolrCore.class lock held
   void initIndex() {
     try {
       File dirFile = new File(getNewIndexDir());
       boolean indexExists = dirFile.canRead();
-      boolean firstTime = dirs.add(dirFile.getCanonicalPath());
+      boolean firstTime;
+      synchronized (SolrCore.class) {
+        firstTime = dirs.add(dirFile.getCanonicalPath());
+      }
       boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
 
       initDirectoryFactory();
@@ -483,100 +485,95 @@ public final class SolrCore implements SolrInfoMBean {
    *@since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    synchronized (SolrCore.class) {
-      coreDescriptor = cd;
-      // this is for backward compatibility (and also the reason
-      // the sync block is needed)
-      instance = this;   // set singleton
-      this.setName( name );
-      SolrResourceLoader loader = config.getResourceLoader();
-      if (dataDir == null)
-        dataDir = config.get("dataDir",cd.getDataDir());
+    coreDescriptor = cd;
+    this.setName( name );
+    SolrResourceLoader loader = config.getResourceLoader();
+    if (dataDir == null)
+      dataDir = config.get("dataDir",cd.getDataDir());
 
-      dataDir = SolrResourceLoader.normalizeDir(dataDir);
+    dataDir = SolrResourceLoader.normalizeDir(dataDir);
 
-      log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
+    log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
 
-      if (schema==null) {
-        schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
-      }
-      
-      //Initialize JMX
-      if (config.jmxConfig.enabled) {
-        infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, config.jmxConfig);
-      } else  {
-        log.info("JMX monitoring not detected for core: " + name);
-        infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
-      }
+    if (schema==null) {
+      schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
+    }
 
-      this.schema = schema;
-      this.dataDir = dataDir;
-      this.solrConfig = config;
-      this.startTime = System.currentTimeMillis();
-      this.maxWarmingSearchers = config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+    //Initialize JMX
+    if (config.jmxConfig.enabled) {
+      infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, config.jmxConfig);
+    } else  {
+      log.info("JMX monitoring not detected for core: " + name);
+      infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
+    }
 
-      booleanQueryMaxClauseCount();
+    this.schema = schema;
+    this.dataDir = dataDir;
+    this.solrConfig = config;
+    this.startTime = System.currentTimeMillis();
+    this.maxWarmingSearchers = config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+
+    booleanQueryMaxClauseCount();
   
-      parseListeners();
+    parseListeners();
 
-      initDeletionPolicy();
+    initDeletionPolicy();
 
-      initIndex();
-      
-      initWriters();
-      initQParsers();
-      initValueSourceParsers();
-      
-      this.searchComponents = loadSearchComponents( config );
+    initIndex();
 
-      // Processors initialized before the handlers
-      updateProcessorChains = loadUpdateProcessorChains();
-      reqHandlers = new RequestHandlers(this);
-      reqHandlers.initHandlersFromConfig( solrConfig );
+    initWriters();
+    initQParsers();
+    initValueSourceParsers();
+
+    this.searchComponents = loadSearchComponents( config );
+
+    // Processors initialized before the handlers
+    updateProcessorChains = loadUpdateProcessorChains();
+    reqHandlers = new RequestHandlers(this);
+    reqHandlers.initHandlersFromConfig( solrConfig );
   
-      highlighter = createHighlighter(
-    		  solrConfig.get("highlighting/@class", DefaultSolrHighlighter.class.getName())
+    highlighter = createHighlighter(
+    	  solrConfig.get("highlighting/@class", DefaultSolrHighlighter.class.getName())
+    );
+    highlighter.initalize( solrConfig );
+
+    // Handle things that should eventually go away
+    initDeprecatedSupport();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    try {
+      // cause the executor to stall so firstSearcher events won't fire
+      // until after inform() has been called for all components.
+      // searchExecutor must be single-threaded for this to work
+      searcherExecutor.submit(new Callable() {
+        public Object call() throws Exception {
+          latch.await();
+          return null;
+        }
+      });
+
+      // Open the searcher *before* the update handler so we don't end up opening
+      // one in the middle.
+      // With lockless commits in Lucene now, this probably shouldn't be an issue anymore
+      getSearcher(false,false,null);
+  
+      updateHandler = createUpdateHandler(
+        solrConfig.get("updateHandler/@class", DirectUpdateHandler2.class.getName())
       );
-      highlighter.initalize( solrConfig );
-      
-      // Handle things that should eventually go away
-      initDeprecatedSupport();
 
-      final CountDownLatch latch = new CountDownLatch(1);
+      infoRegistry.put("updateHandler", updateHandler);
 
-      try {
-        // cause the executor to stall so firstSearcher events won't fire
-        // until after inform() has been called for all components.
-        // searchExecutor must be single-threaded for this to work
-        searcherExecutor.submit(new Callable() {
-          public Object call() throws Exception {
-            latch.await();
-            return null;
-          }
-        });
-
-        // Open the searcher *before* the update handler so we don't end up opening
-        // one in the middle.
-        // With lockless commits in Lucene now, this probably shouldn't be an issue anymore
-        getSearcher(false,false,null);
-  
-        updateHandler = createUpdateHandler(
-          solrConfig.get("updateHandler/@class", DirectUpdateHandler2.class.getName())
-        );
-
-        infoRegistry.put("updateHandler", updateHandler);
-
-        // Finally tell anyone who wants to know
-        loader.inform( loader );
-        loader.inform( this );
-
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        // allow firstSearcher events to fire
-        latch.countDown();
-      }
-    } // end synchronized
+      // Finally tell anyone who wants to know
+      loader.inform( loader );
+      loader.inform( this );
+      instance = this;   // set singleton for backwards compatibility
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      // allow firstSearcher events to fire
+      latch.countDown();
+    }
 
     infoRegistry.put("core", this);
   }

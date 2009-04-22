@@ -234,6 +234,9 @@ Optimizations
  8. SOLR-973: CommonsHttpSolrServer writes the xml directly to the server.
     (Noble Paul via shalin)
 
+ 9. SOLR-1108: Remove un-needed synchronization in SolrCore constructor.
+    (Noble Paul via shalin)
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
