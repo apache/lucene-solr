@@ -66,7 +66,9 @@ abstract class AbstractTrieRangeQuery extends MultiTermQuery {
       .append((min==null) ? "*" : min.toString())
       .append(" TO ")
       .append((max==null) ? "*" : max.toString())
-      .append(maxInclusive ? ']' : '}').toString();
+      .append(maxInclusive ? ']' : '}')
+      .append(ToStringUtils.boost(getBoost()))
+      .toString();
   }
 
   //@Override
@@ -81,7 +83,8 @@ abstract class AbstractTrieRangeQuery extends MultiTermQuery {
         (q.max == null ? max == null : q.max.equals(max)) &&
         minInclusive==q.minInclusive &&
         maxInclusive==q.maxInclusive &&
-        precisionStep==q.precisionStep
+        precisionStep==q.precisionStep &&
+        getBoost()==q.getBoost()
       );
     }
     return false;
@@ -89,7 +92,8 @@ abstract class AbstractTrieRangeQuery extends MultiTermQuery {
 
   //@Override
   public final int hashCode() {
-    int hash = field.hashCode() + (precisionStep^0x64365465);
+    int hash = Float.floatToIntBits(getBoost()) ^ field.hashCode();
+    hash += precisionStep^0x64365465;
     if (min!=null) hash += min.hashCode()^0x14fa55fb;
     if (max!=null) hash += max.hashCode()^0x733fa5fe;
     return hash+
