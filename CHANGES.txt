@@ -331,6 +331,9 @@ Bug Fixes
     incorrectly treated as relative paths. (hossman)
 
 36. SOLR-1104: Fix some rounding errors in LukeRequestHandler's histogram (hossman)
+
+37. SOLR-1125: Use query analyzer rather than index analyzer for queryFieldType in QueryElevationComponent
+    (koji)
     
 Other Changes
 ----------------------

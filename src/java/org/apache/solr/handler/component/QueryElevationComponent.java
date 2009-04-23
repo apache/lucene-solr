@@ -151,7 +151,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
             "Unknown FieldType: '"+a+"' used in QueryElevationComponent" );
       }
-      analyzer = ft.getAnalyzer();
+      analyzer = ft.getQueryAnalyzer();
     }
 
     SchemaField sf = core.getSchema().getUniqueKeyField();
