@@ -5391,6 +5391,12 @@ public class IndexWriter {
     mergedSegmentWarmer = warmer;
   }
 
+  /** Returns the current merged segment warmer.  See {@link
+   *  IndexReaderWarmer}. */
+  public IndexReaderWarmer getMergedSegmentWarmer() {
+    return mergedSegmentWarmer;
+  }
+
   // Used only by assert for testing.  Current points:
   //   startDoFlush
   //   startCommitMerge
