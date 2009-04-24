@@ -27,3 +27,5 @@ $Id:$
 2. SOLR-284: Removed "silent success" key generation (gsingers)
 
 3. SOLR-1075: Upgrade to Tika 0.3.  See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt (gsingers)
+
+4. SOLR-1128: Added metadata output to "extract only" option.  (gsingers)

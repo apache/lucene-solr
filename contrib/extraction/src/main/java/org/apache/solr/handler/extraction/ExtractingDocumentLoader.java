@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -178,7 +179,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           }
           rsp.add(stream.getName(), writer.toString());
           writer.close();
-
+          String[] names = metadata.names();
+          NamedList metadataNL = new NamedList();
+          for (int i = 0; i < names.length; i++) {
+            String[] vals = metadata.getValues(names[i]);
+            metadataNL.add(names[i], vals);
+          }
+          rsp.add(stream.getName() + "_metadata", metadataNL);
         }
       } catch (Exception e) {
         //TODO: handle here with an option to not fail and just log the exception

@@ -177,6 +177,11 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertTrue("extraction is null and it shouldn't be", extraction != null);
     assertTrue(extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
 
+    NamedList nl = (NamedList) list.get("solr-word.pdf_metadata");
+    assertTrue("nl is null and it shouldn't be", nl != null);
+    Object title = nl.get("title");
+    assertTrue("title is null and it shouldn't be", title != null);
+
   }
 
   public void testXPath() throws Exception {
