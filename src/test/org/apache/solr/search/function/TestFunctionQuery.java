@@ -273,6 +273,24 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       singleTest(field, "\0", answers);
       System.out.println("Done test "+i);
     }
+  }
 
+  public void testGeneral() {
+    assertU(adoc("id","1"));
+    assertU(adoc("id","2"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","3"));
+    assertU(adoc("id","4"));
+    assertU(commit()); // create more than one segment
+    assertU(adoc("id","5"));
+    assertU(adoc("id","6"));
+    assertU(commit());
+
+    // test that ord and rord are working on a global index basis, not just
+    // at the segment level (since Lucene 2.9 has switched to per-segment searching)
+    assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}top(ord(id))", "fq","id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}rord(id)", "fq","id:1"),"//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}top(rord(id))", "fq","id:1"),"//float[@name='score']='6.0'");
   }
 }

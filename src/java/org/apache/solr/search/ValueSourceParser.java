@@ -23,22 +23,7 @@ import java.util.Map;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.function.BoostedQuery;
-import org.apache.solr.search.function.DivFloatFunction;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.LinearFloatFunction;
-import org.apache.solr.search.function.MaxFloatFunction;
-import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.solr.search.function.PowFloatFunction;
-import org.apache.solr.search.function.ProductFloatFunction;
-import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.RangeMapFloatFunction;
-import org.apache.solr.search.function.ReciprocalFloatFunction;
-import org.apache.solr.search.function.ReverseOrdFieldSource;
-import org.apache.solr.search.function.ScaleFloatFunction;
-import org.apache.solr.search.function.SimpleFloatFunction;
-import org.apache.solr.search.function.SumFloatFunction;
-import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -67,7 +52,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin
     standardValueSourceParsers.put("ord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
-        return new OrdFieldSource(field);
+        return new TopValueSource(new OrdFieldSource(field));
       }
 
       public void init(NamedList args) {
@@ -77,12 +62,22 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin
     standardValueSourceParsers.put("rord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
-        return new ReverseOrdFieldSource(field);
+        return new TopValueSource(new ReverseOrdFieldSource(field));
       }
 
       public void init(NamedList args) {
       }
       
+    });
+    standardValueSourceParsers.put("top", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        ValueSource source = fp.parseValueSource();
+        // nested top is redundant, and ord and rord get automatically wrapped
+        if (source instanceof TopValueSource) return source;
+        return new TopValueSource(source);
+      }
+      public void init(NamedList args) {
+      }
     });
     standardValueSourceParsers.put("linear", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {

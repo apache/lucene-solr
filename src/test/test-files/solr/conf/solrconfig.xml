@@ -89,9 +89,13 @@
     <!-- lucene options specific to the main on-disk lucene index -->
     <useCompoundFile>false</useCompoundFile>
     <mergeFactor>10</mergeFactor>
-    <ramBufferSizeMB>32</ramBufferSizeMB>
+    <!-- for better multi-segment testing, we are using slower
+    indexing properties of maxBufferedDocs=10 and LogDocMergePolicy.
+    -->
+    <maxBufferedDocs>10</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
+    <mergePolicy>org.apache.lucene.index.LogDocMergePolicy</mergePolicy>
 
     <unlockOnStartup>true</unlockOnStartup>
   </mainIndex>
