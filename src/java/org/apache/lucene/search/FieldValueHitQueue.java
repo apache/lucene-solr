@@ -28,6 +28,11 @@ import org.apache.lucene.util.PriorityQueue;
  * Expert: A hit queue for sorting by hits by terms in more than one field.
  * Uses <code>FieldCache.DEFAULT</code> for maintaining
  * internal term lookup tables.
+ * 
+ * This class will not resolve SortField.AUTO types, and expects the type
+ * of all SortFields used for construction to already have been resolved. 
+ * {@link #detectFieldType(IndexReader, String)} is a utility method which
+ * may be used for field type detection.
  *
  * <b>NOTE:</b> This API is experimental and might change in
  * incompatible ways in the next release.
