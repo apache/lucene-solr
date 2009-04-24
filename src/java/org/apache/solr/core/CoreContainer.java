@@ -174,6 +174,7 @@ public class CoreContainer
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
+      String adminHandler  = cfg.get(     "solr/cores/@adminHandler", null );      
       managementPath  = cfg.get("solr/cores/@managementPath", null );
 
       if (libDir != null) {
@@ -182,8 +183,12 @@ public class CoreContainer
         libLoader = SolrResourceLoader.createClassLoader(f, null);
       }
 
-      if( adminPath != null ) {
-        coreAdminHandler = this.createMultiCoreHandler();
+      if (adminPath != null) {
+        if (adminHandler == null) {
+          coreAdminHandler = new CoreAdminHandler(this);
+        } else {
+          coreAdminHandler = this.createMultiCoreHandler(adminHandler);
+        }
       }
 
       try {
@@ -506,15 +511,18 @@ public class CoreContainer
    * Creates a CoreAdminHandler for this MultiCore.
    * @return a CoreAdminHandler
    */
-  protected CoreAdminHandler createMultiCoreHandler() {
-    return new CoreAdminHandler() {
-      @Override
-      public CoreContainer getCoreContainer() {
-        return CoreContainer.this;
-      }
-    };
+  protected CoreAdminHandler createMultiCoreHandler(final String adminHandlerClass) {
+    SolrResourceLoader loader = new SolrResourceLoader(null, libLoader, null);
+    Object obj = loader.newAdminHandlerInstance(CoreContainer.this, adminHandlerClass);
+    if ( !(obj instanceof CoreAdminHandler))
+    {
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+          "adminHandlerClass is not of type "+ CoreAdminHandler.class );
+      
+    }
+    return (CoreAdminHandler) obj;
   }
- 
+
   public CoreAdminHandler getMultiCoreHandler() {
     return coreAdminHandler;
   }

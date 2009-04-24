@@ -205,6 +205,9 @@ New Features
     FieldAnalysisRequestHandler and DocumentAnalysisRequestHandler is also provided in the Solrj client.
     (Uri Boness, shalin)
 
+38. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
+    ones can be overridden if needed. (Kay Kay, Noble Paul, shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
