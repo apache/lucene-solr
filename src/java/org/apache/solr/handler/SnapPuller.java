@@ -787,6 +787,9 @@ public class SnapPuller {
       this.size = (Long) fileDetails.get(SIZE);
       this.isConf = isConf;
       this.saveAs = saveAs;
+      if(fileDetails.get(LAST_MODIFIED) != null){
+        lastmodified = (Long)fileDetails.get(LAST_MODIFIED);
+      }
       indexVersion = latestVersion;
 
       this.file = new File(snapDir, saveAs);
@@ -809,7 +812,7 @@ public class SnapPuller {
             if (result == 0 || result == NO_CONTENT) {
               // if the file is downloaded properly set the
               //  timestamp same as that in the server
-              if (file.exists())
+              if (file.exists() && lastmodified > 0)
                 file.setLastModified(lastmodified);
               return;
             }
