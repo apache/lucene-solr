@@ -31,7 +31,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
- * Query that sets document score as a programmatic function of several (sub) scores.
+ * Query that sets document score as a programmatic function of several (sub) scores:
  * <ol>
  *    <li>the score of its subQuery (any query)</li>
  *    <li>(optional) the score of its ValueSourceQuery (or queries).
@@ -166,26 +166,26 @@ public class CustomScoreQuery extends Query {
    * should override at least one of the two customScore() methods.
    * If the number of ValueSourceQueries is always &lt; 2 it is 
    * sufficient to override the other 
-   * {@link #customScore(int, float, float) costomScore()} 
+   * {@link #customScore(int, float, float) customScore()} 
    * method, which is simpler. 
    * <p>
-   * The default computation herein is:
+   * The default computation herein is a multiplication of given scores:
    * <pre>
-   *     ModifiedScore = valSrcScore * subQueryScore[0] * subQueryScore[1] * ...
+   *     ModifiedScore = valSrcScore * valSrcScores[0] * valSrcScores[1] * ...
    * </pre>
    * 
    * @param doc id of scored doc. 
    * @param subQueryScore score of that doc by the subQuery.
-   * @param valSrcScores score of that doc by the ValueSourceQuery.
+   * @param valSrcScores scores of that doc by the ValueSourceQuery.
    * @return custom score.
    */
   public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
-	  if(valSrcScores.length == 1) {
-	    return customScore(doc, subQueryScore, valSrcScores[0]);
-	  }
+    if (valSrcScores.length == 1) {
+      return customScore(doc, subQueryScore, valSrcScores[0]);
+    }
     if (valSrcScores.length == 0) {
-	    return customScore(doc, subQueryScore, 1);
-	  }
+      return customScore(doc, subQueryScore, 1);
+    }
     float score = subQueryScore;
     for(int i = 0; i < valSrcScores.length; i++) {
       score *= valSrcScores[i];
@@ -201,11 +201,11 @@ public class CustomScoreQuery extends Query {
    * If your custom scoring is different than the default herein you 
    * should override at least one of the two customScore() methods.
    * If the number of ValueSourceQueries is always &lt; 2 it is 
-   * sufficient to override this costomScore() method, which is simpler. 
+   * sufficient to override this customScore() method, which is simpler. 
    * <p>
-   * The default computation herein is:
+   * The default computation herein is a multiplication of the two scores:
    * <pre>
-   *     ModifiedScore = valSrcScore * subQueryScore
+   *     ModifiedScore = subQueryScore * valSrcScore
    * </pre>
    * 
    * @param doc id of scored doc. 
@@ -214,8 +214,8 @@ public class CustomScoreQuery extends Query {
    * @return custom score.
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) {
-		return subQueryScore * valSrcScore;
-	}
+    return subQueryScore * valSrcScore;
+  }
 
   /**
    * Explain the custom score.
@@ -229,19 +229,19 @@ public class CustomScoreQuery extends Query {
    * @return an explanation for the custom score
    */
   public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
-    if(valSrcExpls.length == 1) {
+    if (valSrcExpls.length == 1) {
       return customExplain(doc, subQueryExpl, valSrcExpls[0]);
     }
     if (valSrcExpls.length == 0) {
       return subQueryExpl;
     }
     float valSrcScore = 1;
-    for(int i = 0; i < valSrcExpls.length; i++) {
+    for (int i = 0; i < valSrcExpls.length; i++) {
       valSrcScore *= valSrcExpls[i].getValue();
     }
     Explanation exp = new Explanation( valSrcScore * subQueryExpl.getValue(), "custom score: product of:");
     exp.addDetail(subQueryExpl);
-    for(int i = 0; i < valSrcExpls.length; i++) {
+    for (int i = 0; i < valSrcExpls.length; i++) {
       exp.addDetail(valSrcExpls[i]);
     }
     return exp;
@@ -370,10 +370,10 @@ public class CustomScoreQuery extends Query {
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#next() */
     public boolean next() throws IOException {
       boolean hasNext = subQueryScorer.next();
-      if(hasNext) {
-    	  for(int i = 0; i < valSrcScorers.length; i++) {
-    	    valSrcScorers[i].skipTo(subQueryScorer.doc());  
-    	  }
+      if (hasNext) {
+        for(int i = 0; i < valSrcScorers.length; i++) {
+          valSrcScorers[i].skipTo(subQueryScorer.doc());  
+        }
       }
       return hasNext;
     }
@@ -386,7 +386,7 @@ public class CustomScoreQuery extends Query {
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     public float score() throws IOException {
       for(int i = 0; i < valSrcScorers.length; i++) {
-    	  vScores[i] = valSrcScorers[i].score();
+        vScores[i] = valSrcScorers[i].score();
       }
       return qWeight * customScore(subQueryScorer.doc(), subQueryScorer.score(), vScores);
     }
@@ -394,10 +394,10 @@ public class CustomScoreQuery extends Query {
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#skipTo(int) */
     public boolean skipTo(int target) throws IOException {
       boolean hasNext = subQueryScorer.skipTo(target);
-      if(hasNext) {
-      	for(int i = 0; i < valSrcScorers.length; i++) {
-      	  valSrcScorers[i].skipTo(subQueryScorer.doc());
-      	}
+      if (hasNext) {
+      	for (int i = 0; i < valSrcScorers.length; i++) {
+          valSrcScorers[i].skipTo(subQueryScorer.doc());
+        }
       }
       return hasNext;
     }
