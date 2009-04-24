@@ -96,7 +96,7 @@ API Changes
    Rutherglen via Mike McCandless)
 
 9. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
-   resources.  (Christian Kohlsch�tter via Mike McCandless)
+   resources.  (Christian Kohlschütter via Mike McCandless)
 
 10. LUCENE-652: Added org.apache.lucene.document.CompressionTools, to
     enable compressing & decompressing binary content, external to
@@ -134,7 +134,7 @@ Bug fixes
    if the max slop was exceeded; The wrong payload could be returned in 
    certain situations. (Jonathan Mamou, Greg Shackles, Mark Miller)
 
- 4 LUCENE-1453: Ensure IndexReader.reopen() does not result in
+4. LUCENE-1453: Ensure IndexReader.reopen() does not result in
    incorrectly closing the shared FSDirectory.  This bug would only
    happen if you use IndexReader.open with a File or String argument.
    (Mark Miller via Mike McCandless)
@@ -143,7 +143,7 @@ Bug fixes
    (Mike McCandless via Doug Sale)
 
 6. LUCENE-1186: Add Analyzer.close() to free internal ThreadLocal
-   resources.  (Christian Kohlsch�tter via Mike McCandless)
+   resources.  (Christian Kohlschütter via Mike McCandless)
 
 7. LUCENE-1327: Fix TermSpans#skipTo() to behave as specified in javadocs
    of Terms#skipTo(). (Michael Busch)
