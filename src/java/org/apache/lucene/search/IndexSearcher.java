@@ -211,7 +211,7 @@ public class IndexSearcher extends Searcher {
       int type = field.getType();
       // Resolve AUTO into its true type
       if (type == SortField.AUTO) {
-        int autotype = FieldValueHitQueue.detectFieldType(reader, fieldname);
+        int autotype = SortField.detectFieldType(reader, fieldname);
         if (autotype == SortField.STRING) {
           fields[i] = new SortField (fieldname, field.getLocale(), field.getReverse());
         } else {

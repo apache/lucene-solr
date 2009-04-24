@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -31,7 +29,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * This class will not resolve SortField.AUTO types, and expects the type
  * of all SortFields used for construction to already have been resolved. 
- * {@link #detectFieldType(IndexReader, String)} is a utility method which
+ * {@link SortField#detectFieldType(IndexReader, String)} is a utility method which
  * may be used for field type detection.
  *
  * <b>NOTE:</b> This API is experimental and might change in
@@ -230,54 +228,5 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
   /** Returns the SortFields being used by this hit queue. */
   SortField[] getFields() {
     return fields;
-  }
-  
-  /** Attempts to detect the given field type for an IndexReader. */
-  static int detectFieldType(IndexReader reader, String fieldKey) throws IOException {
-    String field = fieldKey.intern();
-    TermEnum enumerator = reader.terms(new Term(field));
-    try {
-      Term term = enumerator.term();
-      if (term == null) {
-        throw new RuntimeException("no terms in field " + field + " - cannot determine sort type");
-      }
-      int ret = 0;
-      if (term.field() == field) {
-        String termtext = term.text().trim();
-
-        /**
-         * Java 1.4 level code:
-
-         if (pIntegers.matcher(termtext).matches())
-         return IntegerSortedHitQueue.comparator (reader, enumerator, field);
-
-         else if (pFloats.matcher(termtext).matches())
-         return FloatSortedHitQueue.comparator (reader, enumerator, field);
-         */
-
-        // Java 1.3 level code:
-        try {
-          Integer.parseInt (termtext);
-          ret = SortField.INT;
-        } catch (NumberFormatException nfe1) {
-          try {
-            Long.parseLong(termtext);
-            ret = SortField.LONG;
-          } catch (NumberFormatException nfe2) {
-            try {
-              Float.parseFloat (termtext);
-              ret = SortField.FLOAT;
-            } catch (NumberFormatException nfe3) {
-              ret = SortField.STRING;
-            }
-          }
-        }         
-      } else {
-        throw new RuntimeException("field \"" + field + "\" does not appear to be indexed");
-      }
-      return ret;
-    } finally {
-      enumerator.close();
-    }
   }
 }
