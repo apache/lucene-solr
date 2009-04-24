@@ -208,6 +208,11 @@ New Features
 48. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
     ones can be overridden if needed. (Kay Kay, Noble Paul, shalin)
 
+49. SOLR-1124: Add a top() function query that causes it's argument to
+    have it's values derived from the top level IndexReader, even when
+    invoked from a sub-reader.  top() is implicitly used for the
+    ord() and rord() functions.  (yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
