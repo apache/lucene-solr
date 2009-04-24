@@ -497,6 +497,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     searcher.search(weight, filter, hitCollector);
   }
 
+  public void search(Weight weight, Filter filter, Collector collector) throws IOException {
+    searcher.search(weight, filter, collector);
+  }
+
   public Query rewrite(Query original) throws IOException {
     return searcher.rewrite(original);
   }

@@ -17,12 +17,10 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.trie.IntTrieRangeFilter;
-import org.apache.lucene.search.trie.LongTrieRangeFilter;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.trie.IntTrieRangeQuery;
+import org.apache.lucene.search.trie.LongTrieRangeQuery;
 import org.apache.lucene.search.trie.TrieUtils;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
@@ -42,9 +40,7 @@ import java.util.Map;
  * link. The possible number of terms increases dramatically with higher precision steps (factor 2^precisionStep). For
  * the fast range search to work, trie fields must be indexed.
  * <p/>
- * Trie fields are <b>not</b> sortable in numerical order. Also, they cannot be used in function queries. If one needs
- * sorting as well as fast range search, one should create a copy field specifically for sorting. Same workaround is
- * suggested for using trie fields in function queries as well.
+ * Trie fields are sortable in numerical order and can be used in function queries.
  * <p/>
  * Note that if you use a precisionStep of 32 for int/float and 64 for long/double, then multiple terms will not be
  * generated, range search will be no faster than any other number field, but sorting will be possible.
@@ -171,39 +167,39 @@ public class TrieField extends FieldType {
     Query query = null;
     switch (type) {
       case INTEGER:
-        query = new IntTrieRangeFilter(field, precisionStep,
+        query = new IntTrieRangeQuery(field, precisionStep,
                 min == null ? null : Integer.parseInt(min),
                 max == null ? null : Integer.parseInt(max),
-                minInclusive, maxInclusive).asQuery();
+                minInclusive, maxInclusive);
         break;
       case FLOAT:
-        query = new IntTrieRangeFilter(field, precisionStep,
+        query = new IntTrieRangeQuery(field, precisionStep,
                 min == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
                 max == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
-                minInclusive, maxInclusive).asQuery();
+                minInclusive, maxInclusive);
         break;
       case LONG:
-        query = new LongTrieRangeFilter(field, precisionStep,
+        query = new LongTrieRangeQuery(field, precisionStep,
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
-                minInclusive, maxInclusive).asQuery();
+                minInclusive, maxInclusive);
         break;
       case DOUBLE:
-        query = new LongTrieRangeFilter(field, precisionStep,
+        query = new LongTrieRangeQuery(field, precisionStep,
                 min == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
                 max == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
-                minInclusive, maxInclusive).asQuery();
+                minInclusive, maxInclusive);
         break;
       case DATE:
-        query = new LongTrieRangeFilter(field, precisionStep,
+        query = new LongTrieRangeQuery(field, precisionStep,
                 min == null ? null : dateField.parseMath(null, min).getTime(),
                 max == null ? null : dateField.parseMath(null, max).getTime(),
-                minInclusive, maxInclusive).asQuery();
+                minInclusive, maxInclusive);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
-    
+
     return query;
   }
 
