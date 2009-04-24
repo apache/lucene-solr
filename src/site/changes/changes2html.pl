@@ -383,9 +383,11 @@ for my $rel (@releases) {
 
     for my $itemnum (1..$#{$items}) {
       my $item = $items->[$itemnum];
-      $item =~ s:&:&amp;:g;                            # Escape HTML metachars
-      $item =~ s:<:&lt;:g; 
-      $item =~ s:>:&gt;:g;
+      $item =~ s:&:&amp;:g;                   # Escape HTML metachars,
+      $item =~ s:<(?!/?code>):&lt;:gi;        #   but leave <code> tags intact
+      $item =~ s:(?<!code)>:&gt;:gi;          #   and add <pre> tags so that
+      $item =~ s:<code>:<code><pre>:gi;       #   whitespace is preserved in the
+      $item =~ s:</code>:</pre></code>:gi;    #   output.
 
       # Put attributions on their own lines.
       # Check for trailing parenthesized attribution with no following period.
