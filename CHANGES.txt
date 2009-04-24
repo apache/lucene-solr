@@ -166,46 +166,46 @@ New Features
 34. SOLR-943: Make it possible to specify dataDir in solr.xml and accept the dataDir as a request parameter for
     the CoreAdmin create command. (Noble Paul via shalin)
 
-25. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
+35. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
     'shard-connection-timeout' parameters in SearchHandler. (Patrick O'Leary via shalin)
 
-26. SOLR-799: Add support for hash based exact/near duplicate document
+36. SOLR-799: Add support for hash based exact/near duplicate document
     handling. (Mark Miller, yonik)
 
-27. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
+37. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
 
-28. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
+38. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
 
-29. SOLR-1046: Nested query support for the function query parser
+39. SOLR-1046: Nested query support for the function query parser
     and lucene query parser (the latter existed as an undocumented 
     feature in 1.3) (yonik)
 
-30. SOLR-940: Add support for Lucene's Trie Range Queries by providing new FieldTypes in schema for int, float, long,
+40. SOLR-940: Add support for Lucene's Trie Range Queries by providing new FieldTypes in schema for int, float, long,
     double and date. Range searches and term queries on such fields will automatically use the corresponding trie
     range filter in Lucene contrib-queries and can be dramatically faster than normal range queries.
     (Uwe Schindler, shalin)
 
-31. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
+41. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
 
-32. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
+42. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
     support (Noble Paul, Mark Miller, hossman via shalin)
 
-33. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
+43. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
 
-34. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
+44. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
 
-35. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
+45. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
     replication. (Jeff Newburn, Noble Paul, shalin)
 
-36. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
+46. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
 
-37. SOLR-1099:  A FieldAnalysisRequestHandler which provides the analysis functionality of the web admin page as
+47. SOLR-1099:  A FieldAnalysisRequestHandler which provides the analysis functionality of the web admin page as
     a service. The AnalysisRequestHandler is renamed to DocumentAnalysisRequestHandler which is enhanced with
     query analysis and showMatch support. AnalysisRequestHandler is now deprecated. Support for both
     FieldAnalysisRequestHandler and DocumentAnalysisRequestHandler is also provided in the Solrj client.
     (Uri Boness, shalin)
 
-38. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
+48. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
     ones can be overridden if needed. (Kay Kay, Noble Paul, shalin)
 
 Optimizations
@@ -340,7 +340,6 @@ Bug Fixes
 
 38. SOLR-1126: Replicated files have incorrect timestamp (Jian Han Guo, Jeff Newburn, Noble Paul via shalin)
     
-Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
 
