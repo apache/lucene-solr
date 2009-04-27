@@ -213,6 +213,8 @@ New Features
     invoked from a sub-reader.  top() is implicitly used for the
     ord() and rord() functions.  (yonik)
 
+50. SOLR-1110: Support sorting on trie fields with Distributed Search. (Mark Miller, Uwe Schindler via shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

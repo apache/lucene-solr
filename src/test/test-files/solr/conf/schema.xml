@@ -342,7 +342,8 @@
   </fieldtype>
 
   <fieldType name="uuid" class="solr.UUIDField" />
-
+  
+  <fieldType name="tlong" class="solr.TrieField" type="long" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
  </types>
 
 
@@ -431,6 +432,7 @@
    <field name="intDefault" type="sint" indexed="true" stored="true" default="42" multiValued="false"/>
    
 
+   <field name="tlong" type="tlong" indexed="true" stored="true" />
    
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

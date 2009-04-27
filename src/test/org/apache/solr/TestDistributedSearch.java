@@ -58,6 +58,7 @@ public class TestDistributedSearch extends TestCase {
   String id="id";
   String t1="a_t";
   String i1="a_i";
+  String tlong = "tlong";
   String oddField="oddField_s";
   String missingField="missing_but_valid_field_t";
   String invalidField="invalid_field_not_in_schema";
@@ -465,20 +466,20 @@ public class TestDistributedSearch extends TestCase {
 
   public void doTest() throws Exception {
     del("*:*");
-    index(id,1, i1, 100,t1,"now is the time for all good men"
+    index(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
             ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    index(id,2, i1, 50 ,t1,"to come to the aid of their country.");
-    index(id,3, i1, 2 ,t1,"how now brown cow");
-    index(id,4, i1, -100 ,t1,"the quick fox jumped over the lazy dog");
-    index(id,5, i1, 500 ,t1,"the quick fox jumped way over the lazy dog");
-    index(id,6, i1, -600 ,t1,"humpty dumpy sat on a wall");
-    index(id,7, i1, 123 ,t1,"humpty dumpy had a great fall");
-    index(id,8, i1, 876 ,t1,"all the kings horses and all the kings men");
-    index(id,9, i1, 7 ,t1,"couldn't put humpty together again");
-    index(id,10, i1, 4321 ,t1,"this too shall pass");
-    index(id,11, i1, -987 ,t1,"An eye for eye only ends up making the whole world blind.");
-    index(id,12, i1, 379 ,t1,"Great works are performed, not by strength, but by perseverance.");
-    index(id,13, i1, 232 ,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
+    index(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.");
+    index(id,3, i1, 2, tlong, 2,t1,"how now brown cow");
+    index(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog");
+    index(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog");
+    index(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
+    index(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
+    index(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
+    index(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
+    index(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
+    index(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
+    index(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
+    index(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
 
     index(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
     index(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
@@ -497,6 +498,7 @@ public class TestDistributedSearch extends TestCase {
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
+    query("q","*:*", "sort",tlong+" desc");
     handle.put("maxScore", SKIPVAL);
     query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
@@ -592,8 +594,4 @@ public class TestDistributedSearch extends TestCase {
     destroyServers();
   }
 
-
 }
-
-
-

@@ -21,6 +21,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.ExtendedFieldCache.DoubleParser;
+import org.apache.lucene.search.ExtendedFieldCache.LongParser;
+import org.apache.lucene.search.FieldCache.FloatParser;
+import org.apache.lucene.search.FieldCache.IntParser;
+import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.SolrDocument;
@@ -194,16 +199,16 @@ public class QueryComponent extends SearchComponent
 
         switch (type) {
           case SortField.INT:
-            comparator = comparatorInt (reader, fieldname);
+            comparator = comparatorInt (reader, fieldname, sortField.getParser());
             break;
           case SortField.FLOAT:
-            comparator = comparatorFloat (reader, fieldname);
+            comparator = comparatorFloat (reader, fieldname, sortField.getParser());
             break;
           case SortField.LONG:
-            comparator = comparatorLong(reader, fieldname);
+            comparator = comparatorLong(reader, fieldname, sortField.getParser());
             break;
           case SortField.DOUBLE:
-            comparator = comparatorDouble(reader, fieldname);
+            comparator = comparatorDouble(reader, fieldname, sortField.getParser());
             break;
           case SortField.STRING:
             if (sortField.getLocale() != null) comparator = comparatorStringLocale (reader, fieldname, sortField.getLocale());
@@ -538,13 +543,14 @@ public class QueryComponent extends SearchComponent
    * Returns a comparator for sorting hits according to a field containing integers.
    * @param reader  Index to use.
    * @param fieldname  Fieldable containg integer values.
+   * @param parser used to parse term values, null for default.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorInt (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorInt (final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final int[] fieldOrder = FieldCache.DEFAULT.getInts (reader, field);
+    final int[] fieldOrder = parser == null ? FieldCache.DEFAULT.getInts (reader, field) : FieldCache.DEFAULT.getInts (reader, field, (IntParser) parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -569,13 +575,14 @@ public class QueryComponent extends SearchComponent
    * Returns a comparator for sorting hits according to a field containing integers.
    * @param reader  Index to use.
    * @param fieldname  Fieldable containg integer values.
+   * @param parser used to parse term values, null for default.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final long[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getLongs (reader, field);
+    final long[] fieldOrder = parser == null ? ExtendedFieldCache.EXT_DEFAULT.getLongs(reader, field) :  ExtendedFieldCache.EXT_DEFAULT.getLongs(reader, field, (LongParser) parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -600,13 +607,14 @@ public class QueryComponent extends SearchComponent
    * Returns a comparator for sorting hits according to a field containing floats.
    * @param reader  Index to use.
    * @param fieldname  Fieldable containg float values.
+   * @param parser used to parse term values, null for default.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorFloat (final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorFloat (final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final float[] fieldOrder = FieldCache.DEFAULT.getFloats (reader, field);
+    final float[] fieldOrder = parser == null ? FieldCache.DEFAULT.getFloats(reader, field) : FieldCache.DEFAULT.getFloats(reader, field, (FloatParser) parser);
     return new ScoreDocComparator () {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -632,13 +640,14 @@ public class QueryComponent extends SearchComponent
    * Returns a comparator for sorting hits according to a field containing doubles.
    * @param reader  Index to use.
    * @param fieldname  Fieldable containg float values.
+   * @param parser used to parse term values, null for default. 
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
-  static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname)
+  static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final double[] fieldOrder = ExtendedFieldCache.EXT_DEFAULT.getDoubles (reader, field);
+    final double[] fieldOrder = parser == null ? ExtendedFieldCache.EXT_DEFAULT.getDoubles(reader, field) :  ExtendedFieldCache.EXT_DEFAULT.getDoubles(reader, field, (DoubleParser) parser);
     return new ScoreDocComparator () {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
