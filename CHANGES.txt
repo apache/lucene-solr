@@ -413,6 +413,9 @@ Other Changes
 
 28. Upgraded to Lucene 2.9-dev r768336 (shalin)
 
+29. SOLR-997: Wait for a longer time for slave to complete replication in TestReplicationHandler
+    (Mark Miller via shalin)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

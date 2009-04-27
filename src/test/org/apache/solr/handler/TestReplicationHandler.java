@@ -133,6 +133,15 @@ public class TestReplicationHandler extends TestCase {
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    
+    if(slaveQueryResult.getNumFound() == 0) {
+      //try sleeping again in case of slower comp
+      Thread.sleep(5000);
+      
+       slaveQueryRsp = query("*:*", slaveClient);
+       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    }
+    
     assertEquals(500, slaveQueryResult.getNumFound());
 
     //compare results
@@ -187,6 +196,15 @@ public class TestReplicationHandler extends TestCase {
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    
+    if(slaveQueryResult.getNumFound() == 0) {
+      //try sleeping again in case of slower comp
+      Thread.sleep(5000);
+      
+       slaveQueryRsp = query("*:*", slaveClient);
+       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    }
+    
     assertEquals(500, slaveQueryResult.getNumFound());
 
     //compare results
