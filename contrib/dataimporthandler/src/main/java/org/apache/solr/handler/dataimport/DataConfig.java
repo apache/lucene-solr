@@ -97,7 +97,7 @@ public class DataConfig {
 
     public Entity parentEntity;
 
-    public EntityProcessor processor;
+    public EntityProcessorWrapper processor;
 
     @SuppressWarnings("unchecked")
     public DataSource dataSrc;

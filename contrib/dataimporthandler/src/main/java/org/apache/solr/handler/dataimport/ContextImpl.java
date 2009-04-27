@@ -48,18 +48,21 @@ public class ContextImpl extends Context {
 
   private DataImporter dataImporter;
 
-  private Map<String, Object> entitySession, globalSession, docSession;
+  private Map<String, Object> entitySession, globalSession;
+
+  DocBuilder.DocWrapper doc;
 
   DocBuilder docBuilder;
+
 
   public ContextImpl(DataConfig.Entity entity, VariableResolverImpl resolver,
                      DataSource ds, String currProcess,
                      Map<String, Object> global, ContextImpl parentContext, DocBuilder docBuilder) {
     this.entity = entity;
+    this.docBuilder = docBuilder;
     this.resolver = resolver;
     this.ds = ds;
     this.currProcess = currProcess;
-    this.docBuilder = docBuilder;
     if (docBuilder != null) {
       this.requestParams = docBuilder.requestParameters.requestParams;
       dataImporter = docBuilder.dataImporter;
@@ -90,9 +93,8 @@ public class ContextImpl extends Context {
       entity.dataSrc = dataImporter.getDataSourceInstance(entity, entity.dataSource, this);
     }
     if (entity.dataSrc != null && docBuilder != null && docBuilder.verboseDebug &&
-            currProcess == Context.FULL_DUMP) {
+             Context.FULL_DUMP.equals(currentProcess())) {
       //debug is not yet implemented properly for deltas
-
       entity.dataSrc = docBuilder.writer.getDebugLogger().wrapDs(entity.dataSrc);
     }
     return entity.dataSrc;
@@ -128,9 +130,9 @@ public class ContextImpl extends Context {
         globalSession.put(name, val);
       }
     } else if (Context.SCOPE_DOC.equals(scope)) {
-      Map<String, Object> docsession = getDocSession();
-      if (docsession != null)
-        docsession.put(name, val);
+      DocBuilder.DocWrapper doc = getDocument();
+      if (doc != null)
+        doc.setSessionAttribute(name, val);
     } else if (SCOPE_SOLR_CORE.equals(scope)){
       if(dataImporter != null) dataImporter.getCoreScopeSession().put(name, val);
     }
@@ -146,9 +148,8 @@ public class ContextImpl extends Context {
         return globalSession.get(name);
       }
     } else if (Context.SCOPE_DOC.equals(scope)) {
-      Map<String, Object> docsession = getDocSession();
-      if (docsession != null)
-        return docsession.get(name);
+      DocBuilder.DocWrapper doc = getDocument();      
+      return doc == null ? null: doc.getSessionAttribute(name);
     } else if (SCOPE_SOLR_CORE.equals(scope)){
        return dataImporter == null ? null : dataImporter.getCoreScopeSession().get(name);
     }
@@ -159,11 +160,11 @@ public class ContextImpl extends Context {
     return parent;
   }
 
-  public Map<String, Object> getDocSession() {
+  private DocBuilder.DocWrapper getDocument() {
     ContextImpl c = this;
     while (true) {
-      if (c.docSession != null)
-        return c.docSession;
+      if (c.doc != null)
+        return c.doc;
       if (c.parent != null)
         c = c.parent;
       else
@@ -171,8 +172,8 @@ public class ContextImpl extends Context {
     }
   }
 
-  public void setDocSession(Map<String, Object> docSession) {
-    this.docSession = docSession;
+  public void setDoc(DocBuilder.DocWrapper docWrapper) {
+    this.doc = docWrapper;
   }
 
 

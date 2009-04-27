@@ -267,6 +267,7 @@ Other
               EntityProcessor#destroy has been modified to be called once per parent-row at the end of row. A new
               method EntityProcessor#close is added which is called at the end of import. A new method
               Context#getResolvedEntityAttribute is added which returns the resolved value of an entity's attribute.
+              Introduced a DocWrapper which takes care of maintaining document level session variables.
               (Noble Paul, shalin)
 
 ================== Release 1.3.0 20080915 ==================

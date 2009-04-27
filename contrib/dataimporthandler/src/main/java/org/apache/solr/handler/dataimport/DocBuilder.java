@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since solr 1.3
  */
 public class DocBuilder {
-  public static final String DOC_BOOST = "$docBoost";
 
   private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
 
@@ -257,7 +256,7 @@ public class DocBuilder {
     Iterator<Map<String, Object>> pkIter = allPks.iterator();
     while (pkIter.hasNext()) {
       Map<String, Object> map = pkIter.next();
-      vri.addNamespace(DataConfig.IMPORTER_NS + ".delta", map);
+      vri.addNamespace(DataConfig.IMPORTER_NS_SHORT + ".delta", map);
       buildDocument(vri, null, map, root, true, null);
       pkIter.remove();
       // check for abort
@@ -286,11 +285,11 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void buildDocument(VariableResolverImpl vr, SolrInputDocument doc,
+  private void buildDocument(VariableResolverImpl vr, DocWrapper doc,
                              Map<String, Object> pk, DataConfig.Entity entity, boolean isRoot,
                              ContextImpl parentCtx) {
 
-    EntityProcessor entityProcessor = getEntityProcessor(entity);
+    EntityProcessorWrapper entityProcessor = getEntityProcessor(entity);
 
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
@@ -323,11 +322,8 @@ public class DocBuilder {
             writer.log(SolrWriter.START_DOC, entity.name, null);
           }
           if (doc == null && entity.isDocRoot) {
-            if (ctx.getDocSession() != null)
-              ctx.getDocSession().clear();
-            else
-              ctx.setDocSession(new HashMap<String, Object>());
-            doc = new SolrInputDocument();
+            doc = new DocWrapper();
+            ctx.setDoc(doc);
             DataConfig.Entity e = entity;
             while (e.parentEntity != null) {
               addFields(e.parentEntity, doc, (Map<String, Object>) vr
@@ -340,10 +336,6 @@ public class DocBuilder {
           if (arow == null) {
             entityProcessor.destroy();
             break;            
-          }
-
-          if (arow.containsKey(DOC_BOOST)) {
-            setDocumentBoost(doc, arow);
           }
 
           // Support for start parameter in debug mode
@@ -361,7 +353,7 @@ public class DocBuilder {
           }
           importStatistics.rowsCount.incrementAndGet();
           if (doc != null) {
-            handleSpecialCommands(arow);
+            handleSpecialCommands(arow, doc);
             addFields(entity, doc, arow);
           }
           if (isRoot)
@@ -423,18 +415,21 @@ public class DocBuilder {
     }
   }
 
-  private void setDocumentBoost(SolrInputDocument doc, Map<String, Object> arow) {
-    Object v = arow.get(DOC_BOOST);
-    float value = 1.0f;
-    if (v instanceof Number) {
-      value = ((Number) v).floatValue();
-    } else {
-      value = Float.parseFloat(v.toString());
+  static class DocWrapper extends SolrInputDocument {
+    //final SolrInputDocument solrDocument = new SolrInputDocument();
+    Map<String ,Object> session;
+
+    public void setSessionAttribute(String key, Object val){
+      if(session == null) session = new HashMap<String, Object>();
+      session.put(key, val);
     }
-    doc.setDocumentBoost(value);
+
+    public Object getSessionAttribute(String key) {
+      return session == null ? null : session.get(key);
+    }
   }
 
-  private void handleSpecialCommands(Map<String, Object> arow) {
+  private void handleSpecialCommands(Map<String, Object> arow, DocWrapper doc) {
     Object value = arow.get("$deleteDocById");
     if (value != null) {
       if (value instanceof Collection) {
@@ -453,11 +448,21 @@ public class DocBuilder {
         for (Object o : collection) {
           writer.deleteByQuery(o.toString());
         }
-
       } else {
         writer.deleteByQuery(value.toString());
       }
     }
+    value = arow.get("$docBoost");
+    if (value != null) {
+      float value1 = 1.0f;
+      if (value instanceof Number) {
+        value1 = ((Number) value).floatValue();
+      } else {
+        value1 = Float.parseFloat(value.toString());
+      }
+      doc.setDocumentBoost(value1);
+    }
+
     value = arow.get("$skipDoc");
     if (value != null) {
       if (Boolean.parseBoolean(value.toString())) {
@@ -475,7 +480,7 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void addFields(DataConfig.Entity entity, SolrInputDocument doc, Map<String, Object> arow) {
+  private void addFields(DataConfig.Entity entity, DocWrapper doc, Map<String, Object> arow) {
     for (Map.Entry<String, Object> entry : arow.entrySet()) {
       String key = entry.getKey();
       Object value = entry.getValue();
@@ -502,7 +507,7 @@ public class DocBuilder {
     }
   }
 
-  private void addFieldToDoc(Object value, String name, float boost, boolean multiValued, SolrInputDocument doc) {
+  private void addFieldToDoc(Object value, String name, float boost, boolean multiValued, DocWrapper doc) {
     if (value instanceof Collection) {
       Collection collection = (Collection) value;
       if (multiValued) {
@@ -529,7 +534,7 @@ public class DocBuilder {
     }
   }
 
-  private EntityProcessor getEntityProcessor(DataConfig.Entity entity) {
+  private EntityProcessorWrapper getEntityProcessor(DataConfig.Entity entity) {
     if (entity.processor != null)
       return entity.processor;
     EntityProcessor entityProcessor;
