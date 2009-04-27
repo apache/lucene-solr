@@ -313,7 +313,7 @@ final class FieldsReader implements Cloneable {
       Field.Index index = getIndexType(fi, tokenize);
       Field.TermVector termVector = getTermVectorType(fi);
 
-      Fieldable f;
+      AbstractField f;
       if (compressed) {
         store = Field.Store.COMPRESS;
         int toRead = fieldsStream.readVInt();
@@ -322,7 +322,7 @@ final class FieldsReader implements Cloneable {
         //skip over the part that we aren't loading
         fieldsStream.seek(pointer + toRead);
         f.setOmitNorms(fi.omitNorms);
-        f.setOmitTf(fi.omitTermFreqAndPositions);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
       } else {
         int length = fieldsStream.readVInt();
         long pointer = fieldsStream.getFilePointer();
@@ -333,7 +333,7 @@ final class FieldsReader implements Cloneable {
           fieldsStream.skipChars(length);
         f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
         f.setOmitNorms(fi.omitNorms);
-        f.setOmitTf(fi.omitTermFreqAndPositions);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
       }
       doc.add(f);
     }
@@ -372,7 +372,7 @@ final class FieldsReader implements Cloneable {
       Field.Index index = getIndexType(fi, tokenize);
       Field.TermVector termVector = getTermVectorType(fi);
 
-      Fieldable f;
+      AbstractField f;
       if (compressed) {
         store = Field.Store.COMPRESS;
         int toRead = fieldsStream.readVInt();
@@ -385,7 +385,7 @@ final class FieldsReader implements Cloneable {
                 store,
                 index,
                 termVector);
-        f.setOmitTf(fi.omitTermFreqAndPositions);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
         f.setOmitNorms(fi.omitNorms);
       } else {
         f = new Field(fi.name,     // name
@@ -394,7 +394,7 @@ final class FieldsReader implements Cloneable {
                 store,
                 index,
                 termVector);
-        f.setOmitTf(fi.omitTermFreqAndPositions);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
         f.setOmitNorms(fi.omitNorms);
       }
       doc.add(f);
