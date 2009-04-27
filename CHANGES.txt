@@ -346,7 +346,8 @@ Bug Fixes
     (koji)
 
 38. SOLR-1126: Replicated files have incorrect timestamp (Jian Han Guo, Jeff Newburn, Noble Paul via shalin)
-    
+
+Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
 
