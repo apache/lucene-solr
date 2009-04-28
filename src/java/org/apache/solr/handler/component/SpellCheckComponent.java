@@ -186,11 +186,17 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     NamedList result = new NamedList();
     Map<Token, LinkedHashMap<String, Integer>> suggestions = spellingResult.getSuggestions();
     boolean hasFreqInfo = spellingResult.hasTokenFrequencyInfo();
-    boolean isCorrectlySpelled = true;
+    boolean isCorrectlySpelled = false;
     Map<Token, String> best = null;
     if (collate == true){
       best = new LinkedHashMap<Token, String>(suggestions.size());
     }
+    
+    // will be flipped to false if any of the suggestions are not in the index and hasFreqInfo is true
+    if(suggestions.size() > 0) {
+      isCorrectlySpelled = true;
+    }
+    
     for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
       Token inputToken = entry.getKey();
       Map<String, Integer> theSuggestions = entry.getValue();
