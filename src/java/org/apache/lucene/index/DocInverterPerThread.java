@@ -53,8 +53,7 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     
     public void reinit(String stringValue, int startOffset,  int endOffset) {
       termAttribute.setTermBuffer(stringValue);
-      offsetAttribute.setStartOffset(startOffset);
-      offsetAttribute.setEndOffset(endOffset);
+      offsetAttribute.setOffset(startOffset, endOffset);
     }
   }
   

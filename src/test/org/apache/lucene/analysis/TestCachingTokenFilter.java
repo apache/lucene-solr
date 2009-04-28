@@ -51,8 +51,7 @@ public class TestCachingTokenFilter extends LuceneTestCase {
           return false;
         } else {
           termAtt.setTermBuffer(tokens[index++]);
-          offsetAtt.setStartOffset(0);
-          offsetAtt.setEndOffset(0);
+          offsetAtt.setOffset(0,0);
           return true;
         }        
       }

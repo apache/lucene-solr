@@ -43,11 +43,14 @@ public class OffsetAttribute extends Attribute implements Cloneable, Serializabl
     return startOffset;
   }
 
-  /** Set the starting offset.
-    @see #startOffset() */
-  public void setStartOffset(int offset) {
-    this.startOffset = offset;
+  
+  /** Set the starting and ending offset.
+    @see #startOffset() and #endOffset()*/
+  public void setOffset(int startOffset, int endOffset) {
+    this.startOffset = startOffset;
+    this.endOffset = endOffset;
   }
+  
 
   /** Returns this Token's ending offset, one greater than the position of the
   last character corresponding to this token in the source text. The length
@@ -56,11 +59,6 @@ public class OffsetAttribute extends Attribute implements Cloneable, Serializabl
     return endOffset;
   }
 
-  /** Set the ending offset.
-    @see #endOffset() */
-  public void setEndOffset(int offset) {
-    this.endOffset = offset;
-  }
 
   public void clear() {
     startOffset = 0;
@@ -92,7 +90,6 @@ public class OffsetAttribute extends Attribute implements Cloneable, Serializabl
   
   public void copyTo(Attribute target) {
     OffsetAttribute t = (OffsetAttribute) target;
-    t.setStartOffset(startOffset);
-    t.setEndOffset(endOffset);
+    t.setOffset(startOffset, endOffset);
   }  
 }

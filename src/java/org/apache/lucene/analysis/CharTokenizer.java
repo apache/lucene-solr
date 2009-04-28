@@ -90,8 +90,7 @@ public abstract class CharTokenizer extends Tokenizer {
     }
 
     termAtt.setTermLength(length);
-    offsetAtt.setStartOffset(start);
-    offsetAtt.setEndOffset(start+length);
+    offsetAtt.setOffset(start, start+length);
     return true;
   }
 

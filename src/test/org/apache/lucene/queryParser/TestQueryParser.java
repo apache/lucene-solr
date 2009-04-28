@@ -85,8 +85,7 @@ public class TestQueryParser extends LuceneTestCase {
       if (inPhrase) {
         inPhrase = false;
         termAtt.setTermBuffer("phrase2");
-        offsetAtt.setStartOffset(savedStart);
-        offsetAtt.setEndOffset(savedEnd);
+        offsetAtt.setOffset(savedStart, savedEnd);
         return true;
       } else
         while (input.incrementToken()) {
@@ -95,8 +94,7 @@ public class TestQueryParser extends LuceneTestCase {
             savedStart = offsetAtt.startOffset();
             savedEnd = offsetAtt.endOffset();
             termAtt.setTermBuffer("phrase1");
-            offsetAtt.setStartOffset(savedStart);
-            offsetAtt.setEndOffset(savedEnd);
+            offsetAtt.setOffset(savedStart, savedEnd);
             return true;
           } else if (!termAtt.term().equals("stop"))
             return true;

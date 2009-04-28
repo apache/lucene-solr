@@ -161,8 +161,7 @@ public class StandardTokenizer extends Tokenizer {
         posIncrAtt.setPositionIncrement(posIncr);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
-        offsetAtt.setStartOffset(start);
-        offsetAtt.setEndOffset(start+termAtt.termLength());
+        offsetAtt.setOffset(start, start+termAtt.termLength());
         // This 'if' should be removed in the next release. For now, it converts
         // invalid acronyms to HOST. When removed, only the 'else' part should
         // remain.

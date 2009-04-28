@@ -163,8 +163,7 @@ public class TestMultiAnalyzer extends LuceneTestCase {
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
         termAtt.setTermBuffer("multi"+(multiToken+1));
-        offsetAtt.setStartOffset(prevStartOffset);
-        offsetAtt.setEndOffset(prevEndOffset);
+        offsetAtt.setOffset(prevStartOffset, prevEndOffset);
         typeAtt.setType(prevType);
         posIncrAtt.setPositionIncrement(0);
         multiToken--;
