@@ -27,6 +27,9 @@ import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.lucene.search.BooleanQuery;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
@@ -48,6 +51,8 @@ import java.io.InputStream;
  */
 public class SolrConfig extends Config {
 
+  public static final Logger log = LoggerFactory.getLogger(SolrConfig.class);
+  
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
   /**
@@ -202,7 +207,6 @@ public class SolrConfig extends Config {
   private final NamedList pingQueryParams;
 
   static private NamedList readPingQueryParams(SolrConfig config) {  
-    // TODO: check for nested tags and parse as a named list instead
     String urlSnippet = config.get("admin/pingQuery", "").trim();
     
     StringTokenizer qtokens = new StringTokenizer(urlSnippet,"&");
@@ -212,6 +216,10 @@ public class SolrConfig extends Config {
       tok = qtokens.nextToken();
       String[] split = tok.split("=", 2);
       params.add(split[0], split[1]);
+    }
+    if (0 < params.size()) {
+      log.warn("The <pingQuery> syntax is deprecated, " +
+               "please use PingRequestHandler instead");
     }
     return params;
   }
@@ -224,6 +232,11 @@ public class SolrConfig extends Config {
    */
   @Deprecated
   public SolrQueryRequest getPingQueryRequest(SolrCore core) {
+    if(pingQueryParams.size() == 0) {
+      throw new IllegalStateException
+        ("<pingQuery> not configured (consider registering " +
+         "PingRequestHandler with the name '/admin/ping' instead)");
+    }
     return new LocalSolrQueryRequest(core, pingQueryParams);
   }
 

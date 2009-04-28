@@ -349,6 +349,9 @@ Bug Fixes
 
 39. SOLR-1094: Incorrect value of correctlySpelled attribute in some cases (David Smiley, mark Miller via shalin)
 
+40. SOLR-965: Better error message when <pingQuery> is not configured.
+    (Mark Miller via hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
