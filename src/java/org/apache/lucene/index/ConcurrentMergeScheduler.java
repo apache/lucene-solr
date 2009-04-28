@@ -340,6 +340,13 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /** Called when an exception is hit in a background merge
    *  thread */
   protected void handleMergeException(Throwable exc) {
+    try {
+      Thread.sleep(250);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      // In 3.0 this will throw InterruptedException
+      throw new RuntimeException(ie);
+    }
     throw new MergePolicy.MergeException(exc, dir);
   }
 
