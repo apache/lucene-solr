@@ -120,6 +120,7 @@ public class SolrIndexWriter extends IndexWriter {
    * @deprecated use getDirectory(String path, DirectoryFactory directoryFactory, SolrIndexConfig config)
    */
   public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
+    log.warn("SolrIndexWriter is using LEGACY_DIR_FACTORY which means deprecated code is likely in use and SolrIndexWriter is ignoring any custom DirectoryFactory.");
     return getDirectory(path, LEGACY_DIR_FACTORY, config);
   }
   
@@ -155,8 +156,8 @@ public class SolrIndexWriter extends IndexWriter {
     init(name, schema, config);
   }
 
-  public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy) throws IOException {
-    super(getDirectory(path, config), schema.getAnalyzer(), create, delPolicy, new MaxFieldLength(IndexWriter.DEFAULT_MAX_FIELD_LENGTH));
+  public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy) throws IOException {
+    super(getDirectory(path, dirFactory, config), schema.getAnalyzer(), create, delPolicy, new MaxFieldLength(IndexWriter.DEFAULT_MAX_FIELD_LENGTH));
     init(name, schema, config);
   }
 
