@@ -364,8 +364,15 @@
   	<attribute name="dataDir"/>
   	<attribute name="tempDir"/>
   	<element name="contrib-settings" optional="yes"/>
-  	
-  	<sequential>
+
+    <sequential>
+	    <condition property="runall">
+	      <not><or>
+	        <isset property="testcase" />
+	      	<isset property="testpackage" />
+	      	<isset property="testpackageroot" />
+	      </or></not>
+	    </condition>
 	  	<mkdir dir="@{junit.output.dir}"/>
 	    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
 	      errorProperty="tests.failed" failureProperty="tests.failed">
@@ -386,8 +393,14 @@
 	    	
 	      <formatter type="xml"/>
 	      <formatter type="brief" usefile="false"/>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" unless="testcase">
+	      <batchtest fork="yes" todir="@{junit.output.dir}" if="runall">
 	        <fileset dir="@{dataDir}" includes="${junit.includes}" excludes="${junit.excludes}"/>
+	      </batchtest>
+	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
+	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}"/>
+	      </batchtest>
+	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageroot">
+	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" excludes="${junit.excludes}"/>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testcase">
 	        <fileset dir="@{dataDir}" includes="**/${testcase}.java"/>
@@ -574,15 +587,3 @@
 
 
 </project>
-
-
-
-
-
-
-
-
-
-
-
-
