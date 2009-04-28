@@ -271,6 +271,19 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     
     assertQ("Make sure correct spellings are signalled in the response", req, 
         "//*[@numFound='0']", "//*/lst[@name='suggestions']", "//*/bool[@name='correctlySpelled'][.='false']");
+    
+    
+    args = new HashMap<String, String>();
+
+    args.put(CommonParams.Q, "lowerfilt:lazy");
+    args.put(CommonParams.QT, "spellCheckCompRH");
+    args.put(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
+    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(
+            args));
+    
+    assertQ("Make sure correct spellings are signalled in the response", req, 
+        "//*[@numFound='1']", "//*/lst[@name='suggestions']", "//*/bool[@name='correctlySpelled'][.='true']");
   }
 
   public void testInit() throws Exception {

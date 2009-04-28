@@ -227,6 +227,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     if (hasFreqInfo) {
       result.add("correctlySpelled", isCorrectlySpelled);
+    } else if(extendedResults && suggestions.size() == 0) { // if the word is misspelled, its added to suggestions with freqinfo
+      result.add("correctlySpelled", true);
     }
     if (collate == true){
       StringBuilder collation = new StringBuilder(origQuery);
