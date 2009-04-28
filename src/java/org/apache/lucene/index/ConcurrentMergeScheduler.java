@@ -41,7 +41,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   // Max number of threads allowed to be merging at once
   private int maxThreadCount = 3;
 
-  private List exceptions = new ArrayList();
   protected Directory dir;
 
   private boolean closed;
@@ -309,10 +308,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         // Ignore the exception if it was due to abort:
         if (!(exc instanceof MergePolicy.MergeAbortedException)) {
-          synchronized(ConcurrentMergeScheduler.this) {
-            exceptions.add(exc);
-          }
-          
           if (!suppressExceptions) {
             // suppressExceptions is normally only set during
             // testing.
@@ -341,6 +336,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    *  thread */
   protected void handleMergeException(Throwable exc) {
     try {
+      // When an exception is hit during merge, IndexWriter
+      // removes any partial files and then allows another
+      // merge to run.  If whatever caused the error is not
+      // transient then the exception will keep happening,
+      // so, we sleep here to avoid saturating CPU in such
+      // cases:
       Thread.sleep(250);
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
