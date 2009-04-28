@@ -171,7 +171,6 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
   /** Return number of valid characters (length of the term)
    *  in the termBuffer array. */
   public int termLength() {
-    initTermBuffer();
     return termLength;
   }
 
