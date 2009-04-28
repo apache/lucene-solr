@@ -125,7 +125,7 @@ public class SerialChainFilter extends Filter {
           }
         break;
       case (AND):
-        bits.and(((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet());
+        bits.and(chain[i].bits(reader));
         break;
       case (OR):
         bits.or(((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet());

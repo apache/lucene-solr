@@ -157,7 +157,8 @@ public class TestCartesian extends TestCase{
     Query tq = new TermQuery(new Term("metafile", "doc"));
     
     FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-    CustomScoreQuery customScore = new CustomScoreQuery(tq,fsQuery){
+    
+    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
       
       @Override
       public float customScore(int doc, float subQueryScore, float valSrcScore){
@@ -184,7 +185,7 @@ public class TestCartesian extends TestCase{
     
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    Hits hits = searcher.search(customScore, dq.getFilter(),sort);
+    Hits hits = searcher.search(customScore,null,sort);
 
     int results = hits.length();
     
