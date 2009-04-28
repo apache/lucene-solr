@@ -93,6 +93,7 @@ public abstract class Lock {
       } catch (InterruptedException e) {
         // In 3.0 we will change this to throw
         // InterruptedException instead
+        Thread.currentThread().interrupt();
         throw new IOException(e.toString());
       }
       locked = obtain();
