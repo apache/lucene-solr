@@ -127,7 +127,7 @@ final class TermScorer extends Scorer {
       ? scoreCache[f]                             // cache hit
       : getSimilarity().tf(f)*weightValue;        // cache miss
 
-    return raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
+    return norms == null ? raw : raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
   }
 
   /** Skips to the first match beyond the current whose document number is

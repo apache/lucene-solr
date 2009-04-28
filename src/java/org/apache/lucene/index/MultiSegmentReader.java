@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 
 /** 
@@ -262,15 +264,18 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
-    if (infos.size() == 1) {
+    DirectoryIndexReader reader;
+	if (infos.size() == 1) {
       // The index has only one segment now, so we can't refresh the MultiSegmentReader.
       // Return a new [ReadOnly]SegmentReader instead
-      return SegmentReader.get(openReadOnly, infos, infos.info(0), false);
+      reader = SegmentReader.get(openReadOnly, infos, infos.info(0), false);
     } else if (openReadOnly) {
-      return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
+      reader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
     } else {
-      return new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
-    }            
+      reader = new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
+    }
+    reader.setDisableFakeNorms(getDisableFakeNorms());
+    return reader;
   }
 
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
@@ -397,7 +402,7 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     if (bytes != null)
       return bytes;          // cache hit
     if (!hasNorms(field))
-      return fakeNorms();
+      return getDisableFakeNorms() ? null : fakeNorms();
 
     bytes = new byte[maxDoc()];
     for (int i = 0; i < subReaders.length; i++)
@@ -410,12 +415,15 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     throws IOException {
     ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);
-    if (bytes==null && !hasNorms(field)) bytes=fakeNorms();
-    if (bytes != null)                            // cache hit
+    if (bytes==null && !hasNorms(field)) {
+      Arrays.fill(result, offset, result.length, DefaultSimilarity.encodeNorm(1.0f));
+    } else if (bytes != null) {                           // cache hit
       System.arraycopy(bytes, 0, result, offset, maxDoc());
-
-    for (int i = 0; i < subReaders.length; i++)      // read from segments
-      subReaders[i].norms(field, result, offset + starts[i]);
+    } else {
+      for (int i = 0; i < subReaders.length; i++) {      // read from segments
+        subReaders[i].norms(field, result, offset + starts[i]);
+      }
+    }
   }
 
   protected void doSetNorm(int n, String field, byte value)
@@ -512,6 +520,12 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       return subReaders[0].getTermInfosIndexDivisor();
     else
       throw new IllegalStateException("no readers");
+  }
+
+  public void setDisableFakeNorms(boolean disableFakeNorms) {
+    super.setDisableFakeNorms(disableFakeNorms);
+    for (int i = 0; i < subReaders.length; i++)
+        subReaders[i].setDisableFakeNorms(disableFakeNorms);
   }
 
   static class MultiTermEnum extends TermEnum {

@@ -629,11 +629,11 @@ class SegmentReader extends DirectoryIndexReader {
       }
     } else {
       if (openReadOnly)
-        return new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, doClone);
+        newReader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, doClone);
       else
-        return new MultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, false, doClone);
+        newReader = new MultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, false, doClone);
     }
-    
+    newReader.setDisableFakeNorms(getDisableFakeNorms());
     return newReader;
   }
   
@@ -708,6 +708,7 @@ class SegmentReader extends DirectoryIndexReader {
         }
       }
 
+      clone.setDisableFakeNorms(getDisableFakeNorms());
       clone.norms = new HashMap();
 
       // Clone norms
@@ -1017,6 +1018,7 @@ class SegmentReader extends DirectoryIndexReader {
 
   private byte[] ones;
   private byte[] fakeNorms() {
+    assert !getDisableFakeNorms();
     if (ones==null) ones=createFakeNorms(maxDoc());
     return ones;
   }
@@ -1032,7 +1034,7 @@ class SegmentReader extends DirectoryIndexReader {
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = getNorms(field);
-    if (bytes==null) bytes=fakeNorms();
+    if (bytes==null && !getDisableFakeNorms()) bytes=fakeNorms();
     return bytes;
   }
 
@@ -1053,7 +1055,7 @@ class SegmentReader extends DirectoryIndexReader {
     ensureOpen();
     Norm norm = (Norm) norms.get(field);
     if (norm == null) {
-      System.arraycopy(fakeNorms(), 0, bytes, offset, maxDoc());
+      Arrays.fill(bytes, offset, bytes.length, DefaultSimilarity.encodeNorm(1.0f));
       return;
     }
   

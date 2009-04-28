@@ -1377,10 +1377,17 @@ public class TestIndexReader extends LuceneTestCase
         String curField = (String) it1.next();
         byte[] norms1 = index1.norms(curField);
         byte[] norms2 = index2.norms(curField);
-        assertEquals(norms1.length, norms2.length);
-        for (int i = 0; i < norms1.length; i++) {
-          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1[i], norms2[i]);
-        }      
+        if (norms1 != null && norms2 != null)
+        {
+          assertEquals(norms1.length, norms2.length);
+	        for (int i = 0; i < norms1.length; i++) {
+	          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1[i], norms2[i]);
+	        }
+        }
+        else
+        {
+          assertSame(norms1, norms2);
+        }
       }
       
       // check deletions

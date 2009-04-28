@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermDocs;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermEnum;
 import org.apache.lucene.index.MultiSegmentReader.MultiTermPositions;
+import org.apache.lucene.search.DefaultSimilarity;
 
 /** An IndexReader which reads multiple indexes, appending their content.
  *
@@ -179,6 +181,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       }
       MultiReader mr = new MultiReader(newSubReaders);
       mr.decrefOnClose = newDecrefOnClose;
+      mr.setDisableFakeNorms(getDisableFakeNorms());
       return mr;
     } else {
       return this;
@@ -288,7 +291,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     if (bytes != null)
       return bytes;          // cache hit
     if (!hasNorms(field))
-      return fakeNorms();
+      return getDisableFakeNorms() ? null : fakeNorms();
 
     bytes = new byte[maxDoc()];
     for (int i = 0; i < subReaders.length; i++)
@@ -301,12 +304,18 @@ public class MultiReader extends IndexReader implements Cloneable {
     throws IOException {
     ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);
-    if (bytes==null && !hasNorms(field)) bytes=fakeNorms();
-    if (bytes != null)                            // cache hit
-      System.arraycopy(bytes, 0, result, offset, maxDoc());
-
     for (int i = 0; i < subReaders.length; i++)      // read from segments
       subReaders[i].norms(field, result, offset + starts[i]);
+
+    if (bytes==null && !hasNorms(field)) {
+      Arrays.fill(result, offset, result.length, DefaultSimilarity.encodeNorm(1.0f));
+    } else if (bytes != null) {                         // cache hit
+      System.arraycopy(bytes, 0, result, offset, maxDoc());
+    } else {
+      for (int i = 0; i < subReaders.length; i++) {     // read from segments
+        subReaders[i].norms(field, result, offset + starts[i]);
+      }
+    }
   }
 
   protected void doSetNorm(int n, String field, byte value)

@@ -247,39 +247,41 @@ public class TestIndicesEquals extends TestCase {
       byte[] aprioriNorms = aprioriReader.norms((String) field);
       byte[] testNorms = testReader.norms((String) field);
 
-      assertEquals(aprioriNorms.length, testNorms.length);
+      if (!aprioriReader.getDisableFakeNorms()) {
+        assertEquals(aprioriNorms.length, testNorms.length);
 
-      for (int i = 0; i < aprioriNorms.length; i++) {
-        assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-      }
+        for (int i = 0; i < aprioriNorms.length; i++) {
+          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
+        }
 
-      // test norms as used by multireader
+        // test norms as used by multireader
 
-      aprioriNorms = new byte[aprioriReader.maxDoc()];
-      aprioriReader.norms((String) field, aprioriNorms, 0);
+        aprioriNorms = new byte[aprioriReader.maxDoc()];
+        aprioriReader.norms((String) field, aprioriNorms, 0);
 
-      testNorms = new byte[testReader.maxDoc()];
-      testReader.norms((String) field, testNorms, 0);
+        testNorms = new byte[testReader.maxDoc()];
+        testReader.norms((String) field, testNorms, 0);
 
-      assertEquals(aprioriNorms.length, testNorms.length);
+        assertEquals(aprioriNorms.length, testNorms.length);
 
-      for (int i = 0; i < aprioriNorms.length; i++) {
-        assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
-      }
+        for (int i = 0; i < aprioriNorms.length; i++) {
+          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
+        }
 
 
-      // test norms as used by multireader
+        // test norms as used by multireader
 
-      aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
-      aprioriReader.norms((String) field, aprioriNorms, 10);
+        aprioriNorms = new byte[aprioriReader.maxDoc() + 10];
+        aprioriReader.norms((String) field, aprioriNorms, 10);
 
-      testNorms = new byte[testReader.maxDoc() + 10];
-      testReader.norms((String) field, testNorms, 10);
+        testNorms = new byte[testReader.maxDoc() + 10];
+        testReader.norms((String) field, testNorms, 10);
 
-      assertEquals(aprioriNorms.length, testNorms.length);
-
-      for (int i = 0; i < aprioriNorms.length; i++) {
-        assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
+        assertEquals(aprioriNorms.length, testNorms.length);
+        
+        for (int i = 0; i < aprioriNorms.length; i++) {
+          assertEquals("norms does not equals for field " + field + " in document " + i, aprioriNorms[i], testNorms[i]);
+        }
       }
 
     }

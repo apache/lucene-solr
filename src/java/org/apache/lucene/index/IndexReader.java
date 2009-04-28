@@ -116,6 +116,8 @@ public abstract class IndexReader implements Cloneable {
   
   private volatile int refCount;
 
+  private boolean disableFakeNorms = false;
+
   /** Expert: returns the current refCount for this reader */
   public synchronized int getRefCount() {
     return refCount;
@@ -792,6 +794,9 @@ public abstract class IndexReader implements Cloneable {
    * int) length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
+   * <b>NOTE:</b> If this field does not store norms, then
+   * this method call will silently do nothing.
+   *
    * @see #norms(String)
    * @see Similarity#decodeNorm(byte)
    * @throws StaleReaderException if the index has changed
@@ -1275,4 +1280,26 @@ public abstract class IndexReader implements Cloneable {
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
+
+  /** Expert: Return the state of the flag that disables fakes norms in favor of representing the absence of field norms with null.
+   * @return true if fake norms are disabled
+   * @deprecated This currently defaults to false (to remain
+   * back-compatible), but in 3.0 it will be hardwired to
+   * true, meaning the norms() methods will return null for
+   * fields that had disabled norms.
+   */
+  public boolean getDisableFakeNorms() {
+    return disableFakeNorms;
+  }
+
+  /** Expert: Set the state of the flag that disables fakes norms in favor of representing the absence of field norms with null.
+   * @param disableFakeNorms true to disable fake norms, false to preserve the legacy behavior
+   * @deprecated This currently defaults to false (to remain
+   * back-compatible), but in 3.0 it will be hardwired to
+   * true, meaning the norms() methods will return null for
+   * fields that had disabled norms.
+   */
+  public void setDisableFakeNorms(boolean disableFakeNorms) {
+    this.disableFakeNorms = disableFakeNorms;
+ }
 }

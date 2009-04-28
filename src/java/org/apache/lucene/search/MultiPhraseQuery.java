@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultipleTermPositions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -225,7 +224,7 @@ public class MultiPhraseQuery extends Query {
       Explanation fieldNormExpl = new Explanation();
       byte[] fieldNorms = reader.norms(field);
       float fieldNorm =
-        fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 0.0f;
+        fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 1.0f;
       fieldNormExpl.setValue(fieldNorm);
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);

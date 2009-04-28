@@ -227,7 +227,9 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
       // TODO: right now we *always* make a new reader; in
       // the future we could have write make some effort to
       // detect that no changes have occurred
-      return writer.getReader();
+      IndexReader reader = writer.getReader();
+      reader.setDisableFakeNorms(getDisableFakeNorms());
+      return reader;
     }
 
     if (commit == null) {
@@ -298,6 +300,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
       } else {
         reader = (DirectoryIndexReader) finder.doBody(commit.getSegmentsFileName());
       }
+      reader.setDisableFakeNorms(getDisableFakeNorms());
     } finally {
       if (myCloseDirectory) {
         assert directory instanceof FSDirectory;

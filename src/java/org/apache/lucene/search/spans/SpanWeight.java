@@ -122,7 +122,7 @@ public class SpanWeight implements Weight {
     Explanation fieldNormExpl = new Explanation();
     byte[] fieldNorms = reader.norms(field);
     float fieldNorm =
-      fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 0.0f;
+      fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 1.0f;
     fieldNormExpl.setValue(fieldNorm);
     fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
     fieldExpl.addDetail(fieldNormExpl);

@@ -29,8 +29,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.search.Similarity;
 
 public class TestSegmentReader extends LuceneTestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -173,16 +171,21 @@ public class TestSegmentReader extends LuceneTestCase {
         assertEquals(reader.hasNorms(f.name()), !f.getOmitNorms());
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
         if (!reader.hasNorms(f.name())) {
-          // test for fake norms of 1.0
+          // test for fake norms of 1.0 or null depending on the flag
           byte [] norms = reader.norms(f.name());
-          assertEquals(norms.length,reader.maxDoc());
-          for (int j=0; j<reader.maxDoc(); j++) {
-            assertEquals(norms[j], DefaultSimilarity.encodeNorm(1.0f));
+          byte norm1 = DefaultSimilarity.encodeNorm(1.0f);
+          if (reader.getDisableFakeNorms())
+            assertNull(norms);
+          else {
+            assertEquals(norms.length,reader.maxDoc());
+            for (int j=0; j<reader.maxDoc(); j++) {
+              assertEquals(norms[j], norm1);
+            }
           }
           norms = new byte[reader.maxDoc()];
           reader.norms(f.name(),norms, 0);
           for (int j=0; j<reader.maxDoc(); j++) {
-            assertEquals(norms[j], DefaultSimilarity.encodeNorm(1.0f));
+            assertEquals(norms[j], norm1);
           }
         }
       }

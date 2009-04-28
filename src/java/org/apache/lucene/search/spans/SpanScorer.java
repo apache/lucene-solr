@@ -89,7 +89,7 @@ public class SpanScorer extends Scorer {
 
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
-    return raw * Similarity.decodeNorm(norms[doc]); // normalize
+    return norms == null? raw : raw * Similarity.decodeNorm(norms[doc]); // normalize
   }
 
   public Explanation explain(final int doc) throws IOException {
