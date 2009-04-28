@@ -82,6 +82,8 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
           maxSkipLevels = input.readInt();
         }
       }
+      assert indexInterval > 0: "indexInterval=" + indexInterval + " is negative; must be > 0";
+      assert skipInterval > 0: "skipInterval=" + skipInterval + " is negative; must be > 0";
     }
     if (format > TermInfosWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
       termBuffer.setPreUTF8Strings();
