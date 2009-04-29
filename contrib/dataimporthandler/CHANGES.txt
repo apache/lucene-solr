@@ -136,6 +136,9 @@ New Features
               for processing with transformers and child entities.
               (Fergus McMenemie, Noble Paul, shalin)
 
+31.SOLR-1127: Add support for field name to be templatized.
+              (Noble Paul, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

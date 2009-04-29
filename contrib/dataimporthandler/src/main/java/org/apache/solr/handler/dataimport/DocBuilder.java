@@ -327,7 +327,7 @@ public class DocBuilder {
             DataConfig.Entity e = entity;
             while (e.parentEntity != null) {
               addFields(e.parentEntity, doc, (Map<String, Object>) vr
-                      .resolve(e.parentEntity.name));
+                      .resolve(e.parentEntity.name), vr);
               e = e.parentEntity;
             }
           }
@@ -335,7 +335,7 @@ public class DocBuilder {
           Map<String, Object> arow = entityProcessor.nextRow();
           if (arow == null) {
             entityProcessor.destroy();
-            break;            
+            break;
           }
 
           // Support for start parameter in debug mode
@@ -354,7 +354,7 @@ public class DocBuilder {
           importStatistics.rowsCount.incrementAndGet();
           if (doc != null) {
             handleSpecialCommands(arow, doc);
-            addFields(entity, doc, arow);
+            addFields(entity, doc, arow, vr);
           }
           if (isRoot)
             vr.removeNamespace(null);
@@ -480,7 +480,8 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void addFields(DataConfig.Entity entity, DocWrapper doc, Map<String, Object> arow) {
+  private void addFields(DataConfig.Entity entity, DocWrapper doc,
+                         Map<String, Object> arow, VariableResolver vr) {
     for (Map.Entry<String, Object> entry : arow.entrySet()) {
       String key = entry.getKey();
       Object value = entry.getValue();
@@ -500,7 +501,11 @@ public class DocBuilder {
       } else {
         if (field != null) {
           for (DataConfig.Field f : field) {
-            if (f.toWrite) addFieldToDoc(entry.getValue(), f.getName(), f.boost, f.multiValued, doc);
+            String name = f.getName();
+            if(f.dynamicName){
+              name =  vr.replaceTokens(name);
+            }
+            if (f.toWrite) addFieldToDoc(entry.getValue(), name, f.boost, f.multiValued, doc);
           }
         }
       }

@@ -190,6 +190,9 @@ public class DataConfig {
 
     public boolean multiValued = false;
 
+    boolean dynamicName;
+
+
     public Map<String, String> allAttributes = new HashMap<String, String>() {
       public String put(String key, String value) {
         if (super.containsKey(key))

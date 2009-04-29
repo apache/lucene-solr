@@ -112,6 +112,21 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testRequestParamsAsFieldName() throws Exception {
+    List rows = new ArrayList();
+    rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
+    MockDataSource.setIterator("select * from x", rows.iterator());
+
+    LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
+            "debug", "on", "clean", "true", "commit", "true",
+            "mypk", "id", "text", "desc",
+            "dataConfig", dataConfigWithTemplatizedFieldNames);
+    h.query("/dataimport", request);
+    assertQ(req("id:101"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testContext() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -296,6 +311,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "        <entity name=\"books\" query=\"select * from x\">\n" +
           "            <field column=\"ID\" />\n" +
           "            <field column=\"Desc\" />\n" +
+          "        </entity>\n" +
+          "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigWithTemplatizedFieldNames = "<dataConfig>\n" +
+          "    <document>\n" +
+          "        <entity name=\"books\" query=\"select * from x\">\n" +
+          "            <field column=\"mypk\" name=\"${dih.request.mypk}\" />\n" +
+          "            <field column=\"text\" name=\"${dih.request.text}\" />\n" +
           "        </entity>\n" +
           "    </document>\n" +
           "</dataConfig>";

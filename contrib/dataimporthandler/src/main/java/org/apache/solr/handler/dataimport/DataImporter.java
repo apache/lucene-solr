@@ -181,6 +181,10 @@ public class DataImporter {
     if (e.fields != null) {
       for (DataConfig.Field f : e.fields) {
         if (schema != null) {
+          if(f.name != null && f.name.contains("${")){
+            f.dynamicName = true;
+            continue;
+          }
           SchemaField schemaField = schema.getFieldOrNull(f.getName());
           if (schemaField == null) {
             schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase());
