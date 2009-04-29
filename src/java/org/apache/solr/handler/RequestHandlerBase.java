@@ -54,7 +54,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
 
   /**
-   * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named:
+   * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
    * <table border="1">
    * <tr><th>Name</th><th>Description</th></tr>
    * <tr><td>defaults</td><td>Contains all of the named arguments contained within the list element named "defaults".</td></tr>
@@ -65,21 +65,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * Example:
    * <pre>
    * &lt;lst name="defaults"&gt;
-     &lt;str name="echoParams"&gt;explicit&lt;/str&gt;
-     &lt;str name="qf"&gt;text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0&lt;/str&gt;
-     &lt;str name="mm"&gt;2&lt;-1 5&lt;-2 6&lt;90%&lt;/str&gt;
-     &lt;str name="bq"&gt;incubationdate_dt:[* TO NOW/DAY-1MONTH]^2.2&lt;/str&gt;
-    &lt;/lst&gt;
-    &lt;lst name="appends"&gt;
-      &lt;str name="fq"&gt;inStock:true&lt;/str&gt;
-    &lt;/lst&gt;
-
-    &lt;lst name="invariants"&gt;
-      &lt;str name="facet.field"&gt;cat&lt;/str&gt;
-      &lt;str name="facet.field"&gt;manu_exact&lt;/str&gt;
-      &lt;str name="facet.query"&gt;price:[* TO 500]&lt;/str&gt;
-      &lt;str name="facet.query"&gt;price:[500 TO *]&lt;/str&gt;
-    &lt;/lst&gt;
+   * &lt;str name="echoParams"&gt;explicit&lt;/str&gt;
+   * &lt;str name="qf"&gt;text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0&lt;/str&gt;
+   * &lt;str name="mm"&gt;2&lt;-1 5&lt;-2 6&lt;90%&lt;/str&gt;
+   * &lt;str name="bq"&gt;incubationdate_dt:[* TO NOW/DAY-1MONTH]^2.2&lt;/str&gt;
+   * &lt;/lst&gt;
+   * &lt;lst name="appends"&gt;
+   * &lt;str name="fq"&gt;inStock:true&lt;/str&gt;
+   * &lt;/lst&gt;
+   *
+   * &lt;lst name="invariants"&gt;
+   * &lt;str name="facet.field"&gt;cat&lt;/str&gt;
+   * &lt;str name="facet.field"&gt;manu_exact&lt;/str&gt;
+   * &lt;str name="facet.query"&gt;price:[* TO 500]&lt;/str&gt;
+   * &lt;str name="facet.query"&gt;price:[500 TO *]&lt;/str&gt;
+   * &lt;/lst&gt;
    * </pre>
    *
    *
