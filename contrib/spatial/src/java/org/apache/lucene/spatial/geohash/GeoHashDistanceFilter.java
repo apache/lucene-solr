@@ -48,6 +48,8 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   
   private Map<Integer,Double> distances = null;
   private Precision precise = null;
+  int offset = 0; 
+  int nextOffset;
   
   /**
    * Provide a distance filter based from a center point with a radius
@@ -143,7 +145,9 @@ public class GeoHashDistanceFilter extends DistanceFilter {
     
 
     /* store calculated distances for reuse by other components */
-    distances = new HashMap<Integer,Double>(size);
+    offset += reader.maxDoc();
+    if (distances == null)
+    	distances = new HashMap<Integer,Double>(size);
     
     long start = System.currentTimeMillis();
     String[] geoHashCache = FieldCache.DEFAULT.getStrings(reader, geoHashField);
@@ -194,7 +198,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   
 
     cdistance = null;
-    
+    nextOffset += offset;
     return result;
   }
 

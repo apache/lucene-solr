@@ -88,6 +88,7 @@ public class SerialChainFilter extends Filter {
      */
     if (actionType[i] == AND){
        try {
+      	//System.out.println(chain[i] );
         bits = (BitSet) ((DocIdBitSet)chain[i].getDocIdSet(reader)).getBitSet().clone();
       } catch (IOException e) {
         // TODO Auto-generated catch block
@@ -97,9 +98,9 @@ public class SerialChainFilter extends Filter {
     }
     
     for( ; i < chainSize; i++) {
-    
+    	
       int action = (i < actionSize)? actionType[i]: DEFAULT;
-    
+      //System.out.println(chain[i] + ": "+  action);
       switch (action){
       
       case (SERIALAND):
@@ -132,6 +133,10 @@ public class SerialChainFilter extends Filter {
         break;
       }
     }
+    
+//    System.out.println("++++++====================");
+//    new Exception().printStackTrace();
+    
     return new DocIdBitSet(bits);
   }
 

@@ -138,9 +138,9 @@ public class DistanceQueryBuilder {
     return new SerialChainFilter(f,chain); 
   }
     
-  public Query getQuery() {
-      return new ConstantScoreQuery(getFilter());
-  }
+//  public Query getQuery() {
+//      return new ConstantScoreQuery(getFilter());
+//  }
 
   
   public Query getQuery(Query query){

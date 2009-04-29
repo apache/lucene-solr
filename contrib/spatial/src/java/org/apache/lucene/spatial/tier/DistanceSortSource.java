@@ -75,11 +75,15 @@ public class DistanceSortSource implements SortComparatorSource {
 //      if (this.distances == null) {
 //          distances = distanceFilter.getDistances();
 //      }
-      double a = distanceFilter.getDistance(aDoc.doc);
-      double b = distanceFilter.getDistance(bDoc.doc);
-      if (a > b) return 1;
-      if (a < b )return -1;
-      
+    	//System.out.println("comparing : "+ aDoc.doc+ " - "+ bDoc.doc);
+    	try {
+    		double a = distanceFilter.getDistance(aDoc.doc);
+    		double b = distanceFilter.getDistance(bDoc.doc);
+    		if (a > b) return 1;
+    		if (a < b )return -1;
+    	} catch (Exception e){
+    		System.out.println(" Failed with sort with "+ aDoc.doc +" - "+bDoc.doc);
+    	}
       return 0;
     }
 

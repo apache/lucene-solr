@@ -45,6 +45,8 @@ public class LatLongDistanceFilter extends DistanceFilter {
   String latField;
   String lngField;
   Logger log = Logger.getLogger(getClass().getName());
+  int offset =0;
+  int nextOffset = 0;
   
   Map<Integer,Double> distances = null;
   private Precision precise = null;
@@ -134,17 +136,24 @@ public class LatLongDistanceFilter extends DistanceFilter {
 
   
     /* Create a BitSet to store the result */
+  	
     int size = bits.cardinality();
     BitSet result = new BitSet(size);
     
-
+    
     /* create an intermediate cache to avoid recomputing
          distances for the same point  */
     HashMap<String,Double> cdistance = new HashMap<String,Double>(size);
     
 
     /* store calculated distances for reuse by other components */
-    distances = new HashMap<Integer,Double>(size);
+    boolean db = false;
+    offset += reader.maxDoc();
+    if (distances == null){
+    	distances = new HashMap<Integer,Double>();
+    }else {
+    	db=true;
+    }
     
     long start = System.currentTimeMillis();
     String[] latIndex = FieldCache.DEFAULT.getStrings(reader, latField);
@@ -181,10 +190,10 @@ public class LatLongDistanceFilter extends DistanceFilter {
         cdistance.put(ck, d);
       }
       
-      distances.put(i, d);
-        
+      // why was i storing all distances again?
       if (d < distance){
         result.set(i);
+        distances.put(i+ nextOffset, d); // include nextOffset for multireader  
       }
       i = bits.nextSetBit(i+1);
     }
@@ -197,6 +206,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
   
 
     cdistance = null;
+    nextOffset += offset;  // this should be something that's part of indexReader
     
     return result;
   }
