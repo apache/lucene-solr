@@ -91,6 +91,10 @@ public class QueryUtils {
         }
         checkExplanations(q1,s);
         checkSerialization(q1,s);
+        
+        Query q2 = (Query)q1.clone();
+        checkEqual(s.rewrite(q1),
+                   s.rewrite(q2));
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
