@@ -42,6 +42,7 @@ public class SnapShooter {
 
   public SnapShooter(SolrCore core) {
     solrCore = core;
+    snapDir = core.getDataDir();
   }
 
   void createSnapAsync(final Collection<String> files) {

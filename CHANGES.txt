@@ -352,6 +352,9 @@ Bug Fixes
 40. SOLR-965: Better error message when <pingQuery> is not configured.
     (Mark Miller via hossman)
 
+41. SOLR-1135: Java replication creates Snapshot in the directory where Solr was launched (Jianhan Guo via shalin)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
