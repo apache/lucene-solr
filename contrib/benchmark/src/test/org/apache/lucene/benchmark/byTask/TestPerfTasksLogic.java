@@ -116,8 +116,8 @@ public class TestPerfTasksLogic extends TestCase {
     CountingSearchTestTask.numSearches = 0;
     Benchmark benchmark = execBenchmark(algLines);
     assertTrue(CountingSearchTestTask.numSearches > 0);
-    long elapsed = CountingSearchTestTask.lastMillis - CountingSearchTestTask.startMillis;
-    assertTrue("elapsed time was " + elapsed + " msec", elapsed < 2000);
+    long elapsed = CountingSearchTestTask.prevLastMillis - CountingSearchTestTask.startMillis;
+    assertTrue("elapsed time was " + elapsed + " msec", elapsed <= 1500);
   }
 
   public void testHighlighting() throws Exception {

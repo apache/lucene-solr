@@ -27,6 +27,7 @@ public class CountingSearchTestTask extends SearchTask {
   public static int numSearches = 0; 
   public static long startMillis;
   public static long lastMillis;
+  public static long prevLastMillis;
 
   public CountingSearchTestTask(PerfRunData runData) {
     super(runData);
@@ -39,9 +40,11 @@ public class CountingSearchTestTask extends SearchTask {
   }
 
   private static synchronized void incrNumSearches() {
+    prevLastMillis = lastMillis;
     lastMillis = System.currentTimeMillis();
-    if (0 == numSearches)
-      startMillis = lastMillis;
+    if (0 == numSearches) {
+      startMillis = prevLastMillis = lastMillis;
+    }
     numSearches++;
   }
 
