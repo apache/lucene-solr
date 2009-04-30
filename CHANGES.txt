@@ -150,6 +150,10 @@ Bug fixes
    when loading documents from the index.  (P Eger via Mike
    McCandless)
 
+7. LUCENE-1611: Fix case where OutOfMemoryException in IndexWriter
+   could cause "infinite merging" to happen.  (Christiaan Fluit via
+   Mike McCandless)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
