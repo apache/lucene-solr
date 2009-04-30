@@ -37,14 +37,14 @@ import org.apache.lucene.queryParser.ParseException;
 
 /**
  * TODO!
- * 
+ *
  * @version $Id$
  * @since solr 1.3
  */
 public class  FacetComponent extends SearchComponent
 {
   public static final String COMPONENT_NAME = "facet";
-  
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
   {
@@ -201,7 +201,7 @@ public class  FacetComponent extends SearchComponent
           sreq.params.remove(paramStart + FacetParams.FACET_MINCOUNT);
           sreq.params.remove(paramStart + FacetParams.FACET_OFFSET);
 
-          if(dff.sort.equals(FacetParams.FACET_SORT_COUNT) && dff.limit > 0) {          
+          if(dff.sort.equals(FacetParams.FACET_SORT_COUNT) && dff.limit > 0) {
             // set the initial limit higher to increase accuracy
             dff.initialLimit = dff.offset + dff.limit;
             dff.initialLimit = (int)(dff.initialLimit * 1.5) + 10;
@@ -255,7 +255,7 @@ public class  FacetComponent extends SearchComponent
       }
 
       // step through each facet.field, adding results from this shard
-      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");      
+      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
       for (DistribFieldFacet dff : fi.facets.values()) {
         dff.add(shardNum, (NamedList)facet_fields.get(dff.getKey()), dff.initialLimit);
       }
@@ -326,7 +326,7 @@ public class  FacetComponent extends SearchComponent
     for (ShardResponse srsp: sreq.responses) {
       // int shardNum = rb.getShardNum(srsp.shard);
       NamedList facet_counts = (NamedList)srsp.getSolrResponse().getResponse().get("facet_counts");
-      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");      
+      NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
 
       for (int i=0; i<facet_fields.size(); i++) {
         String key = facet_fields.getName(i);
@@ -385,7 +385,7 @@ public class  FacetComponent extends SearchComponent
         if (counts[i].count < dff.minCount) break;
         fieldCounts.add(counts[i].name, num(counts[i].count));
       }
-      
+
       if (dff.missing) {
         fieldCounts.add(null, num(dff.missingCount));
       }
@@ -398,7 +398,7 @@ public class  FacetComponent extends SearchComponent
 
     rb._facetInfo = null;  // could be big, so release asap
   }
-  
+
 
   // use <int> tags for smaller facet counts (better back compatibility)
   private Number num(long val) {
@@ -439,225 +439,240 @@ public class  FacetComponent extends SearchComponent
   public URL[] getDocs() {
     return null;
   }
-}
 
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class FacetInfo {
+    public LinkedHashMap<String,QueryFacet> queryFacets;
+    public LinkedHashMap<String,DistribFieldFacet> facets;
 
+    void parse(SolrParams params, ResponseBuilder rb) {
+      queryFacets = new LinkedHashMap<String,QueryFacet>();
+      facets = new LinkedHashMap<String,DistribFieldFacet>();
 
-class FacetInfo {
-  LinkedHashMap<String,QueryFacet> queryFacets;
-  LinkedHashMap<String,DistribFieldFacet> facets;
-  
-  void parse(SolrParams params, ResponseBuilder rb) {
-    queryFacets = new LinkedHashMap<String,QueryFacet>();
-    facets = new LinkedHashMap<String,DistribFieldFacet>();
-
-    String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
-    if (facetQs != null) {
-      for (String query : facetQs) {
-        QueryFacet queryFacet = new QueryFacet(rb, query);
-        queryFacets.put(queryFacet.getKey(), queryFacet);
-      }
-    }
-
-    String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
-    if (facetFs != null) {
-
-      for (String field : facetFs) {
-        DistribFieldFacet ff = new DistribFieldFacet(rb, field);
-        facets.put(ff.getKey(), ff);
-      }
-    }
-  }
-}
-
-class FacetBase {
-  String facetType;  // facet.field, facet.query, etc (make enum?)
-  String facetStr;   // original parameter value of facetStr
-  String facetOn;    // the field or query, absent localParams if appropriate
-  private String key; // label in the response for the result... "foo" for {!key=foo}myfield
-  SolrParams localParams;  // any local params for the facet
-
-  public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
-    this.facetType = facetType;
-    this.facetStr = facetStr;
-    try {
-      this.localParams = QueryParsing.getLocalParams(facetStr, rb.req.getParams());
-    } catch (ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-    this.facetOn = facetStr;
-    this.key = facetStr;
-
-    if (localParams != null) {
-      // remove local params unless it's a query
-      if (!facetType.equals(FacetParams.FACET_QUERY)) {
-        facetOn = localParams.get(CommonParams.VALUE);
-        key = facetOn;
-      }
-
-      key = localParams.get(CommonParams.OUTPUT_KEY, key);
-    }
-  }
-
-  /** returns the key in the response that this facet will be under */
-  String getKey() { return key; }
-  String getType() { return facetType; }
-}
-
-class QueryFacet extends FacetBase {
-  long count;
-
-  public QueryFacet(ResponseBuilder rb, String facetStr) {
-    super(rb, FacetParams.FACET_QUERY, facetStr);
-  }
-}
-
-class FieldFacet extends FacetBase {
-  String field;     // the field to facet on... "myfield" for {!key=foo}myfield
-  FieldType ftype;
-  int offset;
-  int limit;
-  int minCount;
-  String sort;
-  boolean missing;
-  String prefix;
-  long missingCount;
-
-  public FieldFacet(ResponseBuilder rb, String facetStr) {
-    super(rb, FacetParams.FACET_FIELD, facetStr);
-    fillParams(rb, rb.req.getParams(), facetOn);
-  }
-
-  private void fillParams(ResponseBuilder rb, SolrParams params, String field) {
-    this.field = field;
-    this.ftype = rb.req.getSchema().getFieldTypeNoEx(this.field);
-    this.offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
-    this.limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
-    Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
-    if (mincount==null) {
-      Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
-      // mincount = (zeros!=null && zeros) ? 0 : 1;
-      mincount = (zeros!=null && !zeros) ? 1 : 0;
-      // current default is to include zeros.
-    }
-    this.minCount = mincount;
-    this.missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
-    // default to sorting by count if there is a limit.
-    this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
-    if (this.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
-      this.sort = FacetParams.FACET_SORT_COUNT;
-    } else if (this.sort.equals(FacetParams.FACET_SORT_INDEX_LEGACY)) {
-      this.sort = FacetParams.FACET_SORT_INDEX;
-    }
-    this.prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
-  }
-}
-
-class DistribFieldFacet extends FieldFacet {
-  List<String>[] _toRefine; // a List<String> of refinements needed, one for each shard.
-
-  // SchemaField sf;    // currently unneeded
-
-  // the max possible count for a term appearing on no list
-  long missingMaxPossible;
-  // the max possible count for a missing term for each shard (indexed by shardNum)
-  long[] missingMax;
-  OpenBitSet[] counted; // a bitset for each shard, keeping track of which terms seen
-  HashMap<String,ShardFacetCount> counts = new HashMap<String,ShardFacetCount>(128);
-  int termNum;
-
-  int initialLimit;  // how many terms requested in first phase
-  boolean needRefinements;  
-  ShardFacetCount[] countSorted;
-
-  DistribFieldFacet(ResponseBuilder rb, String facetStr) {
-    super(rb, facetStr);
-    // sf = rb.req.getSchema().getField(field);
-    missingMax = new long[rb.shards.length];
-    counted = new OpenBitSet[rb.shards.length];
-  }
-
-  void add(int shardNum, NamedList shardCounts, int numRequested) {
-    int sz = shardCounts.size();
-    int numReceived = sz;
-
-    OpenBitSet terms = new OpenBitSet(termNum+sz);
-
-    long last = 0;
-    for (int i=0; i<sz; i++) {
-      String name = shardCounts.getName(i);
-      long count = ((Number)shardCounts.getVal(i)).longValue();
-      if (name == null) {
-        missingCount += count;
-        numReceived--;
-      } else {
-        ShardFacetCount sfc = counts.get(name);
-        if (sfc == null) {
-          sfc = new ShardFacetCount();
-          sfc.name = name;
-          sfc.indexed = ftype == null ? sfc.name : ftype.toInternal(sfc.name);
-          sfc.termNum = termNum++;
-          counts.put(name, sfc);
+      String[] facetQs = params.getParams(FacetParams.FACET_QUERY);
+      if (facetQs != null) {
+        for (String query : facetQs) {
+          QueryFacet queryFacet = new QueryFacet(rb, query);
+          queryFacets.put(queryFacet.getKey(), queryFacet);
         }
-        sfc.count += count;
-        terms.fastSet(sfc.termNum);
-        last = count;
+      }
+
+      String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
+      if (facetFs != null) {
+
+        for (String field : facetFs) {
+          DistribFieldFacet ff = new DistribFieldFacet(rb, field);
+          facets.put(ff.getKey(), ff);
+        }
+      }
+    }
+  }
+
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class FacetBase {
+    String facetType;  // facet.field, facet.query, etc (make enum?)
+    String facetStr;   // original parameter value of facetStr
+    String facetOn;    // the field or query, absent localParams if appropriate
+    private String key; // label in the response for the result... "foo" for {!key=foo}myfield
+    SolrParams localParams;  // any local params for the facet
+
+    public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
+      this.facetType = facetType;
+      this.facetStr = facetStr;
+      try {
+        this.localParams = QueryParsing.getLocalParams(facetStr, rb.req.getParams());
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+      this.facetOn = facetStr;
+      this.key = facetStr;
+
+      if (localParams != null) {
+        // remove local params unless it's a query
+        if (!facetType.equals(FacetParams.FACET_QUERY)) {
+          facetOn = localParams.get(CommonParams.VALUE);
+          key = facetOn;
+        }
+
+        key = localParams.get(CommonParams.OUTPUT_KEY, key);
       }
     }
 
-    // the largest possible missing term is 0 if we received less
-    // than the number requested (provided mincount==0 like it should be for
-    // a shard request)
-    if (numRequested<0 || numRequested != 0 && numReceived < numRequested) {
-      last = 0;
+    /** returns the key in the response that this facet will be under */
+    public String getKey() { return key; }
+    public String getType() { return facetType; }
+  }
+
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class QueryFacet extends FacetBase {
+    public long count;
+
+    public QueryFacet(ResponseBuilder rb, String facetStr) {
+      super(rb, FacetParams.FACET_QUERY, facetStr);
+    }
+  }
+
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class FieldFacet extends FacetBase {
+    public String field;     // the field to facet on... "myfield" for {!key=foo}myfield
+    public FieldType ftype;
+    public int offset;
+    public int limit;
+    public int minCount;
+    public String sort;
+    public boolean missing;
+    public String prefix;
+    public long missingCount;
+
+    public FieldFacet(ResponseBuilder rb, String facetStr) {
+      super(rb, FacetParams.FACET_FIELD, facetStr);
+      fillParams(rb, rb.req.getParams(), facetOn);
     }
 
-    missingMaxPossible += last;
-    missingMax[shardNum] = last;
-    counted[shardNum] = terms;
-  }
-
-  ShardFacetCount[] getLexSorted() {
-    ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
-    Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-      public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-        return o1.indexed.compareTo(o2.indexed);
+    private void fillParams(ResponseBuilder rb, SolrParams params, String field) {
+      this.field = field;
+      this.ftype = rb.req.getSchema().getFieldTypeNoEx(this.field);
+      this.offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
+      this.limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
+      Integer mincount = params.getFieldInt(field, FacetParams.FACET_MINCOUNT);
+      if (mincount==null) {
+        Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
+        // mincount = (zeros!=null && zeros) ? 0 : 1;
+        mincount = (zeros!=null && !zeros) ? 1 : 0;
+        // current default is to include zeros.
       }
-    });
-    countSorted = arr;
-    return arr;
-  }
-
-  ShardFacetCount[] getCountSorted() {
-    ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
-    Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-      public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-        if (o2.count < o1.count) return -1;
-        else if (o1.count < o2.count) return 1;
-        return o1.indexed.compareTo(o2.indexed);
+      this.minCount = mincount;
+      this.missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
+      // default to sorting by count if there is a limit.
+      this.sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
+      if (this.sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
+        this.sort = FacetParams.FACET_SORT_COUNT;
+      } else if (this.sort.equals(FacetParams.FACET_SORT_INDEX_LEGACY)) {
+        this.sort = FacetParams.FACET_SORT_INDEX;
       }
-    });
-    countSorted = arr;
-    return arr;
+      this.prefix = params.getFieldParam(field,FacetParams.FACET_PREFIX);
+    }
   }
 
-  // returns the max possible value this ShardFacetCount could have for this shard
-  // (assumes the shard did not report a count for this value)
-  long maxPossible(ShardFacetCount sfc, int shardNum) {
-    return missingMax[shardNum];
-    // TODO: could store the last term in the shard to tell if this term
-    // comes before or after it.  If it comes before, we could subtract 1
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class DistribFieldFacet extends FieldFacet {
+    public List<String>[] _toRefine; // a List<String> of refinements needed, one for each shard.
+
+    // SchemaField sf;    // currently unneeded
+
+    // the max possible count for a term appearing on no list
+    public long missingMaxPossible;
+    // the max possible count for a missing term for each shard (indexed by shardNum)
+    public long[] missingMax;
+    public OpenBitSet[] counted; // a bitset for each shard, keeping track of which terms seen
+    public HashMap<String,ShardFacetCount> counts = new HashMap<String,ShardFacetCount>(128);
+    public int termNum;
+
+    public int initialLimit;  // how many terms requested in first phase
+    public boolean needRefinements;
+    public ShardFacetCount[] countSorted;
+
+    DistribFieldFacet(ResponseBuilder rb, String facetStr) {
+      super(rb, facetStr);
+      // sf = rb.req.getSchema().getField(field);
+      missingMax = new long[rb.shards.length];
+      counted = new OpenBitSet[rb.shards.length];
+    }
+
+    void add(int shardNum, NamedList shardCounts, int numRequested) {
+      int sz = shardCounts.size();
+      int numReceived = sz;
+
+      OpenBitSet terms = new OpenBitSet(termNum+sz);
+
+      long last = 0;
+      for (int i=0; i<sz; i++) {
+        String name = shardCounts.getName(i);
+        long count = ((Number)shardCounts.getVal(i)).longValue();
+        if (name == null) {
+          missingCount += count;
+          numReceived--;
+        } else {
+          ShardFacetCount sfc = counts.get(name);
+          if (sfc == null) {
+            sfc = new ShardFacetCount();
+            sfc.name = name;
+            sfc.indexed = ftype == null ? sfc.name : ftype.toInternal(sfc.name);
+            sfc.termNum = termNum++;
+            counts.put(name, sfc);
+          }
+          sfc.count += count;
+          terms.fastSet(sfc.termNum);
+          last = count;
+        }
+      }
+
+      // the largest possible missing term is 0 if we received less
+      // than the number requested (provided mincount==0 like it should be for
+      // a shard request)
+      if (numRequested<0 || numRequested != 0 && numReceived < numRequested) {
+        last = 0;
+      }
+
+      missingMaxPossible += last;
+      missingMax[shardNum] = last;
+      counted[shardNum] = terms;
+    }
+
+    public ShardFacetCount[] getLexSorted() {
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
+        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
+          return o1.indexed.compareTo(o2.indexed);
+        }
+      });
+      countSorted = arr;
+      return arr;
+    }
+
+    public ShardFacetCount[] getCountSorted() {
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
+        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
+          if (o2.count < o1.count) return -1;
+          else if (o1.count < o2.count) return 1;
+          return o1.indexed.compareTo(o2.indexed);
+        }
+      });
+      countSorted = arr;
+      return arr;
+    }
+
+    // returns the max possible value this ShardFacetCount could have for this shard
+    // (assumes the shard did not report a count for this value)
+    long maxPossible(ShardFacetCount sfc, int shardNum) {
+      return missingMax[shardNum];
+      // TODO: could store the last term in the shard to tell if this term
+      // comes before or after it.  If it comes before, we could subtract 1
+    }
   }
-}
 
+  /**
+   * <b>This API is experimental and subject to change</b>
+   */
+  public static class ShardFacetCount {
+    public String name;
+    public String indexed;  // the indexed form of the name... used for comparisons.
+    public long count;
+    public int termNum;  // term number starting at 0 (used in bit arrays)
 
-class ShardFacetCount {
-  String name;
-  String indexed;  // the indexed form of the name... used for comparisons.
-  long count;
-  int termNum;  // term number starting at 0 (used in bit arrays)
-
-  public String toString() {
-    return "{term="+name+",termNum="+termNum+",count="+count+"}";
+    public String toString() {
+      return "{term="+name+",termNum="+termNum+",count="+count+"}";
+    }
   }
 }

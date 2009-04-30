@@ -34,11 +34,11 @@ import java.util.Map;
 
 /**
  * This class is experimental and will be changing in the future.
- * 
+ *
  * @version $Id$
  * @since solr 1.3
  */
-public class ResponseBuilder 
+public class ResponseBuilder
 {
   public SolrQueryRequest req;
   public SolrQueryResponse rsp;
@@ -56,11 +56,11 @@ public class ResponseBuilder
   private Query query = null;
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
-  
+
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
   private RTimer timer = null;
-  
+
   private Query highlightQuery = null;
 
   public List<SearchComponent> components;
@@ -126,13 +126,13 @@ public class ResponseBuilder
   // Only valid after STAGE_EXECUTE_QUERY has completed.
 
 
+  public FacetComponent.FacetInfo _facetInfo;
   /* private... components that don't own these shouldn't use them */
   SolrDocumentList _responseDocs;
-  FacetInfo _facetInfo;
   StatsInfo _statsInfo;
 
   /**
-   * Utility function to add debugging info.  This will make sure a valid 
+   * Utility function to add debugging info.  This will make sure a valid
    * debugInfo exists before adding to it.
    */
   public void addDebugInfo( String name, Object val )
