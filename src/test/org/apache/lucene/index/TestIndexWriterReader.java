@@ -537,7 +537,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   public static void createIndexNoClose(boolean multiSegment, String indexName,
       IndexWriter w) throws IOException {
-    w.setMergePolicy(new LogDocMergePolicy());
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, indexName, 4));
     }

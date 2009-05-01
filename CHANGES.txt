@@ -282,6 +282,14 @@ Bug fixes
 
 22. LUCENE-1605: Added BitVector.subset().  (Jeremy Volkman via Mike
     McCandless)
+    
+23. LUCENE-1618: Added FileSwitchDirectory that enables files with
+    specified extensions to be stored in a primary directory and the
+    rest of the files to be stored in the secondary directory.  For
+    example, this can be useful for the large doc-store (stored
+    fields, term vectors) files in FSDirectory and the rest of the
+    index files in a RAMDirectory. (Jason Rutherglen via Mike
+    McCandless)
 
 23. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
     cross-correlate Spans from different fields.
