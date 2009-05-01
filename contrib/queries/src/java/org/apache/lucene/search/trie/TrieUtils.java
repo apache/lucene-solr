@@ -305,7 +305,7 @@ public final class TrieUtils {
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
    * {@link LongRangeBuilder#addRange(String,String)}
    * method.
-   * <p>This method is used by {@link LongTrieRangeFilter}.
+   * <p>This method is used by {@link LongTrieRangeQuery}.
    */
   public static void splitLongRange(final LongRangeBuilder builder,
     final int precisionStep,  final long minBound, final long maxBound
@@ -321,7 +321,7 @@ public final class TrieUtils {
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
    * {@link IntRangeBuilder#addRange(String,String)}
    * method.
-   * <p>This method is used by {@link IntTrieRangeFilter}.
+   * <p>This method is used by {@link IntTrieRangeQuery}.
    */
   public static void splitIntRange(final IntRangeBuilder builder,
     final int precisionStep,  final int minBound, final int maxBound

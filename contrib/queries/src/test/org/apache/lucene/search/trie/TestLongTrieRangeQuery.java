@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLongTrieRangeQuery extends LuceneTestCase {
@@ -366,6 +367,36 @@ public class TestLongTrieRangeQuery extends LuceneTestCase {
   
   public void testSorting_2bit() throws Exception {
     testSorting(2);
+  }
+  
+  public void testEqualsAndHash() throws Exception {
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test1", 4, new Long(10L), new Long(20L), true, true));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test2", 4, new Long(10L), new Long(20L), false, true));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test3", 4, new Long(10L), new Long(20L), true, false));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test4", 4, new Long(10L), new Long(20L), false, false));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test5", 4, new Long(10L), null, true, true));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test6", 4, null, new Long(20L), true, true));
+    QueryUtils.checkHashEquals(new LongTrieRangeQuery("test7", 4, null, null, true, true));
+    QueryUtils.checkEqual(
+      new LongTrieRangeQuery("test8", 4, new Long(10L), new Long(20L), true, true), 
+      new LongTrieRangeQuery("test8", 4, new Long(10L), new Long(20L), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new LongTrieRangeQuery("test9", 4, new Long(10L), new Long(20L), true, true), 
+      new LongTrieRangeQuery("test9", 8, new Long(10L), new Long(20L), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new LongTrieRangeQuery("test10a", 4, new Long(10L), new Long(20L), true, true), 
+      new LongTrieRangeQuery("test10b", 4, new Long(10L), new Long(20L), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new LongTrieRangeQuery("test11", 4, new Long(10L), new Long(20L), true, true), 
+      new LongTrieRangeQuery("test11", 4, new Long(20L), new Long(10L), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new LongTrieRangeQuery("test12", 4, new Long(10L), new Long(20L), true, true), 
+      new LongTrieRangeQuery("test12", 4, new Long(10L), new Long(20L), false, true)
+     );
   }
   
 }

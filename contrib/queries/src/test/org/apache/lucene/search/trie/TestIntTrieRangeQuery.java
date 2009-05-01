@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIntTrieRangeQuery extends LuceneTestCase {
@@ -366,6 +367,36 @@ public class TestIntTrieRangeQuery extends LuceneTestCase {
   
   public void testSorting_2bit() throws Exception {
     testSorting(2);
+  }
+  
+  public void testEqualsAndHash() throws Exception {
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test1", 4, new Integer(10), new Integer(20), true, true));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test2", 4, new Integer(10), new Integer(20), false, true));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test3", 4, new Integer(10), new Integer(20), true, false));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test4", 4, new Integer(10), new Integer(20), false, false));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test5", 4, new Integer(10), null, true, true));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test6", 4, null, new Integer(20), true, true));
+    QueryUtils.checkHashEquals(new IntTrieRangeQuery("test7", 4, null, null, true, true));
+    QueryUtils.checkEqual(
+      new IntTrieRangeQuery("test8", 4, new Integer(10), new Integer(20), true, true), 
+      new IntTrieRangeQuery("test8", 4, new Integer(10), new Integer(20), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new IntTrieRangeQuery("test9", 4, new Integer(10), new Integer(20), true, true), 
+      new IntTrieRangeQuery("test9", 8, new Integer(10), new Integer(20), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new IntTrieRangeQuery("test10a", 4, new Integer(10), new Integer(20), true, true), 
+      new IntTrieRangeQuery("test10b", 4, new Integer(10), new Integer(20), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new IntTrieRangeQuery("test11", 4, new Integer(10), new Integer(20), true, true), 
+      new IntTrieRangeQuery("test11", 4, new Integer(20), new Integer(10), true, true)
+     );
+    QueryUtils.checkUnequal(
+      new IntTrieRangeQuery("test12", 4, new Integer(10), new Integer(20), true, true), 
+      new IntTrieRangeQuery("test12", 4, new Integer(10), new Integer(20), false, true)
+     );
   }
   
 }
