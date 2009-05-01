@@ -1445,13 +1445,27 @@ public class IndexWriter {
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
+        boolean doCommit;
         try {
           segmentInfos.read(directory);
           segmentInfos.clear();
+          doCommit = false;
         } catch (IOException e) {
           // Likely this means it's a fresh directory
+          doCommit = true;
         }
-        segmentInfos.commit(directory);
+
+        if (autoCommit || doCommit) {
+          // Always commit if autoCommit=true, else only
+          // commit if there is no segments file in this dir
+          // already.
+          segmentInfos.commit(directory);
+          synced.addAll(segmentInfos.files(directory, true));
+        } else {
+          // Record that we have a change (zero out all
+          // segments) pending:
+          changeCount++;
+        }
       } else {
         segmentInfos.read(directory);
 

@@ -702,7 +702,7 @@ public class TestDeletionPolicy extends LuceneTestCase
 
       assertEquals(1+3*(N+1), policy.numOnInit);
       if (!autoCommit)
-        assertEquals(2*(N+1), policy.numOnCommit);
+        assertEquals(3*(N+1), policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
