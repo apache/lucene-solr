@@ -1528,13 +1528,13 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>
                     FieldInfos
-                    (.fnm) --&gt; FieldsCount, &lt;FieldName,
+                    (.fnm) --&gt; FNMVersion,FieldsCount, &lt;FieldName,
                     FieldBits&gt;
                     <sup>FieldsCount</sup>
                 
 </p>
 <p>
-                    FieldsCount --&gt; VInt
+                    FNMVersion, FieldsCount --&gt; VInt
                 </p>
 <p>
                     FieldName --&gt; String
@@ -1574,6 +1574,9 @@ document.write("Last Published: " + document.lastModified);
 </ul>
                 
 </p>
+<p>
+		   FNMVersion (added in 2.9) is always -2.
+		</p>
 <p>
                     Fields are numbered by their order in this file. Thus field zero is
                     the
@@ -1730,7 +1733,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N105ED"></a><a name="Term Dictionary"></a>
+<a name="N105F0"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1920,7 +1923,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1066D"></a><a name="Frequencies"></a>
+<a name="N10670"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2048,7 +2051,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N106F5"></a><a name="Positions"></a>
+<a name="N106F8"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2118,7 +2121,7 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N10731"></a><a name="Normalization Factors"></a>
+<a name="N10734"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2222,7 +2225,7 @@ document.write("Last Published: " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N1079A"></a><a name="Term Vectors"></a>
+<a name="N1079D"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2355,7 +2358,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10830"></a><a name="Deleted Documents"></a>
+<a name="N10833"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2427,7 +2430,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10873"></a><a name="Limitations"></a>
+<a name="N10876"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>

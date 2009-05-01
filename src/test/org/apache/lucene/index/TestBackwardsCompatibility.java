@@ -125,6 +125,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase
                              "22.nocfs",
                              "23.cfs",
                              "23.nocfs",
+                             "24.cfs",
+                             "24.nocfs",
   };
 
   public void testOptimizeOldIndex() throws IOException {
@@ -203,8 +205,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       if (!reader.isDeleted(i)) {
         Document d = reader.document(i);
         List fields = d.getFields();
-        if (oldName.startsWith("23.")) {
-          assertEquals(4, fields.size());
+        if (!oldName.startsWith("19.") &&
+            !oldName.startsWith("20.") &&
+            !oldName.startsWith("21.") &&
+            !oldName.startsWith("22.")) {
+          // Test on indices >= 2.3
+          assertEquals(5, fields.size());
           Field f = (Field) d.getField("id");
           assertEquals(""+i, f.stringValue());
 
@@ -216,7 +222,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         
           f = (Field) d.getField("content2");
           assertEquals("here is more content with aaa aaa aaa", f.stringValue());
-        }        
+
+          f = (Field) d.getField("fie\u2C77ld");
+          assertEquals("field with non-ascii name", f.stringValue());
+        }       
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);
@@ -479,6 +488,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
   }
 

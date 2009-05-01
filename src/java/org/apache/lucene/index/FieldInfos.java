@@ -33,6 +33,14 @@ import java.util.*;
  *  accessing this object.
  */
 final class FieldInfos {
+
+  // Used internally (ie not written to *.fnm files) for pre-2.9 files
+  public static final int FORMAT_PRE = -1;
+
+  // First used in 2.9; prior to 2.9 there was no format header
+  public static final int FORMAT_START = -2;
+
+  static final int CURRENT_FORMAT = FORMAT_START;
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
@@ -44,6 +52,7 @@ final class FieldInfos {
   
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
+  private int format;
 
   FieldInfos() { }
 
@@ -57,7 +66,25 @@ final class FieldInfos {
   FieldInfos(Directory d, String name) throws IOException {
     IndexInput input = d.openInput(name);
     try {
-      read(input);
+      try {
+        read(input, name);
+      } catch (IOException ioe) {
+        if (format == FORMAT_PRE) {
+          // LUCENE-1623: FORMAT_PRE (before there was a
+          // format) may be 2.3.2 (pre-utf8) or 2.4.x (utf8)
+          // encoding; retry with input set to pre-utf8
+          input.seek(0);
+          input.setModifiedUTF8StringsMode();
+          byNumber = new ArrayList();
+          byName = new HashMap();
+          try {
+            read(input, name);
+          } catch (Throwable t) {
+            // Ignore any new exception & throw original IOE
+            throw ioe;
+          }
+        }
+      }
     } finally {
       input.close();
     }
@@ -278,6 +305,7 @@ final class FieldInfos {
   }
 
   public void write(IndexOutput output) throws IOException {
+    output.writeVInt(CURRENT_FORMAT);
     output.writeVInt(size());
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);
@@ -295,8 +323,27 @@ final class FieldInfos {
     }
   }
 
-  private void read(IndexInput input) throws IOException {
-    int size = input.readVInt();//read in the size
+  private void read(IndexInput input, String fileName) throws IOException {
+    int firstInt = input.readVInt();
+
+    if (firstInt < 0) {
+      // This is a real format
+      format = firstInt;
+    } else {
+      format = FORMAT_PRE;
+    }
+
+    if (format != FORMAT_PRE & format != FORMAT_START) {
+      throw new CorruptIndexException("unrecognized format " + format + " in file \"" + fileName + "\"");
+    }
+
+    int size;
+    if (format == FORMAT_PRE) {
+      size = firstInt;
+    } else {
+      size = input.readVInt(); //read in the size
+    }
+
     for (int i = 0; i < size; i++) {
       String name = input.readString().intern();
       byte bits = input.readByte();
@@ -309,6 +356,10 @@ final class FieldInfos {
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
       
       addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+    }
+
+    if (input.getFilePointer() != input.length()) {
+      throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length());
     }    
   }
 

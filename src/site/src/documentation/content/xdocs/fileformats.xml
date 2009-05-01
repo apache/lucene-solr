@@ -1053,13 +1053,13 @@
                 </p>
                 <p>
                     FieldInfos
-                    (.fnm) --&gt; FieldsCount, &lt;FieldName,
+                    (.fnm) --&gt; FNMVersion,FieldsCount, &lt;FieldName,
                     FieldBits&gt;
                     <sup>FieldsCount</sup>
                 </p>
 
                 <p>
-                    FieldsCount --&gt; VInt
+                    FNMVersion, FieldsCount --&gt; VInt
                 </p>
 
                 <p>
@@ -1091,12 +1091,18 @@
                     </ul>
                 </p>
 
+		<p>
+		   FNMVersion (added in 2.9) is always -2.
+		</p>
+
                 <p>
                     Fields are numbered by their order in this file. Thus field zero is
                     the
                     first field in the file, field one the next, and so on. Note that,
                     like document numbers, field numbers are segment relative.
                 </p>
+
+
 
                 <p>
                     <br/>
