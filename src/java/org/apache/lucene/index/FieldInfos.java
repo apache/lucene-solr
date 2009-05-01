@@ -50,8 +50,8 @@ final class FieldInfos {
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
   
-  private ArrayList byNumber = new ArrayList();
-  private HashMap byName = new HashMap();
+  private final ArrayList byNumber = new ArrayList();
+  private final HashMap byName = new HashMap();
   private int format;
 
   FieldInfos() { }
@@ -75,14 +75,18 @@ final class FieldInfos {
           // encoding; retry with input set to pre-utf8
           input.seek(0);
           input.setModifiedUTF8StringsMode();
-          byNumber = new ArrayList();
-          byName = new HashMap();
+          byNumber.clear();
+          byName.clear();
           try {
             read(input, name);
           } catch (Throwable t) {
             // Ignore any new exception & throw original IOE
             throw ioe;
           }
+        } else {
+          // The IOException cannot be caused by
+          // LUCENE-1623, so re-throw it
+          throw ioe;
         }
       }
     } finally {
