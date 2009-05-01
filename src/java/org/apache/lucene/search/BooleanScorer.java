@@ -303,16 +303,16 @@ final class BooleanScorer extends Scorer {
     public final int size() { return SIZE; }
 
     public Collector newCollector(int mask) {
-      return new BolleanScorerCollector(mask, this);
+      return new BooleanScorerCollector(mask, this);
     }
   }
 
-  private static final class BolleanScorerCollector extends Collector {
+  private static final class BooleanScorerCollector extends Collector {
     private BucketTable bucketTable;
     private int mask;
     private Scorer scorer;
     
-    public BolleanScorerCollector(int mask, BucketTable bucketTable) {
+    public BooleanScorerCollector(int mask, BucketTable bucketTable) {
       this.mask = mask;
       this.bucketTable = bucketTable;
     }
