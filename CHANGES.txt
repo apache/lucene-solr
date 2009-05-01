@@ -159,7 +159,11 @@ Bug fixes
    could cause "infinite merging" to happen.  (Christiaan Fluit via
    Mike McCandless)
 
-New features
+8. LUCENE-1623: Properly handle back-compability of 2.3.x indexes that
+   contain field names with non-ascii characters.  (Mike Streeton via
+   Mike McCandless)
+
+ New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
     commit, obtained from IndexReader.listCommits.  This makes it
