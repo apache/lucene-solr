@@ -70,11 +70,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String q = getQuery();
       initQuery(resolver.replaceTokens(q));
     }
-    while (true) {
-      Map<String, Object> r = getNext();
-      return r;
-    }
-
+    return getNext();
   }
 
   public Map<String, Object> nextModifiedRowKey() {
