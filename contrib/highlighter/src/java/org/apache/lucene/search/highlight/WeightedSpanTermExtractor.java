@@ -140,10 +140,17 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
       if(mtq.getConstantScoreRewrite()) {
-        query = copyMultiTermQuery(mtq);
+        mtq = copyMultiTermQuery(mtq);
         mtq.setConstantScoreRewrite(false);
+        query = mtq;
       }
-      IndexReader ir = getReaderForField(fieldName);
+      String field;
+      if(mtq instanceof RangeQuery) {
+        field = ((RangeQuery)mtq).getField();
+      } else {
+        field = mtq.getTerm().field();
+      }
+      IndexReader ir = getReaderForField(field);
       extract(query.rewrite(ir), terms);
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
@@ -464,17 +471,17 @@ public class WeightedSpanTermExtractor {
     
   }
   
-  private Query copyMultiTermQuery(MultiTermQuery query) {
+  private MultiTermQuery copyMultiTermQuery(MultiTermQuery query) {
     if(query instanceof RangeQuery) {
       RangeQuery q = (RangeQuery)query;
       q.setBoost(query.getBoost());
       return new RangeQuery(q.getField(), q.getLowerTermText(), q.getUpperTermText(), q.includesLower(), q.includesUpper());
     } else if(query instanceof WildcardQuery) {
-      Query q = new WildcardQuery(query.getTerm());
+      MultiTermQuery q = new WildcardQuery(query.getTerm());
       q.setBoost(query.getBoost());
       return q;
     } else if(query instanceof PrefixQuery) {
-      Query q = new PrefixQuery(query.getTerm());
+      MultiTermQuery q = new PrefixQuery(query.getTerm());
       q.setBoost(q.getBoost());
       return q;
     } else if(query instanceof FuzzyQuery) {

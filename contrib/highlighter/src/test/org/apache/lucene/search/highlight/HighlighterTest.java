@@ -578,6 +578,68 @@ public class HighlighterTest extends TestCase implements Formatter {
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 5);
+    
+    // try null field
+    
+    hits = searcher.search(query);
+    
+    numHighlights = 0;
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
+      int maxNumFragmentsRequired = 2;
+      String fragmentSeparator = "...";
+      SpanScorer scorer = null;
+      TokenStream tokenStream = null;
+
+      tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
+          new StringReader(text)));
+      
+      scorer = new SpanScorer(query, null, (CachingTokenFilter) tokenStream, true);
+
+      Highlighter highlighter = new Highlighter(this, scorer);
+
+      ((CachingTokenFilter) tokenStream).reset();
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(20));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          fragmentSeparator);
+      System.out.println("\t" + result);
+    }
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 5);
+    
+    // try default field
+    
+    hits = searcher.search(query);
+    
+    numHighlights = 0;
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
+      int maxNumFragmentsRequired = 2;
+      String fragmentSeparator = "...";
+      SpanScorer scorer = null;
+      TokenStream tokenStream = null;
+
+      tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
+          new StringReader(text)));
+      
+      scorer = new SpanScorer(query, "random_field", (CachingTokenFilter) tokenStream, HighlighterTest.FIELD_NAME, true);
+
+      Highlighter highlighter = new Highlighter(this, scorer);
+
+      ((CachingTokenFilter) tokenStream).reset();
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(20));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          fragmentSeparator);
+      System.out.println("\t" + result);
+    }
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 5);
   }
 
   public void testGetBestFragmentsPhrase() throws Exception {
