@@ -39,7 +39,8 @@
        not normally be changed by applications.
        1.0: multiValued attribute did not exist, all fields are multiValued by nature
        1.1: multiValued attribute introduced, false by default 
-       1.2: omitTermFreqAndPositions attribute introduced, true by default -->
+       1.2: omitTermFreqAndPositions attribute introduced, true by default except for text fields.
+     -->
 
   <types>
     <!-- field type definitions. The "name" attribute is
