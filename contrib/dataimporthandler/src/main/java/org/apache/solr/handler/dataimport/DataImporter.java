@@ -480,7 +480,7 @@ public class DataImporter {
         verbose = "true".equals(requestParams.get("verbose"))
                 || "on".equals(requestParams.get("verbose"));
       }
-      if (DELTA_IMPORT_CMD.equals(command)) {
+      if (DELTA_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
         clean = false;
       }
       if (requestParams.containsKey("commit"))
@@ -538,6 +538,8 @@ public class DataImporter {
   public static final String STATUS_MSGS = "status-messages";
 
   public static final String FULL_IMPORT_CMD = "full-import";
+
+  public static final String IMPORT_CMD = "import";
 
   public static final String DELTA_IMPORT_CMD = "delta-import";
 

@@ -139,6 +139,10 @@ New Features
 31.SOLR-1127: Add support for field name to be templatized.
               (Noble Paul, shalin)
 
+32.SOLR-1092: Added a new command named 'import' which does not automatically clean the index. This is useful and
+              more appropriate when one needs to import only some of the entities.
+              (Noble Paul via shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

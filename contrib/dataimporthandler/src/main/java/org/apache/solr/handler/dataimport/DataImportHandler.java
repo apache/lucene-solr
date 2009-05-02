@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -171,7 +172,8 @@ public class DataImportHandler extends RequestHandlerBase implements
       message = DataImporter.MSG.CMD_RUNNING;
     } else if (command != null) {
       if (DataImporter.FULL_IMPORT_CMD.equals(command)
-              || DataImporter.DELTA_IMPORT_CMD.equals(command)) {
+              || DataImporter.DELTA_IMPORT_CMD.equals(command) ||
+              IMPORT_CMD.equals(command)) {
 
         UpdateRequestProcessorChain processorChain =
                 req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
