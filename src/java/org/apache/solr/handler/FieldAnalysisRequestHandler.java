@@ -82,6 +82,8 @@ import java.util.Set;
  * <td>No</td>
  * </tr>
  * </table>
+ * <p>Note that if neither analysis.fieldname and analysis.fieldtype is specified, then the default search field's
+ * analyzer is used.</p>
  *
  * @version $Id$
  * @since solr 1.4 
@@ -92,7 +94,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * {@inheritDoc}
    */
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
-    FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req.getParams());
+    FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     IndexSchema indexSchema = req.getCore().getSchema();
     return handleAnalysisRequest(analysisRequest, indexSchema);
   }
@@ -122,19 +124,26 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * Resolves the AnalysisRequest based on the parameters in the given SolrParams.
    *
-   * @param solrParams SolrParams taken from request
+   * @param req the request
    *
    * @return AnalysisRequest containing all the information about what needs to be analyzed, and using what
    *         fields/types
    */
-  FieldAnalysisRequest resolveAnalysisRequest(SolrParams solrParams) {
+  FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) {
+    SolrParams solrParams = req.getParams();
     FieldAnalysisRequest analysisRequest = new FieldAnalysisRequest();
 
+    boolean useDefaultSearchField = true;
     if (solrParams.get(AnalysisParams.FIELD_TYPE) != null) {
       analysisRequest.setFieldTypes(Arrays.asList(solrParams.get(AnalysisParams.FIELD_TYPE).split(",")));
+      useDefaultSearchField = false;
     }
     if (solrParams.get(AnalysisParams.FIELD_NAME) != null) {
       analysisRequest.setFieldNames(Arrays.asList(solrParams.get(AnalysisParams.FIELD_NAME).split(",")));
+      useDefaultSearchField = false;
+    }
+    if (useDefaultSearchField)  {
+      analysisRequest.addFieldName(req.getSchema().getSolrQueryParser(null).getField());
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
     analysisRequest.setFieldValue(solrParams.get(AnalysisParams.FIELD_VALUE));
@@ -154,15 +163,19 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     NamedList<NamedList> analysisResults = new SimpleOrderedMap<NamedList>();
 
     NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<NamedList>();
-    for (String fieldTypeName : request.getFieldTypes()) {
-      FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
-      fieldTypeAnalysisResults.add(fieldTypeName, analyzeValues(request, fieldType, null));
+    if (request.getFieldTypes() != null)  {
+      for (String fieldTypeName : request.getFieldTypes()) {
+        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
+        fieldTypeAnalysisResults.add(fieldTypeName, analyzeValues(request, fieldType, null));
+      }
     }
 
     NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<NamedList>();
-    for (String fieldName : request.getFieldNames()) {
-      FieldType fieldType = schema.getFieldType(fieldName);
-      fieldNameAnalysisResults.add(fieldName, analyzeValues(request, fieldType, fieldName));
+    if (request.getFieldNames() != null)  {
+      for (String fieldName : request.getFieldNames()) {
+        FieldType fieldType = schema.getFieldType(fieldName);
+        fieldNameAnalysisResults.add(fieldName, analyzeValues(request, fieldType, fieldName));
+      }
     }
 
     analysisResults.add("field_types", fieldTypeAnalysisResults);
