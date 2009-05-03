@@ -18,6 +18,7 @@
 package org.apache.solr.request;
 
 import org.apache.solr.search.DocSlice;
+import org.apache.solr.common.SolrDocumentList;
 
 public class PageTool {
   private long start;
@@ -33,11 +34,17 @@ public class PageTool {
       results_per_page = new Integer(rows);
     }
 
-    DocSlice doc_slice = (DocSlice) response.getValues().get("response");
-
-    if (doc_slice != null) {
-      results_found = doc_slice.matches();
-      start = doc_slice.offset();
+    Object docs = response.getValues().get("response");
+    if (docs != null) {
+      if (docs instanceof DocSlice) {
+        DocSlice doc_slice = (DocSlice) docs;
+        results_found = doc_slice.matches();
+        start = doc_slice.offset();
+      } else {
+        SolrDocumentList doc_list = (SolrDocumentList) docs;
+        results_found = doc_list.getNumFound();
+        start = doc_list.getStart();
+      }
     }
 
     page_count = (int) Math.ceil(results_found / (double) results_per_page);
