@@ -85,7 +85,24 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     assertEquals( "xxxx", comp.getAnalyzedQuery( "XXXX" ) );
     assertEquals( "xxxxyyyy", comp.getAnalyzedQuery( "XXXX YYYY" ) );
   }
-  
+
+  public void testEmptyQuery() throws Exception {
+    SolrCore core = h.getCore();
+
+
+
+    //String query = "title:ipod";
+
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( "q.alt", "*:*" );
+    args.put( "defType", "dismax");
+    //args.put( CommonParams.FL, "id,title,score" );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    assertQ("Make sure QEC handles null queries", req, "//*[@numFound='0']");
+
+  }
+
+
   public void testSorting() throws IOException
   {
     SolrCore core = h.getCore();

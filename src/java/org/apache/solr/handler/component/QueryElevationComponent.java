@@ -52,6 +52,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortComparatorSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -324,12 +325,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     boolean force = params.getBool( FORCE_ELEVATION, forceElevation );
     
     Query query = rb.getQuery();
-    if( query == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-          "The QueryElevationComponent needs to be registered 'after' the query component" );
+    String qstr = rb.getQueryString();
+    if( query == null || qstr == null) {
+      return;
     }
-    
-    String qstr = getAnalyzedQuery( rb.getQueryString() );
+
+    qstr = getAnalyzedQuery(qstr);
     IndexReader reader = req.getSearcher().getReader();
     ElevationObj booster = null;
     try {

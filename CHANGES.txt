@@ -354,6 +354,7 @@ Bug Fixes
 
 41. SOLR-1135: Java replication creates Snapshot in the directory where Solr was launched (Jianhan Guo via shalin)
 
+42. SOLR-1138: Query Elevation Component now gracefully handles missing queries. (gsingers)
 
 Other Changes
 ----------------------
