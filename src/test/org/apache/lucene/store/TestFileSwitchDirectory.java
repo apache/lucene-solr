@@ -64,8 +64,11 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     }
     reader.close();
     writer.close();
-    
-    primaryDir.close();
-    secondaryDir.close();
+
+    files = fsd.listAll();
+    for(int i=0;i<files.length;i++) {
+      assertNotNull(files[i]);
+    }
+    fsd.close();
   }
 }

@@ -44,6 +44,14 @@ public class FileSwitchDirectory extends Directory {
     this.lockFactory = primaryDir.getLockFactory();
   }
   
+  public Directory getPrimaryDir() {
+    return primaryDir;
+  }
+  
+  public Directory getSecondaryDir() {
+    return secondaryDir;
+  }
+  
   public void close() throws IOException {
     if (doClose) {
       try {
@@ -56,16 +64,12 @@ public class FileSwitchDirectory extends Directory {
   }
   
   public String[] listAll() throws IOException {
-    List list = new ArrayList();
-    String[] ramFiles = secondaryDir.listAll();
-    for (int x = 0; x < ramFiles.length; x++) {
-      list.add(ramFiles[x]);
-    }
-    String[] fsFiles = primaryDir.listAll();
-    for (int x = 0; x < fsFiles.length; x++) {
-      list.add(fsFiles[x]);
-    }
-    return (String[]) list.toArray(new String[0]);
+    String[] primaryFiles = primaryDir.listAll();
+    String[] secondaryFiles = secondaryDir.listAll();
+    String[] files = new String[primaryFiles.length + secondaryFiles.length];
+    System.arraycopy(primaryFiles, 0, files, 0, primaryFiles.length);
+    System.arraycopy(secondaryFiles, 0, files, primaryFiles.length, secondaryFiles.length);
+    return files;
   }
   
   public String[] list() throws IOException {
