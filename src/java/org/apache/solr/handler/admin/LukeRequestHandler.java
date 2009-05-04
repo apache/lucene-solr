@@ -300,7 +300,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
-      if (sfield != null && schema.getDynamicPattern(sfield.getName()) != null) {
+      if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
     	  f.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
 

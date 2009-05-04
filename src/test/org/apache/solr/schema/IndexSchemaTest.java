@@ -129,4 +129,12 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
   }
+  
+  public void testIsDynamicField() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    assertFalse( schema.isDynamicField( "id" ) );
+    assertTrue( schema.isDynamicField( "aaa_i" ) );
+    assertFalse( schema.isDynamicField( "no_such_field" ) );
+  }
 }

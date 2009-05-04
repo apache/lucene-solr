@@ -356,6 +356,9 @@ Bug Fixes
 
 42. SOLR-1138: Query Elevation Component now gracefully handles missing queries. (gsingers)
 
+43. SOLR-929: LukeRequestHandler should return "dynamicBase" only if the field is dynamic.
+    (Peter Wolanin, koji)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

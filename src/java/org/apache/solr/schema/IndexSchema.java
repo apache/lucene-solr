@@ -1014,6 +1014,23 @@ public final class IndexSchema {
   }
 
   /**
+   * Is the specified field dynamic or not.
+   * @param fieldName
+   * @return true if the specified field is dynamic
+   */
+  public boolean isDynamicField(String fieldName) {
+    if(fields.containsKey(fieldName)) {
+      return false;
+    }
+
+    for (DynamicField df : dynamicFields) {
+      if (df.matches(fieldName)) return true;
+    }
+
+    return false;
+  }
+  
+  /**
    * Returns the SchemaField that should be used for the specified field name, or
    * null if none exists.
    *
