@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastInputStream;
@@ -380,8 +381,8 @@ public class SnapPuller {
       LOG.warn("Exception while updating statistics", e);
     }
     finally {
-      closeNoExp(inFile);
-      closeNoExp(outFile);
+      IOUtils.closeQuietly(inFile);
+      IOUtils.closeQuietly(outFile);
     }
   }
 
@@ -584,7 +585,7 @@ public class SnapPuller {
       } catch (Exception e) {
         LOG.error("Unable to load index.properties");
       } finally {
-        closeNoExp(is);
+        IOUtils.closeQuietly(is);
       }
     }
     p.put("index", snap);
@@ -596,7 +597,7 @@ public class SnapPuller {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unable to write index.properties", e);
     } finally {
-      closeNoExp(os);
+      IOUtils.closeQuietly(os);
     }
   }
 
@@ -818,7 +819,7 @@ public class SnapPuller {
             }
             //if there is an error continue. But continue from the point where it got broken
           } finally {
-            closeNoExp(is);
+            IOUtils.closeQuietly(is);
           }
         }
       } finally {

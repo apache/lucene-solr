@@ -359,6 +359,8 @@ Bug Fixes
 43. SOLR-929: LukeRequestHandler should return "dynamicBase" only if the field is dynamic.
     (Peter Wolanin, koji)
 
+44. SOLR-1141: NullPointerException during snapshoot command in java based replication (Jian Han Guo, shalin)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

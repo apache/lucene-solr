@@ -34,6 +34,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +92,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
   private volatile IndexCommit indexCommitPoint;
+
+  volatile NamedList snapShootDetails; 
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -201,7 +204,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } catch (Exception e) {
       LOG.warn("Exception in finding checksum of " + f, e);
     } finally {
-      closeNoExp(fis);
+      IOUtils.closeQuietly(fis);
     }
     return null;
   }
@@ -236,8 +239,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private void doSnapShoot(SolrQueryResponse rsp) {
     try {
-      new SnapShooter(core).createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames());
+      IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
+      if (indexCommit != null)  {
+        new SnapShooter(core).createSnapAsync(indexCommit.getFileNames(), this);
+      }
     } catch (Exception e) {
+      LOG.warn("Exception during creating a snapshot", e);
       rsp.add("exception", e);
     }
   }
@@ -542,7 +549,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (Exception e) {
         LOG.warn("Exception while reading " + SnapPuller.REPLICATION_PROPERTIES);
       } finally {
-        closeNoExp(inFile);
+        IOUtils.closeQuietly(inFile);
       }
       try {
         NamedList nl = snapPuller.getCommandResponse(CMD_DETAILS);
@@ -667,6 +674,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       details.add("master", master);
     if(isSlave)
       details.add("slave", slave);
+    NamedList snapshotStats = snapShootDetails;
+    if (snapshotStats != null)
+      details.add(CMD_SNAP_SHOOT, snapshotStats);
     return details;
   }
 
@@ -804,7 +814,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core);
-            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames());
+            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames(), ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }
@@ -813,13 +823,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) { /*no op*/}
     };
-  }
-
-  static void closeNoExp(Closeable closeable) {
-    try {
-      if (closeable != null)
-        closeable.close();
-    } catch (Exception e) {/*no op*/ }
   }
 
   private class FileStream {
@@ -913,7 +916,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (IOException e) {
         LOG.warn("Exception while writing response for params: " + params, e);
       } finally {
-        closeNoExp(inputStream);
+        IOUtils.closeQuietly(inputStream);
       }
     }
 
