@@ -234,6 +234,9 @@ Bug Fixes
 25.SOLR-1090: DataImportHandler should load the data-config.xml using UTF-8 encoding.
               (Rui Pereira, shalin)
 
+26.SOLR-1146: ConcurrentModificationException in DataImporter.getStatusMessages
+              (Walter Ferrara, Noble Paul via shalin)
+
 Documentation
 ----------------------
 

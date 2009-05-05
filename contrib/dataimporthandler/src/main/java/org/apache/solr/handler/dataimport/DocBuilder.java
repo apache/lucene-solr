@@ -48,7 +48,7 @@ public class DocBuilder {
   private DataConfig.Entity root;
 
   @SuppressWarnings("unchecked")
-  private Map statusMessages = new LinkedHashMap();
+  private Map statusMessages = Collections.synchronizedMap(new LinkedHashMap());
 
   public Statistics importStatistics = new Statistics();
 

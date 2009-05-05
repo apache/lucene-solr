@@ -382,12 +382,17 @@ public class DataImporter {
 
   @SuppressWarnings("unchecked")
   Map<String, String> getStatusMessages() {
+    //this map object is a Collections.synchronizedMap(new LinkedHashMap()). if we
+    // synchronize on the object it must be safe to iterate through the map
     Map statusMessages = (Map) retrieve(STATUS_MSGS);
     Map<String, String> result = new LinkedHashMap<String, String>();
     if (statusMessages != null) {
-      for (Object o : statusMessages.entrySet()) {
-        Map.Entry e = (Map.Entry) o;
-        result.put((String) e.getKey(), e.getValue().toString());
+      synchronized (statusMessages) {
+        for (Object o : statusMessages.entrySet()) {
+          Map.Entry e = (Map.Entry) o;
+          //the toString is taken because some of the Objects create the data lazily when toString() is called
+          result.put((String) e.getKey(), e.getValue().toString());
+        }
       }
     }
     return result;
