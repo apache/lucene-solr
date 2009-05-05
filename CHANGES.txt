@@ -291,7 +291,7 @@ Bug fixes
     index files in a RAMDirectory. (Jason Rutherglen via Mike
     McCandless)
 
-23. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
+24. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
     cross-correlate Spans from different fields.
     (Paul Cowan and Chris Hostetter)
     
