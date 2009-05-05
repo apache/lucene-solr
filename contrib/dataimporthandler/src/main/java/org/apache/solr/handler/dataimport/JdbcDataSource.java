@@ -94,11 +94,9 @@ public class JdbcDataSource extends
 
   protected Callable<Connection> createConnectionFactory(final Context context,
                                        final Properties initProps) {
-    final String jndiName = initProps.getProperty(JNDI_NAME);
-
     final VariableResolver resolver = context.getVariableResolver();
     resolveVariables(resolver, initProps);
-
+    final String jndiName = initProps.getProperty(JNDI_NAME);
     final String url = initProps.getProperty(URL);
     final String driver = initProps.getProperty(DRIVER);
 
