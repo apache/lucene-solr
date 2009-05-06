@@ -39,6 +39,7 @@ import org.apache.lucene.util.ToStringUtils;
  * override equals and hashcode.
  */
 public abstract class MultiTermQuery extends Query {
+  /* @deprecated move to sub class */
   protected Term term;
   protected boolean constantScoreRewrite = false;
   transient int numberOfTerms = 0;
@@ -55,7 +56,11 @@ public abstract class MultiTermQuery extends Query {
   public MultiTermQuery() {
   }
 
-  /** Returns the pattern term. */
+  /**
+   * Returns the pattern term.
+   * @deprecated check sub class for possible term access - getTerm does not
+   * make sense for all MultiTermQuerys and will be removed.
+   */
   public Term getTerm() {
     return term;
   }
@@ -121,7 +126,11 @@ public abstract class MultiTermQuery extends Query {
     }
   }
 
-  /** Prints a user-readable version of this query. */
+
+  /* Prints a user-readable version of this query.
+   * Implemented for back compat in case MultiTermQuery
+   * subclasses do no implement.
+   */
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
     if (term != null) {
@@ -145,31 +154,29 @@ public abstract class MultiTermQuery extends Query {
     this.constantScoreRewrite = constantScoreRewrite;
   }
 
-  public boolean equals(Object o) {
-    if (o == null || term == null) {
-      throw new UnsupportedOperationException(
-          "MultiTermQuerys that do not use a pattern term need to override equals/hashcode");
-    }
-
-    if (this == o)
-      return true;
-    if (!(o instanceof MultiTermQuery))
-      return false;
-
-    final MultiTermQuery multiTermQuery = (MultiTermQuery) o;
-
-    if (!term.equals(multiTermQuery.term))
-      return false;
-
-    return getBoost() == multiTermQuery.getBoost();
-  }
-
+  //@Override
   public int hashCode() {
-    if (term == null) {
-      throw new UnsupportedOperationException(
-          "MultiTermQuerys that do not use a pattern term need to override equals/hashcode");
-    }
-    return term.hashCode() + Float.floatToRawIntBits(getBoost());
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Float.floatToIntBits(getBoost());
+    result = prime * result + (constantScoreRewrite ? 1231 : 1237);
+    return result;
   }
 
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    MultiTermQuery other = (MultiTermQuery) obj;
+    if (Float.floatToIntBits(getBoost()) != Float.floatToIntBits(other.getBoost()))
+      return false;
+    if (constantScoreRewrite != other.constantScoreRewrite)
+      return false;
+    return true;
+  }
+ 
 }

@@ -36,6 +36,8 @@ public class FuzzyQuery extends MultiTermQuery {
   private int prefixLength;
   private boolean termLongEnough = false;
   
+  protected Term term;
+  
   /**
    * Create a new FuzzyQuery that will match terms with a similarity 
    * of at least <code>minimumSimilarity</code> to <code>term</code>.
@@ -53,7 +55,8 @@ public class FuzzyQuery extends MultiTermQuery {
    * or if prefixLength &lt; 0
    */
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) throws IllegalArgumentException {
-    super(term);
+    super(term); // will be removed in 3.0
+    this.term = term;
     
     if (minimumSimilarity >= 1.0f)
       throw new IllegalArgumentException("minimumSimilarity >= 1");
@@ -103,6 +106,13 @@ public class FuzzyQuery extends MultiTermQuery {
 
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
+  }
+  
+  /**
+   * Returns the pattern term.
+   */
+  public Term getTerm() {
+    return term;
   }
 
   public void setConstantScoreRewrite(boolean constantScoreRewrite) {
@@ -158,7 +168,6 @@ public class FuzzyQuery extends MultiTermQuery {
     
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
-    Term term = getTerm();
     if (!term.field().equals(field)) {
         buffer.append(term.field());
         buffer.append(":");
@@ -200,23 +209,35 @@ public class FuzzyQuery extends MultiTermQuery {
     
   }
 
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof FuzzyQuery)) return false;
-    if (!super.equals(o)) return false;
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Float.floatToIntBits(minimumSimilarity);
+    result = prime * result + prefixLength;
+    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    return result;
+  }
 
-    final FuzzyQuery fuzzyQuery = (FuzzyQuery) o;
-
-    if (minimumSimilarity != fuzzyQuery.minimumSimilarity) return false;
-    if (prefixLength != fuzzyQuery.prefixLength) return false;
-
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    FuzzyQuery other = (FuzzyQuery) obj;
+    if (Float.floatToIntBits(minimumSimilarity) != Float
+        .floatToIntBits(other.minimumSimilarity))
+      return false;
+    if (prefixLength != other.prefixLength)
+      return false;
+    if (term == null) {
+      if (other.term != null)
+        return false;
+    } else if (!term.equals(other.term))
+      return false;
     return true;
   }
 
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 29 * result + minimumSimilarity != +0.0f ? Float.floatToIntBits(minimumSimilarity) : 0;
-    result = 29 * result + prefixLength;
-    return result;
-  }
+
 }

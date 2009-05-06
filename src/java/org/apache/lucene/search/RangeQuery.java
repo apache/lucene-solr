@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
  * the useOldRangeQuery property set to true. The QueryParser default behaviour is to use
  * the newer ConstantScore mode. This is generally preferable because:
  * <ul>
- *  <li>It is faster than the standard RangeQuery mode</li>
+ *  <li>In certain situations, it may be faster than the standard RangeQuery mode</li>
  *  <li>Unlike the RangeQuery mode, it does not cause a BooleanQuery.TooManyClauses exception if the range of values is large</li>
  *  <li>Unlike the RangeQuery mode, it does not influence scoring based on the scarcity of individual terms that may match</li>
  * </ul>
@@ -195,40 +195,53 @@ public class RangeQuery extends MultiTermQuery {
       return buffer.toString();
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof RangeQuery)) return false;
-    RangeQuery other = (RangeQuery) o;
-
-    if (this.field != other.field  // interned comparison
-        || this.includeLower != other.includeLower
-        || this.includeUpper != other.includeUpper
-        || (this.collator != null && ! this.collator.equals(other.collator) || (this.collator == null && other.collator != null))
-       ) { return false; }
-    String lowerVal = this.lowerTerm == null ? null : lowerTerm.text();
-    String upperVal = this.upperTerm == null ? null : upperTerm.text();
-    String olowerText = other.lowerTerm == null ? null : other.lowerTerm.text();
-    String oupperText = other.upperTerm == null ? null : other.upperTerm.text();
-    if (lowerVal != null ? !lowerVal.equals(olowerText) : olowerText != null) return false;
-    if (upperVal != null ? !upperVal.equals(oupperText) : oupperText != null) return false;
-    return this.getBoost() == other.getBoost();
-  }
-
-  /** Returns a hash code value for this object.*/
+  //@Override
   public int hashCode() {
-    int h = Float.floatToIntBits(getBoost()) ^ field.hashCode();
-    String lowerVal = this.lowerTerm == null ? null : lowerTerm.text();
-    String upperVal = this.upperTerm == null ? null : upperTerm.text();
-    // hashCode of "" is 0, so don't use that for null...
-    h ^= lowerVal != null ? lowerVal.hashCode() : 0x965a965a;
-    // don't just XOR upperVal with out mixing either it or h, as it will cancel
-    // out lowerVal if they are equal.
-    h ^= (h << 17) | (h >>> 16);  // a reversible (one to one) 32 bit mapping mix
-    h ^= (upperVal != null ? (upperVal.hashCode()) : 0x5a695a69);
-    h ^= (includeLower ? 0x665599aa : 0)
-       ^ (includeUpper ? 0x99aa5566 : 0);
-    h ^= collator != null ? collator.hashCode() : 0;
-    return h;
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((collator == null) ? 0 : collator.hashCode());
+    result = prime * result + ((field == null) ? 0 : field.hashCode());
+    result = prime * result + (includeLower ? 1231 : 1237);
+    result = prime * result + (includeUpper ? 1231 : 1237);
+    result = prime * result + ((lowerTerm == null) ? 0 : lowerTerm.hashCode());
+    result = prime * result + ((upperTerm == null) ? 0 : upperTerm.hashCode());
+    return result;
   }
+
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    RangeQuery other = (RangeQuery) obj;
+    if (collator == null) {
+      if (other.collator != null)
+        return false;
+    } else if (!collator.equals(other.collator))
+      return false;
+    if (field == null) {
+      if (other.field != null)
+        return false;
+    } else if (!field.equals(other.field))
+      return false;
+    if (includeLower != other.includeLower)
+      return false;
+    if (includeUpper != other.includeUpper)
+      return false;
+    if (lowerTerm == null) {
+      if (other.lowerTerm != null)
+        return false;
+    } else if (!lowerTerm.equals(other.lowerTerm))
+      return false;
+    if (upperTerm == null) {
+      if (other.upperTerm != null)
+        return false;
+    } else if (!upperTerm.equals(other.upperTerm))
+      return false;
+    return true;
+  }
+
 }

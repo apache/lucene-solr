@@ -30,7 +30,7 @@ public class PrefixQuery extends MultiTermQuery {
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
-    super(prefix);
+    super(prefix); //will be removed in 3.0
     this.prefix = prefix;
   }
 
@@ -38,14 +38,7 @@ public class PrefixQuery extends MultiTermQuery {
   public Term getPrefix() { return prefix; }
   
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new PrefixTermEnum(reader, getTerm());
-  }
-
-  public boolean equals(Object o) {
-    if (o instanceof PrefixQuery)
-      return super.equals(o);
-
-    return false;
+    return new PrefixTermEnum(reader, prefix);
   }
 
   /** Prints a user-readable version of this query. */
@@ -60,4 +53,30 @@ public class PrefixQuery extends MultiTermQuery {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
+
+  //@Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((prefix == null) ? 0 : prefix.hashCode());
+    return result;
+  }
+
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    PrefixQuery other = (PrefixQuery) obj;
+    if (prefix == null) {
+      if (other.prefix != null)
+        return false;
+    } else if (!prefix.equals(other.prefix))
+      return false;
+    return true;
+  }
+
 }

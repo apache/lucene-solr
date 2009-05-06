@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
+
 import java.io.IOException;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
@@ -32,21 +34,23 @@ import java.io.IOException;
  */
 public class WildcardQuery extends MultiTermQuery {
   private boolean termContainsWildcard;
+  protected Term term;
     
   public WildcardQuery(Term term) {
-    super(term);
+    super(term); //will be removed in 3.0
+    this.term = term;
     this.termContainsWildcard = (term.text().indexOf('*') != -1) || (term.text().indexOf('?') != -1);
   }
 
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new WildcardTermEnum(reader, getTerm());
   }
-
-  public boolean equals(Object o) {
-    if (o instanceof WildcardQuery)
-      return super.equals(o);
-
-    return false;
+  
+  /**
+   * Returns the pattern term.
+   */
+  public Term getTerm() {
+    return term;
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
@@ -55,4 +59,42 @@ public class WildcardQuery extends MultiTermQuery {
     else
       return super.rewrite(reader);
   }
+  
+  /** Prints a user-readable version of this query. */
+  public String toString(String field) {
+    StringBuffer buffer = new StringBuffer();
+    if (!term.field().equals(field)) {
+      buffer.append(term.field());
+      buffer.append(":");
+    }
+    buffer.append(term.text());
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
+  }
+
+  //@Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    return result;
+  }
+
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    WildcardQuery other = (WildcardQuery) obj;
+    if (term == null) {
+      if (other.term != null)
+        return false;
+    } else if (!term.equals(other.term))
+      return false;
+    return true;
+  }
+
 }
