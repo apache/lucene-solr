@@ -45,7 +45,7 @@ public abstract class QParser {
     // WARNING: the internal representation of tagged objects in the request context is
     // experimental and subject to change!
     if (localParams != null) {
-      String tagStr = localParams.get("tag");
+      String tagStr = localParams.get(CommonParams.TAG);
       if (tagStr != null) {
         Map context = req.getContext();
         Map<String,Collection<Object>> tagMap = (Map<String, Collection<Object>>)req.getContext().get("tags");
