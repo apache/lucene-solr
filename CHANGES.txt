@@ -126,6 +126,10 @@ API Changes
     is deprecated in favor of the new TimeLimitingCollector which
     extends Collector.  (Shai Erera via Mike McCandless)
 
+13. LUCENE-1621: MultiTermQuery#getTerm() has been deprecated as it does
+    not make sense for all subclasses of MultiTermQuery. Check individual
+    subclasses to see if they support #getTerm().  (Mark Miller)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
