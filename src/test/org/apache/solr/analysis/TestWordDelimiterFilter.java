@@ -327,4 +327,37 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     );
   }
 
+
+  public void doSplit(final String input, String... output) throws Exception {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new TokenStream() {
+      boolean done=false;
+      @Override
+      public Token next() throws IOException {
+        if (done) return null;
+        done = true;
+        return new Token(input,0,input.length());
+      }
+    }
+            ,1,1,0,0,0
+    );
+
+    for(String expected : output) {
+      Token t = wdf.next();
+      assertEquals(expected, t.term());
+    }
+
+    assertEquals(null, wdf.next());
+  }
+
+  public void testSplits() throws Exception {
+    doSplit("basic-split","basic","split");
+    doSplit("camelCase","camel","Case");
+
+    // non-space marking symbol shouldn't cause split
+    // this is an example in Thai    
+    doSplit("\u0e1a\u0e49\u0e32\u0e19","\u0e1a\u0e49\u0e32\u0e19");
+
+
+  }
+
 }

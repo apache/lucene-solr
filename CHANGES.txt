@@ -361,6 +361,10 @@ Bug Fixes
 
 44. SOLR-1141: NullPointerException during snapshoot command in java based replication (Jian Han Guo, shalin)
 
+45. SOLR-1078: Fixes to WordDelimiterFilter to avoid splitting or dropping
+    international non-letter characters such as non spacing marks. (yonik)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

@@ -242,15 +242,51 @@ final class WordDelimiterFilter extends TokenFilter {
     this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
   }
 
+
   int charType(int ch) {
     if (ch<charTypeTable.length) {
       return charTypeTable[ch];
-    } else if (Character.isLowerCase(ch)) {
-      return LOWER;
-    } else if (Character.isLetter(ch)) {
-      return UPPER;
-    } else {
-      return SUBWORD_DELIM;
+    }
+    switch (Character.getType(ch)) {
+      case Character.UPPERCASE_LETTER: return UPPER;
+      case Character.LOWERCASE_LETTER: return LOWER;
+
+      case Character.TITLECASE_LETTER:
+      case Character.MODIFIER_LETTER:
+      case Character.OTHER_LETTER:
+      case Character.NON_SPACING_MARK:
+      case Character.ENCLOSING_MARK:  // depends what it encloses?
+      case Character.COMBINING_SPACING_MARK:
+        return ALPHA; 
+
+      case Character.DECIMAL_DIGIT_NUMBER:
+      case Character.LETTER_NUMBER:
+      case Character.OTHER_NUMBER:
+        return DIGIT;
+
+      // case Character.SPACE_SEPARATOR:
+      // case Character.LINE_SEPARATOR:
+      // case Character.PARAGRAPH_SEPARATOR:
+      // case Character.CONTROL:
+      // case Character.FORMAT:
+      // case Character.PRIVATE_USE:
+
+      case Character.SURROGATE:  // prevent splitting
+        return ALPHA|DIGIT;  
+
+      // case Character.DASH_PUNCTUATION:
+      // case Character.START_PUNCTUATION:
+      // case Character.END_PUNCTUATION:
+      // case Character.CONNECTOR_PUNCTUATION:
+      // case Character.OTHER_PUNCTUATION:
+      // case Character.MATH_SYMBOL:
+      // case Character.CURRENCY_SYMBOL:
+      // case Character.MODIFIER_SYMBOL:
+      // case Character.OTHER_SYMBOL:
+      // case Character.INITIAL_QUOTE_PUNCTUATION:
+      // case Character.FINAL_QUOTE_PUNCTUATION:
+
+      default: return SUBWORD_DELIM;
     }
   }
 
@@ -348,7 +384,7 @@ final class WordDelimiterFilter extends TokenFilter {
 
         while (pos< len) {
 
-          if (type!=lastType) {
+          if ((type & lastType)==0) {  // no overlap in character type
             // check and remove "'s" from the end of a token.
             // the pattern to check for is
             //   ALPHA "'" ("s"|"S") (SUBWORD_DELIM | END)
@@ -389,9 +425,8 @@ final class WordDelimiterFilter extends TokenFilter {
             if (splitOnCaseChange == 0 && 
                 (lastType & ALPHA) != 0 && (type & ALPHA) != 0) {
               // ALPHA->ALPHA: always ignore if case isn't considered.
-
-            } else if ((lastType & UPPER)!=0 && (type & LOWER)!=0) {
-              // UPPER->LOWER: Don't split
+            } else if ((lastType & UPPER)!=0 && (type & ALPHA)!=0) {
+              // UPPER->letter: Don't split
             } else if(splitOnNumerics == 0 &&
                 ( ((lastType &  ALPHA) != 0 && (type & DIGIT) != 0) || ((lastType &  DIGIT) != 0 && (type & ALPHA) != 0) ) ) {
               // ALPHA->NUMERIC, NUMERIC->ALPHA :Don't split
