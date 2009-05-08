@@ -73,13 +73,15 @@ public class FastOutputStream extends OutputStream implements DataOutput {
       // if the data to write is small enough, buffer it.
       System.arraycopy(arr, off, buf, pos, space);
       out.write(buf);
-      written += pos;
+      written += buf.length;
       pos = len-space;
       System.arraycopy(arr, off+space, buf, 0, pos);
     } else {
-      out.write(buf,0,pos);  // flush
-      written += pos;
-      pos=0;
+      if (pos>0) {
+        out.write(buf,0,pos);  // flush
+        written += pos;
+        pos=0;
+      }
       // don't buffer, just write to sink
       out.write(arr, off, len);
       written += len;            
