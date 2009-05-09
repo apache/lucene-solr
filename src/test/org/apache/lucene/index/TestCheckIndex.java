@@ -55,6 +55,8 @@ public class TestCheckIndex extends LuceneTestCase {
       System.out.println(bos.toString());
       fail();
     }
+    assertTrue(((CheckIndex.Status.SegmentInfoStatus) indexStatus.segmentInfos.get(0)).openReaderPassed);
+
     final List onlySegments = new ArrayList();
     onlySegments.add("_0");
     

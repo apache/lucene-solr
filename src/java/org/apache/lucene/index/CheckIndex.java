@@ -393,6 +393,9 @@ public class CheckIndex {
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
         reader = SegmentReader.get(info);
+
+        segInfoStat.openReaderPassed = true;
+
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
