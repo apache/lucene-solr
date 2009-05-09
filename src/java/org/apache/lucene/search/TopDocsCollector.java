@@ -75,7 +75,10 @@ public abstract class TopDocsCollector extends Collector {
   
   /** Returns the top docs that were collected by this collector. */
   public final TopDocs topDocs() {
-    return topDocs(0, pq.size());
+    // In case pq was populated with sentinel values, there might be less
+    // results than pq.size(). Therefore return all results until either
+    // pq.size() or totalHits.
+    return topDocs(0, totalHits < pq.size() ? totalHits : pq.size());
   }
 
   /**
@@ -91,7 +94,10 @@ public abstract class TopDocsCollector extends Collector {
    * results this search execution collected.
    */
   public final TopDocs topDocs(int start) {
-    return topDocs(start, pq.size());
+    // In case pq was populated with sentinel values, there might be less
+    // results than pq.size(). Therefore return all results until either
+    // pq.size() or totalHits.
+    return topDocs(start, totalHits < pq.size() ? totalHits : pq.size());
   }
 
   /**
@@ -108,18 +114,21 @@ public abstract class TopDocsCollector extends Collector {
    * returned {@link TopDocs} object, which will contain all the results this
    * search execution collected.
    */
-  public TopDocs topDocs(int start, int howMany) {
+  public final TopDocs topDocs(int start, int howMany) {
     
-    int pqsize = pq.size();
+    // In case pq was populated with sentinel values, there might be less
+    // results than pq.size(). Therefore return all results until either
+    // pq.size() or totalHits.
+    int size = totalHits < pq.size() ? totalHits : pq.size();
 
     // Don't bother to throw an exception, just return an empty TopDocs in case
     // the parameters are invalid or out of range.
-    if (start < 0 || start >= pqsize || howMany <= 0) {
+    if (start < 0 || start >= size || howMany <= 0) {
       return newTopDocs(null, start);
     }
 
     // We know that start < pqsize, so just fix howMany. 
-    howMany = Math.min(pqsize - start, howMany);
+    howMany = Math.min(size - start, howMany);
     ScoreDoc[] results = new ScoreDoc[howMany];
 
     // pq's pop() returns the 'least' element in the queue, therefore need
@@ -127,7 +136,7 @@ public abstract class TopDocsCollector extends Collector {
     // Note that this loop will usually not be executed, since the common usage
     // should be that the caller asks for the last howMany results. However it's
     // needed here for completeness.
-    for (int i = pqsize - start - howMany; i > 0; i--) { pq.pop(); }
+    for (int i = pq.size() - start - howMany; i > 0; i--) { pq.pop(); }
     
     // Get the requested results from pq.
     populateResults(results, howMany);

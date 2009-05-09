@@ -36,9 +36,9 @@ class BooleanScorer2 extends Scorer {
   private ArrayList prohibitedScorers = new ArrayList();
 
   private class Coordinator {
+    float[] coordFactors = null;
     int maxCoord = 0; // to be increased for each non prohibited scorer
-    
-    private float[] coordFactors = null;
+    int nrMatchers; // to be increased by score() of match counting scorers.
     
     void init() { // use after all scorers have been added.
       coordFactors = new float[maxCoord + 1];
@@ -48,15 +48,6 @@ class BooleanScorer2 extends Scorer {
       }
     }
     
-    int nrMatchers; // to be increased by score() of match counting scorers.
-
-    void initDoc() {
-      nrMatchers = 0;
-    }
-    
-    float coordFactor() {
-      return coordFactors[nrMatchers];
-    }
   }
 
   private final Coordinator coordinator;
@@ -85,7 +76,7 @@ class BooleanScorer2 extends Scorer {
    * @param allowDocsOutOfOrder Whether it is allowed to return documents out of order.
    *                            This can accelerate the scoring of disjunction queries.                         
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch, boolean allowDocsOutOfOrder) {
+  public BooleanScorer2(Similarity similarity, int minNrShouldMatch, boolean allowDocsOutOfOrder) throws IOException {
     super(similarity);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
@@ -105,7 +96,7 @@ class BooleanScorer2 extends Scorer {
    *                         at least one of the optional scorers will have to
    *                         match during the search.
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch) {
+  public BooleanScorer2(Similarity similarity, int minNrShouldMatch) throws IOException {
     this(similarity, minNrShouldMatch, false);
   }
   
@@ -114,11 +105,11 @@ class BooleanScorer2 extends Scorer {
    *  at least one of the optional scorers will have to match during the search.
    * @param similarity The similarity to be used.
    */
-  public BooleanScorer2(Similarity similarity) {
+  public BooleanScorer2(Similarity similarity) throws IOException {
     this(similarity, 0, false);
   }
 
-  public void add(final Scorer scorer, boolean required, boolean prohibited) {
+  public void add(final Scorer scorer, boolean required, boolean prohibited) throws IOException {
     if (!prohibited) {
       coordinator.maxCoord++;
     }
@@ -151,17 +142,24 @@ class BooleanScorer2 extends Scorer {
   private class SingleMatchScorer extends Scorer {
     private Scorer scorer;
     private int lastScoredDoc = -1;
+    // Save the score of lastScoredDoc, so that we don't compute it more than
+    // once in score().
+    private float lastDocScore = Float.NaN;
 
     SingleMatchScorer(Scorer scorer) {
       super(scorer.getSimilarity());
       this.scorer = scorer;
     }
     public float score() throws IOException {
-      if (this.doc() >= lastScoredDoc) {
-        lastScoredDoc = this.doc();
+      int doc = doc();
+      if (doc >= lastScoredDoc) {
+        if (doc > lastScoredDoc) {
+          lastDocScore = scorer.score();
+          lastScoredDoc = doc;
+        }
         coordinator.nrMatchers++;
       }
-      return scorer.score();
+      return lastDocScore;
     }
     public int doc() {
       return scorer.doc();
@@ -178,39 +176,51 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer countingDisjunctionSumScorer(final List scorers,
-                                              int minNrShouldMatch) throws IOException
-  // each scorer from the list counted as a single matcher
-  {
+      int minNrShouldMatch) throws IOException {
+    // each scorer from the list counted as a single matcher
     return new DisjunctionSumScorer(scorers, minNrShouldMatch) {
       private int lastScoredDoc = -1;
+      // Save the score of lastScoredDoc, so that we don't compute it more than
+      // once in score().
+      private float lastDocScore = Float.NaN;
       public float score() throws IOException {
-        if (this.doc() >= lastScoredDoc) {
-          lastScoredDoc = this.doc();
+        int doc = doc();
+        if (doc >= lastScoredDoc) {
+          if (doc > lastScoredDoc) {
+            lastDocScore = super.score();
+            lastScoredDoc = doc;
+          }
           coordinator.nrMatchers += super.nrMatchers;
         }
-        return super.score();
+        return lastDocScore;
       }
     };
   }
 
-  private static Similarity defaultSimilarity = new DefaultSimilarity();
+  private static final Similarity defaultSimilarity = Similarity.getDefault();
 
   private Scorer countingConjunctionSumScorer(List requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
     return new ConjunctionScorer(defaultSimilarity, requiredScorers) {
       private int lastScoredDoc = -1;
-
+      // Save the score of lastScoredDoc, so that we don't compute it more than
+      // once in score().
+      private float lastDocScore = Float.NaN;
       public float score() throws IOException {
-        if (this.doc() >= lastScoredDoc) {
-          lastScoredDoc = this.doc();
+        int doc = doc();
+        if (doc >= lastScoredDoc) {
+          if (doc > lastScoredDoc) {
+            lastDocScore = super.score();
+            lastScoredDoc = doc;
+          }
           coordinator.nrMatchers += requiredNrMatchers;
         }
         // All scorers match, so defaultSimilarity super.score() always has 1 as
         // the coordination factor.
         // Therefore the sum of the scores of the requiredScorers
         // is used as score.
-        return super.score();
+        return lastDocScore;
       }
     };
   }
@@ -361,7 +371,7 @@ class BooleanScorer2 extends Scorer {
     collector.setScorer(this);
     while (docNr < max) {
       collector.collect(docNr);
-      if (! countingSumScorer.next()) {
+      if (!countingSumScorer.next()) {
         return false;
       }
       docNr = countingSumScorer.doc();
@@ -379,9 +389,9 @@ class BooleanScorer2 extends Scorer {
   }
 
   public float score() throws IOException {
-    coordinator.initDoc();
+    coordinator.nrMatchers = 0;
     float sum = countingSumScorer.score();
-    return sum * coordinator.coordFactor();
+    return sum * coordinator.coordFactors[coordinator.nrMatchers];
   }
 
   /** Skips to the first match beyond the current whose document number is

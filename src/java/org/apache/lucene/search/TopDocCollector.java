@@ -44,7 +44,7 @@ public class TopDocCollector extends HitCollector {
    * @param numHits the maximum number of hits to collect
    */
   public TopDocCollector(int numHits) {
-    this(new HitQueue(numHits));
+    this(new HitQueue(numHits, false));
   }
 
   /** @deprecated use TopDocCollector(hq) instead. numHits is not used by this

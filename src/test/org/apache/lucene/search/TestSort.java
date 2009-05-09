@@ -17,22 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.DocIdBitSet;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.Naming;
@@ -42,7 +26,24 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Random;
-import java.util.regex.Pattern;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import junit.textui.TestRunner;
+
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Unit tests for sorting code.
@@ -53,9 +54,7 @@ import java.util.regex.Pattern;
  * @version $Id$
  */
 
-public class TestSort
-extends LuceneTestCase
-implements Serializable {
+public class TestSort extends LuceneTestCase implements Serializable {
 
   private static final int NUM_STRINGS = 6000;
   private Searcher full;
@@ -118,7 +117,7 @@ implements Serializable {
   {   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
   {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
   };
-
+  
   // create an index of all the documents, or just the x, or just the y documents
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
@@ -343,28 +342,28 @@ implements Serializable {
   public void testCustomFieldParserSort() throws Exception {
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.IntParser(){
       public final int parseInt(final String val) {
-        return (int) (val.charAt(0)-'A') * 123456;
+        return (val.charAt(0)-'A') * 123456;
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
       public final float parseFloat(final String val) {
-        return (float) Math.sqrt( (double) val.charAt(0) );
+        return (float) Math.sqrt( val.charAt(0) );
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
     sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.LongParser(){
       public final long parseLong(final String val) {
-        return (long) (val.charAt(0)-'A') * 1234567890L;
+        return (val.charAt(0)-'A') * 1234567890L;
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
     sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.DoubleParser(){
       public final double parseDouble(final String val) {
-        return Math.pow( (double) val.charAt(0), (double) (val.charAt(0)-'A') );
+        return Math.pow( val.charAt(0), (val.charAt(0)-'A') );
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -432,7 +431,7 @@ implements Serializable {
     public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(final String val) {
-            return (int) (val.charAt(0)-'A') * 123456;
+            return (val.charAt(0)-'A') * 123456;
           }
         });
     }
@@ -642,20 +641,20 @@ implements Serializable {
   // test a variety of sorts using more than one searcher
   public void testMultiSort() throws Exception {
     MultiSearcher searcher = new MultiSearcher (new Searchable[] { searchX, searchY });
-    runMultiSorts (searcher);
+    runMultiSorts(searcher, false);
   }
 
   // test a variety of sorts using a parallel multisearcher
   public void testParallelMultiSort() throws Exception {
     Searcher searcher = new ParallelMultiSearcher (new Searchable[] { searchX, searchY });
-    runMultiSorts (searcher);
+    runMultiSorts(searcher, false);
   }
 
   // test a variety of sorts using a remote searcher
   public void testRemoteSort() throws Exception {
     Searchable searcher = getRemote();
     MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-    runMultiSorts (multi);
+    runMultiSorts(multi, true); // this runs on the full index
   }
 
   // test custom search when remote
@@ -813,9 +812,11 @@ implements Serializable {
     // fillFields to true.
     Sort[] sort = new Sort[] { new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, false, false, false);
+      Query q = new MatchAllDocsQuery();
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, false,
+          false, false, true);
       
-      full.search(new MatchAllDocsQuery(), tdc);
+      full.search(q, tdc);
       
       ScoreDoc[] sd = tdc.topDocs().scoreDocs;
       for (int j = 1; j < sd.length; j++) {
@@ -830,9 +831,11 @@ implements Serializable {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, false, false);
+      Query q = new MatchAllDocsQuery();
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, false,
+          false, true);
       
-      full.search(new MatchAllDocsQuery(), tdc);
+      full.search(q, tdc);
       
       TopDocs td = tdc.topDocs();
       ScoreDoc[] sd = td.scoreDocs;
@@ -848,9 +851,11 @@ implements Serializable {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, false);
+      Query q = new MatchAllDocsQuery();
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true,
+          false, true);
       
-      full.search(new MatchAllDocsQuery(), tdc);
+      full.search(q, tdc);
       
       TopDocs td = tdc.topDocs();
       ScoreDoc[] sd = td.scoreDocs;
@@ -866,9 +871,11 @@ implements Serializable {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      Query q = new MatchAllDocsQuery();
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true,
+          true, true);
       
-      full.search(new MatchAllDocsQuery(), tdc);
+      full.search(q, tdc);
       
       TopDocs td = tdc.topDocs();
       ScoreDoc[] sd = td.scoreDocs;
@@ -879,12 +886,73 @@ implements Serializable {
     }
   }
   
+  public void testOutOfOrderDocsScoringSort() throws Exception {
+
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    boolean[][] tfcOptions = new boolean[][] {
+        new boolean[] { false, false, false },
+        new boolean[] { false, false, true },
+        new boolean[] { false, true, false },
+        new boolean[] { false, true, true },
+        new boolean[] { true, false, false },
+        new boolean[] { true, false, true },
+        new boolean[] { true, true, false },
+        new boolean[] { true, true, true },
+    };
+    String[] actualTFCClasses = new String[] {
+        "OutOfOrderOneComparatorNonScoringCollector", 
+        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
+        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
+        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
+        "OutOfOrderOneComparatorNonScoringCollector", 
+        "OutOfOrderOneComparatorScoringMaxScoreCollector", 
+        "OutOfOrderOneComparatorScoringNoMaxScoreCollector", 
+        "OutOfOrderOneComparatorScoringMaxScoreCollector" 
+    };
+    
+    // Save the original value to set later.
+    boolean origVal = BooleanQuery.getAllowDocsOutOfOrder();
+    
+    BooleanQuery.setAllowDocsOutOfOrder(true);
+    
+    BooleanQuery bq = new BooleanQuery();
+    // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
+    // which delegates to BS if there are no mandatory clauses.
+    bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
+    // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
+    // the clause instead of BQ.
+    bq.setMinimumNumberShouldMatch(1);
+    try {
+      for (int i = 0; i < sort.length; i++) {
+        for (int j = 0; j < tfcOptions.length; j++) {
+          TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10,
+              tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
+
+          assertEquals(actualTFCClasses[j], tdc.getClass().getSimpleName());
+          
+          full.search(bq, tdc);
+          
+          TopDocs td = tdc.topDocs();
+          ScoreDoc[] sd = td.scoreDocs;
+          assertEquals(10, sd.length);
+        }
+      }
+    } finally {
+      // Whatever happens, reset BooleanQuery.allowDocsOutOfOrder to the
+      // original value. Don't set it to false in case the implementation in BQ
+      // will change some day.
+      BooleanQuery.setAllowDocsOutOfOrder(origVal);
+    }
+
+  }
+  
   public void testSortWithScoreAndMaxScoreTrackingNoResults() throws Exception {
     
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));
@@ -892,68 +960,73 @@ implements Serializable {
   }
   
   // runs a variety of sorts useful for multisearchers
-  private void runMultiSorts (Searcher multi) throws Exception {
-    sort.setSort (SortField.FIELD_DOC);
-    assertMatchesPattern (multi, queryA, sort, "[AB]{2}[CD]{2}[EF]{2}[GH]{2}[IJ]{2}");
+  private void runMultiSorts(Searcher multi, boolean isFull) throws Exception {
+    sort.setSort(SortField.FIELD_DOC);
+    String expected = isFull ? "ABCDEFGHIJ" : "ACEGIBDFHJ";
+    assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort (new SortField ("int", SortField.INT));
-    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[ABE]{3}C");
+    sort.setSort(new SortField ("int", SortField.INT));
+    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+    assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort (new SortField[] {new SortField ("int", SortField.INT), SortField.FIELD_DOC});
-    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
+    sort.setSort(new SortField[] {new SortField ("int", SortField.INT), SortField.FIELD_DOC});
+    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+    assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort ("int");
-    assertMatchesPattern (multi, queryA, sort, "IDHFGJ[AB]{2}EC");
+    sort.setSort("int");
+    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
+    assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort (new SortField[] {new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC});
-    assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
+    sort.setSort(new SortField[] {new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC});
+    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort ("float");
-    assertMatchesPattern (multi, queryA, sort, "GDHJ[CI]{2}EFAB");
+    sort.setSort("float");
+    assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort ("string");
-    assertMatches (multi, queryA, sort, "DJAIHGFEBC");
+    sort.setSort("string");
+    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
 
-    sort.setSort ("int", true);
-    assertMatchesPattern (multi, queryA, sort, "C[AB]{2}EJGFHDI");
+    sort.setSort("int", true);
+    expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
+    assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort ("float", true);
-    assertMatchesPattern (multi, queryA, sort, "BAFE[IC]{2}JHDG");
+    sort.setSort("float", true);
+    assertMatches(multi, queryA, sort, "BAFECIJHDG");
 
-    sort.setSort ("string", true);
-    assertMatches (multi, queryA, sort, "CBEFGHIAJD");
+    sort.setSort("string", true);
+    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
-    assertMatches (multi, queryA, sort, "DJAIHGFEBC");
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
+    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
 
-    sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
-    assertMatches (multi, queryA, sort, "CBEFGHIAJD");
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true) });
+    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort (new String[] {"int","float"});
-    assertMatches (multi, queryA, sort, "IDHFGJEABC");
+    sort.setSort(new String[] {"int","float"});
+    assertMatches(multi, queryA, sort, "IDHFGJEABC");
 
-    sort.setSort (new String[] {"float","string"});
-    assertMatches (multi, queryA, sort, "GDHJICEFAB");
+    sort.setSort(new String[] {"float","string"});
+    assertMatches(multi, queryA, sort, "GDHJICEFAB");
 
-    sort.setSort ("int");
-    assertMatches (multi, queryF, sort, "IZJ");
+    sort.setSort("int");
+    assertMatches(multi, queryF, sort, "IZJ");
 
-    sort.setSort ("int", true);
-    assertMatches (multi, queryF, sort, "JZI");
+    sort.setSort("int", true);
+    assertMatches(multi, queryF, sort, "JZI");
 
-    sort.setSort ("float");
-    assertMatches (multi, queryF, sort, "ZJI");
+    sort.setSort("float");
+    assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort ("string");
-    assertMatches (multi, queryF, sort, "ZJI");
+    sort.setSort("string");
+    assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort ("string", true);
-    assertMatches (multi, queryF, sort, "IJZ");
+    sort.setSort("string", true);
+    assertMatches(multi, queryF, sort, "IJZ");
   }
 
   // make sure the documents returned by the search match the expected list
-  private void assertMatches (Searcher searcher, Query query, Sort sort, String expectedResult)
-  throws IOException {
+  private void assertMatches(Searcher searcher, Query query, Sort sort,
+      String expectedResult) throws IOException {
     //ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
     TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
     ScoreDoc[] result = hits.scoreDocs;
@@ -968,23 +1041,6 @@ implements Serializable {
       }
     }
     assertEquals (expectedResult, buff.toString());
-  }
-
-  // make sure the documents returned by the search match the expected list pattern
-  private void assertMatchesPattern (Searcher searcher, Query query, Sort sort, String pattern)
-  throws IOException {
-    ScoreDoc[] result = searcher.search (query, null, 1000, sort).scoreDocs;
-    StringBuffer buff = new StringBuffer(10);
-    int n = result.length;
-    for (int i=0; i<n; ++i) {
-      Document doc = searcher.doc(result[i].doc);
-      String[] v = doc.getValues("tracer");
-      for (int j=0; j<v.length; ++j) {
-        buff.append (v[j]);
-      }
-    }
-    // System.out.println ("matching \""+buff+"\" against pattern \""+pattern+"\"");
-    assertTrue ("found:" + buff + " expected:" + pattern, Pattern.compile(pattern).matcher(buff.toString()).matches());
   }
 
   private HashMap getScores (ScoreDoc[] hits, Searcher searcher)

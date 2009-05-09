@@ -18,9 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-import org.apache.lucene.util.SorterTemplate;
+import java.util.List;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
@@ -40,15 +40,15 @@ import org.apache.lucene.store.Directory;
 public class IndexSearcher extends Searcher {
   IndexReader reader;
   private boolean closeReader;
-  private IndexReader[] sortedSubReaders;
-  private int[] sortedStarts;
+  private IndexReader[] subReaders;
+  private int[] docStarts;
 
   /** Creates a searcher searching the index in the named directory.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public IndexSearcher(String path) throws CorruptIndexException, IOException {
-    this(IndexReader.open(path), true, false);
+    this(IndexReader.open(path), true);
   }
 
   /** Creates a searcher searching the index in the provided directory.
@@ -56,28 +56,27 @@ public class IndexSearcher extends Searcher {
    * @throws IOException if there is a low-level IO error
    */
   public IndexSearcher(Directory directory) throws CorruptIndexException, IOException {
-    this(IndexReader.open(directory), true, false);
+    this(IndexReader.open(directory), true);
   }
 
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
-    this(r, false, false);
+    this(r, false);
   }
   
-  /** Expert: Creates a searcher searching the provided
-   *  index, specifying whether searches must visit the
-   *  documents in order.  By default, segments are searched
-   *  in order of decreasing numDocs(); if you pass true for
-   *  docsInOrder, they will instead be searched in their
-   *  natural (unsorted) order.*/
-  public IndexSearcher(IndexReader r, boolean docsInOrder) {
-    this(r, false, docsInOrder);
-  }
-  
-  private IndexSearcher(IndexReader r, boolean closeReader, boolean docsInOrder) {
+  private IndexSearcher(IndexReader r, boolean closeReader) {
     reader = r;
     this.closeReader = closeReader;
-    sortSubReaders(docsInOrder);
+
+    List subReadersList = new ArrayList();
+    gatherSubReaders(subReadersList, reader);
+    subReaders = (IndexReader[]) subReadersList.toArray(new IndexReader[subReadersList.size()]);
+    docStarts = new int[subReaders.length];
+    int maxDoc = 0;
+    for (int i = 0; i < subReaders.length; i++) {
+      docStarts[i] = maxDoc;
+      maxDoc += subReaders[i].maxDoc();
+    }
   }
 
   protected void gatherSubReaders(List allSubReaders, IndexReader r) {
@@ -86,54 +85,12 @@ public class IndexSearcher extends Searcher {
       // Add the reader itself, and do not recurse
       allSubReaders.add(r);
     } else {
-      for(int i=0;i<subReaders.length;i++) {
+      for (int i = 0; i < subReaders.length; i++) {
         gatherSubReaders(allSubReaders, subReaders[i]);
       }
     }
   }
 
-  static private final IndexReader[] indexReaderZeroArray = new IndexReader[0];
-
-  protected void sortSubReaders(boolean docsInOrder) {
-
-    List subReadersList = new ArrayList();
-    gatherSubReaders(subReadersList, reader);
-    sortedSubReaders = (IndexReader[]) subReadersList.toArray(indexReaderZeroArray);
-    final int length = sortedSubReaders.length;
-    sortedStarts = new int[length];
-    int maxDoc = 0;
-    for (int i = 0; i < sortedSubReaders.length; i++) {
-      sortedStarts[i] = maxDoc;
-      maxDoc += sortedSubReaders[i].maxDoc();          // compute maxDocs
-    }
-
-    if (!docsInOrder) {
-
-      // sort readers and starts
-      SorterTemplate sorter = new SorterTemplate() {
-          protected int compare(int i, int j) {
-            int num1 = sortedSubReaders[i].numDocs();
-            int num2 = sortedSubReaders[j].numDocs();
-            if (num1 > num2)
-              return -1;
-            if (num1 < num2)
-              return 1;
-            return 0;
-          }
-          protected void swap(int i, int j) {
-            IndexReader temp = sortedSubReaders[i];
-            sortedSubReaders[i] = sortedSubReaders[j];
-            sortedSubReaders[j] = temp;
-
-            int tempInt = sortedStarts[i];
-            sortedStarts[i] = sortedStarts[j];
-            sortedStarts[j] = tempInt;
-          }
-        };
-      sorter.quickSort(0, length - 1);
-    }
-  }
-  
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
@@ -177,7 +134,10 @@ public class IndexSearcher extends Searcher {
     if (nDocs <= 0)  // null might be returned from hq.top() below.
       throw new IllegalArgumentException("nDocs must be > 0");
 
-    TopScoreDocCollector collector = new TopScoreDocCollector(nDocs);
+    // TODO: The following should be changed to first obtain a Scorer and then ask it
+    // if it's going to return in-order or out-of-order docs, and create TSDC
+    // accordingly.
+    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, false);
     search(weight, filter, collector);
     return collector.topDocs();
   }
@@ -233,10 +193,14 @@ public class IndexSearcher extends Searcher {
       return (TopFieldDocs) collector.topDocs();
     }
     // Search each sub-reader
-    // TODO: by default we should create a TopFieldCollector which does not
-    // track document scores and maxScore. Currently the default is set to true,
-    // however it will change in 3.0.
-    TopFieldCollector collector = TopFieldCollector.create(sort, nDocs, fillFields, true, true);
+    // TODO (3.0): by default we should create a TopFieldCollector which does
+    // not track document scores and maxScore. Currently the default is set to
+    // true, however it will change in 3.0.
+    // TODO: The following should be changed to first obtain a Scorer and then ask it
+    // if it's going to return in-order or out-of-order docs, and create TSDC
+    // accordingly.
+    TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
+        fillFields, true, true, false);
     search(weight, filter, collector);
     return (TopFieldDocs) collector.topDocs();
   }
@@ -252,9 +216,9 @@ public class IndexSearcher extends Searcher {
   public void search(Weight weight, Filter filter, Collector collector)
       throws IOException {
     
-    for (int i = 0; i < sortedSubReaders.length; i++) { // search each subreader
-      collector.setNextReader(sortedSubReaders[i], sortedStarts[i]);
-      doSearch(sortedSubReaders[i], weight, filter, collector);
+    for (int i = 0; i < subReaders.length; i++) { // search each subreader
+      collector.setNextReader(subReaders[i], docStarts[i]);
+      doSearch(subReaders[i], weight, filter, collector);
     }
   }
   

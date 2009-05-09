@@ -99,21 +99,23 @@ final class BooleanScorer extends Scorer {
     throws IOException {
     int mask = 0;
     if (required || prohibited) {
-      if (nextMask == 0)
-        throw new IndexOutOfBoundsException
-          ("More than 32 required/prohibited clauses in query.");
+      if (nextMask == 0) {
+        throw new IndexOutOfBoundsException(
+            "More than 32 required/prohibited clauses in query.");
+      }
       mask = nextMask;
       nextMask = nextMask << 1;
-    } else
-      mask = 0;
+    }
 
-    if (!prohibited)
+    if (!prohibited) {
       maxCoord++;
-
-    if (prohibited)
+      if (required) {
+        requiredMask |= mask;                       // update required mask
+      }
+    } else {
+      // prohibited
       prohibitedMask |= mask;                     // update prohibited mask
-    else if (required)
-      requiredMask |= mask;                       // update required mask
+    }
 
     scorers = new SubScorer(scorer, required, prohibited,
                             bucketTable.newCollector(mask), scorers);
@@ -121,8 +123,10 @@ final class BooleanScorer extends Scorer {
 
   private final void computeCoordFactors() {
     coordFactors = new float[maxCoord];
-    for (int i = 0; i < maxCoord; i++)
-      coordFactors[i] = getSimilarity().coord(i, maxCoord-1);
+    Similarity sim = getSimilarity();
+    for (int i = 0; i < maxCoord; i++) {
+      coordFactors[i] = sim.coord(i, maxCoord - 1); 
+    }
   }
 
   private int end;
@@ -130,8 +134,7 @@ final class BooleanScorer extends Scorer {
 
   /** @deprecated use {@link #score(Collector)} instead. */
   public void score(HitCollector hc) throws IOException {
-    next();
-    score(hc, Integer.MAX_VALUE);
+    score(new HitCollectorWrapper(hc));
   }
   
   public void score(Collector collector) throws IOException {
@@ -145,9 +148,9 @@ final class BooleanScorer extends Scorer {
   }
 
   protected boolean score(Collector collector, int max) throws IOException {
-    if (coordFactors == null)
+    if (coordFactors == null) {
       computeCoordFactors();
-
+    }
     boolean more;
     Bucket tmp;
     
@@ -241,8 +244,9 @@ final class BooleanScorer extends Scorer {
   }
 
   public float score() {
-    if (coordFactors == null)
+    if (coordFactors == null) {
       computeCoordFactors();
+    }
     return current.score * coordFactors[current.coord];
   }
 

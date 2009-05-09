@@ -102,8 +102,10 @@ public abstract class ReadTask extends PerfTask {
       final int numHits = numHits();
       if (numHits > 0) {
         if (sort != null) {
+          // TODO: change the following to create TFC with in/out-of order
+          // according to whether the query's Scorer.
           TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-              true, withScore(), withMaxScore());
+              true, withScore(), withMaxScore(), false);
           searcher.search(q, collector);
           hits = collector.topDocs();
         } else {

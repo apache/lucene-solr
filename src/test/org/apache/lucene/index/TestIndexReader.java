@@ -39,20 +39,17 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -1642,59 +1639,6 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     dir.close();
-  }
-
-  // LUCENE-1483
-  public void testDocsInOrderSearch() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(),
-                                         IndexWriter.MaxFieldLength.LIMITED);
-    writer.addDocument(createDocument("a"));
-    writer.commit();
-    writer.addDocument(createDocument("a"));
-    writer.addDocument(createDocument("a"));
-    writer.close();
-
-    Query q = new TermQuery(new Term("id", "a"));
-
-    IndexSearcher s = new IndexSearcher(dir);
-    s.search(q, new Collector() {
-        int lastDocBase = -1;
-        public void setNextReader(IndexReader reader, int docBase) {
-          if (lastDocBase == -1) {
-            assertEquals(1, docBase);
-          } else if (lastDocBase == 1) {
-            assertEquals(0, docBase);
-          } else {
-            fail();
-          }
-          lastDocBase = docBase;
-        }
-        public void collect(int doc) {}
-        public void setScorer(Scorer scorer) {}
-      });
-    s.close();
-
-    IndexReader r = IndexReader.open(dir);
-    s = new IndexSearcher(r, true);
-    s.search(q, new Collector() {
-        int lastDocBase = -1;
-        public void setNextReader(IndexReader reader, int docBase) {
-          if (lastDocBase == -1) {
-            assertEquals(0, docBase);
-          } else if (lastDocBase == 0) {
-            assertEquals(1, docBase);
-          } else {
-            fail();
-          }
-          lastDocBase = docBase;
-        }
-        public void collect(int doc) {}
-        public void setScorer(Scorer scorer) {}
-      });
-    s.close();
-    r.close();
   }
 
   // LUCENE-1579: Ensure that on a cloned reader, segments

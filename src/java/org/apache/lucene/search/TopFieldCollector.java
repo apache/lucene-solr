@@ -41,7 +41,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
    * Implements a TopFieldCollector over one SortField criteria, without
    * tracking document scores and maxScore.
    */
-  private static class OneComparatorNonScoringCollector extends
+  private static class OneComparatorNonScoringCollector extends 
       TopFieldCollector {
 
     final FieldComparator comparator;
@@ -54,19 +54,19 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       reverseMul = queue.getReverseMul()[0];
     }
     
-    private final void updateBottom(int doc) {
+    final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
       bottom.docID = docBase + doc;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
-        // Fastmatch: return if this hit is not competitive
-        final int cmp = reverseMul * comparator.compareBottom(doc);
-        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.docID)) {
+        if ((reverseMul * comparator.compareBottom(doc)) <= 0) {
+          // since docs are visited in doc Id order, if compare is 0, it means
+          // this document is largest than anything else in the queue, and
+          // therefore not competitive.
           return;
         }
         
@@ -99,26 +99,117 @@ public abstract class TopFieldCollector extends TopDocsCollector {
   }
 
   /*
+   * Implements a TopFieldCollector over one SortField criteria, without
+   * tracking document scores and maxScore, and assumes out of orderness in doc
+   * Ids collection.
+   */
+  private static class OutOfOrderOneComparatorNonScoringCollector extends
+      OneComparatorNonScoringCollector {
+
+    public OutOfOrderOneComparatorNonScoringCollector(FieldValueHitQueue queue,
+        int numHits, boolean fillFields) throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
+    public void collect(int doc) throws IOException {
+      ++totalHits;
+      if (queueFull) {
+        // Fastmatch: return if this hit is not competitive
+        final int cmp = reverseMul * comparator.compareBottom(doc);
+        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.docID)) {
+          return;
+        }
+        
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        comparator.copy(bottom.slot, doc);
+        updateBottom(doc);
+        comparator.setBottom(bottom.slot);
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        comparator.copy(slot, doc);
+        add(slot, doc, Float.NaN);
+        if (queueFull) {
+          comparator.setBottom(bottom.slot);
+        }
+      }
+    }
+  }
+
+  /*
    * Implements a TopFieldCollector over one SortField criteria, while tracking
    * document scores but no maxScore.
    */
   private static class OneComparatorScoringNoMaxScoreCollector extends
       OneComparatorNonScoringCollector {
 
-    private Scorer scorer;
+    Scorer scorer;
 
     public OneComparatorScoringNoMaxScoreCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
     }
     
-    private final void updateBottom(int doc, float score) {
+    final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
+    public void collect(int doc) throws IOException {
+      ++totalHits;
+      if (queueFull) {
+        if ((reverseMul * comparator.compareBottom(doc)) <= 0) {
+          // since docs are visited in doc Id order, if compare is 0, it means
+          // this document is largest than anything else in the queue, and
+          // therefore not competitive.
+          return;
+        }
+        
+        // Compute the score only if the hit is competitive.
+        final float score = scorer.score();
+
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        comparator.copy(bottom.slot, doc);
+        updateBottom(doc, score);
+        comparator.setBottom(bottom.slot);
+      } else {
+        // Compute the score only if the hit is competitive.
+        final float score = scorer.score();
+
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        comparator.copy(slot, doc);
+        add(slot, doc, score);
+        if (queueFull) {
+          comparator.setBottom(bottom.slot);
+        }
+      }
+    }
+    
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      comparator.setScorer(scorer);
+    }
+    
+  }
+
+  /*
+   * Implements a TopFieldCollector over one SortField criteria, while tracking
+   * document scores but no maxScore, and assumes out of orderness in doc Ids
+   * collection.
+   */
+  private static class OutOfOrderOneComparatorScoringNoMaxScoreCollector extends
+      OneComparatorScoringNoMaxScoreCollector {
+
+    public OutOfOrderOneComparatorScoringNoMaxScoreCollector(
+        FieldValueHitQueue queue, int numHits, boolean fillFields)
+        throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -149,28 +240,16 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         }
       }
     }
-    
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      final int numSlotsFull = queueFull ? numHits : totalHits;
-      this.docBase = docBase;
-      comparator.setNextReader(reader, docBase, numSlotsFull);
-    }
-    
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-      comparator.setScorer(scorer);
-    }
-    
   }
 
   /*
    * Implements a TopFieldCollector over one SortField criteria, with tracking
    * document scores and maxScore.
    */
-  private final static class OneComparatorScoringMaxScoreCollector extends
+  private static class OneComparatorScoringMaxScoreCollector extends
       OneComparatorNonScoringCollector {
 
-    private Scorer scorer;
+    Scorer scorer;
     
     public OneComparatorScoringMaxScoreCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
@@ -179,13 +258,62 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       maxScore = Float.NEGATIVE_INFINITY;
     }
     
-    private final void updateBottom(int doc, float score) {
+    final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
+    public void collect(int doc) throws IOException {
+      final float score = scorer.score();
+      if (score > maxScore) {
+        maxScore = score;
+      }
+      ++totalHits;
+      if (queueFull) {
+        if ((reverseMul * comparator.compareBottom(doc)) <= 0) {
+          // since docs are visited in doc Id order, if compare is 0, it means
+          // this document is largest than anything else in the queue, and
+          // therefore not competitive.
+          return;
+        }
+        
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        comparator.copy(bottom.slot, doc);
+        updateBottom(doc, score);
+        comparator.setBottom(bottom.slot);
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        comparator.copy(slot, doc);
+        add(slot, doc, score);
+        if (queueFull) {
+          comparator.setBottom(bottom.slot);
+        }
+      }
+
+    }
+    
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      super.setScorer(scorer);
+    }
+  }
+
+  /*
+   * Implements a TopFieldCollector over one SortField criteria, with tracking
+   * document scores and maxScore, and assumes out of orderness in doc Ids
+   * collection.
+   */
+  private static class OutOfOrderOneComparatorScoringMaxScoreCollector extends
+      OneComparatorScoringMaxScoreCollector {
+
+    public OutOfOrderOneComparatorScoringMaxScoreCollector(FieldValueHitQueue queue,
+        int numHits, boolean fillFields) throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
     public void collect(int doc) throws IOException {
       final float score = scorer.score();
       if (score > maxScore) {
@@ -215,11 +343,6 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       }
 
     }
-    
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-      super.setScorer(scorer);
-    }
   }
 
   /*
@@ -238,11 +361,10 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       reverseMul = queue.getReverseMul();
     }
     
-    private final void updateBottom(int doc) {
+    final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
       bottom.docID = docBase + doc;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -252,18 +374,16 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         for (int i = 0;; i++) {
           final int c = reverseMul[i] * comparators[i].compareBottom(doc);
           if (c < 0) {
-            // Definitely not competitive
+            // Definitely not competitive.
             return;
           } else if (c > 0) {
-            // Definitely competitive
+            // Definitely competitive.
             break;
           } else if (i == comparators.length - 1) {
-            // This is the equals case.
-            if (doc + docBase > bottom.docID) {
-              // Definitely not competitive
-              return;
-            }
-            break;
+            // Here c=0. If we're at the last comparator, this doc is not
+            // competitive, since docs are visited in doc Id order, which means
+            // this doc cannot compete with any other document in the queue.
+            return;
           }
         }
 
@@ -310,12 +430,74 @@ public abstract class TopFieldCollector extends TopDocsCollector {
   }
   
   /*
+   * Implements a TopFieldCollector over multiple SortField criteria, without
+   * tracking document scores and maxScore, and assumes out of orderness in doc
+   * Ids collection.
+   */
+  private static class OutOfOrderMultiComparatorNonScoringCollector extends
+      MultiComparatorNonScoringCollector {
+    
+    public OutOfOrderMultiComparatorNonScoringCollector(FieldValueHitQueue queue,
+        int numHits, boolean fillFields) throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
+    public void collect(int doc) throws IOException {
+      ++totalHits;
+      if (queueFull) {
+        // Fastmatch: return if this hit is not competitive
+        for (int i = 0;; i++) {
+          final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+          if (c < 0) {
+            // Definitely not competitive.
+            return;
+          } else if (c > 0) {
+            // Definitely competitive.
+            break;
+          } else if (i == comparators.length - 1) {
+            // This is the equals case.
+            if (doc + docBase > bottom.docID) {
+              // Definitely not competitive
+              return;
+            }
+            break;
+          }
+        }
+
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(bottom.slot, doc);
+        }
+
+        updateBottom(doc);
+
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].setBottom(bottom.slot);
+        }
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(slot, doc);
+        }
+        add(slot, doc, Float.NaN);
+        if (queueFull) {
+          for (int i = 0; i < comparators.length; i++) {
+            comparators[i].setBottom(bottom.slot);
+          }
+        }
+      }
+    }
+  }
+
+  /*
    * Implements a TopFieldCollector over multiple SortField criteria, with
    * tracking document scores and maxScore.
    */
-  private final static class MultiComparatorScoringMaxScoreCollector extends MultiComparatorNonScoringCollector {
+  private static class MultiComparatorScoringMaxScoreCollector extends MultiComparatorNonScoringCollector {
     
-    private Scorer scorer;
+    Scorer scorer;
     
     public MultiComparatorScoringMaxScoreCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
@@ -324,11 +506,10 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       maxScore = Float.NEGATIVE_INFINITY;
     }
     
-    private final void updateBottom(int doc, float score) {
+    final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -342,18 +523,16 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         for (int i = 0;; i++) {
           final int c = reverseMul[i] * comparators[i].compareBottom(doc);
           if (c < 0) {
-            // Definitely not competitive
+            // Definitely not competitive.
             return;
           } else if (c > 0) {
-            // Definitely competitive
+            // Definitely competitive.
             break;
           } else if (i == comparators.length - 1) {
-            // This is the equals case.
-            if (doc + docBase > bottom.docID) {
-              // Definitely not competitive
-              return;
-            }
-            break;
+            // Here c=0. If we're at the last comparator, this doc is not
+            // competitive, since docs are visited in doc Id order, which means
+            // this doc cannot compete with any other document in the queue.
+            return;
           }
         }
 
@@ -391,22 +570,87 @@ public abstract class TopFieldCollector extends TopDocsCollector {
 
   /*
    * Implements a TopFieldCollector over multiple SortField criteria, with
+   * tracking document scores and maxScore, and assumes out of orderness in doc
+   * Ids collection.
+   */
+  private final static class OutOfOrderMultiComparatorScoringMaxScoreCollector
+      extends MultiComparatorScoringMaxScoreCollector {
+    
+    public OutOfOrderMultiComparatorScoringMaxScoreCollector(FieldValueHitQueue queue,
+        int numHits, boolean fillFields) throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
+    public void collect(int doc) throws IOException {
+      final float score = scorer.score();
+      if (score > maxScore) {
+        maxScore = score;
+      }
+      ++totalHits;
+      if (queueFull) {
+        // Fastmatch: return if this hit is not competitive
+        for (int i = 0;; i++) {
+          final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+          if (c < 0) {
+            // Definitely not competitive.
+            return;
+          } else if (c > 0) {
+            // Definitely competitive.
+            break;
+          } else if (i == comparators.length - 1) {
+            // This is the equals case.
+            if (doc + docBase > bottom.docID) {
+              // Definitely not competitive
+              return;
+            }
+            break;
+          }
+        }
+
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(bottom.slot, doc);
+        }
+
+        updateBottom(doc, score);
+
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].setBottom(bottom.slot);
+        }
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(slot, doc);
+        }
+        add(slot, doc, score);
+        if (queueFull) {
+          for (int i = 0; i < comparators.length; i++) {
+            comparators[i].setBottom(bottom.slot);
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Implements a TopFieldCollector over multiple SortField criteria, with
    * tracking document scores and maxScore.
    */
-  private final static class MultiComparatorScoringNoMaxScoreCollector extends MultiComparatorNonScoringCollector {
+  private static class MultiComparatorScoringNoMaxScoreCollector extends MultiComparatorNonScoringCollector {
     
-    private Scorer scorer;
+    Scorer scorer;
     
     public MultiComparatorScoringNoMaxScoreCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
     }
     
-    private final void updateBottom(int doc, float score) {
+    final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      pq.adjustTop();
-      bottom = (FieldValueHitQueue.Entry) pq.top();
+      bottom = (Entry) pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -416,10 +660,81 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         for (int i = 0;; i++) {
           final int c = reverseMul[i] * comparators[i].compareBottom(doc);
           if (c < 0) {
-            // Definitely not competitive
+            // Definitely not competitive.
             return;
           } else if (c > 0) {
-            // Definitely competitive
+            // Definitely competitive.
+            break;
+          } else if (i == comparators.length - 1) {
+            // Here c=0. If we're at the last comparator, this doc is not
+            // competitive, since docs are visited in doc Id order, which means
+            // this doc cannot compete with any other document in the queue.
+            return;
+          }
+        }
+
+        // This hit is competitive - replace bottom element in queue & adjustTop
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(bottom.slot, doc);
+        }
+
+        // Compute score only if it is competitive.
+        final float score = scorer.score();
+        updateBottom(doc, score);
+
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].setBottom(bottom.slot);
+        }
+      } else {
+        // Startup transient: queue hasn't gathered numHits yet
+        final int slot = totalHits - 1;
+        // Copy hit into queue
+        for (int i = 0; i < comparators.length; i++) {
+          comparators[i].copy(slot, doc);
+        }
+
+        // Compute score only if it is competitive.
+        final float score = scorer.score();
+        add(slot, doc, score);
+        if (queueFull) {
+          for (int i = 0; i < comparators.length; i++) {
+            comparators[i].setBottom(bottom.slot);
+          }
+        }
+      }
+    }
+
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+      super.setScorer(scorer);
+    }
+  }
+
+  /*
+   * Implements a TopFieldCollector over multiple SortField criteria, with
+   * tracking document scores and maxScore, and assumes out of orderness in doc
+   * Ids collection.
+   */
+  private final static class OutOfOrderMultiComparatorScoringNoMaxScoreCollector
+      extends MultiComparatorScoringNoMaxScoreCollector {
+    
+    public OutOfOrderMultiComparatorScoringNoMaxScoreCollector(
+        FieldValueHitQueue queue, int numHits, boolean fillFields)
+        throws IOException {
+      super(queue, numHits, fillFields);
+    }
+    
+    public void collect(int doc) throws IOException {
+      ++totalHits;
+      if (queueFull) {
+        // Fastmatch: return if this hit is not competitive
+        for (int i = 0;; i++) {
+          final int c = reverseMul[i] * comparators[i].compareBottom(doc);
+          if (c < 0) {
+            // Definitely not competitive.
+            return;
+          } else if (c > 0) {
+            // Definitely competitive.
             break;
           } else if (i == comparators.length - 1) {
             // This is the equals case.
@@ -451,7 +766,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
           comparators[i].copy(slot, doc);
         }
 
-        // Compute score only if it competitive.
+        // Compute score only if it is competitive.
         final float score = scorer.score();
         add(slot, doc, score);
         if (queueFull) {
@@ -518,12 +833,16 @@ public abstract class TopFieldCollector extends TopDocsCollector {
    *          true affects performance as it incurs the score computation on
    *          each result. Also, setting this true automatically sets
    *          <code>trackDocScores</code> to true as well.
+   * @param docsScoredInOrder
+   *          specifies whether documents are scored in doc Id order or not by
+   *          the given {@link Scorer} in {@link #setScorer(Scorer)}.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
    * @throws IOException
    */
   public static TopFieldCollector create(Sort sort, int numHits,
-      boolean fillFields, boolean trackDocScores, boolean trackMaxScore)
+      boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
+      boolean docsScoredInOrder)
       throws IOException {
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -531,28 +850,47 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     
     FieldValueHitQueue queue = FieldValueHitQueue.create(sort.fields, numHits);
     if (queue.getComparators().length == 1) {
-      if (trackMaxScore) {
-        return new OneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
-      } else if (trackDocScores) {
-        return new OneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+      if (docsScoredInOrder) {
+        if (trackMaxScore) {
+          return new OneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+        } else if (trackDocScores) {
+          return new OneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+        } else {
+          return new OneComparatorNonScoringCollector(queue, numHits, fillFields);
+        }
       } else {
-        return new OneComparatorNonScoringCollector(queue, numHits, fillFields);
+        if (trackMaxScore) {
+          return new OutOfOrderOneComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+        } else if (trackDocScores) {
+          return new OutOfOrderOneComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+        } else {
+          return new OutOfOrderOneComparatorNonScoringCollector(queue, numHits, fillFields);
+        }
       }
     }
 
     // multiple comparators.
-    if (trackMaxScore) {
-      return new MultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
-    } else if (trackDocScores) {
-      return new MultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+    if (docsScoredInOrder) {
+      if (trackMaxScore) {
+        return new MultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+      } else if (trackDocScores) {
+        return new MultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+      } else {
+        return new MultiComparatorNonScoringCollector(queue, numHits, fillFields);
+      }
     } else {
-      return new MultiComparatorNonScoringCollector(queue, numHits, fillFields);
+      if (trackMaxScore) {
+        return new OutOfOrderMultiComparatorScoringMaxScoreCollector(queue, numHits, fillFields);
+      } else if (trackDocScores) {
+        return new OutOfOrderMultiComparatorScoringNoMaxScoreCollector(queue, numHits, fillFields);
+      } else {
+        return new OutOfOrderMultiComparatorNonScoringCollector(queue, numHits, fillFields);
+      }
     }
   }
   
   final void add(int slot, int doc, float score) {
-    pq.put(new FieldValueHitQueue.Entry(slot, docBase + doc, score));
-    bottom = (FieldValueHitQueue.Entry) pq.top();
+    bottom = (Entry) pq.add(new Entry(slot, docBase + doc, score));
     queueFull = totalHits == numHits;
   }
 
@@ -562,14 +900,15 @@ public abstract class TopFieldCollector extends TopDocsCollector {
    */
 
   protected void populateResults(ScoreDoc[] results, int howMany) {
-    FieldValueHitQueue queue = (FieldValueHitQueue) pq;
     if (fillFields) {
-      for (int i = queue.size() - 1; i >= 0; i--) {
-        results[i] = queue.fillFields((FieldValueHitQueue.Entry) queue.pop());
+      // avoid casting if unnecessary.
+      FieldValueHitQueue queue = (FieldValueHitQueue) pq;
+      for (int i = howMany - 1; i >= 0; i--) {
+        results[i] = queue.fillFields((Entry) queue.pop());
       }
     } else {
-      for (int i = queue.size() - 1; i >= 0; i--) {
-        Entry entry = (FieldValueHitQueue.Entry) queue.pop();
+      for (int i = howMany - 1; i >= 0; i--) {
+        Entry entry = (Entry) pq.pop();
         results[i] = new FieldDoc(entry.docID, entry.score);
       }
     }

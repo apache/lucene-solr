@@ -62,6 +62,11 @@ Changes in runtime behavior
     writes an empty commit when it's created.  (Paul Taylor via Mike
     McCandless)
 
+ 5. LUCENE-1593: When you call Sort() or Sort.setSort(String field,
+    boolean reverse), the resulting SortField array no longer ends
+    with SortField.FIELD_DOC (it was unnecessary as Lucene breaks ties
+    internally by docID). (Shai Erera via Michael McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
@@ -166,6 +171,10 @@ Bug fixes
 8. LUCENE-1623: Properly handle back-compability of 2.3.x indexes that
    contain field names with non-ascii characters.  (Mike Streeton via
    Mike McCandless)
+
+9. LUCENE-1593: MultiSearcher and ParallelMultiSearcher did not break ties (in 
+   sort) by doc Id in a consistent manner (i.e., if Sort.FIELD_DOC was used vs. 
+   when it wasn't). (Shai Erera via Michael McCandless)
 
  New features
 

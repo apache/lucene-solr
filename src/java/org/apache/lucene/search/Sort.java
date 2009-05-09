@@ -121,7 +121,7 @@ implements Serializable {
    * only with slightly more overhead.
    */
   public Sort() {
-    this(new SortField[] { SortField.FIELD_SCORE, SortField.FIELD_DOC });
+    this(SortField.FIELD_SCORE);
   }
 
   /**
@@ -179,9 +179,7 @@ implements Serializable {
    * then by index order (document number).
    */
   public void setSort(String field, boolean reverse) {
-    SortField[] nfields = new SortField[] {
-        new SortField(field, SortField.AUTO, reverse), SortField.FIELD_DOC };
-    fields = nfields;
+    fields = new SortField[] { new SortField(field, SortField.AUTO, reverse) };
   }
 
   /** Sets the sort to the terms in each field in succession. */

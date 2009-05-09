@@ -54,7 +54,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    */
   public TopDocs search(Weight weight, Filter filter, int nDocs)
     throws IOException {
-    HitQueue hq = new HitQueue(nDocs);
+    HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
     MultiSearcherThread[] msta =
       new MultiSearcherThread[searchables.length];
@@ -295,7 +295,22 @@ class MultiSearcherThread extends Thread {
       // the actual type of fields, in case the original list contained AUTO.
       // if the searchable returns null for fields, we'll have problems.
       if (sort != null) {
-        ((FieldDocSortedHitQueue)hq).setFields (((TopFieldDocs)docs).fields);
+        TopFieldDocs docsFields = (TopFieldDocs) docs;
+        // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
+        // it will break ties by doc Id properly. Otherwise, it will compare to
+        // 'relative' doc Ids, that belong to two different searchers.
+        for (int j = 0; j < docsFields.fields.length; j++) {
+          if (docsFields.fields[j].getType() == SortField.DOC) {
+            // iterate over the score docs and change their fields value
+            for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
+              FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
+              fd.fields[j] = new Integer(((Integer) fd.fields[j]).intValue() + starts[i]);
+            }
+            break;
+          }
+        }
+
+        ((FieldDocSortedHitQueue) hq).setFields(docsFields.fields);
       }
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0;

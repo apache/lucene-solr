@@ -203,7 +203,7 @@ public class MultiSearcher extends Searcher {
   public TopDocs search(Weight weight, Filter filter, int nDocs)
   throws IOException {
 
-    HitQueue hq = new HitQueue(nDocs);
+    HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
 
     for (int i = 0; i < searchables.length; i++) { // search each searcher
@@ -236,7 +236,19 @@ public class MultiSearcher extends Searcher {
     
     for (int i = 0; i < searchables.length; i++) { // search each searcher
       TopFieldDocs docs = searchables[i].search (weight, filter, n, sort);
-      
+      // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
+      // it will break ties by doc Id properly. Otherwise, it will compare to
+      // 'relative' doc Ids, that belong to two different searchers.
+      for (int j = 0; j < docs.fields.length; j++) {
+        if (docs.fields[j].getType() == SortField.DOC) {
+          // iterate over the score docs and change their fields value
+          for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
+            FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
+            fd.fields[j] = new Integer(((Integer) fd.fields[j]).intValue() + starts[i]);
+          }
+          break;
+        }
+      }
       if (hq == null) hq = new FieldDocSortedHitQueue (docs.fields, n);
       totalHits += docs.totalHits;		  // update totalHits
       maxScore = Math.max(maxScore, docs.getMaxScore());

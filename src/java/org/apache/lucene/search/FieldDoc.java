@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-
 /**
  * Expert: A ScoreDoc which also contains information about
  * how to sort the referenced document.  In addition to the
@@ -38,8 +37,7 @@ package org.apache.lucene.search;
  * @see ScoreDoc
  * @see TopFieldDocs
  */
-public class FieldDoc
-extends ScoreDoc {
+public class FieldDoc extends ScoreDoc {
 
 	/** Expert: The values which are used to sort the referenced document.
 	 * The order of these will match the original sort criteria given by a
@@ -59,5 +57,19 @@ extends ScoreDoc {
 	public FieldDoc (int doc, float score, Comparable[] fields) {
 		super (doc, score);
 		this.fields = fields;
+	}
+	
+	// A convenience method for debugging.
+	public String toString() {
+	  // super.toString returns the doc and score information, so just add the
+          // fields information
+	  StringBuffer sb = new StringBuffer(super.toString());
+	  sb.append("[");
+	  for (int i = 0; i < fields.length; i++) {
+            sb.append(fields[i]).append(", ");
+          }
+	  sb.setLength(sb.length() - 2); // discard last ", "
+	  sb.append("]");
+	  return super.toString();
 	}
 }

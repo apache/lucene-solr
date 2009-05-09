@@ -29,6 +29,49 @@ public abstract class PriorityQueue {
     must define this one method. */
   protected abstract boolean lessThan(Object a, Object b);
 
+  /**
+   * This method can be overridden by extending classes to return a sentinel
+   * object which will be used by {@link #initialize(int)} to fill the queue, so
+   * that the code which uses that queue can always assume it's full and only
+   * change the top without attempting to insert any new object.<br>
+   * 
+   * Those sentinel values should always compare worse than any non-sentinel
+   * value (i.e., {@link #lessThan(Object, Object)} should always favor the
+   * non-sentinel values).<br>
+   * 
+   * By default, this method returns false, which means the queue will not be
+   * filled with sentinel values. Otherwise, the value returned will be used to
+   * pre-populate the queue. Adds sentinel values to the queue.<br>
+   * 
+   * If this method is extended to return a non-null value, then the following
+   * usage pattern is recommended:
+   * 
+   * <pre>
+   * // extends getSentinelObject() to return a non-null value.
+   * PriorityQueue pq = new MyQueue(numHits);
+   * // save the 'top' element, which is guaranteed to not be null.
+   * MyObject pqTop = (MyObject) pq.top();
+   * &lt;...&gt;
+   * // now in order to add a new element, which is 'better' than top (after 
+   * // you've verified it is better), it is as simple as:
+   * pqTop.change().
+   * pqTop = pq.updateTop();
+   * </pre>
+   * 
+   * <b>NOTE:</b> if this method returns a non-null value, it will be called by
+   * {@link #initialize(int)} {@link #size()} times, relying on a new object to
+   * be returned and will not check if it's null again. Therefore you should
+   * ensure any call to this method creates a new instance and behaves
+   * consistently, e.g., it cannot return null if it previously returned
+   * non-null.
+   * 
+   * @return the sentinel object to use to pre-populate the queue, or null if
+   *         sentinel objects are not supported.
+   */
+  protected Object getSentinelObject() {
+    return null;
+  }
+
   /** Subclass constructors must call this. */
   protected final void initialize(int maxSize) {
     size = 0;
@@ -40,12 +83,25 @@ public abstract class PriorityQueue {
       heapSize = maxSize + 1;
     heap = new Object[heapSize];
     this.maxSize = maxSize;
+    
+    // If sentinel objects are supported, populate the queue with them
+    Object sentinel = getSentinelObject();
+    if (sentinel != null) {
+      heap[1] = sentinel;
+      for (int i = 2; i < heap.length; i++) {
+        heap[i] = getSentinelObject();
+      }
+      size = maxSize;
+    }
   }
 
   /**
-   * Adds an Object to a PriorityQueue in log(size) time.
-   * If one tries to add more objects than maxSize from initialize
-   * a RuntimeException (ArrayIndexOutOfBound) is thrown.
+   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
+   * more objects than maxSize from initialize a RuntimeException
+   * (ArrayIndexOutOfBound) is thrown.
+   * 
+   * @deprecated use {@link #add(Object)} which returns the new top object,
+   *             saving an additional call to {@link #top()}.
    */
   public final void put(Object element) {
     size++;
@@ -54,10 +110,27 @@ public abstract class PriorityQueue {
   }
 
   /**
-   * Adds element to the PriorityQueue in log(size) time if either
-   * the PriorityQueue is not full, or not lessThan(element, top()).
+   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
+   * more objects than maxSize from initialize an
+   * {@link ArrayIndexOutOfBoundsException} is thrown.
+   * 
+   * @return the new 'top' element in the queue.
+   */
+  public final Object add(Object element) {
+    size++;
+    heap[size] = element;
+    upHeap();
+    return heap[1];
+  }
+
+  /**
+   * Adds element to the PriorityQueue in log(size) time if either the
+   * PriorityQueue is not full, or not lessThan(element, top()).
+   * 
    * @param element
    * @return true if element is added, false otherwise.
+   * @deprecated use {@link #insertWithOverflow(Object)} instead, which
+   *             encourages objects reuse.
    */
   public boolean insert(Object element) {
     return insertWithOverflow(element) != element;
@@ -109,15 +182,52 @@ public abstract class PriorityQueue {
       return null;
   }
 
-  /** Should be called when the Object at top changes values.  Still log(n)
-   * worst case, but it's at least twice as fast to <pre>
-   *  { pq.top().change(); pq.adjustTop(); }
-   * </pre> instead of <pre>
-   *  { o = pq.pop(); o.change(); pq.push(o); }
+  /**
+   * Should be called when the Object at top changes values. Still log(n) worst
+   * case, but it's at least twice as fast to
+   * 
+   * <pre>
+   * pq.top().change();
+   * pq.adjustTop();
    * </pre>
+   * 
+   * instead of
+   * 
+   * <pre>
+   * o = pq.pop();
+   * o.change();
+   * pq.push(o);
+   * </pre>
+   * 
+   * @deprecated use {@link #updateTop()} which returns the new top element and
+   *             saves an additional call to {@link #top()}.
    */
   public final void adjustTop() {
     downHeap();
+  }
+  
+  /**
+   * Should be called when the Object at top changes values. Still log(n) worst
+   * case, but it's at least twice as fast to
+   * 
+   * <pre>
+   * pq.top().change();
+   * pq.updateTop();
+   * </pre>
+   * 
+   * instead of
+   * 
+   * <pre>
+   * o = pq.pop();
+   * o.change();
+   * pq.push(o);
+   * </pre>
+   * 
+   * @return the new 'top' element.
+   */
+  public final Object updateTop() {
+    downHeap();
+    return heap[1];
   }
 
   /** Returns the number of elements currently stored in the PriorityQueue. */
@@ -127,8 +237,9 @@ public abstract class PriorityQueue {
 
   /** Removes all entries from the PriorityQueue. */
   public final void clear() {
-    for (int i = 0; i <= size; i++)
+    for (int i = 0; i <= size; i++) {
       heap[i] = null;
+    }
     size = 0;
   }
 

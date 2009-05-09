@@ -36,7 +36,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     private int base = 0;
     
     public MyTopsDocCollector(int size) {
-      super(new HitQueue(size));
+      super(new HitQueue(size, false));
     }
     
     protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
@@ -56,7 +56,8 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
     
     public void collect(int doc) throws IOException {
-      pq.insert(new ScoreDoc(doc + base, scores[idx++]));
+      ++totalHits;
+      pq.insertWithOverflow(new ScoreDoc(doc + base, scores[idx++]));
     }
 
     public void setNextReader(IndexReader reader, int docBase)

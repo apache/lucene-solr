@@ -193,7 +193,8 @@ public class SearchFiles {
                                      int hitsPerPage, boolean raw, boolean interactive) throws IOException {
  
     // Collect enough docs to show 5 pages
-    TopScoreDocCollector collector = new TopScoreDocCollector(5 * hitsPerPage);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(
+        5 * hitsPerPage, false);
     searcher.search(query, collector);
     ScoreDoc[] hits = collector.topDocs().scoreDocs;
     
@@ -212,7 +213,7 @@ public class SearchFiles {
           break;
         }
 
-        collector = new TopScoreDocCollector(numTotalHits);
+        collector = TopScoreDocCollector.create(numTotalHits, false);
         searcher.search(query, collector);
         hits = collector.topDocs().scoreDocs;
       }
