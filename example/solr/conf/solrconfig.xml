@@ -637,12 +637,16 @@
 -->
 
 
+  <!-- A component to return terms and document frequency of those terms.
+       This component does not yet support distributed search. -->
+  <searchComponent name="termsComponent" class="org.apache.solr.handler.component.TermsComponent"/>
 
-  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
-
-  <requestHandler name="/autoSuggest" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
+     <lst name="defaults">
+      <bool name="terms">true</bool>
+    </lst>     
     <arr name="components">
-      <str>termsComp</str>
+      <str>termsComponent</str>
     </arr>
   </requestHandler>
 

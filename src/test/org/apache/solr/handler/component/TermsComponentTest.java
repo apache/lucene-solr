@@ -43,9 +43,9 @@ public class TermsComponentTest extends AbstractSolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    assertU(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a"));
-    assertU(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa"));
-    assertU(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa"));
+    assertU(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a", "foo_i","1"));
+    assertU(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa", "foo_i","1"));
+    assertU(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa", "foo_i","2"));
     assertU(adoc("id", "3", "lowerfilt", "aaa", "standardfilt", "abbb"));
     assertU(adoc("id", "4", "lowerfilt", "ab", "standardfilt", "b"));
     assertU(adoc("id", "5", "lowerfilt", "abb", "standardfilt", "bb"));
@@ -75,7 +75,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     //no lower bound
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -106,7 +106,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS, "true");
     //no lower bound
     params.add(TermsParams.TERMS_LOWER, "d");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
 
@@ -130,7 +130,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
     //no lower bound
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -158,7 +158,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS, "true");
     params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
     //no lower bound, upper bound or rows
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(-1));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(-1));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -186,7 +186,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
     params.add(TermsParams.TERMS_PREFIX_STR, "aa");
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -213,7 +213,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     //no upper bound, lower bound doesn't exist
     params.add(TermsParams.TERMS_LOWER, "d");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -239,7 +239,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     params.add(TermsParams.TERMS_LOWER, "a");
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -268,7 +268,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "standardfilt");
     params.add(TermsParams.TERMS_LOWER, "cc");
     params.add(TermsParams.TERMS_UPPER, "d");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
@@ -288,7 +288,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     params.add(TermsParams.TERMS_LOWER, "a");
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     SolrRequestHandler handler;
     SolrQueryResponse rsp;
     NamedList values;
@@ -330,7 +330,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     params.add(TermsParams.TERMS_LOWER, "a");
     params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(2));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(2));
     rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
@@ -343,6 +343,24 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("abc is not null", terms.get("abc") == null);
     assertTrue("b is null and it shouldn't be", terms.get("b") == null);
     assertTrue("baa is not null", terms.get("baa") == null);
+
+    params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "foo_i");
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("foo_i");
+    assertEquals(2,terms.get("1"));
+
+    params.add("terms.raw","true");
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("foo_i");
+    assertTrue(terms.get("1") == null);
   }
 
   
@@ -358,7 +376,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(TermsParams.TERMS, "true");
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     // Tests TERMS_LOWER = "a" with freqmin = 2, freqmax = -1, terms.size() = 1
     params.add(TermsParams.TERMS_LOWER, "a");
     params.add(TermsParams.TERMS_MINCOUNT,String.valueOf(2));
@@ -373,7 +391,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params = new ModifiableSolrParams();
     params.add(TermsParams.TERMS, "true");
     params.add(TermsParams.TERMS_FIELD, "standardfilt");
-    params.add(TermsParams.TERMS_ROWS, String.valueOf(50));
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
     // Tests TERMS_LOWER = "a" with freqmin = 2, freqmax = -1, terms.size() = 1
     params.add(TermsParams.TERMS_LOWER, "d");
     params.add(TermsParams.TERMS_MINCOUNT,String.valueOf(2));

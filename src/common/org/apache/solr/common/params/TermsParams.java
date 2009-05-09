@@ -64,7 +64,7 @@ public interface TermsParams {
   /**
    * Optional.  The number of results to return.  If not specified, looks for {@link org.apache.solr.common.params.CommonParams#ROWS}.  If that's not specified, uses 10.
    */
-  public static final String TERMS_ROWS = TERMS_PREFIX + "rows";
+  public static final String TERMS_LIMIT = TERMS_PREFIX + "limit";
 
   public static final String TERMS_PREFIX_STR = TERMS_PREFIX + "prefix";
 
@@ -76,5 +76,11 @@ public interface TermsParams {
    * Optional.  The maximum value of docFreq to be returned.  -1 by default means no boundary
    */
   public static final String TERMS_MAXCOUNT = TERMS_PREFIX + "maxcount";
+
+  /**
+   * Optional.  If true, return the raw characters of the indexed term, regardless of if it is readable.
+   * For instance, the index form of numeric numbers is not human readable.  The default is false.
+   */
+  public static final String TERMS_RAW = TERMS_PREFIX + "raw";
 }
 

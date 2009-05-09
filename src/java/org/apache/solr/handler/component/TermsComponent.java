@@ -23,6 +23,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.StrField;
 
 import java.io.IOException;
 
@@ -40,23 +42,30 @@ public class TermsComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (params.getBool(TermsParams.TERMS, false)) {
-      String lower = params.get(TermsParams.TERMS_LOWER, "");
+      String lowerStr = params.get(TermsParams.TERMS_LOWER, null);
       String[] fields = params.getParams(TermsParams.TERMS_FIELD);
       if (fields != null && fields.length > 0) {
         NamedList terms = new NamedList();
         rb.rsp.add("terms", terms);
-        int rows = params.getInt(TermsParams.TERMS_ROWS, params.getInt(CommonParams.ROWS, 10));
+        int rows = params.getInt(TermsParams.TERMS_LIMIT, 10);
         if (rows < 0) {
           rows = Integer.MAX_VALUE;
         }
-        String upper = params.get(TermsParams.TERMS_UPPER);
+        String upperStr = params.get(TermsParams.TERMS_UPPER);
         boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
         boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
         int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1); // initialize freqmin
         int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT); // initialize freqmax
         String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
+        boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
         for (int j = 0; j < fields.length; j++) {
           String field = fields[j];
+          FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
+          if (ft==null) ft = new StrField();
+
+          String lower = lowerStr==null ? "" : ft.toInternal(lowerStr);
+          String upper = upperStr==null ? null : ft.toInternal(upperStr);
+
           Term lowerTerm = new Term(field, lower);
           Term upperTerm = upper != null ? new Term(field, upper) : null;
           TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm);//this will be positioned ready to go
@@ -72,16 +81,17 @@ public class TermsComponent extends SearchComponent {
           if (hasMore == true) {
             do {
               Term theTerm = termEnum.term();
-              String theText = theTerm.text();
+              String indexedText = theTerm.text();
+              String readableText = ft.indexedToReadable(indexedText);
               int upperCmp = upperTerm != null ? theTerm.compareTo(upperTerm) : -1;
               if (theTerm != null && theTerm.field().equals(field)
                       && ((upperIncl == true && upperCmp <= 0) ||
                       (upperIncl == false && upperCmp < 0))
-                      && (prefix == null || theText.startsWith(prefix))
+                      && (prefix == null || readableText.startsWith(prefix))
                       ) {
                 int docFreq = termEnum.docFreq();
                 if (docFreq >= freqmin && (freqmax == UNLIMITED_MAX_COUNT || (docFreq <= freqmax))) {
-                  fieldTerms.add(theText, docFreq);
+                  fieldTerms.add(readableText, docFreq);
                   i++;
                 }
               } else {//we're done
@@ -103,15 +113,15 @@ public class TermsComponent extends SearchComponent {
   }
 
   public String getVersion() {
-    return "$Revision:$";
+    return "$Revision$";
   }
 
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 
   public String getDescription() {
