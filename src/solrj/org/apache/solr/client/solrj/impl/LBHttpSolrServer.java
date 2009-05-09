@@ -311,7 +311,8 @@ public class LBHttpSolrServer extends SolrServer {
 
   protected void finalize() throws Throwable {
     try {
-      this.aliveCheckExecutor.shutdownNow();
+      if(this.aliveCheckExecutor!=null)
+        this.aliveCheckExecutor.shutdownNow();
     } finally {
       super.finalize();
     }
