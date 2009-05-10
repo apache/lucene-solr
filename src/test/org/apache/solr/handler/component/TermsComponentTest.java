@@ -330,6 +330,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     params.add(TermsParams.TERMS_FIELD, "lowerfilt");
     params.add(TermsParams.TERMS_LOWER, "a");
     params.add(TermsParams.TERMS_UPPER, "b");
+    params.add(TermsParams.TERMS_RAW, "true");  // this should have no effect on a text field
     params.add(TermsParams.TERMS_LIMIT, String.valueOf(2));
     rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap());
@@ -361,6 +362,16 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     values = rsp.getValues();
     terms = (NamedList) ((NamedList) values.get("terms")).get("foo_i");
     assertTrue(terms.get("1") == null);
+
+    // check something at the end of the index
+    params.set(TermsParams.TERMS_FIELD, "zzz_i");
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("zzz_i");
+    assertTrue(terms.size() == 0);
+
   }
 
   

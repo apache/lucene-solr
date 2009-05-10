@@ -47,59 +47,76 @@ public class TermsComponent extends SearchComponent {
       if (fields != null && fields.length > 0) {
         NamedList terms = new NamedList();
         rb.rsp.add("terms", terms);
-        int rows = params.getInt(TermsParams.TERMS_LIMIT, 10);
-        if (rows < 0) {
-          rows = Integer.MAX_VALUE;
+        int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
+        if (limit < 0) {
+          limit = Integer.MAX_VALUE;
         }
         String upperStr = params.get(TermsParams.TERMS_UPPER);
         boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
         boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
         int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1); // initialize freqmin
         int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT); // initialize freqmax
+        if (freqmax<0) {
+          freqmax = Integer.MAX_VALUE;
+        }
         String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
         boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
         for (int j = 0; j < fields.length; j++) {
-          String field = fields[j];
+          String field = fields[j].intern();
           FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
           if (ft==null) ft = new StrField();
 
-          String lower = lowerStr==null ? "" : ft.toInternal(lowerStr);
-          String upper = upperStr==null ? null : ft.toInternal(upperStr);
+          // If no lower bound was specified, use the prefix
+          String lower = lowerStr==null ? prefix : (raw ? lowerStr : ft.toInternal(lowerStr));
+          if (lower == null) lower="";
+          String upper = upperStr==null ? null : (raw ? upperStr : ft.toInternal(upperStr));
 
           Term lowerTerm = new Term(field, lower);
-          Term upperTerm = upper != null ? new Term(field, upper) : null;
-          TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm);//this will be positioned ready to go
+          Term upperTerm = upper==null ? null : new Term(field, upper);
+          
+          TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm); //this will be positioned ready to go
           int i = 0;
           NamedList fieldTerms = new NamedList();
           terms.add(field, fieldTerms);
-          boolean hasMore = true;
           Term lowerTestTerm = termEnum.term();
+
           //Only advance the enum if we are excluding the lower bound and the lower Term actually matches
-          if (lowerIncl == false && lowerTestTerm.field().equals(field) == true && lowerTestTerm.text().equals(lower)) {
-            hasMore = termEnum.next();
+          if (lowerTestTerm!=null && lowerIncl == false && lowerTestTerm.field() == field  // intern'd comparison
+                  && lowerTestTerm.text().equals(lower)) {
+            termEnum.next();
           }
-          if (hasMore == true) {
-            do {
-              Term theTerm = termEnum.term();
-              String indexedText = theTerm.text();
-              String readableText = ft.indexedToReadable(indexedText);
-              int upperCmp = upperTerm != null ? theTerm.compareTo(upperTerm) : -1;
-              if (theTerm != null && theTerm.field().equals(field)
-                      && ((upperIncl == true && upperCmp <= 0) ||
-                      (upperIncl == false && upperCmp < 0))
-                      && (prefix == null || readableText.startsWith(prefix))
-                      ) {
-                int docFreq = termEnum.docFreq();
-                if (docFreq >= freqmin && (freqmax == UNLIMITED_MAX_COUNT || (docFreq <= freqmax))) {
-                  fieldTerms.add(readableText, docFreq);
-                  i++;
-                }
-              } else {//we're done
-                break;
-              }
+
+          while (i<limit) {
+
+            Term theTerm = termEnum.term();
+
+            // check for a different field, or the end of the index.
+            if (theTerm==null || field != theTerm.field())  // intern'd comparison
+              break;
+
+            String indexedText = theTerm.text();
+
+            // stop if the prefix doesn't match
+            if (prefix != null && !indexedText.startsWith(prefix)) break;
+
+            if (upperTerm != null) {
+              int upperCmp = theTerm.compareTo(upperTerm);
+              // if we are past the upper term, or equal to it (when don't include upper) then stop.
+              if (upperCmp>0 || (upperCmp==0 && !upperIncl)) break;
             }
-            while (i < rows && termEnum.next());
+
+            // This is a good term in the range.  Check if mincount/maxcount conditions are satisfied.
+            int docFreq = termEnum.docFreq();
+            if (docFreq >= freqmin && docFreq <= freqmax) {
+              // add the term to the list
+              String label = raw ? indexedText : ft.indexedToReadable(indexedText);
+              fieldTerms.add(label, docFreq);
+              i++;
+            }
+
+            termEnum.next();
           }
+
           termEnum.close();
         }
       } else {
