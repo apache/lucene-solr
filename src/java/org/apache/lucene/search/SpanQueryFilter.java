@@ -87,7 +87,7 @@ public class SpanQueryFilter extends SpanFilter {
   }
 
   public String toString() {
-    return "QueryWrapperFilter(" + query + ")";
+    return "SpanQueryFilter(" + query + ")";
   }
 
   public boolean equals(Object o) {
