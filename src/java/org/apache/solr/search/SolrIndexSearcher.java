@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 // IndexReader to pass to the searcher myself.
 // NOTE: as of Lucene 1.9, this has changed!
 
-public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
+public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
@@ -66,7 +66,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
   private long warmupTime = 0;
-  private final IndexSearcher searcher;
   private final SolrIndexReader reader;
   private final boolean closeReader;
 
@@ -121,6 +120,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
+    super(r);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
@@ -140,9 +140,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       indexDir = fsDirectory.getFile().getAbsolutePath();
     }
 
-    searcher = new IndexSearcher(reader);
     this.closeReader = closeReader;
-    searcher.setSimilarity(schema.getSimilarity());
+    setSimilarity(schema.getSimilarity());
 
     SolrConfig solrConfig = core.getSolrConfig();
     queryResultWindowSize = solrConfig.queryResultWindowSize;
@@ -232,7 +231,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
     core.getInfoRegistry().remove(name);
     try {
-      searcher.close();
+      super.close();
     }
     finally {
       if(closeReader) reader.close();
@@ -353,38 +352,14 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
     if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
     ) {
-      return searcher.search(query,filter,sort);
+      return super.search(query,filter,sort);
     } else {
       Query[] newQuery = new Query[1];
       Filter[] newFilter = new Filter[1];
-      optimizer.optimize((BooleanQuery)query, searcher, 0, newQuery, newFilter);
+      optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
 
-      return searcher.search(newQuery[0], newFilter[0], sort);
+      return super.search(newQuery[0], newFilter[0], sort);
     }
-  }
-
-  public Hits search(Query query, Filter filter) throws IOException {
-    return searcher.search(query, filter);
-  }
-
-  public Hits search(Query query, Sort sort) throws IOException {
-    return searcher.search(query, sort);
-  }
-
-  public void search(Query query, HitCollector results) throws IOException {
-    searcher.search(query, results);
-  }
-
-  public void setSimilarity(Similarity similarity) {
-    searcher.setSimilarity(similarity);
-  }
-
-  public Similarity getSimilarity() {
-    return searcher.getSimilarity();
-  }
-
-  public int docFreq(Term term) throws IOException {
-    return searcher.docFreq(term);
   }
 
   /**
@@ -433,7 +408,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * 
    * @see IndexReader#document(int, FieldSelector) */
   public Document doc(int n, FieldSelector fieldSelector) throws IOException {
-    return searcher.getIndexReader().document(n, fieldSelector);
+    return getIndexReader().document(n, fieldSelector);
   }
 
   /**
@@ -452,9 +427,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
 
     if(!enableLazyFieldLoading || fields == null) {
-      d = searcher.getIndexReader().document(i);
+      d = getIndexReader().document(i);
     } else {
-      d = searcher.getIndexReader().document(i, 
+      d = getIndexReader().document(i, 
              new SetNonLazyFieldSelector(fields));
     }
 
@@ -484,34 +459,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   /* ********************** end document retrieval *************************/
-
-  public int maxDoc() throws IOException {
-    return searcher.maxDoc();
-  }
-
-  public TopDocs search(Weight weight, Filter filter, int i) throws IOException {
-    return searcher.search(weight, filter, i);
-  }
-
-  public void search(Weight weight, Filter filter, HitCollector hitCollector) throws IOException {
-    searcher.search(weight, filter, hitCollector);
-  }
-
-  public void search(Weight weight, Filter filter, Collector collector) throws IOException {
-    searcher.search(weight, filter, collector);
-  }
-
-  public Query rewrite(Query original) throws IOException {
-    return searcher.rewrite(original);
-  }
-
-  public Explanation explain(Weight weight, int i) throws IOException {
-    return searcher.explain(weight, i);
-  }
-
-  public TopFieldDocs search(Weight weight, Filter filter, int i, Sort sort) throws IOException {
-    return searcher.search(weight, filter, i, sort);
-  }
 
   ////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////
@@ -692,7 +639,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
           if (tdocs!=null) tdocs.close();
         }
       } else {
-        searcher.search(query,null,hc);
+        super.search(query,null,hc);
       }
       return hc.getDocSet();
 
@@ -700,7 +647,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
       final DocSetHitCollector hc = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
       final DocSet filt = filter;
-      searcher.search(query, null, new HitCollector() {
+      super.search(query, null, new HitCollector() {
         public void collect(int doc, float score) {
           if (filt.exists(doc)) hc.collect(doc,score);
         }
@@ -979,7 +926,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        searcher.search(query, hc );
+        super.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1018,7 +965,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        searcher.search(query, hc );
+        super.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1073,7 +1020,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        searcher.search(query, hc );
+        super.search(query, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1188,7 +1135,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final int[] numHits = new int[1];
 
       try {
-        searcher.search(query, new HitCollector() {
+        super.search(query, new HitCollector() {
           public void collect(int doc, float score) {
             hitCollector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
@@ -1218,7 +1165,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
       try {
-        searcher.search(query, new HitCollector() {
+        super.search(query, new HitCollector() {
           private FieldDoc reusableFD;
           public void collect(int doc, float score) {
             hitCollector.collect(doc,score);
@@ -1262,7 +1209,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
       try {
-        searcher.search(query, new HitCollector() {
+        super.search(query, new HitCollector() {
           private ScoreDoc reusableSD;
           public void collect(int doc, float score) {
             hitCollector.collect(doc,score);
