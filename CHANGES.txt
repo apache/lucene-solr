@@ -347,7 +347,7 @@ Bug Fixes
 
 38. SOLR-1126: Replicated files have incorrect timestamp (Jian Han Guo, Jeff Newburn, Noble Paul via shalin)
 
-39. SOLR-1094: Incorrect value of correctlySpelled attribute in some cases (David Smiley, mark Miller via shalin)
+39. SOLR-1094: Incorrect value of correctlySpelled attribute in some cases (David Smiley, Mark Miller via shalin)
 
 40. SOLR-965: Better error message when <pingQuery> is not configured.
     (Mark Miller via hossman)
@@ -436,6 +436,8 @@ Other Changes
 
 30. SOLR-748: FacetComponent helper classes are made public as an experimental API.
     (Wojtek Piaseczny via shalin)
+    
+31. Upgraded to Lucene 2.9-dev 773862 (Mark Miller)
 
 Build
 ----------------------
