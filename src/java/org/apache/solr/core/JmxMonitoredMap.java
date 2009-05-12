@@ -245,7 +245,7 @@ public class JmxMonitoredMap<K, V> extends
             throws AttributeNotFoundException, MBeanException, ReflectionException {
       Object val;
       if (staticStats.contains(attribute) && attribute != null
-              & attribute.length() > 0) {
+              && attribute.length() > 0) {
         try {
           String getter = "get" + attribute.substring(0, 1).toUpperCase()
                   + attribute.substring(1);
