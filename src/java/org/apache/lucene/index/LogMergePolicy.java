@@ -41,7 +41,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   /** Defines the allowed range of log(size) for each
    *  level.  A level is computed by taking the max segment
-   *  log size, minuse LEVEL_LOG_SPAN, and finding all
+   *  log size, minus LEVEL_LOG_SPAN, and finding all
    *  segments falling within that range. */
   public static final double LEVEL_LOG_SPAN = 0.75;
 
