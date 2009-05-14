@@ -308,12 +308,6 @@ Bug fixes
     cross-correlate Spans from different fields.
     (Paul Cowan and Chris Hostetter)
     
-25. LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
-    improves on CJKAnalyzer and ChineseAnalyzer by handling Chinese
-    sentences properly.  SmartChineseAnalyzer uses a Hidden Markov
-    Model to tokenize Chinese words in a more intelligent way.
-    (Xiaoping Gao via Mike McCandless)
-  
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

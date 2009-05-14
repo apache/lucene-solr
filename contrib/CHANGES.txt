@@ -55,6 +55,12 @@ New features
     you can download the .bz2 export from http://wikipedia.org and
     immediately index it.  (Shai Erera via Mike McCandless)
 
+ 5. LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
+    improves on CJKAnalyzer and ChineseAnalyzer by handling Chinese
+    sentences properly.  SmartChineseAnalyzer uses a Hidden Markov
+    Model to tokenize Chinese words in a more intelligent way.
+    (Xiaoping Gao via Mike McCandless)
+  
 
 Documentation
 
