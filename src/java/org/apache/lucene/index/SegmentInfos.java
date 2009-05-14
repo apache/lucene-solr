@@ -297,7 +297,7 @@ final class SegmentInfos extends Vector {
 
   // Only non-null after prepareCommit has been called and
   // before finishCommit is called
-  ChecksumIndexOutput pendingOutput;
+  ChecksumIndexOutput pendingSegnOutput;
 
   private final void write(Directory directory) throws IOException {
 
@@ -310,34 +310,34 @@ final class SegmentInfos extends Vector {
       generation++;
     }
 
-    ChecksumIndexOutput output = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
+    ChecksumIndexOutput segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
 
     boolean success = false;
 
     try {
-      output.writeInt(CURRENT_FORMAT); // write FORMAT
-      output.writeLong(++version); // every write changes
+      segnOutput.writeInt(CURRENT_FORMAT); // write FORMAT
+      segnOutput.writeLong(++version); // every write changes
                                    // the index
-      output.writeInt(counter); // write counter
-      output.writeInt(size()); // write infos
+      segnOutput.writeInt(counter); // write counter
+      segnOutput.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
-        info(i).write(output);
+        info(i).write(segnOutput);
       }
       if (userData == null)
-        output.writeByte((byte) 0);
+        segnOutput.writeByte((byte) 0);
       else {
-        output.writeByte((byte) 1);
-        output.writeString(userData);
+        segnOutput.writeByte((byte) 1);
+        segnOutput.writeString(userData);
       }
-      output.prepareCommit();
+      segnOutput.prepareCommit();
       success = true;
-      pendingOutput = output;
+      pendingSegnOutput = segnOutput;
     } finally {
       if (!success) {
         // We hit an exception above; try to close the file
         // but suppress any exception:
         try {
-          output.close();
+          segnOutput.close();
         } catch (Throwable t) {
           // Suppress so we keep throwing the original exception
         }
@@ -765,9 +765,9 @@ final class SegmentInfos extends Vector {
   }
 
   public final void rollbackCommit(Directory dir) throws IOException {
-    if (pendingOutput != null) {
+    if (pendingSegnOutput != null) {
       try {
-        pendingOutput.close();
+        pendingSegnOutput.close();
       } catch (Throwable t) {
         // Suppress so we keep throwing the original exception
         // in our caller
@@ -784,7 +784,7 @@ final class SegmentInfos extends Vector {
         // Suppress so we keep throwing the original exception
         // in our caller
       }
-      pendingOutput = null;
+      pendingSegnOutput = null;
     }
   }
 
@@ -794,7 +794,7 @@ final class SegmentInfos extends Vector {
    *  is called you must call {@link #finishCommit} to complete
    *  the commit or {@link #rollbackCommit} to abort it. */
   public final void prepareCommit(Directory dir) throws IOException {
-    if (pendingOutput != null)
+    if (pendingSegnOutput != null)
       throw new IllegalStateException("prepareCommit was already called");
     write(dir);
   }
@@ -820,13 +820,13 @@ final class SegmentInfos extends Vector {
   }
 
   public final void finishCommit(Directory dir) throws IOException {
-    if (pendingOutput == null)
+    if (pendingSegnOutput == null)
       throw new IllegalStateException("prepareCommit was not called");
     boolean success = false;
     try {
-      pendingOutput.finishCommit();
-      pendingOutput.close();
-      pendingOutput = null;
+      pendingSegnOutput.finishCommit();
+      pendingSegnOutput.close();
+      pendingSegnOutput = null;
       success = true;
     } finally {
       if (!success)
