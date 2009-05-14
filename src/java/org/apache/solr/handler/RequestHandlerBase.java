@@ -130,10 +130,14 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       rsp.setHttpCaching(httpCaching);
       handleRequestBody( req, rsp );
       // count timeouts
-      boolean timedOut = (Boolean)rsp.getResponseHeader().get("partialResults") == null ? false : (Boolean)rsp.getResponseHeader().get("partialResults");
-      if( timedOut ) {
-        numTimeouts++;
-        rsp.setHttpCaching(false);
+      NamedList header = rsp.getResponseHeader();
+      if(header != null) {
+        Object partialResults = header.get("partialResults");
+        boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
+        if( timedOut ) {
+          numTimeouts++;
+          rsp.setHttpCaching(false);
+        }
       }
     } catch (Exception e) {
       SolrException.log(SolrCore.log,e);
