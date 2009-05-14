@@ -33,8 +33,12 @@ import java.util.HashMap;
  */
 public class SolrIndexReader extends FilterIndexReader {
   private final SolrIndexReader[] subReaders;
+  private final SolrIndexReader[] leafReaders;
+  private int[] leafOffsets;
   private final SolrIndexReader parent;
   private final int base; // docid offset of this reader within parent
+
+  private static int[] zeroIntArray = new int[]{0};
 
   // top level searcher for this reader tree
   // a bit if a hack currently... searcher needs to set
@@ -54,14 +58,91 @@ public class SolrIndexReader extends FilterIndexReader {
     this.parent = parent;
     this.base = base;
     IndexReader subs[] = in.getSequentialSubReaders();
-    subReaders = subs == null ? null : new SolrIndexReader[subs.length];
     if (subs != null) {
+      subReaders = new SolrIndexReader[subs.length]; 
+      int numLeaves = subs.length;
+      leafOffsets = new int[numLeaves];
       int b=0;
       for (int i=0; i<subReaders.length; i++) {
-        subReaders[i] = new SolrIndexReader(subs[i], this, b);
-        b += subReaders[i].maxDoc();
+        SolrIndexReader sir = subReaders[i] = new SolrIndexReader(subs[i], this, b);
+        leafOffsets[i] = b;
+        b += sir.maxDoc();
+        IndexReader subLeaves[] = sir.leafReaders;
+        numLeaves += subLeaves.length - 1;  // subtract 1 for the parent
+      }
+      leafReaders = getLeaves(numLeaves);
+    } else {
+      subReaders = null;
+      leafReaders = new SolrIndexReader[]{this};
+      leafOffsets = zeroIntArray;
+    }
+
+  }
+
+  private SolrIndexReader[] getLeaves(int numLeaves) {
+    // fast path for a normal multiReader
+    if (subReaders==null || numLeaves == subReaders.length) return subReaders;
+
+    SolrIndexReader[] leaves = new SolrIndexReader[numLeaves];
+    leafOffsets = new int[numLeaves];
+    
+    int i=0;
+    int b = 0;
+    for (SolrIndexReader sir : subReaders) {
+      SolrIndexReader subLeaves[] = sir.leafReaders;
+      if (subLeaves == null) {
+        leafOffsets[i] = b;
+        b += sir.maxDoc();
+        leaves[i++] = sir;
+      } else {
+        for (SolrIndexReader subLeaf : subLeaves) {
+          leafOffsets[i] = b;
+          b += subLeaf.maxDoc();
+          leaves[i++] = subLeaf;
+        }
       }
     }
+    assert(i == numLeaves && b == maxDoc());
+    return leaves;
+  }
+
+  /** return the leaf readers in this reader tree, or an array of size 1 containing "this" if "this" is a leaf */
+  public SolrIndexReader[] getLeafReaders() {
+    return leafReaders;
+  }
+
+  /** Return the doc id offsets for each leaf reader.  This will be different than getBase() for
+   * any leaf reader who is not a direct descendant of "this".
+   */
+  public int[] getLeafOffsets() {
+    return leafOffsets;
+  }
+
+  /** Given an array of IndexReader offsets, find which contains the given doc */
+  public static int readerIndex(int doc, int[] offsets) {    // find reader for doc doc:
+    int high = offsets.length - 1;
+
+    // fast-path for a big optimized index and a bunch of smaller ones.
+    if (high <= 0 || doc < offsets[1]) return 0;
+
+    int low = 1;
+
+    while (high >= low) {
+      int mid = (low + high) >>> 1;
+      int offset = offsets[mid];
+      // check low first since first segments are normally bigger.
+      if (doc < offset)
+        high = mid - 1;
+      else if (doc > offset) {
+        low = mid + 1;
+      }
+      else {
+        // exact match on the offset.
+        return mid;
+      }
+    }
+    // low is the insertion point, high should be just below that (and the segment we want).
+    return high;
   }
 
   static String shortName(Object o) {

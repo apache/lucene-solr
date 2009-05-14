@@ -179,6 +179,10 @@ public class QueryComponent extends SearchComponent
     rsp.add("response",rb.getResults().docList);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
+
+    // The query cache doesn't currently store sort field values, and SolrIndexSearcher doesn't
+    // currently have an option to return sort field values.  Because of this, we
+    // take the documents given and re-derive the sort values.
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
       Sort sort = rb.getSortSpec().getSort();
@@ -187,46 +191,46 @@ public class QueryComponent extends SearchComponent
       NamedList sortVals = new NamedList(); // order is important for the sort fields
       Field field = new Field("dummy", "", Field.Store.YES, Field.Index.NO); // a dummy Field
 
+      SolrIndexReader reader = searcher.getReader();
+      SolrIndexReader[] readers = reader.getLeafReaders();
+      if (readers.length==1) readers=null;
+      int[] offsets = reader.getLeafOffsets();
+
       for (SortField sortField: sortFields) {
         int type = sortField.getType();
         if (type==SortField.SCORE || type==SortField.DOC) continue;
 
         ScoreDocComparator comparator = null;
-        IndexReader reader = searcher.getReader();
+        ScoreDocComparator comparators[] = (readers==null) ? null : new ScoreDocComparator[readers.length];
+
         String fieldname = sortField.getField();
         FieldType ft = fieldname==null ? null : req.getSchema().getFieldTypeNoEx(fieldname);
-
-
-        switch (type) {
-          case SortField.INT:
-            comparator = comparatorInt (reader, fieldname, sortField.getParser());
-            break;
-          case SortField.FLOAT:
-            comparator = comparatorFloat (reader, fieldname, sortField.getParser());
-            break;
-          case SortField.LONG:
-            comparator = comparatorLong(reader, fieldname, sortField.getParser());
-            break;
-          case SortField.DOUBLE:
-            comparator = comparatorDouble(reader, fieldname, sortField.getParser());
-            break;
-          case SortField.STRING:
-            if (sortField.getLocale() != null) comparator = comparatorStringLocale (reader, fieldname, sortField.getLocale());
-            else comparator = comparatorString (reader, fieldname);
-            break;
-          case SortField.CUSTOM:
-            comparator = sortField.getFactory().newComparator (reader, fieldname);
-            break;
-          default:
-            throw new RuntimeException ("unknown field type: "+type);
-        }
 
         DocList docList = rb.getResults().docList;
         ArrayList<Object> vals = new ArrayList<Object>(docList.size());
         DocIterator it = rb.getResults().docList.iterator();
+        SolrIndexReader subReader = reader;
+        int offset = 0;
+        int idx = 0;
+
         while(it.hasNext()) {
           sd.doc = it.nextDoc();
+          if (readers != null) {
+            idx = SolrIndexReader.readerIndex(sd.doc, offsets);
+            subReader = readers[idx];
+            offset = offsets[idx];
+            comparator = comparators[idx];
+          }
+
+          if (comparator == null) {
+            comparator = getComparator(subReader, sortField);
+            if (comparators != null)
+              comparators[idx] = comparator;
+          }
+
+          sd.doc -= offset;  // adjust for what segment this is in
           Object val = comparator.sortValue(sd);
+          
           // Sortable float, double, int, long types all just use a string
           // comparator. For these, we need to put the type into a readable
           // format.  One reason for this is that XML can't represent all
@@ -251,6 +255,35 @@ public class QueryComponent extends SearchComponent
       // TODO: this may depend on the highlighter component (or other components?)
       SolrPluginUtils.optimizePreFetchDocs(rb.getResults().docList, rb.getQuery(), req, rsp);
     }
+  }
+
+  private ScoreDocComparator getComparator(SolrIndexReader reader, SortField sortField) throws IOException {
+    ScoreDocComparator comparator = null;
+    String fieldname = sortField.getField();
+    switch (sortField.getType()) {
+      case SortField.INT:
+        comparator = comparatorInt (reader, fieldname, sortField.getParser());
+        break;
+      case SortField.FLOAT:
+        comparator = comparatorFloat (reader, fieldname, sortField.getParser());
+        break;
+      case SortField.LONG:
+        comparator = comparatorLong(reader, fieldname, sortField.getParser());
+        break;
+      case SortField.DOUBLE:
+        comparator = comparatorDouble(reader, fieldname, sortField.getParser());
+        break;
+      case SortField.STRING:
+        if (sortField.getLocale() != null) comparator = comparatorStringLocale (reader, fieldname, sortField.getLocale());
+        else comparator = comparatorString (reader, fieldname);
+        break;
+      case SortField.CUSTOM:
+        comparator = sortField.getFactory().newComparator (reader, fieldname);
+        break;
+      default:
+        throw new RuntimeException ("unknown field type: "+sortField.getType());
+    }
+    return comparator;
   }
 
   @Override  
