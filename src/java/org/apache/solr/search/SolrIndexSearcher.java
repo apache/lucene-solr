@@ -628,15 +628,26 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     if (filter==null) {
-      DocSetHitCollector hc = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+      DocSetCollector hc = new DocSetCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
-        TermDocs tdocs = null;
-        try {
-          tdocs = reader.termDocs(t);
-          while (tdocs.next()) hc.collect(tdocs.doc(),0.0f);
-        } finally {
-          if (tdocs!=null) tdocs.close();
+        SolrIndexReader[] readers = reader.getLeafReaders();
+        int[] offsets = reader.getLeafOffsets();
+        int[] arr = new int[256];
+        int[] freq = new int[256];
+        for (int i=0; i<readers.length; i++) {
+          SolrIndexReader sir = readers[i];
+          int offset = offsets[i];
+          hc.setNextReader(sir, offset);
+          TermDocs tdocs = sir.termDocs(t);
+          for(;;) {
+            int num = tdocs.read(arr, freq);
+            if (num==0) break;
+            while (--num>=0) {
+              hc.collect(arr[num]);
+            }
+          }
+          tdocs.close();
         }
       } else {
         super.search(query,null,hc);
@@ -645,11 +656,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     } else {
       // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
-      final DocSetHitCollector hc = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+      final DocSetCollector hc = new DocSetCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
       final DocSet filt = filter;
-      super.search(query, null, new HitCollector() {
-        public void collect(int doc, float score) {
-          if (filt.exists(doc)) hc.collect(doc,score);
+      super.search(query, null, new Collector() {
+        int base = 0;
+        public void collect(int doc) {
+          doc += base;
+          if (filt.exists(doc)) hc.collect(doc);
+        }
+
+        public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          this.base = docBase;  
+        }
+
+        public void setScorer(Scorer scorer) throws IOException {
         }
       }
       );
@@ -1112,7 +1132,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     int[] ids;
     float[] scores;
     final DocSetHitCollector setHC = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
-    final HitCollector hitCollector = ( cmd.getTimeAllowed() > 0 ) ? new TimeLimitedCollector( setHC, cmd.getTimeAllowed() ) : setHC;
+    final HitCollector collector = ( cmd.getTimeAllowed() > 0 ) ? new TimeLimitedCollector( setHC, cmd.getTimeAllowed() ) : setHC;
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
@@ -1137,7 +1157,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       try {
         super.search(query, new HitCollector() {
           public void collect(int doc, float score) {
-            hitCollector.collect(doc,score);
+            collector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
             numHits[0]++;
             if (score > topscore[0]) topscore[0]=score;
@@ -1168,7 +1188,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         super.search(query, new HitCollector() {
           private FieldDoc reusableFD;
           public void collect(int doc, float score) {
-            hitCollector.collect(doc,score);
+            collector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
             numHits[0]++;
             if (reusableFD == null)
@@ -1212,7 +1232,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         super.search(query, new HitCollector() {
           private ScoreDoc reusableSD;
           public void collect(int doc, float score) {
-            hitCollector.collect(doc,score);
+            collector.collect(doc,score);
             if (filt!=null && !filt.exists(doc)) return;
               // if docs are always delivered in order, we could use "score>minScore"
               // but might BooleanScorer14 might still be used and deliver docs out-of-order?

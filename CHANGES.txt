@@ -247,6 +247,10 @@ Optimizations
  9. SOLR-1108: Remove un-needed synchronization in SolrCore constructor.
     (Noble Paul via shalin)
 
+10. SOLR-1166: Speed up docset/filter generation by avoiding top-level
+    score() call and iterating over leaf readers with TermDocs. (yonik)
+
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)
