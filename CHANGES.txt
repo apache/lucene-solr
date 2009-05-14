@@ -345,6 +345,9 @@ Optimizations
     score should then call Scorer.score() per hit inside
     collect(). (Shai Erera via Mike McCandless)
 
+ 8. LUCENE-1596: MultiTermDocs speedup when set with
+    MultiTermDocs.seek(MultiTermEnum) (yonik)
+
 Documentation
 
 Build

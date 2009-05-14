@@ -533,10 +533,12 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   
     private Term term;
     private int docFreq;
-  
+    final SegmentMergeInfo[] matchingSegments; // null terminated array of matching segments
+
     public MultiTermEnum(IndexReader[] readers, int[] starts, Term t)
       throws IOException {
       queue = new SegmentMergeQueue(readers.length);
+      matchingSegments = new SegmentMergeInfo[readers.length+1];
       for (int i = 0; i < readers.length; i++) {
         IndexReader reader = readers[i];
         TermEnum termEnum;
@@ -547,6 +549,7 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
           termEnum = reader.terms();
   
         SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
+        smi.ord = i;
         if (t == null ? smi.next() : termEnum.term() != null)
           queue.put(smi);          // initialize queue
         else
@@ -559,7 +562,20 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     }
   
     public boolean next() throws IOException {
+      for (int i=0; i<matchingSegments.length; i++) {
+        SegmentMergeInfo smi = matchingSegments[i];
+        if (smi==null) break;
+        if (smi.next())
+          queue.put(smi);
+        else
+          smi.close(); // done with segment
+      }
+      
+      int numMatchingSegments = 0;
+      matchingSegments[0] = null;
+
       SegmentMergeInfo top = (SegmentMergeInfo)queue.top();
+
       if (top == null) {
         term = null;
         return false;
@@ -569,14 +585,13 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       docFreq = 0;
   
       while (top != null && term.compareTo(top.term) == 0) {
+        matchingSegments[numMatchingSegments++] = top;
         queue.pop();
         docFreq += top.termEnum.docFreq();    // increment freq
-        if (top.next())
-          queue.put(top);          // restore queue
-        else
-          top.close();          // done with a segment
         top = (SegmentMergeInfo)queue.top();
       }
+
+      matchingSegments[numMatchingSegments] = null;
       return true;
     }
   
@@ -603,7 +618,11 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   
     private TermDocs[] readerTermDocs;
     protected TermDocs current;              // == readerTermDocs[pointer]
-  
+
+    private MultiTermEnum tenum;  // the term enum used for seeking... can be null
+    int matchingSegmentPos;  // position into the matching segments from tenum
+    SegmentMergeInfo smi;     // current segment mere info... can be null
+
     public MultiTermDocs(IndexReader[] r, int[] s) {
       readers = r;
       starts = s;
@@ -623,10 +642,16 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       this.base = 0;
       this.pointer = 0;
       this.current = null;
+      this.tenum = null;
+      this.smi = null;
+      this.matchingSegmentPos = 0;
     }
   
     public void seek(TermEnum termEnum) throws IOException {
       seek(termEnum.term());
+      if (termEnum instanceof MultiTermEnum) {
+        this.tenum = (MultiTermEnum)termEnum;
+      }
     }
   
     public boolean next() throws IOException {
@@ -635,6 +660,14 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
           return true;
         }
         else if (pointer < readers.length) {
+          if (tenum != null) {
+            smi = tenum.matchingSegments[matchingSegmentPos++];
+            if (smi==null) {
+              pointer = readers.length;
+              return false;
+            }
+            pointer = smi.ord;
+          }
           base = starts[pointer];
           current = termDocs(pointer++);
         } else {
@@ -648,6 +681,14 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       while (true) {
         while (current == null) {
           if (pointer < readers.length) {      // try next segment
+            if (tenum != null) {
+              smi = tenum.matchingSegments[matchingSegmentPos++];
+              if (smi==null) {
+                pointer = readers.length;
+                return 0;
+              }
+              pointer = smi.ord;
+            }
             base = starts[pointer];
             current = termDocs(pointer++);
           } else {
@@ -672,6 +713,14 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
         if (current != null && current.skipTo(target-base)) {
           return true;
         } else if (pointer < readers.length) {
+          if (tenum != null) {
+            SegmentMergeInfo smi = tenum.matchingSegments[matchingSegmentPos++];
+            if (smi==null) {
+              pointer = readers.length;
+              return false;
+            }
+            pointer = smi.ord;
+          }
           base = starts[pointer];
           current = termDocs(pointer++);
         } else
@@ -683,7 +732,13 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
       TermDocs result = readerTermDocs[i];
       if (result == null)
         result = readerTermDocs[i] = termDocs(readers[i]);
-      result.seek(term);
+      if (smi != null) {
+        assert(smi.ord == i);
+        assert(smi.termEnum.term().equals(term));
+        result.seek(smi.termEnum);
+      } else {
+        result.seek(term);
+      }
       return result;
     }
   

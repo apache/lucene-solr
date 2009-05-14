@@ -22,6 +22,7 @@ import java.io.IOException;
 final class SegmentMergeInfo {
   Term term;
   int base;
+  int ord;  // the position of the segment in a MultiReader
   TermEnum termEnum;
   IndexReader reader;
   int delCount;
