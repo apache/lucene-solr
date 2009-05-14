@@ -240,10 +240,6 @@ final class RequestHandlers {
           SolrRequestHandler handler = core.createRequestHandler(_className);
           handler.init( _args );
 
-          if( handler instanceof ResourceLoaderAware ) {
-            ((ResourceLoaderAware)_handler).inform( core.getSolrConfig().getResourceLoader() );
-          }
-
           if( handler instanceof SolrCoreAware ) {
             ((SolrCoreAware)handler).inform( core );
           }
