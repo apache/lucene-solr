@@ -31,7 +31,7 @@ import java.io.IOException;
 /** Utility which converts certain query clauses into {@link QueryFilter}s and
  * caches these.  Only required {@link TermQuery}s whose boost is zero and
  * whose term occurs in at least a certain fraction of documents are converted
- * to cached filters.  This accellerates query constraints like language,
+ * to cached filters.  This accelerates query constraints like language,
  * document format, etc., which do not affect ranking but might otherwise slow
  * search considerably. */
 // Taken from Nutch and modified - YCS
