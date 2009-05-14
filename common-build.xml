@@ -233,6 +233,12 @@
       destdir="${build.dir}/classes/java">
       <classpath refid="classpath"/>
     </compile>
+
+    <!-- Copy the resources folder (if existent) -->
+    <copy todir="${build.dir}/classes/java" includeEmptyDirs="false">
+      <globmapper from="resources/*" to="*" handledirsep="yes"/>
+      <fileset dir="src" includes="resources/**"/>
+    </copy>
   </target>
 
   <target name="compile" depends="compile-core">
