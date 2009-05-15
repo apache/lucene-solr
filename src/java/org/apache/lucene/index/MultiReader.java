@@ -329,12 +329,12 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   public TermEnum terms() throws IOException {
     ensureOpen();
-    return new MultiTermEnum(subReaders, starts, null);
+    return new MultiTermEnum(this, subReaders, starts, null);
   }
 
   public TermEnum terms(Term term) throws IOException {
     ensureOpen();
-    return new MultiTermEnum(subReaders, starts, term);
+    return new MultiTermEnum(this, subReaders, starts, term);
   }
 
   public int docFreq(Term t) throws IOException {
@@ -347,12 +347,12 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   public TermDocs termDocs() throws IOException {
     ensureOpen();
-    return new MultiTermDocs(subReaders, starts);
+    return new MultiTermDocs(this, subReaders, starts);
   }
 
   public TermPositions termPositions() throws IOException {
     ensureOpen();
-    return new MultiTermPositions(subReaders, starts);
+    return new MultiTermPositions(this, subReaders, starts);
   }
 
   /** @deprecated */

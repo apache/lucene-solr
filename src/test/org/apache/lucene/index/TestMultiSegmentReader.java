@@ -149,6 +149,36 @@ public class TestMultiSegmentReader extends LuceneTestCase {
     mr.close();
   }
 
+  public void testMultiTermDocs() throws IOException {
+    RAMDirectory ramDir1=new RAMDirectory();
+    addDoc(ramDir1, "test foo", true);
+    RAMDirectory ramDir2=new RAMDirectory();
+    addDoc(ramDir2, "test blah", true);
+    RAMDirectory ramDir3=new RAMDirectory();
+    addDoc(ramDir3, "test wow", true);
+
+    IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir3)};
+    IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2), IndexReader.open(ramDir3)};
+    MultiReader mr2 = new MultiReader(readers1);
+    MultiReader mr3 = new MultiReader(readers2);
+
+    // test mixing up TermDocs and TermEnums from different readers.
+    TermDocs td2 = mr2.termDocs();
+    TermEnum te3 = mr3.terms(new Term("body","wow"));
+    td2.seek(te3);
+    int ret = 0;
+
+    // This should blow up if we forget to check that the TermEnum is from the same
+    // reader as the TermDocs.
+    while (td2.next()) ret += td2.doc();
+    td2.close();
+    te3.close();
+
+    // really a dummy assert to ensure that we got some docs and to ensure that
+    // nothing is optimized out.
+    assertTrue(ret > 0);
+  }
+
   public void testAllTermDocs() throws IOException {
     IndexReader reader = openReader();
     int NUM_DOCS = 2;

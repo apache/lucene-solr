@@ -437,12 +437,12 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
 
   public TermEnum terms() throws IOException {
     ensureOpen();
-    return new MultiTermEnum(subReaders, starts, null);
+    return new MultiTermEnum(this, subReaders, starts, null);
   }
 
   public TermEnum terms(Term term) throws IOException {
     ensureOpen();
-    return new MultiTermEnum(subReaders, starts, term);
+    return new MultiTermEnum(this, subReaders, starts, term);
   }
 
   public int docFreq(Term t) throws IOException {
@@ -455,12 +455,12 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
 
   public TermDocs termDocs() throws IOException {
     ensureOpen();
-    return new MultiTermDocs(subReaders, starts);
+    return new MultiTermDocs(this, subReaders, starts);
   }
 
   public TermPositions termPositions() throws IOException {
     ensureOpen();
-    return new MultiTermPositions(subReaders, starts);
+    return new MultiTermPositions(this, subReaders, starts);
   }
 
   protected void commitChanges() throws IOException {
@@ -529,14 +529,16 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   static class MultiTermEnum extends TermEnum {
+    IndexReader topReader; // used for matching TermEnum to TermDocs
     private SegmentMergeQueue queue;
   
     private Term term;
     private int docFreq;
     final SegmentMergeInfo[] matchingSegments; // null terminated array of matching segments
 
-    public MultiTermEnum(IndexReader[] readers, int[] starts, Term t)
+    public MultiTermEnum(IndexReader topReader, IndexReader[] readers, int[] starts, Term t)
       throws IOException {
+      this.topReader = topReader;
       queue = new SegmentMergeQueue(readers.length);
       matchingSegments = new SegmentMergeInfo[readers.length+1];
       for (int i = 0; i < readers.length; i++) {
@@ -609,6 +611,7 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   static class MultiTermDocs implements TermDocs {
+    IndexReader topReader;  // used for matching TermEnum to TermDocs
     protected IndexReader[] readers;
     protected int[] starts;
     protected Term term;
@@ -623,7 +626,8 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     int matchingSegmentPos;  // position into the matching segments from tenum
     SegmentMergeInfo smi;     // current segment mere info... can be null
 
-    public MultiTermDocs(IndexReader[] r, int[] s) {
+    public MultiTermDocs(IndexReader topReader, IndexReader[] r, int[] s) {
+      this.topReader = topReader;
       readers = r;
       starts = s;
   
@@ -650,7 +654,9 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     public void seek(TermEnum termEnum) throws IOException {
       seek(termEnum.term());
       if (termEnum instanceof MultiTermEnum) {
-        this.tenum = (MultiTermEnum)termEnum;
+        tenum = (MultiTermEnum)termEnum;
+        if (topReader != tenum.topReader)
+          tenum = null;
       }
     }
   
@@ -756,8 +762,8 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   static class MultiTermPositions extends MultiTermDocs implements TermPositions {
-    public MultiTermPositions(IndexReader[] r, int[] s) {
-      super(r,s);
+    public MultiTermPositions(IndexReader topReader, IndexReader[] r, int[] s) {
+      super(topReader,r,s);
     }
   
     protected TermDocs termDocs(IndexReader reader) throws IOException {
