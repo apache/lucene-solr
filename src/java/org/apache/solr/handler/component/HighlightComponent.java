@@ -79,11 +79,16 @@ public class HighlightComponent extends SearchComponent
         }
       }
       
+      if(highlightQuery != null) {
+        boolean rewrite = !(Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER)) && Boolean.valueOf(req.getParams().get(HighlightParams.HIGHLIGHT_MULTI_TERM)));
+        highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getReader()) : highlightQuery;
+      }
+      
       // No highlighting if there is no query -- consider q.alt="*:*
       if( highlightQuery != null ) {
         NamedList sumData = highlighter.doHighlighting(
                 rb.getResults().docList,
-                highlightQuery.rewrite(req.getSearcher().getReader()),
+                highlightQuery,
                 req, defaultHighlightFields );
         
         if(sumData != null) {

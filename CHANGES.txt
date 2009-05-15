@@ -367,6 +367,9 @@ Bug Fixes
 
 45. SOLR-1078: Fixes to WordDelimiterFilter to avoid splitting or dropping
     international non-letter characters such as non spacing marks. (yonik)
+    
+46. SOLR-825: Enables highlighting for range/wildcard/fuzzy/prefix queries if using hl.usePhraseHighlighter=true
+    and hl.highlightMultiTerm=true.  (Mark Miller)
 
 
 Other Changes

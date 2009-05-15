@@ -131,11 +131,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter
    */
   private SpanScorer getSpanQueryScorer(Query query, String fieldName, CachingTokenFilter tokenStream, SolrQueryRequest request) throws IOException {
     boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
+    Boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM);
+    if(highlightMultiTerm == null) {
+      highlightMultiTerm = false;
+    }
+
     if (reqFieldMatch) {
-      return new SpanScorer(query, fieldName, tokenStream);
+      return new SpanScorer(query, fieldName, tokenStream, highlightMultiTerm);
     }
     else {
-      return new SpanScorer(query, null, tokenStream);
+      return new SpanScorer(query, null, tokenStream, highlightMultiTerm);
     }
   }
 

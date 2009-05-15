@@ -672,4 +672,50 @@ public class HighlighterTest extends AbstractSolrTestCase {
     assertEquals("Expected to highlight on field \"foo_s\"", "foo_s",
         highlightFieldNames.get(0));
   }
+
+  public void testDefaultFieldPrefixWildcardHighlight() {
+
+    // do summarization using re-analysis of the field
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("df", "t_text");
+    args.put("hl.fl", "");
+    args.put("hl.usePhraseHighlighter", "true");
+    args.put("hl.highlightMultiTerm", "true");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    
+    assertU(adoc("t_text", "a long day's night", "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Basic summarization",
+            sumLRF.makeRequest("lon*"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='t_text']/str"
+            );
+
+  }
+
+  public void testDefaultFieldNonPrefixWildcardHighlight() {
+
+    // do summarization using re-analysis of the field
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("df", "t_text");
+    args.put("hl.fl", "");
+    args.put("hl.usePhraseHighlighter", "true");
+    args.put("hl.highlightMultiTerm", "true");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    
+    assertU(adoc("t_text", "a long day's night", "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Basic summarization",
+            sumLRF.makeRequest("l*g"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='t_text']/str"
+            );
+
+  }
 }

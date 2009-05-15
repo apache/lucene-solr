@@ -142,14 +142,18 @@ public class SolrQueryParser extends QueryParser {
     // TODO: throw exception if field type doesn't support prefixes?
     // (sortable numeric types don't do prefixes, but can do range queries)
     Term t = new Term(field, termStr);
-    return new ConstantScorePrefixQuery(t);
+    PrefixQuery prefixQuery = new PrefixQuery(t);
+    prefixQuery.setConstantScoreRewrite(true);
+    return prefixQuery;
   }
 
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     Query q = super.getWildcardQuery(field, termStr);
     if (q instanceof WildcardQuery) {
       // use a constant score query to avoid overflowing clauses
-      return new ConstantScoreQuery(new WildcardFilter(((WildcardQuery)q).getTerm()));
+      WildcardQuery wildcardQuery = new WildcardQuery(((WildcardQuery)q).getTerm());
+      wildcardQuery.setConstantScoreRewrite(true);
+      return  wildcardQuery; 
     }
     return q;
   }
