@@ -4353,6 +4353,10 @@ public class IndexWriter {
     assert !segmentInfos.contains(merge.info);
     segmentInfos.add(start, merge.info);
 
+    // Must note the change to segmentInfos so any commits
+    // in-flight don't lose it:
+    changeCount++;
+
     // If the merged segments had pending changes, clear
     // them so that they don't bother writing them to
     // disk, updating SegmentInfo, etc.:
@@ -4865,7 +4869,9 @@ public class IndexWriter {
     // Must checkpoint before decrefing so any newly
     // referenced files in the new merge.info are incref'd
     // first:
-    checkpoint();
+    synchronized(this) {
+      deleter.checkpoint(segmentInfos, false);
+    }
     decrefMergeSegments(merge);
 
     if (merge.useCompoundFile) {
