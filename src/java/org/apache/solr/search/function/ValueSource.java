@@ -71,7 +71,7 @@ class ValueSourceScorer extends Scorer {
   }
 
   public boolean matches(int doc) {
-    return (!checkDeletes || !reader.isDeleted(maxDoc)) && matchesValue(doc);
+    return (!checkDeletes || !reader.isDeleted(doc)) && matchesValue(doc);
   }
 
   public boolean matchesValue(int doc) {
