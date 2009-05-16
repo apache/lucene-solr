@@ -307,6 +307,10 @@ Bug fixes
 24. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
     cross-correlate Spans from different fields.
     (Paul Cowan and Chris Hostetter)
+
+25. LUCENE-1634: Add calibrateSizeByDeletes to LogMergePolicy, to take
+    deletions into account when considering merges.  (Yasuhiro Matsuda
+    via Mike McCandless)
     
 Optimizations
 

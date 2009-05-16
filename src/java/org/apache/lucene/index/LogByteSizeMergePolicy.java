@@ -36,7 +36,7 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
     maxMergeSize = (long) (DEFAULT_MAX_MERGE_MB*1024*1024);
   }
   protected long size(SegmentInfo info) throws IOException {
-    return info.sizeInBytes();
+    return sizeBytes(info);
   }
 
   /** <p>Determines the largest segment (measured by total

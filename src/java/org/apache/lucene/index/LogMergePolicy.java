@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.store.Directory;
-
 /** <p>This class implements a {@link MergePolicy} that tries
  *  to merge segments into levels of exponentially
  *  increasing size, where each level has < mergeFactor
@@ -59,6 +57,9 @@ public abstract class LogMergePolicy extends MergePolicy {
   long maxMergeSize;
   int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
+  /* TODO 3.0: change this default to true */
+  protected boolean calibrateSizeByDeletes = false;
+  
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
   private IndexWriter writer;
@@ -132,10 +133,40 @@ public abstract class LogMergePolicy extends MergePolicy {
     return useCompoundDocStore;
   }
 
+  /** Sets whether the segment size should be calibrated by
+   *  the number of deletes when choosing segments for merge. */
+  public void setCalibrateSizeByDeletes(boolean calibrateSizeByDeletes) {
+    this.calibrateSizeByDeletes = calibrateSizeByDeletes;
+  }
+
+  /** Returns true if the segment size should be calibrated 
+   *  by the number of deletes when choosing segments for merge. */
+  public boolean getCalibrateSizeByDeletes() {
+    return calibrateSizeByDeletes;
+  }
+
   public void close() {}
 
   abstract protected long size(SegmentInfo info) throws IOException;
 
+  protected long sizeDocs(SegmentInfo info) throws IOException {
+    if (calibrateSizeByDeletes) {
+      return (info.docCount - (long)info.getDelCount());
+    } else {
+      return info.docCount;
+    }
+  }
+  
+  protected long sizeBytes(SegmentInfo info) throws IOException {
+    long byteSize = info.sizeInBytes();
+    if (calibrateSizeByDeletes) {
+      float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
+      return (info.docCount <= 0 ?  byteSize : (long)((float)byteSize * (1.0f - delRatio)));
+    } else {
+      return byteSize;
+    }
+  }
+  
   private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
@@ -321,8 +352,6 @@ public abstract class LogMergePolicy extends MergePolicy {
     float[] levels = new float[numSegments];
     final float norm = (float) Math.log(mergeFactor);
 
-    final Directory directory = writer.getDirectory();
-
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = infos.info(i);
       long size = size(info);
@@ -390,7 +419,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         boolean anyTooLarge = false;
         for(int i=start;i<end;i++) {
           final SegmentInfo info = infos.info(i);
-          anyTooLarge |= (size(info) >= maxMergeSize || info.docCount >= maxMergeDocs);
+          anyTooLarge |= (size(info) >= maxMergeSize || sizeDocs(info) >= maxMergeDocs);
         }
 
         if (!anyTooLarge) {

@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -34,8 +36,8 @@ public class LogDocMergePolicy extends LogMergePolicy {
     // it to Long.MAX_VALUE to disable it
     maxMergeSize = Long.MAX_VALUE;
   }
-  protected long size(SegmentInfo info) {
-    return info.docCount;
+  protected long size(SegmentInfo info) throws IOException {
+    return sizeDocs(info);
   }
 
   /** Sets the minimum size for the lowest level segments.
