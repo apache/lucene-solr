@@ -34,14 +34,13 @@ import org.apache.lucene.LucenePackage;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -56,6 +55,8 @@ import org.apache.solr.schema.IndexSchema;
  */
 public class SystemInfoHandler extends RequestHandlerBase 
 {
+  private static Logger log = LoggerFactory.getLogger(SystemInfoHandler.class);
+  
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
@@ -169,7 +170,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       return IOUtils.toString( in );
     }
     catch( Exception ex ) {
-      ex.printStackTrace();
+      // ignore - log.warn("Error executing command", ex);
       return "(error executing: " + cmd + ")";
     }
     finally {
@@ -218,7 +219,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       jmx.add( "upTimeMS",  mx.getUptime() );
     }
     catch (Exception e) {
-      e.printStackTrace();
+      log.warn("Error getting JMX properties", e);
     }
     jvm.add( "jmx", jmx );
     return jvm;
