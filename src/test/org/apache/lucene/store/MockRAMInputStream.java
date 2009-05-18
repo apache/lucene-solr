@@ -43,7 +43,7 @@ public class MockRAMInputStream extends RAMInputStream {
     // remove the conditional check so we also track that
     // all clones get closed:
     if (!isClone) {
-      synchronized(dir.openFiles) {
+      synchronized(dir) {
         Integer v = (Integer) dir.openFiles.get(name);
         // Could be null when MockRAMDirectory.crash() was called
         if (v != null) {

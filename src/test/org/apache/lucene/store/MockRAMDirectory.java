@@ -54,7 +54,7 @@ public class MockRAMDirectory extends RAMDirectory {
   // like super is called, then our members are initialized:
   Map openFiles;
 
-  private void init() {
+  private synchronized void init() {
     if (openFiles == null)
       openFiles = new HashMap();
     if (createdFiles == null)
@@ -96,11 +96,9 @@ public class MockRAMDirectory extends RAMDirectory {
 
   /** Simulates a crash of OS or machine by overwriting
    *  unsycned files. */
-  public void crash() throws IOException {
-    synchronized(this) {
-      crashed = true;
-      openFiles = new HashMap();
-    }
+  public synchronized void crash() throws IOException {
+    crashed = true;
+    openFiles = new HashMap();
     Iterator it = unSyncedFiles.iterator();
     unSyncedFiles = new HashSet();
     int count = 0;
@@ -195,64 +193,53 @@ public class MockRAMDirectory extends RAMDirectory {
     if (unSyncedFiles.contains(name))
       unSyncedFiles.remove(name);
     if (!forced) {
-      synchronized(openFiles) {
-        if (noDeleteOpenFile && openFiles.containsKey(name)) {
-          throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
-        }
+      if (noDeleteOpenFile && openFiles.containsKey(name)) {
+        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
       }
     }
     super.deleteFile(name);
   }
 
-  public IndexOutput createOutput(String name) throws IOException {
+  public synchronized IndexOutput createOutput(String name) throws IOException {
     if (crashed)
       throw new IOException("cannot createOutput after crash");
     init();
-    synchronized(openFiles) {
-      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
-        throw new IOException("file \"" + name + "\" was already written to");
-      if (noDeleteOpenFile && openFiles.containsKey(name))
-        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
-    }
+    if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
+      throw new IOException("file \"" + name + "\" was already written to");
+    if (noDeleteOpenFile && openFiles.containsKey(name))
+      throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
     RAMFile file = new RAMFile(this);
-    synchronized (this) {
-      if (crashed)
-        throw new IOException("cannot createOutput after crash");
-      unSyncedFiles.add(name);
-      createdFiles.add(name);
-      RAMFile existing = (RAMFile)fileMap.get(name);
-      // Enforce write once:
-      if (existing!=null && !name.equals("segments.gen"))
-        throw new IOException("file " + name + " already exists");
-      else {
-        if (existing!=null) {
-          sizeInBytes -= existing.sizeInBytes;
-          existing.directory = null;
-        }
-
-        fileMap.put(name, file);
+    if (crashed)
+      throw new IOException("cannot createOutput after crash");
+    unSyncedFiles.add(name);
+    createdFiles.add(name);
+    RAMFile existing = (RAMFile)fileMap.get(name);
+    // Enforce write once:
+    if (existing!=null && !name.equals("segments.gen"))
+      throw new IOException("file " + name + " already exists");
+    else {
+      if (existing!=null) {
+        sizeInBytes -= existing.sizeInBytes;
+        existing.directory = null;
       }
+
+      fileMap.put(name, file);
     }
 
     return new MockRAMOutputStream(this, file, name);
   }
 
-  public IndexInput openInput(String name) throws IOException {
-    RAMFile file;
-    synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
-    }
+  public synchronized IndexInput openInput(String name) throws IOException {
+    RAMFile file = (RAMFile)fileMap.get(name);
     if (file == null)
       throw new FileNotFoundException(name);
     else {
-      synchronized(openFiles) {
-        if (openFiles.containsKey(name)) {
-          Integer v = (Integer) openFiles.get(name);
-          v = new Integer(v.intValue()+1);
-          openFiles.put(name, v);
-        } else {
-          openFiles.put(name, new Integer(1));
-        }
+      if (openFiles.containsKey(name)) {
+        Integer v = (Integer) openFiles.get(name);
+        v = new Integer(v.intValue()+1);
+        openFiles.put(name, v);
+      } else {
+         openFiles.put(name, new Integer(1));
       }
     }
     return new MockRAMInputStream(this, name, file);
@@ -281,16 +268,14 @@ public class MockRAMDirectory extends RAMDirectory {
     return size;
   }
 
-  public void close() {
+  public synchronized void close() {
     if (openFiles == null) {
       openFiles = new HashMap();
     }
-    synchronized(openFiles) {
-      if (noDeleteOpenFile && openFiles.size() > 0) {
-        // RuntimeException instead of IOException because
-        // super() does not throw IOException currently:
-        throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
-      }
+    if (noDeleteOpenFile && openFiles.size() > 0) {
+      // RuntimeException instead of IOException because
+      // super() does not throw IOException currently:
+      throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
     }
   }
 
