@@ -65,6 +65,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-similarity label="Similarity" href="ext:javadocs-contrib-similarity"/>
 -->			
             <javadoc-contrib-snowball label="Snowball" href="ext:javadocs-contrib-snowball"/>
+		    <javadoc-contrib-spatial label="Spatial" href="ext:javadocs-contrib-spatial"/>
 		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>
 		    <javadoc-contrib-surround label="Surround" href="ext:javadocs-contrib-surround"/>			
 		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>
@@ -111,6 +112,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-regex href="api/contrib-regex/index.html"/>
 	<javadocs-contrib-similarity href="api/contrib-similarity/index.html"/>
 	<javadocs-contrib-snowball href="api/contrib-snowball/index.html"/>
+	<javadocs-contrib-spatial href="api/contrib-spatial/index.html"/>
 	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
 	<javadocs-contrib-surround href="api/contrib-surround/index.html"/>
 	<javadocs-contrib-swing href="api/contrib-swing/index.html"/>
