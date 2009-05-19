@@ -19,6 +19,8 @@ package org.apache.lucene.collation;
 
 
 import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.RawCollationKey;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
@@ -61,6 +63,7 @@ import java.nio.CharBuffer;
  */
 public class ICUCollationKeyFilter extends TokenFilter {
   private Collator collator = null;
+  private RawCollationKey reusableKey = new RawCollationKey();
 
   /**
    * 
@@ -78,8 +81,8 @@ public class ICUCollationKeyFilter extends TokenFilter {
     if (nextToken != null) {
       char[] termBuffer = nextToken.termBuffer();
       String termText = new String(termBuffer, 0, nextToken.termLength());
-      byte[] collationKey = collator.getCollationKey(termText).toByteArray();
-      ByteBuffer collationKeyBuf = ByteBuffer.wrap(collationKey);
+      collator.getRawCollationKey(termText, reusableKey);
+      ByteBuffer collationKeyBuf = ByteBuffer.wrap(reusableKey.bytes, 0, reusableKey.size);
       int encodedLength
         = IndexableBinaryStringTools.getEncodedLength(collationKeyBuf);
       if (encodedLength > termBuffer.length) {

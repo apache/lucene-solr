@@ -61,6 +61,11 @@ New features
     Model to tokenize Chinese words in a more intelligent way.
     (Xiaoping Gao via Mike McCandless)
   
+Optimizations
+
+  1. LUCENE-1643: Re-use the collation key (RawCollationKey) for
+     better performance, in ICUCollationKeyFilter.  (Robert Muir via
+     Mike McCandless)
 
 Documentation
 
