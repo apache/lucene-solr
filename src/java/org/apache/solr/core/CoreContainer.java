@@ -66,7 +66,6 @@ public class CoreContainer
   protected SolrResourceLoader loader = null;
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   protected Properties containerProperties;
-  
   public CoreContainer() {
   }
 
@@ -174,7 +173,7 @@ public class CoreContainer
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
-      String adminHandler  = cfg.get(     "solr/cores/@adminHandler", null );      
+      String adminHandler  = cfg.get(     "solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
 
       if (libDir != null) {
@@ -475,6 +474,7 @@ public class CoreContainer
   /**
    * Sets the preferred core used to handle MultiCore admin tasks.
    */
+  @Deprecated
   public void setAdminCore(SolrCore core) {
     synchronized (cores) {
       adminCore = new java.lang.ref.WeakReference<SolrCore>(core);
@@ -486,7 +486,8 @@ public class CoreContainer
    * increase its refcount.
    * @see SolrCore#close() 
    * @return the acquired admin core, null if no core is available
-   */               
+   */
+  @Deprecated
   public SolrCore getAdminCore() {
     synchronized (cores) {
       SolrCore core = adminCore != null ? adminCore.get() : null;

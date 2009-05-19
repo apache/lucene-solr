@@ -20,6 +20,7 @@ package org.apache.solr.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.ByteArrayInputStream;
 import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.*;
 import org.apache.solr.request.*;
@@ -53,7 +56,17 @@ public class SolrDispatchFilter implements Filter
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected String solrConfigFilename = null;
-  protected final WeakHashMap<SolrCore, SolrRequestParsers> parsers = new WeakHashMap<SolrCore, SolrRequestParsers>();
+  protected final WeakHashMap<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
+  protected final SolrRequestParsers adminRequestParser;
+
+  public SolrDispatchFilter() {
+    try {
+      adminRequestParser = new SolrRequestParsers(new Config(null,"solr",new ByteArrayInputStream("<root/>".getBytes()),"") );
+    } catch (Exception e) {
+      //unlikely
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
+  }
 
   public void init(FilterConfig config) throws ServletException
   {
@@ -156,12 +169,10 @@ public class SolrDispatchFilter implements Filter
         // Check for the core admin page
         if( path.equals( cores.getAdminPath() ) ) {
           handler = cores.getMultiCoreHandler();
-          // pick a core to use for output generation
-          core = cores.getAdminCore();
-          if( core == null ) {
-            throw new RuntimeException( "Can not find a valid core for the cores admin handler" );
-          }
-        } 
+          solrReq =  adminRequestParser.parse(null,path, req);
+          handleAdminRequest(req, response, handler, solrReq);
+          return;
+        }
         else {
           //otherwise, we should find a core from the path
           idx = path.indexOf( "/", 1 );
@@ -187,7 +198,7 @@ public class SolrDispatchFilter implements Filter
           parser = parsers.get(core);
           if( parser == null ) {
             parser = new SolrRequestParsers(config);
-            parsers.put( core, parser );
+            parsers.put( core.getSolrConfig(), parser );
           }
 
           // Determine the handler from the url path if not set
@@ -241,26 +252,8 @@ public class SolrDispatchFilter implements Filter
                 } catch (ClassCastException cce) {
                   log.log(Level.WARNING, "exception adding response header log information", cce);
                 }*/
-                if( solrRsp.getException() != null ) {
-                  sendError( (HttpServletResponse)response, solrRsp.getException() );
-                }
-                else {
-                  // Now write it out
-                  QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
-                  response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
-                  if (Method.HEAD != reqMethod) {
-                    if (responseWriter instanceof BinaryQueryResponseWriter) {
-                      BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
-                      binWriter.write(response.getOutputStream(), solrReq, solrRsp);
-                    } else {
-                      PrintWriter out = response.getWriter();
-                      responseWriter.write(out, solrReq, solrRsp);
-
-                    }
-
-                  }
-                  //else http HEAD request, nothing to write out, waited this long just to get ContentType
-                }
+               QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
+              writeResponse(solrRsp, response, responseWriter, solrReq, reqMethod);
             }
             return; // we are done with a valid handler
           }
@@ -293,6 +286,50 @@ public class SolrDispatchFilter implements Filter
 
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
+  }
+
+  private void handleAdminRequest(HttpServletRequest req, ServletResponse response, SolrRequestHandler handler,
+                                  SolrQueryRequest solrReq) throws IOException {
+    SolrQueryResponse solrResp = new SolrQueryResponse();
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
+    solrResp.add("responseHeader", responseHeader);
+    NamedList toLog = solrResp.getToLog();
+    toLog.add("webapp", req.getContextPath());
+    toLog.add("path", solrReq.getContext().get("path"));
+    toLog.add("params", "{" + solrReq.getParamString() + "}");
+    handler.handleRequest(solrReq, solrResp);
+    SolrCore.setResponseHeaderValues(handler, solrReq, solrResp);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < toLog.size(); i++) {
+      String name = toLog.getName(i);
+      Object val = toLog.getVal(i);
+      sb.append(name).append("=").append(val).append(" ");
+    }
+    QueryResponseWriter respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
+    if (respWriter == null) respWriter = SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard");
+    writeResponse(solrResp, response, respWriter, solrReq, Method.getMethod(req.getMethod()));
+  }
+
+  private void writeResponse(SolrQueryResponse solrRsp, ServletResponse response,
+                             QueryResponseWriter responseWriter, SolrQueryRequest solrReq, Method reqMethod)
+          throws IOException {
+    if (solrRsp.getException() != null) {
+      sendError((HttpServletResponse) response, solrRsp.getException());
+    } else {
+      // Now write it out
+      response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
+      if (Method.HEAD != reqMethod) {
+        if (responseWriter instanceof BinaryQueryResponseWriter) {
+          BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+          binWriter.write(response.getOutputStream(), solrReq, solrRsp);
+        } else {
+          PrintWriter out = response.getWriter();
+          responseWriter.write(out, solrReq, solrRsp);
+
+        }
+      }
+      //else http HEAD request, nothing to write out, waited this long just to get ContentType
+    }
   }
 
   protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {

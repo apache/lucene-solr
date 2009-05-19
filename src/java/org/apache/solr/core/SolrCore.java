@@ -22,7 +22,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -1354,7 +1353,7 @@ public final class SolrCore implements SolrInfoMBean {
     execute(handler, req, rsp);
   }
   
-  protected void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
+  public static void setResponseHeaderValues(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
 	NamedList responseHeader = rsp.getResponseHeader();
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
@@ -1401,8 +1400,20 @@ public final class SolrCore implements SolrInfoMBean {
   
   private QueryResponseWriter defaultResponseWriter;
   private final Map<String, QueryResponseWriter> responseWriters = new HashMap<String, QueryResponseWriter>();
+  public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
+  static{
+    HashMap<String, QueryResponseWriter> m= new HashMap<String, QueryResponseWriter>();
+    m.put("xml", new XMLResponseWriter());
+    m.put("standard", m.get("xml"));
+    m.put("json", new JSONResponseWriter());
+    m.put("python", new PythonResponseWriter());
+    m.put("ruby", new RubyResponseWriter());
+    m.put("raw", new RawResponseWriter());
+    m.put("javabin", new BinaryResponseWriter());
+    DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
+  }
   
-  /** Configure the query response writers. There will always be a default writer; additional 
+  /** Configure the query response writers. There will always be a default writer; additional
    * writers may also be configured. */
   private void initWriters() {
     String xpath = "queryResponseWriter";
@@ -1412,31 +1423,15 @@ public final class SolrCore implements SolrInfoMBean {
       new NamedListPluginLoader<QueryResponseWriter>( "[solrconfig.xml] "+xpath, responseWriters );
     
     defaultResponseWriter = loader.load( solrConfig.getResourceLoader(), nodes );
+    for (Map.Entry<String, QueryResponseWriter> entry : DEFAULT_RESPONSE_WRITERS.entrySet()) {
+      if(responseWriters.get(entry.getKey()) == null) responseWriters.put(entry.getKey(), entry.getValue());
+    }
     
     // configure the default response writer; this one should never be null
     if (defaultResponseWriter == null) {
       defaultResponseWriter = responseWriters.get("standard");
-      if( defaultResponseWriter == null ) {
-        defaultResponseWriter = new XMLResponseWriter();
-      }
     }
 
-    // make JSON response writers available by default
-    if (responseWriters.get("json")==null) {
-      responseWriters.put("json", new JSONResponseWriter());
-    }
-    if (responseWriters.get("python")==null) {
-      responseWriters.put("python", new PythonResponseWriter());
-    }
-    if (responseWriters.get("ruby")==null) {
-      responseWriters.put("ruby", new RubyResponseWriter());
-    }
-    if (responseWriters.get("raw")==null) {
-      responseWriters.put("raw", new RawResponseWriter());
-    }
-    if (responseWriters.get("javabin") == null) {
-      responseWriters.put("javabin", new BinaryResponseWriter());
-    }
   }
   
   /** Finds a writer by name, or returns the default writer if not found. */

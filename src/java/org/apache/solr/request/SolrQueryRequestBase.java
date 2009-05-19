@@ -200,6 +200,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   // The index searcher associated with this request
   protected RefCounted<SolrIndexSearcher> searcherHolder;
   public SolrIndexSearcher getSearcher() {
+    if(core == null) return null;//a request for a core admin will no have a core
     // should this reach out and get a searcher from the core singleton, or
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
@@ -218,7 +219,8 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
 
   // The index schema associated with this request
   public IndexSchema getSchema() {
-    return core.getSchema();
+    //a request for a core admin will no have a core
+    return core == null? null: core.getSchema();
   }
 
   /**
