@@ -446,6 +446,8 @@ Other Changes
     
 31. Upgraded to Lucene 2.9-dev 773862 (Mark Miller)
 
+32. Upgraded to Lucene 2.9-dev r776177 (shalin)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
