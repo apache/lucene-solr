@@ -24,19 +24,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 
 /**
- * A Query that matches documents within an exclusive range. A RangeQuery
- * is built by QueryParser for input like <code>[010 TO 120]</code> but only if the QueryParser has 
- * the useOldRangeQuery property set to true. The QueryParser default behaviour is to use
- * the newer ConstantScore mode. This is generally preferable because:
- * <ul>
- *  <li>In certain situations, it may be faster than the standard RangeQuery mode</li>
- *  <li>Unlike the RangeQuery mode, it does not cause a BooleanQuery.TooManyClauses exception if the range of values is large</li>
- *  <li>Unlike the RangeQuery mode, it does not influence scoring based on the scarcity of individual terms that may match</li>
- * </ul>
- * 
+ * A Query that matches documents within an exclusive range.
  *
- * @version $Id$
+ * See {@link MultiTermQuery#setConstantScoreRewrite} for the tradeoffs between
+ * enabling and disabling constantScoreRewrite mode.
  */
+
 public class RangeQuery extends MultiTermQuery {
   private Term lowerTerm;
   private Term upperTerm;
