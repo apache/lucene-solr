@@ -2069,6 +2069,7 @@ public class IndexWriter {
       mergePolicy.close();
 
       finishMerges(waitForMerges);
+      stopMerges = true;
 
       mergeScheduler.close();
 
