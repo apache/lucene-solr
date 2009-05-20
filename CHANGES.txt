@@ -217,6 +217,8 @@ New Features
 
 51. SOLR-1121: CoreAdminhandler should not need a core  . This makes it possible to start a Solr server w/o a core .(noble)
 
+52. SOLR-769: Added support for clustering in contrib/clustering.  See http://wiki.apache.org/solr/ClusteringComponent for more info.  (gsingers, Stanislaw Osinski)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
