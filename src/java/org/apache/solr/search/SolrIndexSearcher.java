@@ -82,9 +82,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   private final LuceneQueryOptimizer optimizer;
   
-  private final float HASHSET_INVERSE_LOAD_FACTOR;
-  private final int HASHDOCSET_MAXSIZE;
-  
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final HashMap<String, SolrCache> cacheMap;
   private static final HashMap<String, SolrCache> noGenericCaches=new HashMap<String,SolrCache>(0);
@@ -185,10 +182,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       cacheList= noCaches;
     }
     optimizer = solrConfig.filtOptEnabled ? new LuceneQueryOptimizer(solrConfig.filtOptCacheSize,solrConfig.filtOptThreshold) : null;
-
-    // for DocSets
-    HASHSET_INVERSE_LOAD_FACTOR = solrConfig.hashSetInverseLoadFactor;
-    HASHDOCSET_MAXSIZE = solrConfig.hashDocSetMaxSize;
 
     fieldNames = r.getFieldNames(IndexReader.FieldOption.ALL);
   }
@@ -628,7 +621,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     if (filter==null) {
-      DocSetCollector hc = new DocSetCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+      DocSetCollector hc = new DocSetCollector(maxDoc()>>6, maxDoc());
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
         SolrIndexReader[] readers = reader.getLeafReaders();
@@ -656,7 +649,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     } else {
       // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
-      final DocSetCollector hc = new DocSetCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+      final DocSetCollector hc = new DocSetCollector(maxDoc()>>6, maxDoc());
       final DocSet filt = filter;
       super.search(query, null, new Collector() {
         int base = 0;
@@ -1131,7 +1124,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     float maxScore;
     int[] ids;
     float[] scores;
-    final DocSetHitCollector setHC = new DocSetHitCollector(HASHSET_INVERSE_LOAD_FACTOR, HASHDOCSET_MAXSIZE, maxDoc());
+    final DocSetHitCollector setHC = new DocSetHitCollector(maxDoc()>>6, maxDoc());
     final HitCollector collector = ( cmd.getTimeAllowed() > 0 ) ? new TimeLimitedCollector( setHC, cmd.getTimeAllowed() ) : setHC;
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());

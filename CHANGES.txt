@@ -254,6 +254,11 @@ Optimizations
 10. SOLR-1166: Speed up docset/filter generation by avoiding top-level
     score() call and iterating over leaf readers with TermDocs. (yonik)
 
+11. SOLR-1169: SortedIntDocSet - a new small set implementation
+    that saves memory over HashDocSet, is faster to construct, 
+    is ordered for easier impelemntation of skipTo, and is faster
+    in the general case. (yonik)
+
 
 Bug Fixes
 ----------------------

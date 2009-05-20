@@ -30,31 +30,26 @@ import java.io.IOException;
  */
 
 final class DocSetHitCollector extends HitCollector {
-
-  final float HASHSET_INVERSE_LOAD_FACTOR;
-  final int HASHDOCSET_MAXSIZE;
-
   int pos=0;
   OpenBitSet bits;
   final int maxDoc;
+  final int smallSetSize;
 
   // in case there aren't that many hits, we may not want a very sparse
   // bit array.  Optimistically collect the first few docs in an array
   // in case there are only a few.
   final int[] scratch;
 
-  // todo - could pass in bitset and an operation also...
-  DocSetHitCollector(float inverseLoadFactor, int maxSize, int maxDoc) {
+  DocSetHitCollector(int smallSetSize, int maxDoc) {
+    this.smallSetSize = smallSetSize;
     this.maxDoc = maxDoc;
-    HASHSET_INVERSE_LOAD_FACTOR = inverseLoadFactor;
-    HASHDOCSET_MAXSIZE = maxSize;
-    scratch = new int[HASHDOCSET_MAXSIZE];
+    this.scratch = new int[smallSetSize];
   }
 
   public void collect(int doc, float score) {
     // optimistically collect the first docs in an array
     // in case the total number will be small enough to represent
-    // as a HashDocSet() instead...
+    // as a small set like SortedIntDocSet instead...
     // Storing in this array will be quicker to convert
     // than scanning through a potentially huge bit vector.
     // FUTURE: when search methods all start returning docs in order, maybe
@@ -73,7 +68,8 @@ final class DocSetHitCollector extends HitCollector {
 
   public DocSet getDocSet() {
     if (pos<=scratch.length) {
-      return new HashDocSet(scratch,0,pos,HASHSET_INVERSE_LOAD_FACTOR);
+      // assumes docs were collected in sorted order!     
+      return new SortedIntDocSet(scratch, pos);
     } else {
       // set the bits for ids that were collected in the array
       for (int i=0; i<scratch.length; i++) bits.fastSet(scratch[i]);
@@ -84,33 +80,27 @@ final class DocSetHitCollector extends HitCollector {
 
 
 class DocSetCollector extends Collector {
-
-  final float HASHSET_INVERSE_LOAD_FACTOR;
-  final int HASHDOCSET_MAXSIZE;
-
   int pos=0;
   OpenBitSet bits;
   final int maxDoc;
-  int base=0;
+  final int smallSetSize;
+  int base;
 
   // in case there aren't that many hits, we may not want a very sparse
   // bit array.  Optimistically collect the first few docs in an array
   // in case there are only a few.
   final int[] scratch;
 
-  // todo - could pass in bitset and an operation also...
-  DocSetCollector(float inverseLoadFactor, int maxSize, int maxDoc) {
+  DocSetCollector(int smallSetSize, int maxDoc) {
+    this.smallSetSize = smallSetSize;
     this.maxDoc = maxDoc;
-    HASHSET_INVERSE_LOAD_FACTOR = inverseLoadFactor;
-    HASHDOCSET_MAXSIZE = maxSize;
-    scratch = new int[HASHDOCSET_MAXSIZE];
+    this.scratch = new int[smallSetSize];
   }
-
   public void collect(int doc) {
     doc += base;
     // optimistically collect the first docs in an array
     // in case the total number will be small enough to represent
-    // as a HashDocSet() instead...
+    // as a small set like SortedIntDocSet instead...
     // Storing in this array will be quicker to convert
     // than scanning through a potentially huge bit vector.
     // FUTURE: when search methods all start returning docs in order, maybe
@@ -129,7 +119,8 @@ class DocSetCollector extends Collector {
 
   public DocSet getDocSet() {
     if (pos<=scratch.length) {
-      return new HashDocSet(scratch,0,pos,HASHSET_INVERSE_LOAD_FACTOR);
+      // assumes docs were collected in sorted order!     
+      return new SortedIntDocSet(scratch, pos);
     } else {
       // set the bits for ids that were collected in the array
       for (int i=0; i<scratch.length; i++) bits.fastSet(scratch[i]);

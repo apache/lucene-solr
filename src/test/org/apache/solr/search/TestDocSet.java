@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import junit.framework.TestCase;
 
 import java.util.Random;
+import java.util.Arrays;
 
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
@@ -49,41 +50,75 @@ public class TestDocSet extends TestCase {
     return new HashDocSet(docs,0,docs.length);
   }
 
+  public DocSet getIntDocSet(OpenBitSet bs) {
+    int[] docs = new int[(int)bs.cardinality()];
+    OpenBitSetIterator iter = new OpenBitSetIterator(bs);
+    for (int i=0; i<docs.length; i++) {
+      docs[i] = iter.nextDoc();
+    }
+    return new SortedIntDocSet(docs);
+  }
+
+
   public DocSet getBitDocSet(OpenBitSet bs) {
     return new BitDocSet(bs);
   }
 
   public DocSet getDocSet(OpenBitSet bs) {
-    return rand.nextInt(2)==0 ? getHashDocSet(bs) : getBitDocSet(bs);
+    switch(rand.nextInt(3)) {
+      case 0: return getIntDocSet(bs);
+      case 1: return getHashDocSet(bs);
+      case 2: return getBitDocSet(bs);    
+    }
+    return null;
   }
 
   public void checkEqual(OpenBitSet bs, DocSet set) {
     for (int i=0; i<bs.capacity(); i++) {
       assertEquals(bs.get(i), set.exists(i));
     }
+    assertEquals(bs.cardinality(), set.size());
+  }
+
+  public void iter(DocSet d1, DocSet d2) {
+    // HashDocSet doesn't iterate in order.
+    if (d1 instanceof HashDocSet || d2 instanceof HashDocSet) return;
+
+    DocIterator i1 = d1.iterator();
+    DocIterator i2 = d2.iterator();
+
+    assert(i1.hasNext() == i2.hasNext());
+
+    for(;;) {
+      boolean b1 = i1.hasNext();
+      boolean b2 = i2.hasNext();
+      assertEquals(b1,b2);
+      if (!b1) break;
+      assertEquals(i1.nextDoc(), i2.nextDoc());
+    }
   }
 
   protected void doSingle(int maxSize) {
     int sz = rand.nextInt(maxSize+1);
     int sz2 = rand.nextInt(maxSize);
-    OpenBitSet a1 = getRandomSet(sz, rand.nextInt(sz+1));
-    OpenBitSet a2 = getRandomSet(sz, rand.nextInt(sz2+1));
+    OpenBitSet bs1 = getRandomSet(sz, rand.nextInt(sz+1));
+    OpenBitSet bs2 = getRandomSet(sz, rand.nextInt(sz2+1));
 
-    DocSet b1 = getDocSet(a1);
-    DocSet b2 = getDocSet(a2);
+    DocSet a1 = new BitDocSet(bs1);
+    DocSet a2 = new BitDocSet(bs2);
+    DocSet b1 = getDocSet(bs1);
+    DocSet b2 = getDocSet(bs2);
 
-    // System.out.println("b1="+b1+", b2="+b2);
+    checkEqual(bs1,b1);
+    checkEqual(bs2,b2);
 
-    assertEquals((int)a1.cardinality(), b1.size());
-    assertEquals((int)a2.cardinality(), b2.size());
+    iter(a1,b1);
+    iter(a2,b2);
 
-    checkEqual(a1,b1);
-    checkEqual(a2,b2);
-
-    OpenBitSet a_and = (OpenBitSet)a1.clone(); a_and.and(a2);
-    OpenBitSet a_or = (OpenBitSet)a1.clone(); a_or.or(a2);
-    // OpenBitSet a_xor = (OpenBitSet)a1.clone(); a_xor.xor(a2);
-    OpenBitSet a_andn = (OpenBitSet)a1.clone(); a_andn.andNot(a2);
+    OpenBitSet a_and = (OpenBitSet) bs1.clone(); a_and.and(bs2);
+    OpenBitSet a_or = (OpenBitSet) bs1.clone(); a_or.or(bs2);
+    // OpenBitSet a_xor = (OpenBitSet)bs1.clone(); a_xor.xor(bs2);
+    OpenBitSet a_andn = (OpenBitSet) bs1.clone(); a_andn.andNot(bs2);
 
     checkEqual(a_and, b1.intersection(b2));
     checkEqual(a_or, b1.union(b2));
@@ -102,12 +137,15 @@ public class TestDocSet extends TestCase {
   }
 
   public void testRandomDocSets() {
-    doMany(300, 5000);
+    // Make the size big enough to go over certain limits (such as one set
+    // being 8 times the size of another in the int set, or going over 2 times
+    // 64 bits for the bit doc set.  Smaller sets can hit more boundary conditions though.
+
+    doMany(130, 10000);
+    //doMany(130, 1000000);
   }
 
-
-  public HashDocSet getRandomHashDocset(int maxSetSize, int maxDoc) {
-    int n = rand.nextInt(maxSetSize);
+  public DocSet getRandomDocSet(int n, int maxDoc) {
     OpenBitSet obs = new OpenBitSet(maxDoc);
     int[] a = new int[n];
     for (int i=0; i<n; i++) {
@@ -118,14 +156,29 @@ public class TestDocSet extends TestCase {
         break;
       }
     }
-    return loadfactor!=0 ? new HashDocSet(a,0,n,1/loadfactor) : new HashDocSet(a,0,n);
+
+    if (n <= smallSetCuttoff) {
+      if (smallSetType ==0) {
+        Arrays.sort(a);
+        return new SortedIntDocSet(a);
+      } else if (smallSetType ==1) {
+        Arrays.sort(a);
+        return loadfactor!=0 ? new HashDocSet(a,0,n,1/loadfactor) : new HashDocSet(a,0,n);
+      }
+    }
+
+    return new BitDocSet(obs, n);
   }
 
-  public DocSet[] getRandomHashSets(int nSets, int maxSetSize, int maxDoc) {
+  public DocSet[] getRandomSets(int nSets, int minSetSize, int maxSetSize, int maxDoc) {
     DocSet[] sets = new DocSet[nSets];
 
     for (int i=0; i<nSets; i++) {
-      sets[i] = getRandomHashDocset(maxSetSize,maxDoc);
+      int sz;
+      sz = rand.nextInt(maxSetSize-minSetSize+1)+minSetSize;
+      // different distribution
+      // sz = (maxSetSize+1)/(rand.nextInt(maxSetSize)+1) + minSetSize;
+      sets[i] = getRandomDocSet(sz,maxDoc);
     }
 
     return sets;
@@ -160,30 +213,43 @@ public class TestDocSet extends TestCase {
   }
   ***/
 
+  public static int smallSetType = 0;  // 0==sortedint, 1==hash, 2==openbitset
+  public static int smallSetCuttoff=3000;
+
   /***
   public void testIntersectionSizePerformance() {
-    loadfactor=.75f;
-    rand=new Random(12345);  // make deterministic
-    int maxSetsize=4000;
-    int nSets=128;
-    int iter=10;
+    loadfactor=.75f; // for HashDocSet    
+    rand=new Random(1);  // make deterministic
+
+    int minBigSetSize=1,maxBigSetSize=30000;
+    int minSmallSetSize=1,maxSmallSetSize=30000;
+    int nSets=1024;
+    int iter=1;
     int maxDoc=1000000;
-    DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
+
+
+    smallSetCuttoff = maxDoc>>6; // break even for SortedIntSet is /32... but /64 is better for performance
+    // smallSetCuttoff = maxDoc;
+
+
+    DocSet[] bigsets = getRandomSets(nSets, minBigSetSize, maxBigSetSize, maxDoc);
+    DocSet[] smallsets = getRandomSets(nSets, minSmallSetSize, maxSmallSetSize, maxDoc);
     int ret=0;
     long start=System.currentTimeMillis();
     for (int i=0; i<iter; i++) {
-      for (DocSet s1 : sets) {
-        for (DocSet s2 : sets) {
+      for (DocSet s1 : bigsets) {
+        for (DocSet s2 : smallsets) {
           ret += s1.intersectionSize(s2);
         }
       }
     }
     long end=System.currentTimeMillis();
-    System.out.println("testIntersectionSizePerformance="+(end-start)+" ms");
-    if (ret==-1)System.out.println("wow!");
+    System.out.println("intersectionSizePerformance="+(end-start)+" ms");
+    System.out.println("ret="+ret);
   }
+   ***/
 
-
+  /****
   public void testExistsPerformance() {
     loadfactor=.75f;
     rand=new Random(12345);  // make deterministic

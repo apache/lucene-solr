@@ -189,10 +189,9 @@ abstract class DocSetBase implements DocSet {
   };
 
   public DocSet intersection(DocSet other) {
-    // intersection is overloaded in HashDocSet to be more
-    // efficient, so if "other" is a HashDocSet, dispatch off
-    // of it instead.
-    if (other instanceof HashDocSet) {
+    // intersection is overloaded in the smaller DocSets to be more
+    // efficient, so dispatch off of it instead.
+    if (!(other instanceof BitDocSet)) {
       return other.intersection(this);
     }
 
@@ -209,10 +208,9 @@ abstract class DocSetBase implements DocSet {
   }
 
   public int intersectionSize(DocSet other) {
-    // intersectionSize is overloaded in HashDocSet to be more
-    // efficient, so if "other" is a HashDocSet, dispatch off
-    // of it instead.
-    if (other instanceof HashDocSet) {
+    // intersection is overloaded in the smaller DocSets to be more
+    // efficient, so dispatch off of it instead.
+    if (!(other instanceof BitDocSet)) {
       return other.intersectionSize(this);
     }
     // less efficient way: do the intersection then get it's size
