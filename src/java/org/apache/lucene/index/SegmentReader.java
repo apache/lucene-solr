@@ -652,7 +652,8 @@ class SegmentReader extends DirectoryIndexReader {
     }
 
     // if we're cloning we need to run through the reopenSegment logic
-    if (normsUpToDate && deletionsUpToDate && !doClone && openReadOnly == readOnly) {
+    // also if both old and new readers aren't readonly, we clone to avoid sharing modifications
+    if (normsUpToDate && deletionsUpToDate && !doClone && openReadOnly && readOnly) {
       return this;
     }    
 

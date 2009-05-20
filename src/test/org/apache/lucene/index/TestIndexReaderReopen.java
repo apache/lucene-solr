@@ -1160,21 +1160,20 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testDeletes() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    createIndex(dir, false);
-    // Get delete bitVector
-    modifyIndex(0, dir);
-    IndexReader r1 = IndexReader.open(dir);
+    createIndex(dir, false); // Create an index with a bunch of docs (1 segment)
 
-    // Add doc:
-    modifyIndex(5, dir);
+    modifyIndex(0, dir); // Get delete bitVector on 1st segment
+    modifyIndex(5, dir); // Add a doc (2 segments)
 
-    IndexReader r2 = r1.reopen();
+    IndexReader r1 = IndexReader.open(dir); // MSR
+
+    modifyIndex(5, dir); // Add another doc (3 segments)
+
+    IndexReader r2 = r1.reopen(); // MSR
     assertTrue(r1 != r2);
 
-    IndexReader[] rs2 = r2.getSequentialSubReaders();
-
-    SegmentReader sr1 = (SegmentReader) r1;
-    SegmentReader sr2 = (SegmentReader) rs2[0];
+    SegmentReader sr1 = (SegmentReader) r1.getSequentialSubReaders()[0]; // Get SRs for the first segment from original
+    SegmentReader sr2 = (SegmentReader) r2.getSequentialSubReaders()[0]; // and reopened IRs
 
     // At this point they share the same BitVector
     assertTrue(sr1.deletedDocs==sr2.deletedDocs);
