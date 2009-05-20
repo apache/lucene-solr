@@ -194,6 +194,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (opts != null)
         dcore.setDataDir(opts);
 
+      dcore.setCoreProperties(null);
       SolrCore core = coreContainer.create(dcore);
       coreContainer.register(name, core, false);
       rsp.add("core", core.getName());
