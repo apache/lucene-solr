@@ -63,12 +63,15 @@ public final class LevensteinDistance implements StringDistance {
         d = new int[n+1]; 
       
         final int m = other.length();
+        if (n == 0 || m == 0) {
+          if (n == m) {
+            return 1;
+          }
+          else {
+            return 0;
+          }
+        } 
 
-        if (n == 0) {
-            return 1;
-        } else if (m == 0) {
-            return 1;
-        }
 
         // indexes into strings s and t
         int i; // iterates through s

@@ -82,6 +82,12 @@ public class TestSpellChecker extends TestCase {
     spellChecker.setAccuracy(0.8f);
     checkCommonSuggestions(r);
     checkJaroWinklerSuggestions();
+    
+    spellChecker.setStringDistance(new NGramDistance(2));
+    spellChecker.setAccuracy(0.5f);
+    checkCommonSuggestions(r);
+    checkNGramSuggestions();
+    
   }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {
@@ -168,6 +174,14 @@ public class TestSpellChecker extends TestCase {
     String[] similar = spellChecker.suggestSimilar("onety", 2);
     assertEquals(2, similar.length);
     assertEquals(similar[0], "one");
+    assertEquals(similar[1], "ninety");
+  }
+  
+  private void checkNGramSuggestions() throws IOException {
+    String[] similar = spellChecker.suggestSimilar("onety", 2);
+    assertEquals(2, similar.length);
+    assertEquals(similar[0], "one");
+    assertEquals(similar[1], "ninety");
   }
 
   private void addwords(IndexReader r, String field) throws IOException {

@@ -311,6 +311,10 @@ Bug fixes
 25. LUCENE-1634: Add calibrateSizeByDeletes to LogMergePolicy, to take
     deletions into account when considering merges.  (Yasuhiro Matsuda
     via Mike McCandless)
+
+26. LUCENE-1550: Added new n-gram based String distance measure for spell checking.
+    See the Javadocs for NGramDistance.java for a reference paper on why this is helpful (Tom Morton via Grant Ingersoll)
+        
     
 Optimizations
 

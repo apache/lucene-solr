@@ -45,5 +45,10 @@ public class TestLevenshteinDistance extends TestCase {
     d2 = sd.getDistance("brittney spears", "brittney startzman");
     assertTrue(d1 > d2);
   }
+  
+  public void testEmpty() throws Exception {
+    float d = sd.getDistance("", "al");
+    assertEquals(d,0.0f,0.001);
+  }
 
 }
