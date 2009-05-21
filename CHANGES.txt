@@ -221,6 +221,9 @@ New Features
 
 53. SOLR-1175: disable/enable replication on master side. added two commands 'enableReplication' and 'disableReplication' (noble)
 
+54. SOLR-1179: DocSets can now be used as Lucene Filters via
+    DocSet.getTopFilter() (yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
