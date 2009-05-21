@@ -327,8 +327,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name, boolean readOnly) throws IOException {
-    return new SolrIndexSearcher(this, schema, name, directoryFactory.open(getIndexDir()), false);
-    //return new SolrIndexSearcher(this, schema, "main", IndexReader.open(FSDirectory.getDirectory(getIndexDir()), readOnly), true, false);
+    return new SolrIndexSearcher(this, schema, name, directoryFactory.open(getIndexDir()), readOnly, false);
   }
 
   private void initDirectoryFactory() {
