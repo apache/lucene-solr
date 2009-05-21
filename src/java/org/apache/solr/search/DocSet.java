@@ -19,6 +19,12 @@ package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.index.IndexReader;
+
+import java.io.IOException;
 
 /**
  * <code>DocSet</code> represents an unordered set of Lucene Document Ids.
@@ -135,6 +141,13 @@ public interface DocSet /* extends Collection<Integer> */ {
    * Returns the number of documents in this set that are not in the other set.
    */
   public int andNotSize(DocSet other);
+
+  /**
+   * Returns a Filter for use in Lucene search methods, assuming this DocSet
+   * was generated from the top-level MultiReader that the Lucene search
+   * methods will be invoked with.
+   */
+  public Filter getTopFilter();
 }
 
 /** A base class that may be usefull for implementing DocSets */
@@ -229,6 +242,49 @@ abstract class DocSetBase implements DocSet {
 
   public int andNotSize(DocSet other) {
     return this.size() - this.intersectionSize(other);
+  }
+
+  public Filter getTopFilter() {
+    final OpenBitSet bs = getBits();
+
+    return new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+        int offset = 0;
+        SolrIndexReader r = (SolrIndexReader)reader;
+        while (r.getParent() != null) {
+          offset += r.getBase();
+          r = r.getParent();
+        }
+
+        if (r==reader) return bs;
+
+        final int base = offset;
+        final int maxDoc = reader.maxDoc();
+        final int max = base + maxDoc;   // one past the max doc in this segment.
+
+        return new DocIdSet() {
+          public DocIdSetIterator iterator() throws IOException {
+            return new DocIdSetIterator() {
+              int pos=base-1;
+              public int doc() {
+                return pos-base;
+              }
+
+              public boolean next() throws IOException {
+                pos = bs.nextSetBit(pos+1);
+                return pos>=0 && pos<max;
+              }
+
+              public boolean skipTo(int target) throws IOException {
+                pos = bs.nextSetBit(target+base);
+                return pos>=0 && pos<max;
+              }
+            };
+          }
+        };
+      }
+    };
   }
 }
 

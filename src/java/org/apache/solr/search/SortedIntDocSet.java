@@ -18,6 +18,12 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.index.IndexReader;
+
+import java.io.IOException;
 
 /**
  * <code>SortedIntDocSet</code> represents a sorted set of Lucene Document Ids.
@@ -493,6 +499,126 @@ public class SortedIntDocSet extends DocSetBase {
     return bs;
   }
 
+
+  public static int findIndex(int[] arr, int value, int low, int high) {
+    // binary search
+    while (low <= high) {
+      int mid = (low+high) >>> 1;
+      int found = arr[mid];
+
+      if (found < value) {
+        low = mid+1;
+      }
+      else if (found > value) {
+        high = mid-1;
+      }
+      else {
+        return mid;
+      }
+    }
+    return low;
+  }
+
+  @Override
+  public Filter getTopFilter() {
+    return new Filter() {
+      int lastEndIdx = 0;
+
+      @Override
+      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+        int offset = 0;
+        SolrIndexReader r = (SolrIndexReader)reader;
+        while (r.getParent() != null) {
+          offset += r.getBase();
+          r = r.getParent();
+        }
+        final int base = offset;
+        final int maxDoc = reader.maxDoc();
+        final int max = base + maxDoc;   // one past the max doc in this segment.
+        int sidx = Math.max(0,lastEndIdx);
+
+        if (sidx > 0 && docs[sidx-1] >= base) {
+          // oops, the lastEndIdx isn't correct... we must have been used
+          // in a multi-threaded context, or the indexreaders are being
+          // used out-of-order.  start at 0.
+          sidx = 0;
+        }
+        if (sidx < docs.length && docs[sidx] < base) {
+          // if docs[sidx] is < base, we need to seek to find the real start.
+          sidx = findIndex(docs, base, sidx, docs.length-1);
+        }
+
+        final int startIdx = sidx;
+
+        // Largest possible end index is limited to the start index
+        // plus the number of docs contained in the segment.  Subtract 1 since
+        // the end index is inclusive.
+        int eidx = Math.min(docs.length, startIdx + maxDoc) - 1;
+
+        // find the real end
+        eidx = findIndex(docs, max, startIdx, eidx) - 1;
+
+        final int endIdx = eidx;
+        lastEndIdx = endIdx;
+
+
+        return new DocIdSet() {
+          public DocIdSetIterator iterator() throws IOException {
+            return new DocIdSetIterator() {
+              int idx = startIdx;
+              int doc;
+              public int doc() {
+                return doc - base;
+              }
+
+              public boolean next() throws IOException {
+                if (idx > endIdx) return false;
+                doc = docs[idx++];
+                return true;
+              }
+
+              public boolean skipTo(int target) throws IOException {
+                if (idx > endIdx) return false;
+                target += base;
+
+                // probe next
+                doc = docs[idx++];
+                if (doc >= target) return true;
+
+                int high = endIdx;
+
+                // TODO: probe more before resorting to binary search?
+
+                // binary search
+                while (idx <= high) {
+                  int mid = (idx+high) >>> 1;
+                  doc = docs[mid];
+
+                  if (doc < target) {
+                    idx = mid+1;
+                  }
+                  else if (doc > target) {
+                    high = mid-1;
+                  }
+                  else {
+                    idx=mid+1;
+                    return true;
+                  }
+                }
+
+                // low is on the insertion point...
+                if (idx <= endIdx) {
+                  doc = docs[idx++];
+                  return true;
+                } else {
+                  return false;
+                }
+              }
+            };
+          }
+        };
+      }
+    };
+  }
+
 }
-
-

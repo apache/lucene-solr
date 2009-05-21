@@ -21,9 +21,16 @@ import junit.framework.TestCase;
 
 import java.util.Random;
 import java.util.Arrays;
+import java.io.IOException;
 
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 
 /**
  * @version $Id$
@@ -299,6 +306,119 @@ public class TestDocSet extends TestCase {
     System.out.println("collisions="+HashDocSet.collisions);
   }
   ***/
+
+  public IndexReader dummyIndexReader(final int maxDoc) {
+
+    IndexReader r = new FilterIndexReader(null) {
+      @Override
+      public int maxDoc() {
+        return maxDoc;
+      }
+
+      @Override
+      public boolean hasDeletions() {
+        return false;
+      }
+
+      @Override
+      public IndexReader[] getSequentialSubReaders() {
+        return null;
+      }
+    };
+    return r;
+  }
+
+  public IndexReader dummyMultiReader(int nSeg, int maxDoc) {
+    if (nSeg==1 && rand.nextBoolean()) return dummyIndexReader(rand.nextInt(maxDoc));
+
+    IndexReader[] subs = new IndexReader[rand.nextInt(nSeg)+1];
+    for (int i=0; i<subs.length; i++) {
+      subs[i] = dummyIndexReader(rand.nextInt(maxDoc));
+    }
+
+    MultiReader mr = new MultiReader(subs);
+    return mr;
+  }
+
+  public void doTestIteratorEqual(DocIdSet a, DocIdSet b) throws IOException {
+    DocIdSetIterator ia = a.iterator();
+    DocIdSetIterator ib = b.iterator();
+
+    // test for next() equivalence
+    for(;;) {
+      boolean nexta = ia.next();
+      boolean nextb = ib.next();
+      assertEquals(nexta, nextb);
+      if (!nexta) break;
+      assertEquals(ia.doc(), ib.doc());
+
+    }
+
+    for (int i=0; i<10; i++) {
+      // test random skipTo() and next()
+      ia = a.iterator();
+      ib = b.iterator();
+      int doc = -1;
+      for (;;) {
+        boolean nexta,nextb;
+        if (rand.nextBoolean()) {
+          nexta = ia.next();
+          nextb = ib.next();
+        } else {
+          int target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
+          nexta = ia.skipTo(target);
+          nextb = ib.skipTo(target);
+        }
+
+        assertEquals(nexta, nextb);        
+        if (!nexta) break;
+        doc = ia.doc();
+        assertEquals(doc, ib.doc());
+      }
+    }
+  }
+
+  public void doFilterTest(SolrIndexReader reader) throws IOException {
+    OpenBitSet bs = getRandomSet(reader.maxDoc(), rand.nextInt(reader.maxDoc()+1));
+    DocSet a = new BitDocSet(bs);
+    DocSet b = getIntDocSet(bs);
+
+    Filter fa = a.getTopFilter();
+    Filter fb = b.getTopFilter();
+
+    // test top-level
+    DocIdSet da = fa.getDocIdSet(reader);
+    DocIdSet db = fb.getDocIdSet(reader);
+    doTestIteratorEqual(da, db);
+
+    // first test in-sequence sub readers
+    for (SolrIndexReader sir : reader.getLeafReaders()) {
+      da = fa.getDocIdSet(sir);
+      db = fb.getDocIdSet(sir);
+      doTestIteratorEqual(da, db);
+    }  
+
+    int nReaders = reader.getLeafReaders().length;
+    // now test out-of-sequence sub readers
+    for (int i=0; i<nReaders; i++) {
+      SolrIndexReader sir = reader.getLeafReaders()[rand.nextInt(nReaders)];
+      da = fa.getDocIdSet(sir);
+      db = fb.getDocIdSet(sir);
+      doTestIteratorEqual(da, db);
+    }
+  }
+
+  public void testFilter() throws IOException {
+    // keeping these numbers smaller help hit more edge cases
+    int maxSeg=4;
+    int maxDoc=5;    // increase if future changes add more edge cases (like probing a certain distance in the bin search)
+
+    for (int i=0; i<5000; i++) {
+      IndexReader r = dummyMultiReader(maxSeg, maxDoc);
+      SolrIndexReader sir = new SolrIndexReader(r, null, 0);
+      doFilterTest(sir);
+    }
+  }
 
 
 }
