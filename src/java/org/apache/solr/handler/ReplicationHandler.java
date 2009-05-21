@@ -44,6 +44,7 @@ import java.nio.channels.FileChannel;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
@@ -93,7 +94,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile IndexCommit indexCommitPoint;
 
-  volatile NamedList snapShootDetails; 
+  volatile NamedList snapShootDetails;
+
+  private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -105,9 +108,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     // This command does not give the current index version of the master
     // It gives the current 'replicateable' index version
-    if (command.equals(CMD_INDEX_VERSION)) {
+    if(CMD_ENABLE_REPL.equalsIgnoreCase(command)){
+      replicationEnabled.set(true);
+    } else if(CMD_DISABLE_REPL.equalsIgnoreCase(command)){
+      replicationEnabled.set(false);
+    } else if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
-      if (commitPoint != null) {
+      if (commitPoint != null && replicationEnabled.get()) {
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
@@ -949,6 +956,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CMD_FILE_CHECKSUM = "filechecksum";
 
   public static final String CMD_DISABLE_POLL = "disablepoll";
+
+  public static final String CMD_DISABLE_REPL = "disablereplication";
+
+  public static final String CMD_ENABLE_REPL = "enablereplication";
 
   public static final String CMD_ENABLE_POLL = "enablepoll";
 
