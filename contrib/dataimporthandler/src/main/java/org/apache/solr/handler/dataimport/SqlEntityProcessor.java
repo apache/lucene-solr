@@ -107,18 +107,17 @@ public class SqlEntityProcessor extends EntityProcessorBase {
 
   public String getQuery() {
     String queryString = context.getEntityAttribute(QUERY);
-    if (context.currentProcess() == Context.FULL_DUMP
-            || !context.isRootEntity()) {
+    if (Context.FULL_DUMP.equals(context.currentProcess())) {
       return queryString;
+    }
+    if (Context.DELTA_DUMP.equals(context.currentProcess())) {
+      String deltaImportQuery = context.getEntityAttribute(DELTA_IMPORT_QUERY);
+      if(deltaImportQuery != null) return deltaImportQuery;
     }
     return getDeltaImportQuery(queryString);
   }
 
-  public String getDeltaImportQuery(String queryString) {
-    String deltaImportQuery = context.getEntityAttribute(DELTA_IMPORT_QUERY);
-    if(deltaImportQuery != null){
-      return resolver.replaceTokens(deltaImportQuery);
-    }
+  public String getDeltaImportQuery(String queryString) {    
     StringBuilder sb = new StringBuilder(queryString);
     if (SELECT_WHERE_PATTERN.matcher(queryString).find()) {
       sb.append(" and ");
