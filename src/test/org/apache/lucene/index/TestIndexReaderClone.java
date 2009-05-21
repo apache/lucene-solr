@@ -397,6 +397,44 @@ public class TestIndexReaderClone extends LuceneTestCase {
     dir1.close();
   }
 
+  // LUCENE-1648
+  public void testCloneWithDeletes() throws Throwable {
+    final Directory dir1 = new MockRAMDirectory();
+    TestIndexReaderReopen.createIndex(dir1, false);
+    SegmentReader origSegmentReader = (SegmentReader) IndexReader.open(dir1);
+    origSegmentReader.deleteDocument(1);
+
+    SegmentReader clonedSegmentReader = (SegmentReader) origSegmentReader.clone();
+    origSegmentReader.close();
+    clonedSegmentReader.close();
+
+    SegmentReader r = (SegmentReader) IndexReader.open(dir1);
+    assertTrue(r.isDeleted(1));
+    r.close();
+    dir1.close();
+  }
+
+  // LUCENE-1648
+  public void testCloneWithSetNorm() throws Throwable {
+    final Directory dir1 = new MockRAMDirectory();
+    TestIndexReaderReopen.createIndex(dir1, false);
+    SegmentReader orig = (SegmentReader) IndexReader.open(dir1);
+    orig.setNorm(1, "field1", 17.0f);
+    final byte encoded = Similarity.encodeNorm(17.0f);
+    assertEquals(encoded, orig.norms("field1")[1]);
+
+    // the cloned segmentreader should have 2 references, 1 to itself, and 1 to
+    // the original segmentreader
+    SegmentReader clonedSegmentReader = (SegmentReader) orig.clone();
+    orig.close();
+    clonedSegmentReader.close();
+
+    SegmentReader r = (SegmentReader) IndexReader.open(dir1);
+    assertEquals(encoded, r.norms("field1")[1]);
+    r.close();
+    dir1.close();
+  }
+
   private void assertDocDeleted(SegmentReader reader, SegmentReader reader2,
       int doc) {
     assertEquals(reader.isDeleted(doc), reader2.isDeleted(doc));

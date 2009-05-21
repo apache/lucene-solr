@@ -330,7 +330,9 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
   /** Returns the directory this index resides in.
    */
   public Directory directory() {
-    ensureOpen();
+    // Don't ensureOpen here -- in certain cases, when a
+    // cloned/reopened reader needs to commit, it may call
+    // this method on the closed original reader
     return directory;
   }
 

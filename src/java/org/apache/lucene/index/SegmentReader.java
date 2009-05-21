@@ -691,6 +691,15 @@ class SegmentReader extends DirectoryIndexReader {
       clone.termVectorsReaderOrig = termVectorsReaderOrig;
       clone.fieldsReaderOrig = fieldsReaderOrig;
       
+      if (!openReadOnly && hasChanges) {
+        // My pending changes transfer to the new reader
+        clone.pendingDeleteCount = pendingDeleteCount;
+        clone.deletedDocsDirty = deletedDocsDirty;
+        clone.normsDirty = normsDirty;
+        clone.hasChanges = hasChanges;
+        hasChanges = false;
+      }
+      
       if (doClone) {
         if (deletedDocs != null) {
           deletedDocsRef.incRef();
@@ -752,6 +761,7 @@ class SegmentReader extends DirectoryIndexReader {
       
       si.setDelCount(si.getDelCount()+pendingDeleteCount);
       pendingDeleteCount = 0;
+      assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
     }
     if (undeleteAll && si.hasDeletions()) {
       si.clearDelGen();
