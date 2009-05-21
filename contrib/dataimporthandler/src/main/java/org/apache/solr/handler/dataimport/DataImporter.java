@@ -365,8 +365,10 @@ public class DataImporter {
       }
       return;
     }
-    if (!importLock.tryLock())
+    if (!importLock.tryLock()){
+      LOG.warn("Import command failed . another import is running");      
       return;
+    }
     try {
       Date lastModified = sw.loadIndexStartTime();
       setLastIndexTime(lastModified);
