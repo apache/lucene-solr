@@ -219,7 +219,7 @@ New Features
 
 52. SOLR-769: Added support for clustering in contrib/clustering.  See http://wiki.apache.org/solr/ClusteringComponent for more info.  (gsingers, Stanislaw Osinski)
 
-53. SOLR-1175: disable/enable replication on master side. added two commands 'enableReplication' and 'disableReplication'
+53. SOLR-1175: disable/enable replication on master side. added two commands 'enableReplication' and 'disableReplication' (noble)
 
 Optimizations
 ----------------------
