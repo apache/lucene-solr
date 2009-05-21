@@ -135,6 +135,9 @@ API Changes
     not make sense for all subclasses of MultiTermQuery. Check individual
     subclasses to see if they support #getTerm().  (Mark Miller)
 
+14. LUCENE-1636: Make TokenFilter.input final so it's set only
+    once. (Wouter Heijke, Uwe Schindler via Mike McCandless).
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

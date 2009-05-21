@@ -35,7 +35,7 @@ import java.io.IOException;
   */
 public abstract class TokenFilter extends TokenStream {
   /** The source of tokens for this filter. */
-  protected TokenStream input;
+  protected final TokenStream input;
 
   /** Construct a token stream filtering the given input. */
   protected TokenFilter(TokenStream input) {
