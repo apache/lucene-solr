@@ -65,9 +65,7 @@ public final class LogLevelSelection extends HttpServlet {
             "with a level setting.  Note that this only shows " +
             "JDK Log levels.</p>\n");
 
-    out.write("<form action='");
-    out.write(request.getRequestURI());
-    out.write("' method='POST'>\n");
+    out.write("<form method='POST'>\n");
 
     out.write("<input type='submit' name='submit' value='set' " +
             "class='button'>\n");

@@ -382,6 +382,8 @@ Bug Fixes
 46. SOLR-825: Enables highlighting for range/wildcard/fuzzy/prefix queries if using hl.usePhraseHighlighter=true
     and hl.highlightMultiTerm=true.  (Mark Miller)
 
+47. SOLR-1174: Fix Logging admin form submit url for multicore. (Jacob Singh via shalin)
+
 
 Other Changes
 ----------------------
