@@ -231,6 +231,7 @@ public class SnapPuller {
         response = getLatestVersion();
       } catch (Exception e) {
         LOG.error("Master at: "+masterUrl + " is not available. Snappull failed. Exception: " + e.getMessage());
+        return false;
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
       long latestGeneration = (Long) response.get(GENERATION);
