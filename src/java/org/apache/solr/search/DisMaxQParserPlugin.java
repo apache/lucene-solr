@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -88,9 +87,6 @@ class DismaxQParser extends QParser {
 
     int pslop = solrParams.getInt(DisMaxParams.PS, 0);
     int qslop = solrParams.getInt(DisMaxParams.QS, 0);
-
-    /* a generic parser for parsing regular lucene queries */
-    QueryParser p = schema.getSolrQueryParser(null);
 
     /* a parser for dealing with user input, which will convert
      * things to DisjunctionMaxQueries
