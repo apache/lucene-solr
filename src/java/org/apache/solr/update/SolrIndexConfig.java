@@ -31,9 +31,10 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
  */
 public class SolrIndexConfig {
   public static final String defaultsName ="indexDefaults";
-  static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
   public static final String DEFAULT_MERGE_POLICY_CLASSNAME = LogByteSizeMergePolicy.class.getName();
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
+  static final SolrIndexConfig defaultDefaults = new SolrIndexConfig();
+
 
   private SolrIndexConfig() {
     useCompoundFile = true;
