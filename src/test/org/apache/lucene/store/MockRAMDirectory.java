@@ -215,7 +215,7 @@ public class MockRAMDirectory extends RAMDirectory {
     createdFiles.add(name);
     RAMFile existing = (RAMFile)fileMap.get(name);
     // Enforce write once:
-    if (existing!=null && !name.equals("segments.gen"))
+    if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite)
       throw new IOException("file " + name + " already exists");
     else {
       if (existing!=null) {

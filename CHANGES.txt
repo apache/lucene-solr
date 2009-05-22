@@ -179,6 +179,9 @@ Bug fixes
    sort) by doc Id in a consistent manner (i.e., if Sort.FIELD_DOC was used vs. 
    when it wasn't). (Shai Erera via Michael McCandless)
 
+10. LUCENE-1647: Fix case where IndexReader.undeleteAll would cause
+    the segment's deletion count to be incorrect. (Mike McCandless)
+
  New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior

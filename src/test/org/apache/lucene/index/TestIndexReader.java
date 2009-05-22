@@ -1590,6 +1590,27 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader.open(dir).close();
   }
 
+  // LUCENE-1647
+  public void testIndexReaderUnDeleteAll() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    dir.setPreventDoubleWrite(false);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(),
+                                         IndexWriter.MaxFieldLength.UNLIMITED);
+    writer.addDocument(createDocument("a"));
+    writer.addDocument(createDocument("b"));
+    writer.addDocument(createDocument("c"));
+    writer.close();
+    IndexReader reader = IndexReader.open(dir);
+    reader.deleteDocuments(new Term("id", "a"));
+    reader.flush();
+    reader.deleteDocuments(new Term("id", "b"));
+    reader.undeleteAll();
+    reader.deleteDocuments(new Term("id", "b"));
+    reader.close();
+    IndexReader.open(dir).close();
+    dir.close();
+  }
+
   private Document createDocument(String id) {
     Document doc = new Document();
     doc.add(new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));

@@ -57,12 +57,10 @@ class SegmentReader extends DirectoryIndexReader {
   Ref deletedDocsRef = null;
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
-  private boolean undeleteAll = false;
   private int pendingDeleteCount;
 
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
-  private boolean rollbackUndeleteAll = false;
   private int rollbackPendingDeleteCount;
   IndexInput freqStream;
   IndexInput proxStream;
@@ -762,11 +760,10 @@ class SegmentReader extends DirectoryIndexReader {
       si.setDelCount(si.getDelCount()+pendingDeleteCount);
       pendingDeleteCount = 0;
       assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
+    } else {
+      assert pendingDeleteCount == 0;
     }
-    if (undeleteAll && si.hasDeletions()) {
-      si.clearDelGen();
-      si.setDelCount(0);
-    }
+
     if (normsDirty) {               // re-write norms
       si.setNumFields(fieldInfos.size());
       Iterator it = norms.values().iterator();
@@ -779,7 +776,6 @@ class SegmentReader extends DirectoryIndexReader {
     }
     deletedDocsDirty = false;
     normsDirty = false;
-    undeleteAll = false;
   }
 
   FieldsReader getFieldsReader() {
@@ -865,21 +861,23 @@ class SegmentReader extends DirectoryIndexReader {
       oldRef.decRef();
     }
     deletedDocsDirty = true;
-    undeleteAll = false;
     if (!deletedDocs.getAndSet(docNum))
       pendingDeleteCount++;
   }
 
   protected void doUndeleteAll() {
     deletedDocsDirty = false;
-    undeleteAll = true;
     if (deletedDocs != null) {
       assert deletedDocsRef != null;
       deletedDocsRef.decRef();
       deletedDocs = null;
       deletedDocsRef = null;
+      pendingDeleteCount = 0;
+      si.clearDelGen();
+      si.setDelCount(0);
     } else {
       assert deletedDocsRef == null;
+      assert pendingDeleteCount == 0;
     }
   }
 
@@ -1254,7 +1252,6 @@ class SegmentReader extends DirectoryIndexReader {
     super.startCommit();
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
-    rollbackUndeleteAll = undeleteAll;
     rollbackPendingDeleteCount = pendingDeleteCount;
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {
@@ -1267,7 +1264,6 @@ class SegmentReader extends DirectoryIndexReader {
     super.rollbackCommit();
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
-    undeleteAll = rollbackUndeleteAll;
     pendingDeleteCount = rollbackPendingDeleteCount;
     Iterator it = norms.values().iterator();
     while (it.hasNext()) {
