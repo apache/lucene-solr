@@ -740,7 +740,7 @@ public class SnapPuller {
     return nextTime;
   }
 
-  private class ReplicationHandlerException extends InterruptedException {
+  private static class ReplicationHandlerException extends InterruptedException {
     public ReplicationHandlerException(String message) {
       super(message);
     }

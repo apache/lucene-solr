@@ -160,7 +160,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void close() throws IOException;
 
 
-  class DeleteHitCollector extends HitCollector {
+  static class DeleteHitCollector extends HitCollector {
     public int deleted=0;
     public final SolrIndexSearcher searcher;
 

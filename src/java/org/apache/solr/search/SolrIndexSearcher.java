@@ -376,7 +376,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * FieldSelector which loads the specified fields, and load all other
    * field lazily.
    */
-  class SetNonLazyFieldSelector implements FieldSelector {
+  static class SetNonLazyFieldSelector implements FieldSelector {
     private Set<String> fieldsToLoad;
     SetNonLazyFieldSelector(Set<String> toLoad) {
       fieldsToLoad = toLoad;

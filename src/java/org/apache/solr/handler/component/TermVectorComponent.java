@@ -182,7 +182,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     return result;
   }
 
-  private class TVMapper extends TermVectorMapper {
+  private static class TVMapper extends TermVectorMapper {
     private NamedList docNL;
     private IndexReader reader;
     private Set<String> fields;
