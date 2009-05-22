@@ -470,20 +470,20 @@ public class QueryParsing {
     }
   }
 
-
-
-
-  // simple class to help with parsing a string
-  static class StrParser {
+  /**
+   * Simple class to help with parsing a string
+   * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
+   */
+  public static class StrParser {
     String val;
     int pos;
     int end;
 
-    StrParser(String val) {
+    public StrParser(String val) {
       this(val,0,val.length());
     }
 
-    StrParser(String val, int start, int end) {
+    public StrParser(String val, int start, int end) {
       this.val = val;
       this.pos = start;
       this.end = end;

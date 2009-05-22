@@ -27,14 +27,19 @@ import org.apache.solr.request.SolrQueryRequest;
 
 import java.util.*;
 
+/**
+ * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
+ * 
+ * @version $Id$
+ */
 public abstract class QParser {
-  String qstr;
-  SolrParams params;
-  SolrParams localParams;
-  SolrQueryRequest req;
-  int recurseCount;
+  protected String qstr;
+  protected SolrParams params;
+  protected SolrParams localParams;
+  protected SolrQueryRequest req;
+  protected int recurseCount;
 
-  Query query;
+  protected Query query;
 
 
   public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {

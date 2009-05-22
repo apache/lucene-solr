@@ -27,6 +27,8 @@ import java.util.Set;
  * Returns a score for each document based on a ValueSource,
  * often some function of the value of a field.
  *
+ * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
+ *
  * @version $Id$
  */
 public class FunctionQuery extends Query {
@@ -51,9 +53,9 @@ public class FunctionQuery extends Query {
   public void extractTerms(Set terms) {}
 
   protected class FunctionWeight implements Weight {
-    Searcher searcher;
-    float queryNorm;
-    float queryWeight;
+    protected Searcher searcher;
+    protected float queryNorm;
+    protected float queryWeight;
 
     public FunctionWeight(Searcher searcher) {
       this.searcher = searcher;
