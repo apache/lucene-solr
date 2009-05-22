@@ -25,7 +25,7 @@ import java.io.File;
  *
  * @since solr 1.3
  */
-public class CoreDescriptor implements Cloneable {
+public class CoreDescriptor {
   protected String name;
   protected String instanceDir;
   protected String dataDir;
