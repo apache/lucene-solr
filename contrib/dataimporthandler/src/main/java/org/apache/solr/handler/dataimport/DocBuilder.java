@@ -244,10 +244,9 @@ public class DocBuilder {
     addStatusMessage("Deltas Obtained");
     addStatusMessage("Building documents");
     if (!deletedKeys.isEmpty()) {
+      allPks.removeAll(deletedKeys);      
       deleteAll(deletedKeys);
-      importStatistics.deletedDocCount.addAndGet(deletedKeys.size());
       // Make sure that documents are not re-created
-      allPks.removeAll(deletedKeys);
     }
     deletedKeys = null;
 
@@ -275,6 +274,7 @@ public class DocBuilder {
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
       writer.deleteDoc(map.get(root.pk));
+      importStatistics.deletedDocCount.incrementAndGet();      
       iter.remove();
     }
   }
