@@ -66,6 +66,9 @@ public class AttributeSource {
   }
   
   public AttributeSource(AttributeSource input) {
+    if (input == null) {
+      throw new IllegalArgumentException("input AttributeSource must not be null");
+    }
     this.attributes = input.attributes;
   }
   
