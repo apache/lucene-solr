@@ -135,11 +135,11 @@ abstract class FieldProperties {
 
   static int parseProperties(Map<String,String> properties, boolean which) {
     int props = 0;
-    for (String prop : properties.keySet()) {
-      if (propertyMap.get(prop)==null) continue;
-      String val = properties.get(prop);
+    for (Map.Entry<String, String> entry : properties.entrySet()) {
+      String val = entry.getValue();
+      if(val == null) continue;
       if (Boolean.parseBoolean(val) == which) {
-        props |= propertyNameToInt(prop);
+        props |= propertyNameToInt(entry.getKey());
       }
     }
     return props;
