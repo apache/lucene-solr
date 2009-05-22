@@ -387,6 +387,9 @@ Bug Fixes
 
 47. SOLR-1174: Fix Logging admin form submit url for multicore. (Jacob Singh via shalin)
 
+48. SOLR-1182: Fix bug in OrdFieldSource#equals which could cause a bug with OrdFieldSource caching
+               on OrdFieldSource#hashcode collisions. (Mark Miller)
+
 
 Other Changes
 ----------------------
