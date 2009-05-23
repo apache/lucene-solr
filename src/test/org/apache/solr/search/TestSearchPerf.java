@@ -215,7 +215,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
   }
 
   /** test range query performance */
-  public void testFilteringPerformance() throws Exception {
+  public void XtestFilteringPerformance() throws Exception {
     int indexSize=19999;
     float fractionCovered=.1f;
 
