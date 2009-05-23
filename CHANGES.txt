@@ -264,6 +264,9 @@ Optimizations
     is ordered for easier impelemntation of skipTo, and is faster
     in the general case. (yonik)
 
+12. SOLR-1165: Use Lucene Filters and pass them down to the Lucene
+    search methods to filter earlier and improve performance. (yonik)
+
 
 Bug Fixes
 ----------------------

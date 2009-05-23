@@ -885,9 +885,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       // do it the normal way...
       cmd.setSupersetMaxDoc(supersetMaxDoc);
       if ((cmd.getFlags() & GET_DOCSET)!=0) {
+        // this currently conflates returning the docset for the base query vs
+        // the base query and all filters.
         DocSet qDocSet = getDocListAndSetNC(qr,cmd);
         // cache the docSet matching the query w/o filtering
-        if (filterCache!=null && !qr.isPartialResults()) filterCache.put(cmd.getQuery(),qDocSet);
+        if (qDocSet!=null && filterCache!=null && !qr.isPartialResults()) filterCache.put(cmd.getQuery(),qDocSet);
       } else {
         getDocListNC(qr,cmd);
         //Parameters: cmd.getQuery(),theFilt,cmd.getSort(),0,supersetMaxDoc,cmd.getFlags(),cmd.getTimeAllowed(),responseHeader);
@@ -922,15 +924,15 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
+    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
+
     // handle zero case...
     if (lastDocRequested<=0) {
-      final DocSet filt = filter;
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
       final int[] numHits = new int[1];
 
       HitCollector hc = new HitCollector() {
         public void collect(int doc, float score) {
-          if (filt!=null && !filt.exists(doc)) return;
           numHits[0]++;
           if (score > topscore[0]) topscore[0]=score;
         }
@@ -939,7 +941,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, hc );
+        super.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -955,15 +957,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       // can't use TopDocs if there is a sort since it
       // will do automatic score normalization.
       // NOTE: this changed late in Lucene 1.9
-
-      final DocSet filt = filter;
       final int[] numHits = new int[1];
       final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
       HitCollector hc = new HitCollector() {
         private FieldDoc reusableFD;
         public void collect(int doc, float score) {
-          if (filt!=null && !filt.exists(doc)) return;
           numHits[0]++;
           if (reusableFD == null)
             reusableFD = new FieldDoc(doc, score);
@@ -978,7 +977,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, hc );
+        super.search(query, luceneFilter, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1002,14 +1001,11 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       // No Sort specified (sort by score descending)
       // This case could be done with TopDocs, but would currently require
       // getting a BitSet filter from a DocSet which may be inefficient.
-
-      final DocSet filt = filter;
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
       HitCollector hc = new HitCollector() {
         private ScoreDoc reusableSD;
         public void collect(int doc, float score) {
-          if (filt!=null && !filt.exists(doc)) return;
             // TODO: if docs are always delivered in order, we could use "score>minScore"
             // instead of "score>=minScore" and avoid tiebreaking scores
             // in the priority queue.
@@ -1033,7 +1029,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, hc );
+        super.search(query, luceneFilter, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1110,10 +1106,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   }
 
-
   // the DocSet returned is for the query only, without any filtering... that way it may
   // be cached if desired.
   private DocSet getDocListAndSetNC(QueryResult qr,QueryCommand cmd) throws IOException {
+///////////////////// NEW
     int len = cmd.getSupersetMaxDoc();
     DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
     int last = len;
@@ -1124,22 +1120,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     float maxScore;
     int[] ids;
     float[] scores;
-    final DocSetHitCollector setHC = new DocSetHitCollector(maxDoc()>>6, maxDoc());
-    final HitCollector collector = ( cmd.getTimeAllowed() > 0 ) ? new TimeLimitedCollector( setHC, cmd.getTimeAllowed() ) : setHC;
+
+    final DocSetHitCollector collector = new DocSetHitCollector(maxDoc()>>6, maxDoc());
 
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
+    final long timeAllowed = cmd.getTimeAllowed();
 
-    // TODO: perhaps unify getDocListAndSetNC and getDocListNC without imposing a significant performance hit
-
-    // Comment: gathering the set before the filter is applied allows one to cache
-    // the resulting DocSet under the query.  The drawback is that it requires an
-    // extra intersection with the filter at the end.  This will be a net win
-    // for expensive queries.
-
-    // Q: what if the final intersection results in a small set from two large
-    // sets... it won't be a HashDocSet or other small set.  One way around
-    // this would be to collect the resulting set as we go (the filter is
-    // checked anyway).
+    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
 
     // handle zero case...
     if (lastDocRequested<=0) {
@@ -1147,21 +1134,25 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
       final int[] numHits = new int[1];
 
-      try {
-        super.search(query, new HitCollector() {
+      HitCollector hc = new HitCollector() {
           public void collect(int doc, float score) {
-            collector.collect(doc,score);
-            if (filt!=null && !filt.exists(doc)) return;
+            collector.collect(doc, score);
             numHits[0]++;
             if (score > topscore[0]) topscore[0]=score;
           }
-        }
-        );
+      };
+
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
+      }
+      try {
+        super.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
+
 
       nDocsReturned=0;
       ids = new int[nDocsReturned];
@@ -1173,16 +1164,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       // will do automatic score normalization.
       // NOTE: this changed late in Lucene 1.9
 
-      final DocSet filt = filter;
       final int[] numHits = new int[1];
       final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, cmd.getSort().getSort(), len);
 
-      try {
-        super.search(query, new HitCollector() {
+      HitCollector hc = new HitCollector() {
           private FieldDoc reusableFD;
           public void collect(int doc, float score) {
-            collector.collect(doc,score);
-            if (filt!=null && !filt.exists(doc)) return;
+            collector.collect(doc, score);            
             numHits[0]++;
             if (reusableFD == null)
               reusableFD = new FieldDoc(doc, score);
@@ -1192,13 +1180,19 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             }
             reusableFD = (FieldDoc) hq.insertWithOverflow(reusableFD);
           }
-        }
-        );
+        };
+
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
+      }
+      try {
+        super.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
         qr.setPartialResults(true);
       }
+      
 
       totalHits = numHits[0];
       maxScore = totalHits>0 ? hq.getMaxScore() : 0.0f;
@@ -1218,33 +1212,37 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       // This case could be done with TopDocs, but would currently require
       // getting a BitSet filter from a DocSet which may be inefficient.
 
-      final DocSet filt = filter;
       final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
       final int[] numHits = new int[1];
-      try {
-        super.search(query, new HitCollector() {
+      
+      HitCollector hc = new HitCollector() {
           private ScoreDoc reusableSD;
           public void collect(int doc, float score) {
-            collector.collect(doc,score);
-            if (filt!=null && !filt.exists(doc)) return;
-              // if docs are always delivered in order, we could use "score>minScore"
-              // but might BooleanScorer14 might still be used and deliver docs out-of-order?
-              int nhits = numHits[0]++;
-              if (reusableSD == null) {
-                reusableSD = new ScoreDoc(doc, score);
-              } else if (nhits < lastDocRequested || score >= reusableSD.score) {
-                // reusableSD holds the last "rejected" entry, so, if
-                // this new score is not better than that, there's no
-                // need to try inserting it
-                reusableSD.doc = doc;
-                reusableSD.score = score;
-              } else {
-                return;
-              }
-              reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
+            collector.collect(doc, score);
+
+            // if docs are always delivered in order, we could use "score>minScore"
+            // but might BooleanScorer14 might still be used and deliver docs out-of-order?
+            int nhits = numHits[0]++;
+            if (reusableSD == null) {
+              reusableSD = new ScoreDoc(doc, score);
+            } else if (nhits < lastDocRequested || score >= reusableSD.score) {
+              // reusableSD holds the last "rejected" entry, so, if
+              // this new score is not better than that, there's no
+              // need to try inserting it
+              reusableSD.doc = doc;
+              reusableSD.score = score;
+            } else {
+              return;
             }
-        }
-        );
+            reusableSD = (ScoreDoc) hq.insertWithOverflow(reusableSD);
+          }
+      };
+
+      if( timeAllowed > 0 ) {
+        hc = new TimeLimitedCollector( hc, timeAllowed );
+      }
+      try {
+        super.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1267,13 +1265,16 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     int sliceLen = Math.min(lastDocRequested,nDocsReturned);
     if (sliceLen < 0) sliceLen=0;
-    
-    qr.setDocList(new DocSlice(0,sliceLen,ids,scores,totalHits,maxScore));
-    DocSet qDocSet = setHC.getDocSet();
-    qr.setDocSet(filter==null ? qDocSet : qDocSet.intersection(filter));
-    return qDocSet;
-  }
 
+    qr.setDocList(new DocSlice(0,sliceLen,ids,scores,totalHits,maxScore));
+    // TODO: if we collect results before the filter, we just need to intersect with
+    // that filter to generate the DocSet for qr.setDocSet()
+    qr.setDocSet(collector.getDocSet());
+
+    // TODO: currently we don't generate the DocSet for the base query.
+    // But the QueryDocSet == CompleteDocSet if filter==null.
+    return filter==null ? qr.getDocSet() : null;
+  }
 
 
   /**
@@ -1701,7 +1702,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     private int supersetMaxDoc;
     private int flags;
     private long timeAllowed = -1;
-    private boolean needDocSet;
 
     public Query getQuery() { return query; }
     public QueryCommand setQuery(Query query) {
