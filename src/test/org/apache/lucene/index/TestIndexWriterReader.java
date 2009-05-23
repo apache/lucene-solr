@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -42,6 +41,24 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriterReader extends LuceneTestCase {
   static PrintStream infoStream;
+
+  private static class HeavyAtomicInt {
+    private int value;
+    public HeavyAtomicInt(int start) {
+      value = start;
+    }
+    public synchronized int addAndGet(int inc) {
+      value += inc;
+      return value;
+    }
+    public synchronized int incrementAndGet() {
+      value++;
+      return value;
+    }
+    public synchronized int intValue() {
+      return value;
+    }
+  }
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
@@ -259,7 +276,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final static int NUM_THREADS = 5;
     final Thread[] threads = new Thread[NUM_THREADS];
     IndexWriter mainWriter;
-    AtomicInteger delCount = new AtomicInteger();
     List deletedTerms = new ArrayList();
     LinkedList toDeleteTerms = new LinkedList();
     Random random;
@@ -329,8 +345,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final List failures = new ArrayList();
     IndexReader[] readers;
     boolean didClose = false;
-    AtomicInteger count = new AtomicInteger(0);
-    AtomicInteger numAddIndexesNoOptimize = new AtomicInteger(0);
+    HeavyAtomicInt count = new HeavyAtomicInt(0);
+    HeavyAtomicInt numAddIndexesNoOptimize = new HeavyAtomicInt(0);
     
     public AddDirectoriesThreads(int numDirs, IndexWriter mainWriter) throws Throwable {
       this.numDirs = numDirs;

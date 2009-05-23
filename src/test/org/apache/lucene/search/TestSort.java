@@ -929,7 +929,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
           TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10,
               tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
 
-          assertEquals(actualTFCClasses[j], tdc.getClass().getSimpleName());
+          assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
           
           full.search(bq, tdc);
           
