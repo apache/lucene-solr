@@ -57,6 +57,40 @@ public class TestXPathRecordReader {
     Assert.assertEquals("x0", l.get(0).get("a"));
     Assert.assertEquals("y1", l.get(1).get("b"));
   }
+  
+  @Test
+  public void attrInRoot(){
+    String xml = "<r>\n" +
+            "<merchantProduct id=\"814636051\" mid=\"189973\">\n" +
+            "                   <in_stock type=\"stock-4\" />\n" +
+            "                   <condition type=\"cond-0\" />\n" +
+            "                   <price>301.46</price>\n" +
+            "</merchantProduct>\n" +
+            "<merchantProduct id=\"814636052\" mid=\"189974\">\n" +
+            "                   <in_stock type=\"stock-5\" />\n" +
+            "                   <condition type=\"cond-1\" />\n" +
+            "                   <price>302.46</price>\n" +
+            "</merchantProduct>\n" +
+            "\n" +
+            "</r>";
+     XPathRecordReader rr = new XPathRecordReader("/r/merchantProduct");
+    rr.addField("id", "/r/merchantProduct/@id", false);
+    rr.addField("mid", "/r/merchantProduct/@mid", false);
+    rr.addField("price", "/r/merchantProduct/price", false);
+    rr.addField("conditionType", "/r/merchantProduct/condition/@type", false);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Map<String, Object> m = l.get(0);
+    Assert.assertEquals("814636051", m.get("id"));
+    Assert.assertEquals("189973", m.get("mid"));
+    Assert.assertEquals("301.46", m.get("price"));
+    Assert.assertEquals("cond-0", m.get("conditionType"));
+
+    m = l.get(1);
+    Assert.assertEquals("814636052", m.get("id"));
+    Assert.assertEquals("189974", m.get("mid"));
+    Assert.assertEquals("302.46", m.get("price"));
+    Assert.assertEquals("cond-1", m.get("conditionType"));
+  }
 
   @Test
   public void attributes2Level() {
