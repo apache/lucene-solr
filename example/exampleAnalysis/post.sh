@@ -15,7 +15,7 @@
 # limitations under the License.
 
 FILES=$*
-URL=http://localhost:8983/solr/analysis
+URL=http://localhost:8983/solr/analysis/document
 
 for f in $FILES; do
   echo Posting file $f to $URL
