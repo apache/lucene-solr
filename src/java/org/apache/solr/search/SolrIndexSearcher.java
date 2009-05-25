@@ -49,13 +49,6 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since solr 0.9
  */
-
-// Since the internal reader in IndexSearcher is
-// package protected, I can't get to it by inheritance.
-// For now, I am using delgation and creating the
-// IndexReader to pass to the searcher myself.
-// NOTE: as of Lucene 1.9, this has changed!
-
 public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
