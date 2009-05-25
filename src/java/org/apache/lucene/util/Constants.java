@@ -17,6 +17,11 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.jar.Manifest;
+import java.util.jar.Attributes;
+import java.io.InputStream;
+import java.net.URL;
+
 /**
  * Some useful constants.
  *
@@ -44,4 +49,36 @@ public final class Constants {
   public static final boolean WINDOWS = OS_NAME.startsWith("Windows");
   /** True iff running on SunOS. */
   public static final boolean SUN_OS = OS_NAME.startsWith("SunOS");
+
+  public static final String OS_ARCH = System.getProperty("os.arch");
+  public static final String OS_VERSION = System.getProperty("os.version");
+  public static final String JAVA_VENDOR = System.getProperty("java.vendor");
+
+  public static final String LUCENE_VERSION;
+
+  public static final String LUCENE_MAIN_VERSION = "2.9-dev";
+
+  static {
+    String v = LUCENE_MAIN_VERSION;
+    try {
+      // TODO: this should have worked, but doesn't seem to?
+      // Package.getPackage("org.apache.lucene.util").getImplementationVersion();
+      String classContainer = Constants.class.getProtectionDomain().getCodeSource().getLocation().toString();
+      URL manifestUrl = new URL("jar:" + classContainer + "!/META-INF/MANIFEST.MF");
+      InputStream s = manifestUrl.openStream();
+      try {
+        Manifest manifest = new Manifest(s);
+        Attributes attr = manifest.getMainAttributes();
+        v = attr.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+      } finally {
+        if (s != null) {
+          s.close();
+        }
+      }
+    } catch (Throwable t) {
+      // ignore
+    }
+
+    LUCENE_VERSION = v;
+  }
 }

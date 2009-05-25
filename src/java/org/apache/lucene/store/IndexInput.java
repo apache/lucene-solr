@@ -18,6 +18,8 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 
 /** Abstract base class for input from a file in a {@link Directory}.  A
  * random-access input stream.  Used for all Lucene index input operations.
@@ -226,4 +228,16 @@ public abstract class IndexInput implements Cloneable {
     return clone;
   }
 
+  // returns Map<String, String>
+  public Map readStringStringMap() throws IOException {
+    final Map map = new HashMap();
+    final int count = readInt();
+    for(int i=0;i<count;i++) {
+      final String key = readString();
+      final String val = readString();
+      map.put(key, val);
+    }
+
+    return map;
+  }
 }

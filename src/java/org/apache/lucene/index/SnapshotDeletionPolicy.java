@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.io.IOException;
 import org.apache.lucene.store.Directory;
 
@@ -118,7 +119,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     public long getGeneration() {
       return cp.getGeneration();
     }
-    public String getUserData() throws IOException {
+    public Map getUserData() throws IOException {
       return cp.getUserData();
     }
   }

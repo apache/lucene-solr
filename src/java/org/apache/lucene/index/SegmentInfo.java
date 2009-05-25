@@ -23,7 +23,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BitVector;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 
 final class SegmentInfo {
 
@@ -78,6 +81,8 @@ final class SegmentInfo {
                                                   // (if it's an older index)
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
+
+  private Map diagnostics;
 
   public String toString() {
     return "si: "+dir.toString()+" "+name+" docCount: "+docCount+" delCount: "+delCount+" delFileName: "+getDelFileName();
@@ -139,6 +144,16 @@ final class SegmentInfo {
     delCount = src.delCount;
   }
 
+  // must be Map<String, String>
+  void setDiagnostics(Map diagnostics) {
+    this.diagnostics = diagnostics;
+  }
+
+  // returns Map<String, String>
+  Map getDiagnostics() {
+    return diagnostics;
+  }
+
   /**
    * Construct a new SegmentInfo instance by reading a
    * previously saved SegmentInfo from input.
@@ -192,6 +207,12 @@ final class SegmentInfo {
         hasProx = input.readByte() == 1;
       else
         hasProx = true;
+
+      if (format <= SegmentInfos.FORMAT_DIAGNOSTICS) {
+        diagnostics = input.readStringStringMap();
+      } else {
+        diagnostics = Collections.EMPTY_MAP;
+      }
     } else {
       delGen = CHECK_DIR;
       normGen = null;
@@ -203,6 +224,7 @@ final class SegmentInfo {
       docStoreSegment = null;
       delCount = -1;
       hasProx = true;
+      diagnostics = Collections.EMPTY_MAP;
     }
   }
   
@@ -290,8 +312,10 @@ final class SegmentInfo {
     si.isCompoundFile = isCompoundFile;
     si.delGen = delGen;
     si.delCount = delCount;
+    si.hasProx = hasProx;
     si.preLockless = preLockless;
     si.hasSingleNormFile = hasSingleNormFile;
+    si.diagnostics = new HashMap(diagnostics);
     if (normGen != null) {
       si.normGen = (long[]) normGen.clone();
     }
@@ -527,6 +551,7 @@ final class SegmentInfo {
     output.writeByte(isCompoundFile);
     output.writeInt(delCount);
     output.writeByte((byte) (hasProx ? 1:0));
+    output.writeStringStringMap(diagnostics);
   }
 
   void setHasProx(boolean hasProx) {

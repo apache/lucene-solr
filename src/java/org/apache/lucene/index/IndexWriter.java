@@ -3718,6 +3718,7 @@ public class IndexWriter {
             segmentInfos.clear();                      // pop old infos & add new
             info = new SegmentInfo(mergedName, docCount, directory, false, true,
                                    -1, null, false, merger.hasProx());
+            setDiagnostics(info, "addIndexes(IndexReader[])");
             segmentInfos.add(info);
           }
 
@@ -3831,16 +3832,16 @@ public class IndexWriter {
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    *
-   * @see #prepareCommit(String) */
+   * @see #prepareCommit(Map) */
   public final void prepareCommit() throws CorruptIndexException, IOException {
     ensureOpen();
     prepareCommit(null);
   }
 
   /** <p>Expert: prepare for commit, specifying
-   *  commitUserData String.  This does the first phase of
-   *  2-phase commit.  You can only call this when
-   *  autoCommit is false.  This method does all steps
+   *  commitUserData Map (String -> String).  This does the
+   *  first phase of 2-phase commit.  You can only call this
+   *  when autoCommit is false.  This method does all steps
    *  necessary to commit changes since this writer was
    *  opened: flushes pending added and deleted docs, syncs
    *  the index files, writes most of next segments_N file.
@@ -3849,7 +3850,7 @@ public class IndexWriter {
    *  #rollback()} to revert the commit and undo all changes
    *  done since the writer was opened.</p>
    * 
-   *  You can also just call {@link #commit(String)} directly
+   *  You can also just call {@link #commit(Map)} directly
    *  without prepareCommit first in which case that method
    *  will internally call prepareCommit.
    *
@@ -3857,11 +3858,12 @@ public class IndexWriter {
    *  you should immediately close the writer.  See <a
    *  href="#OOME">above</a> for details.</p>
    *
-   *  @param commitUserData Opaque String that's recorded
-   *  into the segments file in the index, and retrievable
-   *  by {@link IndexReader#getCommitUserData}.  Note that
-   *  when IndexWriter commits itself, for example if open
-   *  with autoCommit=true, or, during {@link #close}, the
+   *  @param commitUserData Opaque Map (String->String)
+   *  that's recorded into the segments file in the index,
+   *  and retrievable by {@link
+   *  IndexReader#getCommitUserData}.  Note that when
+   *  IndexWriter commits itself, for example if open with
+   *  autoCommit=true, or, during {@link #close}, the
    *  commitUserData is unchanged (just carried over from
    *  the prior commit).  If this is null then the previous
    *  commitUserData is kept.  Also, the commitUserData will
@@ -3869,11 +3871,11 @@ public class IndexWriter {
    *  index to commit.  Therefore it's best to use this
    *  feature only when autoCommit is false.
    */
-  public final void prepareCommit(String commitUserData) throws CorruptIndexException, IOException {
+  public final void prepareCommit(Map commitUserData) throws CorruptIndexException, IOException {
     prepareCommit(commitUserData, false);
   }
 
-  private final void prepareCommit(String commitUserData, boolean internal) throws CorruptIndexException, IOException {
+  private final void prepareCommit(Map commitUserData, boolean internal) throws CorruptIndexException, IOException {
 
     if (hitOOM) {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
@@ -3926,22 +3928,22 @@ public class IndexWriter {
    * href="#OOME">above</a> for details.</p>
    *
    * @see #prepareCommit
-   * @see #commit(String)
+   * @see #commit(Map)
    */
   public final void commit() throws CorruptIndexException, IOException {
     commit(null);
   }
 
   /** Commits all changes to the index, specifying a
-   *  commitUserData String.  This just calls {@link
-   *  #prepareCommit(String)} (if you didn't already call
-   *  it) and then {@link #finishCommit}.
+   *  commitUserData Map (String -> String).  This just
+   *  calls {@link #prepareCommit(Map)} (if you didn't
+   *  already call it) and then {@link #finishCommit}.
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    */
-  public final void commit(String commitUserData) throws CorruptIndexException, IOException {
+  public final void commit(Map commitUserData) throws CorruptIndexException, IOException {
 
     ensureOpen();
 
@@ -4136,6 +4138,7 @@ public class IndexWriter {
                                      docStoreOffset, docStoreSegment,
                                      docStoreIsCompoundFile,    
                                      docWriter.hasProx());
+        setDiagnostics(newSegment, "flush");
       }
 
       docWriter.pushDeletes();
@@ -4646,11 +4649,37 @@ public class IndexWriter {
                                  docStoreIsCompoundFile,
                                  false);
 
+
+    Map details = new HashMap();
+    details.put("optimize", merge.optimize+"");
+    details.put("mergeFactor", end+"");
+    details.put("mergeDocStores", mergeDocStores+"");
+    setDiagnostics(merge.info, "merge", details);
+
     // Also enroll the merged segment into mergingSegments;
     // this prevents it from getting selected for a merge
     // after our merge is done but while we are building the
     // CFS:
     mergingSegments.add(merge.info);
+  }
+
+  private void setDiagnostics(SegmentInfo info, String source) {
+    setDiagnostics(info, source, null);
+  }
+
+  private void setDiagnostics(SegmentInfo info, String source, Map details) {
+    Map diagnostics = new HashMap();
+    diagnostics.put("source", source);
+    diagnostics.put("lucene.version", Constants.LUCENE_VERSION);
+    diagnostics.put("os", Constants.OS_NAME+"");
+    diagnostics.put("os.arch", Constants.OS_ARCH+"");
+    diagnostics.put("os.version", Constants.OS_VERSION+"");
+    diagnostics.put("java.version", Constants.JAVA_VERSION+"");
+    diagnostics.put("java.vendor", Constants.JAVA_VENDOR+"");
+    if (details != null) {
+      diagnostics.putAll(details);
+    }
+    info.setDiagnostics(diagnostics);
   }
 
   /** This is called after merging a segment and before
@@ -5142,7 +5171,7 @@ public class IndexWriter {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(long sizeInBytes, String commitUserData) throws IOException {
+  private void startCommit(long sizeInBytes, Map commitUserData) throws IOException {
 
     assert testPoint("startStartCommit");
 

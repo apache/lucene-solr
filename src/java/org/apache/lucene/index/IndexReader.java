@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -525,9 +526,9 @@ public abstract class IndexReader implements Cloneable {
 
   /**
    * Reads commitUserData, previously passed to {@link
-   * IndexWriter#commit(String)}, from current index
+   * IndexWriter#commit(Map)}, from current index
    * segments file.  This will return null if {@link
-   * IndexWriter#commit(String)} has never been called for
+   * IndexWriter#commit(Map)} has never been called for
    * this index.
    * 
    * @param directory where the index resides.
@@ -537,7 +538,7 @@ public abstract class IndexReader implements Cloneable {
    *
    * @see #getCommitUserData()
    */
-  public static String getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
+  public static Map getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
     return SegmentInfos.readCurrentUserData(directory);
   }
 
@@ -552,12 +553,12 @@ public abstract class IndexReader implements Cloneable {
   /**
    * Retrieve the String userData optionally passed to
    * IndexWriter#commit.  This will return null if {@link
-   * IndexWriter#commit(String)} has never been called for
+   * IndexWriter#commit(Map)} has never been called for
    * this index.
    *
    * @see #getCommitUserData(Directory)
    */
-  public String getCommitUserData() {
+  public Map getCommitUserData() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
@@ -1017,12 +1018,13 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /**
-   * @param commitUserData Opaque String that's recorded
-   *  into the segments file in the index, and retrievable
-   *  by {@link IndexReader#getCommitUserData}.
+   * @param commitUserData Opaque Map (String -> String)
+   *  that's recorded into the segments file in the index,
+   *  and retrievable by {@link
+   *  IndexReader#getCommitUserData}.
    * @throws IOException
    */
-  public final synchronized void flush(String commitUserData) throws IOException {
+  public final synchronized void flush(Map commitUserData) throws IOException {
     ensureOpen();
     commit(commitUserData);
   }
@@ -1049,7 +1051,7 @@ public abstract class IndexReader implements Cloneable {
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
    */
-  protected final synchronized void commit(String commitUserData) throws IOException {
+  protected final synchronized void commit(Map commitUserData) throws IOException {
     if (hasChanges) {
       doCommit(commitUserData);
     }
@@ -1057,13 +1059,13 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /** Implements commit.
-   *  @deprecated Please implement {@link #doCommit(String)
+   *  @deprecated Please implement {@link #doCommit(Map)
    *  instead}. */
   protected abstract void doCommit() throws IOException;
 
   /** Implements commit.  NOTE: subclasses should override
    *  this.  In 3.0 this will become an abstract method. */
-  void doCommit(String commitUserData) throws IOException {
+  void doCommit(Map commitUserData) throws IOException {
     // Default impl discards commitUserData; all Lucene
     // subclasses override this (do not discard it).
     doCommit();

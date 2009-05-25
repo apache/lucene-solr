@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 */
 
 import java.util.Collection;
+import java.util.Map;
 import java.io.IOException;
 import org.apache.lucene.store.Directory;
 
@@ -122,8 +123,9 @@ public abstract class IndexCommit implements IndexCommitPoint {
   }
 
   /** Returns userData, previously passed to {@link
-   *  IndexWriter#commit(String)} for this commit.  */
-  public String getUserData() throws IOException {
+   *  IndexWriter#commit(Map)} for this commit.  Map is
+   *  String -> String. */
+  public Map getUserData() throws IOException {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
 }

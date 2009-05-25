@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Basic tool and API to check the health of an index and
@@ -113,6 +114,9 @@ public class CheckIndex {
      * argument). */
     public boolean partial;
 
+    /** Holds the userData of the last commit in the index */
+    public Map userData;
+
     /** Holds the status of each segment in the index.
      *  See {@link #segmentInfos}.
      *
@@ -169,6 +173,11 @@ public class CheckIndex {
        *  does not omitTermFreqAndPositions.
        *  @see AbstractField#setOmitTermFreqAndPositions */
       public boolean hasProx;
+
+      /** Map<String, String> that includes certain
+       *  debugging details that IndexWriter records into
+       *  each segment it creates */
+      public Map diagnostics;
     }
   }
 
@@ -310,6 +319,8 @@ public class CheckIndex {
         sFormat = "FORMAT_HAS_PROX [Lucene 2.4]";
       else if (format == SegmentInfos.FORMAT_USER_DATA)
         sFormat = "FORMAT_USER_DATA [Lucene 2.9]";
+      else if (format == SegmentInfos.FORMAT_DIAGNOSTICS)
+        sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
       else if (format < SegmentInfos.CURRENT_FORMAT) {
         sFormat = "int=" + format + " [newer version of Lucene than this tool]";
         skip = true;
@@ -318,10 +329,18 @@ public class CheckIndex {
       }
     }
 
-    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat);
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.segmentFormat = sFormat;
+    result.userData = sis.getUserData();
+    String userDataString;
+    if (sis.getUserData().size() > 0) {
+      userDataString = " userData=" + sis.getUserData();
+    } else {
+      userDataString = "";
+    }
+
+    msg("Segments file=" + segmentsFileName + " numSegments=" + numSegments + " version=" + sFormat + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -369,7 +388,11 @@ public class CheckIndex {
         segInfoStat.numFiles = info.files().size();
         msg("    size (MB)=" + nf.format(info.sizeInBytes()/(1024.*1024.)));
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
-
+        Map diagnostics = info.getDiagnostics();
+        segInfoStat.diagnostics = diagnostics;
+        if (diagnostics.size() > 0) {
+          msg("    diagnostics = " + diagnostics);
+        }
 
         final int docStoreOffset = info.getDocStoreOffset();
         if (docStoreOffset != -1) {

@@ -28,6 +28,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.util.Constants;
 
 public class TestCheckIndex extends LuceneTestCase {
 
@@ -55,11 +56,22 @@ public class TestCheckIndex extends LuceneTestCase {
       System.out.println(bos.toString());
       fail();
     }
-    assertTrue(((CheckIndex.Status.SegmentInfoStatus) indexStatus.segmentInfos.get(0)).openReaderPassed);
+    
+    final CheckIndex.Status.SegmentInfoStatus seg = (CheckIndex.Status.SegmentInfoStatus) indexStatus.segmentInfos.get(0);
+    assertTrue(seg.openReaderPassed);
 
+    assertNotNull(seg.diagnostics);
+    assertTrue(seg.diagnostics.size() > 0);
     final List onlySegments = new ArrayList();
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
+  }
+
+  public void testLuceneConstantVersion() throws IOException {
+    // common-build.xml sets lucene.version
+    final String version = System.getProperty("lucene.version");
+    assertEquals(version, Constants.LUCENE_MAIN_VERSION);
+    assertTrue(Constants.LUCENE_VERSION.startsWith(version));
   }
 }

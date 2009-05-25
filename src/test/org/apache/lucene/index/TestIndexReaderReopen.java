@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -1233,11 +1235,15 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
-      writer.commit(""+i);
+      Map data = new HashMap();
+      data.put("index", i+"");
+      writer.commit(data);
     }
     for(int i=0;i<4;i++) {
       writer.deleteDocuments(new Term("id", ""+i));
-      writer.commit(""+(4+i));
+      Map data = new HashMap();
+      data.put("index", (4+i)+"");
+      writer.commit(data);
     }
     writer.close();
 
@@ -1259,13 +1265,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         // expected
       }
 
-      final String s = commit.getUserData();
+      final Map s = commit.getUserData();
       final int v;
-      if (s == null) {
+      if (s.size() == 0) {
         // First commit created by IW
         v = -1;
       } else {
-        v = Integer.parseInt(s);
+        v = Integer.parseInt((String) s.get("index"));
       }
       if (v < 4) {
         assertEquals(1+v, r2.numDocs());

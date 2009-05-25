@@ -31,7 +31,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 
 final class SegmentInfos extends Vector {
 
@@ -76,8 +79,12 @@ final class SegmentInfos extends Vector {
   /** This format adds optional commit userData (String) storage. */
   public static final int FORMAT_USER_DATA = -8;
 
+  /** This format adds optional per-segment String
+   *  dianostics storage, and switches userData to Map */
+  public static final int FORMAT_DIAGNOSTICS = -9;
+
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_USER_DATA;
+  static final int CURRENT_FORMAT = FORMAT_DIAGNOSTICS;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -91,7 +98,7 @@ final class SegmentInfos extends Vector {
                                    // or wrote; this is normally the same as generation except if
                                    // there was an IOException that had interrupted a commit
 
-  private String userData;                        // Opaque String that user can specify during IndexWriter.commit
+  private Map userData = Collections.EMPTY_MAP;       // Opaque Map<String, String> that user can specify during IndexWriter.commit
 
   /**
    * If non-null, information about loading segments_N files
@@ -252,10 +259,16 @@ final class SegmentInfos extends Vector {
       }
 
       if (format <= FORMAT_USER_DATA) {
-        if (0 == input.readByte())
-          userData = null;
-        else
-          userData = input.readString();
+        if (format <= FORMAT_DIAGNOSTICS) {
+          userData = input.readStringStringMap();
+        } else {
+          userData = Collections.EMPTY_MAP;
+          if (0 != input.readByte()) {
+            userData.put("userData", input.readString());
+          }
+        }
+      } else {
+        userData = Collections.EMPTY_MAP;
       }
 
       if (format <= FORMAT_CHECKSUM) {
@@ -323,12 +336,7 @@ final class SegmentInfos extends Vector {
       for (int i = 0; i < size(); i++) {
         info(i).write(segnOutput);
       }
-      if (userData == null)
-        segnOutput.writeByte((byte) 0);
-      else {
-        segnOutput.writeByte((byte) 1);
-        segnOutput.writeString(userData);
-      }
+      segnOutput.writeStringStringMap(userData);
       segnOutput.prepareCommit();
       success = true;
       pendingSegnOutput = segnOutput;
@@ -362,6 +370,7 @@ final class SegmentInfos extends Vector {
     for(int i=0;i<sis.size();i++) {
       sis.set(i, sis.info(i).clone());
     }
+    sis.userData = new HashMap(userData);
     return sis;
   }
 
@@ -422,7 +431,7 @@ final class SegmentInfos extends Vector {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static String readCurrentUserData(Directory directory)
+  public static Map readCurrentUserData(Directory directory)
     throws CorruptIndexException, IOException {
     SegmentInfos sis = new SegmentInfos();
     sis.read(directory);
@@ -899,12 +908,16 @@ final class SegmentInfos extends Vector {
     return buffer.toString();
   }
 
-  public String getUserData() {
+  public Map getUserData() {
     return userData;
   }
 
-  public void setUserData(String data) {
-    userData = data;
+  public void setUserData(Map data) {
+    if (data == null) {
+      userData = Collections.EMPTY_MAP;
+    } else {
+      userData = data;
+    }
   }
 
   /** Replaces all segments in this instance, but keeps

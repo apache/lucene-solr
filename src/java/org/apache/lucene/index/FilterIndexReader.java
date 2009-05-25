@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -213,7 +214,7 @@ public class FilterIndexReader extends IndexReader {
   /** @deprecated */
   protected void doCommit() throws IOException { doCommit(null); }
   
-  protected void doCommit(String commitUserData) throws IOException { in.commit(commitUserData); }
+  protected void doCommit(Map commitUserData) throws IOException { in.commit(commitUserData); }
   
   protected void doClose() throws IOException { in.close(); }
 

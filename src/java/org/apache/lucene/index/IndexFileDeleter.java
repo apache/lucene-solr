@@ -585,7 +585,7 @@ final class IndexFileDeleter {
     long version;
     long generation;
     final boolean isOptimized;
-    final String userData;
+    final Map userData;
 
     public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
@@ -625,7 +625,7 @@ final class IndexFileDeleter {
       return generation;
     }
 
-    public String getUserData() {
+    public Map getUserData() {
       return userData;
     }
 

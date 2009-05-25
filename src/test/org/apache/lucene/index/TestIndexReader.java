@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import junit.framework.TestSuite;
@@ -70,8 +71,9 @@ public class TestIndexReader extends LuceneTestCase
     
     public void testCommitUserData() throws Exception {
       RAMDirectory d = new MockRAMDirectory();
-      
-      String cmpCommitUserData = "foo fighters";
+
+      Map commitUserData = new HashMap();
+      commitUserData.put("foo", "fighters");
       
       // set up writer
       IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -82,14 +84,14 @@ public class TestIndexReader extends LuceneTestCase
       
       IndexReader r = IndexReader.open(d);
       r.deleteDocument(5);
-      r.flush(cmpCommitUserData);
+      r.flush(commitUserData);
       r.close();
       
       SegmentInfos sis = new SegmentInfos();
       sis.read(d);
       IndexReader r2 = IndexReader.open(d);
       IndexCommit c = r.getIndexCommit();
-      assertEquals(c.getUserData(), cmpCommitUserData);
+      assertEquals(c.getUserData(), commitUserData);
 
       assertEquals(sis.getCurrentSegmentFileName(), c.getSegmentsFileName());
 

@@ -360,7 +360,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     doCommit(null);
   }
   
-  protected void doCommit(String commitUserData) throws IOException {
+  protected void doCommit(Map commitUserData) throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit(commitUserData);
   }

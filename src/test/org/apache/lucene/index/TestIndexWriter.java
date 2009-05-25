@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SinkTokenizer;
@@ -4096,31 +4098,33 @@ public class TestIndexWriter extends LuceneTestCase
       addDoc(w);
     w.close();
 
-    assertEquals(null, IndexReader.getCommitUserData(dir));
+    assertEquals(0, IndexReader.getCommitUserData(dir).size());
 
     IndexReader r = IndexReader.open(dir);
-    // commit(String) never called for this index
-    assertEquals(null, r.getCommitUserData());
+    // commit(Map) never called for this index
+    assertEquals(0, r.getCommitUserData().size());
     r.close();
       
     w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     w.setMaxBufferedDocs(2);
     for(int j=0;j<17;j++)
       addDoc(w);
-    w.commit("test1");
+    Map data = new HashMap();
+    data.put("label", "test1");
+    w.commit(data);
     w.close();
       
-    assertEquals("test1", IndexReader.getCommitUserData(dir));
+    assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));
 
     r = IndexReader.open(dir);
-    assertEquals("test1", r.getCommitUserData());
+    assertEquals("test1", r.getCommitUserData().get("label"));
     r.close();
 
     w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     w.optimize();
     w.close();
 
-    assertEquals("test1", IndexReader.getCommitUserData(dir));
+    assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));
       
     dir.close();
   }

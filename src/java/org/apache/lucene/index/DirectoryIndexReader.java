@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Collections;
+import java.util.Map;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
@@ -344,7 +345,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
     return segmentInfos.getVersion();
   }
 
-  public String getCommitUserData() {
+  public Map getCommitUserData() {
     ensureOpen();
     return segmentInfos.getUserData();
   }
@@ -396,7 +397,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
    */
-  protected void doCommit(String commitUserData) throws IOException {
+  protected void doCommit(Map commitUserData) throws IOException {
     if (hasChanges) {
       if (segmentInfos != null) {
         segmentInfos.setUserData(commitUserData);
@@ -557,7 +558,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
     long generation;
     long version;
     final boolean isOptimized;
-    final String userData;
+    final Map userData;
 
     ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
@@ -590,7 +591,7 @@ abstract class DirectoryIndexReader extends IndexReader implements Cloneable {
     public boolean isDeleted() {
       return false;
     }
-    public String getUserData() {
+    public Map getUserData() {
       return userData;
     }
   }

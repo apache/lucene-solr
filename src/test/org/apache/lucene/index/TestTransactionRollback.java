@@ -23,6 +23,8 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import junit.framework.TestCase;
 
@@ -55,9 +57,9 @@ public class TestTransactionRollback extends TestCase {
     Collection commits = IndexReader.listCommits(dir);
     for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
       IndexCommit commit = (IndexCommit) iterator.next();
-      String ud=commit.getUserData();
-      if (ud != null)
-        if (ud.endsWith(ids))
+      Map ud=commit.getUserData();
+      if (ud.size() > 0)
+        if (((String) ud.get("index")).endsWith(ids))
           last=commit;
     }
 
@@ -66,7 +68,9 @@ public class TestTransactionRollback extends TestCase {
 		
     IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(),
                                     new RollbackDeletionPolicy(id), MaxFieldLength.UNLIMITED, last);
-    w.commit("Rolled back to 1-"+id);
+    Map data = new HashMap();
+    data.put("index", "Rolled back to 1-"+id);
+    w.commit(data);
     w.close();
   }
 
@@ -101,6 +105,7 @@ public class TestTransactionRollback extends TestCase {
     assertEquals("Should have 0 docs remaining ", 0 ,expecteds.cardinality());
   }
 
+  /*
   private void showAvailableCommitPoints() throws Exception {
     Collection commits = IndexReader.listCommits(dir);
     for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
@@ -114,6 +119,7 @@ public class TestTransactionRollback extends TestCase {
       System.out.println();
     }
   }
+  */
 
   protected void setUp() throws Exception {
     dir = new MockRAMDirectory();
@@ -126,15 +132,15 @@ public class TestTransactionRollback extends TestCase {
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
     IndexWriter w=new IndexWriter(dir,new WhitespaceAnalyzer(),sdp,MaxFieldLength.UNLIMITED);
-    int firstRecordIdInThisTransaction=1;
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
       doc.add(new Field(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {
-        String userData="records 1-"+currentRecordId;
-        w.commit(userData);
+        Map data = new HashMap();
+        data.put("index", "records 1-"+currentRecordId);
+        w.commit(data);
       }
     }
 
@@ -155,12 +161,13 @@ public class TestTransactionRollback extends TestCase {
     public void onInit(List commits) throws IOException {
       for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
         IndexCommit commit = (IndexCommit) iterator.next();
-        String userData=commit.getUserData();
-        if (userData != null) {
+        Map userData=commit.getUserData();
+        if (userData.size() > 0) {
           // Label for a commit point is "Records 1-30"
           // This code reads the last id ("30" in this example) and deletes it
           // if it is after the desired rollback point
-          String lastVal = userData.substring(userData.lastIndexOf("-")+1);
+          String x = (String) userData.get("index");
+          String lastVal = x.substring(x.lastIndexOf("-")+1);
           int last = Integer.parseInt(lastVal);
           if (last>rollbackPoint) {
             /*

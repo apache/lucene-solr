@@ -107,10 +107,10 @@ API Changes
    that's visited.  All core collectors now use this API.  (Mark
    Miller, Mike McCandless)
 
-8. LUCENE-1546: Add IndexReader.flush(String commitUserData), allowing
-   you to record an opaque commitUserData into the commit written by
-   IndexReader.  This matches IndexWriter's commit methods.  (Jason
-   Rutherglen via Mike McCandless)
+8. LUCENE-1546: Add IndexReader.flush(Map commitUserData), allowing
+   you to record an opaque commitUserData (maps String -> String) into
+   the commit written by IndexReader.  This matches IndexWriter's
+   commit methods.  (Jason Rutherglen via Mike McCandless)
 
 9. LUCENE-652: Added org.apache.lucene.document.CompressionTools, to
    enable compressing & decompressing binary content, external to
@@ -192,10 +192,11 @@ Bug fixes
     when building transactional support on top of Lucene.  (Mike
     McCandless)
 
- 2. LUCENE-1382: Add an optional arbitrary String "commitUserData" to
-    IndexWriter.commit(), which is stored in the segments file and is
-    then retrievable via IndexReader.getCommitUserData instance and
-    static methods.  (Shalin Shekhar Mangar via Mike McCandless)
+ 2. LUCENE-1382: Add an optional arbitrary Map (String -> String)
+    "commitUserData" to IndexWriter.commit(), which is stored in the
+    segments file and is then retrievable via
+    IndexReader.getCommitUserData instance and static methods.
+    (Shalin Shekhar Mangar via Mike McCandless)
 
  3. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
 
