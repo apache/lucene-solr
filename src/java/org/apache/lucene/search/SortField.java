@@ -444,7 +444,7 @@ implements Serializable {
    * @param reversed True if the SortField is reversed
    * @return {@link FieldComparator} to use when sorting
    */
-  protected FieldComparator getComparator(final int numHits, final int sortPos, final boolean reversed) throws IOException {
+  public FieldComparator getComparator(final int numHits, final int sortPos, final boolean reversed) throws IOException {
 
     if (locale != null) {
       // TODO: it'd be nice to allow FieldCache.getStringIndex
